@@ -2,11 +2,11 @@
   "workloads": "bench/workloads/workloads.apple.metal.json",
   "baseline": {
     "name": "doe",
-    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_doe_comparable --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
+    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_doe_comparable --execute --no-pipeline-cache --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
   },
   "comparison": {
     "name": "dawn_delegate",
-    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
+    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_dawn_release --execute --no-pipeline-cache --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
   },
   "run": {
     "iterations": 16,

@@ -54,6 +54,8 @@ bench/out/**
 !bench/out/**/*.smoke.json
 !bench/out/*.claim.json
 !bench/out/**/*.claim.json
+!bench/out/*.erratum.md
+!bench/out/**/*.erratum.md
 !bench/out/*.determinism.json
 !bench/out/**/*.determinism.json
 !bench/out/*.commands.annotated.json

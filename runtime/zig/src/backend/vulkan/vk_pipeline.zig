@@ -28,6 +28,7 @@ const DEFAULT_KERNEL_ROOT = "bench/kernels";
 // SPIR-V opcode/decoration constants for binding detection.
 const SPIRV_OP_DECORATE: u16 = 71;
 const SPIRV_DECORATION_BINDING: u32 = 33;
+const SPIRV_OP_ENTRY_POINT: u16 = 15;
 
 /// Scan SPIR-V words for any OpDecorate ... Binding instructions.
 /// Returns true if the shader declares at least one descriptor binding.
@@ -43,6 +44,48 @@ fn spirv_has_descriptor_bindings(words: []const u32) bool {
             if (words[i + 2] == SPIRV_DECORATION_BINDING) return true;
         }
         i += word_count;
+    }
+    return false;
+}
+
+/// Scan SPIR-V for an OpEntryPoint instruction whose name matches `name`.
+/// OpEntryPoint layout: opcode|wordcount, ExecutionModel, EntryPoint <id>, Name (literal string), Interfaces...
+/// The Name is a null-terminated, packed-word string.
+fn spirv_has_entry_point(words: []const u32, name: []const u8) bool {
+    if (words.len < 5) return false;
+    var i: usize = 5;
+    while (i < words.len) {
+        const word = words[i];
+        const opcode: u16 = @truncate(word & 0xFFFF);
+        const word_count: u16 = @truncate((word >> 16) & 0xFFFF);
+        if (word_count == 0) break;
+        if (opcode == SPIRV_OP_ENTRY_POINT and word_count >= 4 and i + word_count <= words.len) {
+            // Name starts at offset 3 within the instruction (after opcode word, ExecutionModel, EntryPoint id).
+            const name_words = words[i + 3 .. i + word_count];
+            if (entry_name_matches(name_words, name)) return true;
+        }
+        i += word_count;
+    }
+    return false;
+}
+
+/// Compare a packed-word SPIR-V literal string against a Zig string slice.
+/// Stops at the first NUL byte in the packed words.
+fn entry_name_matches(name_words: []const u32, target: []const u8) bool {
+    var byte_index: usize = 0;
+    for (name_words) |w| {
+        var shift: u5 = 0;
+        while (shift <= 24) {
+            const byte: u8 = @truncate((w >> shift) & 0xFF);
+            if (byte == 0) {
+                return byte_index == target.len;
+            }
+            if (byte_index >= target.len) return false;
+            if (target[byte_index] != byte) return false;
+            byte_index += 1;
+            if (shift == 24) break;
+            shift += 8;
+        }
     }
     return false;
 }
@@ -324,6 +367,12 @@ pub fn build_pipeline_for_words(
     errdefer destroy_pipeline_objects(self);
 
     const entry_name = entry_point orelse "main";
+    // Defensive: RADV (and likely other drivers) segfault inside vkCreateComputePipelines
+    // when the pName references an OpEntryPoint that doesn't exist in the module.
+    // Doe must reject this at the boundary rather than crashing inside the driver.
+    if (!spirv_has_entry_point(words, entry_name)) {
+        return error.InvalidArgument;
+    }
     const owned_entry = try self.allocator.dupeZ(u8, entry_name);
     errdefer self.allocator.free(owned_entry);
 

@@ -25,7 +25,18 @@ class ExecutorRegistryTests(unittest.TestCase):
         template = resolve_executor_command_template("doe_direct_metal")
         self.assertIn("doe-zig-runtime", template)
         self.assertIn("--backend-lane metal_doe_comparable", template)
+        self.assertIn("--no-pipeline-cache", template)
         self.assertEqual(resolve_executor_boundary("doe_direct_metal"), "commands")
+
+    def test_resolves_cache_opt_in_metal_executors(self) -> None:
+        doe_template = resolve_executor_command_template("doe_direct_metal_cache")
+        dawn_template = resolve_executor_command_template("dawn_delegate_metal_cache")
+        self.assertIn("--backend-lane metal_doe_comparable", doe_template)
+        self.assertIn("--backend-lane metal_dawn_release", dawn_template)
+        self.assertNotIn("--no-pipeline-cache", doe_template)
+        self.assertNotIn("--no-pipeline-cache", dawn_template)
+        self.assertEqual(resolve_executor_boundary("doe_direct_metal_cache"), "commands")
+        self.assertEqual(resolve_executor_boundary("dawn_delegate_metal_cache"), "commands")
 
     def test_resolves_doe_direct_plan_executor(self) -> None:
         template = resolve_executor_command_template("doe_direct_plan_metal")

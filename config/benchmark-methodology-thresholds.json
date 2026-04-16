@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "timingSelection": {
     "minDispatchWindowNsWithoutEncode": 500000,
     "minDispatchWindowCoveragePercentWithoutEncode": 1.0
@@ -7,6 +7,9 @@
   "claimabilityDefaults": {
     "localMinTimedSamples": 7,
     "releaseMinTimedSamples": 15
+  },
+  "comparabilityDefaults": {
+    "minTimedSamples": 7
   },
   "timingScopeSanity": {
     "minOperationWallCoverageRatio": 0.05,

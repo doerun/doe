@@ -64,6 +64,14 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         executor_id="doe_direct_metal",
         command_template=_DOE_RUNTIME_PREFIX.replace(
             "--backend native --execute",
+            "--backend native --backend-lane metal_doe_comparable --execute --no-pipeline-cache",
+        ),
+        execution_boundary="commands",
+    ),
+    "doe_direct_metal_cache": ExecutorSpec(
+        executor_id="doe_direct_metal_cache",
+        command_template=_DOE_RUNTIME_PREFIX.replace(
+            "--backend native --execute",
             "--backend native --backend-lane metal_doe_comparable --execute",
         ),
         execution_boundary="commands",
@@ -98,7 +106,44 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         executor_id="dawn_delegate_metal",
         command_template=_DOE_RUNTIME_PREFIX.replace(
             "--backend native --execute",
+            "--backend native --backend-lane metal_dawn_release --execute --no-pipeline-cache",
+        ),
+        execution_boundary="commands",
+    ),
+    "dawn_delegate_metal_cache": ExecutorSpec(
+        executor_id="dawn_delegate_metal_cache",
+        command_template=_DOE_RUNTIME_PREFIX.replace(
+            "--backend native --execute",
             "--backend native --backend-lane metal_dawn_release --execute",
+        ),
+        execution_boundary="commands",
+    ),
+    # Fair-cold lanes: --no-pipeline-cache disables Doe's MTLBinaryArchive at
+    # backend init so a Doe-vs-Dawn comparison on cache-asymmetric kernels
+    # measures runtime engineering, not pre-built archive savings. Dawn-side
+    # template carries the same flag for command symmetry; the flag is a no-op
+    # there because Dawn's Metal backend doesn't open Doe's archive. Pair these
+    # two executors when comparing workloads listed in
+    # bench/kernels/doe_pipeline_archive.manifest. See
+    # docs/status/2026-04.md "Apple Metal pipeline-cache asymmetry" entry and
+    # CLAUDE.md non-negotiable #7.
+    "doe_direct_metal_no_cache": ExecutorSpec(
+        executor_id="doe_direct_metal_no_cache",
+        command_template=(
+            _DOE_RUNTIME_PREFIX.replace(
+                "--backend native --execute",
+                "--backend native --backend-lane metal_doe_comparable --execute --no-pipeline-cache",
+            )
+        ),
+        execution_boundary="commands",
+    ),
+    "dawn_delegate_metal_no_cache": ExecutorSpec(
+        executor_id="dawn_delegate_metal_no_cache",
+        command_template=(
+            _DOE_RUNTIME_PREFIX.replace(
+                "--backend native --execute",
+                "--backend native --backend-lane metal_dawn_release --execute --no-pipeline-cache",
+            )
         ),
         execution_boundary="commands",
     ),

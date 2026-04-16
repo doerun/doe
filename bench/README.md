@@ -75,6 +75,12 @@ Generated workload manifests now carry explicit ownership plus advisory
 freshness metadata in the run receipt. Freshness no longer rejects `run` or
 `compare`; standalone manifests are never checked against the backend catalog.
 
+Apple Metal native compare defaults are fair-cold: `doe_direct_metal` and
+`dawn_delegate_metal` pass `--no-pipeline-cache`. Cache-enabled diagnostics must
+use explicit cache opt-in executor ids. See `bench/docs/metal-pipeline-cache-policy.md`.
+Package and browser ORT WebGPU lane scope is audited in
+`bench/docs/package-browser-ort-fairness-audit.md`.
+
 ## First benchmark matrix
 
 If you are starting from zero, use this matrix instead of inferring coverage

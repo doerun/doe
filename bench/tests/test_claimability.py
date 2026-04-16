@@ -24,6 +24,7 @@ BENCHMARK_POLICY = BenchmarkMethodologyPolicy(
     min_dispatch_window_coverage_percent_without_encode=1.0,
     local_claim_min_timed_samples=19,
     release_claim_min_timed_samples=15,
+    comparability_min_timed_samples=7,
     min_operation_wall_coverage_ratio=0.05,
     max_operation_wall_coverage_asymmetry_ratio=128.0,
     min_row_timing_floor_ns=5000000,

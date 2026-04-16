@@ -512,7 +512,16 @@ def compare_assessment(
             right_dispatches = right_map[key]
             left_known = {value for value in left_dispatches if value >= 0}
             right_known = {value for value in right_dispatches if value >= 0}
-            if left_known and right_known and left_known != right_known:
+            if not left_known or not right_known:
+                return (
+                    False,
+                    (
+                        f"dispatch counts unknown for row/success={key}: "
+                        f"baseline_known={sorted(left_known)} "
+                        f"comparison_known={sorted(right_known)}"
+                    ),
+                )
+            if left_known != right_known:
                 return (
                     False,
                     (

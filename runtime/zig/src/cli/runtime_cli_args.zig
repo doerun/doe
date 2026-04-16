@@ -23,6 +23,12 @@ pub const RunOptions = struct {
     backend_mode: execution.BackendMode = .trace,
     backend_lane_value: ?[]const u8 = null,
     kernel_root: ?[]const u8 = null,
+    // When true, skip Apple Metal MTLBinaryArchive cache initialization at
+    // backend startup. Use for fair-cold Doe-vs-Dawn comparisons of cached
+    // kernels (the Dawn delegate path has no equivalent cache; see
+    // runtime/zig/src/backend/metal/metal_native_runtime.zig:380-402 and
+    // bench/lib/metal_pipeline_cache_manifest.py for context).
+    no_pipeline_cache: bool = false,
     command_repeat: u32 = 1,
     upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
@@ -196,6 +202,8 @@ pub fn parseArgs(argv: [][:0]u8, stdout: anytype) !ParseOutcome {
             }
         } else if (std.mem.eql(u8, argv[i], "--execute")) {
             options.execute = true;
+        } else if (std.mem.eql(u8, argv[i], "--no-pipeline-cache")) {
+            options.no_pipeline_cache = true;
         } else if (std.mem.eql(u8, argv[i], "--replay") and i + 1 < argv.len) {
             i += 1;
             options.replay_path = argv[i];

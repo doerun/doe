@@ -116,10 +116,21 @@ def ensure_step_ok(step: dict[str, Any]) -> None:
 
 def ensure_compare_step_acceptable(step: dict[str, Any], report_path: Path) -> None:
     if bool(step.get("pass")):
+        if report_path.exists():
+            artifacts_mod.ensure_release_strict_comparability(
+                load_json(report_path),
+                report_path,
+                surface="publish_apple_runtime_release",
+            )
         return
     if int(step.get("returnCode", 1)) != 3 or not report_path.exists():
         raise RuntimeError(f"{step.get('label', 'step')} failed")
     report = load_json(report_path)
+    artifacts_mod.ensure_release_strict_comparability(
+        report,
+        report_path,
+        surface="publish_apple_runtime_release",
+    )
     claim_report, _claim_path = artifacts_mod.load_optional_claim_report(report_path)
     if report.get("comparisonStatus") != "comparable":
         raise RuntimeError(f"{step.get('label', 'step')} failed")

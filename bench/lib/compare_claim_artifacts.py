@@ -108,6 +108,40 @@ def claim_mode(claim_report: dict[str, Any] | None) -> str:
     return value if isinstance(value, str) else ""
 
 
+# Modes accepted on the release surface. CLAUDE.md non-negotiable #7 requires
+# Dawn-vs-Doe claims be apples-to-apples by default; only "strict" enforces the
+# domain-specific timing-source whitelist and full phase-equivalence checks in
+# native_compare_modules/comparability.py. Local diagnostic runs may use "warn"
+# or "off", but those artifacts must not be promoted into release evidence.
+RELEASE_REQUIRED_COMPARABILITY_MODES: tuple[str, ...] = ("strict",)
+
+
+def comparability_mode(compare_report: dict[str, Any]) -> str:
+    policy = compare_report.get("comparabilityPolicy")
+    if not isinstance(policy, dict):
+        return ""
+    value = policy.get("mode")
+    return value if isinstance(value, str) else ""
+
+
+def ensure_release_strict_comparability(
+    compare_report: dict[str, Any],
+    report_path: Path,
+    *,
+    surface: str,
+) -> None:
+    mode = comparability_mode(compare_report)
+    if mode in RELEASE_REQUIRED_COMPARABILITY_MODES:
+        return
+    allowed = ", ".join(RELEASE_REQUIRED_COMPARABILITY_MODES)
+    raise RuntimeError(
+        f"{surface}: compare report {report_path} carries "
+        f"comparabilityPolicy.mode={mode!r}; release surface requires one of: "
+        f"{allowed}. Re-run the compare lane without --comparability-mode "
+        f"warn/off, or route this artifact through a non-release path."
+    )
+
+
 def claim_min_timed_samples(claim_report: dict[str, Any] | None) -> int | None:
     if not isinstance(claim_report, dict):
         return None

@@ -12,6 +12,18 @@ pub const BackendTelemetry = struct {
     adapter_ordinal: ?u32,
     queue_family_index: ?u32,
     present_capable: ?bool,
+    // Apple Metal pipeline cache state and warmup telemetry. Populated by
+    // backend_runtime_telemetry.refresh from the active Metal backend's
+    // MTLBinaryArchive cache. `pipeline_cache_active` is true only when Doe's
+    // Metal native runtime opened an MTLBinaryArchive; it is false on non-Mac
+    // builds, when --no-pipeline-cache disabled init, AND when the active
+    // backend is not Doe's Metal (e.g. dawn_delegate Metal goes through Dawn's
+    // own backend and never opens Doe's archive). Surfaced into trace_meta and
+    // the run-receipt's runtimeIdentity.pipelineCache for fair-cold lane
+    // verification and cache-derived cost-savings quantification.
+    pipeline_cache_active: bool = false,
+    pipeline_cache_warmup_count: u64 = 0,
+    pipeline_cache_warmup_ns: u64 = 0,
 };
 
 pub fn default_telemetry() BackendTelemetry {
@@ -27,5 +39,8 @@ pub fn default_telemetry() BackendTelemetry {
         .adapter_ordinal = null,
         .queue_family_index = null,
         .present_capable = null,
+        .pipeline_cache_active = false,
+        .pipeline_cache_warmup_count = 0,
+        .pipeline_cache_warmup_ns = 0,
     };
 }

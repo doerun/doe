@@ -18,6 +18,7 @@ const artifact_emit = @import("artifact_emit.zig");
 const backend_execute = @import("backend_execute.zig");
 const host_plan_artifact = @import("metal_host_plan_artifact.zig");
 const native_runtime = @import("metal_native_runtime.zig");
+const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const backend_policy = @import("../backend_policy.zig");
 const bridge = @import("metal_bridge_decls.zig");
 
@@ -314,6 +315,20 @@ pub fn host_plan_path_from_context(ctx: *anyopaque) ?[]const u8 {
 
 pub fn host_plan_hash_from_context(ctx: *anyopaque) ?[]const u8 {
     return cast(ctx).host_plan_hash();
+}
+
+pub fn pipeline_cache_warmup_telemetry_from_context(ctx: *anyopaque) struct { count: u64, ns: u64 } {
+    _ = ctx;
+    return metal_pipeline_cache.process_active_cache_warmup_telemetry();
+}
+
+pub fn pipeline_cache_active_from_context(ctx: *anyopaque) bool {
+    _ = ctx;
+    return metal_pipeline_cache.process_active_cache_present();
+}
+
+pub fn set_pipeline_cache_disabled(disabled: bool) void {
+    metal_pipeline_cache.set_process_pipeline_cache_disabled(disabled);
 }
 
 fn deinit(ctx: *anyopaque) void {

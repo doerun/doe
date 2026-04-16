@@ -547,6 +547,8 @@ def build_compare_report(
     primary_metric: str = "measured_ms",
     out_path: str = "",
     run_artifact_paths: list[str] | None = None,
+    comparability_min_timed_samples: int = 0,
+    benchmark_policy_path: str = "",
 ) -> dict[str, Any]:
     """Assemble a compare-only report from workload entries."""
     enriched_entries = [_attach_receipt_hashes(entry) for entry in workload_entries]
@@ -604,6 +606,22 @@ def build_compare_report(
         "overallWorkloadUnitWall": _overall_stats(enriched_entries, "wall_ms"),
         "workloads": entries,
     }
+
+    from bench.lib import comparability_coherence as coherence_mod
+
+    coherence = coherence_mod.assess_report(
+        report,
+        min_timed_samples=max(comparability_min_timed_samples, 0),
+        benchmark_policy_path=benchmark_policy_path,
+    )
+    if comparison_status == "comparable" and coherence.get("status") != "pass":
+        report["comparisonStatus"] = "unreliable"
+        coherence["statusBeforeCoherence"] = "comparable"
+        coherence["finalComparisonStatus"] = "unreliable"
+    else:
+        coherence["statusBeforeCoherence"] = comparison_status
+        coherence["finalComparisonStatus"] = report["comparisonStatus"]
+    report["comparabilityCoherence"] = coherence
     return report
 
 

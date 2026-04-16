@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bench.lib import metal_pipeline_cache_manifest as metal_cache_manifest
 from native_compare_modules import reporting as reporting_mod
 from native_compare_modules import timing_selection as timing_selection_mod
 from native_compare_modules.runner import file_sha256
@@ -236,7 +237,48 @@ def _runtime_identity(
         "providerName": provider_name,
     }
     payload.update(_package_identity(provider_name))
+    # Apple Metal pipeline cache state + warmup telemetry. The Zig runtime
+    # emits a nested `pipelineCache` object in trace_meta containing state
+    # (enabled|disabled), reason (default|cli-flag|non-doe-backend|platform-
+    # unsupported), warmupCount, and warmupNs. Surfacing it inside
+    # runtimeIdentity lets the comparability gate verify which side ran with
+    # Doe's MTLBinaryArchive active and quantify any cache-derived savings.
+    # Backwards-compat: if the new nested object is absent, fall back to the
+    # legacy top-level pipelineCacheWarmupCount/Ns fields (older artifacts).
+    pipeline_cache = _pipeline_cache_telemetry(trace_meta)
+    if pipeline_cache is not None:
+        payload["pipelineCache"] = pipeline_cache
     return payload
+
+
+def _pipeline_cache_telemetry(trace_meta: dict[str, Any]) -> dict[str, Any] | None:
+    """Read Apple Metal pipeline cache state + warmup telemetry from trace_meta.
+
+    Prefers the nested `pipelineCache` object emitted by the Zig runtime today
+    (state, reason, warmupCount, warmupNs). Falls back to legacy top-level
+    `pipelineCacheWarmupCount` / `pipelineCacheWarmupNs` for older artifacts;
+    in that path the state/reason are reported as "unknown" so a reader can
+    distinguish "field absent because old artifact" from "field present with
+    a known state". Returns None if neither shape is present.
+    """
+    nested = trace_meta.get("pipelineCache")
+    if isinstance(nested, dict):
+        return {
+            "state": str(nested.get("state", "unknown")).strip() or "unknown",
+            "reason": str(nested.get("reason", "unknown")).strip() or "unknown",
+            "warmupCount": int(nested.get("warmupCount") or 0),
+            "warmupNs": int(nested.get("warmupNs") or 0),
+        }
+    legacy_count = trace_meta.get("pipelineCacheWarmupCount")
+    legacy_ns = trace_meta.get("pipelineCacheWarmupNs")
+    if legacy_count is None and legacy_ns is None:
+        return None
+    return {
+        "state": "unknown",
+        "reason": "unknown",
+        "warmupCount": int(legacy_count or 0),
+        "warmupNs": int(legacy_ns or 0),
+    }
 
 
 def _host_identity(
@@ -311,6 +353,43 @@ def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _resolve_metal_cache_asymmetry(
+    *,
+    workload_spec: WorkloadSpec,
+    declared: bool,
+    declared_note: str,
+    pipeline_cache_state: str = "",
+    pipeline_cache_reason: str = "",
+) -> tuple[bool, str]:
+    """Auto-set Apple Metal pathAsymmetry for cache-membership workloads.
+
+    Returns the (path_asymmetry, path_asymmetry_note) the artifact should
+    carry. When the workload spec already declared pathAsymmetry=true (e.g.
+    UMA upload workloads), the declared note is preserved (auto-detection
+    only ever escalates to true; it never demotes a declared asymmetry).
+
+    Skips the cache-manifest auto-flag when the trace_meta indicates the cache
+    was not active on this side. Concretely:
+      - state="disabled" reason="cli-flag"             — fair-cold lane
+      - state="disabled" reason="non-doe-backend"      — dawn_delegate Metal
+      - state="disabled" reason="platform-unsupported" — non-Mac build
+    In these cases the workload may be in the Doe Metal manifest but no Doe
+    cache was loaded, so flagging pathAsymmetry would be incorrect. Workloads
+    that explicitly declared pathAsymmetry (e.g. UMA upload) still keep it.
+    """
+    if declared:
+        return True, declared_note
+    if not metal_cache_manifest.workload_dispatches_cached_kernel(
+        workload_api=workload_spec.api,
+        workload_vendor=workload_spec.vendor,
+        commands_path=workload_spec.commands_path,
+    ):
+        return declared, declared_note
+    if pipeline_cache_state == "disabled":
+        return declared, declared_note
+    return True, metal_cache_manifest.auto_path_asymmetry_note()
+
+
 def build_run_artifact(
     *,
     run_result: dict[str, Any],
@@ -334,6 +413,32 @@ def build_run_artifact(
     samples = _receipt_samples(run_result)
     invocation_command = samples[0]["command"] if samples else []
     workload_manifest = workload_manifest_provenance(workload_contract_path).to_dict()
+
+    # Auto-detect Apple Metal pipeline-cache asymmetry. The Doe Metal native
+    # runtime opens an MTLBinaryArchive at startup and pre-warms PSOs for any
+    # kernel listed in `bench/kernels/doe_pipeline_archive.manifest`; the Dawn
+    # delegate path has no equivalent cache, so any Apple Metal workload that
+    # dispatches one of those kernels enjoys an undisclosed setup-time
+    # advantage. CLAUDE.md non-negotiable #7 requires explicit transferability
+    # caveats for hardware-path asymmetries; we set them here regardless of
+    # what the workload manifest declared, because the asymmetry is determined
+    # by the runtime, not the workload spec. The trace_meta pipelineCache
+    # state is consulted to skip auto-flagging when the cache wasn't actually
+    # active on this side (--no-pipeline-cache, dawn_delegate, non-Mac).
+    sample_trace_meta: dict[str, Any] = {}
+    if samples:
+        first = samples[0].get("traceMeta", {})
+        if isinstance(first, dict):
+            sample_trace_meta = first
+    cache_telemetry_for_asymmetry = _pipeline_cache_telemetry(sample_trace_meta) or {}
+    auto_path_asymmetry, auto_path_note = _resolve_metal_cache_asymmetry(
+        workload_spec=workload_spec,
+        declared=workload_spec.path_asymmetry,
+        declared_note=workload_spec.path_asymmetry_note,
+        pipeline_cache_state=str(cache_telemetry_for_asymmetry.get("state", "")),
+        pipeline_cache_reason=str(cache_telemetry_for_asymmetry.get("reason", "")),
+    )
+
     artifact = {
         "schemaVersion": RUN_ARTIFACT_SCHEMA_VERSION,
         "artifactKind": RUN_ARTIFACT_KIND,
@@ -365,8 +470,8 @@ def build_run_artifact(
             "benchmarkClass": workload_spec.benchmark_class,
             "comparabilityNotes": workload_spec.comparability_notes,
             "directionalReason": workload_spec.directional_reason,
-            "pathAsymmetry": workload_spec.path_asymmetry,
-            "pathAsymmetryNote": workload_spec.path_asymmetry_note,
+            "pathAsymmetry": auto_path_asymmetry,
+            "pathAsymmetryNote": auto_path_note,
             "claimEligible": workload_spec.claim_eligible,
             "strictNormalizationUnit": workload_spec.strict_normalization_unit,
         },
@@ -465,6 +570,36 @@ def _normalize_legacy_artifact(data: dict[str, Any]) -> dict[str, Any]:
         host = {}
     samples = _legacy_samples(data)
     execution = _execution_summary(samples)
+    # Apply the same Apple Metal cache-asymmetry auto-detection used in
+    # build_run_artifact, so legacy artifacts loaded today carry the correct
+    # disclosure. Auto-detection only escalates to true; never demotes. The
+    # trace_meta pipelineCache state is consulted to skip auto-flagging when
+    # the cache wasn't actually active on this side (--no-pipeline-cache,
+    # dawn_delegate, non-Mac).
+    declared_path_asymmetry = bool(workload.get("pathAsymmetry", False))
+    declared_path_note = str(workload.get("pathAsymmetryNote", "")).strip()
+    legacy_workload_api = str(workload.get("api", "")).strip()
+    legacy_workload_vendor = str(workload.get("vendor", "")).strip()
+    legacy_commands_path = str(workload.get("commandsPath", "")).strip()
+    legacy_trace_meta: dict[str, Any] = {}
+    if samples:
+        first = samples[0].get("traceMeta", {})
+        if isinstance(first, dict):
+            legacy_trace_meta = first
+    legacy_cache = _pipeline_cache_telemetry(legacy_trace_meta) or {}
+    legacy_cache_state = str(legacy_cache.get("state", ""))
+    if (
+        not declared_path_asymmetry
+        and legacy_cache_state != "disabled"
+        and metal_cache_manifest.workload_dispatches_cached_kernel(
+            workload_api=legacy_workload_api,
+            workload_vendor=legacy_workload_vendor,
+            commands_path=legacy_commands_path,
+        )
+    ):
+        declared_path_asymmetry = True
+        if not declared_path_note:
+            declared_path_note = metal_cache_manifest.auto_path_asymmetry_note()
     return {
         "schemaVersion": RUN_ARTIFACT_SCHEMA_VERSION,
         "artifactKind": RUN_ARTIFACT_KIND,
@@ -498,8 +633,8 @@ def _normalize_legacy_artifact(data: dict[str, Any]) -> dict[str, Any]:
             "benchmarkClass": str(workload.get("benchmarkClass", "")).strip(),
             "comparabilityNotes": str(workload.get("comparabilityNotes", "")).strip(),
             "directionalReason": str(workload.get("directionalReason", "")).strip(),
-            "pathAsymmetry": bool(workload.get("pathAsymmetry", False)),
-            "pathAsymmetryNote": str(workload.get("pathAsymmetryNote", "")).strip(),
+            "pathAsymmetry": declared_path_asymmetry,
+            "pathAsymmetryNote": declared_path_note,
             "claimEligible": bool(workload.get("claimEligible", True)),
             "strictNormalizationUnit": str(
                 workload.get("strictNormalizationUnit", "")

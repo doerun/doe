@@ -322,8 +322,10 @@ def _cmd_compare(
         group_run_artifacts_by_workload,
         write_compare_report,
     )
+    from native_compare_modules.config_support import load_benchmark_methodology_policy
     from native_compare_modules.run_artifact import load_run_artifact
 
+    benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
     artifact_paths = list(args.artifacts)
 
     if args.products and not artifact_paths:
@@ -413,6 +415,8 @@ def _cmd_compare(
         primary_metric="measured_ms",
         out_path=str(out_path),
         run_artifact_paths=artifact_paths,
+        comparability_min_timed_samples=benchmark_policy.comparability_min_timed_samples,
+        benchmark_policy_path=benchmark_policy.source_path,
     )
     write_compare_report(report, out_path)
     print(f"\nCompare report: {out_path}")

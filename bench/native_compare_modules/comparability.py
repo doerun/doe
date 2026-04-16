@@ -36,12 +36,39 @@ DAWN_OPERATION_TIMING_SOURCES = {
 OBLIGATION_SCHEMA_VERSION = 2
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
+# Legacy median-fraction threshold; retained for backwards-compatible reporting
+# but no longer gates apples-to-apples per CLAUDE.md #11 ("one side reports
+# zero in a timing phase ... while the other reports material cost"). The
+# all-zero-vs-any-material check below is the authoritative gate.
 _PHASE_ASYMMETRY_THRESHOLD = 0.10
+# All-zero-vs-any-material gate (the CLAUDE.md #11 formulation):
+#   * one side is said to "report zero" in a phase iff every sample's phase
+#     fraction is < _PHASE_ZERO_EPSILON (tiny float-noise tolerance)
+#   * the other side is said to "report material cost" iff at least
+#     _PHASE_MATERIAL_MIN_SAMPLES samples have phase fraction
+#     >= _PHASE_MATERIAL_FLOOR_FRACTION
+# When both conditions hold, the timing scopes are measuring different things
+# and the phase-equivalence gate fires regardless of the median percentile.
+_PHASE_ZERO_EPSILON: float = 1e-9
+_PHASE_MATERIAL_FLOOR_FRACTION: float = 0.005  # 0.5% of executionTotalNs
+_PHASE_MATERIAL_MIN_SAMPLES: int = 2
 _TIMING_PHASE_FIELDS: tuple[tuple[str, str], ...] = (
     ("setup", "executionSetupTotalNs"),
     ("encode", "executionEncodeTotalNs"),
     ("submitWait", "executionSubmitWaitTotalNs"),
 )
+
+
+def _all_samples_zero(values: list[float]) -> bool:
+    """Per-sample all-zero check with float-noise epsilon."""
+    if not values:
+        return False
+    return all(abs(value) < _PHASE_ZERO_EPSILON for value in values)
+
+
+def _material_sample_count(values: list[float]) -> int:
+    """Count samples whose phase fraction clears the material floor."""
+    return sum(1 for value in values if value >= _PHASE_MATERIAL_FLOOR_FRACTION)
 
 
 def _normalized_domain(workload_domain: str) -> str:

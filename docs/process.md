@@ -71,7 +71,7 @@
 - ad-hoc/manual artifact names are routed under `bench/out/scratch/<timestamp>/...` to keep canonical run folders and dashboard inputs clean.
 - canonical CI/script entrypoint for blocking gate sequence:
   `python3 bench/runners/run_blocking_gates.py --report bench/out/dawn-vs-doe.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
-  when `--with-claim-gate` is enabled, `run_blocking_gates.py` also auto-enables `structural_equivalence_gate.py` so path asymmetry and timing-phase mismatch block the claim lane before publication.
+  `run_blocking_gates.py` enables `comparability_coherence_gate.py` and `structural_equivalence_gate.py` by default. When `--with-claim-gate` is enabled, disabling either gate is a hard error so sample-floor, workload matching, obligation, path-asymmetry, timing-phase, and execution-shape mismatches block the claim lane before publication.
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
   `python3 bench/runners/run_release_pipeline.py --config bench/native-compare/compare.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate`

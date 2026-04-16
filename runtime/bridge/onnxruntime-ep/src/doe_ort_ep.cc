@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -17,10 +18,13 @@ namespace doe::ort_ep {
 
 namespace {
 
-constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v5";
+constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v6";
 constexpr const char* kIdentityOperatorType = "Identity";
 constexpr const char* kAddOperatorType = "Add";
 constexpr const char* kReluOperatorType = "Relu";
+constexpr const char* kSigmoidOperatorType = "Sigmoid";
+constexpr const char* kTanhOperatorType = "Tanh";
+constexpr const char* kGeluOperatorType = "Gelu";
 constexpr const char* kMatMulOperatorType = "MatMul";
 constexpr const char* kGemmOperatorType = "Gemm";
 constexpr const char* kOnnxDomain = "";
@@ -45,6 +49,9 @@ enum class CompiledOpKind : uint8_t {
   kIdentity,
   kAdd,
   kRelu,
+  kSigmoid,
+  kTanh,
+  kGelu,
   kMatMul,
   kGemm,
   kGemmReluGemm,
@@ -58,12 +65,18 @@ std::atomic<uint64_t> g_claimed_nodes{0};
 std::atomic<uint64_t> g_claimed_identity_nodes{0};
 std::atomic<uint64_t> g_claimed_add_nodes{0};
 std::atomic<uint64_t> g_claimed_relu_nodes{0};
+std::atomic<uint64_t> g_claimed_sigmoid_nodes{0};
+std::atomic<uint64_t> g_claimed_tanh_nodes{0};
+std::atomic<uint64_t> g_claimed_gelu_nodes{0};
 std::atomic<uint64_t> g_claimed_matmul_nodes{0};
 std::atomic<uint64_t> g_claimed_gemm_nodes{0};
 std::atomic<uint64_t> g_compile_calls{0};
 std::atomic<uint64_t> g_compiled_identity_groups{0};
 std::atomic<uint64_t> g_compiled_add_groups{0};
 std::atomic<uint64_t> g_compiled_relu_groups{0};
+std::atomic<uint64_t> g_compiled_sigmoid_groups{0};
+std::atomic<uint64_t> g_compiled_tanh_groups{0};
+std::atomic<uint64_t> g_compiled_gelu_groups{0};
 std::atomic<uint64_t> g_compiled_matmul_groups{0};
 std::atomic<uint64_t> g_compiled_gemm_groups{0};
 std::atomic<uint64_t> g_compiled_gemm_relu_gemm_groups{0};
@@ -75,6 +88,9 @@ std::atomic<uint64_t> g_compute_calls{0};
 std::atomic<uint64_t> g_compute_identity_calls{0};
 std::atomic<uint64_t> g_compute_add_calls{0};
 std::atomic<uint64_t> g_compute_relu_calls{0};
+std::atomic<uint64_t> g_compute_sigmoid_calls{0};
+std::atomic<uint64_t> g_compute_tanh_calls{0};
+std::atomic<uint64_t> g_compute_gelu_calls{0};
 std::atomic<uint64_t> g_compute_matmul_calls{0};
 std::atomic<uint64_t> g_compute_gemm_calls{0};
 std::atomic<uint64_t> g_compute_gemm_relu_gemm_calls{0};
@@ -154,6 +170,12 @@ const char* CompiledOpKindName(const CompiledOpKind kind) {
       return kAddOperatorType;
     case CompiledOpKind::kRelu:
       return kReluOperatorType;
+    case CompiledOpKind::kSigmoid:
+      return kSigmoidOperatorType;
+    case CompiledOpKind::kTanh:
+      return kTanhOperatorType;
+    case CompiledOpKind::kGelu:
+      return kGeluOperatorType;
     case CompiledOpKind::kMatMul:
       return kMatMulOperatorType;
     case CompiledOpKind::kGemm:
@@ -182,6 +204,9 @@ size_t ClaimedNodeCountForKind(const CompiledOpKind kind) {
     case CompiledOpKind::kIdentity:
     case CompiledOpKind::kAdd:
     case CompiledOpKind::kRelu:
+    case CompiledOpKind::kSigmoid:
+    case CompiledOpKind::kTanh:
+    case CompiledOpKind::kGelu:
     case CompiledOpKind::kMatMul:
     case CompiledOpKind::kGemm:
       return 1;
@@ -193,6 +218,9 @@ size_t ExpectedInputCountForKind(const CompiledOpKind kind) {
   switch (kind) {
     case CompiledOpKind::kIdentity:
     case CompiledOpKind::kRelu:
+    case CompiledOpKind::kSigmoid:
+    case CompiledOpKind::kTanh:
+    case CompiledOpKind::kGelu:
       return kUnaryInputCount;
     case CompiledOpKind::kAdd:
     case CompiledOpKind::kMatMul:
@@ -227,6 +255,15 @@ void IncrementClaimCounters(const CompiledOpKind kind) {
       break;
     case CompiledOpKind::kRelu:
       g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kSigmoid:
+      g_claimed_sigmoid_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kTanh:
+      g_claimed_tanh_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGelu:
+      g_claimed_gelu_nodes.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kMatMul:
       g_claimed_matmul_nodes.fetch_add(1, std::memory_order_relaxed);
@@ -265,6 +302,15 @@ void IncrementCompiledGroupCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kRelu:
       g_compiled_relu_groups.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kSigmoid:
+      g_compiled_sigmoid_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kTanh:
+      g_compiled_tanh_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGelu:
+      g_compiled_gelu_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kMatMul:
       g_compiled_matmul_groups.fetch_add(1, std::memory_order_relaxed);
       break;
@@ -296,6 +342,15 @@ void IncrementComputeCounters(const CompiledOpKind kind) {
       break;
     case CompiledOpKind::kRelu:
       g_compute_relu_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kSigmoid:
+      g_compute_sigmoid_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kTanh:
+      g_compute_tanh_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGelu:
+      g_compute_gelu_calls.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kMatMul:
       g_compute_matmul_calls.fetch_add(1, std::memory_order_relaxed);
@@ -694,6 +749,15 @@ OrtStatus* GetSupportedNodeSpec(
   } else if (std::string_view(operator_type) == kReluOperatorType) {
     spec_out->kind = CompiledOpKind::kRelu;
     expected_inputs = kUnaryInputCount;
+  } else if (std::string_view(operator_type) == kSigmoidOperatorType) {
+    spec_out->kind = CompiledOpKind::kSigmoid;
+    expected_inputs = kUnaryInputCount;
+  } else if (std::string_view(operator_type) == kTanhOperatorType) {
+    spec_out->kind = CompiledOpKind::kTanh;
+    expected_inputs = kUnaryInputCount;
+  } else if (std::string_view(operator_type) == kGeluOperatorType) {
+    spec_out->kind = CompiledOpKind::kGelu;
+    expected_inputs = kUnaryInputCount;
   } else if (std::string_view(operator_type) == kMatMulOperatorType) {
     spec_out->kind = CompiledOpKind::kMatMul;
     expected_inputs = kBinaryInputCount;
@@ -747,6 +811,9 @@ OrtStatus* GetSupportedNodeSpec(
   switch (spec_out->kind) {
     case CompiledOpKind::kIdentity:
     case CompiledOpKind::kRelu:
+    case CompiledOpKind::kSigmoid:
+    case CompiledOpKind::kTanh:
+    case CompiledOpKind::kGelu:
       if (!SameTypeAndShape(spec_out->inputs[0], spec_out->outputs[0])) {
         return nullptr;
       }
@@ -1714,6 +1781,22 @@ float ReluValue(const float value) {
   return value < 0.0f ? 0.0f : value;
 }
 
+float SigmoidValue(const float value) {
+  return 1.0f / (1.0f + std::exp(-value));
+}
+
+float TanhValue(const float value) {
+  return std::tanh(value);
+}
+
+// GeLU using the exact erf formulation: 0.5 * x * (1 + erf(x / sqrt(2))).
+// This matches the ONNX reference implementation. The "approximate=tanh"
+// attribute variant is not supported in this slice.
+float GeluValue(const float value) {
+  constexpr float kInvSqrt2 = 0.70710678118654752440f;
+  return 0.5f * value * (1.0f + std::erf(value * kInvSqrt2));
+}
+
 OrtStatus* ExecuteIdentity(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
   RuntimeTensorDescriptor input_descriptor;
   const float* input_data = nullptr;
@@ -1762,6 +1845,54 @@ OrtStatus* ExecuteRelu(const CompiledNodeComputeInfo& info, OrtKernelContext* ke
 
   for (size_t index = 0; index < input_descriptor.element_count; ++index) {
     output_data[index] = ReluValue(input_data[index]);
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteSigmoid(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  const float* input_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, input_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  for (size_t index = 0; index < input_descriptor.element_count; ++index) {
+    output_data[index] = SigmoidValue(input_data[index]);
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteTanh(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  const float* input_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, input_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  for (size_t index = 0; index < input_descriptor.element_count; ++index) {
+    output_data[index] = TanhValue(input_data[index]);
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteGelu(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  const float* input_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, input_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  for (size_t index = 0; index < input_descriptor.element_count; ++index) {
+    output_data[index] = GeluValue(input_data[index]);
   }
   return nullptr;
 }
@@ -2050,6 +2181,12 @@ OrtStatus* ORT_API_CALL ComputeImpl(
       return ExecuteAdd(info, kernel_context);
     case CompiledOpKind::kRelu:
       return ExecuteRelu(info, kernel_context);
+    case CompiledOpKind::kSigmoid:
+      return ExecuteSigmoid(info, kernel_context);
+    case CompiledOpKind::kTanh:
+      return ExecuteTanh(info, kernel_context);
+    case CompiledOpKind::kGelu:
+      return ExecuteGelu(info, kernel_context);
     case CompiledOpKind::kMatMul:
       return ExecuteMatMul(info, kernel_context);
     case CompiledOpKind::kGemm:
@@ -2108,12 +2245,18 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_claimed_identity_nodes.store(0, std::memory_order_relaxed);
   g_claimed_add_nodes.store(0, std::memory_order_relaxed);
   g_claimed_relu_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_sigmoid_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_tanh_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_gelu_nodes.store(0, std::memory_order_relaxed);
   g_claimed_matmul_nodes.store(0, std::memory_order_relaxed);
   g_claimed_gemm_nodes.store(0, std::memory_order_relaxed);
   g_compile_calls.store(0, std::memory_order_relaxed);
   g_compiled_identity_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_groups.store(0, std::memory_order_relaxed);
   g_compiled_relu_groups.store(0, std::memory_order_relaxed);
+  g_compiled_sigmoid_groups.store(0, std::memory_order_relaxed);
+  g_compiled_tanh_groups.store(0, std::memory_order_relaxed);
+  g_compiled_gelu_groups.store(0, std::memory_order_relaxed);
   g_compiled_matmul_groups.store(0, std::memory_order_relaxed);
   g_compiled_gemm_groups.store(0, std::memory_order_relaxed);
   g_compiled_gemm_relu_gemm_groups.store(0, std::memory_order_relaxed);
@@ -2125,6 +2268,9 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_compute_identity_calls.store(0, std::memory_order_relaxed);
   g_compute_add_calls.store(0, std::memory_order_relaxed);
   g_compute_relu_calls.store(0, std::memory_order_relaxed);
+  g_compute_sigmoid_calls.store(0, std::memory_order_relaxed);
+  g_compute_tanh_calls.store(0, std::memory_order_relaxed);
+  g_compute_gelu_calls.store(0, std::memory_order_relaxed);
   g_compute_matmul_calls.store(0, std::memory_order_relaxed);
   g_compute_gemm_calls.store(0, std::memory_order_relaxed);
   g_compute_gemm_relu_gemm_calls.store(0, std::memory_order_relaxed);
@@ -2141,12 +2287,18 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .claimed_identity_nodes = g_claimed_identity_nodes.load(std::memory_order_relaxed),
       .claimed_add_nodes = g_claimed_add_nodes.load(std::memory_order_relaxed),
       .claimed_relu_nodes = g_claimed_relu_nodes.load(std::memory_order_relaxed),
+      .claimed_sigmoid_nodes = g_claimed_sigmoid_nodes.load(std::memory_order_relaxed),
+      .claimed_tanh_nodes = g_claimed_tanh_nodes.load(std::memory_order_relaxed),
+      .claimed_gelu_nodes = g_claimed_gelu_nodes.load(std::memory_order_relaxed),
       .claimed_matmul_nodes = g_claimed_matmul_nodes.load(std::memory_order_relaxed),
       .claimed_gemm_nodes = g_claimed_gemm_nodes.load(std::memory_order_relaxed),
       .compile_calls = g_compile_calls.load(std::memory_order_relaxed),
       .compiled_identity_groups = g_compiled_identity_groups.load(std::memory_order_relaxed),
       .compiled_add_groups = g_compiled_add_groups.load(std::memory_order_relaxed),
       .compiled_relu_groups = g_compiled_relu_groups.load(std::memory_order_relaxed),
+      .compiled_sigmoid_groups = g_compiled_sigmoid_groups.load(std::memory_order_relaxed),
+      .compiled_tanh_groups = g_compiled_tanh_groups.load(std::memory_order_relaxed),
+      .compiled_gelu_groups = g_compiled_gelu_groups.load(std::memory_order_relaxed),
       .compiled_matmul_groups = g_compiled_matmul_groups.load(std::memory_order_relaxed),
       .compiled_gemm_groups = g_compiled_gemm_groups.load(std::memory_order_relaxed),
       .compiled_gemm_relu_gemm_groups = g_compiled_gemm_relu_gemm_groups.load(std::memory_order_relaxed),
@@ -2158,6 +2310,9 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .compute_identity_calls = g_compute_identity_calls.load(std::memory_order_relaxed),
       .compute_add_calls = g_compute_add_calls.load(std::memory_order_relaxed),
       .compute_relu_calls = g_compute_relu_calls.load(std::memory_order_relaxed),
+      .compute_sigmoid_calls = g_compute_sigmoid_calls.load(std::memory_order_relaxed),
+      .compute_tanh_calls = g_compute_tanh_calls.load(std::memory_order_relaxed),
+      .compute_gelu_calls = g_compute_gelu_calls.load(std::memory_order_relaxed),
       .compute_matmul_calls = g_compute_matmul_calls.load(std::memory_order_relaxed),
       .compute_gemm_calls = g_compute_gemm_calls.load(std::memory_order_relaxed),
       .compute_gemm_relu_gemm_calls = g_compute_gemm_relu_gemm_calls.load(std::memory_order_relaxed),

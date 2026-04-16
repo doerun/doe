@@ -20,6 +20,7 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- Apple Metal native Doe-vs-Dawn compare defaults are now fair-cold: default Metal executor ids pass `--no-pipeline-cache`, cache-enabled runs require explicit opt-in executor ids, report-level comparability coherence is default-on in `run_blocking_gates.py`, and the committed Metal archive is documented as a benchmark fixture rather than a product runtime contract. See `bench/docs/metal-pipeline-cache-policy.md` and the current April shard.
 - Apple Metal package compute has narrow claimable warm package artifacts on
   `mac.lan`. The current Node artifacts are
   `bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json`

@@ -115,6 +115,10 @@
         "$ref": "#/$defs/comparabilityFailure"
       }
     },
+    "comparabilityCoherence": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "overall": {
       "$ref": "#/$defs/aggregate"
     },

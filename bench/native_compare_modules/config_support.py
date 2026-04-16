@@ -220,6 +220,7 @@ class BenchmarkMethodologyPolicy:
     min_dispatch_window_coverage_percent_without_encode: float
     local_claim_min_timed_samples: int
     release_claim_min_timed_samples: int
+    comparability_min_timed_samples: int
     min_operation_wall_coverage_ratio: float
     max_operation_wall_coverage_asymmetry_ratio: float
     min_row_timing_floor_ns: int = 0
@@ -497,6 +498,10 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         first_config_value(payload, ["claimabilityDefaults.releaseMinTimedSamples"]),
         field="claimabilityDefaults.releaseMinTimedSamples",
     )
+    comparability_min_samples = as_int(
+        first_config_value(payload, ["comparabilityDefaults.minTimedSamples"]),
+        field="comparabilityDefaults.minTimedSamples",
+    )
     min_operation_wall_coverage_ratio = as_float(
         first_config_value(payload, ["timingScopeSanity.minOperationWallCoverageRatio"]),
         field="timingScopeSanity.minOperationWallCoverageRatio",
@@ -528,6 +533,8 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         raise ValueError("claimabilityDefaults.localMinTimedSamples must be >= 0")
     if release_min_samples < 0:
         raise ValueError("claimabilityDefaults.releaseMinTimedSamples must be >= 0")
+    if comparability_min_samples < 0:
+        raise ValueError("comparabilityDefaults.minTimedSamples must be >= 0")
     if min_operation_wall_coverage_ratio < 0.0:
         raise ValueError("timingScopeSanity.minOperationWallCoverageRatio must be >= 0")
     if max_operation_wall_coverage_asymmetry_ratio < 1.0:
@@ -543,6 +550,7 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         min_dispatch_window_coverage_percent_without_encode=dispatch_coverage,
         local_claim_min_timed_samples=local_min_samples,
         release_claim_min_timed_samples=release_min_samples,
+        comparability_min_timed_samples=comparability_min_samples,
         min_operation_wall_coverage_ratio=min_operation_wall_coverage_ratio,
         max_operation_wall_coverage_asymmetry_ratio=max_operation_wall_coverage_asymmetry_ratio,
         min_row_timing_floor_ns=min_row_timing_floor_ns,

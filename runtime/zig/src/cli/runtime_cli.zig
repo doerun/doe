@@ -1,4 +1,5 @@
 const std = @import("std");
+const backend_runtime_telemetry = @import("../backend/backend_runtime_telemetry.zig");
 const execution = @import("../execution.zig");
 const main_print = @import("../main_print.zig");
 const model_commands = @import("../model_commands.zig");
@@ -179,6 +180,9 @@ pub fn runCli() !void {
 
     var execution_context: ?execution.ExecutionContext = null;
     if (options.execute) {
+        // Must be set BEFORE backend init so the Metal backend's cache-init
+        // guard sees the flag. No-op on non-Mac builds.
+        backend_runtime_telemetry.set_metal_pipeline_cache_disabled(options.no_pipeline_cache);
         const executor_init_start_ns = nowNs();
         execution_context = try execution.ExecutionContext.init(
             allocator,
@@ -488,6 +492,20 @@ pub fn runCli() !void {
     trace_summary.host_artifact_operator_manifest_finalize_total_ns = artifact_totals.host_artifact_operator_manifest_finalize_total_ns;
 
     if (options.trace_meta_path) |path| {
+        // Apple Metal pipeline cache state + warmup telemetry (zero/disabled on
+        // non-Mac builds and on non-Metal backends). Routed through the
+        // standard backend telemetry surface so the cli/ -> backend/metal/
+        // import-fence boundary stays clean. State (enabled/disabled) and
+        // reason (cli-flag/default/platform-unsupported) are derived inside
+        // writeTraceMeta from this bool plus builtin.os.tag.
+        trace_summary.pipeline_cache_disabled = options.no_pipeline_cache;
+        if (execution_context) |*ctx_ref| {
+            if (ctx_ref.telemetry()) |snapshot| {
+                trace_summary.pipeline_cache_active = snapshot.pipeline_cache_active;
+                trace_summary.pipeline_cache_warmup_count = snapshot.pipeline_cache_warmup_count;
+                trace_summary.pipeline_cache_warmup_ns = snapshot.pipeline_cache_warmup_ns;
+            }
+        }
         try trace.writeTraceMeta(path, trace_summary);
     }
     if (load_result.inputs.replay_expectations) |expectation_set| {

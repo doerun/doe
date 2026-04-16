@@ -2,11 +2,11 @@
   "workloads": "bench/workloads/workloads.apple.metal.json",
   "baseline": {
     "name": "doe",
-    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
+    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_doe_directional --execute --no-pipeline-cache --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
   },
   "comparison": {
     "name": "dawn_delegate",
-    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
+    "commandTemplate": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane metal_dawn_release --execute --no-pipeline-cache --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto --kernel-root bench/kernels {extra_args}"
   },
   "run": {
     "iterations": 1,
@@ -19,7 +19,8 @@
   "comparability": {
     "mode": "warn",
     "requireTimingClass": "operation",
-    "allowBaselineNoExecution": true
+    "allowBaselineNoExecution": true,
+    "rationale": "Directional coverage-characterization lane. Baseline runs `metal_doe_directional`; comparison runs `metal_dawn_release`. Workloads selected include the `directional` benchmark class, so Dawn may legitimately report executionUnsupportedCount>0 (or executionSkippedCount>0) on workloads that exercise Doe-only coverage. `allowBaselineNoExecution: true` relaxes the strict execution-evidence obligations in compare_assessment.py for this lane only; `claimability.mode: \"off\"` and `claimEligibleOnly: false` prevent these artifacts from reaching any claim surface. Release paths reject this artifact via bench/lib/compare_claim_artifacts.py::ensure_release_strict_comparability (mode != strict). Do not copy this block into a claimable config."
   },
   "claimability": {
     "mode": "off",

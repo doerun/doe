@@ -172,6 +172,7 @@ def _benchmark_policy() -> object:
             "min_dispatch_window_coverage_percent_without_encode": 0.5,
             "local_claim_min_timed_samples": 3,
             "release_claim_min_timed_samples": 15,
+            "comparability_min_timed_samples": 3,
             "min_operation_wall_coverage_ratio": 0.0,
             "max_operation_wall_coverage_asymmetry_ratio": 10.0,
             "min_row_timing_floor_ns": 0,
@@ -231,6 +232,7 @@ class TestCompareFromArtifacts(unittest.TestCase):
             self.assertEqual(report["schemaVersion"], COMPARE_REPORT_SCHEMA_VERSION)
             self.assertEqual(report["artifactKind"], COMPARE_REPORT_KIND)
             self.assertEqual(report["comparisonStatus"], "comparable")
+            self.assertEqual(report["comparabilityCoherence"]["status"], "pass")
             self.assertNotIn("claimStatus", report)
             self.assertAlmostEqual(
                 report["overallWorkloadUnitWall"]["baselineStatsMs"]["p50Ms"],
@@ -248,6 +250,35 @@ class TestCompareFromArtifacts(unittest.TestCase):
             )
             self.assertEqual(claim_report["claimStatus"], "claimable")
             self.assertTrue(claim_report["pass"])
+
+    def test_comparability_coherence_demotes_low_sample_claim_rows(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
+        entry = compare_workload_from_artifacts(
+            baseline=baseline,
+            comparison=comparison,
+        )
+        report = build_compare_report(
+            workload_entries=[entry],
+            baseline_artifact=baseline,
+            comparison_artifact=comparison,
+            comparability_mode="strict",
+            required_timing_class="operation",
+            out_path="sample.compare.json",
+            comparability_min_timed_samples=7,
+            benchmark_policy_path="config/benchmark-methodology-thresholds.json",
+        )
+        self.assertEqual(report["comparisonStatus"], "unreliable")
+        coherence = report["comparabilityCoherence"]
+        self.assertEqual(coherence["status"], "fail")
+        self.assertEqual(coherence["minTimedSamples"], 7)
+        reasons = [
+            reason
+            for failure in coherence["failures"]
+            if failure["workloadId"] == "compute_test"
+            for reason in failure["reasons"]
+        ]
+        self.assertTrue(any("comparability floor 7" in reason for reason in reasons))
 
     def test_group_run_artifacts_by_workload(self) -> None:
         grouped = group_run_artifacts_by_workload(

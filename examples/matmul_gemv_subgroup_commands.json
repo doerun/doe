@@ -8,6 +8,7 @@
   {
     "kind": "kernel_dispatch",
     "kernel": "matmul_gemv_truesubgroup.wgsl",
+    "entry_point": "main_vec4",
     "x": 256,
     "y": 1,
     "z": 1,

@@ -2,6 +2,7 @@
 #include "doe_ort_ep.h"
 #include "doe_ort_ep_api_version.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -34,6 +35,9 @@ enum class SmokeModelKind : uint8_t {
   kIdentity,
   kAdd,
   kRelu,
+  kSigmoid,
+  kTanh,
+  kGelu,
   kMatMul,
   kGemm,
   kGemmReluGemm,
@@ -275,6 +279,12 @@ const char* SmokeModelKindName(const SmokeModelKind kind) {
       return "Add";
     case SmokeModelKind::kRelu:
       return "Relu";
+    case SmokeModelKind::kSigmoid:
+      return "Sigmoid";
+    case SmokeModelKind::kTanh:
+      return "Tanh";
+    case SmokeModelKind::kGelu:
+      return "Gelu";
     case SmokeModelKind::kMatMul:
       return "MatMul";
     case SmokeModelKind::kGemm:
@@ -295,6 +305,9 @@ size_t ExpectedInputCount(const SmokeModelKind kind) {
   switch (kind) {
     case SmokeModelKind::kIdentity:
     case SmokeModelKind::kRelu:
+    case SmokeModelKind::kSigmoid:
+    case SmokeModelKind::kTanh:
+    case SmokeModelKind::kGelu:
       return 1;
     case SmokeModelKind::kAdd:
     case SmokeModelKind::kMatMul:
@@ -323,6 +336,9 @@ uint64_t ExpectedClaimedNodes(const SmokeModelKind kind) {
     case SmokeModelKind::kIdentity:
     case SmokeModelKind::kAdd:
     case SmokeModelKind::kRelu:
+    case SmokeModelKind::kSigmoid:
+    case SmokeModelKind::kTanh:
+    case SmokeModelKind::kGelu:
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kGemm:
       return 1;
@@ -345,6 +361,9 @@ std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
     case SmokeModelKind::kGemmReluGemm:
       return {"input", "hidden_w", "hidden_bias", "output_w", "output_bias"};
     case SmokeModelKind::kRelu:
+    case SmokeModelKind::kSigmoid:
+    case SmokeModelKind::kTanh:
+    case SmokeModelKind::kGelu:
       return {"input"};
   }
   return {};
@@ -487,12 +506,18 @@ doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
       .claimed_identity_nodes = after.claimed_identity_nodes - before.claimed_identity_nodes,
       .claimed_add_nodes = after.claimed_add_nodes - before.claimed_add_nodes,
       .claimed_relu_nodes = after.claimed_relu_nodes - before.claimed_relu_nodes,
+      .claimed_sigmoid_nodes = after.claimed_sigmoid_nodes - before.claimed_sigmoid_nodes,
+      .claimed_tanh_nodes = after.claimed_tanh_nodes - before.claimed_tanh_nodes,
+      .claimed_gelu_nodes = after.claimed_gelu_nodes - before.claimed_gelu_nodes,
       .claimed_matmul_nodes = after.claimed_matmul_nodes - before.claimed_matmul_nodes,
       .claimed_gemm_nodes = after.claimed_gemm_nodes - before.claimed_gemm_nodes,
       .compile_calls = after.compile_calls - before.compile_calls,
       .compiled_identity_groups = after.compiled_identity_groups - before.compiled_identity_groups,
       .compiled_add_groups = after.compiled_add_groups - before.compiled_add_groups,
       .compiled_relu_groups = after.compiled_relu_groups - before.compiled_relu_groups,
+      .compiled_sigmoid_groups = after.compiled_sigmoid_groups - before.compiled_sigmoid_groups,
+      .compiled_tanh_groups = after.compiled_tanh_groups - before.compiled_tanh_groups,
+      .compiled_gelu_groups = after.compiled_gelu_groups - before.compiled_gelu_groups,
       .compiled_matmul_groups = after.compiled_matmul_groups - before.compiled_matmul_groups,
       .compiled_gemm_groups = after.compiled_gemm_groups - before.compiled_gemm_groups,
       .compiled_gemm_relu_gemm_groups =
@@ -506,6 +531,9 @@ doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
       .compute_identity_calls = after.compute_identity_calls - before.compute_identity_calls,
       .compute_add_calls = after.compute_add_calls - before.compute_add_calls,
       .compute_relu_calls = after.compute_relu_calls - before.compute_relu_calls,
+      .compute_sigmoid_calls = after.compute_sigmoid_calls - before.compute_sigmoid_calls,
+      .compute_tanh_calls = after.compute_tanh_calls - before.compute_tanh_calls,
+      .compute_gelu_calls = after.compute_gelu_calls - before.compute_gelu_calls,
       .compute_matmul_calls = after.compute_matmul_calls - before.compute_matmul_calls,
       .compute_gemm_calls = after.compute_gemm_calls - before.compute_gemm_calls,
       .compute_gemm_relu_gemm_calls =
@@ -518,7 +546,23 @@ doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
 }
 
 bool FloatVectorsEqual(const std::vector<float>& lhs, const std::vector<float>& rhs) {
-  return lhs == rhs;
+  if (lhs.size() != rhs.size()) {
+    return false;
+  }
+  // Element-wise equality with small absolute tolerance to accommodate ULP-level
+  // float32 differences between literal expected values and runtime-computed
+  // values (e.g., transcendental functions like Gelu/Sigmoid where the literal
+  // truncation in source can differ from std::exp/std::erf output by a few ULPs).
+  // Existing exact-arithmetic ops (Identity/Add/Relu/MatMul/Gemm) still match
+  // exactly under this tolerance.
+  constexpr float kAbsTolerance = 1e-5f;
+  for (size_t i = 0; i < lhs.size(); ++i) {
+    const float diff = std::fabs(lhs[i] - rhs[i]);
+    if (diff > kAbsTolerance) {
+      return false;
+    }
+  }
+  return true;
 }
 
 std::string RenderFloatArrayJson(const std::vector<float>& values) {
@@ -569,12 +613,18 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"claimedIdentityNodes\": " << counters.claimed_identity_nodes << ",\n";
   json << child_indent << "\"claimedAddNodes\": " << counters.claimed_add_nodes << ",\n";
   json << child_indent << "\"claimedReluNodes\": " << counters.claimed_relu_nodes << ",\n";
+  json << child_indent << "\"claimedSigmoidNodes\": " << counters.claimed_sigmoid_nodes << ",\n";
+  json << child_indent << "\"claimedTanhNodes\": " << counters.claimed_tanh_nodes << ",\n";
+  json << child_indent << "\"claimedGeluNodes\": " << counters.claimed_gelu_nodes << ",\n";
   json << child_indent << "\"claimedMatMulNodes\": " << counters.claimed_matmul_nodes << ",\n";
   json << child_indent << "\"claimedGemmNodes\": " << counters.claimed_gemm_nodes << ",\n";
   json << child_indent << "\"compileCalls\": " << counters.compile_calls << ",\n";
   json << child_indent << "\"compiledIdentityGroups\": " << counters.compiled_identity_groups << ",\n";
   json << child_indent << "\"compiledAddGroups\": " << counters.compiled_add_groups << ",\n";
   json << child_indent << "\"compiledReluGroups\": " << counters.compiled_relu_groups << ",\n";
+  json << child_indent << "\"compiledSigmoidGroups\": " << counters.compiled_sigmoid_groups << ",\n";
+  json << child_indent << "\"compiledTanhGroups\": " << counters.compiled_tanh_groups << ",\n";
+  json << child_indent << "\"compiledGeluGroups\": " << counters.compiled_gelu_groups << ",\n";
   json << child_indent << "\"compiledMatMulGroups\": " << counters.compiled_matmul_groups << ",\n";
   json << child_indent << "\"compiledGemmGroups\": " << counters.compiled_gemm_groups << ",\n";
   json << child_indent << "\"compiledGemmReluGemmGroups\": " << counters.compiled_gemm_relu_gemm_groups << ",\n";
@@ -586,6 +636,9 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"computeIdentityCalls\": " << counters.compute_identity_calls << ",\n";
   json << child_indent << "\"computeAddCalls\": " << counters.compute_add_calls << ",\n";
   json << child_indent << "\"computeReluCalls\": " << counters.compute_relu_calls << ",\n";
+  json << child_indent << "\"computeSigmoidCalls\": " << counters.compute_sigmoid_calls << ",\n";
+  json << child_indent << "\"computeTanhCalls\": " << counters.compute_tanh_calls << ",\n";
+  json << child_indent << "\"computeGeluCalls\": " << counters.compute_gelu_calls << ",\n";
   json << child_indent << "\"computeMatMulCalls\": " << counters.compute_matmul_calls << ",\n";
   json << child_indent << "\"computeGemmCalls\": " << counters.compute_gemm_calls << ",\n";
   json << child_indent << "\"computeGemmReluGemmCalls\": " << counters.compute_gemm_relu_gemm_calls << ",\n";
@@ -805,6 +858,36 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
           .inputs = {{-5.0f, 1.0f, -2.0f, 7.0f}, {3.0f, -4.0f, 5.0f, -1.0f}},
           .expected_output = {0.0f, 0.0f, 3.0f, 6.0f},
       },
+      // New element-wise ops added 2026-04-16. Placed after the original
+      // 7-op coverage so any opset-version regression here doesn't halt
+      // existing op coverage (the smoke runner breaks on first failure).
+      SmokeCaseSpec{
+          .case_name = "sigmoid",
+          .model_kind = SmokeModelKind::kSigmoid,
+          .input_dims = {{1, 4}},
+          .output_dims = {1, 4},
+          // sigmoid(x) = 1 / (1 + exp(-x))
+          .inputs = {{0.0f, 1.0f, -1.0f, 2.0f}},
+          .expected_output = {0.5f, 0.7310586f, 0.26894143f, 0.880797f},
+      },
+      SmokeCaseSpec{
+          .case_name = "tanh",
+          .model_kind = SmokeModelKind::kTanh,
+          .input_dims = {{1, 4}},
+          .output_dims = {1, 4},
+          .inputs = {{0.0f, 1.0f, -1.0f, 2.0f}},
+          .expected_output = {0.0f, 0.7615942f, -0.7615942f, 0.9640276f},
+      },
+      SmokeCaseSpec{
+          .case_name = "gelu",
+          .model_kind = SmokeModelKind::kGelu,
+          .input_dims = {{1, 4}},
+          .output_dims = {1, 4},
+          // GeLU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
+          // Note: ONNX Gelu was added in opset 20; the model uses opset 20.
+          .inputs = {{0.0f, 1.0f, -1.0f, 2.0f}},
+          .expected_output = {0.0f, 0.84134465f, -0.15865529f, 1.9544997f},
+      },
   };
 }
 
@@ -852,12 +935,20 @@ cleanup:
   return status;
 }
 
-OrtStatus* CreateModelShell(const OrtModelEditorApi* model_editor_api, OrtModel** model_out, OrtGraph** graph_out) {
+OrtStatus* CreateModelShellAtOpset(
+    const OrtModelEditorApi* model_editor_api,
+    int opset_version,
+    OrtModel** model_out,
+    OrtGraph** graph_out) {
   const char* const domains[] = {""};
-  const int opsets[] = {13};
+  const int opsets[] = {opset_version};
   OrtStatus* status = model_editor_api->CreateModel(domains, opsets, 1, model_out);
   if (status != nullptr) return status;
   return model_editor_api->CreateGraph(graph_out);
+}
+
+OrtStatus* CreateModelShell(const OrtModelEditorApi* model_editor_api, OrtModel** model_out, OrtGraph** graph_out) {
+  return CreateModelShellAtOpset(model_editor_api, 13, model_out, graph_out);
 }
 
 OrtStatus* CreateAddModel(
@@ -977,9 +1068,12 @@ cleanup:
   return status;
 }
 
-OrtStatus* CreateReluModel(
+OrtStatus* CreateUnaryModelAtOpset(
     const OrtApi* api,
     const OrtModelEditorApi* model_editor_api,
+    const char* op_type,
+    const char* node_name,
+    int opset_version,
     const std::vector<int64_t>& input_dims,
     const std::vector<int64_t>& output_dims,
     OrtModel** out_model) {
@@ -987,8 +1081,8 @@ OrtStatus* CreateReluModel(
   OrtGraph* graph = nullptr;
   OrtValueInfo* input = nullptr;
   OrtValueInfo* output = nullptr;
-  OrtNode* relu_node = nullptr;
-  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  OrtNode* node = nullptr;
+  OrtStatus* status = CreateModelShellAtOpset(model_editor_api, opset_version, &model, &graph);
   if (status != nullptr) goto cleanup;
 
   status = CreateFloatValueInfo(api, model_editor_api, "input", input_dims, &input);
@@ -1011,12 +1105,12 @@ OrtStatus* CreateReluModel(
   {
     const char* const input_names[] = {"input"};
     const char* const output_names[] = {"output"};
-    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    status = model_editor_api->CreateNode(op_type, "", node_name, input_names, 1, output_names, 1, nullptr, 0, &node);
     if (status != nullptr) goto cleanup;
   }
-  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  status = model_editor_api->AddNodeToGraph(graph, node);
   if (status != nullptr) goto cleanup;
-  relu_node = nullptr;
+  node = nullptr;
   status = model_editor_api->AddGraphToModel(model, graph);
   if (status != nullptr) goto cleanup;
   graph = nullptr;
@@ -1024,12 +1118,32 @@ OrtStatus* CreateReluModel(
   model = nullptr;
 
 cleanup:
-  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (node != nullptr) api->ReleaseNode(node);
   if (input != nullptr) api->ReleaseValueInfo(input);
   if (output != nullptr) api->ReleaseValueInfo(output);
   if (graph != nullptr) api->ReleaseGraph(graph);
   if (model != nullptr) api->ReleaseModel(model);
   return status;
+}
+
+OrtStatus* CreateUnaryModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const char* op_type,
+    const char* node_name,
+    const std::vector<int64_t>& input_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  return CreateUnaryModelAtOpset(api, model_editor_api, op_type, node_name, 13, input_dims, output_dims, out_model);
+}
+
+OrtStatus* CreateReluModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& input_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  return CreateUnaryModel(api, model_editor_api, "Relu", "relu0", input_dims, output_dims, out_model);
 }
 
 OrtStatus* CreateAddReluModel(
@@ -1517,6 +1631,14 @@ OrtStatus* CreateSmokeModel(
       return CreateAddModel(api, model_editor_api, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
     case SmokeModelKind::kRelu:
       return CreateReluModel(api, model_editor_api, spec.input_dims[0], spec.output_dims, out_model);
+    case SmokeModelKind::kSigmoid:
+      return CreateUnaryModel(api, model_editor_api, "Sigmoid", "sigmoid0", spec.input_dims[0], spec.output_dims, out_model);
+    case SmokeModelKind::kTanh:
+      return CreateUnaryModel(api, model_editor_api, "Tanh", "tanh0", spec.input_dims[0], spec.output_dims, out_model);
+    case SmokeModelKind::kGelu:
+      // Gelu was added in ONNX opset 20; the default opset 13 model shell
+      // would fail at session-creation time.
+      return CreateUnaryModelAtOpset(api, model_editor_api, "Gelu", "gelu0", 20, spec.input_dims[0], spec.output_dims, out_model);
     case SmokeModelKind::kMatMul:
       return CreateMatMulModel(api, model_editor_api, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
     case SmokeModelKind::kGemm:
@@ -1667,6 +1789,21 @@ bool ValidateCaseRouting(
     case SmokeModelKind::kRelu:
       if (delta.claimed_relu_nodes == 0 || delta.compiled_relu_groups == 0 || delta.compute_relu_calls == 0) {
         return fail("Relu case did not report Relu-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kSigmoid:
+      if (delta.claimed_sigmoid_nodes == 0 || delta.compiled_sigmoid_groups == 0 || delta.compute_sigmoid_calls == 0) {
+        return fail("Sigmoid case did not report Sigmoid-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kTanh:
+      if (delta.claimed_tanh_nodes == 0 || delta.compiled_tanh_groups == 0 || delta.compute_tanh_calls == 0) {
+        return fail("Tanh case did not report Tanh-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kGelu:
+      if (delta.claimed_gelu_nodes == 0 || delta.compiled_gelu_groups == 0 || delta.compute_gelu_calls == 0) {
+        return fail("Gelu case did not report Gelu-specific claim/compile/compute counters.");
       }
       break;
     case SmokeModelKind::kMatMul:

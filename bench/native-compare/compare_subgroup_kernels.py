@@ -31,8 +31,18 @@ RUNTIME_BIN = REPO_ROOT / "runtime/zig/zig-out/bin/doe-zig-runtime"
 QUIRKS_PATH = REPO_ROOT / "examples/quirks/amd_radv_noop_list.json"
 KERNEL_ROOT = REPO_ROOT / "bench/kernels"
 OUT_DIR = REPO_ROOT / "bench/out/subgroup-kernels"
-CLAIM_LOCAL_MIN_SAMPLES = 7
-CLAIM_RELEASE_MIN_SAMPLES = 15
+
+# Claim-grade gate shared with other ad-hoc compare scripts
+# (compare_doe_vs_tint_compilation.py et al.) via bench/lib/adhoc_claim_gating.
+sys.path.insert(0, str(REPO_ROOT / "bench"))
+from lib.adhoc_claim_gating import (  # noqa: E402
+    CLAIM_LOCAL_MIN_SAMPLES,
+    CLAIM_RELEASE_MIN_SAMPLES,
+    ClaimPolicy,
+    DeltaPercentiles,
+    aggregate_claim_status,
+    gate_workload_claim,
+)
 
 PAIRS = [
     {
@@ -128,36 +138,32 @@ def delta_percent(baseline_ns: float, comparison_ns: float) -> float | None:
 
 
 def gate_one(label: str, tree: list[dict], subgroup: list[dict], claim_mode: str) -> dict:
-    min_samples = CLAIM_RELEASE_MIN_SAMPLES if claim_mode == "release" else CLAIM_LOCAL_MIN_SAMPLES
-    required_pcts = ["p50", "p95", "p99"] if claim_mode == "release" else ["p50", "p95"]
+    policy = ClaimPolicy.for_mode(claim_mode)
     tree_per = [r["gpu_ns_per_dispatch"] for r in tree]
     sg_per = [r["gpu_ns_per_dispatch"] for r in subgroup]
     tree_stats = stats(tree_per)
     sg_stats = stats(sg_per)
-    delta_p50 = delta_percent(sg_stats["p50_ns"], tree_stats["p50_ns"])
-    delta_p95 = delta_percent(sg_stats["p95_ns"], tree_stats["p95_ns"])
-    delta_p99 = delta_percent(sg_stats["p99_ns"], tree_stats["p99_ns"])
-    deltas = {"p50": delta_p50, "p95": delta_p95, "p99": delta_p99}
-    reasons = []
-    if len(tree) < min_samples:
-        reasons.append(f"tree sample count {len(tree)} < {claim_mode} floor {min_samples}")
-    if len(subgroup) < min_samples:
-        reasons.append(f"subgroup sample count {len(subgroup)} < {claim_mode} floor {min_samples}")
-    for pct in required_pcts:
-        v = deltas[pct]
-        if v is None:
-            reasons.append(f"delta.{pct} unavailable")
-        elif v <= 0:
-            reasons.append(f"delta.{pct} {v:+.2f}% not positive")
-    return {
-        "label": label,
-        "claimable": not reasons,
-        "reasons": reasons,
-        "requiredPositivePercentiles": required_pcts,
-        "tree": tree_stats,
-        "subgroup": sg_stats,
-        "deltaPercent": {"p50": delta_p50, "p95": delta_p95, "p99": delta_p99},
-    }
+    deltas = DeltaPercentiles(
+        p50=delta_percent(sg_stats["p50_ns"], tree_stats["p50_ns"]),
+        p95=delta_percent(sg_stats["p95_ns"], tree_stats["p95_ns"]),
+        p99=delta_percent(sg_stats["p99_ns"], tree_stats["p99_ns"]),
+    )
+    # Here "baseline" = tree (workgroup tree reduction), "comparison" = subgroup
+    # variant. Positive delta% = subgroup faster (the sub-group side is the one
+    # we're testing for improvement).
+    record = gate_workload_claim(
+        shader=label,
+        baseline_sample_count=len(tree),
+        comparison_sample_count=len(subgroup),
+        delta_percent=deltas,
+        policy=policy,
+    )
+    # Replace shader->label + add per-variant stats (kept for backward compat
+    # with existing artifact consumers reading this shape).
+    record["label"] = record.pop("shader")
+    record["tree"] = tree_stats
+    record["subgroup"] = sg_stats
+    return record
 
 
 def main():
@@ -199,19 +205,21 @@ def main():
                 print(f"    - {r}")
         workloads.append(gate)
 
-    pass_all = all(w["claimable"] for w in workloads)
+    status, pass_all, aggregate_reasons = aggregate_claim_status(workloads)
+    policy = ClaimPolicy.for_mode(args.claim_mode)
+    claim_policy_payload = policy.to_dict()
+    # Override the delta-% convention string because this script measures
+    # subgroup-vs-tree, not the canonical baseline-vs-comparison framing.
+    claim_policy_payload["deltaPercentConvention"] = (
+        "((tree_ns / subgroup_ns) - 1) * 100; positive = subgroup faster"
+    )
+    claim_policy_payload["timingSource"] = "executionGpuTimestampNs (Vulkan timestamp queries)"
     claim_report = {
         "schemaVersion": 1,
         "artifactKind": "claim-report",
         "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "claimMode": args.claim_mode,
-        "claimPolicy": {
-            "minTimedSamples": CLAIM_RELEASE_MIN_SAMPLES if args.claim_mode == "release" else CLAIM_LOCAL_MIN_SAMPLES,
-            "requiredPositivePercentiles": ["p50", "p95", "p99"] if args.claim_mode == "release" else ["p50", "p95"],
-            "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
-            "deltaPercentConvention": "((tree_ns / subgroup_ns) - 1) * 100; positive = subgroup faster",
-            "timingSource": "executionGpuTimestampNs (Vulkan timestamp queries)",
-        },
+        "claimPolicy": claim_policy_payload,
         "binaryProvenance": {
             "doeZigRuntime": {
                 "path": str(RUNTIME_BIN),
@@ -225,9 +233,9 @@ def main():
             "api": "vulkan",
         },
         "comparisonStatus": "comparable",
-        "claimStatus": "claimable" if pass_all else "not_claimable",
+        "claimStatus": status,
         "pass": pass_all,
-        "reasons": [] if pass_all else [f"{sum(1 for w in workloads if not w['claimable'])} of {len(workloads)} rows not claimable"],
+        "reasons": aggregate_reasons,
         "workloads": workloads,
     }
     out_path = OUT_DIR / "subgroup-vs-tree.claim.json"

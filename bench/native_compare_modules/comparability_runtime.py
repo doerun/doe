@@ -14,7 +14,12 @@ from native_compare_modules.comparability import (
     NATIVE_EXECUTION_OPERATION_TIMING_SOURCES,
     OBLIGATION_SCHEMA_VERSION,
     _PHASE_ASYMMETRY_THRESHOLD,
+    _PHASE_MATERIAL_FLOOR_FRACTION,
+    _PHASE_MATERIAL_MIN_SAMPLES,
+    _PHASE_ZERO_EPSILON,
     _TIMING_PHASE_FIELDS,
+    _all_samples_zero,
+    _material_sample_count,
     _normalized_domain,
     _record_obligation,
     _sources_match_with_runtime_compatibility,
@@ -102,15 +107,26 @@ def assess_timing_phase_equivalence(
         }
         if left_median is None or right_median is None:
             continue
-        if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        # Primary gate (CLAUDE.md #11): one side uniformly zero across samples
+        # AND the other side has >= _PHASE_MATERIAL_MIN_SAMPLES samples above
+        # the material floor. Median-fraction is still reported but no longer
+        # the threshold; near-zero warm-cache signals that legitimately median
+        # to ~0.1% no longer false-fire.
+        left_all_zero = _all_samples_zero(left_values)
+        right_all_zero = _all_samples_zero(right_values)
+        left_material = _material_sample_count(left_values)
+        right_material = _material_sample_count(right_values)
+        if left_all_zero and right_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"baseline reports zero {field_name} median while comparison spends {right_median:.1%} "
-                "of execution in that phase"
+                f"baseline reports zero {field_name} on every sample while comparison has "
+                f"{right_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} of executionTotalNs "
+                f"(median {right_median:.2%})"
             )
-        elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        elif right_all_zero and left_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"comparison reports zero {field_name} median while baseline spends {left_median:.1%} "
-                "of execution in that phase"
+                f"comparison reports zero {field_name} on every sample while baseline has "
+                f"{left_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} of executionTotalNs "
+                f"(median {left_median:.2%})"
             )
 
     applies = any(
@@ -118,6 +134,10 @@ def assess_timing_phase_equivalence(
     )
     details: dict[str, Any] = {
         "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
+        "phaseMaterialFloorFraction": _PHASE_MATERIAL_FLOOR_FRACTION,
+        "phaseMaterialMinSamples": _PHASE_MATERIAL_MIN_SAMPLES,
+        "phaseZeroEpsilon": _PHASE_ZERO_EPSILON,
+        "phaseGateFormulation": "all-zero-one-side-vs-any-material-other-side",
         "baselineMedianPhaseFractions": left_medians,
         "comparisonMedianPhaseFractions": right_medians,
         "phaseSampleCounts": phase_sample_counts,
@@ -175,15 +195,21 @@ def assess_submit_scope_equivalence(
         }
         if left_median is None or right_median is None:
             continue
-        if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        left_all_zero = _all_samples_zero(left_values)
+        right_all_zero = _all_samples_zero(right_values)
+        left_material = _material_sample_count(left_values)
+        right_material = _material_sample_count(right_values)
+        if left_all_zero and right_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"baseline submit_wait excludes material {field_name} "
-                f"while comparison spends {right_median:.1%} of submit_wait in that scope"
+                f"baseline submit_wait reports zero {field_name} on every sample while "
+                f"comparison has {right_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
+                f"of submit_wait (median {right_median:.2%})"
             )
-        elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        elif right_all_zero and left_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             mismatches.append(
-                f"comparison submit_wait excludes material {field_name} "
-                f"while baseline spends {left_median:.1%} of submit_wait in that scope"
+                f"comparison submit_wait reports zero {field_name} on every sample while "
+                f"baseline has {left_material} sample(s) >= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} "
+                f"of submit_wait (median {left_median:.2%})"
             )
 
     applies = left_sample_count > 0 or right_sample_count > 0
@@ -197,6 +223,10 @@ def assess_submit_scope_equivalence(
         )
     details: dict[str, Any] = {
         "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
+        "phaseMaterialFloorFraction": _PHASE_MATERIAL_FLOOR_FRACTION,
+        "phaseMaterialMinSamples": _PHASE_MATERIAL_MIN_SAMPLES,
+        "phaseZeroEpsilon": _PHASE_ZERO_EPSILON,
+        "phaseGateFormulation": "all-zero-one-side-vs-any-material-other-side",
         "baselineMedianSubmitScopeFractions": left_medians,
         "comparisonMedianSubmitScopeFractions": right_medians,
         "submitScopeSampleCounts": sample_counts,

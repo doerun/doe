@@ -54,8 +54,8 @@ Use two labels only:
 
 `claimable` faster requires all of the following:
 
-1. comparability passes (`comparisonStatus=comparable`, zero non-comparable workloads).
-2. sample floor: at least 7 timed samples per side (`iterations - warmup >= 7`) for local claims; target 15+ for release/CI claims.
+1. comparability passes (`comparisonStatus=comparable`, zero non-comparable workloads), including report-level comparability coherence.
+2. sample floor: at least the configured `config/benchmark-methodology-thresholds.json::comparabilityDefaults.minTimedSamples` for comparable claim-eligible rows before compare reports can remain claimable; claim sidecars then apply local/release floors from `claimabilityDefaults`.
 3. percentile sign consistency for speed claims:
 - local: `delta p50 > 0` and `delta p95 > 0`
 - release/CI: `delta p50 > 0`, `delta p95 > 0`, `delta p99 > 0`

@@ -23,11 +23,17 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 KERNELS_DIR = REPO_ROOT / "bench" / "kernels"
+INFERENCE_KERNELS_DIR = REPO_ROOT / "bench" / "inference-pipeline" / "kernels"
 SHADER_BENCH_BIN = REPO_ROOT / "runtime" / "zig" / "zig-out" / "bin" / "doe-shader-bench"
+EMIT_SPIRV_BIN = REPO_ROOT / "runtime" / "zig" / "zig-out" / "bin" / "doe-emit-spirv"
 DEFAULT_SPV_SEARCH_DIRS = [
     REPO_ROOT / "bench" / "kernels",
     REPO_ROOT / "bench" / "out",
     REPO_ROOT / "runtime" / "zig" / "zig-out",
+]
+DEFAULT_WGSL_DISCOVERY_DIRS = [
+    REPO_ROOT / "bench" / "kernels",
+    REPO_ROOT / "bench" / "inference-pipeline" / "kernels",
 ]
 VENDOR_DIR = REPO_ROOT / "bench" / "vendor"
 
@@ -76,7 +82,75 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Optional path to write a JSON validation report.",
     )
+    parser.add_argument(
+        "--discover-wgsl",
+        action="store_true",
+        help=(
+            "Auto-discover all .wgsl files under bench/kernels and "
+            "bench/inference-pipeline/kernels, compile each via doe-emit-spirv, "
+            "and validate the resulting SPIR-V. Catches kernels that lack "
+            "pre-built .spv artifacts."
+        ),
+    )
+    parser.add_argument(
+        "--emit-spirv-bin",
+        default=str(EMIT_SPIRV_BIN),
+        help="Path to doe-emit-spirv binary for --discover-wgsl mode.",
+    )
+    parser.add_argument(
+        "--require-subgroup-coverage",
+        action="store_true",
+        help=(
+            "When auto-discovering, fail if any .wgsl file declaring "
+            "'enable subgroups;' was not validated. Defends against the "
+            "subgroup-op SPIR-V emitter regression class."
+        ),
+    )
     return parser.parse_args()
+
+
+def discover_wgsl_files(dirs: list[Path]) -> list[Path]:
+    """Find all .wgsl files under dirs."""
+    results: list[Path] = []
+    for d in dirs:
+        if not d.is_dir():
+            continue
+        for wgsl in sorted(d.rglob("*.wgsl")):
+            if VENDOR_DIR in wgsl.parents:
+                continue
+            results.append(wgsl)
+    return results
+
+
+def emit_spirv_for_wgsl(emit_spirv_bin: str, wgsl_path: Path, out_path: Path) -> tuple[bool, str]:
+    """Compile a WGSL source to SPIR-V via doe-emit-spirv. Returns (ok, message)."""
+    try:
+        completed = subprocess.run(
+            [emit_spirv_bin, "--shader-path", str(wgsl_path), "--out", str(out_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except FileNotFoundError:
+        return False, f"doe-emit-spirv not found at {emit_spirv_bin}"
+    except subprocess.TimeoutExpired:
+        return False, "doe-emit-spirv timed out"
+    if completed.returncode != 0:
+        stderr = (completed.stderr or completed.stdout or "").strip()[:300]
+        return False, f"emit failed: {stderr}"
+    if not out_path.is_file() or out_path.stat().st_size == 0:
+        return False, "emit produced no output"
+    return True, "ok"
+
+
+def wgsl_uses_subgroups(wgsl_path: Path) -> bool:
+    """True if the WGSL source enables subgroup operations."""
+    try:
+        text = wgsl_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return "enable subgroups" in text or "subgroupAdd" in text or "subgroupBroadcast" in text
 
 
 def find_spirv_val(explicit: str) -> str | None:
@@ -226,11 +300,46 @@ def main() -> int:
                 if cf.resolve() not in {f.resolve() for f in spv_files}:
                     spv_files.append(cf)
 
-    if not spv_files:
+    discovered_records: list[dict[str, str]] = []
+    if args.discover_wgsl:
+        emit_bin = args.emit_spirv_bin
+        if not Path(emit_bin).is_file():
+            print(f"WARN: doe-emit-spirv not built at {emit_bin}; skipping --discover-wgsl")
+        else:
+            wgsl_files = discover_wgsl_files(DEFAULT_WGSL_DISCOVERY_DIRS)
+            print(f"discover-wgsl: emitting and validating {len(wgsl_files)} WGSL source(s)")
+            with tempfile.TemporaryDirectory(prefix="doe-spirv-val-") as tmpdir:
+                tmp_root = Path(tmpdir)
+                for wgsl in wgsl_files:
+                    spv_out = tmp_root / (wgsl.stem + ".spv")
+                    rel = str(wgsl.relative_to(REPO_ROOT))
+                    emit_ok, emit_msg = emit_spirv_for_wgsl(emit_bin, wgsl, spv_out)
+                    if not emit_ok:
+                        # Emit failures get reported separately so non-SPIR-V-emitting
+                        # kernels (which are CSL-only or vertex-only) don't get
+                        # mislabeled as validation failures.
+                        discovered_records.append({
+                            "path": rel,
+                            "stage": "emit",
+                            "passed": False,
+                            "uses_subgroups": str(wgsl_uses_subgroups(wgsl)),
+                            "error": emit_msg,
+                        })
+                        continue
+                    val_ok, val_msg = validate_spv(spirv_val, spv_out)
+                    discovered_records.append({
+                        "path": rel,
+                        "stage": "validate",
+                        "passed": val_ok,
+                        "uses_subgroups": str(wgsl_uses_subgroups(wgsl)),
+                        "error": "" if val_ok else val_msg,
+                    })
+
+    if not spv_files and not discovered_records:
         print("SKIP: no .spv artifacts found to validate")
         return 0
 
-    print(f"validating {len(spv_files)} SPIR-V artifact(s)")
+    print(f"validating {len(spv_files)} pre-built SPIR-V artifact(s)")
 
     passed = 0
     failed = 0
@@ -247,6 +356,41 @@ def main() -> int:
             print(f"  FAIL: {rel_path}: {message}")
             failures.append({"path": rel_path, "error": message})
 
+    discovered_pass = 0
+    discovered_fail = 0
+    discovered_emit_fail = 0
+    subgroup_validated = 0
+    subgroup_skipped = 0
+    for rec in discovered_records:
+        path = rec["path"]
+        uses_sg = rec["uses_subgroups"] == "True"
+        if rec["stage"] == "emit":
+            discovered_emit_fail += 1
+            print(f"  EMIT-SKIP: {path}: {rec['error']}")
+            if uses_sg:
+                subgroup_skipped += 1
+            continue
+        if rec["passed"]:
+            discovered_pass += 1
+            tag = "PASS-SG" if uses_sg else "PASS"
+            print(f"  {tag}: {path}")
+            if uses_sg:
+                subgroup_validated += 1
+        else:
+            discovered_fail += 1
+            tag = "FAIL-SG" if uses_sg else "FAIL"
+            print(f"  {tag}: {path}: {rec['error']}")
+            failures.append({"path": path, "error": rec["error"], "stage": "discover"})
+
+    if args.require_subgroup_coverage and subgroup_validated == 0 and subgroup_skipped == 0:
+        # Defensive: someone removed all subgroup kernels OR someone added one
+        # in a directory we don't discover. Either way, log it loudly.
+        print(
+            "FAIL: --require-subgroup-coverage set but zero subgroup-using "
+            "WGSL kernels were validated; check discovery dirs"
+        )
+        return 1
+
     # Write JSON report if requested
     if args.json_report:
         report = {
@@ -256,6 +400,14 @@ def main() -> int:
             "passed": passed,
             "failed": failed,
             "failures": failures,
+            "discovered": {
+                "totalWgsl": len(discovered_records),
+                "validated": discovered_pass,
+                "validationFailed": discovered_fail,
+                "emitSkipped": discovered_emit_fail,
+                "subgroupValidated": subgroup_validated,
+                "subgroupSkipped": subgroup_skipped,
+            },
         }
         report_path = Path(args.json_report)
         report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -264,11 +416,19 @@ def main() -> int:
         )
         print(f"report: {report_path}")
 
-    if failed > 0:
-        print(f"FAIL: spirv-val gate ({passed} passed, {failed} failed)")
+    total_failed = failed + discovered_fail
+    if total_failed > 0:
+        print(
+            f"FAIL: spirv-val gate (pre-built {passed}/{passed + failed}, "
+            f"discovered {discovered_pass}/{discovered_pass + discovered_fail}, "
+            f"subgroup-validated {subgroup_validated})"
+        )
         return 1
 
-    print(f"PASS: spirv-val gate ({passed} validated)")
+    print(
+        f"PASS: spirv-val gate (pre-built {passed}, "
+        f"discovered {discovered_pass}, subgroup-validated {subgroup_validated})"
+    )
     return 0
 
 

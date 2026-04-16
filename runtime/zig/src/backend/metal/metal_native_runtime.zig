@@ -378,7 +378,7 @@ pub const NativeMetalRuntime = struct {
         self.has_device = true;
         self.timestamp_state.init_resources(self.device);
         if (builtin.os.tag == .macos) {
-            if (HAS_PIPELINE_CACHE) {
+            if (HAS_PIPELINE_CACHE and !metal_pipeline_cache.is_process_pipeline_cache_disabled()) {
                 const cache_dir = self.kernel_root orelse "bench/kernels";
                 const cache_ptr = metal_pipeline_cache.MetalPipelineCache.init(
                     self.allocator,

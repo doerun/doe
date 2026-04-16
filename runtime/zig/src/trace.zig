@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const model_commands = @import("model_commands.zig");
 const model_policy = @import("model_policy.zig");
 const model_quirks = @import("model_quirks.zig");
@@ -89,6 +90,20 @@ pub const TraceRunSummary = struct {
     quirk_mode: ?[]const u8 = null,
     determinism: ?trace_determinism.TraceDeterminismSummary = null,
     numeric_stability: ?numeric_stability.trace_meta.TraceNumericStabilitySummary = null,
+    // Apple Metal pipeline cache state and warmup telemetry. `pipeline_cache_
+    // active` is populated by backend_runtime_telemetry.refresh from the active
+    // Metal backend's process-level cache pointer; it is true only when Doe's
+    // Metal native runtime opened an MTLBinaryArchive. `pipeline_cache_disabled`
+    // reflects the --no-pipeline-cache CLI choice. The state/reason pair
+    // emitted into trace_meta is derived from BOTH (see writeTraceMeta below)
+    // so a dawn_delegate Metal run reports state=disabled reason=non-doe-backend
+    // even when the CLI flag is absent. See bench/lib/metal_pipeline_cache_
+    // manifest.py for the reader and CLAUDE.md non-negotiable #7 (hardware-
+    // path asymmetry).
+    pipeline_cache_active: bool = false,
+    pipeline_cache_disabled: bool = false,
+    pipeline_cache_warmup_count: u64 = 0,
+    pipeline_cache_warmup_ns: u64 = 0,
 };
 
 pub const writef = trace_text.writef;
@@ -716,5 +731,37 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     }
     try writer.writeAll(",\"driver\":");
     try writeJsonString(&writer, summary.profile_driver);
+    try writer.writeAll("}");
+    // Apple Metal pipeline cache state + warmup telemetry. Emitted as a nested
+    // `pipelineCache` object so bench/native_compare_modules/run_artifact.py
+    // can surface it in the run-receipt's runtimeIdentity.pipelineCache. State
+    // is "enabled" iff Doe's Metal native runtime actually opened an
+    // MTLBinaryArchive in this process. Reason values:
+    //   "default"               - Metal cache active (state=enabled)
+    //   "cli-flag"              - --no-pipeline-cache disabled init (state=disabled)
+    //   "non-doe-backend"       - macos build, but no Doe Metal backend was
+    //                             active (e.g. dawn_delegate Metal). The Doe
+    //                             cache code path was not reached on this run.
+    //   "platform-unsupported"  - non-Mac build (state=disabled)
+    // The schema slot is always emitted so a comparison gate can hard-assert
+    // which mode each side ran in. Warmup count/ns stay zero on non-Mac builds
+    // and on cache-disabled runs.
+    const cache_state: []const u8 = if (summary.pipeline_cache_active) "enabled" else "disabled";
+    const cache_reason: []const u8 = if (comptime builtin.os.tag != .macos)
+        "platform-unsupported"
+    else if (summary.pipeline_cache_disabled)
+        "cli-flag"
+    else if (summary.pipeline_cache_active)
+        "default"
+    else
+        "non-doe-backend";
+    try writer.writeAll(",\"pipelineCache\":{\"state\":");
+    try writeJsonString(&writer, cache_state);
+    try writer.writeAll(",\"reason\":");
+    try writeJsonString(&writer, cache_reason);
+    try writef(writer, ",\"warmupCount\":{},\"warmupNs\":{}", .{
+        summary.pipeline_cache_warmup_count,
+        summary.pipeline_cache_warmup_ns,
+    });
     try writer.writeAll("}}\n");
 }

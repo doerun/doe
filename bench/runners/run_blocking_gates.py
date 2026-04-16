@@ -152,9 +152,30 @@ def parse_args() -> argparse.Namespace:
         help="Run the repeated-window browser claim gate after trace gate.",
     )
     parser.add_argument(
+        "--with-comparability-coherence-gate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Run comparability_coherence_gate.py after trace gate. Default: enabled. "
+            "Pass --no-with-comparability-coherence-gate only for diagnostic report "
+            "audits that are not claim evidence."
+        ),
+    )
+    parser.add_argument(
+        "--comparability-coherence-benchmark-policy",
+        default="config/benchmark-methodology-thresholds.json",
+        help="Benchmark policy path passed to comparability_coherence_gate.py.",
+    )
+    parser.add_argument(
         "--with-structural-equivalence-gate",
-        action="store_true",
-        help="Run structural_equivalence_gate.py after trace gate.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Run structural_equivalence_gate.py after trace gate. Default: enabled. "
+            "Pass --no-with-structural-equivalence-gate to opt out for diagnostic-only "
+            "runs that legitimately fail structural parity (e.g. workloads exercising "
+            "Doe-only coverage where Dawn reports unsupported)."
+        ),
     )
     parser.add_argument(
         "--with-file-size-gate",
@@ -402,6 +423,17 @@ def main() -> int:
         print(f"FAIL: missing report: {report_path}")
         return 1
 
+    try:
+        report_payload = artifacts_mod.load_compare_report(report_path)
+        artifacts_mod.ensure_release_strict_comparability(
+            report_payload,
+            report_path,
+            surface="run_blocking_gates",
+        )
+    except RuntimeError as exc:
+        print(f"FAIL: {exc}")
+        return 1
+
     if args.claim_require_min_timed_samples < 0:
         print(
             "FAIL: invalid --claim-require-min-timed-samples="
@@ -427,6 +459,16 @@ def main() -> int:
         claim_benchmark_policy_path = Path(args.claim_benchmark_policy)
         if not claim_benchmark_policy_path.exists():
             print(f"FAIL: missing --claim-benchmark-policy: {claim_benchmark_policy_path}")
+            return 1
+    if args.with_comparability_coherence_gate:
+        comparability_coherence_policy_path = Path(
+            args.comparability_coherence_benchmark_policy
+        )
+        if not comparability_coherence_policy_path.exists():
+            print(
+                "FAIL: missing --comparability-coherence-benchmark-policy: "
+                f"{comparability_coherence_policy_path}"
+            )
             return 1
 
     output_timestamp = (
@@ -460,6 +502,7 @@ def main() -> int:
     browser_gate = browser_dir / "browser_gate.py"
     browser_claim_gate = browser_dir / "browser_claim_gate.py"
     module_gate = gates_dir / "module_gate.py"
+    comparability_coherence_gate = gates_dir / "comparability_coherence_gate.py"
     structural_equivalence_gate = gates_dir / "structural_equivalence_gate.py"
     dropin_gate = dropin_dir / "dropin_gate.py"
     dropin_proc_resolution_tests = dropin_dir / "dropin_proc_resolution_tests.py"
@@ -478,12 +521,36 @@ def main() -> int:
             "INFO: comparability parity gate not requested; verification-lane Lean/Python "
             "fixture parity is not checked in this run."
         )
-    if args.with_claim_gate and not args.with_structural_equivalence_gate:
+    if not args.with_comparability_coherence_gate:
         print(
-            "INFO: enabling structural equivalence gate because --with-claim-gate "
-            "was requested."
+            "INFO: comparability coherence gate disabled via "
+            "--no-with-comparability-coherence-gate; this run does NOT validate "
+            "that workload matching, obligations, structural checks, timing "
+            "phase checks, and sample-floor policy agree at report scope."
         )
-        args.with_structural_equivalence_gate = True
+    if not args.with_structural_equivalence_gate:
+        print(
+            "INFO: structural equivalence gate disabled via "
+            "--no-with-structural-equivalence-gate; this run does NOT validate "
+            "dispatch-count parity, timing-phase symmetry, or zero-phase "
+            "anomalies. Use only for diagnostic-only runs that legitimately "
+            "fail structural parity (e.g. directional coverage lanes)."
+        )
+    if args.with_claim_gate and not args.with_comparability_coherence_gate:
+        print(
+            "FAIL: --with-claim-gate requires comparability coherence gate "
+            "(remove --no-with-comparability-coherence-gate)."
+        )
+        return 1
+    if args.with_claim_gate and not args.with_structural_equivalence_gate:
+        # --with-claim-gate cannot coexist with structural opt-out; CLAUDE.md
+        # non-negotiable #10 requires structural parity for any claim-eligible
+        # workload.
+        print(
+            "FAIL: --with-claim-gate requires structural equivalence gate "
+            "(remove --no-with-structural-equivalence-gate)."
+        )
+        return 1
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
@@ -594,6 +661,20 @@ def main() -> int:
                 [
                     sys.executable,
                     str(browser_gate),
+                ],
+            )
+
+        if args.with_comparability_coherence_gate:
+            run_gate(
+                "comparability-coherence",
+                [
+                    sys.executable,
+                    str(comparability_coherence_gate),
+                    "--report",
+                    str(report_path),
+                    "--benchmark-policy",
+                    args.comparability_coherence_benchmark_policy,
+                    "--require-pass",
                 ],
             )
 

@@ -36,6 +36,14 @@ REPO_ROOT = SCRIPT_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from bench.lib.adhoc_claim_gating import (  # noqa: E402
+    CLAIM_REPORT_SCHEMA_VERSION,
+    DELTA_PERCENT_CONVENTION,
+    ClaimPolicy,
+    DeltaPercentiles,
+    aggregate_claim_status,
+    gate_workload_claim,
+)
 from bench.native_compare_modules.reporting import (  # noqa: E402
     format_stats,
     subtract_baseline_ms,
@@ -46,11 +54,6 @@ TINT_BENCHMARK_TARGET_MAP = {"msl": "GenerateMSL", "spirv": "GenerateSPIRV", "hl
 DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
 DEFAULT_TINT_WARM_REPETITIONS = 9
 SCHEMA_VERSION = 3
-CLAIM_REPORT_SCHEMA_VERSION = 1
-CLAIM_LOCAL_MIN_SAMPLES = 7
-CLAIM_RELEASE_MIN_SAMPLES = 15
-CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT = 1.0
-DELTA_PERCENT_CONVENTION = "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
 _TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
 fn main() {}
 """
@@ -362,23 +365,11 @@ def build_claim_report(
     calibration,
     claim_mode,
 ):
-    """Build a claim-report alongside the comparison ndjson.
-
-    A shader is claimable if all of:
-      - Doe + Tint warm sample counts both meet the floor for the chosen mode
-      - Required positive percentiles (warm deltaPercent p50/p95, plus p99 for release) are all > 0
-      - Doe per-iteration timer overhead is less than CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT
-        of the smallest measurement on the row
-    """
-    min_samples = (
-        CLAIM_RELEASE_MIN_SAMPLES if claim_mode == "release" else CLAIM_LOCAL_MIN_SAMPLES
-    )
-    required_pcts = (
-        ["p50", "p95", "p99"] if claim_mode == "release" else ["p50", "p95"]
-    )
+    """Build a claim-report alongside the comparison ndjson."""
+    policy = ClaimPolicy.for_mode(claim_mode)
+    required_pcts = [f"warm.{pct}" for pct in policy.required_positive_percentiles]
     timer_overhead_ns = int(calibration.get("timerOverheadP50Ns", 0)) if calibration else 0
     workloads = []
-    aggregate_reasons = []
 
     for record in records:
         if record.get("status") != "compared":
@@ -387,74 +378,56 @@ def build_claim_report(
                     "shader": record.get("shader"),
                     "claimable": False,
                     "reasons": [f"row not compared: {record.get('reason', record.get('status'))}"],
-                    "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
+                    "requiredPositivePercentiles": required_pcts,
                 }
             )
             continue
+
         comparison = record.get("comparison", {})
         baseline = record.get("baseline", {})
         warm = comparison.get("warm", {})
-        warm_iterations = warm.get("iterations", 0)
-        comparison_iterations = comparison.get("iterations", 0)
-        baseline_iterations = baseline.get("iterations") or cfg["run"].get("iterations", 0)
+        warm_iterations = int(warm.get("iterations", 0) or 0)
+        comparison_iterations = int(comparison.get("iterations", 0) or 0)
+        baseline_iterations = int(
+            baseline.get("iterations") or cfg["run"].get("iterations", 0) or 0
+        )
         warm_delta = record.get("warmDeltaPercent", {})
-        reasons = []
-
-        if not warm or not warm_iterations:
-            reasons.append("no warm in-process Tint samples (config lacks warmBinaryPath)")
-        else:
-            if warm_iterations < min_samples:
-                reasons.append(
-                    f"warm Tint sample count {warm_iterations} < {claim_mode} floor {min_samples}"
-                )
-            if comparison_iterations and comparison_iterations < min_samples:
-                reasons.append(
-                    f"raw Tint sample count {comparison_iterations} < {claim_mode} floor {min_samples}"
-                )
-            if baseline_iterations and baseline_iterations < min_samples:
-                reasons.append(
-                    f"Doe sample count {baseline_iterations} < {claim_mode} floor {min_samples}"
-                )
-            for pct in required_pcts:
-                value = warm_delta.get(pct)
-                if value is None:
-                    reasons.append(f"warm.{pct} delta missing")
-                elif value <= 0:
-                    reasons.append(f"warm.{pct} delta {value:+.2f}% not positive")
-
-            min_measurement_ns = min(
-                v for v in (
-                    baseline.get("p50_ns"),
-                    warm.get("p50_ns"),
-                ) if v
-            )
-            if min_measurement_ns and timer_overhead_ns:
-                overhead_percent = (timer_overhead_ns / min_measurement_ns) * 100
-                if overhead_percent > CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT:
-                    reasons.append(
-                        f"Doe timer overhead {timer_overhead_ns}ns is "
-                        f"{overhead_percent:.2f}% of smallest p50 (budget "
-                        f"{CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT}%)"
-                    )
-
-        workloads.append(
-            {
-                "shader": record.get("shader"),
-                "claimable": not reasons,
-                "reasons": reasons,
-                "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
+        smallest_measurement_candidates = [
+            value for value in (baseline.get("p50_ns"), warm.get("p50_ns")) if value
+        ]
+        smallest_measurement_p50_ns = (
+            int(min(smallest_measurement_candidates))
+            if smallest_measurement_candidates
+            else None
+        )
+        delta_percent = DeltaPercentiles(
+            p50=warm_delta.get("p50"),
+            p95=warm_delta.get("p95"),
+            p99=warm_delta.get("p99"),
+        )
+        gate = gate_workload_claim(
+            shader=str(record.get("shader", "")),
+            baseline_sample_count=baseline_iterations,
+            comparison_sample_count=comparison_iterations or warm_iterations,
+            warm_comparison_sample_count=warm_iterations,
+            delta_percent=delta_percent,
+            policy=policy,
+            timer_overhead_p50_ns=timer_overhead_ns or None,
+            smallest_measurement_p50_ns=smallest_measurement_p50_ns,
+            extra_details={
+                "requiredPositivePercentiles": required_pcts,
                 "warmDeltaPercent": warm_delta,
                 "warmIterations": warm_iterations,
                 "doeP50Ns": baseline.get("p50_ns"),
                 "tintWarmP50Ns": warm.get("p50_ns"),
-            }
+            },
         )
+        if not warm or not warm_iterations:
+            gate["reasons"].insert(0, "no warm in-process Tint samples (config lacks warmBinaryPath)")
+            gate["claimable"] = False
+        workloads.append(gate)
 
-    non_claimable = [w for w in workloads if not w["claimable"]]
-    if non_claimable:
-        aggregate_reasons.append(
-            f"{len(non_claimable)} of {len(workloads)} rows not claimable"
-        )
+    claim_status, claim_pass, aggregate_reasons = aggregate_claim_status(workloads)
 
     doe_bin_path = REPO_ROOT / cfg["baseline"]["binaryPath"]
     tint_bin_path = REPO_ROOT / cfg["comparison"]["binaryPath"]
@@ -463,20 +436,16 @@ def build_claim_report(
         if cfg["comparison"].get("warmBinaryPath")
         else None
     )
+    claim_policy = policy.to_dict(timer_overhead_p50_ns=timer_overhead_ns)
+    claim_policy["requiredPositivePercentiles"] = required_pcts
+    claim_policy["deltaPercentConvention"] = DELTA_PERCENT_CONVENTION
 
     return {
         "schemaVersion": CLAIM_REPORT_SCHEMA_VERSION,
         "artifactKind": "claim-report",
         "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "claimMode": claim_mode,
-        "claimPolicy": {
-            "minTimedSamples": min_samples,
-            "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
-            "timerOverheadBudgetPercent": CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT,
-            "timerOverheadP50Ns": timer_overhead_ns,
-            "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
-            "deltaPercentConvention": DELTA_PERCENT_CONVENTION,
-        },
+        "claimPolicy": claim_policy,
         "compareConfigPath": str(cfg.get("_configPath", "")),
         "target": target,
         "binaryProvenance": {
@@ -508,8 +477,8 @@ def build_claim_report(
             ),
         },
         "comparisonStatus": "comparable",
-        "claimStatus": "claimable" if not non_claimable else "not_claimable",
-        "pass": not non_claimable,
+        "claimStatus": claim_status,
+        "pass": claim_pass,
         "reasons": aggregate_reasons,
         "workloads": workloads,
     }

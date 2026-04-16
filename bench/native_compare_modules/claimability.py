@@ -126,17 +126,28 @@ def _median_phase_fractions(
     return fractions
 
 
-# Minimum fraction of executionTotal a phase must represent on one side
-# for a zero on the other side to be considered structurally asymmetric.
-_PHASE_ASYMMETRY_THRESHOLD = 0.10
-
 
 def assess_phase_equivalence(
     *,
     left_command_samples: list[dict[str, Any]],
     right_command_samples: list[dict[str, Any]],
 ) -> list[str]:
-    """Reject claims where one side reports zero for a phase the other side spends >10% in."""
+    """Reject claims where one side reports zero-on-every-sample for a phase the other
+    side reports material cost on.
+
+    CLAUDE.md #11 formulation: if every sample on one side has phase fraction
+    below _PHASE_ZERO_EPSILON AND the other side has at least _PHASE_MATERIAL
+    _MIN_SAMPLES samples at or above _PHASE_MATERIAL_FLOOR_FRACTION of
+    executionTotal, the two sides are measuring different scopes and the
+    result is not claimable.
+    """
+    from native_compare_modules.comparability import (  # local to avoid cycle
+        _PHASE_MATERIAL_FLOOR_FRACTION,
+        _PHASE_MATERIAL_MIN_SAMPLES,
+        _all_samples_zero,
+        _material_sample_count,
+    )
+
     reasons: list[str] = []
     left_fracs = _median_phase_fractions(left_command_samples)
     right_fracs = _median_phase_fractions(right_command_samples)
@@ -147,23 +158,23 @@ def assess_phase_equivalence(
         right_vals = right_fracs.get(phase_key, [])
         if not left_vals or not right_vals:
             continue
-        left_vals_sorted = sorted(left_vals)
-        right_vals_sorted = sorted(right_vals)
-        left_median = left_vals_sorted[len(left_vals_sorted) // 2]
-        right_median = right_vals_sorted[len(right_vals_sorted) // 2]
+        left_all_zero = _all_samples_zero(left_vals)
+        right_all_zero = _all_samples_zero(right_vals)
+        left_material = _material_sample_count(left_vals)
+        right_material = _material_sample_count(right_vals)
 
-        left_zero = left_median == 0.0
-        right_zero = right_median == 0.0
-        if left_zero and not right_zero and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        if left_all_zero and right_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             reasons.append(
-                f"phase asymmetry: baseline reports zero {field_name} but comparison spends "
-                f"{right_median:.1%} of execution in that phase; "
+                f"phase asymmetry: baseline reports zero {field_name} on every sample "
+                f"while comparison has {right_material} sample(s) "
+                f">= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} of executionTotalNs; "
                 f"treat as non-claimable until phase equivalence is confirmed"
             )
-        elif right_zero and not left_zero and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+        elif right_all_zero and left_material >= _PHASE_MATERIAL_MIN_SAMPLES:
             reasons.append(
-                f"phase asymmetry: comparison reports zero {field_name} but baseline spends "
-                f"{left_median:.1%} of execution in that phase; "
+                f"phase asymmetry: comparison reports zero {field_name} on every sample "
+                f"while baseline has {left_material} sample(s) "
+                f">= {_PHASE_MATERIAL_FLOOR_FRACTION:.1%} of executionTotalNs; "
                 f"treat as non-claimable until phase equivalence is confirmed"
             )
     return reasons
