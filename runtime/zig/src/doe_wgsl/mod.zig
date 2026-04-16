@@ -363,8 +363,9 @@ pub fn translateToMsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8)
 }
 
 pub fn translateToMslWithOverrides(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8, overrides: ?[*]const ir.OverrideEntry, override_count: usize) TranslateError!usize {
-    var module_ir = try analyzeToIr(allocator, wgsl);
-    defer module_ir.deinit();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    var module_ir = try analyzeToIr(arena.allocator(), wgsl);
 
     if (overrides != null and override_count > 0) {
         applyOverrides(&module_ir, overrides.?[0..override_count]);
@@ -425,8 +426,9 @@ pub fn translateToHlslWithOverrides(
     overrides: ?[*]const ir.OverrideEntry,
     override_count: usize,
 ) TranslateError!usize {
-    var module_ir = try analyzeToIr(allocator, wgsl);
-    defer module_ir.deinit();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    var module_ir = try analyzeToIr(arena.allocator(), wgsl);
 
     if (overrides != null and override_count > 0) {
         applyOverrides(&module_ir, overrides.?[0..override_count]);
@@ -444,8 +446,9 @@ pub fn translateToHlslWithOverrides(
 }
 
 pub fn translateToSpirv(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
-    var module_ir = try analyzeToIr(allocator, wgsl);
-    defer module_ir.deinit();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    var module_ir = try analyzeToIr(arena.allocator(), wgsl);
 
     return emit_spirv.emit(&module_ir, out) catch |err| {
         const kind = switch (err) {
@@ -460,8 +463,9 @@ pub fn translateToSpirv(allocator: std.mem.Allocator, wgsl: []const u8, out: []u
 }
 
 pub fn translateToDxil(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
-    var module_ir = try analyzeToIr(allocator, wgsl);
-    defer module_ir.deinit();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    var module_ir = try analyzeToIr(arena.allocator(), wgsl);
 
     return emit_dxil.emit(&module_ir, out) catch |err| {
         const detail = emit_dxil.lastErrorMessage();

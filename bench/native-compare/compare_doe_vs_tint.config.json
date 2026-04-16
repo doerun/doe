@@ -10,7 +10,7 @@
     "binaryPath": "bench/vendor/dawn/out/Release/tint"
   },
   "run": {
-    "iterations": 500,
+    "iterations": 200,
     "warmup": 50,
     "targets": [
       "msl"

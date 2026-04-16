@@ -316,7 +316,8 @@
         "timedSampleCount",
         "returnCodes",
         "timingSources",
-        "timingClasses"
+        "timingClasses",
+        "aggregates"
       ],
       "properties": {
         "success": {
@@ -342,6 +343,26 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "aggregates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "wallMs",
+            "measuredMs",
+            "measuredRawMs"
+          ],
+          "properties": {
+            "wallMs": {
+              "$ref": "#/$defs/sampleStats"
+            },
+            "measuredMs": {
+              "$ref": "#/$defs/sampleStats"
+            },
+            "measuredRawMs": {
+              "$ref": "#/$defs/sampleStats"
+            }
           }
         }
       }
@@ -405,6 +426,51 @@
         "number",
         "null"
       ]
+    },
+    "sampleStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "minMs",
+        "maxMs",
+        "p10Ms",
+        "p50Ms",
+        "p95Ms",
+        "p99Ms",
+        "meanMs",
+        "stdevMs"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minMs": {
+          "type": "number"
+        },
+        "maxMs": {
+          "type": "number"
+        },
+        "p10Ms": {
+          "type": "number"
+        },
+        "p50Ms": {
+          "type": "number"
+        },
+        "p95Ms": {
+          "type": "number"
+        },
+        "p99Ms": {
+          "type": "number"
+        },
+        "meanMs": {
+          "type": "number"
+        },
+        "stdevMs": {
+          "type": "number"
+        }
+      }
     },
     "sample": {
       "type": "object",

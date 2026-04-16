@@ -526,8 +526,35 @@ pub fn main() !void {
     }
 }
 
+const TIMER_CALIBRATION_ITERATIONS: u32 = 1000;
+
+fn measure_timer_overhead_ns(allocator: std.mem.Allocator) !u64 {
+    const samples = try allocator.alloc(u64, TIMER_CALIBRATION_ITERATIONS);
+    defer allocator.free(samples);
+    for (samples) |*slot| {
+        var t = try std.time.Timer.start();
+        slot.* = t.read();
+    }
+    std.sort.block(u64, samples, {}, std.sort.asc(u64));
+    return samples[samples.len / 2];
+}
+
+fn write_calibration(writer: anytype, timer_overhead_ns: u64) !void {
+    try writer.print(
+        "{{\"kind\":\"compilation_bench_calibration\",\"version\":{d}," ++
+            "\"timerOverheadP50Ns\":{d}," ++
+            "\"timerOverheadIterations\":{d}," ++
+            "\"timerSource\":\"std.time.Timer\"," ++
+            "\"timerScope\":\"per-translation in-process\"}}\n",
+        .{ BENCH_VERSION, timer_overhead_ns, TIMER_CALIBRATION_ITERATIONS },
+    );
+}
+
 fn run_all(allocator: std.mem.Allocator, cfg: Config, writer: anytype) !void {
     print_stderr_header();
+
+    const timer_overhead_ns = try measure_timer_overhead_ns(allocator);
+    try write_calibration(writer, timer_overhead_ns);
 
     var dynamic_source: ?[]u8 = null;
     defer if (dynamic_source) |buf| allocator.free(buf);

@@ -21,6 +21,8 @@ Output:
 
 import argparse
 import ast
+import datetime
+import hashlib
 import json
 import os
 import subprocess
@@ -44,6 +46,10 @@ TINT_BENCHMARK_TARGET_MAP = {"msl": "GenerateMSL", "spirv": "GenerateSPIRV", "hl
 DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
 DEFAULT_TINT_WARM_REPETITIONS = 9
 SCHEMA_VERSION = 3
+CLAIM_REPORT_SCHEMA_VERSION = 1
+CLAIM_LOCAL_MIN_SAMPLES = 7
+CLAIM_RELEASE_MIN_SAMPLES = 15
+CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT = 1.0
 DELTA_PERCENT_CONVENTION = "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
 _TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
 fn main() {}
@@ -77,6 +83,15 @@ def parse_args():
         "--warmup",
         type=int,
         help="Override warmup iterations from config.",
+    )
+    parser.add_argument(
+        "--claim-mode",
+        choices=("local", "release"),
+        default="release",
+        help=(
+            "Claim policy mode. local requires >=7 timed samples and positive p50/p95; "
+            "release requires >=15 timed samples and positive p50/p95/p99."
+        ),
     )
     return parser.parse_args()
 
@@ -293,6 +308,7 @@ def run_doe_bench(cfg, shaders, target, out_path, dry_run):
         print("  Build with: cd runtime/zig && zig build bench-compilation", file=sys.stderr)
         sys.exit(1)
     results = {}
+    calibration = None
 
     for shader in shaders:
         shader_target = shader.get("target", target)
@@ -319,11 +335,184 @@ def run_doe_bench(cfg, shaders, target, out_path, dry_run):
                 if not line:
                     continue
                 record = json.loads(line)
-                if record.get("kind") == "compilation_bench" and record.get("shader") == shader["name"]:
+                kind = record.get("kind")
+                if kind == "compilation_bench_calibration" and calibration is None:
+                    calibration = record
+                if kind == "compilation_bench" and record.get("shader") == shader["name"]:
                     results[shader["name"]] = record
                     break
 
-    return results
+    return results, calibration
+
+
+def file_sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def build_claim_report(
+    *,
+    cfg,
+    shaders,
+    target,
+    records,
+    calibration,
+    claim_mode,
+):
+    """Build a claim-report alongside the comparison ndjson.
+
+    A shader is claimable if all of:
+      - Doe + Tint warm sample counts both meet the floor for the chosen mode
+      - Required positive percentiles (warm deltaPercent p50/p95, plus p99 for release) are all > 0
+      - Doe per-iteration timer overhead is less than CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT
+        of the smallest measurement on the row
+    """
+    min_samples = (
+        CLAIM_RELEASE_MIN_SAMPLES if claim_mode == "release" else CLAIM_LOCAL_MIN_SAMPLES
+    )
+    required_pcts = (
+        ["p50", "p95", "p99"] if claim_mode == "release" else ["p50", "p95"]
+    )
+    timer_overhead_ns = int(calibration.get("timerOverheadP50Ns", 0)) if calibration else 0
+    workloads = []
+    aggregate_reasons = []
+
+    for record in records:
+        if record.get("status") != "compared":
+            workloads.append(
+                {
+                    "shader": record.get("shader"),
+                    "claimable": False,
+                    "reasons": [f"row not compared: {record.get('reason', record.get('status'))}"],
+                    "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
+                }
+            )
+            continue
+        comparison = record.get("comparison", {})
+        baseline = record.get("baseline", {})
+        warm = comparison.get("warm", {})
+        warm_iterations = warm.get("iterations", 0)
+        comparison_iterations = comparison.get("iterations", 0)
+        baseline_iterations = baseline.get("iterations") or cfg["run"].get("iterations", 0)
+        warm_delta = record.get("warmDeltaPercent", {})
+        reasons = []
+
+        if not warm or not warm_iterations:
+            reasons.append("no warm in-process Tint samples (config lacks warmBinaryPath)")
+        else:
+            if warm_iterations < min_samples:
+                reasons.append(
+                    f"warm Tint sample count {warm_iterations} < {claim_mode} floor {min_samples}"
+                )
+            if comparison_iterations and comparison_iterations < min_samples:
+                reasons.append(
+                    f"raw Tint sample count {comparison_iterations} < {claim_mode} floor {min_samples}"
+                )
+            if baseline_iterations and baseline_iterations < min_samples:
+                reasons.append(
+                    f"Doe sample count {baseline_iterations} < {claim_mode} floor {min_samples}"
+                )
+            for pct in required_pcts:
+                value = warm_delta.get(pct)
+                if value is None:
+                    reasons.append(f"warm.{pct} delta missing")
+                elif value <= 0:
+                    reasons.append(f"warm.{pct} delta {value:+.2f}% not positive")
+
+            min_measurement_ns = min(
+                v for v in (
+                    baseline.get("p50_ns"),
+                    warm.get("p50_ns"),
+                ) if v
+            )
+            if min_measurement_ns and timer_overhead_ns:
+                overhead_percent = (timer_overhead_ns / min_measurement_ns) * 100
+                if overhead_percent > CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT:
+                    reasons.append(
+                        f"Doe timer overhead {timer_overhead_ns}ns is "
+                        f"{overhead_percent:.2f}% of smallest p50 (budget "
+                        f"{CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT}%)"
+                    )
+
+        workloads.append(
+            {
+                "shader": record.get("shader"),
+                "claimable": not reasons,
+                "reasons": reasons,
+                "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
+                "warmDeltaPercent": warm_delta,
+                "warmIterations": warm_iterations,
+                "doeP50Ns": baseline.get("p50_ns"),
+                "tintWarmP50Ns": warm.get("p50_ns"),
+            }
+        )
+
+    non_claimable = [w for w in workloads if not w["claimable"]]
+    if non_claimable:
+        aggregate_reasons.append(
+            f"{len(non_claimable)} of {len(workloads)} rows not claimable"
+        )
+
+    doe_bin_path = REPO_ROOT / cfg["baseline"]["binaryPath"]
+    tint_bin_path = REPO_ROOT / cfg["comparison"]["binaryPath"]
+    warm_bin_path = (
+        REPO_ROOT / cfg["comparison"].get("warmBinaryPath")
+        if cfg["comparison"].get("warmBinaryPath")
+        else None
+    )
+
+    return {
+        "schemaVersion": CLAIM_REPORT_SCHEMA_VERSION,
+        "artifactKind": "claim-report",
+        "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "claimMode": claim_mode,
+        "claimPolicy": {
+            "minTimedSamples": min_samples,
+            "requiredPositivePercentiles": [f"warm.{p}" for p in required_pcts],
+            "timerOverheadBudgetPercent": CLAIM_TIMER_OVERHEAD_BUDGET_PERCENT,
+            "timerOverheadP50Ns": timer_overhead_ns,
+            "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
+            "deltaPercentConvention": DELTA_PERCENT_CONVENTION,
+        },
+        "compareConfigPath": str(cfg.get("_configPath", "")),
+        "target": target,
+        "binaryProvenance": {
+            "doe": {
+                "path": str(doe_bin_path),
+                "sha256": file_sha256(doe_bin_path) if doe_bin_path.exists() else "",
+            },
+            "tint": {
+                "path": str(tint_bin_path),
+                "sha256": file_sha256(tint_bin_path) if tint_bin_path.exists() else "",
+            },
+            "tintWarm": {
+                "path": str(warm_bin_path) if warm_bin_path else "",
+                "sha256": (
+                    file_sha256(warm_bin_path)
+                    if warm_bin_path and warm_bin_path.exists()
+                    else ""
+                ),
+            },
+        },
+        "timingScopeSymmetry": {
+            "doe": "std.time.Timer per-translation in-process",
+            "tintWarm": "Google Benchmark real_time per-iteration in-process (tint_benchmark)",
+            "equivalent": True,
+            "notes": (
+                "both sides measure per-iteration in-process compile cost; "
+                "Doe per-iteration timer overhead is reported in claimPolicy."
+                "timerOverheadP50Ns and gated by claimPolicy.timerOverheadBudgetPercent"
+            ),
+        },
+        "comparisonStatus": "comparable",
+        "claimStatus": "claimable" if not non_claimable else "not_claimable",
+        "pass": not non_claimable,
+        "reasons": aggregate_reasons,
+        "workloads": workloads,
+    }
 
 
 def _run_tint_samples(tint_bin, tint_format, shader_path, total_runs, warmup):
@@ -585,6 +774,7 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                     "p50_ns": baseline_p50,
                     "p95_ns": baseline_p95,
                     "p99_ns": baseline_p99,
+                    "iterations": doe.get("iterations", 0),
                     "bytesOut": doe.get("bytesOut", 0),
                     "timingNote": "in-process measurement, no startup overhead",
                 },
@@ -593,6 +783,7 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                     "p50_ns": comparison_p50,
                     "p95_ns": comparison_p95,
                     "p99_ns": comparison_p99,
+                    "iterations": tint.get("iterations", 0),
                     "timingNote": tint.get(
                         "timingNote",
                         "process-level timing includes startup overhead",
@@ -611,6 +802,7 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                         "p50_ns": comparison_warm_p50,
                         "p95_ns": comparison_warm_p95,
                         "p99_ns": comparison_warm_p99,
+                        "iterations": comparison_warm.get("iterations", 0),
                         "timingNote": comparison_warm.get(
                             "timingNote",
                             "in-process tint_benchmark real_time samples",
@@ -762,13 +954,15 @@ def main():
 
     print(f"shaders: {len(shaders)} selected from {source_label}")
 
+    cfg["_configPath"] = args.config
+
     for target in targets:
         print(f"\n=== target: {target} ===")
 
         doe_out = REPO_ROOT / out_dir / f"doe-{target}.ndjson"
         os.makedirs(doe_out.parent, exist_ok=True)
 
-        doe_results = run_doe_bench(cfg, shaders, target, doe_out, args.dry_run)
+        doe_results, calibration = run_doe_bench(cfg, shaders, target, doe_out, args.dry_run)
         tint_results = run_tint_bench(cfg, shaders, target, iterations, warmup, args.dry_run)
 
         records = build_report(cfg, shaders, target, doe_results, tint_results)
@@ -776,6 +970,33 @@ def main():
         report_path = REPO_ROOT / out_dir / f"{out_stem}.{target}.ndjson"
         write_report(records, report_path)
         print_summary(records, target)
+
+        if not args.dry_run:
+            claim_report = build_claim_report(
+                cfg=cfg,
+                shaders=shaders,
+                target=target,
+                records=records,
+                calibration=calibration,
+                claim_mode=args.claim_mode,
+            )
+            claim_path = REPO_ROOT / out_dir / f"{out_stem}.{target}.claim.json"
+            with open(claim_path, "w") as f:
+                json.dump(claim_report, f, indent=2)
+                f.write("\n")
+            print(
+                f"\nclaim mode: {claim_report['claimMode']} "
+                f"status: {claim_report['claimStatus']} pass: {claim_report['pass']}"
+            )
+            if claim_report["reasons"]:
+                for reason in claim_report["reasons"]:
+                    print(f"  - {reason}")
+            non_claim = [w for w in claim_report["workloads"] if not w["claimable"]]
+            if non_claim:
+                print(f"\nnon-claimable rows ({len(non_claim)}):")
+                for w in non_claim[:10]:
+                    print(f"  - {w['shader']}: {'; '.join(w['reasons'])}")
+            print(f"\nwrote claim report: {claim_path}")
 
 
 if __name__ == "__main__":

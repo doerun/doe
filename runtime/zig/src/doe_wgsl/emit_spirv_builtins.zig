@@ -347,14 +347,13 @@ fn emit_subgroup_reduce(self: anytype, call: anytype, result_ty: ir.TypeId, opco
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformArithmetic);
     const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
-    const op_id = try self.emitter.builder.const_u32(spirv.GroupOperation.Reduce);
     return try emit_result_inst(
         self,
         opcode,
         try self.emitter.lower_type(result_ty),
         &.{
             scope_id,
-            op_id,
+            spirv.GroupOperation.Reduce,
             try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
         },
     );
@@ -365,14 +364,13 @@ fn emit_subgroup_exclusive_scan(self: anytype, call: anytype, result_ty: ir.Type
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformArithmetic);
     const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
-    const op_id = try self.emitter.builder.const_u32(spirv.GroupOperation.ExclusiveScan);
     return try emit_result_inst(
         self,
         opcode,
         try self.emitter.lower_type(result_ty),
         &.{
             scope_id,
-            op_id,
+            spirv.GroupOperation.ExclusiveScan,
             try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
         },
     );
@@ -400,14 +398,13 @@ fn emit_subgroup_inclusive_scan(self: anytype, call: anytype, result_ty: ir.Type
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
     try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformArithmetic);
     const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
-    const op_id = try self.emitter.builder.const_u32(spirv.GroupOperation.InclusiveScan);
     return try emit_result_inst(
         self,
         opcode,
         try self.emitter.lower_type(result_ty),
         &.{
             scope_id,
-            op_id,
+            spirv.GroupOperation.InclusiveScan,
             try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
         },
     );

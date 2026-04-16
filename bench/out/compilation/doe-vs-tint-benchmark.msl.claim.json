@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "claim-report",
+  "generatedAt": "2026-04-16T12:34:04.649377+00:00",
+  "claimMode": "release",
+  "claimPolicy": {
+    "minTimedSamples": 15,
+    "requiredPositivePercentiles": [
+      "warm.p50",
+      "warm.p95",
+      "warm.p99"
+    ],
+    "timerOverheadBudgetPercent": 1.0,
+    "timerOverheadP50Ns": 50,
+    "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
+    "deltaPercentConvention": "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
+  },
+  "compareConfigPath": "bench/native-compare/compare_doe_vs_tint.benchmark-corpus.config.json",
+  "target": "msl",
+  "binaryProvenance": {
+    "doe": {
+      "path": "/home/x/deco/doe/runtime/zig/zig-out/bin/doe-compilation-bench",
+      "sha256": "3158bbda355d44cf9bd0948b480ed8793de8fdfb53cf8be1f62e137d1dacc6b9"
+    },
+    "tint": {
+      "path": "/home/x/deco/doe/bench/vendor/dawn/out/Release/tint",
+      "sha256": "aacc72c460af7c093c088a0fbe8ad1d5e87dd18bbad6a1d10965fb7de68965a2"
+    },
+    "tintWarm": {
+      "path": "/home/x/deco/doe/bench/vendor/dawn/out/Release/tint_benchmark",
+      "sha256": "588e2f0fc51e4b475fc87651f11f0706c390ddcfa7b97ec26b741906d7dc1c15"
+    }
+  },
+  "timingScopeSymmetry": {
+    "doe": "std.time.Timer per-translation in-process",
+    "tintWarm": "Google Benchmark real_time per-iteration in-process (tint_benchmark)",
+    "equivalent": true,
+    "notes": "both sides measure per-iteration in-process compile cost; Doe per-iteration timer overhead is reported in claimPolicy.timerOverheadP50Ns and gated by claimPolicy.timerOverheadBudgetPercent"
+  },
+  "comparisonStatus": "comparable",
+  "claimStatus": "not_claimable",
+  "pass": false,
+  "reasons": [
+    "5 of 13 rows not claimable"
+  ],
+  "workloads": [
+    {
+      "shader": "atan2-const-eval.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 106.49,
+        "p95": 46.65,
+        "p99": 45.78
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 1348111,
+      "tintWarmP50Ns": 2783720
+    },
+    {
+      "shader": "cluster-lights.wgsl",
+      "claimable": false,
+      "reasons": [
+        "warm.p99 delta -43.05% not positive"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 106.53,
+        "p95": 86.49,
+        "p99": -43.05
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 84379,
+      "tintWarmP50Ns": 174271
+    },
+    {
+      "shader": "metaball-isosurface.wgsl",
+      "claimable": false,
+      "reasons": [
+        "warm.p99 delta -10.57% not positive"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 87.96,
+        "p95": 79.56,
+        "p99": -10.57
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 223311,
+      "tintWarmP50Ns": 419737
+    },
+    {
+      "shader": "particles.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 623.03,
+        "p95": 407.19,
+        "p99": 117.76
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 110829,
+      "tintWarmP50Ns": 801325
+    },
+    {
+      "shader": "shadow-fragment.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 20.4,
+        "p95": 13.71,
+        "p99": 6.93
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 52419,
+      "tintWarmP50Ns": 63113
+    },
+    {
+      "shader": "skinned-shadowed-pbr-fragment.wgsl",
+      "claimable": false,
+      "reasons": [
+        "warm.p99 delta -14.50% not positive"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 214.66,
+        "p95": 201.5,
+        "p99": -14.5
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 258958,
+      "tintWarmP50Ns": 814848
+    },
+    {
+      "shader": "skinned-shadowed-pbr-vertex.wgsl",
+      "claimable": false,
+      "reasons": [
+        "warm.p95 delta -24.75% not positive",
+        "warm.p99 delta -59.44% not positive"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 50.13,
+        "p95": -24.75,
+        "p99": -59.44
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 85100,
+      "tintWarmP50Ns": 127763
+    },
+    {
+      "shader": "unity_webgpu_000002778DE78280.cs.spv",
+      "claimable": false,
+      "reasons": [
+        "warm.p99 delta -30.51% not positive"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 150.5,
+        "p95": 142.8,
+        "p99": -30.51
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 84529,
+      "tintWarmP50Ns": 211746
+    },
+    {
+      "shader": "unity_webgpu_000002778DE78280.cs.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 167.26,
+        "p95": 153.27,
+        "p99": 119.12
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 119014,
+      "tintWarmP50Ns": 318078
+    },
+    {
+      "shader": "unity_webgpu_000002778F740030.fs.spv",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 348.2,
+        "p95": 349.86,
+        "p99": 342.86
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 1744418,
+      "tintWarmP50Ns": 7818546
+    },
+    {
+      "shader": "unity_webgpu_000002778F740030.fs.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 311.69,
+        "p95": 320.47,
+        "p99": 340.73
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 3427290,
+      "tintWarmP50Ns": 14109793
+    },
+    {
+      "shader": "unity_webgpu_0000017E9E2D81A0.vs.spv",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 269.55,
+        "p95": 261.02,
+        "p99": 234.61
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 722713,
+      "tintWarmP50Ns": 2670772
+    },
+    {
+      "shader": "unity_webgpu_0000017E9E2D81A0.vs.wgsl",
+      "claimable": true,
+      "reasons": [],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": 256.6,
+        "p95": 255.35,
+        "p99": 250.67
+      },
+      "warmIterations": 25,
+      "doeP50Ns": 1343172,
+      "tintWarmP50Ns": 4789756
+    }
+  ]
+}

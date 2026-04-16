@@ -1,0 +1,588 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "claim-report",
+  "generatedAt": "2026-04-16T12:35:04.631611+00:00",
+  "claimMode": "release",
+  "claimPolicy": {
+    "minTimedSamples": 15,
+    "requiredPositivePercentiles": [
+      "warm.p50",
+      "warm.p95",
+      "warm.p99"
+    ],
+    "timerOverheadBudgetPercent": 1.0,
+    "timerOverheadP50Ns": 20,
+    "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
+    "deltaPercentConvention": "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
+  },
+  "compareConfigPath": "bench/native-compare/compare_doe_vs_tint.config.json",
+  "target": "msl",
+  "binaryProvenance": {
+    "doe": {
+      "path": "/home/x/deco/doe/runtime/zig/zig-out/bin/doe-compilation-bench",
+      "sha256": "3158bbda355d44cf9bd0948b480ed8793de8fdfb53cf8be1f62e137d1dacc6b9"
+    },
+    "tint": {
+      "path": "/home/x/deco/doe/bench/vendor/dawn/out/Release/tint",
+      "sha256": "aacc72c460af7c093c088a0fbe8ad1d5e87dd18bbad6a1d10965fb7de68965a2"
+    },
+    "tintWarm": {
+      "path": "",
+      "sha256": ""
+    }
+  },
+  "timingScopeSymmetry": {
+    "doe": "std.time.Timer per-translation in-process",
+    "tintWarm": "Google Benchmark real_time per-iteration in-process (tint_benchmark)",
+    "equivalent": true,
+    "notes": "both sides measure per-iteration in-process compile cost; Doe per-iteration timer overhead is reported in claimPolicy.timerOverheadP50Ns and gated by claimPolicy.timerOverheadBudgetPercent"
+  },
+  "comparisonStatus": "comparable",
+  "claimStatus": "not_claimable",
+  "pass": false,
+  "reasons": [
+    "27 of 27 rows not claimable"
+  ],
+  "workloads": [
+    {
+      "shader": "compilation_trivial_noop_compute_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 16682,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_trivial_passthrough_vertex_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 25448,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_simple_relu_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 28013,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_simple_silu_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 33824,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_simple_scale_f32_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 20168,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_simple_residual_add_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 34726,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_rmsnorm_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 58371,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_gelu_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 35897,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_rope_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 50145,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_softmax_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 70413,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_layernorm_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 78909,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_moderate_matmul_naive_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 42610,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_complex_attention_decode_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 117211,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_complex_matmul_tiled_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 146175,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_complex_fused_gemv_dequant_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 64382,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_complex_multi_entry_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 68078,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_stress_many_bindings_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 58611,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_attention_decode_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 139714,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_attention_prefill_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 115057,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_gather_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 37621,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_gelu_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 37832,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_matmul_gemv_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 69511,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_matmul_tiled_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 133262,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_residual_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 30126,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_rmsnorm_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 87395,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_rope_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 50716,
+      "tintWarmP50Ns": 0
+    },
+    {
+      "shader": "compilation_inference_sample_msl",
+      "claimable": false,
+      "reasons": [
+        "no warm in-process Tint samples (config lacks warmBinaryPath)"
+      ],
+      "requiredPositivePercentiles": [
+        "warm.p50",
+        "warm.p95",
+        "warm.p99"
+      ],
+      "warmDeltaPercent": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "warmIterations": 0,
+      "doeP50Ns": 75843,
+      "tintWarmP50Ns": 0
+    }
+  ]
+}

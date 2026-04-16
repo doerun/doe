@@ -268,6 +268,22 @@ def _host_identity(
     }
 
 
+_AGGREGATE_FIELDS = ("wallMs", "measuredMs", "measuredRawMs")
+
+
+def _sample_aggregates(samples: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+    successful = [s for s in samples if s.get("success") is True]
+    aggregates: dict[str, dict[str, float]] = {}
+    for field_name in _AGGREGATE_FIELDS:
+        values = [
+            float(s[field_name])
+            for s in successful
+            if isinstance(s.get(field_name), (int, float))
+        ]
+        aggregates[field_name] = reporting_mod.format_stats(values)
+    return aggregates
+
+
 def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
     timing_sources = sorted(
         {
@@ -291,6 +307,7 @@ def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "timingSources": timing_sources,
         "timingClasses": timing_classes,
+        "aggregates": _sample_aggregates(samples),
     }
 
 

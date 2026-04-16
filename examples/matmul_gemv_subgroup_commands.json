@@ -1,0 +1,56 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 6101,
+    "bufferSize": 16,
+    "data": [256, 1024, 0, 0]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul_gemv_truesubgroup.wgsl",
+    "x": 256,
+    "y": 1,
+    "z": 1,
+    "repeat": 100,
+    "warmup_dispatch_count": 5,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 6101,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 6102,
+        "buffer_size": 1048576,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 6103,
+        "buffer_size": 4096,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 6104,
+        "buffer_size": 1024,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

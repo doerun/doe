@@ -1,6 +1,41 @@
 {
   "artifactKind": "run-receipt",
   "execution": {
+    "aggregates": {
+      "measuredMs": {
+        "count": 1,
+        "maxMs": 1.25,
+        "meanMs": 1.25,
+        "minMs": 1.25,
+        "p10Ms": 1.25,
+        "p50Ms": 1.25,
+        "p95Ms": 1.25,
+        "p99Ms": 1.25,
+        "stdevMs": 0.0
+      },
+      "measuredRawMs": {
+        "count": 1,
+        "maxMs": 1.25,
+        "meanMs": 1.25,
+        "minMs": 1.25,
+        "p10Ms": 1.25,
+        "p50Ms": 1.25,
+        "p95Ms": 1.25,
+        "p99Ms": 1.25,
+        "stdevMs": 0.0
+      },
+      "wallMs": {
+        "count": 1,
+        "maxMs": 1.4,
+        "meanMs": 1.4,
+        "minMs": 1.4,
+        "p10Ms": 1.4,
+        "p50Ms": 1.4,
+        "p95Ms": 1.4,
+        "p99Ms": 1.4,
+        "stdevMs": 0.0
+      }
+    },
     "returnCodes": [
       0
     ],
@@ -100,8 +135,8 @@
     "benchmarkClass": "comparable",
     "claimEligible": true,
     "commandsPath": "examples/test.json",
-    "comparable": true,
     "comparabilityNotes": "sample comparable workload",
+    "comparable": true,
     "description": "sample workload",
     "directionalReason": "",
     "domain": "compute",

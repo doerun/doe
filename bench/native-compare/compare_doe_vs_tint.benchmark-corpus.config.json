@@ -11,14 +11,14 @@
     "warmBinaryPath": "bench/vendor/dawn/out/Release/tint_benchmark"
   },
   "run": {
-    "iterations": 50,
-    "warmup": 5,
+    "iterations": 200,
+    "warmup": 50,
     "targets": [
       "msl"
     ],
     "outDir": "bench/out/compilation",
     "outStem": "doe-vs-tint-benchmark",
-    "warmRepetitions": 9,
-    "warmMinTime": "0.01s"
+    "warmRepetitions": 25,
+    "warmMinTime": "0.05s"
   }
 }
