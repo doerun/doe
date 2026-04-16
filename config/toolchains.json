@@ -12,7 +12,7 @@
       "lockfile": "zig-toolchain"
     },
     "shaderMetal": {
-      "version": "xcrun-15.x",
+      "version": "xcrun-32023.x",
       "channel": "stable",
       "contract": "config/shader-toolchain.json"
     }

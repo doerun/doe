@@ -117,9 +117,9 @@ def main() -> int:
             expected = versions.get(tool_name)
             if not expected:
                 continue
-            ok, output = capture_tool("xcrun", tool_name, "-version")
+            ok, output = capture_tool("xcrun", tool_name, "--version")
             if not ok:
-                print(f"FAIL: xcrun {tool_name} -version failed")
+                print(f"FAIL: xcrun {tool_name} --version failed")
                 return 1
             if not version_matches(expected, output):
                 print(

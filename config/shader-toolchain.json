@@ -14,14 +14,14 @@
               "stage": "msl_compile",
               "implementation": "external_tool",
               "tool": "xcrun",
-              "version": "15.x",
+              "version": "32023.x",
               "args": ["metal", "-std=metal3.1"]
             },
             {
               "stage": "metallib_link",
               "implementation": "external_tool",
               "tool": "xcrun",
-              "version": "15.x",
+              "version": "32023.x",
               "args": ["metallib"]
             }
           ]

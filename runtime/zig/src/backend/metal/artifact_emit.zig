@@ -15,7 +15,7 @@ const SPEC = shared_manifest.ManifestSpec{
             .hash_label = "msl_compile",
             .implementation = .external_tool,
             .tool = "xcrun",
-            .version = "15.x",
+            .version = "32023.x",
             .args = &.{ "metal", "-std=metal3.1" },
         },
         .{
@@ -24,7 +24,7 @@ const SPEC = shared_manifest.ManifestSpec{
             .manifest_field = "metallibSha256",
             .implementation = .external_tool,
             .tool = "xcrun",
-            .version = "15.x",
+            .version = "32023.x",
             .args = &.{"metallib"},
         },
     },
