@@ -1,0 +1,277 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": false,
+    "timedSampleCount": 4,
+    "timingClasses": [],
+    "timingSources": []
+  },
+  "executorId": "tjs_ort_bun_doe",
+  "generatedAt": "2026-04-16T01:17:44.843932+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "",
+      "description": "",
+      "device": "",
+      "vendor": "apple"
+    },
+    "api": "webgpu",
+    "arch": "arm64",
+    "driver": "1.0.0",
+    "hostname": "mac.lan",
+    "kernel": "25.3.0",
+    "os": "darwin"
+  },
+  "invocation": {
+    "command": [
+      "bun",
+      "bench/executors/run-bun-tjs-ort-webgpu.js",
+      "--provider",
+      "doe",
+      "--scenario",
+      "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+      "--trace-jsonl",
+      "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run000.ndjson",
+      "--trace-meta",
+      "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run000.meta.json",
+      "--workload",
+      "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok"
+    ],
+    "iterations": 4,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "tjs_ort_bun_doe",
+  "runtimeIdentity": {
+    "binaryPath": "/Users/xyz/.bun/bin/bun",
+    "binarySha256": "14b0008f960ea480de5d25df5ea0ada0fefa086a15e360ef2d305f44cae8f904",
+    "executionBackend": "",
+    "packageLockHash": "",
+    "packageName": "",
+    "packageVersion": "",
+    "providerId": "",
+    "providerName": "",
+    "runtimeHost": "bun"
+  },
+  "samples": [
+    {
+      "command": [
+        "bun",
+        "bench/executors/run-bun-tjs-ort-webgpu.js",
+        "--provider",
+        "doe",
+        "--scenario",
+        "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+        "--trace-jsonl",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run000.ndjson",
+        "--trace-meta",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run000.meta.json",
+        "--workload",
+        "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 0,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    },
+    {
+      "command": [
+        "bun",
+        "bench/executors/run-bun-tjs-ort-webgpu.js",
+        "--provider",
+        "doe",
+        "--scenario",
+        "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+        "--trace-jsonl",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run001.ndjson",
+        "--trace-meta",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run001.meta.json",
+        "--workload",
+        "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    },
+    {
+      "command": [
+        "bun",
+        "bench/executors/run-bun-tjs-ort-webgpu.js",
+        "--provider",
+        "doe",
+        "--scenario",
+        "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+        "--trace-jsonl",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run002.ndjson",
+        "--trace-meta",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run002.meta.json",
+        "--workload",
+        "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    },
+    {
+      "command": [
+        "bun",
+        "bench/executors/run-bun-tjs-ort-webgpu.js",
+        "--provider",
+        "doe",
+        "--scenario",
+        "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+        "--trace-jsonl",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run003.ndjson",
+        "--trace-meta",
+        "bench/out/apple-metal-ort-bun/20260416T011744Z/gemma270m-prefill32-decode1.workspace/isolated-runs/tjs_ort_bun_doe/apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok/tjs_ort_bun_doe.run003.meta.json",
+        "--workload",
+        "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 3,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "webgpu",
+    "benchmarkClass": "comparable",
+    "claimEligible": false,
+    "commandsPath": "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
+    "comparabilityNotes": "Strict process-wall provider compare on Apple Metal Bun. Both sides use the same Transformers.js plus onnxruntime-node WebGPU stack, the same ONNX model, the same tokenizer-accurate 32-token prompt budget, and the same 1-token decode target on the same Apple Metal host. The only intended execution difference is the WebGPU provider: Doe versus bun-webgpu (Dawn-backed package).",
+    "comparable": true,
+    "description": "Repo-only same-stack Bun ORT WebGPU compare for Gemma-3 270M on Apple Metal using the same Transformers.js plus onnxruntime-node workload on both sides, with Doe and bun-webgpu as the only varying WebGPU providers.",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "1.0.0",
+    "family": "apple-gpu",
+    "id": "apple_metal_bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok",
+    "name": "Apple Metal Bun ORT WebGPU provider compare Gemma-3 270M",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "apple"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.bun.ort-webgpu-provider-compare.apple-metal.json",
+    "sha256": "c0353650d56a1216982079e4fc4f78f4eac44dceb88e12626d471e648885ee40"
+  }
+}
