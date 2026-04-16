@@ -89,6 +89,11 @@ pub const CacheTelemetry = struct {
     warmup_ns: u64 = 0,
 };
 
+pub const WarmupTelemetry = struct {
+    count: u64 = 0,
+    ns: u64 = 0,
+};
+
 // ============================================================
 // Process-level snapshot of the most-recent active cache, used by the runtime
 // CLI to populate Apple Metal pipeline cache warmup telemetry into trace_meta
@@ -112,11 +117,11 @@ pub fn is_process_pipeline_cache_disabled() bool {
     return process_pipeline_cache_disabled;
 }
 
-pub fn process_active_cache_warmup_telemetry() struct { count: u64, ns: u64 } {
+pub fn process_active_cache_warmup_telemetry() WarmupTelemetry {
     if (process_active_cache) |c| {
         return .{ .count = c.telemetry.warmup_count, .ns = c.telemetry.warmup_ns };
     }
-    return .{ .count = 0, .ns = 0 };
+    return .{};
 }
 
 /// Whether a Metal pipeline cache was actually opened in this process. Returns

@@ -317,7 +317,7 @@ pub fn host_plan_hash_from_context(ctx: *anyopaque) ?[]const u8 {
     return cast(ctx).host_plan_hash();
 }
 
-pub fn pipeline_cache_warmup_telemetry_from_context(ctx: *anyopaque) struct { count: u64, ns: u64 } {
+pub fn pipeline_cache_warmup_telemetry_from_context(ctx: *anyopaque) metal_pipeline_cache.WarmupTelemetry {
     _ = ctx;
     return metal_pipeline_cache.process_active_cache_warmup_telemetry();
 }
