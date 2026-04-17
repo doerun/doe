@@ -19,6 +19,19 @@ pub fn set_metal_pipeline_cache_disabled(disabled: bool) void {
     }
 }
 
+/// Doe Vulkan pipeline cache opt-out, cross-platform-safe wrapper. No-op on
+/// non-Linux builds. Called by cli/runtime_cli.zig when --no-pipeline-cache is
+/// present; must be invoked *before* backend init so the cache init skip
+/// check in vk_pipeline_cache_persistent.create_process_pipeline_cache sees
+/// the flag set.
+pub fn set_vulkan_pipeline_cache_disabled(disabled: bool) void {
+    if (comptime builtin.os.tag == .linux) {
+        vulkan_backend.set_pipeline_cache_disabled(disabled);
+    } else {
+        std.mem.doNotOptimizeAway(disabled);
+    }
+}
+
 pub fn refresh(backend: *backend_iface.BackendIface) void {
     switch (backend.id) {
         .doe_vulkan => {
@@ -28,6 +41,10 @@ pub fn refresh(backend: *backend_iface.BackendIface) void {
                 backend.telemetry.adapter_ordinal = vulkan_backend.adapter_ordinal_from_context(backend.context);
                 backend.telemetry.queue_family_index = vulkan_backend.queue_family_index_from_context(backend.context);
                 backend.telemetry.present_capable = vulkan_backend.present_capable_from_context(backend.context);
+                const vulkan_cache_telemetry = vulkan_backend.pipeline_cache_warmup_telemetry_from_context(backend.context);
+                backend.telemetry.pipeline_cache_warmup_count = vulkan_cache_telemetry.count;
+                backend.telemetry.pipeline_cache_warmup_ns = vulkan_cache_telemetry.ns;
+                backend.telemetry.pipeline_cache_active = vulkan_backend.pipeline_cache_active_from_context(backend.context);
             }
         },
         .doe_metal => {

@@ -2,6 +2,8 @@
 
 Audience: Doe benchmark operators and contributors.
 
+See also: `bench/docs/dawn-delegate-cache-integration.md` for the scoping-only integration design of the fair-*warm* follow-on lane (Dawn-side persistent cache equivalent to Doe's `MTLBinaryArchive`). That work is not yet landed; current default lanes stay fair-cold.
+
 ## Decision
 
 The committed Apple Metal binary archive is a benchmark fixture, not a product runtime contract.

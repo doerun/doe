@@ -63,6 +63,9 @@ pub extern fn vkAllocateDescriptorSets(device: vk.VkDevice, pAllocateInfo: *cons
 pub extern fn vkUpdateDescriptorSets(device: vk.VkDevice, descriptorWriteCount: u32, pDescriptorWrites: ?[*]const structs.VkWriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: ?*const anyopaque) callconv(.c) void;
 pub extern fn vkCreatePipelineLayout(device: vk.VkDevice, pCreateInfo: *const structs.VkPipelineLayoutCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pPipelineLayout: *vk.VkPipelineLayout) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyPipelineLayout(device: vk.VkDevice, pipelineLayout: vk.VkPipelineLayout, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkCreatePipelineCache(device: vk.VkDevice, pCreateInfo: *const structs.VkPipelineCacheCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pPipelineCache: *vk.VkPipelineCache) callconv(.c) vk.VkResult;
+pub extern fn vkDestroyPipelineCache(device: vk.VkDevice, pipelineCache: vk.VkPipelineCache, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkGetPipelineCacheData(device: vk.VkDevice, pipelineCache: vk.VkPipelineCache, pDataSize: *usize, pData: ?*anyopaque) callconv(.c) vk.VkResult;
 pub extern fn vkCreateComputePipelines(device: vk.VkDevice, pipelineCache: vk.VkPipelineCache, createInfoCount: u32, pCreateInfos: [*]const structs.VkComputePipelineCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pPipelines: [*]vk.VkPipeline) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyPipeline(device: vk.VkDevice, pipeline: vk.VkPipeline, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCmdBindDescriptorSets(commandBuffer: vk.VkCommandBuffer, pipelineBindPoint: i32, layout: vk.VkPipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: ?[*]const vk.VkDescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: ?[*]const u32) callconv(.c) void;

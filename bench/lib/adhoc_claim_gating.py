@@ -9,9 +9,24 @@ future per-op comparisons -- were each re-implementing the same gate logic
 exposes one canonical implementation so all ad-hoc scripts share the same
 contract.
 
+Scope. This module covers sample-floor, required-percentile, and
+timer-overhead-budget gating only. It deliberately does NOT cover:
+
+* execution-shape parity (dispatch / row / success counts)
+* timing-phase asymmetry (all-zero-vs-any-material across setup / encode /
+  submit_wait)
+* hardware-path asymmetry disclosure (`pathAsymmetry`)
+
 CLAUDE.md non-negotiable #10 requires structural-equivalence parity
-regardless of domain; this module makes it trivial for a new ad-hoc compare
-to adopt that contract without re-deriving it.
+regardless of domain. Ad-hoc scripts that dispatch real GPU work (e.g. the
+subgroup kernels family) therefore MUST either satisfy structural parity by
+construction -- both sides dispatch the same fixed count of the same WGSL
+kernel -- or route through `bench/cli.py compare` so
+`comparability_runtime.py` applies the full gate stack. An ad-hoc script
+that cannot guarantee structural parity by construction MUST be migrated
+rather than extended. See `bench/docs/package-browser-ort-fairness-audit.md`
+for the per-surface exemption table that records these construction
+guarantees.
 
 Per-script usage:
 

@@ -416,6 +416,7 @@ def _cmd_compare(
         out_path=str(out_path),
         run_artifact_paths=artifact_paths,
         comparability_min_timed_samples=benchmark_policy.comparability_min_timed_samples,
+        smoke_comparability_min_timed_samples=benchmark_policy.smoke_comparability_min_timed_samples,
         benchmark_policy_path=benchmark_policy.source_path,
     )
     write_compare_report(report, out_path)

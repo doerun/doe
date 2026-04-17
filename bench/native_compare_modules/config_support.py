@@ -224,6 +224,7 @@ class BenchmarkMethodologyPolicy:
     min_operation_wall_coverage_ratio: float
     max_operation_wall_coverage_asymmetry_ratio: float
     min_row_timing_floor_ns: int = 0
+    smoke_comparability_min_timed_samples: int = 0
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -502,6 +503,10 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         first_config_value(payload, ["comparabilityDefaults.minTimedSamples"]),
         field="comparabilityDefaults.minTimedSamples",
     )
+    smoke_min_samples = as_int(
+        first_config_value(payload, ["comparabilityDefaults.smokeMinTimedSamples"]),
+        field="comparabilityDefaults.smokeMinTimedSamples",
+    )
     min_operation_wall_coverage_ratio = as_float(
         first_config_value(payload, ["timingScopeSanity.minOperationWallCoverageRatio"]),
         field="timingScopeSanity.minOperationWallCoverageRatio",
@@ -535,6 +540,13 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         raise ValueError("claimabilityDefaults.releaseMinTimedSamples must be >= 0")
     if comparability_min_samples < 0:
         raise ValueError("comparabilityDefaults.minTimedSamples must be >= 0")
+    if smoke_min_samples < 0:
+        raise ValueError("comparabilityDefaults.smokeMinTimedSamples must be >= 0")
+    if smoke_min_samples > comparability_min_samples:
+        raise ValueError(
+            "comparabilityDefaults.smokeMinTimedSamples must be <= "
+            "comparabilityDefaults.minTimedSamples"
+        )
     if min_operation_wall_coverage_ratio < 0.0:
         raise ValueError("timingScopeSanity.minOperationWallCoverageRatio must be >= 0")
     if max_operation_wall_coverage_asymmetry_ratio < 1.0:
@@ -554,6 +566,7 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         min_operation_wall_coverage_ratio=min_operation_wall_coverage_ratio,
         max_operation_wall_coverage_asymmetry_ratio=max_operation_wall_coverage_asymmetry_ratio,
         min_row_timing_floor_ns=min_row_timing_floor_ns,
+        smoke_comparability_min_timed_samples=smoke_min_samples,
     )
 
 

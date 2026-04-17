@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "timingSelection": {
     "minDispatchWindowNsWithoutEncode": 500000,
     "minDispatchWindowCoveragePercentWithoutEncode": 1.0
@@ -9,7 +9,8 @@
     "releaseMinTimedSamples": 15
   },
   "comparabilityDefaults": {
-    "minTimedSamples": 7
+    "minTimedSamples": 7,
+    "smokeMinTimedSamples": 3
   },
   "timingScopeSanity": {
     "minOperationWallCoverageRatio": 0.05,

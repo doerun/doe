@@ -18,6 +18,7 @@ const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const backend_execute = @import("backend_execute.zig");
 const native_runtime = @import("native_runtime.zig");
+const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
@@ -296,6 +297,20 @@ pub fn present_capable_from_context(ctx: *anyopaque) ?bool {
         return runtime.present_capable();
     }
     return null;
+}
+
+pub fn pipeline_cache_active_from_context(ctx: *anyopaque) bool {
+    _ = ctx;
+    return vk_pipeline_cache_persistent.process_active_cache_present();
+}
+
+pub fn pipeline_cache_warmup_telemetry_from_context(ctx: *anyopaque) vk_pipeline_cache_persistent.WarmupTelemetry {
+    _ = ctx;
+    return vk_pipeline_cache_persistent.process_active_cache_warmup_telemetry();
+}
+
+pub fn set_pipeline_cache_disabled(disabled: bool) void {
+    vk_pipeline_cache_persistent.set_process_pipeline_cache_disabled(disabled);
 }
 
 fn deinit(ctx: *anyopaque) void {

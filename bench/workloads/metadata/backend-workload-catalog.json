@@ -164,7 +164,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_matvec_32768x2048_f32.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -216,7 +217,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -318,7 +320,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_matvec_32768x2048_f32_swizzle1.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -370,7 +373,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -472,7 +476,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_matvec_32768x2048_f32_workgroupshared_swizzle1.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -526,7 +531,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -560,6 +566,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "default",
         "timingNormalizationNote",
         "dawnFilter"
@@ -680,7 +687,8 @@
           "name": "workgroup-atomic 1024",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_workgroup_atomic_1024.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -822,6 +830,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "default",
         "timingNormalizationNote"
       ],
@@ -905,7 +914,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_workgroup_non_atomic_1024.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -992,6 +1002,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "dawnFilter",
         "default",
         "description",
@@ -1051,7 +1062,8 @@
           "baselineTimingDivisor": 500,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; timing values are implausible (near-zero or pathological); row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1063,7 +1075,8 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
@@ -1093,7 +1106,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1130,6 +1144,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "timingNormalizationNote"
       ],
       "id": "pipeline_compile_stress",
@@ -1192,7 +1207,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/pipeline_compile_stress.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1306,6 +1322,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -1356,7 +1373,8 @@
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn DrawCallPerf render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1402,7 +1420,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1435,6 +1454,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -1489,7 +1509,8 @@
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn DrawCallPerf dynamic-pipeline render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1507,7 +1528,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/draw_call_render_bundle_dynamic_pipeline_commands.json",
@@ -1542,7 +1564,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1575,6 +1598,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -1639,7 +1663,8 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw bundle command directly.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1686,7 +1711,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw bundle command directly.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1707,6 +1733,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "dawnFilter",
         "default",
         "description",
@@ -1758,7 +1785,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1768,7 +1796,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
@@ -1793,7 +1822,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1833,6 +1863,7 @@
         "family",
         "driver",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -1881,7 +1912,8 @@
           "baselineTimingDivisor": 20000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -1893,7 +1925,8 @@
           "baselineTimingDivisor": 20000,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/draw_call_indexed_proxy_commands.json",
@@ -1923,7 +1956,8 @@
           "baselineTimingDivisor": 20000,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -1961,6 +1995,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -2015,7 +2050,8 @@
           "baselineTimingDivisor": 20000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn DrawCallPerf redundant-pipeline variant reports per draw (iterationsPerStep=2000); Fawn repeats the redundant-pipeline command stream 10x and normalizes to per-draw units to reduce sample-tail setup jitter.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2033,7 +2069,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/draw_call_redundant_pipeline_bindings_commands.json",
@@ -2066,7 +2103,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2099,6 +2137,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -2163,7 +2202,8 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw redundant-pipeline command directly.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2210,7 +2250,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw redundant-pipeline command directly.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2243,6 +2284,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -2293,7 +2335,8 @@
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn DrawCallPerf DynamicBindGroup reports per draw (iterationsPerStep=2000); Fawn command stream normalizes to per-draw units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2337,7 +2380,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2370,6 +2414,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote"
       ],
@@ -2421,7 +2466,8 @@
           "baselineTimingDivisor": 575000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2465,7 +2511,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2495,6 +2542,7 @@
         "family",
         "driver",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "dawnFilter",
@@ -2592,7 +2640,8 @@
           "name": "render draw throughput",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn DrawCallPerf reports per draw (iterationsPerStep=2000); Fawn render_draw normalizes to per-draw units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2659,7 +2708,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2688,6 +2738,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "timingNormalizationNote"
       ],
       "id": "surface_presentation",
@@ -2735,7 +2786,8 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe headless surface lifecycle now executes the contract, but timing remains diagnostic until the benchmark contract itself is apples-to-apples.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); timing values are implausible (near-zero or pathological)"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2747,7 +2799,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/surface_presentation_commands.json",
@@ -2776,7 +2829,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2809,6 +2863,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -2861,7 +2916,8 @@
           "baselineTimingDivisor": 500,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Fawn command stream executes sampler/texture lifecycle calls plus render draws; repeat=10 and per-iteration normalization reduce fixed setup/sync skew while keeping SubresourceTrackingPerf-oriented units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -2912,7 +2968,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -2946,6 +3003,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote"
       ],
@@ -2997,7 +3055,8 @@
           "baselineTimingDivisor": 500,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution reported errors; timing values are implausible (near-zero or pathological); row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -3041,7 +3100,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -3074,6 +3134,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "comparisonTimingDivisor"
@@ -3126,7 +3187,8 @@
           "baselineTimingDivisor": 500,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant with repeat=10 to amortize fixed setup/sync overhead.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -3177,7 +3239,8 @@
           "comparisonCommandRepeat": 10,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -3211,6 +3274,7 @@
         "driver",
         "extraArgs",
         "comparable",
+        "directionalReason",
         "baselineCommandRepeat",
         "baselineTimingDivisor",
         "timingNormalizationNote",
@@ -3292,7 +3356,8 @@
           "baselineTimingDivisor": 500,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times, disables kernel GPU timestamp queries for this lane (`--gpu-timestamp-mode off`), and normalizes to per-iteration units.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -3312,7 +3377,8 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/texture_raster_proxy_commands.json",
@@ -3356,7 +3422,8 @@
           "comparisonCommandRepeat": 500,
           "comparisonTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -3377,6 +3444,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "claimEligible",
         "dawnFilter",
         "default",
@@ -3492,7 +3560,8 @@
           "comparisonCommandRepeat": 50,
           "comparisonIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "d3d12_comparable": {
           "api": "d3d12",
@@ -3565,6 +3634,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "claimEligible",
         "comparable",
         "dawnFilter",
@@ -3654,7 +3724,8 @@
           "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonUploadBufferUsage": "copy-dst-copy-src",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/upload_1gb_commands.json",
@@ -3681,7 +3752,8 @@
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -3717,6 +3789,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "claimEligible",
         "dawnFilter",
         "default",
@@ -3832,7 +3905,8 @@
           "comparisonCommandRepeat": 50000,
           "comparisonIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "d3d12_comparable": {
           "api": "d3d12",
@@ -3905,6 +3979,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "claimEligible",
         "dawnFilter",
         "default",
@@ -4020,7 +4095,8 @@
           "comparisonCommandRepeat": 100,
           "comparisonIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "d3d12_comparable": {
           "api": "d3d12",
@@ -4093,6 +4169,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "claimEligible",
         "comparable",
         "dawnFilter",
@@ -4180,7 +4257,8 @@
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "commandsPath": "examples/upload_256mb_commands.json",
@@ -4207,7 +4285,8 @@
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -4268,6 +4347,7 @@
         "driver",
         "comparable",
         "benchmarkClass",
+        "directionalReason",
         "pathAsymmetry",
         "pathAsymmetryNote"
       ],
@@ -4331,7 +4411,8 @@
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "hardware paths differ; timing values are implausible (near-zero or pathological); hardware path asymmetry declared on the workload"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -4348,7 +4429,8 @@
           "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonUploadBufferUsage": "copy-dst-copy-src",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "generic": {
           "benchmarkClass": "comparable",
@@ -4377,7 +4459,8 @@
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -4410,6 +4493,7 @@
       "fieldOrder": [
         "api",
         "comparable",
+        "directionalReason",
         "claimEligible",
         "dawnFilter",
         "default",
@@ -4525,7 +4609,8 @@
           "comparisonCommandRepeat": 50,
           "comparisonIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "d3d12_comparable": {
           "api": "d3d12",
@@ -4597,6 +4682,7 @@
     {
       "fieldOrder": [
         "comparable",
+        "directionalReason",
         "claimEligible",
         "default",
         "domain",
@@ -4765,7 +4851,8 @@
           "comparisonCommandRepeat": 10000,
           "comparisonIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "apple_metal_smoke": {
           "api": "metal",
@@ -5387,6 +5474,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -5421,7 +5509,8 @@
         "amd_vulkan_superset_native_supported": {
           "asyncDiagnosticsMode": "capability_introspection",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; timing values are implausible (near-zero or pathological); dispatch counts differ for row/success=(1, 1): [1] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -5429,7 +5518,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -5444,7 +5534,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -5475,6 +5566,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -5509,7 +5601,8 @@
         "amd_vulkan_superset_native_supported": {
           "asyncDiagnosticsMode": "capability_introspection",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; timing values are implausible (near-zero or pathological); dispatch counts differ for row/success=(1, 1): [500] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -5517,7 +5610,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -5532,7 +5626,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -5577,7 +5672,8 @@
         "quirksPath",
         "comparable",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "compute_concurrent_execution_single",
       "lanes": {
@@ -5605,7 +5701,8 @@
           "comparabilityNotes": "Apples-to-apples contract: command shape and Dawn filter mapping both exercise one long-running compute dispatch per benchmark step. Native Vulkan strict comparable lane currently requires explicit SPIR-V kernel artifacts; this WGSL-kernel workload remains directional until that artifact stage is wired.",
           "comparable": false,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_concurrent_execution_single.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -5674,6 +5771,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -5699,7 +5797,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_fallback.compare.json; pending product-meaning audit before flipping comparable=true"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -5734,7 +5834,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -5774,6 +5875,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -5799,7 +5901,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_grid.compare.json; pending product-meaning audit before flipping comparable=true"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -5834,7 +5938,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -5874,6 +5979,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -5895,7 +6001,9 @@
       "id": "compute_dispatch_indirect_large_args",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_indirect_large_args.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -5934,6 +6042,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -5955,7 +6064,9 @@
       "id": "compute_dispatch_indirect_live_args",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_indirect_live_args.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -5993,6 +6104,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -6013,7 +6125,9 @@
       "id": "compute_dispatch_indirect_single",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_indirect_single.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6045,6 +6159,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -6065,7 +6180,9 @@
       "id": "compute_dispatch_workgroups_2d_sweep",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_workgroups_2d_sweep.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6098,6 +6215,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6119,7 +6237,9 @@
       "id": "compute_dispatch_workgroups_3d_sweep",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_workgroups_3d_sweep.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6158,6 +6278,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6179,7 +6300,9 @@
       "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_dispatch_workgroups_indirect_pipeline_switch.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6232,7 +6355,8 @@
         "baselineTimingDivisor",
         "timingNormalizationNote",
         "applesToApplesVetted",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "compute_indirect_timestamp",
       "lanes": {
@@ -6268,7 +6392,8 @@
           "comparable": false,
           "baselineTimingDivisor": 5120,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256)."
+          "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_indirect_timestamp.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -6281,7 +6406,8 @@
           "baselineTimingDivisor": 5120,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -6298,7 +6424,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonCommandRepeat": 20,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -6326,6 +6453,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6347,7 +6475,9 @@
       "id": "compute_kernel_dispatch_1000",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_kernel_dispatch_1000.compare.json; pending product-meaning audit before flipping comparable=true"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6400,7 +6530,8 @@
         "comparable",
         "baselineTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "compute_zero_initialize_workgroup_memory_256",
       "lanes": {
@@ -6452,7 +6583,8 @@
           "baselineTimingDivisor": 2400,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest already reports per-iteration metrics (iterationsPerStep=50 internal normalization). Fawn repeats dispatch 50 times and applies baselineTimingDivisor normalization only.",
-          "vendor": "amd"
+          "vendor": "amd",
+          "directionalReason": "promotion candidate: every blocking comparability obligation passes against bench/out/amd-vulkan/explore/20260412T161500Z/compute_zero_initialize_workgroup_memory_256.compare.json; pending product-meaning audit before flipping comparable=true"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -6518,6 +6650,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -6538,7 +6671,9 @@
       "id": "copy_buffer_to_buffer_4kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6571,6 +6706,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6592,7 +6728,9 @@
       "id": "copy_buffer_to_buffer_overlap",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6631,6 +6769,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6656,7 +6795,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -6691,7 +6832,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -6730,6 +6872,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -6750,7 +6893,9 @@
       "id": "copy_buffer_to_texture_tight_pitch",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -6783,6 +6928,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6805,7 +6951,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; row/success shape sets differ"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -6839,7 +6987,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -6879,6 +7028,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -6901,7 +7051,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -6937,7 +7089,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -6976,6 +7129,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -6996,7 +7150,9 @@
       "id": "copy_texture_to_buffer_padded",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7029,6 +7185,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7051,7 +7208,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -7086,7 +7245,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -7126,6 +7286,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7147,7 +7308,9 @@
       "id": "copy_texture_to_texture_stress",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7186,6 +7349,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7207,7 +7371,9 @@
       "id": "copy_texture_to_texture_subresource",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; timing values are implausible (near-zero or pathological); row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7246,6 +7412,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -7281,7 +7448,8 @@
         "amd_vulkan_superset_native_supported": {
           "asyncDiagnosticsMode": "lifecycle_refcount",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; timing values are implausible (near-zero or pathological); dispatch counts differ for row/success=(1, 1): [1] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -7289,7 +7457,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -7304,7 +7473,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -7336,6 +7506,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -7370,7 +7541,8 @@
         "amd_vulkan_superset_native_supported": {
           "asyncDiagnosticsMode": "lifecycle_refcount",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; dispatch counts differ for row/success=(1, 1): [200] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -7378,7 +7550,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -7393,7 +7566,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -7423,6 +7597,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -7443,7 +7618,9 @@
       "id": "render_draw_indexed_indirect_u16",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7475,6 +7652,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -7495,7 +7673,9 @@
       "id": "render_draw_indexed_indirect_u32",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7528,6 +7708,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7549,7 +7730,9 @@
       "id": "render_draw_indirect_legacy_equivalent",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7601,7 +7784,8 @@
         "comparable",
         "baselineTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "render_multidraw",
       "lanes": {
@@ -7635,7 +7819,8 @@
           "comparable": false,
           "baselineTimingDivisor": 15000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream."
+          "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -7647,7 +7832,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -7663,7 +7849,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -7703,7 +7890,8 @@
         "comparable",
         "baselineTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "render_multidraw_indexed",
       "lanes": {
@@ -7737,7 +7925,8 @@
           "comparable": false,
           "baselineTimingDivisor": 10000,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream."
+          "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -7749,7 +7938,8 @@
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -7765,7 +7955,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -7792,6 +7983,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7813,7 +8005,9 @@
       "id": "render_pass_depth_stencil",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7852,6 +8046,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7873,7 +8068,9 @@
       "id": "render_pass_dynamic_viewport_scissor",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7911,6 +8108,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -7931,7 +8129,9 @@
       "id": "render_pass_loadops_clear_load",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -7964,6 +8164,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -7985,7 +8186,9 @@
       "id": "render_pass_multisample_resolve",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8024,6 +8227,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -8045,7 +8249,9 @@
       "id": "render_pass_stencil_ref_sweep",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8083,6 +8289,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8103,7 +8310,9 @@
       "id": "render_pass_storeops_discard",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; baseline execution unsuccessful on some samples; baseline execution reported errors; row/success shape sets differ"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8137,6 +8346,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8169,7 +8379,8 @@
         },
         "amd_vulkan_superset_native_supported": {
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; execution shape (dispatch/row/success counts) differs; dispatch counts differ for row/success=(1, 1): [1] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -8177,7 +8388,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -8192,7 +8404,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -8240,7 +8453,8 @@
         "quirksPath",
         "baselineTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "render_pixel_local_storage_barrier_500",
       "lanes": {
@@ -8270,7 +8484,8 @@
           "comparabilityNotes": "Apples-to-apples macro contract. Dawn filter mapping is explicitly aligned for strict claim lanes.",
           "baselineTimingDivisor": 3270,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Apples-to-apples macro PLS contract: command-repeat=500 with per-iteration barrier-sequencing normalization and explicit feature-gating parity support."
+          "timingNormalizationNote": "Apples-to-apples macro PLS contract: command-repeat=500 with per-iteration barrier-sequencing normalization and explicit feature-gating parity support.",
+          "directionalReason": "timing sources differ between sides; timing selection policies differ; timing-phase coverage differs (zero-vs-material); execution shape (dispatch/row/success counts) differs; dispatch counts differ for row/success=(1, 1): [1] vs [0]"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -8281,7 +8496,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -8297,7 +8513,8 @@
           "baselineTimingDivisor": 1.0,
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -8341,7 +8558,8 @@
         "comparable",
         "baselineTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
       "lanes": {
@@ -8371,7 +8589,8 @@
           "comparable": false,
           "baselineTimingDivisor": 4400,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Dawn UniformBufferUpdatePerf already reports per-iteration metrics (iterationsPerStep=100 internal normalization). Fawn repeats upload+draw 100 times and applies baselineTimingDivisor normalization only."
+          "timingNormalizationNote": "Dawn UniformBufferUpdatePerf already reports per-iteration metrics (iterationsPerStep=100 internal normalization). Fawn repeats upload+draw 100 times and applies baselineTimingDivisor normalization only.",
+          "directionalReason": "execution shape (dispatch/row/success counts) differs; baseline execution reported errors; row/success shape sets differ"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -8399,7 +8618,8 @@
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "comparisonCommandRepeat": 100,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -8428,6 +8648,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -8449,7 +8670,9 @@
       "id": "resource_buffer_map_double_request_guard",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8487,6 +8710,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8507,7 +8731,9 @@
       "id": "resource_buffer_map_partial_read_4kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8539,6 +8765,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8559,7 +8786,9 @@
       "id": "resource_buffer_map_partial_write_64kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8591,6 +8820,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8611,7 +8841,9 @@
       "id": "resource_buffer_map_readback_1kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8643,6 +8875,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8663,7 +8896,9 @@
       "id": "resource_buffer_map_readback_64kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8695,6 +8930,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8715,7 +8951,9 @@
       "id": "resource_buffer_map_unmap_storm",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8747,6 +8985,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8767,7 +9006,9 @@
       "id": "resource_buffer_map_write_1kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8799,6 +9040,7 @@
       "fieldOrder": [
         "api",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -8819,7 +9061,9 @@
       "id": "resource_buffer_map_write_64kb",
       "lanes": {
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {}
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        }
       },
       "shared": {
         "api": "vulkan",
@@ -8868,7 +9112,8 @@
         "baselineTimingDivisor",
         "comparisonTimingDivisor",
         "timingNormalizationNote",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "resource_lifecycle",
       "lanes": {
@@ -8904,7 +9149,8 @@
           "comparable": false,
           "baselineTimingDivisor": 100,
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations."
+          "timingNormalizationNote": "Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -8977,6 +9223,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityNotes",
         "comparable",
@@ -9012,7 +9259,8 @@
         "amd_vulkan_superset_native_supported": {
           "asyncDiagnosticsMode": "resource_table_immediates",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -9020,7 +9268,8 @@
           "family": "m3",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -9035,7 +9284,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -9086,7 +9336,8 @@
         "default",
         "timingNormalizationNote",
         "comparisonCommandRepeat",
-        "benchmarkClass"
+        "benchmarkClass",
+        "directionalReason"
       ],
       "id": "resource_table_immediates_500",
       "lanes": {
@@ -9132,7 +9383,8 @@
           "description": "Directional-only macro ResourceTable workload for the AMD native Vulkan subset. Doe now executes this through an explicit native emulation path when `featurePolicy=emulate_when_unavailable`.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "comparisonCommandRepeat": 500,
-          "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe emulation now executes the contract, but normalization remains diagnostic until strict apples-to-apples evidence exists."
+          "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe emulation now executes the contract, but normalization remains diagnostic until strict apples-to-apples evidence exists.",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "apple_metal_extended": {
           "api": "metal",
@@ -9145,7 +9397,8 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonCommandRepeat": 500,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "apple"
+          "vendor": "apple",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -9161,7 +9414,8 @@
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {
@@ -9190,6 +9444,7 @@
         "api",
         "applesToApplesVetted",
         "benchmarkClass",
+        "directionalReason",
         "commandsPath",
         "comparabilityCandidate",
         "comparabilityNotes",
@@ -9212,7 +9467,9 @@
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
         "amd_vulkan_superset": {},
-        "amd_vulkan_superset_native_supported": {},
+        "amd_vulkan_superset_native_supported": {
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/amd-vulkan/explore/20260412T161500Z/*.compare.json); re-run the explore preset to produce an artifact before triage"
+        },
         "apple_metal_extended": {
           "api": "metal",
           "applesToApplesVetted": true,
@@ -9246,7 +9503,8 @@
           "driver": "1.0.0",
           "family": "d3d12",
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
-          "vendor": "generic"
+          "vendor": "generic",
+          "directionalReason": "coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/local-d3d12/**/*.compare.json); re-run the explore preset to produce an artifact before triage"
         }
       },
       "shared": {

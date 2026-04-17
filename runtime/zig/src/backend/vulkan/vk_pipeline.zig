@@ -8,6 +8,7 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_pipeline_cache = @import("vk_pipeline_cache.zig");
+const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -382,7 +383,8 @@ pub fn build_pipeline_for_words(
 
     const stage_info = c.VkPipelineShaderStageCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .pNext = null, .flags = 0, .stage = c.VK_SHADER_STAGE_COMPUTE_BIT, .module = self.shader_module, .pName = owned_entry.ptr, .pSpecializationInfo = null };
     var pipeline_info = c.VkComputePipelineCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, .pNext = null, .flags = 0, .stage = stage_info, .layout = self.pipeline_layout, .basePipelineHandle = VK_NULL_U64, .basePipelineIndex = -1 };
-    try c.check_vk(c.vkCreateComputePipelines(self.device, VK_NULL_U64, 1, @ptrCast(&pipeline_info), null, @ptrCast(&self.pipeline)));
+    const compute_cache_handle = vk_pipeline_cache_persistent.handle_for_pipeline_creation();
+    try c.check_vk(c.vkCreateComputePipelines(self.device, compute_cache_handle, 1, @ptrCast(&pipeline_info), null, @ptrCast(&self.pipeline)));
     self.has_pipeline = true;
     self.current_entry_point_owned = owned_entry;
     self.current_pipeline_hash = pipeline_hash;

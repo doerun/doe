@@ -548,6 +548,7 @@ def build_compare_report(
     out_path: str = "",
     run_artifact_paths: list[str] | None = None,
     comparability_min_timed_samples: int = 0,
+    smoke_comparability_min_timed_samples: int = 0,
     benchmark_policy_path: str = "",
 ) -> dict[str, Any]:
     """Assemble a compare-only report from workload entries."""
@@ -612,6 +613,7 @@ def build_compare_report(
     coherence = coherence_mod.assess_report(
         report,
         min_timed_samples=max(comparability_min_timed_samples, 0),
+        smoke_min_timed_samples=max(smoke_comparability_min_timed_samples, 0),
         benchmark_policy_path=benchmark_policy_path,
     )
     if comparison_status == "comparable" and coherence.get("status") != "pass":

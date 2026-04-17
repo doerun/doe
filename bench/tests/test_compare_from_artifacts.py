@@ -176,6 +176,7 @@ def _benchmark_policy() -> object:
             "min_operation_wall_coverage_ratio": 0.0,
             "max_operation_wall_coverage_asymmetry_ratio": 10.0,
             "min_row_timing_floor_ns": 0,
+            "smoke_comparability_min_timed_samples": 2,
         },
     )()
 

@@ -260,6 +260,44 @@ The exercise surface is config-backed by:
 - `config/in-path-numeric-stability-exercise.json`
 - `config/in-path-numeric-stability-exercise.schema.json`
 
+## Proof-backed shader metric front door
+
+Proof-backed shader metric evidence has a named front door under `bench/out/`;
+it does not live in a scratch-only path.
+
+- stable mirror:
+  - `bench/out/proof-metrics/latest/proof_metrics_summary.json` — structured
+    before/after deltas per shader (size, `min(...)` count, `_doe_sizes` /
+    `needs_sizes_buf`, dispatch preconditions, compile `p50`, native Vulkan
+    `p50/dispatch`, GPU timestamp)
+  - `bench/out/proof-metrics/latest/proof_metrics_summary.md` — human summary
+    of the same deltas
+  - both files are tracked (allowlisted in `.gitignore`) so external writeups
+    can link the stable path
+- structural reporter entrypoint:
+  - `zig build runtime-compile-report` builds `doe-runtime-compile-report`
+  - `runtime/zig/src/doe_wgsl/runtime_compile_report.zig` is the single-shader
+    structural emitter; one invocation per shader emits MSL size, `min(...)`
+    count, `_doe_sizes` presence, `needs_sizes_buf`, dispatch preconditions,
+    and workgroup size for the current build flavor
+- build flavors:
+  - `-Dlean-verified=false` reports the baseline structural shape
+  - `-Dlean-verified=true` reports the proof-backed structural shape with the
+    corresponding `lean_proof.lean_verified` comptime branch elimination
+  - both flavors must be run to produce a delta pair per shader
+- refresh pattern:
+  - the structural half of the summary is reproducible cross-platform with the
+    reporter binary alone; build under each flavor, run the reporter on each
+    target shader, and collate the pair into the mirror shape
+  - the timing half (`compileP50Ns`, `nativeVulkanP50PerDispatchNs`,
+    `gpuTimestampNs`) requires Vulkan host execution plus warmup/percentile
+    discipline; it is not structural, and the current mirror values are the
+    current evidence until a refresh on Vulkan hardware produces a newer pass
+- shader scope:
+  - the current pass covers `affine_loop_storage`, `tiled_storage`, and
+    `flat_2d_storage`; broadening the shader set requires extending the
+    reporter invocation list and the mirror schema in lockstep
+
 ## Terminology
 
 Use the benchmark taxonomy from `docs/benchmark-taxonomy.md`:

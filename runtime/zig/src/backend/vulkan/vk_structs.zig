@@ -150,6 +150,14 @@ pub const VkShaderModuleCreateInfo = extern struct {
     pCode: [*]const u32,
 };
 
+pub const VkPipelineCacheCreateInfo = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*const anyopaque,
+    flags: vk.VkFlags,
+    initialDataSize: usize,
+    pInitialData: ?*const anyopaque,
+};
+
 pub const VkPipelineLayoutCreateInfo = extern struct {
     sType: vk.VkStructureType,
     pNext: ?*const anyopaque,

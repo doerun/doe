@@ -5,6 +5,7 @@ const std = @import("std");
 const log = std.log.scoped(.vk_render_pipeline);
 const c = @import("vk_constants.zig");
 const vk_formats = @import("vk_formats.zig");
+const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
@@ -454,9 +455,10 @@ pub fn create_graphics_pipeline(
         .basePipelineHandle = VK_NULL_U64,
         .basePipelineIndex = -1,
     };
+    const graphics_cache_handle = vk_pipeline_cache_persistent.handle_for_pipeline_creation();
     try c.check_vk(c.vkCreateGraphicsPipelines(
         self.device,
-        VK_NULL_U64,
+        graphics_cache_handle,
         1,
         @ptrCast(&pipeline_info),
         null,

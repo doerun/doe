@@ -22,6 +22,7 @@ const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
+const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_render = @import("vk_render.zig");
 const vk_metrics = @import("vk_metrics.zig");
@@ -194,6 +195,7 @@ pub const NativeVulkanRuntime = struct {
             self.primary_command_buffer = null;
         }
         if (self.has_device) {
+            vk_pipeline_cache_persistent.destroy_process_pipeline_cache(self.device);
             c.vkDestroyDevice(self.device, null);
             self.has_device = false;
             self.device = null;

@@ -21,6 +21,8 @@ Read this file first. Use the shard files under
 ## Current status summary
 
 - Apple Metal native Doe-vs-Dawn compare defaults are now fair-cold: default Metal executor ids pass `--no-pipeline-cache`, cache-enabled runs require explicit opt-in executor ids, report-level comparability coherence is default-on in `run_blocking_gates.py`, and the committed Metal archive is documented as a benchmark fixture rather than a product runtime contract. See `bench/docs/metal-pipeline-cache-policy.md` and the current April shard.
+- A fresh Mac fair-cold compare at `bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.{json,claim.json}` recovers four of the seven previously cache-asymmetric compute workloads as strict claimable on `mac.lan` with Doe faster: `compute_workgroup_atomic_1024` (+9.6%), `compute_workgroup_non_atomic_1024` (+10.9%), `compute_zero_initialize_workgroup_memory_256` (+69.1%), `compute_concurrent_execution_single` (+4.3%). Both sides carry `pipelineCache.state="disabled" reason="cli-flag"`, confirming the end-to-end schema round-trip on Mac. Three matvec workloads still need a fair-cold Mac rerun.
+- Pipeline-cache direction differs by backend: Metal has Doe-ahead (Doe opens `MTLBinaryArchive`, Dawn delegate does not), Vulkan has Dawn-ahead (Dawn uses `PipelineCacheVk`, Doe passes `VK_NULL_U64`), D3D12 has Dawn-ahead (Dawn populates `CachedPSO.pCachedBlob`, Doe zero-initializes). The three-backend audit is at `bench/docs/pipeline-cache-backend-audit.md`. Existing AMD Vulkan claimable evidence is unchanged -- current Doe wins are runtime-engineering wins despite the Vulkan cache gap -- and the path to "Doe faster across all boards" splits into two programs: Metal Dawn-cache shim (Push 4 design) and Doe-side Vulkan + D3D12 cache implementation.
 - Apple Metal package compute has narrow claimable warm package artifacts on
   `mac.lan`. The current Node artifacts are
   `bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json`
@@ -129,9 +131,11 @@ Read this file first. Use the shard files under
 
 ## Current follow-up highlights
 
-- Proof-backed shader metric collection currently lives in a scratch evidence
-  bundle rather than a promoted benchmark lane; see the current April shard for
-  the reporter entrypoint and artifact path.
+- Proof-backed shader metric evidence is now front-doored at
+  `bench/out/proof-metrics/latest/proof_metrics_summary.{json,md}`; the
+  reporter entrypoint, build flavors, and refresh pattern are documented in
+  `bench/README.md` under "Proof-backed shader metric front door". A fresh
+  Vulkan-host timing pass is still the next refresh step.
 - Status history is now sharded; future follow-ups should go into the current
   shard instead of bloating this front door.
 

@@ -58,6 +58,7 @@ def main() -> int:
         result = comparability_coherence.assess_report(
             report,
             min_timed_samples=policy.comparability_min_timed_samples,
+            smoke_min_timed_samples=policy.smoke_comparability_min_timed_samples,
             benchmark_policy_path=policy.source_path,
         )
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -75,7 +76,8 @@ def main() -> int:
     print(
         "comparability coherence: "
         f"{result['status']} ({result['failureCount']} failure(s), "
-        f"minTimedSamples={result['minTimedSamples']})"
+        f"minTimedSamples={result['minTimedSamples']}, "
+        f"smokeMinTimedSamples={result['smokeMinTimedSamples']})"
     )
     for failure in result.get("failures", []):
         workload_id = failure.get("workloadId", "?")

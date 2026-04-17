@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "timingSelection", "claimabilityDefaults", "comparabilityDefaults", "timingScopeSanity", "reliability"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 2 },
+    "schemaVersion": { "type": "integer", "const": 3 },
     "timingSelection": {
       "type": "object",
       "additionalProperties": false,
@@ -30,9 +30,10 @@
     "comparabilityDefaults": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["minTimedSamples"],
+      "required": ["minTimedSamples", "smokeMinTimedSamples"],
       "properties": {
-        "minTimedSamples": { "type": "integer", "minimum": 0 }
+        "minTimedSamples": { "type": "integer", "minimum": 0 },
+        "smokeMinTimedSamples": { "type": "integer", "minimum": 0 }
       }
     },
     "timingScopeSanity": {

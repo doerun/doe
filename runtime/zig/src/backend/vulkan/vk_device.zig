@@ -6,6 +6,7 @@
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_feature_caps = @import("vk_feature_caps.zig");
+const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_sync = @import("vk_sync.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 
@@ -145,6 +146,11 @@ pub fn create_device_and_queue(self: anytype) !void {
     self.has_depth_clip_enable_ext = depth_clip_available;
     c.vkGetDeviceQueue(self.device, self.queue_family_index, 0, &self.queue);
     if (self.queue == null) return error.InvalidState;
+    // Create the process-level VkPipelineCache so subsequent pipeline
+    // creation calls can share compile state. Failures here are non-fatal;
+    // the cache falls back to disabled and pipeline creation continues with
+    // VK_NULL_U64 as before.
+    vk_pipeline_cache_persistent.create_process_pipeline_cache(self.device) catch {};
 }
 
 pub fn create_command_pool_and_primary_buffer(self: anytype) !void {

@@ -28,6 +28,7 @@ BENCHMARK_POLICY = BenchmarkMethodologyPolicy(
     min_operation_wall_coverage_ratio=0.05,
     max_operation_wall_coverage_asymmetry_ratio=128.0,
     min_row_timing_floor_ns=5000000,
+    smoke_comparability_min_timed_samples=3,
 )
 
 

@@ -180,9 +180,11 @@ pub fn runCli() !void {
 
     var execution_context: ?execution.ExecutionContext = null;
     if (options.execute) {
-        // Must be set BEFORE backend init so the Metal backend's cache-init
-        // guard sees the flag. No-op on non-Mac builds.
+        // Must be set BEFORE backend init so the Metal and Vulkan backends'
+        // cache-init guards see the flag. Both wrappers are cross-platform-safe
+        // no-ops outside their home platform.
         backend_runtime_telemetry.set_metal_pipeline_cache_disabled(options.no_pipeline_cache);
+        backend_runtime_telemetry.set_vulkan_pipeline_cache_disabled(options.no_pipeline_cache);
         const executor_init_start_ns = nowNs();
         execution_context = try execution.ExecutionContext.init(
             allocator,

@@ -5,6 +5,13 @@ comparable. This module validates the report-level invariant: a report may only
 remain top-level ``comparisonStatus=comparable`` when the matching layer, the
 obligation layer, structural execution-shape checks, timing-phase checks, and
 optional sample-floor policy all agree on the same workload rows.
+
+Sample-floor policy has two tiers. Claim-eligible workloads must clear the
+``min_timed_samples`` floor (default 7 per ``comparabilityDefaults``). Non-claim-
+eligible workloads (smoke, diagnostic, directional) must clear the lower
+``smoke_min_timed_samples`` floor (default 3). The two-tier structure exists so
+that ``count: 2`` smoke artifacts cannot land ``comparable: true`` at the report
+level even though they are never claim-eligible.
 """
 
 from __future__ import annotations
@@ -110,6 +117,7 @@ def assess_workload(
     workload: dict[str, Any],
     *,
     min_timed_samples: int = 0,
+    smoke_min_timed_samples: int = 0,
 ) -> dict[str, Any]:
     workload_id = str(workload.get("id", "?")).strip() or "?"
     reasons: list[str] = []
@@ -200,16 +208,23 @@ def assess_workload(
                 if not details.get("comparisonNormalizedExecutionShapes"):
                     reasons.append("missing comparison normalized execution shape")
 
-        if min_timed_samples > 0 and workload.get("claimEligible") is True:
-            if baseline_count < min_timed_samples:
+        claim_eligible = workload.get("claimEligible") is True
+        if claim_eligible:
+            applied_floor = min_timed_samples
+            floor_kind = "comparability"
+        else:
+            applied_floor = smoke_min_timed_samples
+            floor_kind = "smoke-comparability"
+        if applied_floor > 0:
+            if baseline_count < applied_floor:
                 reasons.append(
-                    f"baselineStatsMs.count {baseline_count} < comparability floor "
-                    f"{min_timed_samples}"
+                    f"baselineStatsMs.count {baseline_count} < {floor_kind} floor "
+                    f"{applied_floor}"
                 )
-            if comparison_count < min_timed_samples:
+            if comparison_count < applied_floor:
                 reasons.append(
-                    f"comparisonStatsMs.count {comparison_count} < comparability floor "
-                    f"{min_timed_samples}"
+                    f"comparisonStatsMs.count {comparison_count} < {floor_kind} floor "
+                    f"{applied_floor}"
                 )
 
     return {
@@ -227,6 +242,7 @@ def assess_report(
     report: dict[str, Any],
     *,
     min_timed_samples: int = 0,
+    smoke_min_timed_samples: int = 0,
     benchmark_policy_path: str = "",
 ) -> dict[str, Any]:
     workloads_raw = report.get("workloads", [])
@@ -246,6 +262,7 @@ def assess_report(
         result = assess_workload(
             workload,
             min_timed_samples=max(min_timed_samples, 0),
+            smoke_min_timed_samples=max(smoke_min_timed_samples, 0),
         )
         if result["status"] != "pass":
             failures.append(result)
@@ -297,6 +314,7 @@ def assess_report(
         "failureCount": len(failures),
         "failures": failures,
         "minTimedSamples": max(min_timed_samples, 0),
+        "smokeMinTimedSamples": max(smoke_min_timed_samples, 0),
         "benchmarkPolicyPath": benchmark_policy_path,
         "requiredComparableObligations": list(REQUIRED_COMPARABLE_OBLIGATIONS),
         "optionalComparableObligations": list(OPTIONAL_COMPARABLE_OBLIGATIONS),

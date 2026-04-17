@@ -732,22 +732,25 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     try writer.writeAll(",\"driver\":");
     try writeJsonString(&writer, summary.profile_driver);
     try writer.writeAll("}");
-    // Apple Metal pipeline cache state + warmup telemetry. Emitted as a nested
+    // Pipeline cache state + warmup telemetry. Emitted as a nested
     // `pipelineCache` object so bench/native_compare_modules/run_artifact.py
     // can surface it in the run-receipt's runtimeIdentity.pipelineCache. State
-    // is "enabled" iff Doe's Metal native runtime actually opened an
-    // MTLBinaryArchive in this process. Reason values:
-    //   "default"               - Metal cache active (state=enabled)
+    // is "enabled" iff Doe's native runtime actually opened a persistent
+    // pipeline cache in this process (MTLBinaryArchive on Metal, VkPipelineCache
+    // on Vulkan). Reason values:
+    //   "default"               - cache active (state=enabled)
     //   "cli-flag"              - --no-pipeline-cache disabled init (state=disabled)
-    //   "non-doe-backend"       - macos build, but no Doe Metal backend was
-    //                             active (e.g. dawn_delegate Metal). The Doe
+    //   "non-doe-backend"       - Mac or Linux build, but no Doe native backend
+    //                             was active (e.g. dawn_delegate Metal). The Doe
     //                             cache code path was not reached on this run.
-    //   "platform-unsupported"  - non-Mac build (state=disabled)
+    //   "platform-unsupported"  - build target with no Doe cache implementation
+    //                             for the active backend (state=disabled)
     // The schema slot is always emitted so a comparison gate can hard-assert
-    // which mode each side ran in. Warmup count/ns stay zero on non-Mac builds
-    // and on cache-disabled runs.
+    // which mode each side ran in. Warmup count/ns stay zero on platforms
+    // without Doe cache support and on cache-disabled runs.
     const cache_state: []const u8 = if (summary.pipeline_cache_active) "enabled" else "disabled";
-    const cache_reason: []const u8 = if (comptime builtin.os.tag != .macos)
+    const cache_supported = comptime (builtin.os.tag == .macos or builtin.os.tag == .linux);
+    const cache_reason: []const u8 = if (!cache_supported)
         "platform-unsupported"
     else if (summary.pipeline_cache_disabled)
         "cli-flag"
