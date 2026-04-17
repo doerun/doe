@@ -32,6 +32,17 @@ pub fn set_vulkan_pipeline_cache_disabled(disabled: bool) void {
     }
 }
 
+/// Configure the Vulkan pipeline-cache disk directory. Empty slice disables
+/// disk persistence; the cache then stays in-memory for the process lifetime.
+/// Must be invoked *before* backend init (parallel to the disabled flag).
+pub fn set_vulkan_pipeline_cache_dir(dir: []const u8) void {
+    if (comptime builtin.os.tag == .linux) {
+        vulkan_backend.set_pipeline_cache_dir(dir);
+    } else {
+        std.mem.doNotOptimizeAway(dir);
+    }
+}
+
 pub fn refresh(backend: *backend_iface.BackendIface) void {
     switch (backend.id) {
         .doe_vulkan => {

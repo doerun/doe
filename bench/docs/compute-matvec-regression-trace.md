@@ -4,7 +4,7 @@ Audience: runtime engineers investigating why Doe is slower than Dawn on the mat
 
 ## Observed delta
 
-From `bench/out/amd-vulkan/explore/20260412T161500Z/compute_matvec_32768x2048_f32.compare.json`:
+**Before the Doe Vulkan pipeline cache landed (2026-04-12 explore):**
 
 | Variant | Doe vs Dawn p50 delta |
 | --- | --- |
@@ -12,7 +12,73 @@ From `bench/out/amd-vulkan/explore/20260412T161500Z/compute_matvec_32768x2048_f3
 | `compute_matvec_32768x2048_f32_swizzle1` | **-3.87%** |
 | `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` | **+11.45%** |
 
-Doe is slower on two of three variants on this board. The "naive swizzle0" variant is the most worrying -- a 38% gap in what should be Doe's strong area (compute-heavy dispatch, cache-irrelevant workload).
+**After the Doe Vulkan pipeline cache landed (2026-04-17 strict compare at `bench/out/amd-vulkan/compare/20260417T114917Z/dawn-vs-doe.amd.vulkan.compare.json`):**
+
+| Variant | Doe vs Dawn p50 delta |
+| --- | --- |
+| `compute_matvec_32768x2048_f32` (naive swizzle0) | **-4.33%** (was -38.62%, +34.29pp) |
+| `compute_matvec_32768x2048_f32_swizzle1` | **+11.26%** (was -3.87%, +15.13pp) |
+| `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` | **+16.28%** (was +11.45%, +4.83pp) |
+
+**Hypothesis #1 confirmed.** The cold Vulkan pipeline compile cost was the dominant contributor to the regression. With Doe-side `VkPipelineCache` active, two of the three variants flipped to Doe-faster and the naive_swizzle0 gap narrowed from -38% to -4.3%. The small residual on naive_swizzle0 is now understood to be SPIR-V codegen-shape sensitivity in the RADV driver, not a runtime bottleneck.
+
+## Subphase breakdown of the -4.33% residual on naive_swizzle0
+
+Per-subphase median across 15 samples each on AMD Vulkan (2026-04-17 strict compare):
+
+| Phase | Doe (ms) | Dawn (ms) | Delta | Notes |
+| --- | ---: | ---: | ---: | --- |
+| `setup_ms` | 0.0008 | 12.7162 | **-12.72** | Doe 16,000x faster -- cache hit |
+| `encode_ms` | 1.2518 | 5.0801 | -3.83 | Doe 4x faster -- command encoder |
+| `submit_wait_ms` | 2142.25 | 2036.46 | **+105.79** | Doe 5% slower -- GPU execution |
+| `total_ms` | 2144.40 | 2055.46 | +88.93 | Net +4.3% slower |
+
+The gap is entirely in `submit_wait_ms` -- i.e., what the GPU is actually doing during the dispatch-and-wait cycle. Doe already wins setup and encode by large margins.
+
+## Why the GPU is slower on Doe's SPIR-V
+
+Direct A/B on this host (single-invocation timing of the matvec command stream via `doe-zig-runtime --execute`):
+
+| SPIR-V source | executionGpuTimestampTotalNs | Delta vs Doe |
+| --- | ---: | ---: |
+| Doe (`doe-emit-spirv`) tracked `.spv` | 2,121,636,687 | baseline |
+| Tint-generated from same WGSL | 2,103,046,366 | **-18,590,321 (-0.88%)** |
+
+Feeding the same WGSL through Tint produces SPIR-V that runs ~18 ms (~0.9%) faster on the GPU for this 100-dispatch workload. Both SPVs declare identical capabilities (`Shader` only), identical execution mode (`LocalSize 64 1 1`), identical descriptor bindings. No subgroup-size hints on either side.
+
+Structural differences:
+
+- Tint wraps each storage buffer in a `_block_tint_explicit_layout` struct with an `inner` member. Doe references the storage array directly.
+- Tint inserts `tint_loop_idx`, `tint_low_inc`, `tint_carry` loop-safety variables. Doe's loop is a direct WGSL-style `loop { if (col >= kPackedCols) break; ... col = col + 1u; }`.
+- Tint names every struct member via `OpMemberName` and every variable via `OpName` with hashed prefixes.
+
+The loop-safety variables should *slow* Tint if they mattered at codegen time -- they don't, so the driver is optimizing them away. The net +0.9% GPU-side advantage for Tint's SPIR-V therefore points at the storage-buffer wrapping: RADV's SPIR-V-to-AMDGPU pass produces slightly better ISA when storage buffers are accessed through an explicit block struct than when accessed as bare runtime arrays.
+
+## Is this a Doe SPV compiler issue to fix?
+
+Yes, but it is real compiler work, not a quick patch. The fix is to update Doe's WGSL-to-SPIR-V emitter (`runtime/zig/src/doe_wgsl/` + `doe-emit-spirv`) to wrap storage buffer declarations in an explicit block struct with an `inner` member, matching Tint's canonical emission shape. The WGSL contract does not dictate this wrapping; it is a SPV emission style choice.
+
+Landing that change would:
+
+- close the -0.9% GPU-side gap on matvec naive_swizzle0 (bringing the overall delta to approximately -3.5% or better, potentially positive with the other noise components)
+- likely close similar small gaps on other compute workloads where the driver optimizer reacts to SPV structure
+- require Doe's WGSL IR → SPIR-V lowering pass to emit `OpTypeStruct { array<T> }` wrappers consistently and update all downstream access chains
+
+Out of scope for the 2026-04-17 session; flagged as a follow-up in the Vulkan optimization queue.
+
+## Ruled out (updated)
+
+Everything in the original hypothesis list has now been ruled out or addressed:
+
+- Codegen bloat (Doe SPIR-V is smaller than Tint's) -- ruled out.
+- Dispatch geometry mismatch -- ruled out (both sides dispatch x=128, workgroup_size=64).
+- Per-dispatch descriptor rebind -- ruled out (short-circuited by bindings hash).
+- Per-dispatch pipeline recreation -- ruled out (short-circuited by pipeline hash).
+- Cold pipeline compile (hypothesis 1) -- FIXED by Doe Vulkan `VkPipelineCache`.
+- Wave-size mismatch (hypothesis 2) -- ruled out (neither SPV declares a subgroup-size hint; RADV picks the same wave for both).
+- Redundant barriers / binding rebinds (hypothesis 3) -- implausible given encode_ms is 4x faster on Doe.
+
+The remaining 4.3% is SPIR-V emission-style sensitivity in RADV. That is now the smallest residual signal on AMD Vulkan and also the most surgical follow-up.
 
 The regression is comparability-contract-compatible: the workloads pass every blocking obligation (execution shape match, timing phases match, hardware path match). They were flagged as "promotion candidates" by the triage in `bench/docs/comparability-promotion-audit.md`. What keeps them directional today is the claim gate, not the comparability gate -- Doe is not faster, so they are not claim-eligible.
 

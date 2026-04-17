@@ -313,6 +313,10 @@ pub fn set_pipeline_cache_disabled(disabled: bool) void {
     vk_pipeline_cache_persistent.set_process_pipeline_cache_disabled(disabled);
 }
 
+pub fn set_pipeline_cache_dir(dir: []const u8) void {
+    vk_pipeline_cache_persistent.set_process_pipeline_cache_dir(dir);
+}
+
 fn deinit(ctx: *anyopaque) void {
     const self = cast(ctx);
     const allocator = self.allocator;

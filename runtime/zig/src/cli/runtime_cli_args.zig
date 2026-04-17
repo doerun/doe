@@ -29,6 +29,11 @@ pub const RunOptions = struct {
     // runtime/zig/src/backend/metal/metal_native_runtime.zig:380-402 and
     // bench/lib/metal_pipeline_cache_manifest.py for context).
     no_pipeline_cache: bool = false,
+    /// Optional override for the pipeline-cache directory. Empty slice means
+    /// "no disk-backed persistence"; runtime stays in-memory for the process.
+    /// Respected on platforms where Doe operates a persistent pipeline cache
+    /// (Vulkan today; Metal's MTLBinaryArchive has its own path).
+    pipeline_cache_dir: []const u8 = "",
     command_repeat: u32 = 1,
     upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
@@ -204,6 +209,9 @@ pub fn parseArgs(argv: [][:0]u8, stdout: anytype) !ParseOutcome {
             options.execute = true;
         } else if (std.mem.eql(u8, argv[i], "--no-pipeline-cache")) {
             options.no_pipeline_cache = true;
+        } else if (std.mem.eql(u8, argv[i], "--pipeline-cache-dir") and i + 1 < argv.len) {
+            i += 1;
+            options.pipeline_cache_dir = argv[i];
         } else if (std.mem.eql(u8, argv[i], "--replay") and i + 1 < argv.len) {
             i += 1;
             options.replay_path = argv[i];

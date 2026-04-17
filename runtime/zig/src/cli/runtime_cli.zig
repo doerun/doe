@@ -185,6 +185,7 @@ pub fn runCli() !void {
         // no-ops outside their home platform.
         backend_runtime_telemetry.set_metal_pipeline_cache_disabled(options.no_pipeline_cache);
         backend_runtime_telemetry.set_vulkan_pipeline_cache_disabled(options.no_pipeline_cache);
+        backend_runtime_telemetry.set_vulkan_pipeline_cache_dir(options.pipeline_cache_dir);
         const executor_init_start_ns = nowNs();
         execution_context = try execution.ExecutionContext.init(
             allocator,
