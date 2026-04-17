@@ -116,7 +116,11 @@
       "only_vulkan": [
         "compute_matvec_32768x2048_f32",
         "compute_matvec_32768x2048_f32_swizzle1",
-        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1"
+        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+        "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+        "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+        "upload_write_buffer_1gb",
+        "upload_write_buffer_256mb"
       ],
       "only_metal": [
         "compute_dispatch_fallback",
@@ -143,14 +147,14 @@
         "upload_write_buffer_64kb_staged"
       ],
       "only_d3d12": [
-        "resource_lifecycle",
-        "upload_write_buffer_16mb"
+        "resource_lifecycle"
       ],
       "vulkan_and_metal_only": [],
       "metal_and_d3d12_only": [
         "compute_zero_initialize_workgroup_memory_256"
       ],
       "vulkan_and_d3d12_only": [
+        "upload_write_buffer_16mb",
         "upload_write_buffer_1kb",
         "upload_write_buffer_1mb",
         "upload_write_buffer_4mb",
@@ -159,15 +163,15 @@
     },
     "counts": {
       "across_all_three_backends": 4,
-      "only_vulkan": 3,
+      "only_vulkan": 7,
       "only_metal": 22,
-      "only_d3d12": 2,
+      "only_d3d12": 1,
       "vulkan_and_metal_only": 0,
       "metal_and_d3d12_only": 1,
-      "vulkan_and_d3d12_only": 4,
+      "vulkan_and_d3d12_only": 5,
       "distinctComparable": {
         "metal": 27,
-        "vulkan": 11,
+        "vulkan": 16,
         "d3d12": 11
       }
     }

@@ -309,6 +309,28 @@ pub const Builder = struct {
         return id;
     }
 
+    /// Like `type_struct` but always allocates a fresh OpTypeStruct id even when
+    /// an existing struct with identical member types is already known. Use for
+    /// storage-buffer block wrappers where the RADV optimizer produces better
+    /// ISA when each buffer binding has its own distinct struct type (matches
+    /// Tint's emission shape). This improves driver alias analysis: same-type
+    /// bindings would otherwise be treated as potentially aliased under the
+    /// shared-struct shape.
+    pub fn type_struct_fresh(self: *Builder, member_types: []const u32) EmitError!u32 {
+        const members_start: u32 = @intCast(self.members_scratch.items.len);
+        try self.members_scratch.appendSlice(self.allocator, member_types);
+        const key = StructKey{ .members_start = members_start, .members_len = @intCast(member_types.len) };
+        const id = self.reserve_id();
+        try self.types_globals.append(self.allocator, (@as(u32, @intCast(2 + member_types.len)) << 16) | Opcode.TypeStruct);
+        try self.types_globals.append(self.allocator, id);
+        try self.types_globals.appendSlice(self.allocator, member_types);
+        // Record the new id under the same key (overwriting any prior dedup
+        // entry); callers who opt into fresh emission have already accepted
+        // that subsequent `type_struct` calls will not reuse the same id.
+        try self.struct_types.put(self.allocator, key, id);
+        return id;
+    }
+
     pub fn type_pointer(self: *Builder, storage_class: u32, pointee_type: u32) EmitError!u32 {
         const key = PtrKey{ .storage_class = storage_class, .pointee = pointee_type };
         if (self.pointer_types.get(key)) |id| return id;

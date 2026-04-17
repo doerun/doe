@@ -637,8 +637,8 @@
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark",
       "cohorts": [
-        "regression",
-        "exploration"
+        "governed",
+        "regression"
       ]
     },
     {
@@ -672,7 +672,7 @@
       "driver": "24.0.0",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
-        "exploration"
+        "governed"
       ]
     },
     {
@@ -776,7 +776,7 @@
       "driver": "24.0.0",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
-        "exploration"
+        "governed"
       ]
     },
     {
@@ -2456,7 +2456,7 @@
       "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
       "commandsPath": "bench/plans/generated/compat/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces_commands.json",
       "cohorts": [
-        "exploration"
+        "governed"
       ]
     },
     {
@@ -2493,7 +2493,7 @@
       "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
       "commandsPath": "bench/plans/generated/compat/compute_stable_fluids_multistage_256grid_18pressure_4steps_commands.json",
       "cohorts": [
-        "exploration"
+        "governed"
       ]
     }
   ]

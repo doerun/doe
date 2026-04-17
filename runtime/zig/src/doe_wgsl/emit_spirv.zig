@@ -180,12 +180,13 @@ pub const Emitter = struct {
 
         _ = try self.decorate_memory_type(global.ty, addr_space);
         const block_member_type = try self.lower_type(global.ty);
-        const block_type = try self.builder.type_struct(&.{block_member_type});
-        const block_gop = try self.decorated_block_types.getOrPut(self.alloc, block_type);
-        if (!block_gop.found_existing) {
-            try self.builder.emit_block_decoration(block_type);
-            try self.builder.emit_member_offset_decoration(block_type, 0, 0);
-        }
+        // Emit a distinct block struct per storage-buffer binding so the
+        // driver's alias analysis does not treat same-type bindings as
+        // potentially aliased. Matches Tint's storage-buffer emission shape
+        // and closes the matvec naive_swizzle0 residual on RADV.
+        const block_type = try self.builder.type_struct_fresh(&.{block_member_type});
+        try self.builder.emit_block_decoration(block_type);
+        try self.builder.emit_member_offset_decoration(block_type, 0, 0);
 
         const storage_class = try self.global_storage_class(global);
         const ptr_type = try self.builder.type_pointer(storage_class, block_type);
