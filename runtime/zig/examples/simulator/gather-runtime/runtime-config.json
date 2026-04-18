@@ -1,6 +1,6 @@
 {
   "mode": "sdk-runtime-command",
-  "notes": "Governed-lane runtime-config that invokes cs_python + SdkRuntime to runtime-verify the gather (embedding lookup) kernel. Verifies 4 tokens gathered from a 32-row embedding table match numpy bit-exactly, writes a schema-conforming csl_simulator_trace plus a sibling .kernel-result.json.",
+  "notes": "Governed-lane runtime-config that invokes cs_python + SdkRuntime to runtime-verify the gather (embedding lookup) kernel. Verifies 4 tokens gathered from a 32-row embedding table match numpy bit-exactly, writes an explicit_simulator_trace with runtimePassed=true inline (schema-valid per doe-wgsl-simulator-trace.schema.json#/$defs/RuntimeNumericalTrace).",
   "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
   "cmaddrEnvVar": "DOE_CSL_CMADDR",
   "command": [
