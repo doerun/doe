@@ -1,5 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
+const build_options = @import("build_options");
 const pipeline_cache = @import("pipeline_cache.zig");
 const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const ir = @import("doe_wgsl/ir.zig");
@@ -7,13 +8,16 @@ const ir = @import("doe_wgsl/ir.zig");
 const PipelineCache = pipeline_cache.PipelineCache;
 const PipelineCacheKey = pipeline_cache.PipelineCacheKey;
 const TranslationInfo = wgsl_runtime_compile.TranslationInfo;
+const Sha256 = std.crypto.hash.sha2.Sha256;
 
 const CACHE_MAGIC: u32 = 0xD0E5_CACE;
-const CACHE_VERSION: u32 = 4;
+const CACHE_VERSION: u32 = 5;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;
 const DEFAULT_CACHE_DIR_SUFFIX = "doe/shader_translation_cache";
+const TRANSLATION_CONTRACT_DOMAIN = "doe.shader_translation_cache.contract.v1";
+const TRANSLATION_KEY_DOMAIN = "doe.shader_translation_cache.key.v1";
 
 const PayloadKind = enum(u32) {
     msl = 1,
@@ -33,6 +37,7 @@ const Header = extern struct {
     dispatch_stride: u32,
     texture_dispatch_stride: u32,
     payload_len: u32,
+    contract_digest: [32]u8,
 };
 
 pub const CachedTranslation = struct {
@@ -117,7 +122,7 @@ fn lookupComputePayload(
     expected_kind: PayloadKind,
 ) ?CachedPayload {
     const cache = ensureGlobalCache() orelse return null;
-    const payload = cache.lookup(&buildComputeKey(wgsl_source)) orelse return null;
+    const payload = cache.lookup(&buildComputeKey(wgsl_source, expected_kind)) orelse return null;
     return decodePayload(allocator, payload, expected_kind);
 }
 
@@ -131,7 +136,7 @@ fn storeComputePayload(
     const cache = ensureGlobalCache() orelse return;
     const payload = encodePayload(allocator, payload_source, info, payload_kind) catch return;
     defer allocator.free(payload);
-    cache.store(&buildComputeKey(wgsl_source), payload);
+    cache.store(&buildComputeKey(wgsl_source, payload_kind), payload);
 }
 
 fn ensureGlobalCache() ?*PipelineCache {
@@ -153,9 +158,9 @@ fn resolveDefaultCacheDir(allocator: std.mem.Allocator) ![]u8 {
     return allocator.dupe(u8, "cache/" ++ DEFAULT_CACHE_DIR_SUFFIX);
 }
 
-fn buildComputeKey(wgsl_source: []const u8) PipelineCacheKey {
+fn buildComputeKey(wgsl_source: []const u8, payload_kind: PayloadKind) PipelineCacheKey {
     return .{
-        .wgsl_hash = pipeline_cache.hash_wgsl(wgsl_source),
+        .wgsl_hash = translationKeyHash(wgsl_source, payload_kind),
         .kind = .compute,
         .pixel_format = 0,
         .vertex_entry_hash = 0,
@@ -163,6 +168,59 @@ fn buildComputeKey(wgsl_source: []const u8) PipelineCacheKey {
         .sample_count = 1,
         .color_attachment_count = 0,
     };
+}
+
+fn translationKeyHash(wgsl_source: []const u8, payload_kind: PayloadKind) [32]u8 {
+    var hasher = Sha256.init(.{});
+    hashString(&hasher, "domain", TRANSLATION_KEY_DOMAIN);
+    hashU32(&hasher, @intFromEnum(payload_kind));
+    const source_hash = pipeline_cache.hash_wgsl(wgsl_source);
+    hasher.update(source_hash[0..]);
+    const contract_digest = translationContractDigest(payload_kind);
+    hasher.update(contract_digest[0..]);
+    var digest: [32]u8 = undefined;
+    hasher.final(&digest);
+    return digest;
+}
+
+fn translationContractDigest(payload_kind: PayloadKind) [32]u8 {
+    var hasher = Sha256.init(.{});
+    hashString(&hasher, "domain", TRANSLATION_CONTRACT_DOMAIN);
+    hashU32(&hasher, CACHE_VERSION);
+    hashU32(&hasher, @intFromEnum(payload_kind));
+    hashU32(&hasher, compilerModeFlags());
+    hashString(&hasher, "wgsl_compiler_source_sha256", build_options.wgsl_compiler_source_sha256);
+    hashString(&hasher, "shader_translation_cache_source_sha256", build_options.shader_translation_cache_source_sha256);
+    hashString(&hasher, "pipeline_cache_source_sha256", build_options.pipeline_cache_source_sha256);
+    hashBool(&hasher, "lean_verified", build_options.lean_verified);
+    if (build_options.lean_verified) {
+        hashString(&hasher, "lean_source_tree_sha256", build_options.lean_source_tree_sha256);
+        hashString(&hasher, "proof_pattern_spec_sha256", build_options.proof_pattern_spec_sha256);
+        hashString(&hasher, "proof_artifact_sha256", build_options.proof_artifact_sha256);
+    }
+    var digest: [32]u8 = undefined;
+    hasher.final(&digest);
+    return digest;
+}
+
+fn hashString(hasher: *Sha256, label: []const u8, value: []const u8) void {
+    hasher.update(label);
+    hasher.update(&[_]u8{0});
+    hashU32(hasher, @intCast(value.len));
+    hasher.update(value);
+    hasher.update(&[_]u8{0});
+}
+
+fn hashBool(hasher: *Sha256, label: []const u8, value: bool) void {
+    hasher.update(label);
+    hasher.update(&[_]u8{0});
+    hasher.update(&[_]u8{if (value) 1 else 0});
+}
+
+fn hashU32(hasher: *Sha256, value: u32) void {
+    var bytes: [4]u8 = undefined;
+    std.mem.writeInt(u32, &bytes, value, .little);
+    hasher.update(&bytes);
 }
 
 fn currentFlags(info: ?*const TranslationInfo) u32 {
@@ -207,6 +265,7 @@ fn encodePayload(
         .dispatch_stride = @sizeOf(ir.DispatchPrecondition),
         .texture_dispatch_stride = @sizeOf(ir.TextureDispatchPrecondition),
         .payload_len = @intCast(payload_source.len),
+        .contract_digest = translationContractDigest(payload_kind),
     };
     writeBytes(payload, &offset, std.mem.asBytes(&header));
     writeBytes(payload, &offset, payload_source);
@@ -226,6 +285,8 @@ fn decodePayload(
     if (header.magic != CACHE_MAGIC or header.version != CACHE_VERSION) return null;
     if (header.payload_kind != @intFromEnum(expected_kind)) return null;
     if (header.flags & ~FLAG_NEEDS_SIZES_BUF != compilerModeFlags()) return null;
+    const expected_contract_digest = translationContractDigest(expected_kind);
+    if (!std.mem.eql(u8, header.contract_digest[0..], expected_contract_digest[0..])) return null;
 
     const payload_len: usize = @intCast(header.payload_len);
     const dispatch_count: usize = @intCast(header.dispatch_count);
@@ -351,4 +412,24 @@ test "shader translation cache spirv payload roundtrips" {
     try std.testing.expectEqual(@as(u32, 16), decoded.info.workgroup_size[0]);
     try std.testing.expectEqual(@as(usize, 0), decoded.info.dispatch_preconditions.len);
     try std.testing.expectEqual(@as(usize, 0), decoded.info.texture_dispatch_preconditions.len);
+}
+
+test "shader translation cache key separates backend payload kinds" {
+    const wgsl = "@compute @workgroup_size(1) fn main() {}";
+    const msl_key = buildComputeKey(wgsl, .msl).derive();
+    const spirv_key = buildComputeKey(wgsl, .spirv).derive();
+
+    try std.testing.expect(!std.mem.eql(u8, msl_key[0..], spirv_key[0..]));
+}
+
+test "shader translation cache rejects stale contract digest" {
+    const info = TranslationInfo{
+        .workgroup_size = .{ 1, 1, 1 },
+        .needs_sizes_buf = false,
+    };
+    const payload = try encodePayload(std.testing.allocator, "kernel msl", &info, .msl);
+    defer std.testing.allocator.free(payload);
+
+    payload[@offsetOf(Header, "contract_digest")] ^= 0xff;
+    try std.testing.expect(decodePayload(std.testing.allocator, payload, .msl) == null);
 }

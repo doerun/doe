@@ -554,6 +554,34 @@ class TestProofPatternSpec(unittest.TestCase):
             f"Shared proof-pattern spec references bounds theorems missing from artifact: {missing}",
         )
 
+    def test_stride_pattern_uses_matcher_contract_theorem(self):
+        stride_pattern = next(
+            (
+                entry
+                for entry in self.spec["boundsPatterns"]
+                if entry["id"] == "gid_1d_storage_buffer_stride"
+            ),
+            None,
+        )
+        self.assertIsNotNone(stride_pattern, "Missing gid_1d_storage_buffer_stride pattern")
+        self.assertEqual(
+            stride_pattern["theorem"],
+            "gid_stride_offset_matcher_contract_sound",
+        )
+
+        bounds_entries = {
+            entry["theorem"]: entry for entry in self.artifact.get("boundsEliminations", [])
+        }
+        self.assertIn(
+            "gid_stride_offset_matcher_contract_sound",
+            bounds_entries,
+            "Matcher contract theorem is missing from boundsEliminations",
+        )
+        self.assertEqual(
+            bounds_entries["gid_stride_offset_matcher_contract_sound"].get("module"),
+            "Doe.Shader.BoundsElisionMatcher",
+        )
+
     def test_spec_validator_theorems_exist_in_artifact_theorem_inventory(self):
         artifact_theorems = {thm["name"] for thm in self.artifact.get("theorems", [])}
         missing = []

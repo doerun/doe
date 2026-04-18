@@ -7,6 +7,7 @@ const std = @import("std");
 const parser_mod = @import("parser.zig");
 const sema_mod = @import("sema.zig");
 const ir_builder_mod = @import("ir_builder.zig");
+const ir_opt_rewrite_mod = @import("ir_opt_rewrite.zig");
 const ir_validate_mod = @import("ir_validate.zig");
 const emit_msl_mod = @import("emit_msl.zig");
 const emit_spirv_mod = @import("emit_spirv.zig");
@@ -260,6 +261,14 @@ fn maybe_validate_module(module: *const ir_mod.Module, failure_label: []const u8
     return true;
 }
 
+fn prepare_module_for_emit(module: *ir_mod.Module, failure_label: []const u8) bool {
+    _ = ir_opt_rewrite_mod.apply(module.allocator, module) catch |err| {
+        std.debug.print("  {s}: {}\n", .{ failure_label, err });
+        return false;
+    };
+    return true;
+}
+
 // Returns null when the stage fails; caller skips this (shader, stage) pair.
 fn run_analyze_to_ir(
     allocator: std.mem.Allocator,
@@ -379,6 +388,7 @@ fn run_e2e_msl(
         };
         defer module.deinit();
         if (!maybe_validate_module(&module, "ir_validate failed")) return null;
+        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
         const n = emit_msl_mod.emit(&module, out_buf) catch |err| {
             std.debug.print("  emit_msl failed: {}\n", .{err});
             return null;
@@ -416,6 +426,7 @@ fn run_e2e_spirv(
         };
         defer module.deinit();
         if (!maybe_validate_module(&module, "ir_validate failed")) return null;
+        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
         const n = emit_spirv_mod.emit(&module, out_buf) catch |err| {
             std.debug.print("  emit_spirv failed: {}\n", .{err});
             return null;
@@ -453,6 +464,7 @@ fn run_e2e_hlsl(
         };
         defer module.deinit();
         if (!maybe_validate_module(&module, "ir_validate failed")) return null;
+        if (!prepare_module_for_emit(&module, "ir_opt_rewrite failed")) return null;
         const n = emit_hlsl_mod.emit(&module, out_buf) catch |err| {
             std.debug.print("  emit_hlsl failed: {}\n", .{err});
             return null;
@@ -490,6 +502,10 @@ fn build_reference_module(
         return null;
     };
     if (!maybe_validate_module(&module, "warmup ir_validate failed")) {
+        module.deinit();
+        return null;
+    }
+    if (!prepare_module_for_emit(&module, "warmup ir_opt_rewrite failed")) {
         module.deinit();
         return null;
     }
@@ -587,6 +603,7 @@ fn run_warmup_iteration(
             var module = ir_builder_mod.build(allocator, &tree, &semantic) catch return false;
             defer module.deinit();
             if (!maybe_validate_module(&module, "warmup ir_validate failed")) return false;
+            if (!prepare_module_for_emit(&module, "warmup ir_opt_rewrite failed")) return false;
 
             if (stage == .e2e_msl) {
                 const buf = try allocator.alloc(u8, MSL_BUF_SIZE);

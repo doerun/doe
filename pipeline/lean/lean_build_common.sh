@@ -56,6 +56,8 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BufferDispatchPrecondition.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BufferDispatchPrecondition.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrTypePreserved.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrTypePreserved.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrOptRewrite.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrOptRewrite.lean"
 
 # Full layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
@@ -70,6 +72,8 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Shader/ComputeBounds.olean" "${ROOT_DIR}/pipeline/lean/Doe/Shader/ComputeBounds.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Shader/TextureSampleBounds.olean" "${ROOT_DIR}/pipeline/lean/Doe/Shader/TextureSampleBounds.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Shader/BoundsElisionMatcher.olean" "${ROOT_DIR}/pipeline/lean/Doe/Shader/BoundsElisionMatcher.lean"
 
 # Legacy compat shell (Doe/Model.lean re-exports Doe.Core.Model plus enum constructors).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \

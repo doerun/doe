@@ -23,11 +23,12 @@
       "minProperties": 1,
       "additionalProperties": {
         "type": "string",
-        "enum": [
-          "dawn_delegate",
-          "doe_metal",
-          "doe_vulkan",
-          "doe_d3d12"
+          "enum": [
+            "dawn_delegate",
+            "webkit_delegate",
+            "doe_metal",
+            "doe_vulkan",
+            "doe_d3d12"
         ]
       }
     },
@@ -36,12 +37,21 @@
       "additionalProperties": false,
       "required": [
         "dawn_delegate",
+        "webkit_delegate",
         "doe_metal",
         "doe_vulkan",
         "doe_d3d12"
       ],
       "properties": {
         "dawn_delegate": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "webkit_delegate": {
           "type": "array",
           "uniqueItems": true,
           "items": {

@@ -3,6 +3,7 @@ const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
 const APP_ICON_SOURCE_SVG = "../../browser/chromium/assets/logo/source/fawn-icon-main.svg";
 const APP_ICON_PRECOMPILED_ICNS = "../../browser/chromium/assets/logo/compiled/macos/fawn-icon-main.icns";
+const ABSENT_PROOF_ARTIFACT_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -62,6 +63,12 @@ const ProofProvenance = struct {
     proof_pattern_spec_sha256: []const u8,
 };
 
+const ShaderTranslationProvenance = struct {
+    wgsl_compiler_source_sha256: []const u8,
+    shader_translation_cache_source_sha256: []const u8,
+    pipeline_cache_source_sha256: []const u8,
+};
+
 fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) []u8 {
     const file = std.fs.cwd().openFile(path, .{}) catch
         @panic("required file not found");
@@ -80,41 +87,46 @@ fn lessThanString(_: void, lhs: []const u8, rhs: []const u8) bool {
     return std.mem.lessThan(u8, lhs, rhs);
 }
 
-fn hashLeanSourceTreeAlloc(allocator: std.mem.Allocator, root_path: []const u8) []u8 {
+fn hashSourceTreeAlloc(
+    allocator: std.mem.Allocator,
+    root_path: []const u8,
+    repo_rel_root: []const u8,
+    suffix: []const u8,
+) []u8 {
     var dir = std.fs.cwd().openDir(root_path, .{ .iterate = true }) catch
-        @panic("failed to open Lean source tree");
+        @panic("failed to open source tree");
     defer dir.close();
 
     var walker = dir.walk(allocator) catch
-        @panic("failed to walk Lean source tree");
+        @panic("failed to walk source tree");
     defer walker.deinit();
 
     var rel_paths = std.ArrayList([]u8).initCapacity(allocator, 0) catch
-        @panic("failed to allocate Lean path list");
+        @panic("failed to allocate source path list");
     defer {
         for (rel_paths.items) |path| allocator.free(path);
         rel_paths.deinit(allocator);
     }
 
-    while (walker.next() catch @panic("failed to iterate Lean source tree")) |entry| {
+    while (walker.next() catch @panic("failed to iterate source tree")) |entry| {
         if (entry.kind != .file) continue;
-        if (!std.mem.endsWith(u8, entry.path, ".lean")) continue;
-        rel_paths.append(allocator, allocator.dupe(u8, entry.path) catch @panic("failed to dupe Lean path")) catch
-            @panic("failed to collect Lean paths");
+        if (!std.mem.endsWith(u8, entry.path, suffix)) continue;
+        rel_paths.append(allocator, allocator.dupe(u8, entry.path) catch @panic("failed to dupe source path")) catch
+            @panic("failed to collect source paths");
     }
 
     std.sort.heap([]u8, rel_paths.items, {}, lessThanString);
 
     var hasher = std.crypto.hash.sha2.Sha256.init(.{});
     for (rel_paths.items) |rel_path| {
-        const repo_rel_path = std.fmt.allocPrint(allocator, "pipeline/lean/Doe/{s}", .{rel_path}) catch
-            @panic("failed to format Lean source path");
+        const repo_rel_path = std.fmt.allocPrint(allocator, "{s}/{s}", .{ repo_rel_root, rel_path }) catch
+            @panic("failed to format source path");
         defer allocator.free(repo_rel_path);
         hasher.update(repo_rel_path);
         hasher.update("\n");
 
         const full_path = std.fmt.allocPrint(allocator, "{s}/{s}", .{ root_path, rel_path }) catch
-            @panic("failed to format Lean source full path");
+            @panic("failed to format source full path");
         defer allocator.free(full_path);
         const contents = readFileAlloc(allocator, full_path, 512 * 1024);
         defer allocator.free(contents);
@@ -125,6 +137,14 @@ fn hashLeanSourceTreeAlloc(allocator: std.mem.Allocator, root_path: []const u8) 
     var digest: [32]u8 = undefined;
     hasher.final(&digest);
     return hexEncodeAlloc(allocator, &digest);
+}
+
+fn hashLeanSourceTreeAlloc(allocator: std.mem.Allocator, root_path: []const u8) []u8 {
+    return hashSourceTreeAlloc(allocator, root_path, "pipeline/lean/Doe", ".lean");
+}
+
+fn hashWgslCompilerSourceTreeAlloc(allocator: std.mem.Allocator) []u8 {
+    return hashSourceTreeAlloc(allocator, "src/doe_wgsl", "runtime/zig/src/doe_wgsl", ".zig");
 }
 
 fn loadLeanToolchainRefAlloc(allocator: std.mem.Allocator) []u8 {
@@ -166,6 +186,25 @@ fn addProofProvenanceOptions(options: *std.Build.Step.Options, provenance: Proof
     options.addOption([]const u8, "lean_source_tree_sha256", provenance.lean_source_tree_sha256);
     options.addOption([]const u8, "generated_comparability_contract_sha256", provenance.generated_comparability_contract_sha256);
     options.addOption([]const u8, "proof_pattern_spec_sha256", provenance.proof_pattern_spec_sha256);
+}
+
+fn loadShaderTranslationProvenance(allocator: std.mem.Allocator) ShaderTranslationProvenance {
+    return .{
+        .wgsl_compiler_source_sha256 = hashWgslCompilerSourceTreeAlloc(allocator),
+        .shader_translation_cache_source_sha256 = hashFileAlloc(allocator, "src/doe_shader_translation_cache.zig", 128 * 1024),
+        .pipeline_cache_source_sha256 = hashFileAlloc(allocator, "src/pipeline_cache.zig", 128 * 1024),
+    };
+}
+
+fn addShaderTranslationProvenanceOptions(
+    options: *std.Build.Step.Options,
+    provenance: ShaderTranslationProvenance,
+    proof_artifact_sha256: []const u8,
+) void {
+    options.addOption([]const u8, "wgsl_compiler_source_sha256", provenance.wgsl_compiler_source_sha256);
+    options.addOption([]const u8, "shader_translation_cache_source_sha256", provenance.shader_translation_cache_source_sha256);
+    options.addOption([]const u8, "pipeline_cache_source_sha256", provenance.pipeline_cache_source_sha256);
+    options.addOption([]const u8, "proof_artifact_sha256", proof_artifact_sha256);
 }
 
 fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
@@ -216,6 +255,7 @@ pub fn build(b: *std.Build) void {
     const BuildTier = enum { compute, headless, full };
     const build_tier = b.option(BuildTier, "tier", "Build tier: compute (dispatch+buffer only), headless (full WebGPU sans presentation), full (Dawn drop-in)") orelse .headless;
     const proof_provenance = loadProofProvenance(b.allocator);
+    const shader_translation_provenance = loadShaderTranslationProvenance(b.allocator);
 
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
     const build_options = b.addOptions();
@@ -233,7 +273,7 @@ pub fn build(b: *std.Build) void {
     }
 
     var proof_json: ?[]const u8 = null;
-    var proof_artifact_sha256: ?[]const u8 = null;
+    var proof_artifact_sha256: []const u8 = ABSENT_PROOF_ARTIFACT_SHA256;
     if (lean_verified) {
         const proof_artifact = std.fs.cwd().openFile("../../pipeline/lean/artifacts/proven-conditions.json", .{}) catch
             @panic("lean-verified=true but pipeline/lean/artifacts/proven-conditions.json not found. Run pipeline/lean/extract.sh first.");
@@ -243,6 +283,7 @@ pub fn build(b: *std.Build) void {
         build_options.addOption([]const u8, "lean_proof_json", proof_json.?);
         proof_artifact_sha256 = sha256HexAlloc(b.allocator, proof_json.?);
     }
+    addShaderTranslationProvenanceOptions(build_options, shader_translation_provenance, proof_artifact_sha256);
 
     {
         const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch
@@ -300,8 +341,8 @@ pub fn build(b: *std.Build) void {
     const dropin_step = b.step("dropin", "Build the drop-in WebGPU shared library");
     dropin_step.dependOn(&install_dropin.step);
     const dropin_build_metadata_files = b.addWriteFiles();
-    const proof_artifact_sha256_json = if (proof_artifact_sha256) |value|
-        std.fmt.allocPrint(b.allocator, "\"{s}\"", .{value}) catch @panic("failed to format proof artifact sha256")
+    const proof_artifact_sha256_json = if (lean_verified)
+        std.fmt.allocPrint(b.allocator, "\"{s}\"", .{proof_artifact_sha256}) catch @panic("failed to format proof artifact sha256")
     else
         "null";
     const dropin_build_metadata_json = std.fmt.allocPrint(
@@ -818,6 +859,7 @@ pub fn build(b: *std.Build) void {
     compute_build_options.addOption(bool, "lean_verified", lean_verified);
     compute_build_options.addOption(BuildTier, "build_tier", .compute);
     addProofProvenanceOptions(compute_build_options, proof_provenance);
+    addShaderTranslationProvenanceOptions(compute_build_options, shader_translation_provenance, proof_artifact_sha256);
     // Re-embed required config for the compute variant.
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
@@ -880,6 +922,7 @@ pub fn build(b: *std.Build) void {
     full_build_options.addOption(bool, "lean_verified", lean_verified);
     full_build_options.addOption(BuildTier, "build_tier", .full);
     addProofProvenanceOptions(full_build_options, proof_provenance);
+    addShaderTranslationProvenanceOptions(full_build_options, shader_translation_provenance, proof_artifact_sha256);
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
         defer f.close();

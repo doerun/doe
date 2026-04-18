@@ -105,8 +105,9 @@ pub const CopyState = struct {
     }
 };
 
-const D3D12_RESOURCE_STATE_COPY_DEST: c_int = 0x800;
-const D3D12_RESOURCE_STATE_COPY_SOURCE: c_int = 0x400;
+// Canonical D3D12 values: COPY_DEST=0x400, COPY_SOURCE=0x800.
+const D3D12_RESOURCE_STATE_COPY_DEST: c_int = 0x400;
+const D3D12_RESOURCE_STATE_COPY_SOURCE: c_int = 0x800;
 
 fn alignedSize(bytes: usize, alignment: u32) usize {
     if (alignment <= 1) return bytes;

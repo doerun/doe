@@ -5,7 +5,6 @@ const spirv = @import("spirv_builder.zig");
 const emit_spirv_shared = @import("emit_spirv_shared.zig");
 const emit_spirv_builtins = @import("emit_spirv_builtins.zig");
 const emit_spirv_fn_helpers = @import("emit_spirv_fn_helpers.zig");
-const emit_spirv_fn_folds = @import("emit_spirv_fn_folds.zig");
 
 const EmitError = emit_spirv_shared.EmitError;
 const ScalarKind = emit_spirv_fn_helpers.ScalarKind;
@@ -342,30 +341,15 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 },
                 .load => |inner| try self.emit_load_from_ref(inner),
                 .unary => |unary| try self.emit_unary(unary.op, try self.emit_value_expr(unary.operand), expr.ty),
-                .binary => |binary| blk: {
-                    // Constant-fold integer binary ops at emit time. WGSL often
-                    // encodes grid math like `kRows / 4u` or `4u * stride` from
-                    // compile-time `const` values; folding here removes an
-                    // OpUDiv / OpIMul per expression and matches Tint's shape
-                    // (Tint inlines these via its constant-propagation pass).
-                    if (try emit_spirv_fn_folds.try_fold_const_binary(self, binary, expr.ty)) |folded_id| break :blk folded_id;
-                    // Identity / absorbing folds: `x + 0`, `x * 1`, `x * 0`,
-                    // `x - 0`, `x << 0`, `x >> 0`, bitwise with 0 or all-ones.
-                    // These appear in address math like `(4u * rowBy4 + 0u) *
-                    // kPackedCols` and can't be caught by const-const fold
-                    // alone since one side is non-literal. Emit-time folding
-                    // shaves ops from inner loops across the kernel corpus.
-                    if (try emit_spirv_fn_folds.try_fold_identity_binary(self, binary, expr.ty)) |folded_id| break :blk folded_id;
-                    break :blk try self.emit_binary(
-                        binary.op,
-                        try self.emit_value_expr(binary.lhs),
-                        try self.emit_value_expr(binary.rhs),
-                        self.function.exprs.items[binary.lhs].ty,
-                        self.function.exprs.items[binary.rhs].ty,
-                        self.function.exprs.items[binary.lhs].ty,
-                        expr.ty,
-                    );
-                },
+                .binary => |binary| try self.emit_binary(
+                    binary.op,
+                    try self.emit_value_expr(binary.lhs),
+                    try self.emit_value_expr(binary.rhs),
+                    self.function.exprs.items[binary.lhs].ty,
+                    self.function.exprs.items[binary.rhs].ty,
+                    self.function.exprs.items[binary.lhs].ty,
+                    expr.ty,
+                ),
                 .call => |call| try self.emit_call(call, expr.ty),
                 .construct => |construct| try self.emit_construct(construct.ty, construct.args),
                 .member => |member| if (expr.category == .ref)
@@ -934,4 +918,3 @@ pub fn FunctionState(comptime EmitterT: type) type {
         }
     };
 }
-

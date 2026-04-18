@@ -8,8 +8,13 @@ pub const RESOURCE_STATE_RENDER_TARGET: c_int = 0x00000004;
 pub const RESOURCE_STATE_DEPTH_WRITE: c_int = 0x00000010;
 pub const RESOURCE_STATE_DEPTH_READ: c_int = 0x00000020;
 pub const RESOURCE_STATE_UNORDERED_ACCESS: c_int = 0x00000008;
-pub const RESOURCE_STATE_COPY_SOURCE: c_int = 0x00000400;
-pub const RESOURCE_STATE_COPY_DEST: c_int = 0x00000800;
+// Canonical D3D12 values per d3d12.h: COPY_DEST=0x400, COPY_SOURCE=0x800.
+// Previously swapped. Latent for the compute-only cohort; any texture
+// transitioning into or out of a copy state from the Zig backend would have
+// passed the wrong state constant, triggering D3D12 validation errors on
+// debug devices.
+pub const RESOURCE_STATE_COPY_DEST: c_int = 0x00000400;
+pub const RESOURCE_STATE_COPY_SOURCE: c_int = 0x00000800;
 pub const RESOURCE_STATE_RESOLVE_DEST: c_int = 0x00001000;
 pub const RESOURCE_STATE_RESOLVE_SOURCE: c_int = 0x00002000;
 pub const RESOURCE_STATE_PIXEL_SHADER_RESOURCE: c_int = 0x00000080;

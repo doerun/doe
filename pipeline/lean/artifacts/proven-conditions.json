@@ -3,10 +3,10 @@
   "status": "verified",
   "provenance": {
     "leanToolchainRef": "leanprover/lean4:v4.16.0",
-    "extractProgramSha256": "e1d1ffc179823bf4d42aed5238cd503da9c27861abc4d1cff8eb14f8d41be11d",
-    "leanSourceTreeSha256": "67bfa51079c9934b40b6f378980fe8d56787df4e3e068d7412badadafb802fc5",
+    "extractProgramSha256": "9031a2ebb95cbadf1b5647c5e6701e86d3d34bfde3e6399358c0ce8841e6ef90",
+    "leanSourceTreeSha256": "451e5ecbacc40bffd6bd9b7112490031b893a60aab8d154d33e2eff577e1f2fe",
     "generatedComparabilityContractSha256": "a5f14bae1ece1251c60181fd57be18e117da649e3059cb684a60560adc9376ea",
-    "proofPatternSpecSha256": "b9187d71c0588cb45a431f0fc639238920e892f3c25a69956bb0e122f17d4dfc"
+    "proofPatternSpecSha256": "a556746e3f77c774ac5abb4ae9a9d8e0ade26bad15137e0c179805d1bf8252ec"
   },
   "contractHashes": {
     "comparabilityObligationsSha256": "b4c4327fc41f6845c4ce0edc044126d2578c9ba355364c1306ec4686eef40269"
@@ -86,19 +86,52 @@
     { "name": "liveOps_preserve_live", "module": "Doe.Core.BufferDispatchPrecondition", "category": "lean_required" },
     { "name": "liveOps_dispatch_always_ready", "module": "Doe.Core.BufferDispatchPrecondition", "category": "lean_required" },
     { "name": "nPasses_preserve_original_types", "module": "Doe.Core.IrTypePreserved", "category": "lean_required" },
+    { "name": "robustClampIndex_inbounds_when_nonempty", "module": "Doe.Core.IrTypePreserved", "category": "lean_required" },
+    { "name": "robustClampIndex_noop_when_inbounds", "module": "Doe.Core.IrTypePreserved", "category": "lean_required" },
+    { "name": "robustClampRead_noop_under_bounds", "module": "Doe.Core.IrTypePreserved", "category": "lean_required" },
+    { "name": "applyRobustClamp_index_safe_when_nonempty", "module": "Doe.Core.IrTypePreserved", "category": "lean_required" },
+    { "name": "intAddZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intZeroAddLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intSubZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intMulOneRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intOneMulLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intMulZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intZeroMulLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intDivOneRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intOrZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intZeroOrLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intAndZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intZeroAndLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intXorZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intZeroXorLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intShiftLeftZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "intShiftRightZeroRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "boolAndTrueRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "boolTrueAndLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "boolOrFalseRight", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
+    { "name": "boolFalseOrLeft", "module": "Doe.Core.IrOptRewrite", "category": "lean_verified" },
     { "name": "gid_component_lt_total", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_plus_offset_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_times_stride_plus_offset_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "gid_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "gid_stride_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_plus_bounded_loop_index_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_tiled_index_plus_offset_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "gid_loop_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "gid_loop_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "gid_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "clamp_noop_when_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_2d_plus_offset_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_3d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_3d_plus_offset_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "flat_2d_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "flat_2d_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "flat_3d_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "flat_3d_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_texture_coord_1d_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_2d_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_texture_coord_1d_affine_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
@@ -107,6 +140,15 @@
     { "name": "gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "texture_1d_identity_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_2d_identity_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_3d_identity_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_1d_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_2d_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_3d_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_1d_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_2d_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "texture_3d_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "guarded_gid_texture_coords_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_3d_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "guarded_gid_texture_coords_3d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" }
@@ -146,8 +188,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_plus_offset_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "gid_offset_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "global_invocation_id.{component} + constant indexes storage buffer",
       "precondition": "workgroup_size.{component} * num_workgroups.{component} + constant <= buffer_element_count",
@@ -155,17 +197,17 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_times_stride_plus_offset_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "gid_stride_offset_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
-      "pattern": "global_invocation_id.{component} * constant + constant indexes storage buffer",
+      "pattern": "matcher-accepted global_invocation_id.{component} * constant + constant indexes storage buffer",
       "precondition": "workgroup_size.{component} * num_workgroups.{component} * stride + offset <= buffer_element_count",
       "eliminates": "min(gid.{component} * stride + offset, arrayLength(&buf) - 1) -> gid.{component} * stride + offset",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_plus_bounded_loop_index_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "gid_loop_offset_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "canonical counted-loop local i with global_invocation_id.{component} + i + constant indexing a storage buffer",
       "precondition": "either for (var i = 0; i < limit; i = i + 1) or var i = 0; loop { if (i >= limit) { break; } ... continuing { i = i + 1; } } AND workgroup_size.{component} * num_workgroups.{component} + limit + offset <= buffer_element_count",
@@ -173,8 +215,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "gid_loop_affine_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "canonical counted-loop local i with global_invocation_id.{component} * gid_stride + i * loop_stride + constant indexing a storage buffer",
       "precondition": "supported counted-loop form with i < limit, gid_stride > 0, loop_stride > 0, and workgroup_size.{component} * num_workgroups.{component} * gid_stride + limit * loop_stride + offset <= buffer_element_count",
@@ -182,8 +224,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_tiled_index_plus_offset_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "gid_tiled_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "(global_invocation_id.{component} / tile_width) * tile_stride + (global_invocation_id.{component} % tile_width) + constant indexes storage buffer",
       "precondition": "tile_width > 0 AND tile_width <= tile_stride AND (((workgroup_size.{component} * num_workgroups.{component} - 1) / tile_width) + 1) * tile_stride + offset <= buffer_element_count",
@@ -191,8 +233,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "flat_index_2d_inbounds",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "flat_2d_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "gid.y * width + gid.x indexes storage buffer",
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count",
@@ -200,8 +242,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "flat_index_2d_plus_offset_inbounds",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "flat_2d_offset_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "gid.y * width + gid.x + constant indexes storage buffer",
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height + offset <= buffer_element_count",
@@ -209,8 +251,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "flat_index_3d_inbounds",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "flat_3d_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width + gid.x indexes storage buffer",
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND ws.z * nwg.z <= depth AND width * height * depth <= buffer_element_count",
@@ -218,8 +260,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "flat_index_3d_plus_offset_inbounds",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "flat_3d_offset_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width + gid.x + constant indexes storage buffer",
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND ws.z * nwg.z <= depth AND width * height * depth + offset <= buffer_element_count",
@@ -227,8 +269,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {
-      "theorem": "gid_texture_coord_1d_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_1d_identity_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "global_invocation_id.x scalar texture coord on a bound 1D texture",
       "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex[,level]).x",
@@ -236,8 +278,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coord_1d_affine_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_1d_affine_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "global_invocation_id.x * stride + offset scalar texture coord on a bound 1D texture",
       "precondition": "workgroup_size.x * num_workgroups.x * stride + offset <= textureDimensions(tex[,level]).x",
@@ -245,8 +287,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_2d_affine_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_2d_affine_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "vec2(global_invocation_id.x * stride_x + offset_x, global_invocation_id.y * stride_y + offset_y) texture coords on a bound 2D texture",
       "precondition": "ws.x * nwg.x * stride_x + offset_x <= textureDimensions(tex[,level]).x AND ws.y * nwg.y * stride_y + offset_y <= textureDimensions(tex[,level]).y",
@@ -254,8 +296,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_3d_affine_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_3d_affine_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "vec3(global_invocation_id.x * stride_x + offset_x, global_invocation_id.y * stride_y + offset_y, global_invocation_id.z * stride_z + offset_z) texture coords on a bound 3D texture",
       "precondition": "per-axis affine dispatch extents fit textureDimensions(tex[,level]).xyz",
@@ -263,8 +305,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_1d_tiled_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "(global_invocation_id.x / tile_width) * tile_stride + (global_invocation_id.x % tile_width) + offset scalar texture coord on a bound 1D texture",
       "precondition": "tile_width > 0 AND tile_width <= tile_stride AND tiled groups fit textureDimensions(tex[,level]).x",
@@ -272,8 +314,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_2d_tiled_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "vec2(tiled_gid_x + offset_x, tiled_gid_y + offset_y) texture coords on a bound 2D texture",
       "precondition": "per-axis tiled groups fit textureDimensions(tex[,level]).xy",
@@ -281,8 +323,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.TextureSampleBounds",
+      "theorem": "texture_3d_tiled_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "vec3(tiled_gid_x + offset_x, tiled_gid_y + offset_y, tiled_gid_z + offset_z) texture coords on a bound 3D texture",
       "precondition": "per-axis tiled groups fit textureDimensions(tex[,level]).xyz",
@@ -299,8 +341,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_2d_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "texture_2d_identity_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "global_invocation_id.xy texture coords on a bound 2D texture",
       "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex,0).x AND workgroup_size.y * num_workgroups.y <= textureDimensions(tex,0).y",
@@ -317,8 +359,8 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
-      "theorem": "gid_texture_coords_3d_inbounds_when_dispatch_fits",
-      "module": "Doe.Shader.ComputeBounds",
+      "theorem": "texture_3d_identity_matcher_contract_sound",
+      "module": "Doe.Shader.BoundsElisionMatcher",
       "category": "lean_required",
       "pattern": "global_invocation_id.xyz texture coords on a bound 3D texture",
       "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex,0).x AND workgroup_size.y * num_workgroups.y <= textureDimensions(tex,0).y AND workgroup_size.z * num_workgroups.z <= textureDimensions(tex,0).z",

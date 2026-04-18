@@ -11,6 +11,7 @@ pub const sema = @import("sema.zig");
 pub const ir = @import("ir.zig");
 pub const ir_builder = @import("ir_builder.zig");
 pub const ir_validate = @import("ir_validate.zig");
+pub const ir_opt_rewrite = @import("ir_opt_rewrite.zig");
 pub const ir_transform_robustness = @import("ir_transform_robustness.zig");
 pub const emit_msl = @import("emit_msl.zig");
 pub const emit_msl_subgroups = @import("emit_msl_subgroups.zig");
@@ -325,6 +326,9 @@ pub fn analyzeToIrWithConfig(
     ir_transform_robustness.apply(allocator, &module, config) catch {
         return TranslateError.OutOfMemory;
     };
+    _ = ir_opt_rewrite.apply(allocator, &module) catch {
+        return TranslateError.OutOfMemory;
+    };
     return module;
 }
 
@@ -584,6 +588,7 @@ test {
     _ = ir;
     _ = ir_builder;
     _ = ir_validate;
+    _ = ir_opt_rewrite;
     _ = ir_transform_robustness;
     _ = emit_msl;
     _ = emit_msl_subgroups;

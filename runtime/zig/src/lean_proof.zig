@@ -83,7 +83,7 @@ pub const BoundsPattern = enum {
 
     /// buf[global_invocation_id.x * stride + offset] on a runtime-sized
     /// storage buffer, where stride is a positive compile-time constant.
-    /// Theorem: gid_times_stride_plus_offset_inbounds_when_dispatch_fits
+    /// Theorem: gid_stride_offset_matcher_contract_sound
     /// Precondition: workgroup_size.x * num_workgroups.x * stride + offset <= arrayLength(&buf)
     gid_1d_storage_buffer_stride,
 
@@ -180,75 +180,75 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
         .gid_1d_storage_buffer => true,
         .gid_1d_storage_buffer_offset => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_plus_offset_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"gid_offset_matcher_contract_sound\"");
         },
         .gid_1d_storage_buffer_stride => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_times_stride_plus_offset_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"gid_stride_offset_matcher_contract_sound\"");
         },
         .gid_1d_storage_buffer_loop_offset => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_plus_bounded_loop_index_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"gid_loop_offset_matcher_contract_sound\"");
         },
         .gid_1d_storage_buffer_loop_affine => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"gid_loop_affine_matcher_contract_sound\"");
         },
         .gid_1d_storage_buffer_tiled => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_tiled_index_plus_offset_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"gid_tiled_matcher_contract_sound\"");
         },
         .gid_2d_flat_storage_buffer => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"flat_index_2d_inbounds\"");
+            break :blk comptimeContains(proof_json.?, "\"flat_2d_matcher_contract_sound\"");
         },
         .gid_2d_flat_storage_buffer_offset => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"flat_index_2d_plus_offset_inbounds\"");
+            break :blk comptimeContains(proof_json.?, "\"flat_2d_offset_matcher_contract_sound\"");
         },
         .gid_3d_flat_storage_buffer => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"flat_index_3d_inbounds\"");
+            break :blk comptimeContains(proof_json.?, "\"flat_3d_matcher_contract_sound\"");
         },
         .gid_3d_flat_storage_buffer_offset => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"flat_index_3d_plus_offset_inbounds\"");
+            break :blk comptimeContains(proof_json.?, "\"flat_3d_offset_matcher_contract_sound\"");
         },
         .gid_texture_1d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_1d_identity_matcher_contract_sound\"");
         },
         .gid_texture_2d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_2d_identity_matcher_contract_sound\"");
         },
         .gid_texture_3d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_3d_identity_matcher_contract_sound\"");
         },
         .gid_texture_1d_affine_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_affine_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_1d_affine_matcher_contract_sound\"");
         },
         .gid_texture_2d_affine_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_affine_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_2d_affine_matcher_contract_sound\"");
         },
         .gid_texture_3d_affine_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_affine_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_3d_affine_matcher_contract_sound\"");
         },
         .gid_texture_1d_tiled_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_1d_tiled_matcher_contract_sound\"");
         },
         .gid_texture_2d_tiled_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_2d_tiled_matcher_contract_sound\"");
         },
         .gid_texture_3d_tiled_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits\"");
+            break :blk comptimeContains(proof_json.?, "\"texture_3d_tiled_matcher_contract_sound\"");
         },
     };
 }
@@ -298,15 +298,24 @@ comptime {
         requireTheorem(json, "\"gid_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_plus_offset_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_times_stride_plus_offset_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_offset_matcher_contract_sound\"");
+        requireTheorem(json, "\"gid_stride_offset_matcher_contract_sound\"");
         requireTheorem(json, "\"gid_plus_bounded_loop_index_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_tiled_index_plus_offset_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_loop_offset_matcher_contract_sound\"");
+        requireTheorem(json, "\"gid_loop_affine_matcher_contract_sound\"");
+        requireTheorem(json, "\"gid_tiled_matcher_contract_sound\"");
         requireTheorem(json, "\"clamp_noop_when_inbounds\"");
         requireTheorem(json, "\"gid_2d_inbounds\"");
         requireTheorem(json, "\"flat_index_2d_inbounds\"");
         requireTheorem(json, "\"flat_index_2d_plus_offset_inbounds\"");
         requireTheorem(json, "\"flat_index_3d_inbounds\"");
         requireTheorem(json, "\"flat_index_3d_plus_offset_inbounds\"");
+        requireTheorem(json, "\"flat_2d_matcher_contract_sound\"");
+        requireTheorem(json, "\"flat_2d_offset_matcher_contract_sound\"");
+        requireTheorem(json, "\"flat_3d_matcher_contract_sound\"");
+        requireTheorem(json, "\"flat_3d_offset_matcher_contract_sound\"");
         requireTheorem(json, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coord_1d_affine_inbounds_when_dispatch_fits\"");
@@ -316,6 +325,15 @@ comptime {
         requireTheorem(json, "\"gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"texture_1d_identity_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_2d_identity_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_3d_identity_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_1d_affine_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_2d_affine_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_3d_affine_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_1d_tiled_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_2d_tiled_matcher_contract_sound\"");
+        requireTheorem(json, "\"texture_3d_tiled_matcher_contract_sound\"");
 
         // Validate that bounds eliminations section is present when shader
         // bounds theorems are listed.

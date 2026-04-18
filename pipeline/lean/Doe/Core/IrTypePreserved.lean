@@ -14,6 +14,8 @@
 --   (1) A single transform step is type-preserving for all original entries.
 --   (2) A full transform pass (N steps) is type-preserving.
 --   (3) M sequential passes (M unbounded) preserve all original types.
+--   (4) The injected clamp is safe, and is semantically a no-op for reads whose
+--       original index already satisfies the host/GPU bounds preconditions.
 --
 -- The key abstraction is IsPrefix: after any number of passes, the original
 -- type array is a prefix of the result. All original entries are intact.
@@ -121,3 +123,83 @@ theorem nPasses_preserve_original_types (arr : ExprTypeArray)
     show IsPrefix arr (rest.foldl applyPass (applyPass arr pass))
     exact IsPrefix_trans arr (applyPass arr pass) _
       (applyPass_is_prefix arr pass) (ih (applyPass arr pass))
+
+-- ---------------------------------------------------------------------------
+-- Abstract clamp/read semantics
+-- ---------------------------------------------------------------------------
+
+/-- A buffer payload model for semantic reads. Each Nat is an abstract element
+    value; only indexing behavior matters for this proof. -/
+abbrev BufferPayload := List Nat
+
+/-- A single IR index read before or after robustness rewriting.
+    Models the `.index` expression's base plus index operand. -/
+structure IndexRead where
+  base : BufferPayload
+  index : Nat
+
+/-- Evaluate an index read in the abstract model. Out-of-bounds reads are
+    represented by `none`; in-bounds reads return `some value`. -/
+def evalIndexRead (read : IndexRead) : Option Nat :=
+  read.base.get? read.index
+
+/-- The robustness transform's sized/runtime-sized array index clamp:
+    `min(index, length - 1)`.
+
+    Mirrors:
+    - `clamp_sized`: `min(index, length - 1)`
+    - `clamp_runtime_sized`: `min(index, arrayLength(&base) - 1)` -/
+def robustClampIndex (index length : Nat) : Nat :=
+  min index (length - 1)
+
+/-- Apply the robustness clamp to an abstract index read.
+    Models the Zig rewrite of the original `.index.index` operand while keeping
+    the base expression unchanged. -/
+def applyRobustClamp (read : IndexRead) : IndexRead :=
+  { read with index := robustClampIndex read.index read.base.length }
+
+-- Classification: lean_required (quantified over unbounded Nat domains).
+/-- The clamped index is always within a non-empty container. This is the safety
+    half of the robustness transform's semantic contract. -/
+theorem robustClampIndex_inbounds_when_nonempty
+    (index length : Nat)
+    (h_pos : 0 < length) :
+    robustClampIndex index length < length := by
+  unfold robustClampIndex
+  omega
+
+-- Classification: lean_required (quantified over unbounded Nat domains).
+/-- If the original index is already in bounds, the injected `min` clamp is
+    semantically the identity on that index. -/
+theorem robustClampIndex_noop_when_inbounds
+    (index length : Nat)
+    (h_pos : 0 < length)
+    (h_bound : index < length) :
+    robustClampIndex index length = index := by
+  unfold robustClampIndex
+  omega
+
+-- Classification: lean_required (semantic read preservation over arbitrary buffers).
+/-- When the original read is already in bounds, applying the robustness clamp
+    preserves the observable read result. This is the semantic counterpart to
+    `nPasses_preserve_original_types`: the transform changes the index operand,
+    but under the bounds precondition the read denotes the same value. -/
+theorem robustClampRead_noop_under_bounds
+    (read : IndexRead)
+    (h_bound : read.index < read.base.length) :
+    evalIndexRead (applyRobustClamp read) = evalIndexRead read := by
+  have h_pos : 0 < read.base.length := by
+    exact Nat.lt_of_le_of_lt (Nat.zero_le read.index) h_bound
+  unfold applyRobustClamp evalIndexRead
+  rw [robustClampIndex_noop_when_inbounds read.index read.base.length h_pos h_bound]
+
+-- Classification: lean_required (semantic safety over arbitrary buffers).
+/-- Applying the robustness clamp to a non-empty buffer yields an in-bounds read
+    index. The theorem is stated on the transformed IR node, matching the shape
+    the emit passes observe after robustness rewriting. -/
+theorem applyRobustClamp_index_safe_when_nonempty
+    (read : IndexRead)
+    (h_pos : 0 < read.base.length) :
+    (applyRobustClamp read).index < read.base.length := by
+  unfold applyRobustClamp
+  exact robustClampIndex_inbounds_when_nonempty read.index read.base.length h_pos

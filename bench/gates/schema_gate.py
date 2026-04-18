@@ -158,7 +158,7 @@ def collect_targets(root: Path) -> list[ValidationTarget]:
 
 def validate_backend_lane_map_invariants(root: Path) -> list[str]:
     failures: list[str] = []
-    backend_ids = ("dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12")
+    backend_ids = ("dawn_delegate", "webkit_delegate", "doe_metal", "doe_vulkan", "doe_d3d12")
     allowed_upload_path_policies = {"allow_mapped_shortcuts", "staged_copy_only"}
     strict_staged_upload_lanes = {
         "metal_doe_comparable",
