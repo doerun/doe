@@ -269,6 +269,35 @@ theorem gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight
     _ < (total - 1) * gid_stride + (limit - 1) * loop_stride + offset + 1 := Nat.lt_succ_self _
     _ ≤ array_length := h_fit
 
+/-- Pure loop-only affine bound: if a shader indexes
+    `buf[i * loop_stride + offset]` where `i` is the induction variable of a
+    counted loop with `i < limit`, and the buffer is packed so that the tight
+    upper bound on the indexed range plus one fits, then the access is in
+    bounds for every iteration. No gid term is required — this is the
+    companion to `gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight`
+    for access patterns that are purely loop-induction (e.g. the matvec
+    `vectorData[col]` inner-loop load where `col` is the unrolled loop
+    index with no per-thread offset). -/
+theorem loop_index_affine_inbounds_when_loop_fits_tight
+    (array_length limit i loop_stride offset : Nat)
+    (h_i : i < limit)
+    (h_fit : (limit - 1) * loop_stride + offset + 1 ≤ array_length) :
+    i * loop_stride + offset < array_length := by
+  have h_limit_pos : 0 < limit := Nat.lt_of_le_of_lt (Nat.zero_le _) h_i
+  have h_i_le_limit_minus_one : i ≤ limit - 1 :=
+    Nat.le_sub_of_add_le (by omega)
+  have h_loop_scaled_le :
+      i * loop_stride ≤ (limit - 1) * loop_stride :=
+    Nat.mul_le_mul_right loop_stride h_i_le_limit_minus_one
+  have h_plus_offset_le :
+      i * loop_stride + offset ≤ (limit - 1) * loop_stride + offset :=
+    Nat.add_le_add_right h_loop_scaled_le offset
+  calc
+    i * loop_stride + offset
+        ≤ (limit - 1) * loop_stride + offset := h_plus_offset_le
+    _ < (limit - 1) * loop_stride + offset + 1 := Nat.lt_succ_self _
+    _ ≤ array_length := h_fit
+
 /-- 1D tiled index from a global invocation ID. Common pattern:
     `(gid / tile_width) * tile_stride + (gid % tile_width)`. -/
 def tiledIndex1D (gid tile_width tile_stride : Nat) : Nat :=

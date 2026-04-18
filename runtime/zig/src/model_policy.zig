@@ -37,59 +37,41 @@ pub const ProofLevel = enum(u8) {
     rejected,
 };
 
+fn parseEnumCaseInsensitive(comptime T: type, raw: []const u8, comptime invalid: anyerror) !T {
+    inline for (@typeInfo(T).@"enum".fields) |field| {
+        if (std.ascii.eqlIgnoreCase(raw, field.name)) {
+            return @enumFromInt(field.value);
+        }
+    }
+    return invalid;
+}
+
 pub fn parse_api(raw: []const u8) !Api {
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan")) return .vulkan;
-    if (std.ascii.eqlIgnoreCase(raw, "metal")) return .metal;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12")) return .d3d12;
-    if (std.ascii.eqlIgnoreCase(raw, "webgpu")) return .webgpu;
-    return error.InvalidApi;
+    return parseEnumCaseInsensitive(Api, raw, error.InvalidApi);
 }
 
 pub fn parse_scope(raw: []const u8) !Scope {
-    if (std.ascii.eqlIgnoreCase(raw, "alignment")) return .alignment;
-    if (std.ascii.eqlIgnoreCase(raw, "barrier")) return .barrier;
-    if (std.ascii.eqlIgnoreCase(raw, "layout")) return .layout;
-    if (std.ascii.eqlIgnoreCase(raw, "driver_toggle")) return .driver_toggle;
-    if (std.ascii.eqlIgnoreCase(raw, "memory")) return .memory;
-    return error.InvalidScope;
+    return parseEnumCaseInsensitive(Scope, raw, error.InvalidScope);
 }
 
 pub fn parse_safety(raw: []const u8) !SafetyClass {
-    if (std.ascii.eqlIgnoreCase(raw, "low")) return .low;
-    if (std.ascii.eqlIgnoreCase(raw, "moderate")) return .moderate;
-    if (std.ascii.eqlIgnoreCase(raw, "high")) return .high;
-    if (std.ascii.eqlIgnoreCase(raw, "critical")) return .critical;
-    return error.InvalidSafetyClass;
+    return parseEnumCaseInsensitive(SafetyClass, raw, error.InvalidSafetyClass);
 }
 
 pub fn parse_verification_mode(raw: []const u8) !VerificationMode {
-    if (std.ascii.eqlIgnoreCase(raw, "guard_only")) return .guard_only;
-    if (std.ascii.eqlIgnoreCase(raw, "lean_preferred")) return .lean_preferred;
-    if (std.ascii.eqlIgnoreCase(raw, "lean_required")) return .lean_required;
-    return error.InvalidVerificationMode;
+    return parseEnumCaseInsensitive(VerificationMode, raw, error.InvalidVerificationMode);
 }
 
 pub fn parse_proof_level(raw: []const u8) !ProofLevel {
-    if (std.ascii.eqlIgnoreCase(raw, "proven")) return .proven;
-    if (std.ascii.eqlIgnoreCase(raw, "guarded")) return .guarded;
-    if (std.ascii.eqlIgnoreCase(raw, "rejected")) return .rejected;
-    return error.InvalidProofLevel;
+    return parseEnumCaseInsensitive(ProofLevel, raw, error.InvalidProofLevel);
 }
 
 pub fn verification_mode_name(mode: VerificationMode) []const u8 {
-    return switch (mode) {
-        .guard_only => "guard_only",
-        .lean_preferred => "lean_preferred",
-        .lean_required => "lean_required",
-    };
+    return @tagName(mode);
 }
 
 pub fn proof_level_name(level: ProofLevel) []const u8 {
-    return switch (level) {
-        .proven => "proven",
-        .guarded => "guarded",
-        .rejected => "rejected",
-    };
+    return @tagName(level);
 }
 
 pub fn requiresProof(mode: VerificationMode) bool {
@@ -101,22 +83,11 @@ pub fn needsStrongestProof(level: ProofLevel) bool {
 }
 
 pub fn scope_name(scope: Scope) []const u8 {
-    return switch (scope) {
-        .alignment => "alignment",
-        .barrier => "barrier",
-        .layout => "layout",
-        .driver_toggle => "driver_toggle",
-        .memory => "memory",
-    };
+    return @tagName(scope);
 }
 
 pub fn safety_class_name(class: SafetyClass) []const u8 {
-    return switch (class) {
-        .low => "low",
-        .moderate => "moderate",
-        .high => "high",
-        .critical => "critical",
-    };
+    return @tagName(class);
 }
 
 const testing = std.testing;

@@ -52,12 +52,31 @@ pub fn emit(
     try W.write(buf, pos, "var global_max_val: f32 = -3.4028235e+38;\n");
     try W.write(buf, pos, "var global_max_idx: u32 = 0;\n\n");
 
-    // Fabric DSDs
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n\n");
+    // wse3 DSD-to-DSD async fabric pattern (SDK 1.4 canonical).
+    // Reference: csl-extras .../row-col-broadcast/src/sync/pe.csl.
+    // The wse2-era `@fmovs(f32_var, fabin_dsd)` synchronous form is
+    // rejected on wse3. The canonical replacement stages values through
+    // a mem1d_dsd over a single-element scratch buffer and uses
+    // `@mov32(dst_dsd, src_dsd, .{.async=true, [.activate=task]})`.
+    try W.write(buf, pos, "var scratch_in: [1]f32 = @zeros([1]f32);\n");
+    try W.write(buf, pos, "var scratch_out: [1]f32 = @zeros([1]f32);\n");
+    try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_in[i] });\n");
+    try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_out[i] });\n");
+    // Queues 0-1 are reserved by the memcpy runtime; use id=2 to avoid
+    // the wse3 router remap conflict (see emit_csl_fused for details).
+    try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
+    try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .fabric_color = reduce_color, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .fabric_color = reduce_color, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n\n");
 
-    // Phase 1: local argmax
+    // Phase 1: local argmax. Then seed-vs-non-seed split:
+    //   PE 0  : stages local_max_val into scratch_out and fires the
+    //           send east. No recv to arm (no west neighbor).
+    //   others: arms an async recv that activates reduce_recv when the
+    //           next wavelet arrives from the west. The task then
+    //           combines with local state and (if not last PE) sends
+    //           the running max east.
     try W.write(buf, pos, "fn compute() void {\n");
     try W.write(buf, pos, "    local_max_val = -3.4028235e+38;\n");
     try W.write(buf, pos, "    local_max_idx = 0;\n");
@@ -73,19 +92,27 @@ pub fn emit(
     try W.write(buf, pos, "            local_max_idx = offset + @as(u32, i);\n");
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "    }\n\n");
-    try W.write(buf, pos, "    @fmovs(reduce_out, local_max_val);\n");
+    try W.write(buf, pos, "    if (pe_id == 0) {\n");
+    try W.write(buf, pos, "        scratch_out[0] = local_max_val;\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
+    try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        @mov32(scratch_in_dsd, reduce_in, .{ .async = true, .activate = reduce_task_id });\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
-    // Phase 2: reduce
+    // Phase 2: task fires on async recv completion. scratch_in[0] now
+    // carries the chain value from the west. Combine with local state;
+    // forward east on non-last PEs or write output on the last PE.
     try W.write(buf, pos, "task reduce_recv() void {\n");
-    try W.write(buf, pos, "    var incoming: f32 = 0.0;\n");
-    try W.write(buf, pos, "    @fmovs(incoming, reduce_in);\n");
+    try W.write(buf, pos, "    const incoming = scratch_in[0];\n");
     try W.write(buf, pos, "    if (incoming > global_max_val) {\n");
     try W.write(buf, pos, "        global_max_val = incoming;\n");
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    if (pe_id != num_pes - 1) {\n");
-    try W.write(buf, pos, "        const best = math.max(f32, local_max_val, global_max_val);\n");
-    try W.write(buf, pos, "        @fmovs(reduce_out, best);\n");
+    try W.write(buf, pos, "        const best = (if (local_max_val > global_max_val) local_max_val else global_max_val);\n");
+    try W.write(buf, pos, "        scratch_out[0] = best;\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
     try W.write(buf, pos, "    } else {\n");
     try W.write(buf, pos, "        output_token[0] = local_max_idx;\n");
     try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
@@ -93,8 +120,17 @@ pub fn emit(
     try W.write(buf, pos, "}\n\n");
 
     try W.write(buf, pos, "comptime {\n");
+    // The reduce task is bound so it can fire when a wavelet arrives on
+    // reduce_color. We do NOT emit
+    //   @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });
+    // here because wse3 cslc rejects it — the layout already configured
+    // reduce_color's routes via @set_color_config, and wse3 treats the
+    // PE-local config as a duplicate. Task binding alone is sufficient
+    // for the recv-task wiring; alternative canonical patterns use pure
+    // blocking @fmovs(fabin_dsd) in the compute function, which is
+    // already how the non-task receive path in emit_csl_reduce_dist.zig
+    // currently reads from reduce_in.
     try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
-    try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
     try emitExport(buf, pos, logits);
     try W.write(buf, pos, "    @export_symbol(");
     try W.write(buf, pos, tokens);

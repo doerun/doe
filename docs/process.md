@@ -44,6 +44,9 @@
   `python3 bench/gates/csl_fixture_mirror_gate.py`
 - run CSL operation graph hard gate (compile/export/operation references, memcpy RPC/streaming pattern checks, and first source-level `unblock_cmd_stream` checks for registered CSL operation graphs):
   `python3 bench/gates/csl_operation_graph_gate.py`
+- run CSL simulator receipt gate (opt-in because the Cerebras SDK may not be installed on every host):
+  `python3 bench/runners/run_blocking_gates.py --with-csl-simulator-gate --csl-simulator-report bench/out/csl-governed-lane.report.json`
+  Add `--csl-simulator-require-ready` only on hosts with a configured SDK simulator or CS system endpoint.
 - run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):
   `python3 bench/gates/spec_diff_gate.py`
 - run comparability parity verification gate (advisory unless explicitly enabled in gate orchestration):

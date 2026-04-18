@@ -29,6 +29,13 @@ The current CSL lowering stack is:
 The most important design rule is that the explicit `HostPlan` is the contract
 boundary between higher-level execution intent and Cerebras-specific emission.
 
+Simulator and hardware execution use the same receipt path. The default target
+is local simfabric. When `DOE_CSL_CMADDR` or the governed-lane
+`--csl-cmaddr IP_ADDRESS:PORT` flag is present, the SDK runtime command is
+allowed to target a CS system. Doe records that system targeting was requested
+without persisting the endpoint or credentials; SDK authentication material
+stays in the caller's environment.
+
 ## SDK complete-program implication
 
 CSL evidence is a complete-program contract, not a single-kernel contract.

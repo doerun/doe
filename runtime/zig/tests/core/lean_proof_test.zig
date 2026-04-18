@@ -27,6 +27,7 @@ const expected_bounds_patterns = [_]ExpectedBoundsPattern{
     .{ .pattern = .gid_1d_storage_buffer_stride, .name = "gid_1d_storage_buffer_stride" },
     .{ .pattern = .gid_1d_storage_buffer_loop_offset, .name = "gid_1d_storage_buffer_loop_offset" },
     .{ .pattern = .gid_1d_storage_buffer_loop_affine, .name = "gid_1d_storage_buffer_loop_affine" },
+    .{ .pattern = .loop_1d_storage_buffer_affine, .name = "loop_1d_storage_buffer_affine" },
     .{ .pattern = .gid_1d_storage_buffer_tiled, .name = "gid_1d_storage_buffer_tiled" },
     .{ .pattern = .gid_2d_flat_storage_buffer, .name = "gid_2d_flat_storage_buffer" },
     .{ .pattern = .gid_2d_flat_storage_buffer_offset, .name = "gid_2d_flat_storage_buffer_offset" },

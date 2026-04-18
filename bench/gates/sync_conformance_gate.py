@@ -46,7 +46,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def policy_entry(policy: dict[str, Any], domain: str) -> dict[str, Any]:
     domains = policy.get("domains") if isinstance(policy.get("domains"), dict) else {}
-    entry = domains.get(domain) if isinstance(domains, dict) else None
+    entry = domains.get(domain)
     return entry if isinstance(entry, dict) else {}
 
 

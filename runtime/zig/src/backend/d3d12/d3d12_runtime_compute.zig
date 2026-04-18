@@ -16,7 +16,7 @@ pub const MAX_DXC_OUTPUT_BYTES: usize = 64 * 1024;
 pub const DXC_PROFILE: []const u8 = "cs_6_0";
 pub const DXC_ENTRYPOINT: []const u8 = "main";
 
-const D3D12_DESCRIPTOR_RANGE_TYPE_CBV: u32 = 2;
+const D3D12_DESCRIPTOR_RANGE_TYPE_CBV = dc.DESCRIPTOR_RANGE_TYPE_CBV;
 
 const DispatchInfoWords = extern struct {
     x: u32,

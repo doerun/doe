@@ -149,22 +149,17 @@ def gate_workload_claim(
     """
     reasons: list[str] = []
 
-    # Sample-count floor
-    if baseline_sample_count < policy.min_timed_samples:
+    # Sample-count floor: each side must have enough timed samples for the policy.
+    def _check_sample_floor(label: str, count: int | None) -> None:
+        if count is None or count >= policy.min_timed_samples:
+            return
         reasons.append(
-            f"baseline sample count {baseline_sample_count} < {policy.mode} "
-            f"floor {policy.min_timed_samples}"
+            f"{label} sample count {count} < {policy.mode} floor {policy.min_timed_samples}"
         )
-    if comparison_sample_count < policy.min_timed_samples:
-        reasons.append(
-            f"comparison sample count {comparison_sample_count} < {policy.mode} "
-            f"floor {policy.min_timed_samples}"
-        )
-    if warm_comparison_sample_count is not None and warm_comparison_sample_count < policy.min_timed_samples:
-        reasons.append(
-            f"warm comparison sample count {warm_comparison_sample_count} < {policy.mode} "
-            f"floor {policy.min_timed_samples}"
-        )
+
+    _check_sample_floor("baseline", baseline_sample_count)
+    _check_sample_floor("comparison", comparison_sample_count)
+    _check_sample_floor("warm comparison", warm_comparison_sample_count)
 
     # Required positive percentiles (e.g. Doe faster at p50, p95, p99)
     for pct in policy.required_positive_percentiles:

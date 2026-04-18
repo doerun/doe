@@ -74,6 +74,21 @@ pub fn required_buffer_bytes(
             const total_elements = try std.math.add(u64, element_count, precondition.element_offset);
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
+        .loop_component => blk: {
+            // Pure loop-only: max accessed index is
+            //   (loop_limit - 1) * loop_limit_multiplier + element_offset
+            // per the Lean theorem `loop_index_affine_inbounds_when_loop_fits_tight`.
+            // Empty loops touch nothing; no buffer capacity required.
+            if (precondition.loop_limit == 0) break :blk 0;
+            const max_loop_scaled = try std.math.mul(
+                u64,
+                precondition.loop_limit - 1,
+                precondition.loop_limit_multiplier,
+            );
+            const max_accessed = try std.math.add(u64, max_loop_scaled, precondition.element_offset);
+            const total_elements = try std.math.add(u64, max_accessed, 1);
+            break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
+        },
     };
 }
 
@@ -192,4 +207,33 @@ test "required_buffer_bytes accounts for affine loop contribution" {
     // Prior over-approximate formula yielded 312; the 12-byte reclaim is the
     // `em + lm - 1 = 3` elements of slack eliminated by the tight precondition.
     try std.testing.expectEqual(@as(u64, 300), required);
+}
+
+test "required_buffer_bytes computes loop-only bound independent of dispatch" {
+    const required = try required_buffer_bytes(.{
+        .kind = .loop_component,
+        .gid_axis = 0,
+        .storage_binding = .{ .group = 0, .binding = 0 },
+        .element_multiplier = 0,
+        .loop_limit = 2048,
+        .loop_limit_multiplier = 1,
+        .element_stride_bytes = 4,
+        .element_offset = 0,
+    }, .{ 1, 1, 1 }, .{ 1, 1, 1 });
+    // Tight loop-only: (limit-1)*lm + offset + 1 = 2047 + 0 + 1 = 2048; *stride=4 = 8192.
+    try std.testing.expectEqual(@as(u64, 8192), required);
+}
+
+test "required_buffer_bytes loop-only empty loop needs no capacity" {
+    const required = try required_buffer_bytes(.{
+        .kind = .loop_component,
+        .gid_axis = 0,
+        .storage_binding = .{ .group = 0, .binding = 0 },
+        .element_multiplier = 0,
+        .loop_limit = 0,
+        .loop_limit_multiplier = 1,
+        .element_stride_bytes = 4,
+        .element_offset = 7,
+    }, .{ 1, 1, 1 }, .{ 1, 1, 1 });
+    try std.testing.expectEqual(@as(u64, 0), required);
 }

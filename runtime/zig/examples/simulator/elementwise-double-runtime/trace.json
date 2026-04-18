@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_trace",
+  "target": "wse3",
+  "contract": "compile_run_smoke_summary",
+  "driverExecutable": "cs_python",
+  "compiledTargetCount": 1,
+  "compiledTargets": [
+    {
+      "name": "elementwise-double",
+      "artifactDir": "/home/x/deco/doe/runtime/zig/examples/simulator/elementwise-double-runtime/compile/compiled/elementwise-double"
+    }
+  ],
+  "peGrid": {
+    "width": 4,
+    "height": 1
+  },
+  "prefillLaunchCount": 1,
+  "decodeLaunchCount": 0,
+  "runtimeMode": "sdk_runtime_smoke",
+  "simfabTracesPath": null,
+  "generatedAtUtc": "2026-04-18T23:07:30.534815Z"
+}

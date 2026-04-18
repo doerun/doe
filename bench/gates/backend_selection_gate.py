@@ -15,10 +15,16 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 import argparse
 import json
-from pathlib import Path
 from typing import Any
 
 from native_compare_modules import contracts
+
+
+# Every non-listed lane string passes through unchanged. Only one true alias
+# lives in this map — `vulkan_dawn_directional` collapses to the release lane.
+_LANE_ALIASES: dict[str, str] = {
+    "vulkan_dawn_directional": "vulkan_dawn_release",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,31 +43,14 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def normalize_lane_alias(raw_lane: str) -> str:
-    aliases = {
-        "metal_doe_app": "metal_doe_app",
-        "metal_doe_directional": "metal_doe_directional",
-        "metal_doe_comparable": "metal_doe_comparable",
-        "metal_doe_release": "metal_doe_release",
-        "metal_dawn_release": "metal_dawn_release",
-        "vulkan_dawn_release": "vulkan_dawn_release",
-        "vulkan_dawn_directional": "vulkan_dawn_release",
-        "vulkan_doe_app": "vulkan_doe_app",
-        "vulkan_doe_comparable": "vulkan_doe_comparable",
-        "vulkan_doe_release": "vulkan_doe_release",
-        "d3d12_doe_app": "d3d12_doe_app",
-        "d3d12_doe_directional": "d3d12_doe_directional",
-        "d3d12_doe_comparable": "d3d12_doe_comparable",
-        "d3d12_doe_release": "d3d12_doe_release",
-        "d3d12_dawn_release": "d3d12_dawn_release",
-    }
-    return aliases.get(raw_lane, raw_lane)
+    return _LANE_ALIASES.get(raw_lane, raw_lane)
 
 
 def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
     if explicit_lane:
         return normalize_lane_alias(explicit_lane)
     config_path = str(report.get("configPath", ""))
-    if "metal_doe_app" in config_path or "metal_doe_app" in config_path or "metal-doe-app" in config_path:
+    if "metal_doe_app" in config_path or "metal-doe-app" in config_path:
         return "metal_doe_app"
     if ".metal.dawn" in config_path:
         return "metal_dawn_release"

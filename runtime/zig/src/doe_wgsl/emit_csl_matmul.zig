@@ -41,20 +41,34 @@ pub fn emit(
     try write(buf, pos, "// P×P PE grid, collectives_2d for row/column broadcasts.\n");
     try write(buf, pos, "// C[M,N] = A[M,K] * B^T[N,K]\n\n");
 
-    // Params from layout
+    // Params from layout. c2d_params is stitched per-PE by the layout
+    // (emit_csl_layout::emitMatmulLayout calls c2d.get_params(Px, Py, ...)
+    // with explicit x_colors / x_entrypoints / y_colors / y_entrypoints);
+    // the PE receives it as a comptime_struct and unpacks x/y halves for
+    // the two mpi_* dim-bound modules. Canonical wse3 reference:
+    // csl-extras .../benchmarks/gemm-collectives_2d/pe.csl.
+    try write(buf, pos, "param c2d_params: comptime_struct;\n");
     try write(buf, pos, "param memcpy_params: comptime_struct;\n");
-    try write(buf, pos, "param Mt: u16;\n");
-    try write(buf, pos, "param Kt: u16;\n");
-    try write(buf, pos, "param Nt: u16;\n");
+    try write(buf, pos, "param Mt: i16;\n");
+    try write(buf, pos, "param Kt: i16;\n");
+    try write(buf, pos, "param Nt: i16;\n");
     try write(buf, pos, "param P: u16;\n\n");
 
     // Imports
     try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try write(buf, pos, "const mpi_x = @import_module(\"<collectives_2d/pe>\", .{\n");
-    try write(buf, pos, "    .dim = .x,\n");
+    try write(buf, pos, "    .dim_params = c2d_params.x,\n");
+    try write(buf, pos, "    .queues = [2]u16{2, 4},\n");
+    try write(buf, pos, "    .dest_dsr_ids = [1]u16{1},\n");
+    try write(buf, pos, "    .src0_dsr_ids = [1]u16{1},\n");
+    try write(buf, pos, "    .src1_dsr_ids = [1]u16{1},\n");
     try write(buf, pos, "});\n");
     try write(buf, pos, "const mpi_y = @import_module(\"<collectives_2d/pe>\", .{\n");
-    try write(buf, pos, "    .dim = .y,\n");
+    try write(buf, pos, "    .dim_params = c2d_params.y,\n");
+    try write(buf, pos, "    .queues = [2]u16{3, 5},\n");
+    try write(buf, pos, "    .dest_dsr_ids = [1]u16{2},\n");
+    try write(buf, pos, "    .src0_dsr_ids = [1]u16{2},\n");
+    try write(buf, pos, "    .src1_dsr_ids = [1]u16{2},\n");
     try write(buf, pos, "});\n\n");
 
     // Data tiles
@@ -74,11 +88,13 @@ pub fn emit(
     try write(buf, pos, "var px: u16 = 0;\n");
     try write(buf, pos, "var py: u16 = 0;\n\n");
 
-    // Task IDs
-    try write(buf, pos, "const x_done_id: local_task_id = @get_local_task_id(10);\n");
-    try write(buf, pos, "const y_done_id: local_task_id = @get_local_task_id(11);\n");
-    try write(buf, pos, "const compute_task_id: local_task_id = @get_local_task_id(12);\n");
-    try write(buf, pos, "const exit_task_id: local_task_id = @get_local_task_id(13);\n\n");
+    // Task IDs. Task ids 8..11 are reserved by the collectives_2d c2d.get_params
+    // call in the layout (x_entrypoints = {8,9}, y_entrypoints = {10,11}); the
+    // user-defined tasks live at 12..15 to avoid colliding with them.
+    try write(buf, pos, "const exit_task_id:    local_task_id = @get_local_task_id(12);\n");
+    try write(buf, pos, "const compute_task_id: local_task_id = @get_local_task_id(13);\n");
+    try write(buf, pos, "const x_done_id:       local_task_id = @get_local_task_id(14);\n");
+    try write(buf, pos, "const y_done_id:       local_task_id = @get_local_task_id(15);\n\n");
 
     // Synchronization flags
     try write(buf, pos, "var x_done: bool = false;\n");
@@ -119,7 +135,7 @@ pub fn emit(
     try write(buf, pos, "    const Ap = if (px == step) &A_tile else &A_buf;\n");
     try write(buf, pos, "    const Bp = if (py == step) &B_tile else &B_buf;\n\n");
 
-    try write(buf, pos, "    // Local GEMM: C_tile += Ap * Bp^T via @fmacs\n");
+    try write(buf, pos, "    // Local GEMM step: accumulate Ap * Bp^T into C_tile via @fmacs\n");
     try write(buf, pos, "    for (@range(i16, Kt)) |k| {\n");
     try write(buf, pos, "        var C_dsd = @get_dsd(mem1d_dsd, .{\n");
     try write(buf, pos, "            .base_address = &C_tile,\n");
@@ -131,7 +147,7 @@ pub fn emit(
     try write(buf, pos, "            .offset = @as(i16, k) * @as(i16, Mt),\n");
     try write(buf, pos, "        });\n");
     try write(buf, pos, "        for (@range(i16, Nt)) |j| {\n");
-    try write(buf, pos, "            const b_val = Bp.*[@as(u32, j) * Kt + @as(u32, k)];\n");
+    try write(buf, pos, "            const b_val = Bp.*[@as(u32, j) * @as(u32, Kt) + @as(u32, k)];\n");
     try write(buf, pos, "            @fmacs(C_dsd, C_dsd, A_dsd, b_val);\n");
     try write(buf, pos, "            C_dsd = @increment_dsd_offset(C_dsd, Mt, f32);\n");
     try write(buf, pos, "        }\n");

@@ -318,9 +318,9 @@ def main() -> int:
     summary = build_summary(milestones, errors)
 
     if args.emit_json:
-      print(json.dumps(summary, indent=2))
+        print(json.dumps(summary, indent=2))
     else:
-      emit_text(summary)
+        emit_text(summary)
 
     return 0 if summary["ok"] else 1
 

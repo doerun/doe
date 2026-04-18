@@ -1,0 +1,27 @@
+{
+  "kernel": "elementwise-double",
+  "passed": true,
+  "maxAbsErr": 0.0,
+  "width": 4,
+  "chunkSize": 1024,
+  "totalElements": 4096,
+  "executionTarget": "simfabric",
+  "sampleInput": [
+    0.5,
+    1.5,
+    2.5,
+    3.5
+  ],
+  "sampleExpected": [
+    1.0,
+    3.0,
+    5.0,
+    7.0
+  ],
+  "sampleActual": [
+    1.0,
+    3.0,
+    5.0,
+    7.0
+  ]
+}

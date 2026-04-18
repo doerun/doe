@@ -548,6 +548,10 @@ pub const DispatchPreconditionKind = enum {
     gid_component_tiled,
     flat_index_2d_dispatch_x,
     flat_index_3d_dispatch_xy,
+    /// Pure loop-only access (`i * loop_stride + offset` with no gid term).
+    /// The host bound check is independent of dispatch geometry: only the
+    /// loop limit, stride, and offset are needed.
+    loop_component,
 };
 
 pub const DispatchPrecondition = struct {

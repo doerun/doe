@@ -7,22 +7,29 @@ const Allocator = std.mem.Allocator;
 pub const RunOptions = doe_plan_executor.RunOptions;
 pub const CliRunFn = *const fn (Allocator, RunOptions) anyerror!void;
 
+const OPTIONS_WITH_VALUE = [_][]const u8{
+    "--plan",
+    "--trace-meta",
+    "--trace-jsonl",
+    "--workload",
+    "--vendor",
+    "--api",
+    "--family",
+    "--driver",
+    "--kernel-root",
+    "--backend-lane",
+    "--gpu-timestamp-mode",
+    "--queue-wait-mode",
+    "--queue-sync-mode",
+    "--upload-buffer-usage",
+    "--upload-submit-every",
+};
+
 fn optionExpectsValue(option: []const u8) bool {
-    return std.mem.eql(u8, option, "--plan") or
-        std.mem.eql(u8, option, "--trace-meta") or
-        std.mem.eql(u8, option, "--trace-jsonl") or
-        std.mem.eql(u8, option, "--workload") or
-        std.mem.eql(u8, option, "--vendor") or
-        std.mem.eql(u8, option, "--api") or
-        std.mem.eql(u8, option, "--family") or
-        std.mem.eql(u8, option, "--driver") or
-        std.mem.eql(u8, option, "--kernel-root") or
-        std.mem.eql(u8, option, "--backend-lane") or
-        std.mem.eql(u8, option, "--gpu-timestamp-mode") or
-        std.mem.eql(u8, option, "--queue-wait-mode") or
-        std.mem.eql(u8, option, "--queue-sync-mode") or
-        std.mem.eql(u8, option, "--upload-buffer-usage") or
-        std.mem.eql(u8, option, "--upload-submit-every");
+    for (OPTIONS_WITH_VALUE) |name| {
+        if (std.mem.eql(u8, option, name)) return true;
+    }
+    return false;
 }
 
 fn parseArgs(allocator: Allocator) !RunOptions {

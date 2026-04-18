@@ -18,7 +18,6 @@ import re
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 from bench.lib import output_paths
 

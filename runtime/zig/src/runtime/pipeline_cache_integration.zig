@@ -136,15 +136,7 @@ pub fn storeRenderPipeline(
 
 pub fn recordRenderPipelineCreation() void {
     const cache = ensureGlobalCache() orelse return;
-    var key = PipelineCacheKey{
-        .wgsl_hash = std.mem.zeroes([32]u8),
-        .kind = .render,
-        .pixel_format = 0,
-        .vertex_entry_hash = 0,
-        .fragment_entry_hash = 0,
-        .sample_count = 1,
-        .color_attachment_count = 0,
-    };
+    const key = buildRenderKey(null, 0, null, null, 1, 0);
     if (cache.lookup(&key) != null) {
         _ = cache_hits.fetchAdd(1, .monotonic);
         return;

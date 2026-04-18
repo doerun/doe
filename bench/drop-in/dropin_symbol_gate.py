@@ -18,14 +18,8 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
-
-BENCH_ROOT = Path(__file__).resolve().parents[1]
-if str(BENCH_ROOT) not in sys.path:
-    sys.path.insert(0, str(BENCH_ROOT))
 
 from bench.lib import output_paths
 

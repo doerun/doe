@@ -1,0 +1,16 @@
+{
+  "kernel": "gather",
+  "passed": true,
+  "maxAbsErr": 0.0,
+  "width": 4,
+  "hiddenSize": 64,
+  "rowsPerPe": 8,
+  "numTokens": 4,
+  "executionTarget": "simfabric",
+  "indices": [
+    3,
+    0,
+    27,
+    25
+  ]
+}

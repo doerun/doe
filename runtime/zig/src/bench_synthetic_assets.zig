@@ -55,7 +55,7 @@ pub fn readAssetWords(
     const words = try allocator.alloc(u32, word_count);
     for (words, 0..) |*word, idx| {
         const byte_index = idx * @sizeOf(u32);
-        word.* = std.mem.readInt(u32, bytes[byte_index .. byte_index + @sizeOf(u32)][0..@sizeOf(u32)], .little);
+        word.* = std.mem.readInt(u32, bytes[byte_index..][0..@sizeOf(u32)], .little);
     }
     return words;
 }

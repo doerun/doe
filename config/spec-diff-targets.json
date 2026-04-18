@@ -12,6 +12,10 @@
     "d3d12": {
       "path": "browser/chromium/src/third_party/dawn/third_party/directx-headers/src/include/directx/d3d12.h",
       "style": "c_enum_member"
+    },
+    "dxgi_format": {
+      "path": "browser/chromium/src/third_party/dawn/third_party/directx-headers/src/include/directx/dxgiformat.h",
+      "style": "c_enum_member"
     }
   },
   "targets": [
@@ -454,6 +458,170 @@
       "fields": [
         "HEAP_TYPE_UPLOAD",
         "HEAP_TYPE_READBACK"
+      ]
+    },
+    {
+      "id": "d3d12_srv_dimension",
+      "description": "D3D12 D3D12_SRV_DIMENSION enum values used by the Doe backend for CreateShaderResourceView (Zig names drop the D3D12_ prefix).",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "SRV_DIMENSION_UNKNOWN",
+        "SRV_DIMENSION_BUFFER",
+        "SRV_DIMENSION_TEXTURE1D",
+        "SRV_DIMENSION_TEXTURE1DARRAY",
+        "SRV_DIMENSION_TEXTURE2D",
+        "SRV_DIMENSION_TEXTURE2DARRAY",
+        "SRV_DIMENSION_TEXTURE2DMS",
+        "SRV_DIMENSION_TEXTURE2DMSARRAY",
+        "SRV_DIMENSION_TEXTURE3D",
+        "SRV_DIMENSION_TEXTURECUBE",
+        "SRV_DIMENSION_TEXTURECUBEARRAY"
+      ]
+    },
+    {
+      "id": "d3d12_descriptor_heap_type",
+      "description": "D3D12 D3D12_DESCRIPTOR_HEAP_TYPE enum values used by the Doe backend (Zig names drop the D3D12_ prefix). Canonical header uses enum arithmetic for SAMPLER/RTV/DSV.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV",
+        "DESCRIPTOR_HEAP_TYPE_SAMPLER",
+        "DESCRIPTOR_HEAP_TYPE_RTV",
+        "DESCRIPTOR_HEAP_TYPE_DSV"
+      ]
+    },
+    {
+      "id": "d3d12_descriptor_range_type",
+      "description": "D3D12 D3D12_DESCRIPTOR_RANGE_TYPE enum values used by the Doe backend (Zig names drop the D3D12_ prefix). Canonical header uses enum arithmetic for UAV/CBV/SAMPLER.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "DESCRIPTOR_RANGE_TYPE_SRV",
+        "DESCRIPTOR_RANGE_TYPE_UAV",
+        "DESCRIPTOR_RANGE_TYPE_CBV",
+        "DESCRIPTOR_RANGE_TYPE_SAMPLER"
+      ]
+    },
+    {
+      "id": "d3d12_resource_dimension",
+      "description": "D3D12 D3D12_RESOURCE_DIMENSION enum values. Pre-emptive Zig coverage; bridge.c consumes the canonical C symbols directly today.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "RESOURCE_DIMENSION_UNKNOWN",
+        "RESOURCE_DIMENSION_BUFFER",
+        "RESOURCE_DIMENSION_TEXTURE1D",
+        "RESOURCE_DIMENSION_TEXTURE2D",
+        "RESOURCE_DIMENSION_TEXTURE3D"
+      ]
+    },
+    {
+      "id": "d3d12_input_classification",
+      "description": "D3D12 D3D12_INPUT_CLASSIFICATION enum values used by commands/d3d12_render.zig for vertex-input slot classification.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "INPUT_CLASSIFICATION_PER_VERTEX_DATA",
+        "INPUT_CLASSIFICATION_PER_INSTANCE_DATA"
+      ]
+    },
+    {
+      "id": "d3d12_command_list_type",
+      "description": "D3D12 D3D12_COMMAND_LIST_TYPE enum values. Pre-emptive Zig coverage; bridge.c consumes the canonical C symbols directly today.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "COMMAND_LIST_TYPE_DIRECT",
+        "COMMAND_LIST_TYPE_BUNDLE",
+        "COMMAND_LIST_TYPE_COMPUTE",
+        "COMMAND_LIST_TYPE_COPY"
+      ]
+    },
+    {
+      "id": "dxgi_format",
+      "description": "Microsoft DXGI_FORMAT enum values declared in d3d12_formats.zig for WebGPU-to-DXGI texture and vertex format translation. Excludes the Doe-internal alias DXGI_FORMAT_D24_X8_STENCIL8 which overlaps the canonical D24_UNORM_S8_UINT resource.",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_formats.zig",
+      "zigNamespace": null,
+      "header": "dxgi_format",
+      "canonicalPrefix": "",
+      "fields": [
+        "DXGI_FORMAT_R32G32B32A32_FLOAT",
+        "DXGI_FORMAT_R32G32B32A32_UINT",
+        "DXGI_FORMAT_R32G32B32A32_SINT",
+        "DXGI_FORMAT_R32G32B32_FLOAT",
+        "DXGI_FORMAT_R32G32B32_UINT",
+        "DXGI_FORMAT_R32G32B32_SINT",
+        "DXGI_FORMAT_R16G16B16A16_FLOAT",
+        "DXGI_FORMAT_R16G16B16A16_UNORM",
+        "DXGI_FORMAT_R16G16B16A16_UINT",
+        "DXGI_FORMAT_R16G16B16A16_SNORM",
+        "DXGI_FORMAT_R16G16B16A16_SINT",
+        "DXGI_FORMAT_R32G32_FLOAT",
+        "DXGI_FORMAT_R32G32_UINT",
+        "DXGI_FORMAT_R32G32_SINT",
+        "DXGI_FORMAT_D32_FLOAT_S8X24_UINT",
+        "DXGI_FORMAT_R10G10B10A2_UNORM",
+        "DXGI_FORMAT_R10G10B10A2_UINT",
+        "DXGI_FORMAT_R11G11B10_FLOAT",
+        "DXGI_FORMAT_R8G8B8A8_UNORM",
+        "DXGI_FORMAT_R8G8B8A8_UNORM_SRGB",
+        "DXGI_FORMAT_R8G8B8A8_UINT",
+        "DXGI_FORMAT_R8G8B8A8_SNORM",
+        "DXGI_FORMAT_R8G8B8A8_SINT",
+        "DXGI_FORMAT_R16G16_FLOAT",
+        "DXGI_FORMAT_R16G16_UNORM",
+        "DXGI_FORMAT_R16G16_UINT",
+        "DXGI_FORMAT_R16G16_SNORM",
+        "DXGI_FORMAT_R16G16_SINT",
+        "DXGI_FORMAT_D32_FLOAT",
+        "DXGI_FORMAT_R32_FLOAT",
+        "DXGI_FORMAT_R32_UINT",
+        "DXGI_FORMAT_R32_SINT",
+        "DXGI_FORMAT_D24_UNORM_S8_UINT",
+        "DXGI_FORMAT_R8G8_UNORM",
+        "DXGI_FORMAT_R8G8_UINT",
+        "DXGI_FORMAT_R8G8_SNORM",
+        "DXGI_FORMAT_R8G8_SINT",
+        "DXGI_FORMAT_R16_FLOAT",
+        "DXGI_FORMAT_D16_UNORM",
+        "DXGI_FORMAT_R16_UNORM",
+        "DXGI_FORMAT_R16_SNORM",
+        "DXGI_FORMAT_R16_UINT",
+        "DXGI_FORMAT_R16_SINT",
+        "DXGI_FORMAT_R8_UNORM",
+        "DXGI_FORMAT_R8_SNORM",
+        "DXGI_FORMAT_R8_UINT",
+        "DXGI_FORMAT_R8_SINT",
+        "DXGI_FORMAT_R9G9B9E5_SHAREDEXP",
+        "DXGI_FORMAT_BC1_UNORM",
+        "DXGI_FORMAT_BC1_UNORM_SRGB",
+        "DXGI_FORMAT_BC2_UNORM",
+        "DXGI_FORMAT_BC2_UNORM_SRGB",
+        "DXGI_FORMAT_BC3_UNORM",
+        "DXGI_FORMAT_BC3_UNORM_SRGB",
+        "DXGI_FORMAT_BC4_UNORM",
+        "DXGI_FORMAT_BC4_SNORM",
+        "DXGI_FORMAT_BC5_UNORM",
+        "DXGI_FORMAT_BC5_SNORM",
+        "DXGI_FORMAT_B8G8R8A8_UNORM",
+        "DXGI_FORMAT_B8G8R8A8_UNORM_SRGB",
+        "DXGI_FORMAT_BC6H_UF16",
+        "DXGI_FORMAT_BC6H_SF16",
+        "DXGI_FORMAT_BC7_UNORM",
+        "DXGI_FORMAT_BC7_UNORM_SRGB"
       ]
     }
   ]

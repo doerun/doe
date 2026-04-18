@@ -33,13 +33,20 @@ pub fn emit(
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n\n");
 
-    // Q4K block layout constants
+    // Q4K block layout constants.
+    //
+    // Array dimensions must match param num_blocks: i16, so expose an i16
+    // alias for each byte-count constant that participates in array sizes.
+    // The u32 form is still used for byte-address arithmetic inside the
+    // compute body (block_idx * Q4K_BLOCK_BYTES_U32).
     try W.write(buf, pos, "const QK_K: u32 = 256;\n");
-    try W.write(buf, pos, "const Q4K_BLOCK_BYTES: u32 = 144;\n\n");
+    try W.write(buf, pos, "const QK_K_I16: i16 = 256;\n");
+    try W.write(buf, pos, "const Q4K_BLOCK_BYTES: u32 = 144;\n");
+    try W.write(buf, pos, "const Q4K_BLOCK_BYTES_I16: i16 = 144;\n\n");
 
-    // Buffers
-    try emitBuf(buf, pos, qnt, "[num_blocks * Q4K_BLOCK_BYTES]u8");
-    try emitBuf(buf, pos, out, "[num_blocks * QK_K]f32");
+    // Buffers — sizes as i16 * i16 for CSL's array-dimension rule.
+    try emitBuf(buf, pos, qnt, "[num_blocks * Q4K_BLOCK_BYTES_I16]u8");
+    try emitBuf(buf, pos, out, "[num_blocks * QK_K_I16]f32");
     try W.write(buf, pos, "\n");
     try emitPtrTyped(buf, pos, qnt, "u8");
     try emitPtrTyped(buf, pos, out, "f32");
@@ -65,8 +72,11 @@ pub fn emit(
     try W.write(buf, pos, "    const dmin = @bitcast(f16, dmin_bits);\n\n");
 
     // Per-sub-block scales and mins
-    try W.write(buf, pos, "    var scales: [8]f32 = undefined;\n");
-    try W.write(buf, pos, "    var mins: [8]f32 = undefined;\n");
+    // CSL rejects `= undefined` local initializers. Use @zeros(T) — the
+    // loop that follows writes every element, so zero-init vs undefined
+    // is semantically equivalent here.
+    try W.write(buf, pos, "    var scales: [8]f32 = @zeros([8]f32);\n");
+    try W.write(buf, pos, "    var mins: [8]f32 = @zeros([8]f32);\n");
     try W.write(buf, pos, "    for (@range(u32, 8)) |sb| {\n");
     try W.write(buf, pos, "        const sc_byte = ");
     try W.write(buf, pos, qnt);

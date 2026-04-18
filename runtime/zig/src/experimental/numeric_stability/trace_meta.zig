@@ -1,4 +1,5 @@
 const std = @import("std");
+const trace_text = @import("../../trace_text.zig");
 
 pub const TraceNumericStabilityDecisionCounts = struct {
     accept_fast: u32 = 0,
@@ -21,21 +22,7 @@ pub const TraceNumericStabilitySummary = struct {
     downstream_stop_count: u32 = 0,
 };
 
-fn writeJsonString(writer: anytype, value: []const u8) !void {
-    try writer.writeByte('"');
-    for (value) |byte| {
-        switch (byte) {
-            '"' => try writer.writeAll("\\\""),
-            '\\' => try writer.writeAll("\\\\"),
-            '\n' => try writer.writeAll("\\n"),
-            '\r' => try writer.writeAll("\\r"),
-            '\t' => try writer.writeAll("\\t"),
-            0...8, 11...12, 14...31 => try writer.print("\\u00{x:0>2}", .{byte}),
-            else => try writer.writeByte(byte),
-        }
-    }
-    try writer.writeByte('"');
-}
+const writeJsonString = trace_text.writeJsonString;
 
 pub fn writeNumericStabilityMeta(writer: anytype, summary: TraceNumericStabilitySummary) !void {
     try writer.writeByte('{');

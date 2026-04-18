@@ -38,7 +38,8 @@ def check_render_group() -> tuple[bool, str]:
         render_gid = grp.getgrnam("render").gr_gid
     except Exception:
         return False, "unable to resolve render group"
-    return render_gid in groups, "ok" if render_gid in groups else "user is not in render group"
+    in_render_group = render_gid in groups
+    return in_render_group, "ok" if in_render_group else "user is not in render group"
 
 
 def check_vulkaninfo() -> tuple[bool, str]:

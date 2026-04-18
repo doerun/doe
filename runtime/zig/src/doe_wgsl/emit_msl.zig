@@ -9,10 +9,7 @@ pub const EmitError = error{
 pub const MAX_OUTPUT: usize = emit_msl_ir.MAX_OUTPUT;
 
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
-    return emit_msl_ir.emit(module, out) catch |err| switch (err) {
-        error.OutputTooLarge => error.OutputTooLarge,
-        error.InvalidIr => error.InvalidIr,
-    };
+    return emit_msl_ir.emit(module, out);
 }
 
 pub fn moduleNeedsSizesParam(module_ir: *const ir.Module) bool {

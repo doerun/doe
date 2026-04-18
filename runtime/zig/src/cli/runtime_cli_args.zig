@@ -51,28 +51,35 @@ fn printUsage(stdout: anytype) !void {
     try main_usage.printUsage(stdout);
 }
 
+const OPTIONS_WITH_VALUE = [_][]const u8{
+    "--quirks",
+    "--commands",
+    "--command-repeat",
+    "--quirk-mode",
+    "--vendor",
+    "--api",
+    "--family",
+    "--driver",
+    "--trace-jsonl",
+    "--trace-meta",
+    "--numeric-stability-policy",
+    "--numeric-stability-execution-profile",
+    "--kernel-root",
+    "--backend",
+    "--backend-lane",
+    "--upload-buffer-usage",
+    "--upload-submit-every",
+    "--gpu-timestamp-mode",
+    "--queue-wait-mode",
+    "--queue-sync-mode",
+    "--replay",
+};
+
 fn optionExpectsValue(option: []const u8) bool {
-    return std.mem.eql(u8, option, "--quirks") or
-        std.mem.eql(u8, option, "--commands") or
-        std.mem.eql(u8, option, "--command-repeat") or
-        std.mem.eql(u8, option, "--quirk-mode") or
-        std.mem.eql(u8, option, "--vendor") or
-        std.mem.eql(u8, option, "--api") or
-        std.mem.eql(u8, option, "--family") or
-        std.mem.eql(u8, option, "--driver") or
-        std.mem.eql(u8, option, "--trace-jsonl") or
-        std.mem.eql(u8, option, "--trace-meta") or
-        std.mem.eql(u8, option, "--numeric-stability-policy") or
-        std.mem.eql(u8, option, "--numeric-stability-execution-profile") or
-        std.mem.eql(u8, option, "--kernel-root") or
-        std.mem.eql(u8, option, "--backend") or
-        std.mem.eql(u8, option, "--backend-lane") or
-        std.mem.eql(u8, option, "--upload-buffer-usage") or
-        std.mem.eql(u8, option, "--upload-submit-every") or
-        std.mem.eql(u8, option, "--gpu-timestamp-mode") or
-        std.mem.eql(u8, option, "--queue-wait-mode") or
-        std.mem.eql(u8, option, "--queue-sync-mode") or
-        std.mem.eql(u8, option, "--replay");
+    for (OPTIONS_WITH_VALUE) |name| {
+        if (std.mem.eql(u8, option, name)) return true;
+    }
+    return false;
 }
 
 pub fn parseArgs(argv: [][:0]u8, stdout: anytype) !ParseOutcome {

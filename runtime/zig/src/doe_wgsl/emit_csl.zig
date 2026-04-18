@@ -17,11 +17,5 @@ pub const EmitError = error{
 pub const MAX_OUTPUT: usize = emit_csl_core.MAX_OUTPUT;
 
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
-    return emit_csl_core.emit(module, out) catch |err| switch (err) {
-        error.OutputTooLarge => error.OutputTooLarge,
-        error.InvalidIr => error.InvalidIr,
-        error.UnsupportedBuiltin => error.UnsupportedBuiltin,
-        error.UnsupportedConstruct => error.UnsupportedConstruct,
-        error.UnsupportedPattern => error.UnsupportedPattern,
-    };
+    return emit_csl_core.emit(module, out);
 }

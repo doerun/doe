@@ -39,6 +39,7 @@
     "domains": [],
     "ids": [
       "browser_ort_webgpu_compare_sentiment",
+      "browser_ort_webgpu_compare_sentiment_medium",
       "browser_ort_webgpu_compare_sentiment_longform"
     ],
     "excludeIds": []

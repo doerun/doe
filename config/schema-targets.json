@@ -384,6 +384,10 @@
     {
       "schema": "bench/ir/benchmark_ir.schema.json",
       "data": "bench/ir/gemma3_1b.json"
+    },
+    {
+      "schema": "config/pilot-evidence-receipt.schema.json",
+      "data": "bench/out/pilot-evidence/example/receipt.json"
     }
   ],
   "globTargets": [

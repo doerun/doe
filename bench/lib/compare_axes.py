@@ -90,20 +90,23 @@ def derive_temperature(*, mode: str = "", temperature: str = "") -> str:
 
 # -- Product helpers (v2 taxonomy) ------------------------------------------
 
-def load_taxonomy_products(taxonomy_path: str | Path = "config/compare-taxonomy.json") -> list[str]:
+_DEFAULT_TAXONOMY_PATH = "config/compare-taxonomy.json"
+
+
+def _load_taxonomy_axis(axis: str, taxonomy_path: str | Path) -> list[str]:
     p = Path(taxonomy_path)
     if not p.exists():
         return []
     data = json.loads(p.read_text(encoding="utf-8"))
-    return data.get("axes", {}).get("products", [])
+    return data.get("axes", {}).get(axis, [])
 
 
-def load_taxonomy_surfaces(taxonomy_path: str | Path = "config/compare-taxonomy.json") -> list[str]:
-    p = Path(taxonomy_path)
-    if not p.exists():
-        return []
-    data = json.loads(p.read_text(encoding="utf-8"))
-    return data.get("axes", {}).get("surfaces", [])
+def load_taxonomy_products(taxonomy_path: str | Path = _DEFAULT_TAXONOMY_PATH) -> list[str]:
+    return _load_taxonomy_axis("products", taxonomy_path)
+
+
+def load_taxonomy_surfaces(taxonomy_path: str | Path = _DEFAULT_TAXONOMY_PATH) -> list[str]:
+    return _load_taxonomy_axis("surfaces", taxonomy_path)
 
 
 # -- Compare-view helpers ---------------------------------------------------

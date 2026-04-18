@@ -98,12 +98,11 @@ pub const CoverageStatus = core_surface.CoverageStatus;
 
 /// Build a static coverage ledger snapshot for all full-only command kinds.
 pub fn full_only_coverage_ledger() [FULL_ONLY_COMMAND_COUNT]CoverageEntry {
-    const kind_names = full_only_command_kind_names();
     var ledger: [FULL_ONLY_COMMAND_COUNT]CoverageEntry = undefined;
     inline for (@typeInfo(FullCommandKind).@"enum".fields, 0..) |field, i| {
         const kind: FullCommandKind = @enumFromInt(field.value);
         ledger[i] = .{
-            .command_kind = kind_names[i],
+            .command_kind = field.name,
             .domain = domain_for_kind(kind),
             .status = .implemented,
         };
@@ -116,12 +115,8 @@ pub fn combined_coverage_ledger() [TOTAL_COMMAND_COUNT]CoverageEntry {
     const core_ledger = core_surface.coverage_ledger();
     const full_ledger = full_only_coverage_ledger();
     var combined: [TOTAL_COMMAND_COUNT]CoverageEntry = undefined;
-    for (core_ledger, 0..) |entry, i| {
-        combined[i] = entry;
-    }
-    for (full_ledger, 0..) |entry, i| {
-        combined[core_surface.CORE_COMMAND_COUNT + i] = entry;
-    }
+    @memcpy(combined[0..core_surface.CORE_COMMAND_COUNT], &core_ledger);
+    @memcpy(combined[core_surface.CORE_COMMAND_COUNT..], &full_ledger);
     return combined;
 }
 

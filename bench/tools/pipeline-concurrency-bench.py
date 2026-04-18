@@ -63,7 +63,7 @@ def main() -> int:
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(report, indent=2) + "\n")
+    out_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return 0
 
 

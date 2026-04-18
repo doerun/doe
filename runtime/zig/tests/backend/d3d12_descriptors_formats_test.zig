@@ -20,12 +20,12 @@ test "dxgi: R8Unorm maps to 61" {
     try testing.expectEqual(@as(u32, 61), try formats.wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Unorm));
 }
 
-test "dxgi: R8Snorm maps to 62" {
-    try testing.expectEqual(@as(u32, 62), try formats.wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Snorm));
+test "dxgi: R8Uint maps to 62" {
+    try testing.expectEqual(@as(u32, 62), try formats.wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Uint));
 }
 
-test "dxgi: R8Uint maps to 63" {
-    try testing.expectEqual(@as(u32, 63), try formats.wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Uint));
+test "dxgi: R8Snorm maps to 63" {
+    try testing.expectEqual(@as(u32, 63), try formats.wgpu_format_to_dxgi(model.WGPUTextureFormat_R8Snorm));
 }
 
 test "dxgi: R8Sint maps to 64" {
@@ -289,7 +289,7 @@ test "format: BC compressed detection" {
 // ============================================================
 
 test "vertex: uint8 formats" {
-    try testing.expectEqual(@as(u32, 63), try formats.wgpu_vertex_format_to_dxgi(0x01)); // R8_UINT
+    try testing.expectEqual(@as(u32, 62), try formats.wgpu_vertex_format_to_dxgi(0x01)); // R8_UINT
     try testing.expectEqual(@as(u32, 50), try formats.wgpu_vertex_format_to_dxgi(0x02)); // R8G8_UINT
     try testing.expectEqual(@as(u32, 30), try formats.wgpu_vertex_format_to_dxgi(0x03)); // R8G8B8A8_UINT
 }
@@ -307,7 +307,7 @@ test "vertex: unorm8 formats" {
 }
 
 test "vertex: snorm8 formats" {
-    try testing.expectEqual(@as(u32, 62), try formats.wgpu_vertex_format_to_dxgi(0x0A)); // R8_SNORM
+    try testing.expectEqual(@as(u32, 63), try formats.wgpu_vertex_format_to_dxgi(0x0A)); // R8_SNORM
     try testing.expectEqual(@as(u32, 51), try formats.wgpu_vertex_format_to_dxgi(0x0B)); // R8G8_SNORM
     try testing.expectEqual(@as(u32, 31), try formats.wgpu_vertex_format_to_dxgi(0x0C)); // R8G8B8A8_SNORM
 }

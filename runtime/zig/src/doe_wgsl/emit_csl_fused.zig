@@ -40,14 +40,19 @@ pub fn emit(
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
     // Q4K constants
+    // Expose i16 aliases for the byte-count constants so array
+    // dimensions type-check (CSL array dims are i16). The u32 form is
+    // still used for body byte-arithmetic. Same pattern as dequant.
     try W.write(buf, pos, "const QK_K: u32 = 256;\n");
-    try W.write(buf, pos, "const Q4K_BLOCK_BYTES: u32 = 144;\n\n");
+    try W.write(buf, pos, "const QK_K_I16: i16 = 256;\n");
+    try W.write(buf, pos, "const Q4K_BLOCK_BYTES: u32 = 144;\n");
+    try W.write(buf, pos, "const Q4K_BLOCK_BYTES_I16: i16 = 144;\n\n");
 
     // Buffers
     try emitBuf(buf, pos, act, "[in_dim_per_pe]f32");
     try W.write(buf, pos, "var ");
     try W.write(buf, pos, wgt);
-    try W.write(buf, pos, ": [out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES]u8 = @zeros([out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES]u8);\n");
+    try W.write(buf, pos, ": [out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8 = @zeros([out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8);\n");
     try emitBuf(buf, pos, out, "[out_dim]f32");
     try W.write(buf, pos, "var partial: [out_dim]f32 = @zeros([out_dim]f32);\n\n");
 
@@ -60,12 +65,39 @@ pub fn emit(
     try emitPtr(buf, pos, out, "f32");
     try W.write(buf, pos, "\n");
 
-    // Fabric DSDs
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n\n");
+    // wse3 DSD-to-DSD async fabric: single-shot extent=out_dim drain
+    // to avoid router-queue-remap conflicts when the task would
+    // re-arm an async recv on the same color + queue. Iteration 33
+    // tried the iterative [1]f32 re-arm pattern; sim errored with
+    //   "P5.1 Attempt to remap input queue 1, from C22 to C4, but the
+    //    router is holding wavelets"
+    // because the first arm's wavelets were still in-flight when the
+    // task's second arm tried to bind the same queue. Reading all
+    // out_dim values in a single @mov32 avoids the lifecycle issue;
+    // the task then processes scratch_in[0..out_dim) and (if not last
+    // PE) forwards east via a matching single-shot send.
+    try W.write(buf, pos, "var scratch_in: [out_dim]f32 = @zeros([out_dim]f32);\n");
+    try W.write(buf, pos, "var scratch_out: [out_dim]f32 = @zeros([out_dim]f32);\n");
+    try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim} -> scratch_in[i] });\n");
+    try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim} -> scratch_out[i] });\n");
+    // Queues 0-1 are typically reserved by the memcpy runtime for its
+    // h2d/d2h handlers. Canonical SDK 1.4 examples start user fabric
+    // queues at id 2+ (gemv-checkerboard uses 2, 3, 4). Using id=1
+    // here triggered a wse3 sim "Attempt to remap input queue 1, from
+    // C22 to C4" — the router saw the memcpy color still bound to
+    // queue 1 when our reduce_color tried to take it.
+    try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
+    try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = out_dim, .fabric_color = reduce_color, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = out_dim, .fabric_color = reduce_color, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n");
-    try W.write(buf, pos, "const done_task_id: local_task_id = @get_local_task_id(11);\n");
-    try W.write(buf, pos, "var reduce_dim: i16 = 0;\n\n");
+    // send_done_id is bound to a task that's @block'd at comptime; the
+    // @mov32 send below uses `.unblock = send_done_id` so the task only
+    // fires once the async send has propagated. This defers
+    // sys_mod.unblock_cmd_stream until the send is actually on the
+    // wire, avoiding the memcpy-runtime-teardown stall seen when PE 0
+    // unblocks before PE 1's armed recv has received anything.
+    try W.write(buf, pos, "const send_done_id: local_task_id = @get_local_task_id(11);\n\n");
 
     // Phase 1: local partial dot products with on-the-fly dequant
     try W.write(buf, pos, "fn compute() void {\n");
@@ -101,30 +133,59 @@ pub fn emit(
     try W.write(buf, pos, "        partial[@as(u32, row)] = sum;\n");
     try W.write(buf, pos, "    }\n\n");
 
-    try W.write(buf, pos, "    reduce_dim = 0;\n");
-    try W.write(buf, pos, "    @fmovs(reduce_out, partial[0]);\n");
-    try W.write(buf, pos, "}\n\n");
-
-    // Phase 2: fabric reduce partial sums
-    try W.write(buf, pos, "task reduce_recv() void {\n");
-    try W.write(buf, pos, "    var incoming: f32 = 0.0;\n");
-    try W.write(buf, pos, "    @fmovs(incoming, reduce_in);\n");
-    try W.write(buf, pos, "    ");
-    try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, reduce_dim)] = partial[@as(u32, reduce_dim)] + incoming;\n\n");
-    try W.write(buf, pos, "    reduce_dim += 1;\n");
-    try W.write(buf, pos, "    if (reduce_dim < out_dim) {\n");
-    try W.write(buf, pos, "        @fmovs(reduce_out, partial[@as(u32, reduce_dim)]);\n");
-    try W.write(buf, pos, "    } else {\n");
-    try W.write(buf, pos, "        if (pe_id == num_pes - 1) {\n");
-    try W.write(buf, pos, "            sys_mod.unblock_cmd_stream();\n");
+    // Single-shot allreduce with async-send completion gating:
+    //   - PE 0 stages all partial sums, fires @mov32 send with
+    //     `.unblock = send_done_id`. send_done_task is @block'd at
+    //     comptime, so it only fires after the send propagates — at
+    //     which point it calls sys_mod.unblock_cmd_stream.
+    //   - Non-seed PEs arm @mov32 recv with `.activate = reduce_task_id`.
+    //   - reduce_recv folds scratch_in into the output. Non-last PEs
+    //     forward east using the same `.unblock = send_done_id` pattern.
+    //     The last PE has nothing to send; it unblocks directly.
+    try W.write(buf, pos, "    if (pe_id == 0) {\n");
+    try W.write(buf, pos, "        for (@range(i16, out_dim)) |i| {\n");
+    try W.write(buf, pos, "            scratch_out[@as(u32, i)] = partial[@as(u32, i)];\n");
     try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true, .unblock = send_done_id });\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        @mov32(scratch_in_dsd, reduce_in, .{ .async = true, .activate = reduce_task_id });\n");
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
+    // Phase 2: fold scratch_in into partial, write to output, forward east.
+    try W.write(buf, pos, "task reduce_recv() void {\n");
+    try W.write(buf, pos, "    for (@range(i16, out_dim)) |i| {\n");
+    try W.write(buf, pos, "        ");
+    try W.write(buf, pos, out);
+    try W.write(buf, pos, "[@as(u32, i)] = partial[@as(u32, i)] + scratch_in[@as(u32, i)];\n");
+    try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "    if (pe_id != num_pes - 1) {\n");
+    try W.write(buf, pos, "        for (@range(i16, out_dim)) |i| {\n");
+    try W.write(buf, pos, "            scratch_out[@as(u32, i)] = ");
+    try W.write(buf, pos, out);
+    try W.write(buf, pos, "[@as(u32, i)];\n");
+    try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true, .unblock = send_done_id });\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "}\n\n");
+
+    // send_done_task: fires when an async send completes, unblocks
+    // cmd_stream so the memcpy runtime can proceed to d2h on this PE.
+    try W.write(buf, pos, "task send_done_task() void {\n");
+    try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "}\n\n");
+
     try W.write(buf, pos, "comptime {\n");
+    // Drop @set_local_color_config (wse3 rejects it when the layout
+    // configures the same color with routes). @bind_local_task alone
+    // binds the recv task for the async @mov32 activate callback.
+    // send_done_task is @block'd so it only fires via the @mov32
+    // `.unblock` arg — the canonical wse3 async-send-completion gate.
     try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
-    try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
+    try W.write(buf, pos, "    @bind_local_task(send_done_task, send_done_id);\n");
+    try W.write(buf, pos, "    @block(send_done_id);\n");
     try emitExport(buf, pos, act);
     try emitExportTyped(buf, pos, wgt);
     try emitExport(buf, pos, out);

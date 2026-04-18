@@ -1,0 +1,31 @@
+// PE program: element-wise kernel (auto-generated from WGSL)
+// Each PE processes chunk_size elements with no fabric routing.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+// Storage buffers — each PE holds its local data.
+param chunk_size: i16 = 1024;
+
+var input: [chunk_size]f32 = @zeros([chunk_size]f32);
+var input_ptr: [*]f32 = &input;
+var output: [chunk_size]f32 = @zeros([chunk_size]f32);
+var output_ptr: [*]f32 = &output;
+
+fn compute() void {
+    for (@range(i16, chunk_size)) |_idx| {
+        const idx = @as(u32, _idx);
+        output[(if (idx < (@as(u32, chunk_size) - 1)) idx else (@as(u32, chunk_size) - 1))] = (input[(if (idx < (@as(u32, chunk_size) - 1)) idx else (@as(u32, chunk_size) - 1))] * 2.0);
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

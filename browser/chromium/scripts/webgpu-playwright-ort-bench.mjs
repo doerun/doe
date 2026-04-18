@@ -52,6 +52,17 @@ const TASKS = Object.freeze({
     ]),
     expectedLabels: Object.freeze(["POSITIVE", "NEGATIVE"]),
   }),
+  sentiment_medium: Object.freeze({
+    taskId: "sentiment_medium",
+    pipelineTask: "sentiment-analysis",
+    modelId: "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+    dtype: "uint8",
+    inputPayload: Object.freeze([
+      "Deterministic benchmark surfaces make cross-runtime comparisons easier.",
+      "Benchmark drift across lanes is frustrating when you cannot reproduce prior numbers.",
+    ]),
+    expectedLabels: Object.freeze(["POSITIVE", "NEGATIVE"]),
+  }),
   sentiment_longform: Object.freeze({
     taskId: "sentiment_longform",
     pipelineTask: "sentiment-analysis",

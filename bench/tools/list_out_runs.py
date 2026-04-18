@@ -15,14 +15,9 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 import argparse
 import json
-import re
-from pathlib import Path
 from typing import Any
 
 from bench.lib import output_paths
-
-
-TIMESTAMP_RE = re.compile(r"^\d{8}T\d{6}Z$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,10 +40,6 @@ def parse_args() -> argparse.Namespace:
         help="Maximum rows to print (0 = all).",
     )
     return parser.parse_args()
-
-
-def is_timestamp_folder(path: Path) -> bool:
-    return path.is_dir() and bool(TIMESTAMP_RE.fullmatch(path.name))
 
 
 def collect_folders(out_dir: Path, *, include_scratch: bool) -> list[Path]:
