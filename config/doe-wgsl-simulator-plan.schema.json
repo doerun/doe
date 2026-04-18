@@ -52,6 +52,11 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "Optional path (relative to repo root or absolute) of a WGSL source file. When present, the governed lane runner (bench/runners/run_csl_governed_lane.py::materialize_plan) invokes doe-csl-bundle-emitter to regenerate layout.csl + pe_program.csl from this WGSL at compile-input staging time, bypassing the static `compile/<target>/` fixture copy. Lets Doe's WGSL→CSL emitter chain be the single source of truth for the target's CSL; any emitter fix propagates to the lane without per-fixture updates. Absent (default) keeps the prior static-copy behavior for compatibility with hand-authored fixtures like the Gemma-3 270M manifest smoke."
+              },
+              "compileParams": {
+                "type": "object",
+                "additionalProperties": { "type": "integer" },
+                "description": "Optional extra `--params key:value` bindings appended to the cslc command for this compileTarget. The default `width:{peGrid.width}` and `height:{peGrid.height}` bindings are always included; these entries extend (and may override) them. Used by kernels that declare additional top-level layout params — e.g., tiled_matmul needs `P:2,Mt:8,Kt:8,Nt:8` — so the governed plan stays the single source of truth for how each kernel is compiled."
               }
             }
           }

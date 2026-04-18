@@ -6,7 +6,6 @@
 // (added in this change). All operations that can generate errors call
 // error_scope.deliver() so the correct scope captures them.
 
-const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");

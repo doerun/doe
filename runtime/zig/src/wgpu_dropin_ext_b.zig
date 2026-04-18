@@ -3,7 +3,6 @@ const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
 const abi_copy = @import("core/abi/wgpu_copy_descriptor_types.zig");
 const p1cap = @import("wgpu_p1_capability_procs.zig");
-const p0 = @import("wgpu_p0_procs.zig");
 const p1res = @import("wgpu_p1_resource_table_procs.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
 const surface = @import("full/surface/wgpu_surface_procs.zig");

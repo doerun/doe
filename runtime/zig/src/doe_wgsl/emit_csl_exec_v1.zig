@@ -22,7 +22,6 @@
 
 const std = @import("std");
 const host = @import("emit_csl_host.zig");
-const host_plan = @import("emit_csl_host_plan.zig");
 const mem_plan = @import("emit_csl_mem_plan.zig");
 const csl_spec = @import("csl_spec.zig");
 

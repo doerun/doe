@@ -9,10 +9,8 @@ pub const BehaviorMode = enum {
 };
 
 pub fn parse_behavior_mode(raw: []const u8) ?BehaviorMode {
-    if (std.ascii.eqlIgnoreCase(raw, "dawn_ownership")) return .dawn_ownership;
-    if (std.ascii.eqlIgnoreCase(raw, "mixed_ownership")) return .mixed_ownership;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_metal_ownership")) return .doe_metal_ownership;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_vulkan_ownership")) return .doe_vulkan_ownership;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_d3d12_ownership")) return .doe_d3d12_ownership;
+    inline for (@typeInfo(BehaviorMode).@"enum".fields) |field| {
+        if (std.ascii.eqlIgnoreCase(raw, field.name)) return @enumFromInt(field.value);
+    }
     return null;
 }

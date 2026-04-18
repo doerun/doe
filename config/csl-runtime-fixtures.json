@@ -123,6 +123,30 @@
       "nextAction": "Use this as the reduction template before tiled matmul and decode attention."
     },
     {
+      "id": "tiled-matmul",
+      "kernelPattern": "tiled_matmul",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/tiled-matmul/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/tiled-matmul",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/tiled-matmul-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/tiled-matmul-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/tiled-matmul-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/tiled_matmul_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-tiled-matmul/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-tiled-matmul/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-tiled-matmul/trace.json"
+      },
+      "nextAction": "Use this as the collectives_2d template for attention_tiled and attention_decode. Numerical parity at P=2 is bit-exact; scale P for Gemma E2B shapes after validating runtime timing on CS system."
+    },
+    {
       "id": "gelu",
       "kernelPattern": "element_wise",
       "runtimeMode": "compile-only",
