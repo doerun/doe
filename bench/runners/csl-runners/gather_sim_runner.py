@@ -9,14 +9,11 @@ Expected substitutions from csl_sdk_driver.run_simulation:
 
 from __future__ import annotations
 
-import argparse
-import json
-import os
 import sys
-from datetime import datetime, timezone
-from pathlib import Path
 
 import numpy as np
+
+import common
 
 from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-in-module
     SdkRuntime,
@@ -26,11 +23,7 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--compile-dir", required=True)
-    parser.add_argument("--trace-out", required=True)
-    parser.add_argument("--cmaddr", default="")
-    args = parser.parse_args()
+    args = common.parse_runtime_args(__doc__ or "")
 
     width = 4
     hidden_size = 64
@@ -50,7 +43,7 @@ def main() -> int:
         table_flat[pe * rows_per_pe * hidden_size:(pe + 1) * rows_per_pe * hidden_size] = \
             table_full[start:start + rows_per_pe].flatten()
 
-    cmaddr = args.cmaddr.strip() or None
+    cmaddr = common.endpoint(args.cmaddr)
     runner = SdkRuntime(args.compile_dir, cmaddr=cmaddr)
     idx_sym = runner.get_id("indices")
     tbl_sym = runner.get_id("table")
@@ -74,35 +67,25 @@ def main() -> int:
 
     out_per_pe = out_flat.reshape(width, num_tokens, hidden_size)
     actual = out_per_pe.sum(axis=0)
-    max_abs_err = float(np.max(np.abs(actual - expected)))
+    max_abs_err = common.max_abs_error(actual, expected)
     passed = bool(np.allclose(actual, expected, atol=1e-6, rtol=0.0))
 
     if not passed:
         print(f"FAIL: max_abs_err={max_abs_err:.6f}")
         return 1
 
-    # explicit_simulator_trace variant (user's iter-39 schema update).
-    # Numerical detail lives inline; schema requires runtimePassed=true
-    # so reaching here (after the passed guard) keeps the trace valid.
-    trace = {
-        "schemaVersion": 1,
-        "artifactKind": "csl_simulator_trace",
-        "target": "wse3",
-        "contract": "explicit_simulator_trace",
-        "kernel": "gather",
-        "executionTarget": "system" if cmaddr else "simfabric",
-        "width": width,
-        "chunkSize": hidden_size,
-        "totalElements": num_tokens * hidden_size,
-        "runtimePassed": True,
-        "runtimeMaxAbsErr": max_abs_err,
-        "sampleInput": indices_host.astype(np.float32).tolist(),
-        "sampleExpected": expected[0, :4].tolist(),
-        "sampleActual": actual[0, :4].tolist(),
-    }
-    trace_path = Path(args.trace_out)
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    trace_path.write_text(json.dumps(trace, indent=2) + "\n", encoding="utf-8")
+    trace_path = common.write_explicit_trace(
+        trace_out=args.trace_out,
+        kernel="gather",
+        cmaddr=cmaddr,
+        width=width,
+        chunk_size=hidden_size,
+        total_elements=num_tokens * hidden_size,
+        max_abs_err=max_abs_err,
+        sample_input=indices_host.astype(np.float32).tolist(),
+        sample_expected=expected[0, :4].tolist(),
+        sample_actual=actual[0, :4].tolist(),
+    )
     print(f"PASS: {num_tokens} tokens gathered, max_abs_err={max_abs_err:.3e}, trace={trace_path}")
     return 0
 

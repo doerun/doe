@@ -576,12 +576,7 @@ pub fn executionModeName(mode: BackendMode) []const u8 {
 }
 
 pub fn executionStatusName(status: ExecutionStatus) []const u8 {
-    return switch (status) {
-        .skipped => "skipped",
-        .ok => "ok",
-        .unsupported => "unsupported",
-        .@"error" => "error",
-    };
+    return @tagName(status);
 }
 
 // --- Inline tests ---

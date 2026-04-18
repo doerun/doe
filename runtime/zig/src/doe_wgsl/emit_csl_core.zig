@@ -9,7 +9,6 @@
 // Pipeline:
 //   ir.Module → classify → layout emitter + PE program emitter → buffer
 
-const std = @import("std");
 const ir = @import("ir.zig");
 const spec = @import("csl_spec.zig");
 const classify = @import("emit_csl_classify.zig");

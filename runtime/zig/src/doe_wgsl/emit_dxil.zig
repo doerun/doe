@@ -103,13 +103,7 @@ pub fn lower(module: *const ir.Module) Error!Module {
 /// Primary DXIL emission path: generates DXIL natively from the Doe IR.
 pub fn emit(module: *const ir.Module, out: []u8) Error!usize {
     clearLastError();
-    return emit_dxil_native.emit(module, out) catch |err| switch (err) {
-        error.OutputTooLarge => error.OutputTooLarge,
-        error.InvalidIr => error.InvalidIr,
-        error.UnsupportedBuiltin => error.UnsupportedBuiltin,
-        error.UnsupportedConstruct => error.UnsupportedConstruct,
-        error.OutOfMemory => error.OutOfMemory,
-    };
+    return emit_dxil_native.emit(module, out);
 }
 
 /// DXC fallback path: generates HLSL, then invokes DXC to compile to DXIL.

@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_runtime_fixture_registry",
+  "fixtures": [
+    {
+      "id": "elementwise-double",
+      "kernelPattern": "element_wise",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/elementwise-double/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/elementwise-double",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/elementwise-double-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/elementwise-double-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/elementwise-double-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/elementwise_double_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/trace.json"
+      },
+      "nextAction": "Use this as the smallest end-to-end runner-template fixture."
+    },
+    {
+      "id": "gather",
+      "kernelPattern": "gather",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/gather/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/gather",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/gather-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/gather-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/gather-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/gather_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gather/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gather/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gather/trace.json"
+      },
+      "nextAction": "Promote embedding-table role metadata into the runner template."
+    },
+    {
+      "id": "rope",
+      "kernelPattern": "rope",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/rope/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/rope",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/rope-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/rope-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/rope-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/rope_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-rope/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-rope/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-rope/trace.json"
+      },
+      "nextAction": "Carry cosine/sine fixture generation through the runner template."
+    },
+    {
+      "id": "attention-linear",
+      "kernelPattern": "attention_linear",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/attention-linear/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/attention-linear",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/attention-linear-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/attention-linear-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/attention-linear-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/attention_linear_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-linear/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-linear/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-linear/trace.json"
+      },
+      "nextAction": "Graduate this shape into attention_tiled and attention_decode."
+    },
+    {
+      "id": "reduce-sum-workgroup",
+      "kernelPattern": "reduction",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/reduce-sum-workgroup/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/reduce-sum-workgroup",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/reduce-sum-workgroup-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/reduce-sum-workgroup-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/reduce-sum-workgroup-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/reduce_sum_workgroup_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-reduce-sum-workgroup/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-reduce-sum-workgroup/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-reduce-sum-workgroup/trace.json"
+      },
+      "nextAction": "Use this as the reduction template before tiled matmul and decode attention."
+    },
+    {
+      "id": "gelu",
+      "kernelPattern": "element_wise",
+      "runtimeMode": "compile-only",
+      "governedStatus": "compile_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "compile_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/gelu/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/gelu",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/runtime-config.json"
+      },
+      "nextAction": "Attach an sdk-runtime-command fixture and numerical trace."
+    }
+  ]
+}

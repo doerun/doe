@@ -1,5 +1,4 @@
 const std = @import("std");
-const builtin = @import("builtin");
 
 const model_render_types = @import("model_render_types.zig");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
