@@ -439,7 +439,6 @@ pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_e
 
 fn copyBufferBytesPerRow(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(switch (copy.direction) {
-        .buffer_to_texture => firstNonZeroU32(copy.src.bytes_per_row, copy.dst.bytes_per_row),
         .texture_to_buffer => firstNonZeroU32(copy.dst.bytes_per_row, copy.src.bytes_per_row),
         else => firstNonZeroU32(copy.src.bytes_per_row, copy.dst.bytes_per_row),
     });
@@ -447,7 +446,6 @@ fn copyBufferBytesPerRow(copy: model_transfer_types.CopyCommand) u32 {
 
 fn copyBufferRowsPerImage(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(switch (copy.direction) {
-        .buffer_to_texture => firstNonZeroU32(copy.src.rows_per_image, copy.dst.rows_per_image),
         .texture_to_buffer => firstNonZeroU32(copy.dst.rows_per_image, copy.src.rows_per_image),
         else => firstNonZeroU32(copy.src.rows_per_image, copy.dst.rows_per_image),
     });

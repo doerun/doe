@@ -27,14 +27,6 @@ const DoeCommandBuffer = native_types.DoeCommandBuffer;
 const DoeComputePass = native_types.DoeComputePass;
 const DoeTexture = native_types.DoeTexture;
 
-// DoePipelineLayout is private in doe_wgpu_native; redeclare compatible layout here.
-// Magic must match MAGIC_PIPE_LAYOUT = 0xD0E1_0009.
-const MAGIC_PIPE_LAYOUT: u32 = 0xD0E1_0009;
-const DoePipelineLayoutLocal = struct {
-    const TYPE_MAGIC = MAGIC_PIPE_LAYOUT;
-    magic: u32 = TYPE_MAGIC,
-};
-
 // ============================================================
 // Command Encoder / Command Buffer
 

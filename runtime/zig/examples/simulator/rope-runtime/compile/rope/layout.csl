@@ -1,0 +1,28 @@
+// Layout: rotary position embeddings on a 1-D PE row.
+
+param width: i16;
+param head_dim: i16 = 128;
+param num_pairs: i16 = 64;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = 1,
+});
+
+layout {
+    @set_rectangle(width, 1);
+
+    for (@range(i16, width)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = width,
+            .head_dim = head_dim, .num_pairs = num_pairs,
+        });
+    }
+
+    @export_name("input", [*]f32, true);
+    @export_name("freq_cos", [*]f32, true);
+    @export_name("freq_sin", [*]f32, true);
+    @export_name("compute", fn()void);
+}
