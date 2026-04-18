@@ -1,11 +1,12 @@
 {
-  "mode": "compile-only",
-  "notes": "WGSL-backed fixture: layout.csl + pe_program.csl are regenerated at materialize-plan time from simulator-plan.template.json compileTargets[].sourceWgslPath via doe-csl-bundle-emitter, so no static compile/ directory is shipped. Replace this runtime-config with an SDK-backed run command when simulator access is available.",
+  "mode": "sdk-runtime-command",
+  "notes": "WGSL-backed runtime fixture. The governed lane regenerates layout.csl + pe_program.csl from simulator-plan.template.json compileTargets[].sourceWgslPath, then invokes cs_python + SdkRuntime through this command. The runner verifies tanh-based GELU against NumPy over 16 PEs x 1024 f32 elements and writes an explicit_simulator_trace.",
   "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
-  "exampleCommandWhenAvailable": [
-    "--compile-root",
-    "{compile_root}",
-    "--trace-out",
-    "{trace_path}"
+  "cmaddrEnvVar": "DOE_CSL_CMADDR",
+  "command": [
+    "bench/runners/csl-runners/gelu_sim_runner.py",
+    "--compile-dir={compile_output_dir}",
+    "--trace-out={trace_path}",
+    "{cmaddr_arg}"
   ]
 }

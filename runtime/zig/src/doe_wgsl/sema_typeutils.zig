@@ -1,4 +1,3 @@
-const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
 const sema_types = @import("sema_types.zig");

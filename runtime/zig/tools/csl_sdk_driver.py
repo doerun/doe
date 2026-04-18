@@ -366,6 +366,15 @@ def compile_targets(
                 }
             )
             continue
+        # Per-target compile params override/extend the default width/height
+        # binding. Kernels like tiled_matmul declare extra top-level params
+        # (P, Mt, Kt, Nt) that cslc needs at compile time; record them on the
+        # compileTarget so the governed plan stays the single source of truth.
+        extra_compile_params = target.get("compileParams")
+        params_kvs = [f"width:{width}", f"height:{height}"]
+        if isinstance(extra_compile_params, dict):
+            for key, value in extra_compile_params.items():
+                params_kvs.append(f"{key}:{int(value)}")
         command = [
             cslc_executable,
             str(layout_path),
@@ -378,7 +387,7 @@ def compile_targets(
             # flag; the deprecated semantics that let them sit uninitialized
             # now errors with "only 'var' and 'extern const' variables may
             # be uninitialized". The plan's peGrid is the source of truth.
-            f"--params=width:{width},height:{height}",
+            f"--params={','.join(params_kvs)}",
             "-o",
             str(output_dir),
         ]

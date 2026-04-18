@@ -1,5 +1,3 @@
-const std = @import("std");
-
 pub const TraceDeterminismSummary = struct {
     mode: []const u8,
     policy_registry_path: []const u8,

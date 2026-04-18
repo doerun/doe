@@ -9,11 +9,9 @@ pub const SymbolOwner = enum {
 };
 
 pub fn parse_symbol_owner(raw: []const u8) ?SymbolOwner {
-    if (std.ascii.eqlIgnoreCase(raw, "dawn_delegate")) return .dawn_delegate;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_metal")) return .doe_metal;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_vulkan")) return .doe_vulkan;
-    if (std.ascii.eqlIgnoreCase(raw, "doe_d3d12")) return .doe_d3d12;
-    if (std.ascii.eqlIgnoreCase(raw, "shared")) return .shared;
+    inline for (@typeInfo(SymbolOwner).@"enum".fields) |field| {
+        if (std.ascii.eqlIgnoreCase(raw, field.name)) return @enumFromInt(field.value);
+    }
     return null;
 }
 
