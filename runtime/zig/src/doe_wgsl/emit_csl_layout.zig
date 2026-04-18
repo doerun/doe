@@ -260,8 +260,10 @@ pub fn emitRoPELayout(
     _ = info;
     try write(buf, pos, "// Layout: rotary position embeddings on a 1-D PE row.\n\n");
     try write(buf, pos, "param width: i16;\n");
-    try write(buf, pos, "param head_dim: i16;\n");
-    try write(buf, pos, "param num_pairs: i16;\n\n");
+    // Defaults let the driver's `--params=width:W,height:H` invocation compile
+    // without extra knobs; override via caller-provided --params.
+    try write(buf, pos, "param head_dim: i16 = 128;\n");
+    try write(buf, pos, "param num_pairs: i16 = 64;\n\n");
     try emitMemcpyRow(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .num_pairs = num_pairs,\n");
@@ -466,8 +468,9 @@ pub fn emitLinearAttentionLayout(
     _ = info;
     try write(buf, pos, "// Layout: linear attention on a 1-D PE row (no fabric).\n\n");
     try write(buf, pos, "param width: i16;\n");
-    try write(buf, pos, "param head_dim: i16;\n");
-    try write(buf, pos, "param kv_len: i16;\n\n");
+    // Defaults let the driver's default --params=width:W,height:H invocation compile.
+    try write(buf, pos, "param head_dim: i16 = 64;\n");
+    try write(buf, pos, "param kv_len: i16 = 16;\n\n");
     try emitMemcpyRow(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_len = kv_len,\n");

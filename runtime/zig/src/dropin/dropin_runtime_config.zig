@@ -58,10 +58,7 @@ fn resolveModeFromLane(
     const lane_modes = raw_lane_modes orelse return fallback;
     if (lane_modes != .object) return fallback;
 
-    const lane_value = std.process.getEnvVarOwned(std.heap.page_allocator, "FAWN_BACKEND_LANE") catch |err| {
-        if (err == error.EnvironmentVariableNotFound) return fallback;
-        return fallback;
-    };
+    const lane_value = std.process.getEnvVarOwned(std.heap.page_allocator, "FAWN_BACKEND_LANE") catch return fallback;
     defer std.heap.page_allocator.free(lane_value);
 
     const lane = backend_policy.parse_lane(lane_value) orelse return fallback;

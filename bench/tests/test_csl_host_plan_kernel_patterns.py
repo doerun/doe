@@ -327,6 +327,7 @@ class SynthesizeOperationGraphKernelPatternsTests(unittest.TestCase):
                     "gather",
                     "reduction",
                     "tiled_matmul",
+                    "attention_linear",
                     "attention_tiled",
                     "attention_decode",
                     "element_wise",
