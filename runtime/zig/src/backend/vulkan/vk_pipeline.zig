@@ -381,6 +381,14 @@ pub fn build_pipeline_for_words(
     try c.check_vk(c.vkCreateShaderModule(self.device, &shader_info, null, &self.shader_module));
     self.has_shader_module = true;
 
+    // Persist SPIR-V bytes for the next shader artifact manifest emission so
+    // `shader_artifact_gate.py --require-spirv-validation` can run spirv-val
+    // against the real binary. The backend pulls these bytes at manifest
+    // emit time, writes a sibling .spv file, records its path in the
+    // ir_to_spirv stage record, then frees the allocation.
+    if (self.pending_spirv_bytes_owned) |stale| self.allocator.free(stale);
+    self.pending_spirv_bytes_owned = self.allocator.dupe(u8, std.mem.sliceAsBytes(words)) catch null;
+
     const stage_info = c.VkPipelineShaderStageCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .pNext = null, .flags = 0, .stage = c.VK_SHADER_STAGE_COMPUTE_BIT, .module = self.shader_module, .pName = owned_entry.ptr, .pSpecializationInfo = null };
     var pipeline_info = c.VkComputePipelineCreateInfo{ .sType = c.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, .pNext = null, .flags = 0, .stage = stage_info, .layout = self.pipeline_layout, .basePipelineHandle = VK_NULL_U64, .basePipelineIndex = -1 };
     const compute_cache_handle = vk_pipeline_cache_persistent.handle_for_pipeline_creation();

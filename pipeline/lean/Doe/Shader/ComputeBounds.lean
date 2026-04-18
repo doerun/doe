@@ -208,6 +208,67 @@ theorem gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits
         (total * gid_stride + limit * loop_stride) + offset := h_offset_lt
     _ ≤ array_length := h_fit
 
+/-- Tight-precondition variant of the affine counted-loop extension.
+    The original theorem over-approximates the precondition by
+    `gid_stride + loop_stride - 1` (substituting `total` for `gid ≤ total - 1`
+    and `limit` for `i ≤ limit - 1`). For large-stride dispatches, that slack
+    can push the precondition past the buffer size even when the actual
+    maximum accessed index is strictly in bounds — e.g. a 256 MB matvec
+    buffer packed to exactly `total * gid_stride` elements fails the over-
+    approximate fit but is provably in-range.
+
+    This variant encodes the precondition tightly as the strict upper bound
+    on the maximum accessed index plus one, corresponding to the runtime
+    formula
+      `(total_invocations - 1) * gid_stride
+         + (limit - 1) * loop_stride
+         + offset + 1
+       ≤ array_length`
+    that `required_buffer_bytes` now uses for `.gid_component` kinds. -/
+theorem gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length : Nat)
+    (gid_stride limit i loop_stride offset : Nat)
+    (h_i : i < limit)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit :
+      (workgroup_size_x * num_workgroups_x - 1) * gid_stride +
+        (limit - 1) * loop_stride + offset + 1 ≤ array_length) :
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x * gid_stride + i * loop_stride + offset < array_length := by
+  let gid := globalInvocationId workgroup_id_x local_id_x workgroup_size_x
+  let total := workgroup_size_x * num_workgroups_x
+  have h_gid_lt_total : gid < total := by
+    dsimp [gid, total]
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid (Nat.le_refl _)
+  have h_total_pos : 0 < total := Nat.lt_of_le_of_lt (Nat.zero_le _) h_gid_lt_total
+  have h_gid_le_total_minus_one : gid ≤ total - 1 :=
+    Nat.le_sub_of_add_le (by omega)
+  have h_gid_scaled_le :
+      gid * gid_stride ≤ (total - 1) * gid_stride :=
+    Nat.mul_le_mul_right gid_stride h_gid_le_total_minus_one
+  have h_limit_pos : 0 < limit := Nat.lt_of_le_of_lt (Nat.zero_le _) h_i
+  have h_i_le_limit_minus_one : i ≤ limit - 1 :=
+    Nat.le_sub_of_add_le (by omega)
+  have h_loop_scaled_le :
+      i * loop_stride ≤ (limit - 1) * loop_stride :=
+    Nat.mul_le_mul_right loop_stride h_i_le_limit_minus_one
+  have h_sum_le :
+      gid * gid_stride + i * loop_stride ≤
+      (total - 1) * gid_stride + (limit - 1) * loop_stride :=
+    Nat.add_le_add h_gid_scaled_le h_loop_scaled_le
+  have h_plus_offset_le :
+      gid * gid_stride + i * loop_stride + offset ≤
+      (total - 1) * gid_stride + (limit - 1) * loop_stride + offset :=
+    Nat.add_le_add_right h_sum_le offset
+  calc
+    gid * gid_stride + i * loop_stride + offset
+        ≤ (total - 1) * gid_stride + (limit - 1) * loop_stride + offset := h_plus_offset_le
+    _ < (total - 1) * gid_stride + (limit - 1) * loop_stride + offset + 1 := Nat.lt_succ_self _
+    _ ≤ array_length := h_fit
+
 /-- 1D tiled index from a global invocation ID. Common pattern:
     `(gid / tile_width) * tile_stride + (gid % tile_width)`. -/
 def tiledIndex1D (gid tile_width tile_stride : Nat) : Nat :=

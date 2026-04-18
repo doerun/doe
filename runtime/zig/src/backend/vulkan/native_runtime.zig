@@ -128,6 +128,12 @@ pub const NativeVulkanRuntime = struct {
     deferred_command_buffers: std.ArrayListUnmanaged(c.VkCommandBuffer) = .{},
     deferred_command_buffer_index: usize = 0,
 
+    /// Last-compiled SPIR-V bytes awaiting shader-artifact-manifest emission.
+    /// Allocator-owned. Transferred to the manifest emitter which writes a
+    /// sibling .spv file for `shader_artifact_gate.py --require-spirv-validation`
+    /// to validate with spirv-val, then frees the allocation.
+    pending_spirv_bytes_owned: ?[]u8 = null,
+
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{ .allocator = allocator, .kernel_root = kernel_root };
         errdefer self.deinit();
@@ -136,6 +142,10 @@ pub const NativeVulkanRuntime = struct {
     }
 
     pub fn deinit(self: *NativeVulkanRuntime) void {
+        if (self.pending_spirv_bytes_owned) |bytes| {
+            self.allocator.free(bytes);
+            self.pending_spirv_bytes_owned = null;
+        }
         _ = self.flush_queue() catch {};
         vk_pipeline.release_retired_states(self);
         vk_upload.release_pending_uploads(self);

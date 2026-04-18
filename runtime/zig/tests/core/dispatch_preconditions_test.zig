@@ -151,27 +151,27 @@ test "valid dispatch: gid component with element offset" {
 }
 
 test "valid dispatch: gid component with multiplier" {
-    // 512 invocations * 4 multiplier = 2048 elements, *4 bytes = 8192
+    // Tight formula: (511)*4 + 0 + 1 = 2045 elements; *4 bytes = 8180.
     const result = try dispatch.required_buffer_bytes(
         gidPrecondition(.{ .multiplier = 4 }),
         .{ 8, 1, 1 },
         .{ 64, 1, 1 },
     );
-    try testing.expectEqual(@as(u64, 8192), result);
+    try testing.expectEqual(@as(u64, 8180), result);
 }
 
 test "valid dispatch: gid component with multiplier and offset" {
-    // 512 invocations * 4 = 2048 scaled + 2 offset = 2050 elements, *4 bytes = 8200
+    // Tight formula: (511)*4 + 2 + 1 = 2047 elements; *4 bytes = 8188.
     const result = try dispatch.required_buffer_bytes(
         gidPrecondition(.{ .multiplier = 4, .offset = 2 }),
         .{ 8, 1, 1 },
         .{ 64, 1, 1 },
     );
-    try testing.expectEqual(@as(u64, 8200), result);
+    try testing.expectEqual(@as(u64, 8188), result);
 }
 
 test "valid dispatch: gid component with loop contribution" {
-    // 64 invocations * 1 + (4 * 3) loop = 64 + 12 = 76 + 2 offset = 78 elements, *4 bytes = 312
+    // Tight formula: (63)*1 + (3)*3 + 2 + 1 = 75 elements; *4 bytes = 300.
     const result = try dispatch.required_buffer_bytes(
         gidPrecondition(.{
             .loop_limit = 4,
@@ -181,7 +181,7 @@ test "valid dispatch: gid component with loop contribution" {
         .{ 8, 1, 1 },
         .{ 8, 1, 1 },
     );
-    try testing.expectEqual(@as(u64, 312), result);
+    try testing.expectEqual(@as(u64, 300), result);
 }
 
 test "valid dispatch: gid component 16-byte stride" {
@@ -217,13 +217,15 @@ test "zero dispatch workgroup_size=0: zero buffer bytes required" {
 }
 
 test "zero dispatch with offset: only offset contributes" {
-    // 0 invocations + 5 offset = 5 elements, *4 bytes = 20
+    // Empty dispatch touches no elements even with a configured offset, so the
+    // precondition requires zero buffer capacity. Tight formula short-circuits
+    // when total_invocations == 0.
     const result = try dispatch.required_buffer_bytes(
         gidPrecondition(.{ .offset = 5 }),
         .{ 0, 1, 1 },
         .{ 64, 1, 1 },
     );
-    try testing.expectEqual(@as(u64, 20), result);
+    try testing.expectEqual(@as(u64, 0), result);
 }
 
 test "all-zero dispatch triple: zero buffer bytes" {
@@ -495,13 +497,13 @@ test "gid component: zero loop_limit_multiplier contributes nothing" {
 }
 
 test "gid component: loop contribution adds to total before stride" {
-    // 64 invocations * 1 + (10 * 2) loop = 84 elements + 0 offset = 84, *4 = 336
+    // Tight formula: (63)*1 + (9)*2 + 0 + 1 = 82 elements; *4 bytes = 328.
     const result = try dispatch.required_buffer_bytes(
         gidPrecondition(.{ .loop_limit = 10, .loop_limit_multiplier = 2 }),
         .{ 8, 1, 1 },
         .{ 8, 1, 1 },
     );
-    try testing.expectEqual(@as(u64, 336), result);
+    try testing.expectEqual(@as(u64, 328), result);
 }
 
 // ============================================================

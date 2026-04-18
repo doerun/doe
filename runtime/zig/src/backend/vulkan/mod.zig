@@ -200,6 +200,27 @@ pub const ZigVulkanBackend = struct {
         return &self.runtime.?;
     }
 
+    /// Shader-artifact-manifest integration: expose the most recently compiled
+    /// SPIR-V bytes so the manifest emitter can write a sibling .spv file and
+    /// record its path in the ir_to_spirv stage record. Declared on the struct
+    /// so `@hasDecl` on the backend type resolves to this method.
+    pub fn pending_spirv_bytes_view(self: *ZigVulkanBackend) ?[]const u8 {
+        const runtime = &(self.runtime orelse return null);
+        const bytes = runtime.pending_spirv_bytes_owned orelse return null;
+        if (bytes.len == 0) return null;
+        return bytes;
+    }
+
+    /// Frees the SPIR-V bytes stashed on the runtime. Ownership of the allocation
+    /// stays with the backend's allocator; the runtime only holds the slice.
+    pub fn release_pending_spirv_bytes(self: *ZigVulkanBackend) void {
+        const runtime = &(self.runtime orelse return);
+        if (runtime.pending_spirv_bytes_owned) |bytes| {
+            self.allocator.free(bytes);
+            runtime.pending_spirv_bytes_owned = null;
+        }
+    }
+
     pub fn annotate_result(self: *ZigVulkanBackend, command: model.Command, result: webgpu.NativeExecutionResult) webgpu.NativeExecutionResult {
         var out = result;
         const meta = artifact_meta.classify(

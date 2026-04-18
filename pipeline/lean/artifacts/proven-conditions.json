@@ -3,8 +3,8 @@
   "status": "verified",
   "provenance": {
     "leanToolchainRef": "leanprover/lean4:v4.16.0",
-    "extractProgramSha256": "9031a2ebb95cbadf1b5647c5e6701e86d3d34bfde3e6399358c0ce8841e6ef90",
-    "leanSourceTreeSha256": "451e5ecbacc40bffd6bd9b7112490031b893a60aab8d154d33e2eff577e1f2fe",
+    "extractProgramSha256": "6c272b509b447bfec6c0317f31be9370e8dd37b892da05f74c697f885d76eef2",
+    "leanSourceTreeSha256": "b0bda7caecbf85187e982a090c0e1e12d8912f558bc820483c20883f16ed2cb4",
     "generatedComparabilityContractSha256": "a5f14bae1ece1251c60181fd57be18e117da649e3059cb684a60560adc9376ea",
     "proofPatternSpecSha256": "a556746e3f77c774ac5abb4ae9a9d8e0ade26bad15137e0c179805d1bf8252ec"
   },
@@ -118,9 +118,11 @@
     { "name": "gid_stride_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_plus_bounded_loop_index_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_tiled_index_plus_offset_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_loop_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_loop_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "gid_loop_affine_matcher_contract_sound_tight", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "clamp_noop_when_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },

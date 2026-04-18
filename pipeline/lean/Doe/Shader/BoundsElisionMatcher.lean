@@ -314,6 +314,41 @@ theorem gid_loop_affine_matcher_contract_sound
     h_lid
     h_fit
 
+/-- Tight-precondition variant of `gid_loop_affine_matcher_contract_sound`.
+    Uses the tightened Lean theorem so dispatches packed to exactly the
+    maximum accessed index + 1 elements (e.g. the AMD Vulkan matvec 256 MB
+    buffer) still pass the elision check. -/
+theorem gid_loop_affine_matcher_contract_sound_tight
+    (env : BoundsMatcherEnv)
+    (expr : BoundsMatcherExpr)
+    (axis : BoundsMatcherAxis)
+    (gid_stride limit i loop_stride offset array_length : Nat)
+    (h_match : MatchesGidLoopAffine expr axis gid_stride loop_stride offset)
+    (h_i : i < limit)
+    (h_wid : (env.axisDispatch axis).workgroupId < (env.axisDispatch axis).numWorkgroups)
+    (h_lid : (env.axisDispatch axis).localId < (env.axisDispatch axis).workgroupSize)
+    (h_fit :
+      ((env.axisDispatch axis).workgroupSize *
+            (env.axisDispatch axis).numWorkgroups - 1) * gid_stride +
+          (limit - 1) * loop_stride + offset + 1 ≤ array_length) :
+    evalBoundsMatcherExpr env i expr < array_length := by
+  rw [matches_gid_loop_affine_eval env i h_match]
+  exact gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight
+    (env.axisDispatch axis).workgroupId
+    (env.axisDispatch axis).localId
+    (env.axisDispatch axis).workgroupSize
+    (env.axisDispatch axis).numWorkgroups
+    array_length
+    gid_stride
+    limit
+    i
+    loop_stride
+    offset
+    h_i
+    h_wid
+    h_lid
+    h_fit
+
 /-- Contract for the tiled matcher shape:
     `(gid / tile_width) * tile_stride + (gid % tile_width) + offset`. -/
 inductive MatchesGidTiled :

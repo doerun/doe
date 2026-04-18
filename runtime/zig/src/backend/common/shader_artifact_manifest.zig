@@ -39,6 +39,17 @@ pub const ManifestSpec = struct {
     stages: []const StageDescriptor,
 };
 
+/// Runtime-side payload associated with a stage: when the backend has the
+/// real compiled artifact bytes (e.g. a SPIR-V module), the manifest emitter
+/// writes them to a sibling file and records the path on the matching stage
+/// record so downstream gates (`shader_artifact_gate.py --require-spirv-validation`)
+/// can run spirv-val against the binary.
+pub const StageArtifact = struct {
+    manifest_field: []const u8,
+    bytes: []const u8,
+    extension: []const u8,
+};
+
 pub fn manifest_path(self: anytype) ?[]const u8 {
     if (self.manifest_path_len == 0) return null;
     return self.manifest_path_storage[0..self.manifest_path_len];
@@ -60,14 +71,21 @@ pub fn flush_pending_artifact(self: anytype, spec: ManifestSpec) void {
         self.pending_artifact_module,
         self.pending_artifact_meta,
         status_code,
-    )) return;
-    emit_shader_artifact_manifest_for_signature(
+    )) {
+        release_pending_backend_spirv_bytes(self);
+        return;
+    }
+    var pending_artifacts_buf: [1]StageArtifact = undefined;
+    const pending_artifacts = collect_pending_stage_artifacts(self, &pending_artifacts_buf);
+    emit_shader_artifact_manifest_for_signature_with_artifacts(
         self,
         spec,
         self.pending_artifact_module,
         self.pending_artifact_meta,
         status_code,
+        pending_artifacts,
     ) catch {};
+    release_pending_backend_spirv_bytes(self);
 }
 
 pub fn emit_shader_artifact_manifest_for_signature(
@@ -76,6 +94,37 @@ pub fn emit_shader_artifact_manifest_for_signature(
     module: []const u8,
     meta: artifact_meta.ArtifactMeta,
     status_code: []const u8,
+) common_errors.BackendNativeError!void {
+    return emit_shader_artifact_manifest_for_signature_with_artifacts(
+        self,
+        spec,
+        module,
+        meta,
+        status_code,
+        &.{},
+    );
+}
+
+fn collect_pending_stage_artifacts(self: anytype, buffer: *[1]StageArtifact) []const StageArtifact {
+    if (!@hasDecl(@TypeOf(self.*), "pending_spirv_bytes_view")) return &.{};
+    const bytes = self.pending_spirv_bytes_view() orelse return &.{};
+    if (bytes.len == 0) return &.{};
+    buffer[0] = .{ .manifest_field = "spirvSha256", .bytes = bytes, .extension = ".spv" };
+    return buffer[0..1];
+}
+
+fn release_pending_backend_spirv_bytes(self: anytype) void {
+    if (!@hasDecl(@TypeOf(self.*), "release_pending_spirv_bytes")) return;
+    self.release_pending_spirv_bytes();
+}
+
+pub fn emit_shader_artifact_manifest_for_signature_with_artifacts(
+    self: anytype,
+    spec: ManifestSpec,
+    module: []const u8,
+    meta: artifact_meta.ArtifactMeta,
+    status_code: []const u8,
+    stage_artifacts: []const StageArtifact,
 ) common_errors.BackendNativeError!void {
     self.manifest_emit_count +|= 1;
 
@@ -112,7 +161,23 @@ pub fn emit_shader_artifact_manifest_for_signature(
     };
     defer self.allocator.free(stage_hashes);
 
-    const stages_json = build_stages_json(self.allocator, spec.stages, wgsl_hash, stage_hashes) catch {
+    std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+    const stage_artifact_paths = write_stage_artifact_blobs(
+        self.allocator,
+        spec,
+        self.manifest_emit_count,
+        stage_artifacts,
+    ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+    defer free_stage_artifact_paths(self.allocator, stage_artifact_paths);
+
+    const stages_json = build_stages_json(
+        self.allocator,
+        spec.stages,
+        wgsl_hash,
+        stage_hashes,
+        stage_artifact_paths,
+    ) catch {
         return common_errors.BackendNativeError.ShaderCompileFailed;
     };
     defer self.allocator.free(stages_json);
@@ -143,7 +208,6 @@ pub fn emit_shader_artifact_manifest_for_signature(
     ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
     defer self.allocator.free(content);
 
-    std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
     defer file.close();
     file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
@@ -186,11 +250,68 @@ fn derive_stage_hashes(
     return hashes;
 }
 
+const StageArtifactPath = struct {
+    manifest_field: []const u8,
+    filename: []u8,
+};
+
+fn write_stage_artifact_blobs(
+    allocator: std.mem.Allocator,
+    spec: ManifestSpec,
+    manifest_emit_count: u64,
+    stage_artifacts: []const StageArtifact,
+) ![]StageArtifactPath {
+    if (stage_artifacts.len == 0) return allocator.alloc(StageArtifactPath, 0);
+    var out = try allocator.alloc(StageArtifactPath, stage_artifacts.len);
+    var written: usize = 0;
+    errdefer {
+        for (out[0..written]) |entry| allocator.free(entry.filename);
+        allocator.free(out);
+    }
+    for (stage_artifacts) |artifact| {
+        const filename = try std.fmt.allocPrint(
+            allocator,
+            "{s}_shader_artifact_{d}{s}",
+            .{ spec.file_prefix, manifest_emit_count, artifact.extension },
+        );
+        errdefer allocator.free(filename);
+        const full_path = try std.fmt.allocPrint(
+            allocator,
+            "{s}/{s}",
+            .{ SHADER_ARTIFACT_DIR, filename },
+        );
+        defer allocator.free(full_path);
+        const file = try std.fs.cwd().createFile(full_path, .{ .truncate = true });
+        defer file.close();
+        try file.writeAll(artifact.bytes);
+        out[written] = .{ .manifest_field = artifact.manifest_field, .filename = filename };
+        written += 1;
+    }
+    return out;
+}
+
+fn free_stage_artifact_paths(allocator: std.mem.Allocator, paths: []StageArtifactPath) void {
+    for (paths) |entry| allocator.free(entry.filename);
+    allocator.free(paths);
+}
+
+fn lookup_artifact_path(
+    stage: StageDescriptor,
+    stage_artifact_paths: []const StageArtifactPath,
+) ?[]const u8 {
+    const field = stage.manifest_field orelse return null;
+    for (stage_artifact_paths) |entry| {
+        if (std.mem.eql(u8, entry.manifest_field, field)) return entry.filename;
+    }
+    return null;
+}
+
 fn build_stages_json(
     allocator: std.mem.Allocator,
     stages: []const StageDescriptor,
     wgsl_hash: [hash_utils.SHA256_HEX_SIZE]u8,
     stage_hashes: []const [hash_utils.SHA256_HEX_SIZE]u8,
+    stage_artifact_paths: []const StageArtifactPath,
 ) ![]u8 {
     var list = try std.ArrayList(u8).initCapacity(allocator, 0);
     errdefer list.deinit(allocator);
@@ -200,10 +321,10 @@ fn build_stages_json(
     try write_stage_json(writer, .{
         .stage = "wgsl_parse",
         .hash_label = "wgsl_parse",
-    }, wgsl_hash);
+    }, wgsl_hash, null);
     for (stages, 0..) |stage, index| {
         try writer.writeByte(',');
-        try write_stage_json(writer, stage, stage_hashes[index]);
+        try write_stage_json(writer, stage, stage_hashes[index], lookup_artifact_path(stage, stage_artifact_paths));
     }
     try writer.writeByte(']');
     return list.toOwnedSlice(allocator);
@@ -213,11 +334,15 @@ fn write_stage_json(
     writer: anytype,
     stage: StageDescriptor,
     artifact_hash: [hash_utils.SHA256_HEX_SIZE]u8,
+    artifact_path: ?[]const u8,
 ) !void {
     try writer.print(
         "{{\"stage\":\"{s}\",\"implementation\":\"{s}\",\"artifactSha256\":\"{s}\"",
         .{ stage.stage, stage.implementation.name(), artifact_hash[0..] },
     );
+    if (artifact_path) |path| {
+        try writer.print(",\"artifactPath\":\"{s}\"", .{path});
+    }
     switch (stage.implementation) {
         .native_zig => {},
         .external_tool => {
@@ -334,11 +459,29 @@ test "build_stages_json preserves external tool stage metadata" {
     };
     const wgsl_hash = hash_utils.sha256_hex("module");
     const stage_hashes = [_][hash_utils.SHA256_HEX_SIZE]u8{hash_utils.sha256_hex("dxil_validate")};
-    const json = try build_stages_json(std.testing.allocator, &stages, wgsl_hash, &stage_hashes);
+    const json = try build_stages_json(std.testing.allocator, &stages, wgsl_hash, &stage_hashes, &.{});
     defer std.testing.allocator.free(json);
 
     try std.testing.expect(std.mem.indexOf(u8, json, "\"implementation\":\"external_tool\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"tool\":\"dxv\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"version\":\"1.x\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "\"args\":[]") != null);
+}
+
+test "build_stages_json includes artifactPath when provided" {
+    const stages = [_]StageDescriptor{
+        .{ .stage = "ir_to_spirv", .hash_label = "ir_to_spirv", .manifest_field = "spirvSha256" },
+    };
+    const wgsl_hash = hash_utils.sha256_hex("module");
+    const stage_hashes = [_][hash_utils.SHA256_HEX_SIZE]u8{hash_utils.sha256_hex("ir_to_spirv")};
+    const filename_owned = try std.testing.allocator.dupe(u8, "vulkan_shader_artifact_1.spv");
+    defer std.testing.allocator.free(filename_owned);
+    const paths = [_]StageArtifactPath{
+        .{ .manifest_field = "spirvSha256", .filename = filename_owned },
+    };
+    const json = try build_stages_json(std.testing.allocator, &stages, wgsl_hash, &stage_hashes, &paths);
+    defer std.testing.allocator.free(json);
+
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"stage\":\"ir_to_spirv\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json, "\"artifactPath\":\"vulkan_shader_artifact_1.spv\"") != null);
 }

@@ -266,14 +266,20 @@ def main() -> int:
 
     runtime_bin = Path("runtime/zig/zig-out/bin/doe-zig-runtime")
     dawn_bin = Path("bench/vendor/dawn/out/Release/dawn_perf_tests")
-    lib_webgpu = Path("bench/vendor/dawn/out/Release/libwebgpu.so")
-    lib_wgpu_native = Path("bench/vendor/dawn/out/Release/libwgpu_native.so")
+    # Dawn's shared library is emitted as `libwebgpu_dawn.so` in current Dawn
+    # builds (GN + CMake). The Zig runtime's dlopen loader in
+    # `runtime/zig/src/core/abi/wgpu_loader.zig` tries `libwebgpu_dawn.so` as
+    # the first Dawn candidate, so this is the authoritative preflight name.
+    # The older `libwebgpu.so` alias and the unrelated `libwgpu_native.so`
+    # (wgpu-native, a different implementation) were previously checked but
+    # neither exists in current vendored Dawn output and neither is required
+    # for the Dawn-vs-Doe comparison path.
+    lib_webgpu_dawn = Path("bench/vendor/dawn/out/Release/libwebgpu_dawn.so")
 
     for name, path in (
         ("doeRuntime", runtime_bin),
         ("dawnPerfTests", dawn_bin),
-        ("libwebgpu", lib_webgpu),
-        ("libwgpuNative", lib_wgpu_native),
+        ("libwebgpuDawn", lib_webgpu_dawn),
     ):
         ok, message = check_file(path)
         checks.append({"name": name, "ok": ok, "message": message})

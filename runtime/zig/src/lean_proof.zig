@@ -192,7 +192,13 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
         },
         .gid_1d_storage_buffer_loop_affine => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
-            break :blk comptimeContains(proof_json.?, "\"gid_loop_affine_matcher_contract_sound\"");
+            // Require the tight-precondition contract so the runtime check in
+            // dispatch_preconditions.required_buffer_bytes can use the tight
+            // `(total-1)*gid_stride + (limit-1)*loop_stride + offset + 1`
+            // formula. Without the tight theorem, matvec-shaped dispatches
+            // packed to exactly `total*gid_stride` elements fail the fit
+            // check even though the maximum accessed index is in range.
+            break :blk comptimeContains(proof_json.?, "\"gid_loop_affine_matcher_contract_sound_tight\"");
         },
         .gid_1d_storage_buffer_tiled => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);

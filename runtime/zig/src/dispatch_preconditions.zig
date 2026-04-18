@@ -18,10 +18,29 @@ pub fn required_buffer_bytes(
                 return error.DispatchPreconditionFailed;
             }
             const total_invocations = try invocation_extent(dispatch_workgroups[axis], workgroup_size[axis]);
-            const scaled_invocations = try std.math.mul(u64, total_invocations, precondition.element_multiplier);
-            const loop_elements = try std.math.mul(u64, precondition.loop_limit, precondition.loop_limit_multiplier);
-            const affine_elements = try std.math.add(u64, scaled_invocations, loop_elements);
-            const total_elements = try std.math.add(u64, affine_elements, precondition.element_offset);
+            // Empty dispatch touches nothing; no buffer capacity required.
+            if (total_invocations == 0) break :blk 0;
+            // Tight upper bound on the maximum accessed index, matching the
+            // Lean theorem `gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits_tight`:
+            //   (total_invocations - 1) * element_multiplier
+            //     + (loop_limit - 1) * loop_limit_multiplier
+            //     + element_offset
+            // is the strict supremum of `gid*em + i*lm + offset` when
+            // gid < total and i < loop_limit; required buffer size is
+            // (that max index + 1) * element_stride_bytes.
+            //
+            // Switching from the prior `total*em + limit*lm + offset` form
+            // reclaims `em + lm - 1` elements of slack per dispatch, which
+            // is what enables bounds elision on the AMD Vulkan matvec where
+            // the buffer is packed to exactly `total*em` vec4<f32> entries.
+            const max_gid_scaled = try std.math.mul(u64, total_invocations - 1, precondition.element_multiplier);
+            const max_loop_scaled: u64 = if (precondition.loop_limit == 0)
+                0
+            else
+                try std.math.mul(u64, precondition.loop_limit - 1, precondition.loop_limit_multiplier);
+            const affine_max = try std.math.add(u64, max_gid_scaled, max_loop_scaled);
+            const max_accessed = try std.math.add(u64, affine_max, precondition.element_offset);
+            const total_elements = try std.math.add(u64, max_accessed, 1);
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
         .gid_component_tiled => blk: {
@@ -137,7 +156,10 @@ test "required_buffer_bytes accounts for affine gid multiplier and offset" {
         .element_stride_bytes = 4,
         .element_offset = 2,
     }, .{ 8, 1, 1 }, .{ 64, 1, 1 });
-    try std.testing.expectEqual(@as(u64, 8200), required);
+    // Tight formula: (total-1)*em + offset + 1 = 511*4 + 2 + 1 = 2047; *stride=4 = 8188.
+    // Prior over-approximate formula yielded 8200; the 12-byte reclaim is the
+    // `em - 1 = 3` elements of slack eliminated by the tight precondition.
+    try std.testing.expectEqual(@as(u64, 8188), required);
 }
 
 test "required_buffer_bytes accounts for tiled gid stride and offset" {
@@ -166,5 +188,8 @@ test "required_buffer_bytes accounts for affine loop contribution" {
         .element_stride_bytes = 4,
         .element_offset = 2,
     }, .{ 8, 1, 1 }, .{ 8, 1, 1 });
-    try std.testing.expectEqual(@as(u64, 312), required);
+    // Tight formula: (total-1)*em + (limit-1)*lm + offset + 1 = 63 + 9 + 2 + 1 = 75; *stride=4 = 300.
+    // Prior over-approximate formula yielded 312; the 12-byte reclaim is the
+    // `em + lm - 1 = 3` elements of slack eliminated by the tight precondition.
+    try std.testing.expectEqual(@as(u64, 300), required);
 }

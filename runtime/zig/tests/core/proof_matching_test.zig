@@ -636,10 +636,9 @@ test "DispatchPreconditionKind has exactly 4 variants" {
 
 test "dispatch preconditions with loop limit contribute to byte count" {
     const dispatch = @import("../../src/dispatch_preconditions.zig");
-    // gid_component with loop_limit=10, loop_limit_multiplier=2
-    // total = (invocations * 1 + 10 * 2 + 0) * 4
-    // invocations = 4 * 8 = 32
-    // total = (32 + 20) * 4 = 208
+    // Tight formula: (total-1)*em + (limit-1)*lm + offset + 1.
+    // total = 4*8 = 32; tight = 31*1 + 9*2 + 0 + 1 = 50 elements; *4 bytes = 200.
+    // Prior over-approximation yielded 208 (the 8-byte reclaim is `em+lm-1=2` elements).
     const required = try dispatch.required_buffer_bytes(.{
         .kind = .gid_component,
         .gid_axis = 0,
@@ -650,7 +649,7 @@ test "dispatch preconditions with loop limit contribute to byte count" {
         .element_stride_bytes = 4,
         .element_offset = 0,
     }, .{ 4, 1, 1 }, .{ 8, 1, 1 });
-    try testing.expectEqual(@as(u64, 208), required);
+    try testing.expectEqual(@as(u64, 200), required);
 }
 
 test "dispatch preconditions zero loop limit adds nothing" {
