@@ -708,6 +708,7 @@ _HOST_PLAN_KERNEL_PATTERNS: frozenset[str] = frozenset(
         "gather",
         "reduction",
         "tiled_matmul",
+        "attention_linear",
         "attention_tiled",
         "attention_decode",
         "element_wise",

@@ -1,0 +1,50 @@
+// PE program: linear attention (auto-generated from WGSL)
+// Scaled dot-product without softmax. Each PE = one (query, head).
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+param head_dim: i16;
+param kv_len: i16;
+param scale: f32 = 0.125;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+var query: [head_dim]f32 = @zeros([head_dim]f32);
+var query_ptr: [*]f32 = &query;
+var key: [kv_len * head_dim]f32 = @zeros([kv_len * head_dim]f32);
+var key_ptr: [*]f32 = &key;
+var val: [kv_len * head_dim]f32 = @zeros([kv_len * head_dim]f32);
+var val_ptr: [*]f32 = &val;
+var output: [head_dim]f32 = @zeros([head_dim]f32);
+var output_ptr: [*]f32 = &output;
+
+fn compute() void {
+    // Zero output accumulator
+    for (@range(i16, head_dim)) |d| {
+        output[@as(u32, d)] = 0.0;
+    }
+
+    // Accumulate Q * K * V for each KV position
+    for (@range(i16, kv_len)) |kv_i| {
+        var score: f32 = 0.0;
+        for (@range(i16, head_dim)) |d| {
+            score += query[@as(u32, d)] * key[@as(u32, kv_i) * @as(u32, head_dim) + @as(u32, d)];
+        }
+        score *= scale;
+        for (@range(i16, head_dim)) |d| {
+            output[@as(u32, d)] += score * val[@as(u32, kv_i) * @as(u32, head_dim) + @as(u32, d)];
+        }
+    }
+
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(query_ptr, "query");
+    @export_symbol(key_ptr, "key");
+    @export_symbol(val_ptr, "val");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

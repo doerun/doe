@@ -1,0 +1,29 @@
+// Layout: linear attention on a 1-D PE row (no fabric).
+
+param width: i16;
+param head_dim: i16 = 64;
+param kv_len: i16 = 16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = 1,
+});
+
+layout {
+    @set_rectangle(width, 1);
+
+    for (@range(i16, width)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = width,
+            .head_dim = head_dim, .kv_len = kv_len,
+        });
+    }
+
+    @export_name("query", [*]f32, true);
+    @export_name("key", [*]f32, true);
+    @export_name("val", [*]f32, true);
+    @export_name("output", [*]f32, true);
+    @export_name("compute", fn()void);
+}
