@@ -40,6 +40,8 @@
 - current v0 CI does not execute Lean toolchain proofs as a blocking step.
 - run schema hard gate:
   `python3 bench/gates/schema_gate.py`
+- run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):
+  `python3 bench/gates/spec_diff_gate.py`
 - run comparability parity verification gate (advisory unless explicitly enabled in gate orchestration):
   `python3 bench/comparability_obligation_parity_gate.py`
 - run correctness hard gate from comparison report artifacts:

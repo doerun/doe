@@ -70,10 +70,17 @@ pub const ImageFormat = struct {
 };
 
 pub const ImageOperandsMask = struct {
+    // Canonical SPIR-V ImageOperands mask values per spirv.h. Previously Offset
+    // held 0x04 (actually Grad), Grad held 0x08 (actually ConstOffset), and
+    // ConstOffset held 0x10 (actually Offset) — a three-way permutation. Latent
+    // in the compute-only cohort (storage images do not emit these operands);
+    // any texture-sampling shader using OpImageSampleImplicitLod with explicit
+    // gradient, constant-offset, or runtime-offset operands would have written
+    // the wrong operand bitset into the generated SPIR-V word.
     pub const Lod: u32 = 0x00000002;
-    pub const Offset: u32 = 0x00000004;
-    pub const Grad: u32 = 0x00000008;
-    pub const ConstOffset: u32 = 0x00000010;
+    pub const Grad: u32 = 0x00000004;
+    pub const ConstOffset: u32 = 0x00000008;
+    pub const Offset: u32 = 0x00000010;
     pub const Sample: u32 = 0x00000040;
 };
 

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe spec-diff gate targets",
+  "description": "Registry for the programmatic-diff gate that verifies runtime/zig constants against canonical in-tree spec headers (SPIR-V, Vulkan, D3D12).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "headers", "targets"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "headers": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "style"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "style": {
+            "type": "string",
+            "enum": ["c_enum_member"]
+          }
+        }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "zigPath", "header", "canonicalPrefix", "fields"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "description": {
+            "type": "string"
+          },
+          "zigPath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "zigNamespace": {
+            "type": ["string", "null"],
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "header": {
+            "type": "string",
+            "minLength": 1
+          },
+          "canonicalPrefix": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["zig", "canonical"],
+                  "properties": {
+                    "zig": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "canonical": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_]+$"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

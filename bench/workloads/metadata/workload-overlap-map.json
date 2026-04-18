@@ -33,6 +33,11 @@
         "compute_matvec_32768x2048_f32",
         "compute_matvec_32768x2048_f32_swizzle1",
         "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+        "render_bundle_dynamic_pipeline_bindings",
+        "render_draw_redundant_pipeline_bindings",
+        "render_multidraw",
+        "render_multidraw_indexed",
+        "texture_sampling_raster_baseline",
         "upload_write_buffer_1gb",
         "upload_write_buffer_256mb"
       ],
@@ -49,17 +54,9 @@
         "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
         "inference_gemma3_270m_prefill_32tok",
         "inference_gemma3_270m_prefill_64tok_decode_64tok",
-        "render_bundle_dynamic_bindings",
         "render_bundle_dynamic_pipeline_bindings_200k",
         "render_draw_redundant_pipeline_bindings_200k",
-        "render_draw_state_bindings",
-        "render_draw_throughput_200k",
-        "render_draw_throughput_baseline",
-        "render_uniform_buffer_update_writebuffer_partial_single",
         "surface_full_presentation",
-        "texture_sampler_write_query_destroy",
-        "texture_sampler_write_query_destroy_500",
-        "texture_sampler_write_query_destroy_mip8",
         "upload_write_buffer_16mb_staged",
         "upload_write_buffer_1gb_staged",
         "upload_write_buffer_1kb_staged",
@@ -72,7 +69,16 @@
       "only_d3d12": [
         "resource_lifecycle"
       ],
-      "vulkan_and_metal_only": [],
+      "vulkan_and_metal_only": [
+        "render_bundle_dynamic_bindings",
+        "render_draw_state_bindings",
+        "render_draw_throughput_200k",
+        "render_draw_throughput_baseline",
+        "render_uniform_buffer_update_writebuffer_partial_single",
+        "texture_sampler_write_query_destroy",
+        "texture_sampler_write_query_destroy_500",
+        "texture_sampler_write_query_destroy_mip8"
+      ],
       "metal_and_d3d12_only": [
         "compute_zero_initialize_workgroup_memory_256"
       ],
@@ -86,15 +92,15 @@
     },
     "counts": {
       "across_all_three_backends": 6,
-      "only_vulkan": 5,
-      "only_metal": 31,
+      "only_vulkan": 10,
+      "only_metal": 23,
       "only_d3d12": 1,
-      "vulkan_and_metal_only": 0,
+      "vulkan_and_metal_only": 8,
       "metal_and_d3d12_only": 1,
       "vulkan_and_d3d12_only": 5,
       "distinctComparable": {
         "metal": 38,
-        "vulkan": 16,
+        "vulkan": 29,
         "d3d12": 13
       }
     }

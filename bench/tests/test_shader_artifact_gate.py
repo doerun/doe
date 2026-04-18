@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import stat
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 
@@ -45,7 +47,7 @@ class ShaderArtifactGateTests(unittest.TestCase):
         path.chmod(path.stat().st_mode | stat.S_IEXEC)
         return path
 
-    def test_spirv_manifest_requires_validator_and_passes_when_validated(self) -> None:
+    def test_spirv_manifest_validates_when_validator_is_provided(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fawn-shader-artifact-gate-") as tmpdir:
             root = Path(tmpdir)
             spirv_path = root / "shader.spv"
@@ -95,6 +97,15 @@ class ShaderArtifactGateTests(unittest.TestCase):
                 "",
                 False,
             )
+            self.assertEqual(failures, [])
+            self.assertEqual(validated, 0)
+
+            failures, validated = self.module.validate_spirv_artifacts(
+                manifest_path,
+                json.loads(manifest_path.read_text(encoding="utf-8")),
+                "",
+                True,
+            )
             self.assertTrue(any("not provided" in item for item in failures))
             self.assertEqual(validated, 0)
 
@@ -142,6 +153,52 @@ class ShaderArtifactGateTests(unittest.TestCase):
             self.assertEqual(validated, 0)
             self.assertTrue(any("spirv-val failed" in item for item in failures))
 
+    def test_missing_spirv_artifact_path_requires_explicit_binary_validation(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="fawn-shader-artifact-gate-") as tmpdir:
+            root = Path(tmpdir)
+            manifest_path = self.write_manifest(
+                root,
+                {
+                    "schemaVersion": 2,
+                    "backendId": "doe_vulkan",
+                    "module": "doe-zig-runtime",
+                    "pipelineHash": "pipeline",
+                    "wgslSha256": "0" * 64,
+                    "irSha256": "1" * 64,
+                    "toolchainSha256": "2" * 64,
+                    "taxonomyCode": "ok",
+                    "previousHash": "prev",
+                    "hash": "hash",
+                    "spirvSha256": "3" * 64,
+                    "stages": [
+                        {
+                            "stage": "ir_to_spirv",
+                            "implementation": "native_zig",
+                            "artifactSha256": "4" * 64,
+                        }
+                    ],
+                },
+            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+            failures, validated = self.module.validate_spirv_artifacts(
+                manifest_path,
+                manifest,
+                "",
+                False,
+            )
+            self.assertEqual(failures, [])
+            self.assertEqual(validated, 0)
+
+            failures, validated = self.module.validate_spirv_artifacts(
+                manifest_path,
+                manifest,
+                "",
+                True,
+            )
+            self.assertTrue(any("missing artifactPath" in item for item in failures))
+            self.assertEqual(validated, 0)
+
     def test_non_spirv_manifest_does_not_require_validator(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fawn-shader-artifact-gate-") as tmpdir:
             root = Path(tmpdir)
@@ -178,6 +235,88 @@ class ShaderArtifactGateTests(unittest.TestCase):
             )
             self.assertEqual(failures, [])
             self.assertEqual(validated, 0)
+
+    def test_main_validates_receipt_first_report_samples(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="fawn-shader-artifact-gate-") as tmpdir:
+            root = Path(tmpdir)
+            spirv_path = root / "shader.spv"
+            spirv_path.write_bytes(b"SPIR-V")
+            validator = self.write_executable(
+                root,
+                "spirv-val",
+                "#!/usr/bin/env python3\nimport sys\nsys.exit(0)\n",
+            )
+            manifest_path = self.write_manifest(
+                root,
+                {
+                    "schemaVersion": 2,
+                    "backendId": "doe_vulkan",
+                    "module": "doe-zig-runtime",
+                    "pipelineHash": "pipeline",
+                    "wgslSha256": "0" * 64,
+                    "irSha256": "1" * 64,
+                    "toolchainSha256": "2" * 64,
+                    "taxonomyCode": "ok",
+                    "previousHash": "prev",
+                    "hash": "hash",
+                    "spirvSha256": "3" * 64,
+                    "stages": [
+                        {
+                            "stage": "ir_to_spirv",
+                            "implementation": "native_zig",
+                            "artifactSha256": "4" * 64,
+                            "artifactPath": "shader.spv",
+                        }
+                    ],
+                },
+            )
+            run_path = root / "doe-run.json"
+            run_path.write_text(
+                json.dumps(
+                    {
+                        "samples": [
+                            {
+                                "returnCode": 0,
+                                "traceMeta": {
+                                    "shaderArtifactManifestPath": str(manifest_path)
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            report_path = root / "compare.json"
+            report_path.write_text(
+                json.dumps(
+                    {
+                        "workloads": [
+                            {
+                                "id": "receipt_workload",
+                                "receipts": {"left": {"path": str(run_path)}},
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            old_argv = sys.argv
+            sys.argv = [
+                "shader_artifact_gate.py",
+                "--report",
+                str(report_path),
+                "--schema",
+                str(REPO_ROOT / "config" / "shader-artifact.schema.json"),
+                "--require-manifest",
+                "--spirv-val",
+                str(validator),
+            ]
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(self.module.main(), 0)
+            finally:
+                sys.argv = old_argv
 
 
 if __name__ == "__main__":

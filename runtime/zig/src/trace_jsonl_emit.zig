@@ -9,11 +9,22 @@ const ESTIMATED_PLAN_TRACE_ROW_BYTES: usize = 384;
 const FILE_WRITE_BUFFER_BYTES: usize = 64 * 1024;
 const COMPACT_UPLOAD_TRACE_FORMAT = "compact-upload-repeat-v1";
 const COMPACT_UPLOAD_DURATION_ROWS_SUFFIX = ".execution-duration-rows.json";
+const COMPACT_UPLOAD_HASH_TAG: u64 = 0xd0e0_c0ac_7a11_0001;
+const COMPACT_UPLOAD_HASH_MIX: u64 = 0x9e37_79b9_7f4a_7c15;
 
 pub const WriteTiming = struct {
     serialize_ns: u64 = 0,
     write_ns: u64 = 0,
 };
+
+pub fn compactUploadTraceHash(row_total_ns: []const u64, previous_hash: u64) u64 {
+    var hash = previous_hash ^ COMPACT_UPLOAD_HASH_TAG;
+    hash = (hash *% COMPACT_UPLOAD_HASH_MIX) ^ @as(u64, row_total_ns.len);
+    for (row_total_ns) |duration_ns| {
+        hash = (hash *% COMPACT_UPLOAD_HASH_MIX) ^ duration_ns;
+    }
+    return hash;
+}
 
 pub const BufferedTraceRow = struct {
     seq: usize,
@@ -100,6 +111,8 @@ pub fn writeCompactUploadTraceRows(
     path: []const u8,
     module_name: []const u8,
     row_total_ns: []const u64,
+    row_hash: u64,
+    previous_hash: u64,
 ) !WriteTiming {
     const duration_rows_path = try std.mem.concat(
         allocator,
@@ -146,12 +159,18 @@ pub fn writeCompactUploadTraceRows(
     var summary_row = try std.ArrayList(u8).initCapacity(allocator, ESTIMATED_PLAN_TRACE_ROW_BYTES);
     defer summary_row.deinit(allocator);
     const summary_serialize_start_ns = nowNs();
+    const timestamp_ns = nowNs();
     const summary_writer = summary_row.writer(allocator);
     try summary_writer.writeAll("{\"traceVersion\":1,\"module\":");
     try trace.writeJsonString(summary_writer, module_name);
+    try summary_writer.writeAll(",\"opCode\":\"upload\",\"seq\":0,\"timestampMonoNs\":");
+    try summary_writer.print("{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":\"upload\"", .{
+        timestamp_ns,
+        row_hash,
+        previous_hash,
+    });
     try summary_writer.writeAll(",\"traceFormat\":");
     try trace.writeJsonString(summary_writer, COMPACT_UPLOAD_TRACE_FORMAT);
-    try summary_writer.writeAll(",\"opCode\":\"upload\",\"command\":\"upload\"");
     try summary_writer.print(
         ",\"rowCount\":{},\"executionDurationRowCount\":{},\"executionDurationTotalNs\":{},\"executionDurationMinNs\":{},\"executionDurationMaxNs\":{},\"executionDurationRowsPath\":",
         .{

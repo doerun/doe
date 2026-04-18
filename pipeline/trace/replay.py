@@ -134,7 +134,7 @@ def main() -> int:
             print(f"FAIL: trace row={idx} invalid module")
             return 1
 
-        if row.get("opCode") != "dispatch":
+        if row.get("opCode") not in {"dispatch", "upload"}:
             print(f"FAIL: trace row={idx} unsupported opCode={row.get('opCode')}")
             return 1
 

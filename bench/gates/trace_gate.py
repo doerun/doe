@@ -89,15 +89,61 @@ def load_json_file(path: Path) -> dict[str, Any] | None:
     return None
 
 
+def workload_side_payload(workload: dict[str, Any], side: str) -> dict[str, Any]:
+    inline = workload.get(side)
+    if isinstance(inline, dict):
+        return inline
+
+    receipts = workload.get("receipts")
+    if not isinstance(receipts, dict):
+        return {}
+
+    receipt_key = "left" if side == "baseline" else "right"
+    receipt = receipts.get(receipt_key)
+    if not isinstance(receipt, dict):
+        return {}
+
+    path_value = receipt.get("path")
+    if not isinstance(path_value, str) or not path_value:
+        return {}
+
+    payload = load_json_file(Path(path_value))
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
+def side_command_samples(side_payload: dict[str, Any]) -> list[Any]:
+    command_samples = side_payload.get("commandSamples")
+    if isinstance(command_samples, list):
+        return command_samples
+    samples = side_payload.get("samples")
+    if isinstance(samples, list):
+        return samples
+    return []
+
+
+def sample_trace_meta_path(sample: dict[str, Any]) -> Path | None:
+    trace_meta_path = sample.get("traceMetaPath")
+    if isinstance(trace_meta_path, str) and trace_meta_path:
+        return Path(trace_meta_path)
+
+    trace_artifacts = sample.get("traceArtifacts")
+    if isinstance(trace_artifacts, dict):
+        meta_path = trace_artifacts.get("metaPath")
+        if isinstance(meta_path, str) and meta_path:
+            return Path(meta_path)
+    return None
+
+
 def sample_trace_meta(sample: dict[str, Any]) -> dict[str, Any] | None:
     inline = sample.get("traceMeta")
     if isinstance(inline, dict):
         return inline
 
-    trace_meta_path = sample.get("traceMetaPath")
-    if not isinstance(trace_meta_path, str) or not trace_meta_path:
+    path = sample_trace_meta_path(sample)
+    if path is None:
         return None
-    path = Path(trace_meta_path)
     if not path.exists():
         return None
     return load_json_file(path)
@@ -115,9 +161,15 @@ def sample_module_name(sample: dict[str, Any]) -> str:
 
 def sample_trace_path(sample: dict[str, Any]) -> Path | None:
     trace_jsonl = sample.get("traceJsonlPath")
-    if not isinstance(trace_jsonl, str) or not trace_jsonl:
-        return None
-    return Path(trace_jsonl)
+    if isinstance(trace_jsonl, str) and trace_jsonl:
+        return Path(trace_jsonl)
+
+    trace_artifacts = sample.get("traceArtifacts")
+    if isinstance(trace_artifacts, dict):
+        jsonl_path = trace_artifacts.get("jsonlPath")
+        if isinstance(jsonl_path, str) and jsonl_path:
+            return Path(jsonl_path)
+    return None
 
 
 def sample_return_code(sample: dict[str, Any]) -> int | None:
@@ -187,11 +239,15 @@ def main() -> int:
             failures.append(f"workloads[{workload_idx}] is not an object")
             continue
         workload_id = workload.get("id", "unknown")
+        side_payloads = {
+            "baseline": workload_side_payload(workload, "baseline"),
+            "comparison": workload_side_payload(workload, "comparison"),
+        }
         for side in ("baseline", "comparison"):
-            side_payload = workload.get(side, {})
+            side_payload = side_payloads[side]
             if not isinstance(side_payload, dict):
                 continue
-            for sample_idx, sample in enumerate(side_payload.get("commandSamples", [])):
+            for sample_idx, sample in enumerate(side_command_samples(side_payload)):
                 if not isinstance(sample, dict):
                     continue
                 return_code = sample.get("returnCode")
@@ -203,9 +259,9 @@ def main() -> int:
                 if return_code != 0:
                     continue
 
-                trace_meta = sample.get("traceMetaPath")
-                trace_jsonl = sample.get("traceJsonlPath")
-                if not trace_meta or not trace_jsonl:
+                meta_path = sample_trace_meta_path(sample)
+                jsonl_path = sample_trace_path(sample)
+                if meta_path is None or jsonl_path is None:
                     msg = (
                         f"{workload_id}/{side} sample {sample_idx} missing trace artifact paths "
                         "(expected traceMetaPath and traceJsonlPath)"
@@ -213,8 +269,6 @@ def main() -> int:
                     failures.append(msg)
                     continue
 
-                meta_path = Path(trace_meta)
-                jsonl_path = Path(trace_jsonl)
                 if not meta_path.exists() or not jsonl_path.exists():
                     failures.append(
                         f"{workload_id}/{side} sample {sample_idx} missing trace files: "
@@ -257,14 +311,14 @@ def main() -> int:
         if args.semantic_parity_mode == "off":
             continue
 
-        left_payload = workload.get("baseline")
-        right_payload = workload.get("comparison")
+        left_payload = side_payloads["baseline"]
+        right_payload = side_payloads["comparison"]
         if not isinstance(left_payload, dict) or not isinstance(right_payload, dict):
             if args.semantic_parity_mode == "required":
                 failures.append(f"{workload_id} missing baseline/comparison payloads for semantic parity checks")
             continue
-        left_samples = left_payload.get("commandSamples", [])
-        right_samples = right_payload.get("commandSamples", [])
+        left_samples = side_command_samples(left_payload)
+        right_samples = side_command_samples(right_payload)
         if not isinstance(left_samples, list) or not isinstance(right_samples, list):
             if args.semantic_parity_mode == "required":
                 failures.append(f"{workload_id} invalid commandSamples payload for semantic parity checks")

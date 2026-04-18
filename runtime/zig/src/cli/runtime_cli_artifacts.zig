@@ -143,11 +143,17 @@ pub fn finalizeArtifacts(
                 trace_summary.seq_max = 0;
                 trace_summary.row_count = 1;
             }
+            const previous_hash = (trace.TraceState{}).previous_hash;
+            const compact_hash = trace_jsonl_emit.compactUploadTraceHash(rows.items, previous_hash);
+            trace_summary.final_previous_hash = previous_hash;
+            trace_summary.final_hash = compact_hash;
             const trace_jsonl_timing = try trace_jsonl_emit.writeCompactUploadTraceRows(
                 allocator,
                 path,
                 "doe-zig-runtime",
                 rows.items,
+                compact_hash,
+                previous_hash,
             );
             totals.host_artifact_trace_jsonl_serialize_total_ns = trace_jsonl_timing.serialize_ns;
             totals.host_artifact_trace_jsonl_write_total_ns = trace_jsonl_timing.write_ns;

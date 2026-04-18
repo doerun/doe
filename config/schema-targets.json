@@ -226,6 +226,10 @@
       "data": "config/tool-surfaces.json"
     },
     {
+      "schema": "config/spec-diff-targets.schema.json",
+      "data": "config/spec-diff-targets.json"
+    },
+    {
       "schema": "config/doe-determinism-receipt.schema.json",
       "data": "examples/doe-determinism-receipt.stable-token.sample.json"
     },

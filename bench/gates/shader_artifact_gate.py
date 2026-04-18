@@ -16,7 +16,6 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 import argparse
 import json
 import subprocess
-from pathlib import Path
 from typing import Any
 
 from native_compare_modules import contracts
@@ -51,6 +50,71 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def load_json_file(path: Path) -> dict[str, Any] | None:
+    try:
+        return load_json(path)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+        return None
+
+
+def workload_side_payload(workload: dict[str, Any], side: str) -> dict[str, Any]:
+    inline = workload.get(side)
+    if isinstance(inline, dict):
+        return inline
+
+    receipts = workload.get("receipts")
+    if not isinstance(receipts, dict):
+        return {}
+
+    receipt_key = "left" if side == "baseline" else "right"
+    receipt = receipts.get(receipt_key)
+    if not isinstance(receipt, dict):
+        return {}
+
+    path_value = receipt.get("path")
+    if not isinstance(path_value, str) or not path_value:
+        return {}
+
+    payload = load_json_file(Path(path_value))
+    if isinstance(payload, dict):
+        return payload
+    return {}
+
+
+def side_command_samples(side_payload: dict[str, Any]) -> list[Any]:
+    command_samples = side_payload.get("commandSamples")
+    if isinstance(command_samples, list):
+        return command_samples
+    samples = side_payload.get("samples")
+    if isinstance(samples, list):
+        return samples
+    return []
+
+
+def sample_trace_meta_path(sample: dict[str, Any]) -> Path | None:
+    trace_meta_path = sample.get("traceMetaPath")
+    if isinstance(trace_meta_path, str) and trace_meta_path:
+        return Path(trace_meta_path)
+
+    trace_artifacts = sample.get("traceArtifacts")
+    if isinstance(trace_artifacts, dict):
+        meta_path = trace_artifacts.get("metaPath")
+        if isinstance(meta_path, str) and meta_path:
+            return Path(meta_path)
+    return None
+
+
+def sample_trace_meta(sample: dict[str, Any]) -> dict[str, Any] | None:
+    inline = sample.get("traceMeta")
+    if isinstance(inline, dict):
+        return inline
+
+    path = sample_trace_meta_path(sample)
+    if path is None:
+        return None
+    return load_json_file(path)
+
+
 def is_spirv_artifact_stage(stage: dict[str, Any]) -> bool:
     stage_name = stage.get("stage")
     if not isinstance(stage_name, str):
@@ -63,7 +127,7 @@ def is_spirv_artifact_stage(stage: dict[str, Any]) -> bool:
 def main() -> int:
     args = parse_args()
     report = load_json(Path(args.report))
-    schema = shader_contract.load_schema(Path(args.schema))
+    schema = contracts.load_schema(Path(args.schema))
 
     failures: list[str] = []
     validated = 0
@@ -78,18 +142,22 @@ def main() -> int:
         if not isinstance(workload, dict):
             continue
         workload_id = str(workload.get("id", "unknown"))
-        baseline = workload.get("baseline")
-        if not isinstance(baseline, dict):
+        baseline = workload_side_payload(workload, "baseline")
+        if not baseline:
+            if args.require_manifest:
+                failures.append(f"{workload_id}: missing baseline payload")
             continue
-        samples = baseline.get("commandSamples")
-        if not isinstance(samples, list):
+        samples = side_command_samples(baseline)
+        if not samples:
+            if args.require_manifest:
+                failures.append(f"{workload_id}: missing baseline samples")
             continue
         for sample in samples:
             if not isinstance(sample, dict):
                 continue
             if sample.get("returnCode") != 0:
                 continue
-            trace_meta = sample.get("traceMeta")
+            trace_meta = sample_trace_meta(sample)
             if not isinstance(trace_meta, dict):
                 continue
 
@@ -99,7 +167,7 @@ def main() -> int:
                     failures.append(f"{workload_id}: missing shaderArtifactManifestPath")
                 continue
             manifest_path = Path(manifest_path_raw)
-            manifest_errors = shader_contract.validate_manifest(manifest_path, schema)
+            manifest_errors = contracts.validate_manifest(manifest_path, schema)
             if manifest_errors:
                 for err in manifest_errors:
                     failures.append(f"{workload_id}: {err}")
@@ -141,7 +209,6 @@ def validate_spirv_artifacts(
     validated = 0
     saw_spirv_output = isinstance(manifest.get("spirvSha256"), str)
     saw_spirv_stage = False
-    require_validation = require_spirv_validation or saw_spirv_output
     for stage in stages:
         if not isinstance(stage, dict):
             continue
@@ -150,13 +217,15 @@ def validate_spirv_artifacts(
         saw_spirv_stage = True
         artifact_path = stage.get("artifactPath")
         if not isinstance(artifact_path, str) or not artifact_path:
-            failures.append("SPIR-V stage missing artifactPath for validation")
+            if require_spirv_validation:
+                failures.append("SPIR-V stage missing artifactPath for validation")
             continue
         resolved_artifact_path = artifact_path
         if not Path(artifact_path).is_absolute():
             resolved_artifact_path = str((manifest_path.parent / artifact_path).resolve())
         if not spirv_val:
-            failures.append("SPIR-V stage present but --spirv-val not provided")
+            if require_spirv_validation:
+                failures.append("SPIR-V stage present but --spirv-val not provided")
             continue
         completed = subprocess.run(
             [spirv_val, resolved_artifact_path],
@@ -169,7 +238,7 @@ def validate_spirv_artifacts(
             failures.append(f"spirv-val failed for {resolved_artifact_path}: {stderr}")
             continue
         validated += 1
-    if require_validation and saw_spirv_output and not saw_spirv_stage:
+    if require_spirv_validation and saw_spirv_output and not saw_spirv_stage:
         failures.append("SPIR-V artifact present but manifest has no SPIR-V artifact stage")
     return failures, validated
 

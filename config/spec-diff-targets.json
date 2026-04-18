@@ -1,0 +1,460 @@
+{
+  "schemaVersion": 1,
+  "headers": {
+    "spirv_unified": {
+      "path": "browser/chromium/src/third_party/spirv-headers/src/include/spirv/unified1/spirv.h",
+      "style": "c_enum_member"
+    },
+    "vulkan_core": {
+      "path": "browser/chromium/src/third_party/vulkan-headers/src/include/vulkan/vulkan_core.h",
+      "style": "c_enum_member"
+    },
+    "d3d12": {
+      "path": "browser/chromium/src/third_party/dawn/third_party/directx-headers/src/include/directx/d3d12.h",
+      "style": "c_enum_member"
+    }
+  },
+  "targets": [
+    {
+      "id": "spirv_capability",
+      "description": "Khronos SPIR-V Capability enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "Capability",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvCapability",
+      "fields": [
+        "Shader",
+        "ClipDistance",
+        "Float16",
+        "SampleRateShading",
+        "GroupNonUniform",
+        "GroupNonUniformArithmetic",
+        "GroupNonUniformShuffle",
+        "GroupNonUniformVote",
+        "GroupNonUniformBallot",
+        "StorageImageExtendedFormats",
+        "ImageQuery"
+      ]
+    },
+    {
+      "id": "spirv_addressing_model",
+      "description": "Khronos SPIR-V AddressingModel enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "AddressingModel",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvAddressingModel",
+      "fields": ["Logical"]
+    },
+    {
+      "id": "spirv_memory_model",
+      "description": "Khronos SPIR-V MemoryModel enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "MemoryModel",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvMemoryModel",
+      "fields": ["GLSL450"]
+    },
+    {
+      "id": "spirv_dim",
+      "description": "Khronos SPIR-V Dim enum values (Zig leading-underscore maps to digit-leading canonical).",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "Dim",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvDim",
+      "fields": [
+        { "zig": "_1D", "canonical": "1D" },
+        { "zig": "_2D", "canonical": "2D" },
+        { "zig": "_3D", "canonical": "3D" },
+        "Cube"
+      ]
+    },
+    {
+      "id": "spirv_image_format",
+      "description": "Khronos SPIR-V ImageFormat enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "ImageFormat",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvImageFormat",
+      "fields": [
+        "Unknown",
+        "Rgba32f",
+        "Rgba16f",
+        "R32f",
+        "Rgba8",
+        "Rgba8Snorm",
+        "Rg32f",
+        "Rg16f",
+        "R16f",
+        "Rgba16",
+        "Rgba32i",
+        "Rgba16i",
+        "Rgba8i",
+        "R32i",
+        "Rg32i",
+        "Rgba32ui",
+        "Rgba16ui",
+        "Rgba8ui",
+        "R32ui",
+        "Rg32ui"
+      ]
+    },
+    {
+      "id": "spirv_image_operands_mask",
+      "description": "Khronos SPIR-V ImageOperands mask values (Zig names drop the Mask suffix).",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "ImageOperandsMask",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvImageOperands",
+      "fields": [
+        { "zig": "Lod", "canonical": "LodMask" },
+        { "zig": "Offset", "canonical": "OffsetMask" },
+        { "zig": "Grad", "canonical": "GradMask" },
+        { "zig": "ConstOffset", "canonical": "ConstOffsetMask" },
+        { "zig": "Sample", "canonical": "SampleMask" }
+      ]
+    },
+    {
+      "id": "spirv_execution_model",
+      "description": "Khronos SPIR-V ExecutionModel enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "ExecutionModel",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvExecutionModel",
+      "fields": ["Vertex", "Fragment", "GLCompute"]
+    },
+    {
+      "id": "spirv_execution_mode",
+      "description": "Khronos SPIR-V ExecutionMode enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "ExecutionMode",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvExecutionMode",
+      "fields": ["OriginUpperLeft", "DepthReplacing", "LocalSize"]
+    },
+    {
+      "id": "spirv_scope",
+      "description": "Khronos SPIR-V Scope enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "Scope",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvScope",
+      "fields": ["CrossDevice", "Device", "Workgroup", "Subgroup", "Invocation"]
+    },
+    {
+      "id": "spirv_group_operation",
+      "description": "Khronos SPIR-V GroupOperation enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "GroupOperation",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvGroupOperation",
+      "fields": ["Reduce", "InclusiveScan", "ExclusiveScan"]
+    },
+    {
+      "id": "spirv_memory_semantics",
+      "description": "Khronos SPIR-V MemorySemantics mask values (Zig names drop the Mask suffix).",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "MemorySemantics",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvMemorySemantics",
+      "fields": [
+        { "zig": "None", "canonical": "MaskNone" },
+        { "zig": "Acquire", "canonical": "AcquireMask" },
+        { "zig": "Release", "canonical": "ReleaseMask" },
+        { "zig": "AcquireRelease", "canonical": "AcquireReleaseMask" },
+        { "zig": "SequentiallyConsistent", "canonical": "SequentiallyConsistentMask" },
+        { "zig": "UniformMemory", "canonical": "UniformMemoryMask" },
+        { "zig": "WorkgroupMemory", "canonical": "WorkgroupMemoryMask" },
+        { "zig": "ImageMemory", "canonical": "ImageMemoryMask" }
+      ]
+    },
+    {
+      "id": "spirv_storage_class",
+      "description": "Khronos SPIR-V StorageClass enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "StorageClass",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvStorageClass",
+      "fields": [
+        "UniformConstant",
+        "Input",
+        "Uniform",
+        "Output",
+        "Workgroup",
+        "Private",
+        "Function",
+        "StorageBuffer"
+      ]
+    },
+    {
+      "id": "spirv_decoration",
+      "description": "Khronos SPIR-V Decoration enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "Decoration",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvDecoration",
+      "fields": [
+        "Block",
+        "ColMajor",
+        "ArrayStride",
+        "MatrixStride",
+        "BuiltIn",
+        "NoPerspective",
+        "Flat",
+        "Centroid",
+        "Sample",
+        "Invariant",
+        "NonWritable",
+        "NonReadable",
+        "Location",
+        "Index",
+        "Binding",
+        "DescriptorSet",
+        "Offset"
+      ]
+    },
+    {
+      "id": "spirv_builtin",
+      "description": "Khronos SPIR-V BuiltIn enum values.",
+      "zigPath": "runtime/zig/src/doe_wgsl/spirv_spec.zig",
+      "zigNamespace": "Builtin",
+      "header": "spirv_unified",
+      "canonicalPrefix": "SpvBuiltIn",
+      "fields": [
+        "Position",
+        "ClipDistance",
+        "PrimitiveId",
+        "FragCoord",
+        "FrontFacing",
+        "SampleMask",
+        "FragDepth",
+        "NumWorkgroups",
+        "WorkgroupId",
+        "LocalInvocationId",
+        "GlobalInvocationId",
+        "LocalInvocationIndex",
+        "SubgroupSize",
+        "SubgroupLocalInvocationId",
+        "VertexIndex",
+        "InstanceIndex",
+        { "zig": "SampleIndex", "canonical": "SampleId" }
+      ]
+    },
+    {
+      "id": "vulkan_structure_type",
+      "description": "Vulkan VkStructureType values used by the Doe backend.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_STRUCTURE_TYPE_APPLICATION_INFO",
+        "VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_SUBMIT_INFO",
+        "VK_STRUCTURE_TYPE_FENCE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO",
+        "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET",
+        "VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO",
+        "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO",
+        "VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO",
+        "VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER",
+        "VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO",
+        "VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO",
+        "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT",
+        "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES",
+        "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2",
+        "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2",
+        "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES"
+      ]
+    },
+    {
+      "id": "vulkan_blend_factor",
+      "description": "Vulkan VkBlendFactor enum values.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_BLEND_FACTOR_ZERO",
+        "VK_BLEND_FACTOR_ONE",
+        "VK_BLEND_FACTOR_SRC_COLOR",
+        "VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR",
+        "VK_BLEND_FACTOR_DST_COLOR",
+        "VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR",
+        "VK_BLEND_FACTOR_SRC_ALPHA",
+        "VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA",
+        "VK_BLEND_FACTOR_DST_ALPHA",
+        "VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA",
+        "VK_BLEND_FACTOR_CONSTANT_COLOR",
+        "VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR",
+        "VK_BLEND_FACTOR_SRC_ALPHA_SATURATE",
+        "VK_BLEND_FACTOR_SRC1_COLOR",
+        "VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR",
+        "VK_BLEND_FACTOR_SRC1_ALPHA",
+        "VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA"
+      ]
+    },
+    {
+      "id": "vulkan_dynamic_state",
+      "description": "Vulkan VkDynamicState enum values used by the Doe backend.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_DYNAMIC_STATE_VIEWPORT",
+        "VK_DYNAMIC_STATE_SCISSOR",
+        "VK_DYNAMIC_STATE_DEPTH_BIAS",
+        "VK_DYNAMIC_STATE_STENCIL_REFERENCE"
+      ]
+    },
+    {
+      "id": "vulkan_image_layout",
+      "description": "Vulkan VkImageLayout enum values used by the Doe backend.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_IMAGE_LAYOUT_UNDEFINED",
+        "VK_IMAGE_LAYOUT_GENERAL",
+        "VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL",
+        "VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL",
+        "VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL",
+        "VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL"
+      ]
+    },
+    {
+      "id": "vulkan_descriptor_type",
+      "description": "Vulkan VkDescriptorType enum values used by the Doe backend.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_DESCRIPTOR_TYPE_SAMPLER",
+        "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER",
+        "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE",
+        "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE",
+        "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER",
+        "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER",
+        "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT"
+      ]
+    },
+    {
+      "id": "vulkan_primitive_topology",
+      "description": "Vulkan VkPrimitiveTopology enum values used by the Doe backend.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_PRIMITIVE_TOPOLOGY_POINT_LIST",
+        "VK_PRIMITIVE_TOPOLOGY_LINE_LIST",
+        "VK_PRIMITIVE_TOPOLOGY_LINE_STRIP",
+        "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST",
+        "VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP"
+      ]
+    },
+    {
+      "id": "vulkan_image_type",
+      "description": "Vulkan VkImageType enum values.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_IMAGE_TYPE_1D",
+        "VK_IMAGE_TYPE_2D",
+        "VK_IMAGE_TYPE_3D"
+      ]
+    },
+    {
+      "id": "vulkan_image_view_type",
+      "description": "Vulkan VkImageViewType enum values.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_IMAGE_VIEW_TYPE_1D",
+        "VK_IMAGE_VIEW_TYPE_2D",
+        "VK_IMAGE_VIEW_TYPE_3D",
+        "VK_IMAGE_VIEW_TYPE_CUBE",
+        "VK_IMAGE_VIEW_TYPE_1D_ARRAY",
+        "VK_IMAGE_VIEW_TYPE_2D_ARRAY",
+        "VK_IMAGE_VIEW_TYPE_CUBE_ARRAY"
+      ]
+    },
+    {
+      "id": "vulkan_index_type",
+      "description": "Vulkan VkIndexType enum values.",
+      "zigPath": "runtime/zig/src/backend/vulkan/vk_constants.zig",
+      "zigNamespace": null,
+      "header": "vulkan_core",
+      "canonicalPrefix": "",
+      "fields": [
+        "VK_INDEX_TYPE_UINT16",
+        "VK_INDEX_TYPE_UINT32"
+      ]
+    },
+    {
+      "id": "d3d12_resource_state",
+      "description": "D3D12 D3D12_RESOURCE_STATES bit flags used by the Doe backend (Zig names drop the D3D12_ prefix).",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "RESOURCE_STATE_PRESENT",
+        "RESOURCE_STATE_RENDER_TARGET",
+        "RESOURCE_STATE_DEPTH_WRITE",
+        "RESOURCE_STATE_DEPTH_READ",
+        "RESOURCE_STATE_UNORDERED_ACCESS",
+        "RESOURCE_STATE_COPY_DEST",
+        "RESOURCE_STATE_COPY_SOURCE",
+        "RESOURCE_STATE_RESOLVE_DEST",
+        "RESOURCE_STATE_RESOLVE_SOURCE",
+        "RESOURCE_STATE_PIXEL_SHADER_RESOURCE",
+        "RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE"
+      ]
+    },
+    {
+      "id": "d3d12_heap_type",
+      "description": "D3D12 D3D12_HEAP_TYPE enum values used by the Doe backend (Zig names drop the D3D12_ prefix).",
+      "zigPath": "runtime/zig/src/backend/d3d12/d3d12_constants.zig",
+      "zigNamespace": null,
+      "header": "d3d12",
+      "canonicalPrefix": "D3D12_",
+      "fields": [
+        "HEAP_TYPE_UPLOAD",
+        "HEAP_TYPE_READBACK"
+      ]
+    }
+  ]
+}
