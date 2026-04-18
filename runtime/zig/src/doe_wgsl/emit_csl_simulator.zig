@@ -279,8 +279,14 @@ pub fn parseSimulatorPlanArtifact(
     allocator: std.mem.Allocator,
     bytes: []const u8,
 ) EmitError!std.json.Parsed(SimulatorPlan) {
+    // Unknown fields are tolerated here because the schema is shared with the
+    // Python driver, which consumes extra compileTarget metadata (e.g.
+    // sourceWgslPath for emitter-driven fixtures, compileParams for kernels
+    // that declare additional top-level cslc params like tiled_matmul's
+    // P/Mt/Kt/Nt). The Zig sim runner only needs the fields in SimulatorPlan
+    // and must not reject plans the driver-side gates already accept.
     const parsed = std.json.parseFromSlice(SimulatorPlan, allocator, bytes, .{
-        .ignore_unknown_fields = false,
+        .ignore_unknown_fields = true,
     }) catch |err| switch (err) {
         error.OutOfMemory => return error.OutOfMemory,
         else => return error.InvalidSchema,

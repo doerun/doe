@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_trace",
+  "target": "wse3",
+  "contract": "explicit_simulator_trace",
+  "kernel": "tiled-matmul",
+  "executionTarget": "simfabric",
+  "width": 4,
+  "chunkSize": 64,
+  "totalElements": 256,
+  "runtimePassed": true,
+  "runtimeMaxAbsErr": 0.0,
+  "sampleInput": [
+    0.14190717041492462,
+    -1.6685079336166382,
+    -1.3321080207824707,
+    0.5825534462928772
+  ],
+  "sampleExpected": [
+    1.0077903270721436,
+    2.9596118927001953,
+    0.7245785593986511,
+    3.407762050628662
+  ],
+  "sampleActual": [
+    1.0077903270721436,
+    2.9596118927001953,
+    0.7245785593986511,
+    3.407762050628662
+  ]
+}

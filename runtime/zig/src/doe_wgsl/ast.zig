@@ -6,7 +6,6 @@
 
 const std = @import("std");
 const Token = @import("token.zig").Token;
-const Tag = @import("token.zig").Tag;
 
 pub const NULL_NODE: u32 = 0;
 

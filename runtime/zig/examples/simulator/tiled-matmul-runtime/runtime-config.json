@@ -1,0 +1,12 @@
+{
+  "mode": "sdk-runtime-command",
+  "notes": "Governed-lane runtime-config for tiled_matmul (SUMMA GEMM on P×P PE grid). Iteration 43 landed bit-exact parity against numpy A @ B after rewriting the emitter's GEMM step to the canonical @set_dsd_base_addr + @increment_dsd_offset pattern. Compile params P:2,Mt:8,Kt:8,Nt:8 flow through the simulator-plan's compileTargets[0].compileParams (cslc_sdk_driver extension).",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "cmaddrEnvVar": "DOE_CSL_CMADDR",
+  "command": [
+    "bench/runners/csl-runners/tiled_matmul_sim_runner.py",
+    "--compile-dir={compile_output_dir}",
+    "--trace-out={trace_path}",
+    "{cmaddr_arg}"
+  ]
+}

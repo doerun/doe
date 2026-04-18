@@ -1,4 +1,3 @@
-const std = @import("std");
 const abi_base = @import("../core/abi/wgpu_handle_types.zig");
 const abi_callback = @import("../core/abi/wgpu_callback_descriptor_types.zig");
 const process_roots = @import("process_roots.zig");
