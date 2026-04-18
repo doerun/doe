@@ -234,7 +234,7 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                         if (maps.cslMathBuiltin(call.name)) |csl_name| {
                             try write(buf, pos, csl_name);
                         } else if (maps.needsInlineExpansion(call.name)) {
-                            try inlineBuiltin(buf, pos, module, function, call.name, call.args);
+                            try inlineBuiltin(buf, pos, module, function, call.name, call.args, expr_id);
                             return;
                         } else {
                             try write(buf, pos, call.name);
@@ -280,11 +280,23 @@ pub fn Emit(comptime cfg: WalkConfig) type {
             }
         }
 
-        pub fn inlineBuiltin(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function, name: []const u8, args: ir.Range) EmitError!void {
+        pub fn inlineBuiltin(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function, name: []const u8, args: ir.Range, call_expr_id: ir.ExprId) EmitError!void {
             const a = function.expr_args.items;
             if (std.mem.eql(u8, name, "clamp")) {
                 if (args.len >= 3) {
-                    try write(buf, pos, "math.min(f32, math.max(f32, ");
+                    // CSL `math.min`/`math.max` take the scalar type as their
+                    // first arg. Read the type from the outer `clamp` call's
+                    // own TypeId — it matches the polymorphic return type, so
+                    // `clamp(u32_idx, ...)` with call.ty=u32 emits the correct
+                    // `math.min(u32, math.max(u32, ...))`. Using the outer
+                    // call's type is robust even when an arg's type field is
+                    // unset by an upstream IR pass.
+                    const ty = exprScalarTypeName(module, function, call_expr_id);
+                    try write(buf, pos, "math.min(");
+                    try write(buf, pos, ty);
+                    try write(buf, pos, ", math.max(");
+                    try write(buf, pos, ty);
+                    try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start]);
                     try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
@@ -294,7 +306,10 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 }
             } else if (std.mem.eql(u8, name, "min")) {
                 if (args.len >= 2) {
-                    try write(buf, pos, "math.min(f32, ");
+                    const ty = exprScalarTypeName(module, function, call_expr_id);
+                    try write(buf, pos, "math.min(");
+                    try write(buf, pos, ty);
+                    try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start]);
                     try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
@@ -302,7 +317,10 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 }
             } else if (std.mem.eql(u8, name, "max")) {
                 if (args.len >= 2) {
-                    try write(buf, pos, "math.max(f32, ");
+                    const ty = exprScalarTypeName(module, function, call_expr_id);
+                    try write(buf, pos, "math.max(");
+                    try write(buf, pos, ty);
+                    try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start]);
                     try write(buf, pos, ", ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
@@ -357,14 +375,38 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     try writeType(buf, pos, module, vec.elem);
                 },
                 .array => |arr| {
-                    try write(buf, pos, "[");
-                    if (arr.len) |al| {
-                        try writeInt(buf, pos, al);
-                    } else {
-                        try write(buf, pos, cfg.runtime_array_size);
+                    // SDK v1.4 rejects `[N][M]T` (double-bracket) array-of-vector
+                    // types. Canonical shape across all in-tree SDK examples
+                    // (gemv-01, gemv-05, checkerboard benchmark) is flat
+                    // `[N * M]scalar` with row-major indexing. Our IR walker
+                    // already emits 1D computed-index accesses, so flattening
+                    // here preserves access semantics while satisfying v1.4.
+                    switch (module.types.get(arr.elem)) {
+                        .vector => |vec| {
+                            try write(buf, pos, "[");
+                            if (arr.len) |al| {
+                                try writeInt(buf, pos, al);
+                                try write(buf, pos, " * ");
+                                try writeInt(buf, pos, vec.len);
+                            } else {
+                                try write(buf, pos, cfg.runtime_array_size);
+                                try write(buf, pos, " * ");
+                                try writeInt(buf, pos, vec.len);
+                            }
+                            try write(buf, pos, "]");
+                            try writeType(buf, pos, module, vec.elem);
+                        },
+                        else => {
+                            try write(buf, pos, "[");
+                            if (arr.len) |al| {
+                                try writeInt(buf, pos, al);
+                            } else {
+                                try write(buf, pos, cfg.runtime_array_size);
+                            }
+                            try write(buf, pos, "]");
+                            try writeType(buf, pos, module, arr.elem);
+                        },
                     }
-                    try write(buf, pos, "]");
-                    try writeType(buf, pos, module, arr.elem);
                 },
                 .struct_ => |sid| try write(buf, pos, module.structs.items[sid].name),
                 else => try write(buf, pos, "u32"),
@@ -374,18 +416,37 @@ pub fn Emit(comptime cfg: WalkConfig) type {
         pub fn writeZeroInit(buf: []u8, pos: *usize, module: *const ir.Module, ty: ir.TypeId) EmitError!void {
             switch (module.types.get(ty)) {
                 .array => |arr| {
-                    try write(buf, pos, "@zeros([");
-                    if (arr.len) |al| {
-                        try writeInt(buf, pos, al);
-                    } else {
-                        try write(buf, pos, cfg.runtime_array_size);
-                    }
-                    try write(buf, pos, "]");
-                    try writeType(buf, pos, module, arr.elem);
+                    // Mirror the flattening in writeType: `@zeros([N * M]T)`
+                    // for v1.4 compatibility, matching the declaration type.
+                    try write(buf, pos, "@zeros(");
+                    try writeType(buf, pos, module, ty);
                     try write(buf, pos, ")");
+                    _ = arr;
                 },
                 else => try write(buf, pos, "0"),
             }
+        }
+
+        // Returns the CSL scalar-type name for an expression, unwrapping
+        // vectors to their element type so WGSL-polymorphic builtins like
+        // min/max/clamp can emit the correct `math.<op>(<type>, ...)` form.
+        // Falls back to "f32" when the IR type is not scalar/vector — the
+        // SDK's `math.min` / `math.max` require an explicit type argument
+        // and mismatched types generate "Unexpected character" parse errors
+        // at the invocation site.
+        fn exprScalarTypeName(module: *const ir.Module, function: *const ir.Function, expr_id: ir.ExprId) []const u8 {
+            if (expr_id >= function.exprs.items.len) return "f32";
+            const ty = function.exprs.items[expr_id].ty;
+            return scalarTypeOf(module, ty);
+        }
+
+        fn scalarTypeOf(module: *const ir.Module, ty: ir.TypeId) []const u8 {
+            return switch (module.types.get(ty)) {
+                .scalar => |s| spec.scalarTypeName(s),
+                .vector => |vec| scalarTypeOf(module, vec.elem),
+                .ref => |r| scalarTypeOf(module, r.elem),
+                else => "f32",
+            };
         }
 
         // Section emitters
@@ -411,6 +472,30 @@ pub fn Emit(comptime cfg: WalkConfig) type {
             }
         }
 
+        fn writeRuntimeStorageType(buf: []u8, pos: *usize, module: *const ir.Module, elem_ty: ir.TypeId) EmitError!void {
+            try write(buf, pos, "[");
+            try write(buf, pos, cfg.runtime_array_size);
+            switch (module.types.get(elem_ty)) {
+                .vector => |vec| {
+                    try write(buf, pos, " * ");
+                    try writeInt(buf, pos, vec.len);
+                    try write(buf, pos, "]");
+                    try writeType(buf, pos, module, vec.elem);
+                },
+                else => {
+                    try write(buf, pos, "]");
+                    try writeType(buf, pos, module, elem_ty);
+                },
+            }
+        }
+
+        fn writeRuntimeStoragePointerElemType(buf: []u8, pos: *usize, module: *const ir.Module, elem_ty: ir.TypeId) EmitError!void {
+            switch (module.types.get(elem_ty)) {
+                .vector => |vec| try writeType(buf, pos, module, vec.elem),
+                else => try writeType(buf, pos, module, elem_ty),
+            }
+        }
+
         pub fn storageBuffers(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
             try write(buf, pos, "// Storage buffers — each PE holds its local data.\n");
             try write(buf, pos, "param ");
@@ -423,19 +508,15 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 const et = arrayElemType(module, global.ty);
                 try write(buf, pos, "var ");
                 try write(buf, pos, global.name);
-                try write(buf, pos, ": [");
-                try write(buf, pos, cfg.runtime_array_size);
-                try write(buf, pos, "]");
-                try writeType(buf, pos, module, et);
-                try write(buf, pos, " = @zeros([");
-                try write(buf, pos, cfg.runtime_array_size);
-                try write(buf, pos, "]");
-                try writeType(buf, pos, module, et);
+                try write(buf, pos, ": ");
+                try writeRuntimeStorageType(buf, pos, module, et);
+                try write(buf, pos, " = @zeros(");
+                try writeRuntimeStorageType(buf, pos, module, et);
                 try write(buf, pos, ");\n");
                 try write(buf, pos, "var ");
                 try write(buf, pos, global.name);
                 try write(buf, pos, "_ptr: [*]");
-                try writeType(buf, pos, module, et);
+                try writeRuntimeStoragePointerElemType(buf, pos, module, et);
                 try write(buf, pos, " = &");
                 try write(buf, pos, global.name);
                 try write(buf, pos, ";\n");

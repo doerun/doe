@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CSL Fixture Mirror Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "byteIdenticalMirrors", "pathContextMirrors", "runtimeOnlyFixtures"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "byteIdenticalMirrors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/byteIdenticalMirror" },
+      "uniqueItems": true
+    },
+    "pathContextMirrors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pathContextMirror" },
+      "uniqueItems": true
+    },
+    "runtimeOnlyFixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/runtimeOnlyFixture" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "fixtureId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "canonicalPath": {
+      "type": "string",
+      "pattern": "^examples/[^\\n]+\\.json$"
+    },
+    "runtimeMirrorPath": {
+      "type": "string",
+      "pattern": "^runtime/zig/examples/[^\\n]+\\.json$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "byteIdenticalMirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "canonicalPath", "mirrorPath"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fixtureId" },
+        "canonicalPath": { "$ref": "#/$defs/canonicalPath" },
+        "mirrorPath": { "$ref": "#/$defs/runtimeMirrorPath" }
+      }
+    },
+    "pathContextMirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "canonicalPath", "mirrorPath", "ignoredJsonPointers", "reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fixtureId" },
+        "canonicalPath": { "$ref": "#/$defs/canonicalPath" },
+        "mirrorPath": { "$ref": "#/$defs/runtimeMirrorPath" },
+        "ignoredJsonPointers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "uniqueItems": true
+        },
+        "reason": { "$ref": "#/$defs/reason" }
+      }
+    },
+    "runtimeOnlyFixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fixtureId" },
+        "path": { "$ref": "#/$defs/runtimeMirrorPath" },
+        "reason": { "$ref": "#/$defs/reason" }
+      }
+    }
+  }
+}

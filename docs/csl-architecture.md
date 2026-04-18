@@ -29,6 +29,119 @@ The current CSL lowering stack is:
 The most important design rule is that the explicit `HostPlan` is the contract
 boundary between higher-level execution intent and Cerebras-specific emission.
 
+## SDK complete-program implication
+
+CSL evidence is a complete-program contract, not a single-kernel contract.
+The SDK execution shape couples layout code, one or more PE programs, compiler
+parameters, exported symbols, RPC entrypoints, memcpy channels, and host-side
+runtime calls.
+
+That has direct consequences for Doe receipts:
+
+- A CSL compile artifact should bind the emitted `layout.csl`, each
+  `pe_program.csl`, the `cslc` command shape, compile-time parameters, output
+  directory, and compiler metadata such as `out.json` when present.
+- A runtime or simulator trace should bind exported mutable/readonly symbols,
+  host-to-device and device-to-host copy rectangles, element counts, data
+  type/order/streaming mode, RPC launch names, and command-stream completion
+  requirements such as `unblock_cmd_stream`.
+- Multi-PE smoke should graduate before inter-PE communication: replicated
+  work over a `width x 1` rectangle exercises PE-grid parameterization,
+  per-PE copies, and result gathering without adding fabric routing as a
+  confounder.
+- Inter-PE or time-marching programs add a routing-resource contract: colors,
+  task IDs, entrypoints, memcpy-reserved resources, per-direction routes,
+  chunking, and completion callbacks must be explicit receipt fields so a
+  compile/run cannot silently collide with the SDK runtime's reserved colors.
+- Multi-stage host flows should be represented as an ordered operation graph,
+  not as a single run flag. For example: H2D input copies, RPC launch with
+  scalar arguments, D2H reduction/timestamp copy after checkpoint unblock,
+  RPC output-preparation launch, then D2H tensor copy.
+- Streaming-mode memcpy ordering is part of the contract. The SDK GEMV
+  streaming example starts computation from wavelet-triggered receive tasks
+  instead of an explicit kernel launch, and warns that swapping the stream
+  order can hang the program. Doe receipts therefore need to preserve
+  stream order and nonblocking/blocking mode per H2D/D2H operation.
+
+## CSL operation graph contract
+
+`config/csl-operation-graph.schema.json` is the shared receipt shape for the
+host/device operation sequence that surrounds emitted CSL code. It is
+deliberately separate from the current simulator-plan schema so it can be
+validated and adopted incrementally by the SDK driver, simulator result, and
+governed-lane report.
+
+The top-level discriminator is `orchestrationMode`:
+
+- `memcpy`: direct `cslc` compile plus `SdkRuntime` `memcpy_h2d`,
+  `memcpy_d2h`, and `launch` operations. This covers the Gemma 4 E2B ladder
+  and SDK patterns such as single-PE GEMV, replicated multi-PE GEMV, streaming
+  memcpy, and checkerboard GEMV. Streaming H2D/D2H is still `memcpy` mode when
+  the host operation is `SdkRuntime.memcpy_*` with `streaming=true`.
+- `sdklayout`: Python `SdkLayout` code regions, ports, connections, streams,
+  and async `SdkRuntime.send` / `receive` operations. This is the expected
+  31B weight-streaming path once the resident E2B path has compile and trace
+  receipts.
+
+The schema carries typed CSL compile params, the `cslc` fabric/arch/memcpy
+command shape, exported device symbols, and an ordered operation list. The
+operation graph is intentionally explicit about ROI rectangles, elements per
+PE, data type, row/column order, streaming mode, blocking mode, RPC function
+names, and `unblock_cmd_stream` completion requirements.
+
+Within `orchestrationMode="memcpy"`, `executionPattern` is the second
+discriminator:
+
+- `rpc_launch`: copy data through exported device symbols, launch an exported
+  device function through the memcpy RPC mechanism, then copy results back.
+  Launch ops carry `unblockCheckpointRequired` because the host command stream
+  cannot safely proceed to the following copy unless the device function
+  releases it.
+- `streaming_memcpy_driven`: use `memcpy_h2d` / `memcpy_d2h` with
+  `targetKind="memcpy_color"` and `streaming=true` so wavelet-triggered device
+  tasks drive computation. This is the production-shaped E2B matvec/attention
+  lane because checkerboard-style GEMV streams `x`, `b`, and `y` over memcpy
+  colors instead of launching a separate RPC compute entrypoint.
+
+`reservedResources` is optional on day one. It records color, queue, task-ID,
+and memcpy-channel reservations so future gates can detect collisions between
+multiple emitted kernels. The current gate validates graph references and
+source-level unblock obligations, but deliberately does not run the
+cross-kernel resource-collision check until the E2B path exercises concurrent
+kernel composition.
+
+`bench/gates/csl_operation_graph_gate.py` validates the first enforceable
+invariants:
+
+- every memcpy op references an exported `device_variable`
+- every launch op references an exported `device_function`
+- every memcpy ROI fits the declared PE grid
+- every `memcpy` launch marked `unblockCheckpointRequired` ends the referenced
+  CSL function with `sys_mod.unblock_cmd_stream()`
+- every `sdklayout` send/receive references a declared stream, every stream
+  references a declared port, every port references a declared code region,
+  and every connection references declared ports
+
+SDK library-backed domains are a separate pattern family. The SDK 3D FFT
+example imports `<kernels/fft/fft3d_layout>` and binds a pencil-decomposition
+data reshuffle contract around a library layout helper. Doe should represent
+that as a declared library-backed CSL pattern and operation graph, not by
+silently synthesizing arbitrary PE routing from generic WGSL.
+
+Reference SDK patterns for this contract:
+
+- GEMV 1 complete program: canonical memcpy RPC launch and
+  `sys_mod.unblock_cmd_stream()` completion shape.
+- GEMV 5 multiple PEs: canonical multi-PE ROI and row-major distribution shape.
+- GEMV 9 memcpy streaming and GEMV checkerboard: canonical
+  streaming-memcpy-driven shape with memcpy colors and fabric/buffer flags.
+- SDK 1.4 release notes: `SdkLayout` beta and direct-link `send` / `receive`
+  API boundary.
+- SdkLayout 5 GEMV: code regions, ports, connections, streams, and async
+  `send` / `receive` ordering.
+- Host Runtime and Tensor Streaming: `SdkRuntime` lifecycle, copy mode,
+  streaming mode, ROI semantics, and `load` / `run` / `stop`.
+
 ## Why CSL is different
 
 Doe's CSL backend does not assume that GPU-style execution primitives carry
@@ -151,6 +264,21 @@ CSL emitters stay on the current HostPlan path until the governed lane has
 working compile + trace receipts on E2B; `SdkLayout` adoption is a later
 refactor gated on beta restrictions clearing or a parallel driver shape.
 
+For 31B-style streaming, `SdkLayout` is still the likely long-term contract
+shape. Multi-PE input/output streams imply fields that the current resident
+memory-plan fixtures do not yet model:
+
+- tensor sharding maps from logical dimensions to PE-grid width/height chunks
+- code-region graph, placement, ports, stream IDs, and route colors
+- demux/mux adaptor regions when host-visible streams enter or leave through
+  fewer PEs than the compute region uses
+- async `send` / `receive` ordering and dependency receipts
+- control wavelets or sentinel entrypoints used to advance switches or release
+  downstream computation
+
+Those fields belong in a future streaming memory-plan / runtime-config schema
+migration, not as hidden behavior in `csl_sdk_driver.py`.
+
 ## Source of truth
 
 CSL-related sources of truth are layered by concern. Read the layer that
@@ -163,11 +291,12 @@ matches the question, not a nearby one:
 | Artifact contracts (host-plan, memory-plan, runtime-config, simulator-plan/result/trace, governed-lane report) | `config/*.schema.json` registered in `config/schema-targets.json` | Cross-validated by `python3 bench/gates/schema_gate.py`. Schema is authoritative even where prose disagrees. |
 | CSL target constants, fabric limits, architecture enums | `runtime/zig/src/doe_wgsl/csl_spec.zig` | Self-declared single source of truth; `emit_csl_*.zig` must consume constants from here rather than redefining them. |
 | Taxonomy: outcome codes + `laneContracts.doe_csl` | `config/shader-error-taxonomy.schema.json` and `config/shader-error-taxonomy.json` | Defines the three-outcomes contract below and the allow-list of failure-code prefixes. |
+| CSL host operation graphs | `config/csl-operation-graph.schema.json` and `examples/csl-operation-graph.*.json` | Validated by `python3 bench/gates/csl_operation_graph_gate.py`; binds compile shape, exported symbols, ordered host operations, and SdkLayout references. |
 | Classifier: which WGSL kernel patterns are recognized | `runtime/zig/src/doe_wgsl/emit_csl_classify.zig` | Pattern coverage changes here, not in prose. |
 | Doppler `execution-v1` → CSL pattern mapping | `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` | |
 | HostPlan emission | `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig` | Schema-backed; HostPlan is the contract boundary. |
 | External SDK driver seam | `runtime/zig/tools/csl_sdk_driver.py` | Fail-closed behavior; no fabricated traces. |
-| Fixture canonicity | `examples/doe-wgsl-*.json` registered in `config/schema-targets.json` | See "Fixture mirrors" below. |
+| Fixture canonicity | `config/csl-fixture-mirrors.json` | Validated by `python3 bench/gates/csl_fixture_mirror_gate.py`; canonical fixture copies remain under `examples/` and schema-registered in `config/schema-targets.json`. |
 
 Related pattern and surface modules (implementation SSoT for the specific
 family they cover):
@@ -193,10 +322,21 @@ cross-validated by the schema hard gate. The `runtime/zig/examples/` copy is
 a runtime-local mirror kept path-adjacent to the Zig build so the runtime can
 resolve fixtures relative to its own tree without reaching up the repo.
 
+Mirror pairs and intentional runtime-only fixtures are declared in
+`config/csl-fixture-mirrors.json` and checked by
+`python3 bench/gates/csl_fixture_mirror_gate.py`. Most mirrors are bytewise
+identical. A mirror may differ only when the registry declares a path-context
+JSON pointer; the Gemma 4 E2B simulator plan currently permits only
+`/driver/executablePath`, because that field is resolved relative to the
+simulator-plan file location.
+
 Rules when modifying a mirrored fixture:
 
 - Edit `examples/<name>.json` first; re-run `python3 bench/gates/schema_gate.py`.
+- Re-run `python3 bench/gates/csl_fixture_mirror_gate.py`.
 - Update the `runtime/zig/examples/<name>.json` mirror in the same change so
-  the two stay bytewise identical.
-- A divergence between the two copies is a contract bug, not a design choice.
-  Treat it as a blocker on any change that touches either copy.
+  byte-identical pairs stay bytewise identical.
+- For path-context mirrors, keep every field identical except the registry's
+  declared JSON pointers.
+- An undeclared divergence between the two copies is a contract bug, not a
+  design choice. Treat it as a blocker on any change that touches either copy.

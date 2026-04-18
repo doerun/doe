@@ -1,0 +1,463 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CSL Operation Graph",
+  "description": "CSL host/device operation graph contract. Canonical memcpy references: GEMV-01 RPC launch, GEMV-05 multi-PE ROI, GEMV-09 streaming memcpy, GEMV checkerboard. Canonical SdkLayout references: SDK 1.4 release notes direct send/receive API, SdkLayout-05 GEMV, and Host Runtime and Tensor Streaming.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "graphId",
+    "orchestrationMode",
+    "executionPattern",
+    "sdkVersionFloor",
+    "compile",
+    "exportedSymbols",
+    "operations"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_operation_graph" },
+    "graphId": { "$ref": "#/$defs/id" },
+    "orchestrationMode": {
+      "type": "string",
+      "enum": ["memcpy", "sdklayout"]
+    },
+    "executionPattern": {
+      "type": "string",
+      "enum": [
+        "rpc_launch",
+        "streaming_memcpy_driven",
+        "sdklayout_stream_graph"
+      ]
+    },
+    "sdkVersionFloor": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+    },
+    "compile": { "$ref": "#/$defs/compile" },
+    "exportedSymbols": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/exportedSymbol" },
+      "uniqueItems": true
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "reservedResources": { "$ref": "#/$defs/reservedResources" },
+    "codeRegions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/codeRegion" },
+      "uniqueItems": true
+    },
+    "ports": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/port" },
+      "uniqueItems": true
+    },
+    "connections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/connection" },
+      "uniqueItems": true
+    },
+    "streams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/stream" },
+      "uniqueItems": true
+    },
+    "sdkReferences": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "orchestrationMode": { "const": "memcpy" } },
+        "required": ["orchestrationMode"]
+      },
+      "then": {
+        "properties": {
+          "executionPattern": {
+            "enum": ["rpc_launch", "streaming_memcpy_driven"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "orchestrationMode": { "const": "sdklayout" } },
+        "required": ["orchestrationMode"]
+      },
+      "then": {
+        "required": ["codeRegions", "ports", "connections", "streams"],
+        "properties": {
+          "executionPattern": { "const": "sdklayout_stream_graph" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cslName": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "dimension": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "coordinate": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "peGrid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "$ref": "#/$defs/dimension" },
+        "height": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "roi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "$ref": "#/$defs/coordinate" },
+        "y": { "$ref": "#/$defs/coordinate" },
+        "width": { "$ref": "#/$defs/dimension" },
+        "height": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "typedValue": {
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "integer" },
+        { "type": "number" },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+    "compileParam": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "value"],
+      "properties": {
+        "name": { "$ref": "#/$defs/cslName" },
+        "type": { "type": "string", "minLength": 1 },
+        "value": { "$ref": "#/$defs/typedValue" }
+      }
+    },
+    "compileColor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {
+        "name": { "$ref": "#/$defs/cslName" },
+        "value": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "resourceUse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "value"],
+      "properties": {
+        "name": { "$ref": "#/$defs/cslName" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "color",
+            "input_queue",
+            "output_queue",
+            "local_task_id",
+            "data_task_id",
+            "control_task_id",
+            "memcpy_channel"
+          ]
+        },
+        "value": { "type": "integer", "minimum": 0 },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "reservedResources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resources"],
+      "properties": {
+        "resources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/resourceUse" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "compileTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "layout", "peProgram"],
+      "properties": {
+        "name": { "$ref": "#/$defs/id" },
+        "layout": { "$ref": "#/$defs/path" },
+        "peProgram": { "$ref": "#/$defs/path" }
+      }
+    },
+    "compile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "arch",
+        "fabricDims",
+        "fabricOffsets",
+        "peGrid",
+        "channels",
+        "memcpy",
+        "params",
+        "importPaths",
+        "outputDir",
+        "compileTargets"
+      ],
+      "properties": {
+        "arch": { "type": "string", "enum": ["wse2", "wse3"] },
+        "fabricDims": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/dimension" },
+            { "$ref": "#/$defs/dimension" }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "fabricOffsets": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/coordinate" },
+            { "$ref": "#/$defs/coordinate" }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "peGrid": { "$ref": "#/$defs/peGrid" },
+        "channels": { "type": "integer", "minimum": 1 },
+        "memcpy": { "type": "boolean" },
+        "params": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compileParam" },
+          "uniqueItems": true
+        },
+        "colors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compileColor" },
+          "uniqueItems": true
+        },
+        "importPaths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/path" },
+          "uniqueItems": true
+        },
+        "outputDir": { "$ref": "#/$defs/path" },
+        "widthWestBuf": { "type": "integer", "minimum": 0 },
+        "widthEastBuf": { "type": "integer", "minimum": 0 },
+        "compileTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/compileTarget" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "exportedSymbol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "mutable", "kind"],
+      "properties": {
+        "name": { "$ref": "#/$defs/cslName" },
+        "type": { "type": "string", "minLength": 1 },
+        "mutable": { "type": "boolean" },
+        "kind": {
+          "type": "string",
+          "enum": ["device_variable", "device_function"]
+        }
+      }
+    },
+    "operationBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "kind"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string" }
+      }
+    },
+    "memcpyOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "kind",
+        "targetKind",
+        "roi",
+        "elementsPerPE",
+        "dataType",
+        "order",
+        "streaming",
+        "nonblock"
+      ],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "enum": ["memcpy_h2d", "memcpy_d2h"] },
+        "targetKind": {
+          "type": "string",
+          "enum": ["device_symbol", "memcpy_color"]
+        },
+        "deviceSymbol": { "$ref": "#/$defs/cslName" },
+        "memcpyColor": { "$ref": "#/$defs/cslName" },
+        "roi": { "$ref": "#/$defs/roi" },
+        "elementsPerPE": { "type": "integer", "minimum": 1 },
+        "dataType": {
+          "type": "string",
+          "enum": ["MEMCPY_16BIT", "MEMCPY_32BIT"]
+        },
+        "order": {
+          "type": "string",
+          "enum": ["ROW_MAJOR", "COL_MAJOR"]
+        },
+        "streaming": { "type": "boolean" },
+        "nonblock": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "targetKind": { "const": "device_symbol" } },
+            "required": ["targetKind"]
+          },
+          "then": { "required": ["deviceSymbol"] }
+        },
+        {
+          "if": {
+            "properties": { "targetKind": { "const": "memcpy_color" } },
+            "required": ["targetKind"]
+          },
+          "then": { "required": ["memcpyColor"] }
+        }
+      ]
+    },
+    "launchOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "kind",
+        "functionName",
+        "args",
+        "nonblock",
+        "unblockCheckpointRequired"
+      ],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "const": "launch" },
+        "functionName": { "$ref": "#/$defs/cslName" },
+        "args": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/typedValue" }
+        },
+        "nonblock": { "type": "boolean" },
+        "unblockCheckpointRequired": { "type": "boolean" }
+      }
+    },
+    "streamOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "kind",
+        "streamId",
+        "elements",
+        "nonblock"
+      ],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "enum": ["send", "receive"] },
+        "streamId": { "$ref": "#/$defs/id" },
+        "elements": { "type": "integer", "minimum": 1 },
+        "nonblock": { "type": "boolean" }
+      }
+    },
+    "operation": {
+      "oneOf": [
+        { "$ref": "#/$defs/memcpyOperation" },
+        { "$ref": "#/$defs/launchOperation" },
+        { "$ref": "#/$defs/streamOperation" }
+      ]
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "$ref": "#/$defs/coordinate" },
+        "y": { "$ref": "#/$defs/coordinate" }
+      }
+    },
+    "codeRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["regionId", "sourcePath", "width", "height"],
+      "properties": {
+        "regionId": { "$ref": "#/$defs/id" },
+        "sourcePath": { "$ref": "#/$defs/path" },
+        "width": { "$ref": "#/$defs/dimension" },
+        "height": { "$ref": "#/$defs/dimension" },
+        "placement": { "$ref": "#/$defs/placement" }
+      }
+    },
+    "port": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["portId", "regionId", "direction", "edge", "elements"],
+      "properties": {
+        "portId": { "$ref": "#/$defs/id" },
+        "regionId": { "$ref": "#/$defs/id" },
+        "direction": { "type": "string", "enum": ["input", "output"] },
+        "edge": {
+          "type": "string",
+          "enum": ["TOP", "BOTTOM", "LEFT", "RIGHT"]
+        },
+        "elements": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["connectionId", "fromPortId", "toPortId"],
+      "properties": {
+        "connectionId": { "$ref": "#/$defs/id" },
+        "fromPortId": { "$ref": "#/$defs/id" },
+        "toPortId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["streamId", "portId", "direction"],
+      "properties": {
+        "streamId": { "$ref": "#/$defs/id" },
+        "portId": { "$ref": "#/$defs/id" },
+        "direction": { "type": "string", "enum": ["input", "output"] }
+      }
+    }
+  }
+}

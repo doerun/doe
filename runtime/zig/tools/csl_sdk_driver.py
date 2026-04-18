@@ -126,6 +126,39 @@ def compile_targets(
     width = int(runtime["peGrid"]["width"])
     height = int(runtime["peGrid"]["height"])
     arch = str(plan.get("target", "wse3"))
+    # SDK v1.4 requires n_channels > 0 (the deprecated CSELFRunner path with
+    # n_channels=0 was removed; cslc now raises RuntimeError("n_channels=0
+    # corresponds to the deprecated runtime CSELFRunner. Please use
+    # n_channels>0 with SdkRuntime") when the legacy shape is invoked).
+    # Default to 1 channel; plans may override via runtime.channels, and may
+    # opt out of memcpy mode via runtime.memcpy=false when adopting SdkLayout
+    # in the future.
+    channels = int(runtime.get("channels", 1))
+    use_memcpy = bool(runtime.get("memcpy", True))
+
+    # SDK v1.4 memcpy-mode compiles require an explicit --fabric-offsets and a
+    # --fabric-dims that accounts for memcpy's reserved margin around the PE
+    # rectangle. cslc v1.4 raises:
+    #     RuntimeError: The core must have --fabric-offsets=4+width_west_buf,1
+    # when these are missing. The canonical offsets are (4 + west_buf, 1) and
+    # the fabric is sized as
+    #     (west_buf + 4 + kernel_w + east_buf + 3, 1 + kernel_h + 1)
+    # per the SDK gemv-checkerboard benchmark's 4x4 kernel / 11x6 fabric
+    # configuration. Plans may override any of these via
+    # runtime.fabricOffsets / runtime.fabricDims / runtime.widthWestBuf /
+    # runtime.widthEastBuf without requiring a driver change.
+    width_west_buf = int(runtime.get("widthWestBuf", 0))
+    width_east_buf = int(runtime.get("widthEastBuf", 0))
+    fabric_offset_x = width_west_buf + 4
+    fabric_offset_y = 1
+    fabric_offsets = runtime.get("fabricOffsets") or [fabric_offset_x, fabric_offset_y]
+    fabric_offset_x, fabric_offset_y = int(fabric_offsets[0]), int(fabric_offsets[1])
+    fabric_dims = runtime.get("fabricDims") or [
+        width_west_buf + 4 + width + width_east_buf + 3,
+        1 + height + 1,
+    ]
+    fabric_width, fabric_height = int(fabric_dims[0]), int(fabric_dims[1])
+
     target_results: list[dict[str, Any]] = []
 
     if not cslc_executable:
@@ -176,10 +209,24 @@ def compile_targets(
             cslc_executable,
             str(layout_path),
             f"--arch={arch}",
-            f"--fabric-dims={width},{height}",
+            f"--fabric-dims={fabric_width},{fabric_height}",
+            f"--fabric-offsets={fabric_offset_x},{fabric_offset_y}",
+            f"--channels={channels}",
+            # SDK v1.4 requires top-level `param width` / `param height` in
+            # emitted layout.csl to be supplied via the explicit --params
+            # flag; the deprecated semantics that let them sit uninitialized
+            # now errors with "only 'var' and 'extern const' variables may
+            # be uninitialized". The plan's peGrid is the source of truth.
+            f"--params=width:{width},height:{height}",
             "-o",
             str(output_dir),
         ]
+        if width_west_buf > 0:
+            command.append(f"--width-west-buf={width_west_buf}")
+        if width_east_buf > 0:
+            command.append(f"--width-east-buf={width_east_buf}")
+        if use_memcpy:
+            command.append("--memcpy")
         return_code, stdout_written, stderr_written = run_command(command, stdout_path, stderr_path)
         status = "succeeded" if return_code == 0 else "failed"
         if return_code != 0:

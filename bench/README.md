@@ -579,8 +579,12 @@ resolves its entries against repo root.
   - runs deterministic contract-level correctness checks
 - `schema_gate.py`
   - validates schema-backed benchmark/config contracts as blocking release checks (`claim-cycle`, `webgpu-capability-inventory`, command coverage ledgers, Chromium integration overlay, benchmark methodology thresholds, substantiation policy, comparability obligation contracts, and all quirk examples).
+- `csl_fixture_mirror_gate.py`
+  - validates CSL fixture mirror canonicity from `config/csl-fixture-mirrors.json`, including byte-identical mirrors, declared path-context differences, and runtime-only fixture coverage.
+- `csl_operation_graph_gate.py`
+  - validates registered CSL operation graphs from `config/csl-operation-graph.schema.json`, including `rpc_launch` and `streaming_memcpy_driven` memcpy patterns, exported-symbol or memcpy-color references, memcpy ROI bounds, SdkLayout stream references, and required `unblock_cmd_stream` checkpoints.
 - `run_blocking_gates.py`
-  - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional drop-in -> optional claim gate.
+  - canonical entrypoint for blocking gate order: schema -> CSL fixture mirrors -> CSL operation graphs -> correctness -> trace -> optional drop-in -> optional claim gate.
   - release-claim readiness evidence requires claim gate enabled (`--with-claim-gate`), and can be enforced with `--require-claim-gate`.
   - can run comparability verification parity fixtures with `--with-comparability-parity-gate`.
   - shader-artifact gating now treats SPIR-V validation as routine for SPIR-V-bearing manifests; `spirv-val` is auto-discovered from PATH when available.

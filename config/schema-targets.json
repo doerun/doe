@@ -154,6 +154,18 @@
       "data": "examples/csl-governed-lane.sample.json"
     },
     {
+      "schema": "config/csl-operation-graph.schema.json",
+      "data": "examples/csl-operation-graph.gelu-rpc-launch.sample.json"
+    },
+    {
+      "schema": "config/csl-operation-graph.schema.json",
+      "data": "examples/csl-operation-graph.gemv-streaming.sample.json"
+    },
+    {
+      "schema": "config/csl-fixture-mirrors.schema.json",
+      "data": "config/csl-fixture-mirrors.json"
+    },
+    {
       "schema": "config/shader-error-taxonomy.schema.json",
       "data": "config/shader-error-taxonomy.json"
     },

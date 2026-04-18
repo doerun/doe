@@ -508,6 +508,8 @@ def main() -> int:
     dropin_proc_resolution_tests = dropin_dir / "dropin_proc_resolution_tests.py"
     cts_baseline_compare = tools_dir / "cts_baseline_compare.py"
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
+    csl_fixture_mirror_gate = gates_dir / "csl_fixture_mirror_gate.py"
+    csl_operation_graph_gate = gates_dir / "csl_operation_graph_gate.py"
     claim_gate = gates_dir / "claim_gate.py"
     bench_cli = BENCH_ROOT / "cli.py"
 
@@ -554,6 +556,8 @@ def main() -> int:
 
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
+        run_gate("csl-fixture-mirrors", [sys.executable, str(csl_fixture_mirror_gate)])
+        run_gate("csl-operation-graph", [sys.executable, str(csl_operation_graph_gate)])
         if args.with_file_size_gate:
             run_gate("file-size", [sys.executable, str(file_size_gate)])
         if args.with_split_coverage_gate:

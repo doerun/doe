@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_operation_graph",
+  "graphId": "gelu-rpc-launch",
+  "orchestrationMode": "memcpy",
+  "executionPattern": "rpc_launch",
+  "sdkVersionFloor": "1.4.0",
+  "compile": {
+    "arch": "wse3",
+    "fabricDims": [8, 3],
+    "fabricOffsets": [4, 1],
+    "peGrid": {
+      "width": 1,
+      "height": 1
+    },
+    "channels": 1,
+    "memcpy": true,
+    "params": [],
+    "importPaths": [],
+    "outputDir": "out",
+    "compileTargets": [
+      {
+        "name": "gelu-rpc-launch",
+        "layout": "examples/csl/gelu-rpc-launch/layout.csl",
+        "peProgram": "examples/csl/gelu-rpc-launch/pe_program.csl"
+      }
+    ]
+  },
+  "exportedSymbols": [
+    {
+      "name": "input",
+      "type": "[*]f32",
+      "mutable": true,
+      "kind": "device_variable"
+    },
+    {
+      "name": "output",
+      "type": "[*]f32",
+      "mutable": false,
+      "kind": "device_variable"
+    },
+    {
+      "name": "compute",
+      "type": "fn()void",
+      "mutable": false,
+      "kind": "device_function"
+    }
+  ],
+  "operations": [
+    {
+      "operationId": "copy-input-h2d",
+      "kind": "memcpy_h2d",
+      "targetKind": "device_symbol",
+      "deviceSymbol": "input",
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "elementsPerPE": 4,
+      "dataType": "MEMCPY_32BIT",
+      "order": "ROW_MAJOR",
+      "streaming": false,
+      "nonblock": false
+    },
+    {
+      "operationId": "launch-compute",
+      "kind": "launch",
+      "functionName": "compute",
+      "args": [],
+      "nonblock": false,
+      "unblockCheckpointRequired": true
+    },
+    {
+      "operationId": "copy-output-d2h",
+      "kind": "memcpy_d2h",
+      "targetKind": "device_symbol",
+      "deviceSymbol": "output",
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      "elementsPerPE": 4,
+      "dataType": "MEMCPY_32BIT",
+      "order": "ROW_MAJOR",
+      "streaming": false,
+      "nonblock": false
+    }
+  ],
+  "sdkReferences": [
+    "https://sdk.cerebras.net/csl/code-examples/tutorial-gemv-01-complete-program",
+    "https://sdk.cerebras.net/tensor-streaming"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "byteIdenticalMirrors": [
+    {
+      "id": "gemma-3-270m-host-plan",
+      "canonicalPath": "examples/doe-wgsl-host-plan.gemma-3-270m-smoke.json",
+      "mirrorPath": "runtime/zig/examples/doe-wgsl-host-plan.gemma-3-270m-smoke.json"
+    },
+    {
+      "id": "gemma-4-e2b-host-plan",
+      "canonicalPath": "examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json",
+      "mirrorPath": "runtime/zig/examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json"
+    },
+    {
+      "id": "gemma-4-e2b-memory-plan",
+      "canonicalPath": "examples/doe-wgsl-memory-plan.gemma-4-e2b-smoke.json",
+      "mirrorPath": "runtime/zig/examples/doe-wgsl-memory-plan.gemma-4-e2b-smoke.json"
+    },
+    {
+      "id": "gemma-4-e2b-runtime-config",
+      "canonicalPath": "examples/doe-wgsl-runtime-config.gemma-4-e2b-smoke.json",
+      "mirrorPath": "runtime/zig/examples/doe-wgsl-runtime-config.gemma-4-e2b-smoke.json"
+    }
+  ],
+  "pathContextMirrors": [
+    {
+      "id": "gemma-4-e2b-simulator-plan",
+      "canonicalPath": "examples/doe-wgsl-simulator-plan.gemma-4-e2b-smoke.json",
+      "mirrorPath": "runtime/zig/examples/doe-wgsl-simulator-plan.gemma-4-e2b-smoke.json",
+      "ignoredJsonPointers": ["/driver/executablePath"],
+      "reason": "driver.executablePath is resolved relative to the simulator-plan file location."
+    }
+  ],
+  "runtimeOnlyFixtures": [
+    {
+      "id": "gemma-3-270m-manifest-host-plan",
+      "path": "runtime/zig/examples/doe-wgsl-host-plan.gemma-3-270m-manifest-smoke.json",
+      "reason": "Golden HostPlan emitted from the runtime-local execution-v1 manifest smoke fixture."
+    }
+  ]
+}

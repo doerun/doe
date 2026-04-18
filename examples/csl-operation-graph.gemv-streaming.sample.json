@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_operation_graph",
+  "graphId": "gemv-streaming",
+  "orchestrationMode": "memcpy",
+  "executionPattern": "streaming_memcpy_driven",
+  "sdkVersionFloor": "1.4.0",
+  "compile": {
+    "arch": "wse3",
+    "fabricDims": [14, 7],
+    "fabricOffsets": [4, 1],
+    "peGrid": {
+      "width": 4,
+      "height": 4
+    },
+    "channels": 1,
+    "memcpy": true,
+    "params": [
+      {
+        "name": "kernel_cols",
+        "type": "i16",
+        "value": 4
+      },
+      {
+        "name": "kernel_rows",
+        "type": "i16",
+        "value": 4
+      },
+      {
+        "name": "matrix_rows",
+        "type": "i16",
+        "value": 32
+      },
+      {
+        "name": "matrix_cols",
+        "type": "i16",
+        "value": 16
+      },
+      {
+        "name": "MEMCPYH2D_DATA_1_ID",
+        "type": "i16",
+        "value": 10
+      },
+      {
+        "name": "MEMCPYH2D_DATA_2_ID",
+        "type": "i16",
+        "value": 11
+      },
+      {
+        "name": "MEMCPYD2H_DATA_1_ID",
+        "type": "i16",
+        "value": 12
+      }
+    ],
+    "colors": [
+      {
+        "name": "MEMCPYH2D_DATA_1",
+        "value": 10
+      },
+      {
+        "name": "MEMCPYH2D_DATA_2",
+        "value": 11
+      },
+      {
+        "name": "MEMCPYD2H_DATA_1",
+        "value": 12
+      }
+    ],
+    "importPaths": [],
+    "outputDir": "out",
+    "widthWestBuf": 0,
+    "widthEastBuf": 0,
+    "compileTargets": [
+      {
+        "name": "gemv-streaming",
+        "layout": "examples/csl/gemv-streaming/layout.csl",
+        "peProgram": "examples/csl/gemv-streaming/pe_program.csl"
+      }
+    ]
+  },
+  "exportedSymbols": [
+    {
+      "name": "A",
+      "type": "[*]f16",
+      "mutable": true,
+      "kind": "device_variable"
+    }
+  ],
+  "reservedResources": {
+    "resources": [
+      {
+        "name": "MEMCPYH2D_DATA_1",
+        "kind": "color",
+        "value": 10,
+        "source": "memcpy streaming H2D X"
+      },
+      {
+        "name": "MEMCPYH2D_DATA_2",
+        "kind": "color",
+        "value": 11,
+        "source": "memcpy streaming H2D B"
+      },
+      {
+        "name": "MEMCPYD2H_DATA_1",
+        "kind": "color",
+        "value": 12,
+        "source": "memcpy streaming D2H Y"
+      }
+    ]
+  },
+  "operations": [
+    {
+      "operationId": "copy-a-h2d",
+      "kind": "memcpy_h2d",
+      "targetKind": "device_symbol",
+      "deviceSymbol": "A",
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "width": 4,
+        "height": 4
+      },
+      "elementsPerPE": 32,
+      "dataType": "MEMCPY_16BIT",
+      "order": "ROW_MAJOR",
+      "streaming": false,
+      "nonblock": false
+    },
+    {
+      "operationId": "stream-x-h2d",
+      "kind": "memcpy_h2d",
+      "targetKind": "memcpy_color",
+      "memcpyColor": "MEMCPYH2D_DATA_1",
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "width": 4,
+        "height": 1
+      },
+      "elementsPerPE": 4,
+      "dataType": "MEMCPY_16BIT",
+      "order": "ROW_MAJOR",
+      "streaming": true,
+      "nonblock": false
+    },
+    {
+      "operationId": "stream-b-h2d",
+      "kind": "memcpy_h2d",
+      "targetKind": "memcpy_color",
+      "memcpyColor": "MEMCPYH2D_DATA_2",
+      "roi": {
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 4
+      },
+      "elementsPerPE": 8,
+      "dataType": "MEMCPY_16BIT",
+      "order": "ROW_MAJOR",
+      "streaming": true,
+      "nonblock": false
+    },
+    {
+      "operationId": "stream-y-d2h",
+      "kind": "memcpy_d2h",
+      "targetKind": "memcpy_color",
+      "memcpyColor": "MEMCPYD2H_DATA_1",
+      "roi": {
+        "x": 3,
+        "y": 0,
+        "width": 1,
+        "height": 4
+      },
+      "elementsPerPE": 8,
+      "dataType": "MEMCPY_16BIT",
+      "order": "ROW_MAJOR",
+      "streaming": true,
+      "nonblock": false
+    }
+  ],
+  "sdkReferences": [
+    "https://sdk.cerebras.net/csl/code-examples/tutorial-gemv-09-streaming",
+    "https://sdk.cerebras.net/csl/code-examples/benchmark-gemv-checkerboard",
+    "https://sdk.cerebras.net/tensor-streaming"
+  ]
+}

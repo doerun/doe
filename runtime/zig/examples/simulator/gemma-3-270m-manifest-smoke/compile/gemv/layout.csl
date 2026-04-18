@@ -1,5 +1,12 @@
 // Layout: element-wise kernel distributed across a 1-D PE row.
 // Each PE processes a contiguous chunk of the input array.
+//
+// Exported symbols use [*]f32 to match the device-side variable types
+// declared in pe_program.csl. Earlier revisions of this fixture declared
+// [*]u32 here while pe_program.csl bound [*]f32 pointers, which SDK v1.4's
+// @export_symbol semantic check rejects as a type mismatch (the SDK 1.3
+// compiler tolerated the mismatch because the memcpy infrastructure only
+// observed the pointer at byte granularity).
 
 param width: i16;
 
@@ -19,8 +26,8 @@ layout {
         });
     }
 
-    @export_name("matrixData", [*]u32, true);
-    @export_name("vectorData", [*]u32, true);
-    @export_name("outData", [*]u32, true);
+    @export_name("matrixData", [*]f32, true);
+    @export_name("vectorData", [*]f32, true);
+    @export_name("outData", [*]f32, true);
     @export_name("compute", fn()void);
 }

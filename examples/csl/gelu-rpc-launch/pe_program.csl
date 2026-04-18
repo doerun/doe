@@ -1,0 +1,21 @@
+param memcpy_params: comptime_struct;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+var input = @zeros([4]f32);
+var output = @zeros([4]f32);
+var input_ptr: [*]f32 = &input;
+const output_ptr: [*]f32 = &output;
+
+fn compute() void {
+  for (@range(i16, 4)) |i| {
+    output[i] = input[i];
+  }
+  sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+  @export_symbol(input_ptr, "input");
+  @export_symbol(output_ptr, "output");
+  @export_symbol(compute);
+}

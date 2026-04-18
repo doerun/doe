@@ -1,0 +1,15 @@
+param memcpy_params: comptime_struct;
+param matrix_rows: i16;
+param matrix_cols: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+var A = @zeros([64]f16);
+var A_ptr: [*]f16 = &A;
+
+comptime {
+  @export_symbol(A_ptr, "A");
+  _ = sys_mod;
+  _ = matrix_rows;
+  _ = matrix_cols;
+}

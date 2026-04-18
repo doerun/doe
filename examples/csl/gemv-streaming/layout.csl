@@ -1,0 +1,35 @@
+param kernel_cols: i16;
+param kernel_rows: i16;
+param matrix_rows: i16;
+param matrix_cols: i16;
+
+param MEMCPYH2D_DATA_1_ID: i16;
+param MEMCPYH2D_DATA_2_ID: i16;
+param MEMCPYD2H_DATA_1_ID: i16;
+
+const MEMCPYH2D_DATA_1: color = @get_color(MEMCPYH2D_DATA_1_ID);
+const MEMCPYH2D_DATA_2: color = @get_color(MEMCPYH2D_DATA_2_ID);
+const MEMCPYD2H_DATA_1: color = @get_color(MEMCPYD2H_DATA_1_ID);
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+  .width = kernel_cols,
+  .height = kernel_rows,
+  .MEMCPYH2D_1 = MEMCPYH2D_DATA_1,
+  .MEMCPYH2D_2 = MEMCPYH2D_DATA_2,
+  .MEMCPYD2H_1 = MEMCPYD2H_DATA_1,
+});
+
+layout {
+  @set_rectangle(kernel_cols, kernel_rows);
+  for (@range(i16, kernel_cols)) |x| {
+    for (@range(i16, kernel_rows)) |y| {
+      @set_tile_code(x, y, "pe_program.csl", .{
+        .memcpy_params = memcpy.get_params(x),
+        .matrix_rows = matrix_rows,
+        .matrix_cols = matrix_cols,
+      });
+    }
+  }
+
+  @export_name("A", [*]f16, true);
+}

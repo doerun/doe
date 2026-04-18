@@ -1,39 +1,55 @@
-// PE program: element-wise kernel (auto-generated from WGSL)
-// Each PE processes chunk_size elements with no fabric routing.
+// PE program: governed-lane compile smoke for the Gemma 3 270M manifest.
+//
+// SDK v1.4 contract surface:
+//   - `param memcpy_params: comptime_struct;` + `<memcpy/memcpy>` import
+//     is the standard single-PE memcpy plumbing.
+//   - `param pe_id` / `param num_pes` are supplied by layout.csl's
+//     `@set_tile_code` invocation; values flow in automatically and do
+//     not need default values.
+//   - Arrays declared as `[N * M]f32` rather than `[N][M]T` because the
+//     SDK rejects double-bracket array-of-vector types; all canonical
+//     gemv / checkerboard tutorials use flat row-major storage (see
+//     sdk.cerebras.net/csl/tutorials/gemv-01-complete-program and
+//     sdk.cerebras.net/csl/code-examples/benchmark-gemv-checkerboard).
+//   - The compute function ends with `sys_mod.unblock_cmd_stream()` so
+//     the host-side memcpy queue drains after the RPC launch completes
+//     (the `rpc_launch` execution pattern — see the laneContract entry
+//     for `doe_csl` in config/shader-error-taxonomy.json).
+//
+// Kernel body: the 270M manifest smoke is a governed-lane compile +
+// host-plan parity check, not a numerically-verified gemv. We keep the
+// exported symbol surface (matrixData, vectorData, outData, compute) so
+// the canonical HostPlan hash and memcpy ROI contract stay stable, and
+// do a trivial elementwise multiply-accumulate so the generated SPIR-V
+// /CSL isn't trivially dead-code-eliminated. A richer kernel replaces
+// this once the WGSL-to-CSL bundle-emitter chain is wired through to
+// the governed-lane compile step.
 
 param memcpy_params: comptime_struct;
 param pe_id: i16;
 param num_pes: i16;
 
 const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
-const math = @import_module("<math>");
 
-param chunk_size: i16 = 1024;
+// Per-PE footprint stays well under the WSE PE memory budget (~48 KB of
+// data per PE). 3 × flat_len × f32 at flat_len = 64 * 4 = 256 elements
+// costs 3 KB per PE, leaving ample room for task tables and sys_mod's
+// reserved queues. Earlier drafts at chunk_size=1024 hit lld's "ran out
+// of PE memory" on the task-table section.
+const chunk_size: i16 = 64;
+const vec_width: i16 = 4;
+const flat_len: i16 = chunk_size * vec_width;
 
-var matrixData: [chunk_size][4]f32 = @zeros([chunk_size][4]f32);
-var matrixData_ptr: [*][4]f32 = &matrixData;
-var vectorData: [chunk_size][4]f32 = @zeros([chunk_size][4]f32);
-var vectorData_ptr: [*][4]f32 = &vectorData;
-var outData: [chunk_size][4]f32 = @zeros([chunk_size][4]f32);
-var outData_ptr: [*][4]f32 = &outData;
+var matrixData: [flat_len]f32;
+var matrixData_ptr: [*]f32 = &matrixData;
+var vectorData: [flat_len]f32;
+var vectorData_ptr: [*]f32 = &vectorData;
+var outData: [flat_len]f32;
+var outData_ptr: [*]f32 = &outData;
 
 fn compute() void {
-    for (@range(i16, chunk_size)) |_idx| {
-        const idx = @as(u32, _idx);
-        const rowBy4: u32 = gid.x;
-        var col: u32 = 0;
-        while (true) {
-            if ((col >= kPackedCols)) {
-                break;
-            }
-            const v: [4]f32 = vectorData[math.min(f32, col, (arrayLength(vectorData) - 1))];
-            sum.x = (sum.x + dot(matrixData[math.min(f32, ((((4 * rowBy4) + 0) * kPackedCols) + col), (arrayLength(matrixData) - 1))], v));
-            sum.y = (sum.y + dot(matrixData[math.min(f32, ((((4 * rowBy4) + 1) * kPackedCols) + col), (arrayLength(matrixData) - 1))], v));
-            sum.z = (sum.z + dot(matrixData[math.min(f32, ((((4 * rowBy4) + 2) * kPackedCols) + col), (arrayLength(matrixData) - 1))], v));
-            sum.w = (sum.w + dot(matrixData[math.min(f32, ((((4 * rowBy4) + 3) * kPackedCols) + col), (arrayLength(matrixData) - 1))], v));
-            col = (col + 1);
-        }
-        outData[math.min(f32, rowBy4, (arrayLength(outData) - 1))] = sum;
+    for (@range(i16, flat_len)) |idx| {
+        outData[idx] = matrixData[idx] * vectorData[idx];
     }
     sys_mod.unblock_cmd_stream();
 }
