@@ -1,4 +1,5 @@
 const ir = @import("ir.zig");
+const ir_const_eval = @import("ir_const_eval.zig");
 const loop_match = @import("dispatch_proof_loop_match.zig");
 const layout_utils = @import("layout_utils.zig");
 const lean_proof = @import("../lean_proof.zig");
@@ -53,8 +54,8 @@ pub fn try_elide_storage_index(
     }
 
     if (lean_proof.boundsProven(.gid_1d_storage_buffer_loop_affine)) {
-        if (match_gid_component_loop_affine_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
-            if (loop_match.find_bounded_loop_limit(function, expr_id, match.local_idx)) |loop_limit| {
+        if (match_gid_component_loop_affine_plus_offset(module, function, index_data.index, .global_invocation_id)) |match| {
+            if (loop_match.find_bounded_loop_limit(module, function, expr_id, match.local_idx)) |loop_limit| {
                 return .{
                     .kind = .gid_component,
                     .gid_axis = match.axis,
@@ -68,9 +69,9 @@ pub fn try_elide_storage_index(
             }
         }
     } else if (lean_proof.boundsProven(.gid_1d_storage_buffer_loop_offset)) {
-        if (match_gid_component_loop_affine_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+        if (match_gid_component_loop_affine_plus_offset(module, function, index_data.index, .global_invocation_id)) |match| {
             if (match.gid_multiplier == 1 and match.loop_multiplier == 1) {
-                if (loop_match.find_bounded_loop_limit(function, expr_id, match.local_idx)) |loop_limit| {
+                if (loop_match.find_bounded_loop_limit(module, function, expr_id, match.local_idx)) |loop_limit| {
                     return .{
                         .kind = .gid_component,
                         .gid_axis = match.axis,
@@ -443,6 +444,14 @@ fn match_u32_literal_value(function: *const ir.Function, expr_id: ir.ExprId) ?u6
     };
 }
 
+fn match_u32_literal_value_with_module(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+) ?u64 {
+    return ir_const_eval.resolve_constant_int(module, function, resolve_value_alias(function, expr_id));
+}
+
 pub fn match_gid_component_plus_offset(
     function: *const ir.Function,
     expr_id: ir.ExprId,
@@ -567,12 +576,13 @@ pub fn match_gid_component_tiled_plus_offset(
 }
 
 fn match_gid_component_loop_affine_plus_offset(
+    module: *const ir.Module,
     function: *const ir.Function,
     expr_id: ir.ExprId,
     builtin: ir.Builtin,
 ) ?struct { axis: u8, local_idx: u32, gid_multiplier: u64, loop_multiplier: u64, offset: u64 } {
     var state = AdditiveLoopIndexState{};
-    if (!collect_additive_loop_terms(function, expr_id, builtin, &state)) return null;
+    if (!collect_additive_loop_terms(module, function, expr_id, builtin, &state)) return null;
     if (state.gid_multiplier == 0 or state.loop_multiplier == 0) return null;
     return .{
         .axis = state.axis orelse return null,
@@ -592,6 +602,7 @@ const AdditiveLoopIndexState = struct {
 };
 
 fn collect_additive_loop_terms(
+    module: *const ir.Module,
     function: *const ir.Function,
     expr_id: ir.ExprId,
     builtin: ir.Builtin,
@@ -602,12 +613,12 @@ fn collect_additive_loop_terms(
     switch (expr.data) {
         .binary => |binary| {
             if (binary.op == .add) {
-                return collect_additive_loop_terms(function, binary.lhs, builtin, state) and
-                    collect_additive_loop_terms(function, binary.rhs, builtin, state);
+                return collect_additive_loop_terms(module, function, binary.lhs, builtin, state) and
+                    collect_additive_loop_terms(module, function, binary.rhs, builtin, state);
             }
             if (binary.op == .mul) {
-                return collect_scaled_loop_term(function, binary.lhs, binary.rhs, builtin, state) or
-                    collect_scaled_loop_term(function, binary.rhs, binary.lhs, builtin, state);
+                return collect_scaled_loop_term(module, function, binary.lhs, binary.rhs, builtin, state) or
+                    collect_scaled_loop_term(module, function, binary.rhs, binary.lhs, builtin, state);
             }
             return false;
         },
@@ -640,13 +651,14 @@ fn collect_additive_loop_terms(
 }
 
 fn collect_scaled_loop_term(
+    module: *const ir.Module,
     function: *const ir.Function,
     lhs: ir.ExprId,
     rhs: ir.ExprId,
     builtin: ir.Builtin,
     state: *AdditiveLoopIndexState,
 ) bool {
-    const scale = match_u32_literal_value(function, rhs) orelse return false;
+    const scale = match_u32_literal_value_with_module(module, function, rhs) orelse return false;
     if (scale == 0) return true;
 
     const lhs_expr = function.exprs.items[resolve_value_alias(function, lhs)];
@@ -670,9 +682,39 @@ fn collect_scaled_loop_term(
                 state.gid_multiplier = std.math.add(u64, state.gid_multiplier, scale) catch return false;
                 return true;
             }
-            return false;
+            var nested = AdditiveLoopIndexState{};
+            if (!collect_additive_loop_terms(module, function, lhs, builtin, &nested)) return false;
+            return merge_scaled_loop_terms(state, nested, scale);
         },
     }
+}
+
+fn merge_scaled_loop_terms(
+    state: *AdditiveLoopIndexState,
+    nested: AdditiveLoopIndexState,
+    scale: u64,
+) bool {
+    if (nested.axis) |axis| {
+        if (state.axis) |existing| {
+            if (existing != axis) return false;
+        } else {
+            state.axis = axis;
+        }
+        const scaled = std.math.mul(u64, nested.gid_multiplier, scale) catch return false;
+        state.gid_multiplier = std.math.add(u64, state.gid_multiplier, scaled) catch return false;
+    }
+    if (nested.local_idx) |local_idx| {
+        if (state.local_idx) |existing| {
+            if (existing != local_idx) return false;
+        } else {
+            state.local_idx = local_idx;
+        }
+        const scaled = std.math.mul(u64, nested.loop_multiplier, scale) catch return false;
+        state.loop_multiplier = std.math.add(u64, state.loop_multiplier, scaled) catch return false;
+    }
+    const scaled_offset = std.math.mul(u64, nested.offset, scale) catch return false;
+    state.offset = std.math.add(u64, state.offset, scaled_offset) catch return false;
+    return true;
 }
 
 fn match_gid_component_tiled(

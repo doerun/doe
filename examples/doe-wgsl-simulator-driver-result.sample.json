@@ -20,7 +20,18 @@
         "exitCode": 0,
         "stdoutPath": "compile/driver-logs/gemv.cslc.stdout.log",
         "stderrPath": "compile/driver-logs/gemv.cslc.stderr.log",
-        "command": ["/opt/cerebras/bin/cslc", "compile/gemv/layout.csl", "--arch=wse3", "--fabric-dims=32,4", "-o", "compile/compiled/gemv"]
+        "command": [
+          "/opt/cerebras/bin/cslc",
+          "compile/gemv/layout.csl",
+          "--arch=wse3",
+          "--fabric-dims=39,6",
+          "--fabric-offsets=4,1",
+          "--channels=1",
+          "--params=width:32,height:4",
+          "-o",
+          "compile/compiled/gemv",
+          "--memcpy"
+        ]
       }
     ]
   },
@@ -32,5 +43,50 @@
     "traceProduced": false,
     "stdoutPath": "artifacts/stdout.log",
     "stderrPath": "artifacts/stderr.log"
+  },
+  "operationGraph": {
+    "schemaVersion": 1,
+    "artifactKind": "csl_operation_graph",
+    "graphId": "gemv-rpc-launch",
+    "orchestrationMode": "memcpy",
+    "executionPattern": "rpc_launch",
+    "sdkVersionFloor": "1.4.0",
+    "compile": {
+      "arch": "wse3",
+      "fabricDims": [39, 6],
+      "fabricOffsets": [4, 1],
+      "peGrid": { "width": 32, "height": 4 },
+      "channels": 1,
+      "memcpy": true,
+      "params": [
+        { "name": "width", "type": "i16", "value": 32 },
+        { "name": "height", "type": "i16", "value": 4 }
+      ],
+      "importPaths": [],
+      "outputDir": "compile/compiled/gemv",
+      "compileTargets": [
+        {
+          "name": "gemv",
+          "layout": "compile/gemv/layout.csl",
+          "peProgram": "compile/gemv/pe_program.csl"
+        }
+      ]
+    },
+    "exportedSymbols": [
+      { "name": "matrixData", "type": "[*]f32", "mutable": true, "kind": "device_variable" },
+      { "name": "vectorData", "type": "[*]f32", "mutable": true, "kind": "device_variable" },
+      { "name": "outData", "type": "[*]f32", "mutable": true, "kind": "device_variable" },
+      { "name": "compute", "type": "fn()void", "mutable": false, "kind": "device_function" }
+    ],
+    "operations": [
+      { "operationId": "h2d-matrixdata", "kind": "memcpy_h2d", "targetKind": "device_symbol", "deviceSymbol": "matrixData", "roi": { "x": 0, "y": 0, "width": 32, "height": 4 }, "elementsPerPE": 1, "dataType": "MEMCPY_32BIT", "order": "ROW_MAJOR", "streaming": false, "nonblock": true },
+      { "operationId": "h2d-vectordata", "kind": "memcpy_h2d", "targetKind": "device_symbol", "deviceSymbol": "vectorData", "roi": { "x": 0, "y": 0, "width": 32, "height": 4 }, "elementsPerPE": 1, "dataType": "MEMCPY_32BIT", "order": "ROW_MAJOR", "streaming": false, "nonblock": true },
+      { "operationId": "launch-compute", "kind": "launch", "functionName": "compute", "args": [], "nonblock": false, "unblockCheckpointRequired": true },
+      { "operationId": "d2h-outdata", "kind": "memcpy_d2h", "targetKind": "device_symbol", "deviceSymbol": "outData", "roi": { "x": 0, "y": 0, "width": 32, "height": 4 }, "elementsPerPE": 1, "dataType": "MEMCPY_32BIT", "order": "ROW_MAJOR", "streaming": false, "nonblock": false }
+    ],
+    "sdkReferences": [
+      "https://sdk.cerebras.net/csl/code-examples/tutorial-gemv-01-complete-program",
+      "https://sdk.cerebras.net/sdk-release-notes/sdk-rel-notes-cumulative"
+    ]
   }
 }

@@ -87,7 +87,7 @@ fn upper_bound_for_local(
     access_expr_id: ir.ExprId,
     local_idx: u32,
 ) ?u64 {
-    const limit = loop_match.find_bounded_loop_limit(function, access_expr_id, local_idx) orelse
+    const limit = loop_match.find_bounded_loop_limit(module, function, access_expr_id, local_idx) orelse
         find_simple_for_loop_limit(module, function, function.root_stmt, access_expr_id, local_idx) orelse
         return null;
     if (limit == 0) return null;

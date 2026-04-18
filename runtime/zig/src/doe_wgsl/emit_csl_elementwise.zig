@@ -62,16 +62,21 @@ fn emitElementWiseBody(buf: []u8, pos: *usize, module: *const ir.Module, functio
     switch (root) {
         .block => |range| {
             var i: u32 = 0;
+            // The `while (..) : (i += 1)` post-step advances i every iteration.
+            // An earlier revision added a second `i += 1` before `continue`
+            // on filter matches, producing a double-advance that silently
+            // skipped the statement after any filtered one. That happened to
+            // look correct on the canonical gelu kernel only because a
+            // size-guard statement immediately followed the gid let-binding
+            // — the double-skip collapsed into what looked like "skip both".
+            // On other elementwise WGSL (gid let-binding followed directly
+            // by the compute assignment), the double-advance ate the body
+            // and emitted an empty `for` loop. Drop the manual increment so
+            // only the matched statement is filtered.
             while (i < range.len) : (i += 1) {
                 const child_id = function.stmt_children.items[range.start + i];
-                if (isSizeGuard(function, child_id)) {
-                    i += 1;
-                    continue;
-                }
-                if (isGidLetBinding(function, child_id)) {
-                    i += 1;
-                    continue;
-                }
+                if (isSizeGuard(function, child_id)) continue;
+                if (isGidLetBinding(function, child_id)) continue;
                 try walk.stmt(buf, pos, module, function, child_id, 2);
             }
         },
@@ -80,12 +85,22 @@ fn emitElementWiseBody(buf: []u8, pos: *usize, module: *const ir.Module, functio
 }
 
 /// Check if a statement is `let <name> = gid.x;` (global_invocation_id binding).
+/// The WGSL→IR lowering can produce either `.member(.load(.param_ref(gid)), "x")`
+/// or `.load(.member(.param_ref(gid), "x"))` depending on whether the member
+/// access wraps a loaded vec or a pointer-to-member. Both shapes resolve to
+/// the same logical gid.x read, so unwrap any top-level load before checking
+/// for the member pattern.
 fn isGidLetBinding(function: *const ir.Function, stmt_id: ir.StmtId) bool {
     if (stmt_id >= function.stmts.items.len) return false;
     switch (function.stmts.items[stmt_id]) {
         .local_decl => |decl| {
-            const init = decl.initializer orelse return false;
+            var init = decl.initializer orelse return false;
             if (init >= function.exprs.items.len) return false;
+            if (function.exprs.items[init].data == .load) {
+                const inner = function.exprs.items[init].data.load;
+                if (inner >= function.exprs.items.len) return false;
+                init = inner;
+            }
             switch (function.exprs.items[init].data) {
                 .member => |member| {
                     if (!std.mem.eql(u8, member.field_name, "x")) return false;

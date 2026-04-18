@@ -201,7 +201,15 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 },
                 .float_lit => |v| {
                     var t: [32]u8 = undefined;
-                    try write(buf, pos, std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge);
+                    const s = std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge;
+                    try write(buf, pos, s);
+                    // Ensure CSL sees a `comptime_float`, not a `comptime_int`,
+                    // when the value has no fractional part. Zig's `{d}` format
+                    // drops trailing zeros ("2.0" → "2"), and cslc rejects
+                    // `f32_var * 2` with "expected type 'f32', got: 'comptime_int'".
+                    if (std.mem.indexOfAny(u8, s, ".eE") == null) {
+                        try write(buf, pos, ".0");
+                    }
                 },
                 .param_ref => |idx| {
                     if (idx < function.params.items.len) try write(buf, pos, function.params.items[idx].name);
@@ -230,6 +238,23 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 },
                 .call => |call| {
                     if (cfg.skip_barriers and call.kind == .builtin and isBarrierName(call.name)) return;
+                    // WGSL `arrayLength(&buf)` becomes the CSL static per-PE
+                    // size since the CSL declaration is `var buf: [chunk_size]T`.
+                    // Emitting a literal `arrayLength(...)` call would fail at
+                    // cslc parse time — CSL has no arrayLength builtin. The
+                    // runtime_array_size config names the declared per-PE
+                    // length (default `chunk_size` for element-wise mode).
+                    // Wrap the size name in `@as(u32, ...)` because CSL's
+                    // param is `param chunk_size: i16` and downstream uses
+                    // compare/subtract against u32-typed indices (`gid.x`).
+                    // Without the cast cslc errors with
+                    //   "expected type 'u32', got: 'i16'".
+                    if (call.kind == .builtin and std.mem.eql(u8, call.name, "arrayLength")) {
+                        try write(buf, pos, "@as(u32, ");
+                        try write(buf, pos, cfg.runtime_array_size);
+                        try write(buf, pos, ")");
+                        return;
+                    }
                     if (call.kind == .builtin) {
                         if (maps.cslMathBuiltin(call.name)) |csl_name| {
                             try write(buf, pos, csl_name);
@@ -281,48 +306,61 @@ pub fn Emit(comptime cfg: WalkConfig) type {
         }
 
         pub fn inlineBuiltin(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function, name: []const u8, args: ir.Range, call_expr_id: ir.ExprId) EmitError!void {
+            _ = call_expr_id;
             const a = function.expr_args.items;
+            // CSL v1.4 has no `math.min(T, a, b)` / `math.max(T, a, b)` form.
+            // SDK 1.4 canonical examples (gemv-checkerboard, conjugate-gradient,
+            // wide-multiplication) use either user-defined `fn min(a, b)` helpers
+            // or inline conditional expressions. Inline ternaries generalize to
+            // any element type without requiring an external utility module,
+            // so emit `(if (a < b) a else b)` / `(if (a > b) a else b)` directly.
+            // For `clamp(x, lo, hi)` expand to nested min(max(x, lo), hi).
             if (std.mem.eql(u8, name, "clamp")) {
                 if (args.len >= 3) {
-                    // CSL `math.min`/`math.max` take the scalar type as their
-                    // first arg. Read the type from the outer `clamp` call's
-                    // own TypeId — it matches the polymorphic return type, so
-                    // `clamp(u32_idx, ...)` with call.ty=u32 emits the correct
-                    // `math.min(u32, math.max(u32, ...))`. Using the outer
-                    // call's type is robust even when an arg's type field is
-                    // unset by an upstream IR pass.
-                    const ty = exprScalarTypeName(module, function, call_expr_id);
-                    try write(buf, pos, "math.min(");
-                    try write(buf, pos, ty);
-                    try write(buf, pos, ", math.max(");
-                    try write(buf, pos, ty);
-                    try write(buf, pos, ", ");
+                    // min( max(x, lo), hi ) → if (<if (x > lo) x else lo> < hi) ... else hi
+                    try write(buf, pos, "(if ((if (");
                     try expr(buf, pos, module, function, a[args.start]);
-                    try write(buf, pos, ", ");
+                    try write(buf, pos, " > ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
-                    try write(buf, pos, "), ");
+                    try write(buf, pos, ") ");
+                    try expr(buf, pos, module, function, a[args.start]);
+                    try write(buf, pos, " else ");
+                    try expr(buf, pos, module, function, a[args.start + 1]);
+                    try write(buf, pos, ") < ");
+                    try expr(buf, pos, module, function, a[args.start + 2]);
+                    try write(buf, pos, ") (if (");
+                    try expr(buf, pos, module, function, a[args.start]);
+                    try write(buf, pos, " > ");
+                    try expr(buf, pos, module, function, a[args.start + 1]);
+                    try write(buf, pos, ") ");
+                    try expr(buf, pos, module, function, a[args.start]);
+                    try write(buf, pos, " else ");
+                    try expr(buf, pos, module, function, a[args.start + 1]);
+                    try write(buf, pos, ") else ");
                     try expr(buf, pos, module, function, a[args.start + 2]);
                     try write(buf, pos, ")");
                 }
             } else if (std.mem.eql(u8, name, "min")) {
                 if (args.len >= 2) {
-                    const ty = exprScalarTypeName(module, function, call_expr_id);
-                    try write(buf, pos, "math.min(");
-                    try write(buf, pos, ty);
-                    try write(buf, pos, ", ");
+                    try write(buf, pos, "(if (");
                     try expr(buf, pos, module, function, a[args.start]);
-                    try write(buf, pos, ", ");
+                    try write(buf, pos, " < ");
+                    try expr(buf, pos, module, function, a[args.start + 1]);
+                    try write(buf, pos, ") ");
+                    try expr(buf, pos, module, function, a[args.start]);
+                    try write(buf, pos, " else ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
                     try write(buf, pos, ")");
                 }
             } else if (std.mem.eql(u8, name, "max")) {
                 if (args.len >= 2) {
-                    const ty = exprScalarTypeName(module, function, call_expr_id);
-                    try write(buf, pos, "math.max(");
-                    try write(buf, pos, ty);
-                    try write(buf, pos, ", ");
+                    try write(buf, pos, "(if (");
                     try expr(buf, pos, module, function, a[args.start]);
-                    try write(buf, pos, ", ");
+                    try write(buf, pos, " > ");
+                    try expr(buf, pos, module, function, a[args.start + 1]);
+                    try write(buf, pos, ") ");
+                    try expr(buf, pos, module, function, a[args.start]);
+                    try write(buf, pos, " else ");
                     try expr(buf, pos, module, function, a[args.start + 1]);
                     try write(buf, pos, ")");
                 }
@@ -457,15 +495,26 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 switch (module.types.get(global.ty)) {
                     .struct_ => |struct_id| {
                         const sd = module.structs.items[struct_id];
-                        try write(buf, pos, "// Uniforms (loaded from host before compute)\n");
-                        for (sd.fields.items) |field| {
-                            try write(buf, pos, "var ");
-                            try write(buf, pos, field.name);
-                            try write(buf, pos, ": ");
-                            try writeType(buf, pos, module, field.ty);
-                            try write(buf, pos, " = 0;\n");
-                        }
-                        try write(buf, pos, "\n");
+                        try write(buf, pos, "// Uniforms (loaded from host before compute): a single\n");
+                        try write(buf, pos, "// [N]u32 buffer rather than per-field vars so `&<uniform>`\n");
+                        try write(buf, pos, "// yields `[*]u32` that matches `layout.csl @export_name(..., [*]u32)`.\n");
+                        try write(buf, pos, "// Earlier per-field emission produced `&size: *u32` which cslc\n");
+                        try write(buf, pos, "// rejected as a pointer-element-count mismatch. Per-field access\n");
+                        try write(buf, pos, "// in the body is handled by the IR walker's `.member` case,\n");
+                        try write(buf, pos, "// which maps struct field names to array indices via the field\n");
+                        try write(buf, pos, "// index stored on the IR member expression.\n");
+                        try write(buf, pos, "var ");
+                        try write(buf, pos, global.name);
+                        try write(buf, pos, ": [");
+                        try writeInt(buf, pos, sd.fields.items.len);
+                        try write(buf, pos, "]u32 = @zeros([");
+                        try writeInt(buf, pos, sd.fields.items.len);
+                        try write(buf, pos, "]u32);\n");
+                        try write(buf, pos, "var ");
+                        try write(buf, pos, global.name);
+                        try write(buf, pos, "_ptr: [*]u32 = &");
+                        try write(buf, pos, global.name);
+                        try write(buf, pos, ";\n\n");
                     },
                     else => {},
                 }

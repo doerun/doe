@@ -34,5 +34,16 @@
   "simulationResult": {},
   "driverResult": {},
   "comparisonStatus": "diagnostic",
-  "claimStatus": "not-evaluated"
+  "claimStatus": "not-evaluated",
+  "receipts": {
+    "operationGraph": {
+      "status": "bound",
+      "graphId": "gemv-rpc-launch",
+      "executionPattern": "rpc_launch",
+      "orchestrationMode": "memcpy",
+      "operationCount": 7,
+      "exportedSymbolCount": 4,
+      "sdkVersionFloor": "1.4.0"
+    }
+  }
 }

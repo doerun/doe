@@ -13,7 +13,8 @@
     "parity",
     "artifacts",
     "comparisonStatus",
-    "claimStatus"
+    "claimStatus",
+    "receipts"
   ],
   "properties": {
     "schemaVersion": { "const": 1 },
@@ -82,7 +83,33 @@
     "simulationResult": { "type": "object" },
     "driverResult": { "type": "object" },
     "comparisonStatus": { "const": "diagnostic" },
-    "claimStatus": { "const": "not-evaluated" }
+    "claimStatus": { "const": "not-evaluated" },
+    "receipts": {
+      "type": "object",
+      "description": "First-class receipt bindings. The operationGraph summary is required so gates can assert that the compile inputs produced a machine-checkable contract, independent of whether cslc itself succeeded. A missing graph means the lane has no structural receipt surface — that's a hard lane-status degrade, not a soft warning.",
+      "required": ["operationGraph"],
+      "properties": {
+        "operationGraph": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "enum": ["bound", "absent", "invalid"],
+              "description": "bound: driverResult.operationGraph present and schema-valid. absent: no graph (no parseable compile inputs / no function export). invalid: graph present but failed csl-operation-graph.schema.json validation."
+            },
+            "graphId": { "type": "string" },
+            "executionPattern": {
+              "enum": ["rpc_launch", "streaming_memcpy_driven", "sdklayout_stream_graph"]
+            },
+            "orchestrationMode": { "enum": ["memcpy", "sdklayout"] },
+            "operationCount": { "type": "integer", "minimum": 0 },
+            "exportedSymbolCount": { "type": "integer", "minimum": 0 },
+            "sdkVersionFloor": { "type": "string" }
+          }
+        }
+      }
+    }
   },
   "additionalProperties": true
 }

@@ -163,6 +163,34 @@ def run_command(
     }
 
 
+BUNDLE_EMITTER = REPO_ROOT / "runtime" / "zig" / "zig-out" / "bin" / "doe-csl-bundle-emitter"
+
+
+def regenerate_compile_target_from_wgsl(
+    *,
+    wgsl_path: Path,
+    target_name: str,
+    compile_dst: Path,
+) -> None:
+    """Invoke doe-csl-bundle-emitter to produce layout.csl + pe_program.csl
+    under `compile_dst/<target_name>/` from the given WGSL source.
+
+    Raises CalledProcessError on emitter failure; the governed lane treats
+    that as a compile-stage blocker — the static-copy fallback is NOT taken
+    because a missing WGSL source would silently hide upstream emitter bugs.
+    """
+    target_dir = compile_dst / target_name
+    if target_dir.exists():
+        shutil.rmtree(target_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    if not BUNDLE_EMITTER.exists():
+        raise FileNotFoundError(f"missing bundle emitter: {BUNDLE_EMITTER}")
+    subprocess.run(
+        [str(BUNDLE_EMITTER), "--wgsl", str(wgsl_path), "--out-dir", str(target_dir)],
+        check=True,
+    )
+
+
 def materialize_plan(
     *,
     template_path: Path,
@@ -176,7 +204,36 @@ def materialize_plan(
     compile_dst = (run_dir / "compile").resolve()
     if compile_dst.exists():
         shutil.rmtree(compile_dst)
-    shutil.copytree(compile_src, compile_dst)
+
+    # Any compileTarget that declares a sourceWgslPath gets its CSL freshly
+    # emitted from that WGSL source via doe-csl-bundle-emitter. Targets
+    # without sourceWgslPath fall through to the static-copy path (backward
+    # compatibility for hand-authored fixtures like the 270M smoke). This
+    # lets the governed lane consume emitter fixes automatically for any
+    # WGSL-backed target without per-fixture edits.
+    has_wgsl_backed_target = any(
+        target.get("sourceWgslPath") for target in template["inputs"]["compileTargets"]
+    )
+    if has_wgsl_backed_target:
+        compile_dst.mkdir(parents=True, exist_ok=True)
+        for target in template["inputs"]["compileTargets"]:
+            wgsl_raw = target.get("sourceWgslPath")
+            if wgsl_raw:
+                wgsl_path = Path(wgsl_raw)
+                if not wgsl_path.is_absolute():
+                    wgsl_path = (REPO_ROOT / wgsl_path).resolve()
+                regenerate_compile_target_from_wgsl(
+                    wgsl_path=wgsl_path,
+                    target_name=str(target["name"]),
+                    compile_dst=compile_dst,
+                )
+            else:
+                # Mixed template: static-copy targets that lack WGSL source.
+                static_target = compile_src / str(target["name"])
+                if static_target.exists():
+                    shutil.copytree(static_target, compile_dst / str(target["name"]))
+    else:
+        shutil.copytree(compile_src, compile_dst)
 
     runtime_cfg_src = (template_dir / "runtime-config.json").resolve()
     runtime_cfg_dst = (run_dir / "runtime-config.json").resolve()
@@ -302,10 +359,52 @@ def main() -> int:
         run_reason = str(driver_result["run"]["reason"])
         trace_produced = bool(driver_result["run"]["traceProduced"])
 
+    # First-class receipt binding: the driver's synthesized operationGraph
+    # is what makes a blocked compile still produce verifiable evidence.
+    # Absent graph means no receipt surface — that degrades laneStatus, not
+    # a separate advisory.
+    graph: dict[str, Any] = {}
+    if driver_result and isinstance(driver_result.get("operationGraph"), dict):
+        graph = driver_result["operationGraph"]
+    receipt_graph_status: str
+    receipt_block: dict[str, Any]
+    if not graph:
+        receipt_graph_status = "absent"
+        receipt_block = {"status": "absent"}
+    else:
+        try:
+            jsonschema.Draft202012Validator(
+                load_json(REPO_ROOT / "config" / "csl-operation-graph.schema.json")
+            ).validate(graph)
+            receipt_graph_status = "bound"
+        except jsonschema.ValidationError:
+            receipt_graph_status = "invalid"
+        receipt_block = {
+            "status": receipt_graph_status,
+            "graphId": graph.get("graphId", ""),
+            "executionPattern": graph.get("executionPattern", "rpc_launch"),
+            "orchestrationMode": graph.get("orchestrationMode", "memcpy"),
+            "operationCount": len(graph.get("operations", [])),
+            "exportedSymbolCount": len(graph.get("exportedSymbols", [])),
+            "sdkVersionFloor": graph.get("sdkVersionFloor", ""),
+        }
+        # Drop empty-string fields so the schema's optional checks stay clean.
+        receipt_block = {k: v for k, v in receipt_block.items() if v != ""}
+
     lane_status = "blocked"
-    if parity_status == "mismatched" or compile_status == "failed" or run_status == "failed":
+    if (
+        parity_status == "mismatched"
+        or compile_status == "failed"
+        or run_status == "failed"
+        or receipt_graph_status == "invalid"
+    ):
         lane_status = "failed"
-    elif parity_status == "matched" and compile_status == "succeeded" and run_status == "succeeded":
+    elif (
+        parity_status == "matched"
+        and compile_status == "succeeded"
+        and run_status == "succeeded"
+        and receipt_graph_status == "bound"
+    ):
         lane_status = "ready"
 
     report = {
@@ -348,6 +447,9 @@ def main() -> int:
         "driverResult": driver_result,
         "comparisonStatus": "diagnostic",
         "claimStatus": "not-evaluated",
+        "receipts": {
+            "operationGraph": receipt_block,
+        },
     }
 
     jsonschema.Draft202012Validator(load_json(LANE_SCHEMA)).validate(report)

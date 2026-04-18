@@ -72,6 +72,15 @@
         "stderrPath": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": true
+    },
+    "operationGraph": {
+      "description": "Canonical CSL operation graph the compile input is expected to be driven with. Shape mirrors config/csl-operation-graph.schema.json (validated against that schema at synthesis time by csl_sdk_driver.py, rather than via a $ref here to avoid cross-schema resolver setup). Present when the driver can synthesize a graph from the compile inputs (layout @export_name entries + resolved cslc command); absent when the runtime-config is a pure compile-only marker with no structural graph surface. Receipt contract: the graph describes what a valid host invocation would look like given this compile, not a log of operations actually executed.",
+      "type": "object",
+      "required": ["schemaVersion", "artifactKind", "graphId", "executionPattern", "operations"],
+      "properties": {
+        "artifactKind": { "const": "csl_operation_graph" }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

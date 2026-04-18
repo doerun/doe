@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,6 +28,21 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SIM_PLAN_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-plan.schema.json"
 DRIVER_RESULT_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-driver-result.schema.json"
 RUNTIME_CONFIG_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-runtime-config.schema.json"
+OPERATION_GRAPH_SCHEMA = REPO_ROOT / "config" / "csl-operation-graph.schema.json"
+
+# Matches `@export_name("<symbol>", <type>[, <bool>]);`.
+# The type pattern uses non-greedy `.+?` anchored on the closing `);` so it
+# accepts function types like `fn()void` whose `)` would be excluded by a
+# simpler character-class approach. Assumes each `@export_name` declaration
+# is on a single line (matches canonical SDK layout.csl style).
+_EXPORT_NAME_RE = re.compile(
+    r"""@export_name\s*\(\s*
+        "(?P<name>[A-Za-z_][A-Za-z0-9_]*)"\s*,\s*
+        (?P<type>.+?)
+        (?:\s*,\s*(?P<mutable>true|false))?
+        \s*\)\s*;""",
+    re.VERBOSE,
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -338,6 +354,212 @@ def run_simulation(
     }
 
 
+def parse_layout_exports(layout_path: Path) -> list[dict[str, Any]]:
+    """Parse `@export_name(...)` entries from a layout.csl source.
+
+    Returns a list of `exportedSymbol` dicts in csl-operation-graph.schema.json
+    shape. The shape discriminates `device_function` (type matches `fn(...)`)
+    from `device_variable`. Functions always carry `mutable=false`; variables
+    inherit the mutability bool declared in the CSL `@export_name` call (the
+    third positional arg).
+    """
+    try:
+        source = layout_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return []
+    exports: list[dict[str, Any]] = []
+    for match in _EXPORT_NAME_RE.finditer(source):
+        raw_type = match.group("type").strip()
+        mutable_raw = match.group("mutable")
+        is_function = raw_type.startswith("fn") or raw_type.startswith("fn ") or "fn(" in raw_type
+        kind = "device_function" if is_function else "device_variable"
+        mutable = (mutable_raw == "true") if mutable_raw is not None else False
+        exports.append(
+            {
+                "name": match.group("name"),
+                "type": raw_type,
+                "mutable": mutable,
+                "kind": kind,
+            }
+        )
+    return exports
+
+
+def synthesize_operation_graph(
+    *,
+    plan: dict[str, Any],
+    compile_targets_payload: list[dict[str, Any]],
+    compile_root: Path,
+) -> dict[str, Any] | None:
+    """Build a csl-operation-graph.schema.json-shaped artifact for the compile.
+
+    Emits the canonical `rpc_launch` host-side graph the compile inputs expect:
+    h2d per mutable device variable, launch of the single `fn()void` export,
+    d2h per mutable device variable. This is a contract receipt describing
+    what a valid host invocation would look like given the compile inputs —
+    not a log of operations that were actually executed.
+
+    The graph is synthesized from the compile INPUTS (layout.csl @export_name
+    declarations) and is independent of whether cslc successfully compiled
+    those inputs. A blocked compile (compiler_unavailable, missing_compile_inputs,
+    actual compile failure) still produces a graph as long as layout.csl exists
+    and declares at least one `fn()void` export. This lets gates that require
+    an operationGraph block on its ABSENCE (no receipt surface at all) rather
+    than on the compile outcome, which is orthogonal.
+
+    Returns None only when no target has parseable exports with at least one
+    function export — the genuine "no receipt surface" case.
+    """
+    # Prefer a successful target when one exists — its declared ABI is known
+    # to be v1.4-valid. Fall back to any target with a parseable layout so
+    # blocked / failed compiles still emit a receipt.
+    ordered = sorted(
+        compile_targets_payload,
+        key=lambda t: 0 if t.get("status") == "succeeded" else 1,
+    )
+    target: dict[str, Any] | None = None
+    exports: list[dict[str, Any]] = []
+    function_exports: list[dict[str, Any]] = []
+    for candidate in ordered:
+        layout_rel = candidate.get("layoutPath")
+        if not layout_rel:
+            continue
+        layout_path = Path(layout_rel)
+        if not layout_path.is_absolute():
+            layout_path = (compile_root / layout_rel).resolve()
+        candidate_exports = parse_layout_exports(layout_path)
+        candidate_function_exports = [
+            e for e in candidate_exports if e["kind"] == "device_function"
+        ]
+        if candidate_exports and candidate_function_exports:
+            target = candidate
+            exports = candidate_exports
+            function_exports = candidate_function_exports
+            break
+    if target is None:
+        return None
+
+    runtime = plan.get("runtime", {})
+    pe_grid = runtime.get("peGrid", {"width": 1, "height": 1})
+    width = int(pe_grid.get("width", 1))
+    height = int(pe_grid.get("height", 1))
+
+    width_west_buf = int(runtime.get("widthWestBuf", 0))
+    width_east_buf = int(runtime.get("widthEastBuf", 0))
+    fabric_offsets_raw = runtime.get("fabricOffsets") or [width_west_buf + 4, 1]
+    fabric_dims_raw = runtime.get("fabricDims") or [
+        width_west_buf + 4 + width + width_east_buf + 3,
+        1 + height + 1,
+    ]
+    channels = int(runtime.get("channels", 1))
+    memcpy_enabled = bool(runtime.get("memcpy", True))
+
+    inputs = plan.get("inputs", {})
+    compile_targets = []
+    for compile_target in inputs.get("compileTargets", []):
+        compile_targets.append(
+            {
+                "name": str(compile_target["name"]),
+                "layout": str(compile_target["layout"]),
+                "peProgram": str(compile_target["peProgram"]),
+            }
+        )
+    output_dir = str(target.get("outputDir") or inputs.get("compileRootPath", "compile"))
+
+    compile_section: dict[str, Any] = {
+        "arch": str(plan.get("target", "wse3")),
+        "fabricDims": [int(fabric_dims_raw[0]), int(fabric_dims_raw[1])],
+        "fabricOffsets": [int(fabric_offsets_raw[0]), int(fabric_offsets_raw[1])],
+        "peGrid": {"width": width, "height": height},
+        "channels": channels,
+        "memcpy": memcpy_enabled,
+        "params": [
+            {"name": "width", "type": "i16", "value": width},
+            {"name": "height", "type": "i16", "value": height},
+        ],
+        "importPaths": [],
+        "outputDir": output_dir,
+        "compileTargets": compile_targets,
+    }
+    if width_west_buf > 0:
+        compile_section["widthWestBuf"] = width_west_buf
+    if width_east_buf > 0:
+        compile_section["widthEastBuf"] = width_east_buf
+
+    roi = {"x": 0, "y": 0, "width": width, "height": height}
+    operations: list[dict[str, Any]] = []
+    mutable_variables = [
+        e for e in exports if e["kind"] == "device_variable" and e["mutable"]
+    ]
+    for var in mutable_variables:
+        operations.append(
+            {
+                "operationId": f"h2d-{var['name'].lower().replace('_', '-')}",
+                "kind": "memcpy_h2d",
+                "targetKind": "device_symbol",
+                "deviceSymbol": var["name"],
+                "roi": roi,
+                # Placeholder: the actual per-PE element count is set by the
+                # host at runtime from the model's tensor shape. The synthesized
+                # graph documents the call shape, not the execution trace.
+                "elementsPerPE": 1,
+                "dataType": "MEMCPY_32BIT",
+                "order": "ROW_MAJOR",
+                "streaming": False,
+                "nonblock": True,
+            }
+        )
+    launch_fn = function_exports[0]["name"]
+    operations.append(
+        {
+            "operationId": f"launch-{launch_fn.lower().replace('_', '-')}",
+            "kind": "launch",
+            "functionName": launch_fn,
+            "args": [],
+            "nonblock": False,
+            "unblockCheckpointRequired": True,
+        }
+    )
+    for var in mutable_variables:
+        operations.append(
+            {
+                "operationId": f"d2h-{var['name'].lower().replace('_', '-')}",
+                "kind": "memcpy_d2h",
+                "targetKind": "device_symbol",
+                "deviceSymbol": var["name"],
+                "roi": roi,
+                "elementsPerPE": 1,
+                "dataType": "MEMCPY_32BIT",
+                "order": "ROW_MAJOR",
+                "streaming": False,
+                "nonblock": False,
+            }
+        )
+
+    graph_id = f"{compile_targets[0]['name']}-rpc-launch" if compile_targets else "csl-operation-graph"
+    # Graph IDs must start with [a-z0-9] and use only [a-z0-9_.-]; normalize
+    # the kernel name to match.
+    graph_id = re.sub(r"[^a-z0-9_.-]", "-", graph_id.lower()).strip("-.")
+    if not graph_id or not graph_id[0].isalnum():
+        graph_id = "csl-operation-graph"
+
+    return {
+        "schemaVersion": 1,
+        "artifactKind": "csl_operation_graph",
+        "graphId": graph_id,
+        "orchestrationMode": "memcpy",
+        "executionPattern": "rpc_launch",
+        "sdkVersionFloor": "1.4.0",
+        "compile": compile_section,
+        "exportedSymbols": exports,
+        "operations": operations,
+        "sdkReferences": [
+            "https://sdk.cerebras.net/csl/code-examples/tutorial-gemv-01-complete-program",
+            "https://sdk.cerebras.net/sdk-release-notes/sdk-rel-notes-cumulative",
+        ],
+    }
+
+
 def build_driver_result(
     *,
     plan_path: Path,
@@ -346,8 +568,9 @@ def build_driver_result(
     compile_summary: dict[str, Any],
     compile_targets_payload: list[dict[str, Any]],
     run_summary: dict[str, Any],
+    operation_graph: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    return {
+    result: dict[str, Any] = {
         "schemaVersion": 1,
         "artifactKind": "csl_simulator_driver_result",
         "target": "wse3",
@@ -363,6 +586,9 @@ def build_driver_result(
         },
         "run": run_summary,
     }
+    if operation_graph is not None:
+        result["operationGraph"] = operation_graph
+    return result
 
 
 def parse_args() -> argparse.Namespace:
@@ -413,6 +639,26 @@ def main() -> int:
             working_paths=working_paths,
             explicit_sim_runner=runtime_executable or sim_runner_executable,
         )
+        operation_graph = synthesize_operation_graph(
+            plan=plan,
+            compile_targets_payload=compile_targets_payload,
+            compile_root=working_paths["compileRoot"],
+        )
+        if operation_graph is not None:
+            try:
+                jsonschema.Draft202012Validator(load_json(OPERATION_GRAPH_SCHEMA)).validate(
+                    operation_graph
+                )
+            except jsonschema.ValidationError as exc:
+                # Fail closed on a malformed synthesized graph rather than
+                # writing an invalid artifact. The compile section still lands
+                # in driver-result.compile; the operationGraph is skipped so
+                # downstream gates see "no graph bound" instead of a bogus one.
+                print(
+                    f"WARN: synthesized operation graph failed schema validation: {exc.message}",
+                    file=sys.stderr,
+                )
+                operation_graph = None
         driver_result = build_driver_result(
             plan_path=plan_path,
             cslc_executable=cslc_executable,
@@ -420,6 +666,7 @@ def main() -> int:
             compile_summary=compile_summary,
             compile_targets_payload=compile_targets_payload,
             run_summary=run_summary,
+            operation_graph=operation_graph,
         )
         jsonschema.Draft202012Validator(load_json(DRIVER_RESULT_SCHEMA)).validate(driver_result)
         write_json(driver_result_path, driver_result)

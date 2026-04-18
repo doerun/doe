@@ -189,6 +189,44 @@ test "analyzeToIrWithConfig records affine loop gid preconditions" {
     try std.testing.expect(!has_call_named(&elided_ir.functions.items[0], "min"));
 }
 
+test "analyzeToIrWithConfig records matvec-style guarded loop preconditions" {
+    const source =
+        \\const kPackedCols : u32 = 8u;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+        \\@compute @workgroup_size(8)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let rowBy4 = gid.x;
+        \\    var col: u32 = 0u;
+        \\    loop {
+        \\        if (col >= kPackedCols) {
+        \\            break;
+        \\        }
+        \\        data[((4u * rowBy4 + 2u) * kPackedCols) + col] = 1u;
+        \\        col = col + 1u;
+        \\    }
+        \\}
+    ;
+
+    var baseline_ir = try analyzeToIrWithConfig(std.testing.allocator, source, .{});
+    defer baseline_ir.deinit();
+    try std.testing.expect(has_call_named(&baseline_ir.functions.items[0], "min"));
+
+    var elided_ir = try analyzeToIrWithConfig(std.testing.allocator, source, .{
+        .elide_proven_bounds = true,
+    });
+    defer elided_ir.deinit();
+
+    if (!lean_proof.boundsProven(.gid_1d_storage_buffer_loop_affine)) {
+        try std.testing.expectEqual(@as(usize, 0), elided_ir.dispatch_preconditions.items.len);
+        try std.testing.expect(has_call_named(&elided_ir.functions.items[0], "min"));
+        return;
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), elided_ir.dispatch_preconditions.items.len);
+    try expect_gid_component_precondition(elided_ir.dispatch_preconditions.items[0], 32, 8, 1, 16);
+    try std.testing.expect(!has_call_named(&elided_ir.functions.items[0], "min"));
+}
+
 test "compute runtime translation drops _doe_sizes for proof-covered affine loop bounds only" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;

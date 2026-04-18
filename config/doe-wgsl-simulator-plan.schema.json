@@ -47,7 +47,12 @@
             "properties": {
               "name": { "type": "string", "minLength": 1 },
               "layout": { "type": "string", "minLength": 1 },
-              "peProgram": { "type": "string", "minLength": 1 }
+              "peProgram": { "type": "string", "minLength": 1 },
+              "sourceWgslPath": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Optional path (relative to repo root or absolute) of a WGSL source file. When present, the governed lane runner (bench/runners/run_csl_governed_lane.py::materialize_plan) invokes doe-csl-bundle-emitter to regenerate layout.csl + pe_program.csl from this WGSL at compile-input staging time, bypassing the static `compile/<target>/` fixture copy. Lets Doe's WGSL→CSL emitter chain be the single source of truth for the target's CSL; any emitter fix propagates to the lane without per-fixture updates. Absent (default) keeps the prior static-copy behavior for compatibility with hand-authored fixtures like the Gemma-3 270M manifest smoke."
+              }
             }
           }
         }
