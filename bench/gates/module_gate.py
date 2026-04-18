@@ -17,7 +17,6 @@ import argparse
 import hashlib
 import json
 import subprocess
-from pathlib import Path
 from typing import Any
 
 import jsonschema
@@ -145,7 +144,6 @@ PROMOTED_MODULES = {
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default="", help="Repository root. Auto-detected when omitted.")
-    parser.add_argument("--json", action="store_true", dest="emit_json")
     parser.add_argument("--report", default="", help="Optional JSON report path.")
     return parser.parse_args()
 
@@ -310,7 +308,7 @@ def main() -> int:
         module_rows.append(
             {
                 "moduleId": module_id,
-                "schemaOk": not any(not case_row["schemaOk"] for case_row in case_rows),
+                "schemaOk": all(case_row["schemaOk"] for case_row in case_rows),
                 "correctnessOk": all(case_row["correctnessOk"] for case_row in case_rows),
                 "traceOk": all(case_row["traceOk"] for case_row in case_rows),
                 "caseCount": len(case_rows),
@@ -341,8 +339,7 @@ def main() -> int:
             },
         )
 
-    if args.emit_json or True:
-        print(json.dumps(payload, indent=2))
+    print(json.dumps(payload, indent=2))
 
     return 0 if not failures else 1
 

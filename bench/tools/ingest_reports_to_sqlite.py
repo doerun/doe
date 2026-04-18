@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Fawn SQLite Report Ingestor
+Doe SQLite Report Ingestor
 
-This script ingests Fawn benchmark reports (typically emitted by the compare lane)
+This script ingests Doe benchmark reports (typically emitted by the compare lane)
 into a local SQLite database for historical trend analysis.
 """
 
@@ -16,9 +16,9 @@ from pathlib import Path
 from bench.lib import compare_claim_artifacts as artifacts_mod
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Ingest Fawn Benchmark JSON into SQLite")
+    parser = argparse.ArgumentParser(description="Ingest Doe benchmark JSON into SQLite")
     parser.add_argument("--db", default="bench/out/fawn_benchmarks.sqlite", help="Path to SQLite database")
-    parser.add_argument("--report", required=True, help="Path to Fawn benchmark report JSON")
+    parser.add_argument("--report", required=True, help="Path to Doe benchmark report JSON")
     return parser.parse_args()
 
 def setup_database(conn: sqlite3.Connection):

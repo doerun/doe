@@ -30,6 +30,13 @@ pub fn manifest_module(command: model.Command) []const u8 {
     };
 }
 
+pub fn shader_artifact_module(command: model.Command) []const u8 {
+    return switch (command) {
+        .kernel_dispatch => |kernel| kernel.kernel,
+        else => manifest_module(command),
+    };
+}
+
 pub fn is_dispatch(command: model.Command) bool {
     return switch (command) {
         .dispatch, .dispatch_indirect, .kernel_dispatch => true,

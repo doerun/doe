@@ -214,6 +214,11 @@ def parse_args() -> argparse.Namespace:
         help="Run spirv_val_gate.py to validate SPIR-V artifacts with spirv-val.",
     )
     parser.add_argument(
+        "--with-pilot-evidence-gate",
+        action="store_true",
+        help="Run pilot_evidence_gate.py to audit registered pilot-evidence receipts + their artifact bundles.",
+    )
+    parser.add_argument(
         "--spirv-val-require",
         action="store_true",
         help="Fail if spirv-val is not available (default: skip with warning).",
@@ -252,6 +257,11 @@ def parse_args() -> argparse.Namespace:
         help="Run csl_governed_lane_gate.py to validate governed CSL compile/run/parity reports.",
     )
     parser.add_argument(
+        "--with-csl-simulator-gate",
+        action="store_true",
+        help="Run csl_simulator_gate.py to validate governed CSL simulator/run receipts.",
+    )
+    parser.add_argument(
         "--csl-governed-report",
         default="bench/out/csl-governed-lane.report.json",
         help="Governed CSL lane report path passed to csl_governed_lane_gate.py.",
@@ -270,6 +280,21 @@ def parse_args() -> argparse.Namespace:
         "--csl-governed-require-run-success",
         action="store_true",
         help="Require run.status=succeeded in the CSL governed lane gate.",
+    )
+    parser.add_argument(
+        "--csl-simulator-report",
+        default="bench/out/csl-governed-lane.report.json",
+        help="Governed CSL lane report path passed to csl_simulator_gate.py.",
+    )
+    parser.add_argument(
+        "--csl-simulator-report-schema",
+        default="config/csl-governed-lane-report.schema.json",
+        help="Governed CSL lane schema path passed to csl_simulator_gate.py.",
+    )
+    parser.add_argument(
+        "--csl-simulator-require-ready",
+        action="store_true",
+        help="Require laneStatus=ready in csl_simulator_gate.py.",
     )
     parser.add_argument(
         "--cts-baseline-snapshot",
@@ -508,8 +533,10 @@ def main() -> int:
     dropin_proc_resolution_tests = dropin_dir / "dropin_proc_resolution_tests.py"
     cts_baseline_compare = tools_dir / "cts_baseline_compare.py"
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
+    csl_simulator_gate = gates_dir / "csl_simulator_gate.py"
     csl_fixture_mirror_gate = gates_dir / "csl_fixture_mirror_gate.py"
     csl_operation_graph_gate = gates_dir / "csl_operation_graph_gate.py"
+    pilot_evidence_gate = gates_dir / "pilot_evidence_gate.py"
     claim_gate = gates_dir / "claim_gate.py"
     bench_cli = BENCH_ROOT / "cli.py"
 
@@ -558,6 +585,8 @@ def main() -> int:
         run_gate("schema", [sys.executable, str(schema_gate)])
         run_gate("csl-fixture-mirrors", [sys.executable, str(csl_fixture_mirror_gate)])
         run_gate("csl-operation-graph", [sys.executable, str(csl_operation_graph_gate)])
+        if args.with_pilot_evidence_gate:
+            run_gate("pilot-evidence", [sys.executable, str(pilot_evidence_gate)])
         if args.with_file_size_gate:
             run_gate("file-size", [sys.executable, str(file_size_gate)])
         if args.with_split_coverage_gate:
@@ -641,6 +670,19 @@ def main() -> int:
             if args.csl_governed_require_run_success:
                 gate_cmd.append("--require-run-success")
             run_gate("csl-governed-lane", gate_cmd)
+
+        if args.with_csl_simulator_gate:
+            gate_cmd = [
+                sys.executable,
+                str(csl_simulator_gate),
+                "--report",
+                args.csl_simulator_report,
+                "--report-schema",
+                args.csl_simulator_report_schema,
+            ]
+            if args.csl_simulator_require_ready:
+                gate_cmd.append("--require-ready")
+            run_gate("csl-simulator", gate_cmd)
 
         if args.with_modules:
             run_gate(

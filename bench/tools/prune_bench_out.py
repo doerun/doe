@@ -24,6 +24,17 @@ KEEP_SUFFIXES = (
 KEEP_PREFIXES = (
     "test-inventory",
 )
+KEEP_EXACT_PATHS = frozenset(
+    Path(p)
+    for p in (
+        "cube/latest/cube.summary.json",
+        "cube/latest/cube.rows.json",
+        "visualization/latest/inventory.json",
+        "visualization/latest/pipeline.summary.json",
+        "visualization/latest/cube.summary.json",
+        "visualization/latest/cube.rows.json",
+    )
+)
 
 
 def should_keep(path: Path) -> bool:
@@ -34,17 +45,7 @@ def should_keep(path: Path) -> bool:
         return True
     if any(path.name.startswith(prefix) and path.suffix == ".json" for prefix in KEEP_PREFIXES):
         return True
-    if relative == Path("cube/latest/cube.summary.json"):
-        return True
-    if relative == Path("cube/latest/cube.rows.json"):
-        return True
-    if relative == Path("visualization/latest/inventory.json"):
-        return True
-    if relative == Path("visualization/latest/pipeline.summary.json"):
-        return True
-    if relative == Path("visualization/latest/cube.summary.json"):
-        return True
-    if relative == Path("visualization/latest/cube.rows.json"):
+    if relative in KEEP_EXACT_PATHS:
         return True
     return False
 

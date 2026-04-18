@@ -105,6 +105,11 @@
             "orchestrationMode": { "enum": ["memcpy", "sdklayout"] },
             "operationCount": { "type": "integer", "minimum": 0 },
             "exportedSymbolCount": { "type": "integer", "minimum": 0 },
+            "kernelPatternCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Count of HostPlan kernel-pattern bindings the op-graph surfaced (length of operationGraph.kernelPatterns). 0 when HostPlan was not loaded or no compile target matched a kernel name; positive when a heterogeneous HostPlan like the 270M or Gemma 4 E2B plan surfaces per-kernel Doppler taxonomy into the receipt."
+            },
             "sdkVersionFloor": { "type": "string" }
           }
         }

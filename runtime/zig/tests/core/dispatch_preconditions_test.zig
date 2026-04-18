@@ -434,9 +434,9 @@ test "flat 2d: large workgroups cause element count overflow" {
 // DispatchPreconditionKind enum — exhaustiveness
 // ============================================================
 
-test "DispatchPreconditionKind has exactly 4 variants" {
+test "DispatchPreconditionKind has exactly 5 variants" {
     const fields = @typeInfo(ir.DispatchPreconditionKind).@"enum".fields;
-    try testing.expectEqual(@as(usize, 4), fields.len);
+    try testing.expectEqual(@as(usize, 5), fields.len);
 }
 
 test "DispatchPreconditionKind names are stable" {
@@ -444,6 +444,7 @@ test "DispatchPreconditionKind names are stable" {
     try testing.expectEqualStrings("gid_component_tiled", @tagName(ir.DispatchPreconditionKind.gid_component_tiled));
     try testing.expectEqualStrings("flat_index_2d_dispatch_x", @tagName(ir.DispatchPreconditionKind.flat_index_2d_dispatch_x));
     try testing.expectEqualStrings("flat_index_3d_dispatch_xy", @tagName(ir.DispatchPreconditionKind.flat_index_3d_dispatch_xy));
+    try testing.expectEqualStrings("loop_component", @tagName(ir.DispatchPreconditionKind.loop_component));
 }
 
 // ============================================================

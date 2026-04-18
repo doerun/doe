@@ -18,7 +18,6 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from bench.lib import output_paths

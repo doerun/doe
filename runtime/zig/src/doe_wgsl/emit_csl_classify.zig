@@ -239,6 +239,15 @@ pub fn classify(module: *const ir.Module, entry: ir.EntryPoint) KernelPattern {
         return .{ .unsupported = "kernel uses builtins with no CSL equivalent" };
     }
 
+    // Attention-evidence-gated QKV fallback. The name-based hints in
+    // analyzeGlobals already set has_qkv_buffers when a buffer name
+    // contains "K" or "key" etc; only run the count-based fallback when
+    // there's actual attention evidence, so 3-input FMA kernels don't
+    // land in the attention_linear branch below.
+    if (!props.has_qkv_buffers and hasAttentionEvidence(module, function, &props)) {
+        applyQkvFallback(module, &props);
+    }
+
     // --- Specific pattern matching (most specific first) ---
 
     // Gather: has u32 indices buffer + table buffer, no shared mem, no barriers
@@ -368,8 +377,13 @@ pub fn classify(module: *const ir.Module, entry: ir.EntryPoint) KernelPattern {
 
     // --- Generic patterns (less specific) ---
 
-    // No shared memory, no barriers → element-wise
-    if (props.workgroup_globals == 0 and !props.has_barriers) {
+    // No shared memory, no barriers, no subgroup reductions → element-wise.
+    // Subgroup ops (subgroupAdd, subgroupMax, ...) mean the kernel is doing
+    // a cross-lane reduction; classifying it as element_wise would silently
+    // drop the reduction semantics. Gate element_wise on !has_subgroup_ops
+    // so subgroup-only kernels fall into the reduction branch below even
+    // without workgroup-shared memory.
+    if (props.workgroup_globals == 0 and !props.has_barriers and !props.has_subgroup_ops) {
         return .{ .element_wise = .{
             .input_count = props.input_count,
             .output_count = props.output_count,
@@ -396,10 +410,26 @@ pub fn classify(module: *const ir.Module, entry: ir.EntryPoint) KernelPattern {
         };
     }
 
-    // Workgroup globals + barriers → reduction
+    // Reduction: three admissible shapes map to the same pattern —
+    //   (a) workgroup-shared partial sums + barriers (classic rmsnorm)
+    //   (b) barriers without workgroup memory (tree reduction over
+    //       storage that still needs synchronization between phases)
+    //   (c) subgroup ops as the reduction mechanism (decode-stage gemv
+    //       that relies on subgroupAdd/subgroupMax/...).
+    // The first workgroup array (if any) is the preferred reduction
+    // scratchpad; when none exists, 0 is a sentinel consumed by the
+    // emitter as "no shared scratchpad declared — use subgroup or direct".
     if (props.workgroup_globals >= 1 and props.has_barriers) {
         return .{ .reduction = .{
             .shared_global_index = props.wg_indices[0],
+            .input_count = props.input_count,
+            .output_count = props.output_count,
+            .has_apply_phase = true,
+        } };
+    }
+    if (props.has_subgroup_ops or (props.workgroup_globals == 0 and props.has_barriers)) {
+        return .{ .reduction = .{
+            .shared_global_index = 0,
             .input_count = props.input_count,
             .output_count = props.output_count,
             .has_apply_phase = true,
@@ -559,27 +589,60 @@ fn analyzeGlobals(module: *const ir.Module, props: *AnalysisProps) void {
         }
     }
 
-    // Heuristic: ≥4 storage buffers with at least 3 read + 1 write → likely QKV
-    if (!props.has_qkv_buffers and props.input_count >= 3 and props.output_count >= 1) {
-        // Assign first 3 reads as Q, K, V
-        var read_idx: u32 = 0;
-        for (module.globals.items, 0..) |global, idx| {
-            const sp = global.addr_space orelse continue;
-            if (sp != .storage or global.binding == null) continue;
-            const is_rw = if (global.access) |a| (a == .read_write or a == .write) else false;
-            if (is_rw) continue;
-            switch (read_idx) {
-                0 => props.q_global = @intCast(idx),
-                1 => props.k_global = @intCast(idx),
-                2 => {
-                    props.v_global = @intCast(idx);
-                    props.has_qkv_buffers = true;
-                },
-                else => {},
-            }
-            read_idx += 1;
+    // Count-based QKV fallback moved to applyQkvFallback() in classify(),
+    // where we also have the Function AST for an exp()-call check. A pure
+    // 3-input count check over-matches plain FMA-shaped element-wise kernels
+    // (out = a*b + c); gating on attention evidence (barriers, subgroup ops,
+    // exp calls, or a buffer name like k/key/v/val/attn) keeps the fallback
+    // targeted at actual attention kernels that happen to miss the name hints.
+}
+
+// Count-based QKV assignment fallback. Only call after analyzeGlobals and
+// after attention-evidence has been confirmed by the caller. Leaves props
+// unchanged when there are fewer than 3 read inputs.
+fn applyQkvFallback(module: *const ir.Module, props: *AnalysisProps) void {
+    if (props.has_qkv_buffers) return;
+    if (props.input_count < 3 or props.output_count < 1) return;
+    var read_idx: u32 = 0;
+    for (module.globals.items, 0..) |global, idx| {
+        const sp = global.addr_space orelse continue;
+        if (sp != .storage or global.binding == null) continue;
+        const is_rw = if (global.access) |a| (a == .read_write or a == .write) else false;
+        if (is_rw) continue;
+        switch (read_idx) {
+            0 => props.q_global = @intCast(idx),
+            1 => props.k_global = @intCast(idx),
+            2 => {
+                props.v_global = @intCast(idx);
+                props.has_qkv_buffers = true;
+            },
+            else => {},
+        }
+        read_idx += 1;
+    }
+}
+
+// Attention-evidence filter for the count-based fallback. A kernel that is
+// REALLY attention (but happens to miss the name-based Q/K/V hints) will
+// almost always carry at least one of: barriers (tiled / decode), subgroup
+// ops (decode), exp() calls (softmax), or a buffer name containing a
+// known attention token (k/key/v/val/attn/attention). A plain FMA-shaped
+// element-wise kernel — `out = a * b + c` — has 3 read inputs + 1 write
+// and none of the above, so it no longer trips the fallback.
+fn hasAttentionEvidence(module: *const ir.Module, function: *const ir.Function, props: *const AnalysisProps) bool {
+    if (props.has_barriers) return true;
+    if (props.has_subgroup_ops) return true;
+    if (hasExpCalls(function)) return true;
+    for (module.globals.items) |global| {
+        const sp = global.addr_space orelse continue;
+        if (sp != .storage) continue;
+        if (nameContains(global.name, "key") or nameContains(global.name, "val") or
+            nameContains(global.name, "attn") or nameContains(global.name, "attention"))
+        {
+            return true;
         }
     }
+    return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -628,12 +691,16 @@ fn hasBarrierCalls(function: *const ir.Function) bool {
 }
 
 fn hasSubgroupOps(function: *const ir.Function) bool {
+    // Match on the "subgroup" prefix regardless of CallKind. The WGSL
+    // parser recognizes a limited subset of subgroup names as builtins
+    // (subgroup_size, subgroup_invocation_id); reduction-shaped calls
+    // like subgroupAdd/subgroupMax can land as CallKind.user but are
+    // still a classifier signal — the pattern is "this kernel does a
+    // cross-lane reduction" regardless of how the parser categorized it.
     for (function.exprs.items) |expr_node| {
         switch (expr_node.data) {
             .call => |call| {
-                if (call.kind == .builtin) {
-                    if (std.mem.startsWith(u8, call.name, "subgroup")) return true;
-                }
+                if (std.mem.startsWith(u8, call.name, "subgroup")) return true;
             },
             else => {},
         }

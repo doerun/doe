@@ -54,7 +54,7 @@ def main() -> int:
     report_path = Path(args.report)
     if not report_path.exists():
         raise SystemExit(f"missing report: {report_path}")
-    report = json.loads(report_path.read_text())
+    report = json.loads(report_path.read_text(encoding="utf-8"))
 
     if args.require_comparable and report.get("comparisonStatus") != "comparable":
         raise SystemExit(

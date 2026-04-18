@@ -60,7 +60,8 @@ def main() -> int:
             first = RUNNERS[module_id](request_payload, policy_payload, request_hash, policy_hash)
             second = RUNNERS[module_id](request_payload, policy_payload, request_hash, policy_hash)
             validate_payload(module_id, first)
-            deterministic = stable_hash(first) == stable_hash(second)
+            first_hash = stable_hash(first)
+            deterministic = first_hash == stable_hash(second)
             if not deterministic:
                 errors.append(f"non-deterministic prototype output: {fixture_path.name}")
             fallback_stats = first.get("qualityStats") or first.get("fallbackStats") or {}
@@ -70,7 +71,7 @@ def main() -> int:
                     "fixture": fixture_path.name,
                     "moduleId": module_id,
                     "deterministic": deterministic,
-                    "resultHash": stable_hash(first),
+                    "resultHash": first_hash,
                     "fallbackCount": fallback_count,
                 }
             )

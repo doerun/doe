@@ -23,6 +23,26 @@
       "cohorts": ["exploration"]
     },
     {
+      "id": "browser_ort_webgpu_compare_sentiment_medium",
+      "name": "Browser ORT WebGPU compare sentiment medium",
+      "description": "Repo-only same-stack Chromium Playwright ORT WebGPU compare for a medium-length DistilBERT sentiment shape between the short and longform variants.",
+      "domain": "compute",
+      "comparabilityNotes": "Strict same-stack browser ORT compare. Both sides run the same vendored Chromium task, same ONNX model, same browser build family, and same host. The intended difference is Doe versus Dawn WebGPU runtime selection.",
+      "commandsPath": "bench/vendor-browser/ort_browser_sentiment_medium_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "webgpu",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "claimEligible": false,
+      "default": false,
+      "cohorts": ["exploration"]
+    },
+    {
       "id": "browser_ort_webgpu_compare_sentiment_longform",
       "name": "Browser ORT WebGPU compare sentiment longform",
       "description": "Repo-only same-stack Chromium Playwright ORT WebGPU compare for the longer-form vendored DistilBERT sentiment workload.",

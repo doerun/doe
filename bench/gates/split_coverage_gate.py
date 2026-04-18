@@ -22,14 +22,10 @@ import re
 import sys
 from pathlib import Path
 
-# Zig enum extraction pattern for command_partition.zig files.
-ZIG_ENUM_FIELD_RE = re.compile(r"^\s+\.?([a-z_]+)\s*[,=]", re.MULTILINE)
-ZIG_ENUM_FIELD_RE2 = re.compile(r"^\s+([a-z_]+)\s*[,]?\s*$", re.MULTILINE)
-
 
 def extract_enum_fields(partition_path: Path) -> list[str]:
     """Extract enum field names from a Zig command_partition.zig file."""
-    text = partition_path.read_text()
+    text = partition_path.read_text(encoding="utf-8")
     # Match lines like "    upload," or "    upload = 0," inside the enum block.
     fields: list[str] = []
     in_enum = False
@@ -54,7 +50,7 @@ def validate_schema(ledger: dict, schema_path: Path) -> list[str]:
     """Basic structural validation (JSON Schema would be ideal, but we keep
     this self-contained without external dependencies)."""
     errors: list[str] = []
-    schema = json.loads(schema_path.read_text())
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
     required = schema.get("required", [])
     for field in required:
         if field not in ledger:
@@ -215,8 +211,8 @@ def main() -> int:
     root = Path(__file__).resolve().parents[2]
     all_errors: list[str] = []
 
-    core_ledger = json.loads((root / args.core_ledger).read_text())
-    full_ledger = json.loads((root / args.full_ledger).read_text())
+    core_ledger = json.loads((root / args.core_ledger).read_text(encoding="utf-8"))
+    full_ledger = json.loads((root / args.full_ledger).read_text(encoding="utf-8"))
 
     if args.surface in ("core", "both"):
         errs = validate_core(

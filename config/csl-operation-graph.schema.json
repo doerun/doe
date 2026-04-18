@@ -72,6 +72,12 @@
       "type": "array",
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
+    },
+    "kernelPatterns": {
+      "type": "array",
+      "description": "Optional per-compile-target HostPlan kernel-pattern binding. Each entry names a compile target (matching an entry in compile.compileTargets) and carries the HostPlan's pattern taxonomy (gather, reduction, tiled_matmul, attention_tiled, attention_decode, element_wise, fused_gemv_dequant, rope, sample, ...) plus the HostPlan-declared launch count. Surfaces Doppler's HostPlan taxonomy as a first-class op-graph receipt so heterogeneous multi-kernel plans (E2B, Gemma 4 31B) are not collapsed to the single rpc_launch that the top-level operations[] array currently describes.",
+      "items": { "$ref": "#/$defs/kernelPattern" },
+      "uniqueItems": true
     }
   },
   "allOf": [
@@ -457,6 +463,29 @@
         "streamId": { "$ref": "#/$defs/id" },
         "portId": { "$ref": "#/$defs/id" },
         "direction": { "type": "string", "enum": ["input", "output"] }
+      }
+    },
+    "kernelPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetName", "pattern", "count"],
+      "properties": {
+        "targetName": { "$ref": "#/$defs/id" },
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "gather",
+            "reduction",
+            "tiled_matmul",
+            "attention_tiled",
+            "attention_decode",
+            "element_wise",
+            "fused_gemv_dequant",
+            "rope",
+            "sample"
+          ]
+        },
+        "count": { "type": "integer", "minimum": 1 }
       }
     }
   }

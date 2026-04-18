@@ -150,11 +150,7 @@ def validate_single_trace(trace_meta: str | None, trace_jsonl: str | None, *, sk
     if not meta_path.exists() or not jsonl_path.exists():
         if skip_missing:
             return True, []
-        missing = "missing trace-meta"
-        if not meta_path.exists():
-            missing = "missing trace-meta"
-        if not jsonl_path.exists():
-            missing = "missing trace-jsonl"
+        missing = "missing trace-meta" if not meta_path.exists() else "missing trace-jsonl"
         return False, [missing]
 
     try:

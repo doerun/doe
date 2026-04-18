@@ -147,6 +147,12 @@ _INTEGER_LITERAL = r"(?:0x[0-9a-fA-F]+|\d+)"
 _CANONICAL_RE = re.compile(
     rf"\b([A-Za-z_][A-Za-z0-9_]*)\s*=\s*({_INTEGER_LITERAL})\b"
 )
+# Matches `NAME = ( OTHER + N )` enum arithmetic used by DirectX headers
+# (e.g. D3D12_DESCRIPTOR_RANGE_TYPE_UAV = ( D3D12_DESCRIPTOR_RANGE_TYPE_SRV + 1 )).
+# Resolved in a second pass after literal values are collected.
+_CANONICAL_ARITHMETIC_RE = re.compile(
+    rf"\b([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\+\s*({_INTEGER_LITERAL})\s*\)"
+)
 _ZIG_TOP_LEVEL_RE = re.compile(
     rf"^\s*pub\s+const\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*[^=]+=\s*({_INTEGER_LITERAL})\s*;",
     re.MULTILINE,
@@ -169,6 +175,23 @@ def extract_canonical_values(header_text: str) -> dict[str, int]:
         except ValueError:
             continue
         values.setdefault(name, literal_value)
+    while True:
+        progress = False
+        for match in _CANONICAL_ARITHMETIC_RE.finditer(header_text):
+            name = match.group(1)
+            if name in values:
+                continue
+            base = match.group(2)
+            if base not in values:
+                continue
+            try:
+                offset = parse_integer(match.group(3))
+            except ValueError:
+                continue
+            values[name] = values[base] + offset
+            progress = True
+        if not progress:
+            break
     return values
 
 

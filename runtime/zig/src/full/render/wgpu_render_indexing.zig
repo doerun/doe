@@ -21,26 +21,17 @@ pub fn prepareIndexBuffer(self: anytype, render: model_render_types.RenderDrawCo
     const Selected = struct {
         format: u32,
         bytes: []const u8,
+
+        fn from(values: anytype, first_index: u32, count: u32, format: u32) !@This() {
+            const total_count = std.math.cast(u32, values.len) orelse return error.InvalidIndexedDrawData;
+            const end = std.math.add(u32, first_index, count) catch return error.InvalidIndexedDrawData;
+            if (end > total_count) return error.InvalidIndexedDrawData;
+            return .{ .format = format, .bytes = std.mem.sliceAsBytes(values) };
+        }
     };
     const selected: Selected = switch (index_data) {
-        .uint16 => |values| blk: {
-            const total_count = std.math.cast(u32, values.len) orelse return error.InvalidIndexedDrawData;
-            const end = std.math.add(u32, render.first_index, requested_count) catch return error.InvalidIndexedDrawData;
-            if (end > total_count) return error.InvalidIndexedDrawData;
-            break :blk .{
-                .format = INDEX_FORMAT_UINT16,
-                .bytes = std.mem.sliceAsBytes(values),
-            };
-        },
-        .uint32 => |values| blk: {
-            const total_count = std.math.cast(u32, values.len) orelse return error.InvalidIndexedDrawData;
-            const end = std.math.add(u32, render.first_index, requested_count) catch return error.InvalidIndexedDrawData;
-            if (end > total_count) return error.InvalidIndexedDrawData;
-            break :blk .{
-                .format = INDEX_FORMAT_UINT32,
-                .bytes = std.mem.sliceAsBytes(values),
-            };
-        },
+        .uint16 => |values| try Selected.from(values, render.first_index, requested_count, INDEX_FORMAT_UINT16),
+        .uint32 => |values| try Selected.from(values, render.first_index, requested_count, INDEX_FORMAT_UINT32),
     };
 
     const procs = self.core.procs orelse return error.ProceduralNotReady;

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 
@@ -55,19 +56,28 @@ def is_within(path: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+def iter_zig_imports(root: Path) -> Iterator[tuple[Path, int, str, Path]]:
+    """Yield (source_path, line_number, import_target, resolved_candidate) tuples
+    for every `@import("…")` under *root*.
+    """
+    for path in sorted(root.rglob("*.zig")):
+        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
+            for match in ZIG_IMPORT_RE.finditer(line):
+                import_path = match.group(1)
+                candidate = (path.parent / import_path).resolve(strict=False)
+                yield path, line_no, import_path, candidate
+
+
 def scan_zig_core(errors: list[str]) -> None:
     core_dir = ZIG_SRC / "core"
     full_dir = ZIG_SRC / "full"
     if not core_dir.is_dir():
         return
-
-    for path in sorted(core_dir.rglob("*.zig")):
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if is_within(candidate, full_dir):
-                    errors.append(f"{path}:{line_no}: core import reaches full: {import_path}")
+    for path, line_no, import_path, candidate in iter_zig_imports(core_dir):
+        if is_within(candidate, full_dir):
+            errors.append(f"{path}:{line_no}: core import reaches full: {import_path}")
 
 
 def scan_lean_core(errors: list[str]) -> None:
@@ -82,13 +92,9 @@ def scan_lean_core(errors: list[str]) -> None:
 
 
 def scan_synthetic_state_imports(errors: list[str]) -> None:
-    for path in sorted(ZIG_SRC.rglob("*.zig")):
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if is_synthetic_runtime_state_file(candidate) or is_stub_file(candidate):
-                    errors.append(f"{path}:{line_no}: synthetic runtime-state import not allowed: {import_path}")
+    for path, line_no, import_path, candidate in iter_zig_imports(ZIG_SRC):
+        if is_synthetic_runtime_state_file(candidate) or is_stub_file(candidate):
+            errors.append(f"{path}:{line_no}: synthetic runtime-state import not allowed: {import_path}")
 
 
 def scan_stub_file_presence(errors: list[str]) -> None:
@@ -98,55 +104,50 @@ def scan_stub_file_presence(errors: list[str]) -> None:
 
 
 def scan_stub_imports(errors: list[str]) -> None:
-    for path in sorted(ZIG_SRC.rglob("*.zig")):
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if is_stub_file(candidate):
-                    errors.append(f"{path}:{line_no}: stub import not allowed: {import_path}")
+    for path, line_no, import_path, candidate in iter_zig_imports(ZIG_SRC):
+        if is_stub_file(candidate):
+            errors.append(f"{path}:{line_no}: stub import not allowed: {import_path}")
+
+
+_COMPAT_FACADE_ABI_EXEMPT_TYPES = {
+    "model_transfer_types.zig",
+    "model_runtime_types.zig",
+    "model_surface_types.zig",
+}
+_COMPAT_FACADE_ABI_EXEMPT_MODULE = Path("core/abi/mod.zig")
 
 
 def scan_compat_facade_imports(errors: list[str]) -> None:
-    for path in sorted(ZIG_SRC.rglob("*.zig")):
+    for path, line_no, import_path, candidate in iter_zig_imports(ZIG_SRC):
+        if candidate.name not in FORBIDDEN_COMPAT_IMPORTS:
+            continue
         rel_path = path.relative_to(ZIG_SRC)
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if candidate.name not in FORBIDDEN_COMPAT_IMPORTS:
-                    continue
-                if candidate.name in {"model_transfer_types.zig", "model_runtime_types.zig", "model_surface_types.zig"} and rel_path == Path("core/abi/mod.zig"):
-                    continue
-                errors.append(f"{path}:{line_no}: compatibility facade import not allowed: {import_path}")
+        if (
+            candidate.name in _COMPAT_FACADE_ABI_EXEMPT_TYPES
+            and rel_path == _COMPAT_FACADE_ABI_EXEMPT_MODULE
+        ):
+            continue
+        errors.append(f"{path}:{line_no}: compatibility facade import not allowed: {import_path}")
 
 
 def scan_backend_private_imports(errors: list[str]) -> None:
     backend_dir = ZIG_SRC / "backend"
-    for path in sorted(ZIG_SRC.rglob("*.zig")):
+    for path, line_no, import_path, candidate in iter_zig_imports(ZIG_SRC):
         if is_within(path, backend_dir):
             continue
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if any(is_within(candidate, root) for root in BACKEND_PRIVATE_DIRS):
-                    errors.append(f"{path}:{line_no}: non-backend import reaches backend-private module: {import_path}")
+        if any(is_within(candidate, root) for root in BACKEND_PRIVATE_DIRS):
+            errors.append(f"{path}:{line_no}: non-backend import reaches backend-private module: {import_path}")
 
 
 def scan_backend_impl_imports(errors: list[str]) -> None:
-    for path in sorted(ZIG_SRC.rglob("*.zig")):
+    for path, line_no, import_path, candidate in iter_zig_imports(ZIG_SRC):
         rel_path = path.relative_to(ZIG_SRC)
         if rel_path.parts and rel_path.parts[0] == "backend":
             continue
-        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
-            for match in ZIG_IMPORT_RE.finditer(line):
-                import_path = match.group(1)
-                candidate = (path.parent / import_path).resolve(strict=False)
-                if any(is_within(candidate, backend_dir) for backend_dir in BACKEND_IMPL_DIRS):
-                    errors.append(
-                        f"{path}:{line_no}: non-backend file imports backend implementation directly: {import_path}"
-                    )
+        if any(is_within(candidate, backend_dir) for backend_dir in BACKEND_IMPL_DIRS):
+            errors.append(
+                f"{path}:{line_no}: non-backend file imports backend implementation directly: {import_path}"
+            )
 
 
 def scan_forbidden_runtime_state_files(errors: list[str]) -> None:

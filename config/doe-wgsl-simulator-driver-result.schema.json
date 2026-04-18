@@ -66,6 +66,8 @@
           "items": { "type": "string" }
         },
         "exitCode": { "type": "integer" },
+        "executionTarget": { "enum": ["simfabric", "system"] },
+        "cmaddrProvided": { "type": "boolean" },
         "tracePath": { "type": "string", "minLength": 1 },
         "traceProduced": { "type": "boolean" },
         "stdoutPath": { "type": "string", "minLength": 1 },

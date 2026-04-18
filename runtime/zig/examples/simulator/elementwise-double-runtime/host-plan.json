@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "csl_host_plan",
+  "target": "wse3",
+  "contract": "explicit_host_plan",
+  "hostPlan": {
+    "peGrid": {"width": 4, "height": 1},
+    "kernels": [
+      {"name": "elementwise-double", "pattern": "element_wise", "count": 1}
+    ],
+    "phases": {
+      "prefill": [{"kernelName": "elementwise-double", "repeat": 1}],
+      "decode": []
+    },
+    "eosTokenId": null
+  },
+  "compileTargets": [
+    {"name": "elementwise-double", "layout": "elementwise-double/layout.csl", "peProgram": "elementwise-double/pe_program.csl"}
+  ],
+  "cslc": {
+    "executable": "cslc",
+    "discovery": "implicit_path_lookup",
+    "validation": {"command": ["cslc", "--version"], "minimumVersion": "1.4.0"}
+  }
+}

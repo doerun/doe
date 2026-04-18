@@ -2,6 +2,7 @@ const std = @import("std");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const bridge = @import("../d3d12_bridge_decls.zig");
+const d3d12_constants = @import("../d3d12_constants.zig");
 
 // --- Bridge externs ---
 
@@ -54,15 +55,9 @@ fn texture_supports_storage_binding(format: u32) bool {
     };
 }
 
-// --- D3D12 SRV dimension values (D3D12_SRV_DIMENSION) ---
-// These map WebGPU view dimensions to the D3D12 enum for CreateShaderResourceView.
-
-const SRV_DIMENSION_TEXTURE1D: u32 = 3;
-const SRV_DIMENSION_TEXTURE2D: u32 = 4;
-const SRV_DIMENSION_TEXTURE2DARRAY: u32 = 5;
-const SRV_DIMENSION_TEXTURECUBE: u32 = 8;
-const SRV_DIMENSION_TEXTURECUBEARRAY: u32 = 9;
-const SRV_DIMENSION_TEXTURE3D: u32 = 7;
+// D3D12_SRV_DIMENSION values are centralized in d3d12_constants.zig
+// (see d3d12_constants.SRV_DIMENSION_*) so spec_diff_gate.py can audit
+// them against the canonical d3d12.h header.
 
 pub const TextureViewEntry = struct {
     handle: u64,
@@ -205,14 +200,14 @@ pub const TextureViewState = struct {
 /// D3D12_SRV_DIMENSION enum value for CreateShaderResourceView.
 pub fn map_view_dimension_to_srv(dimension: u32) u32 {
     return switch (dimension) {
-        VIEW_DIMENSION_1D => SRV_DIMENSION_TEXTURE1D,
-        VIEW_DIMENSION_2D => SRV_DIMENSION_TEXTURE2D,
-        VIEW_DIMENSION_2D_ARRAY => SRV_DIMENSION_TEXTURE2DARRAY,
-        VIEW_DIMENSION_CUBE => SRV_DIMENSION_TEXTURECUBE,
-        VIEW_DIMENSION_CUBE_ARRAY => SRV_DIMENSION_TEXTURECUBEARRAY,
-        VIEW_DIMENSION_3D => SRV_DIMENSION_TEXTURE3D,
+        VIEW_DIMENSION_1D => d3d12_constants.SRV_DIMENSION_TEXTURE1D,
+        VIEW_DIMENSION_2D => d3d12_constants.SRV_DIMENSION_TEXTURE2D,
+        VIEW_DIMENSION_2D_ARRAY => d3d12_constants.SRV_DIMENSION_TEXTURE2DARRAY,
+        VIEW_DIMENSION_CUBE => d3d12_constants.SRV_DIMENSION_TEXTURECUBE,
+        VIEW_DIMENSION_CUBE_ARRAY => d3d12_constants.SRV_DIMENSION_TEXTURECUBEARRAY,
+        VIEW_DIMENSION_3D => d3d12_constants.SRV_DIMENSION_TEXTURE3D,
         // Unknown dimensions fall back to 2D; callers should validate
         // dimension before reaching this point.
-        else => SRV_DIMENSION_TEXTURE2D,
+        else => d3d12_constants.SRV_DIMENSION_TEXTURE2D,
     };
 }

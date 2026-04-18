@@ -75,18 +75,23 @@ pub const DXGI_FORMAT_R8G8_UINT: u32 = 50;
 pub const DXGI_FORMAT_R8G8_SNORM: u32 = 51;
 pub const DXGI_FORMAT_R8G8_SINT: u32 = 52;
 
-// 1-channel 16-bit
+// 1-channel 16-bit. Canonical dxgiformat.h order is FLOAT=54, D16=55, UNORM=56,
+// UINT=57, SNORM=58, SINT=59 — previously transcribed with UINT and SNORM
+// swapped. Latent for the compute-only cohort but any render/texture path
+// that binds an R16Snorm surface would have produced the wrong DXGI format.
 pub const DXGI_FORMAT_R16_FLOAT: u32 = 54;
 pub const DXGI_FORMAT_D16_UNORM: u32 = 55;
 pub const DXGI_FORMAT_R16_UNORM: u32 = 56;
-pub const DXGI_FORMAT_R16_SNORM: u32 = 57;
-pub const DXGI_FORMAT_R16_UINT: u32 = 58;
+pub const DXGI_FORMAT_R16_UINT: u32 = 57;
+pub const DXGI_FORMAT_R16_SNORM: u32 = 58;
 pub const DXGI_FORMAT_R16_SINT: u32 = 59;
 
-// 1-channel 8-bit
+// 1-channel 8-bit. Canonical dxgiformat.h order is UNORM=61, UINT=62,
+// SNORM=63, SINT=64 — previously transcribed with UINT and SNORM swapped.
+// Same latency class as the R16 swap above.
 pub const DXGI_FORMAT_R8_UNORM: u32 = 61;
-pub const DXGI_FORMAT_R8_SNORM: u32 = 62;
-pub const DXGI_FORMAT_R8_UINT: u32 = 63;
+pub const DXGI_FORMAT_R8_UINT: u32 = 62;
+pub const DXGI_FORMAT_R8_SNORM: u32 = 63;
 pub const DXGI_FORMAT_R8_SINT: u32 = 64;
 
 // Shared exponent

@@ -1,0 +1,35 @@
+{
+  "rpc_symbols": [
+    {
+      "id": 3,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "output",
+      "sym_name": "output_ptr",
+      "type": "[*]f32"
+    },
+    {
+      "id": 2,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "table",
+      "sym_name": "table_ptr",
+      "type": "[*]f32"
+    },
+    {
+      "id": 4,
+      "kind": "Func",
+      "name": "compute",
+      "sym_name": "compute",
+      "type": "void"
+    },
+    {
+      "id": 1,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "indices",
+      "sym_name": "indices_ptr",
+      "type": "[*]u32"
+    }
+  ]
+}

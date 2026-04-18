@@ -20,11 +20,9 @@ const model = struct {
 fn parseCopyResource(
     side: []const u8,
     raw: RawCommand,
-    direction: model.CopyDirection,
     default_kind: model.CopyResourceKind,
     direction_default_to_texture: bool,
 ) !model.CopyTextureResource {
-    _ = direction;
     const handle = if (std.mem.eql(u8, side, "src"))
         (raw.src_handle orelse raw.srcHandle)
     else
@@ -127,8 +125,8 @@ pub fn parseCopyCommand(raw: RawCommand) !model.Command {
         .buffer_to_texture, .texture_to_texture => .texture,
     };
 
-    const src = try parseCopyResource("src", raw, direction, default_src_kind, direction == .texture_to_buffer or direction == .texture_to_texture);
-    const dst = try parseCopyResource("dst", raw, direction, default_dst_kind, direction == .buffer_to_texture or direction == .texture_to_texture);
+    const src = try parseCopyResource("src", raw, default_src_kind, direction == .texture_to_buffer or direction == .texture_to_texture);
+    const dst = try parseCopyResource("dst", raw, default_dst_kind, direction == .buffer_to_texture or direction == .texture_to_texture);
 
     return .{
         .copy_buffer_to_texture = .{

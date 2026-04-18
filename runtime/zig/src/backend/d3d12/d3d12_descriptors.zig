@@ -1,10 +1,16 @@
 const std = @import("std");
 const bridge = @import("d3d12_bridge_decls.zig");
+const d3d12_constants = @import("d3d12_constants.zig");
 
-// --- D3D12 descriptor heap type constants ---
-// D3D12_DESCRIPTOR_HEAP_TYPE values from d3d12.h
-const DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: c_int = 0;
-const DESCRIPTOR_HEAP_TYPE_SAMPLER: c_int = 1;
+// D3D12_DESCRIPTOR_HEAP_TYPE and D3D12_DESCRIPTOR_RANGE_TYPE values are
+// centralized in d3d12_constants.zig so spec_diff_gate.py can audit them
+// against the canonical d3d12.h header.
+const DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV = d3d12_constants.DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+const DESCRIPTOR_HEAP_TYPE_SAMPLER = d3d12_constants.DESCRIPTOR_HEAP_TYPE_SAMPLER;
+const RANGE_TYPE_SRV = d3d12_constants.DESCRIPTOR_RANGE_TYPE_SRV;
+const RANGE_TYPE_UAV = d3d12_constants.DESCRIPTOR_RANGE_TYPE_UAV;
+const RANGE_TYPE_CBV = d3d12_constants.DESCRIPTOR_RANGE_TYPE_CBV;
+const RANGE_TYPE_SAMPLER = d3d12_constants.DESCRIPTOR_RANGE_TYPE_SAMPLER;
 
 // --- Capacity defaults ---
 // 256 is the minimum guaranteed by D3D12 for shader-visible CBV/SRV/UAV heaps;
@@ -20,12 +26,6 @@ const MAX_BINDINGS_PER_GROUP: u32 = 16;
 // --- Root signature serialization flags ---
 const ROOT_SIG_FLAG_NONE: u32 = 0;
 const ROOT_SIG_FLAG_ALLOW_INPUT_ASSEMBLER: u32 = 0x1;
-
-// --- Descriptor range types (D3D12_DESCRIPTOR_RANGE_TYPE) ---
-const RANGE_TYPE_SRV: u32 = 0;
-const RANGE_TYPE_UAV: u32 = 1;
-const RANGE_TYPE_CBV: u32 = 2;
-const RANGE_TYPE_SAMPLER: u32 = 3;
 
 // --- Bridge extern declarations ---
 // Existing bridge functions

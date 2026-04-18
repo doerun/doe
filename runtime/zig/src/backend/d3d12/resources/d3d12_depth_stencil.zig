@@ -1,13 +1,15 @@
 const std = @import("std");
 const dc = @import("../d3d12_constants.zig");
+const formats = dc.formats;
 const bridge = @import("../d3d12_bridge_decls.zig");
 
-// --- DXGI depth/stencil format values ---
-// These map directly to DXGI_FORMAT enum values for depth/stencil surfaces.
-const DXGI_FORMAT_D16_UNORM: u32 = 55;
-const DXGI_FORMAT_D32_FLOAT: u32 = 40;
-const DXGI_FORMAT_D24_UNORM_S8_UINT: u32 = 45;
-const DXGI_FORMAT_D32_FLOAT_S8X24_UINT: u32 = 20;
+// DXGI_FORMAT depth/stencil values are centralized in d3d12_formats.zig
+// (re-exported as d3d12_constants.formats) so spec_diff_gate.py can audit
+// them against the canonical dxgiformat.h header.
+const DXGI_FORMAT_D16_UNORM = formats.DXGI_FORMAT_D16_UNORM;
+const DXGI_FORMAT_D32_FLOAT = formats.DXGI_FORMAT_D32_FLOAT;
+const DXGI_FORMAT_D24_UNORM_S8_UINT = formats.DXGI_FORMAT_D24_UNORM_S8_UINT;
+const DXGI_FORMAT_D32_FLOAT_S8X24_UINT = formats.DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 
 // --- WebGPU depth texture format identifiers ---
 // From the WebGPU spec GPUTextureFormat enum.

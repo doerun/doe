@@ -44,6 +44,9 @@ enum class SmokeModelKind : uint8_t {
   kMatMulAdd,
   kMatMulAddRelu,
   kAddRelu,
+  kSoftmax,
+  kLayerNorm,
+  kConcat,
 };
 
 struct CliOptions {
@@ -297,6 +300,12 @@ const char* SmokeModelKindName(const SmokeModelKind kind) {
       return "MatMul->Add->Relu";
     case SmokeModelKind::kAddRelu:
       return "Add->Relu";
+    case SmokeModelKind::kSoftmax:
+      return "Softmax";
+    case SmokeModelKind::kLayerNorm:
+      return "LayerNormalization";
+    case SmokeModelKind::kConcat:
+      return "Concat";
   }
   return "Unknown";
 }
@@ -308,10 +317,13 @@ size_t ExpectedInputCount(const SmokeModelKind kind) {
     case SmokeModelKind::kSigmoid:
     case SmokeModelKind::kTanh:
     case SmokeModelKind::kGelu:
+    case SmokeModelKind::kSoftmax:
       return 1;
     case SmokeModelKind::kAdd:
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kAddRelu:
+    case SmokeModelKind::kLayerNorm:
+    case SmokeModelKind::kConcat:
       return 2;
     case SmokeModelKind::kGemm:
       return 3;
@@ -341,6 +353,9 @@ uint64_t ExpectedClaimedNodes(const SmokeModelKind kind) {
     case SmokeModelKind::kGelu:
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kGemm:
+    case SmokeModelKind::kSoftmax:
+    case SmokeModelKind::kLayerNorm:
+    case SmokeModelKind::kConcat:
       return 1;
   }
   return 0;
@@ -364,7 +379,12 @@ std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
     case SmokeModelKind::kSigmoid:
     case SmokeModelKind::kTanh:
     case SmokeModelKind::kGelu:
+    case SmokeModelKind::kSoftmax:
       return {"input"};
+    case SmokeModelKind::kLayerNorm:
+      return {"X", "Scale"};
+    case SmokeModelKind::kConcat:
+      return {"a", "b"};
   }
   return {};
 }
@@ -423,7 +443,7 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
     } else if (argument == "--help" || argument == "-h") {
       std::cout
           << "Usage: doe-ort-ep-session-smoke --plugin-path <path> [--ort-lib-path <path>] "
-          << "[--registration-name <name>] [--case identity|add|relu|matmul|gemm|gemm_relu_gemm|matmul_add|matmul_add_relu|add_relu|all] [--output <path>]\n";
+          << "[--registration-name <name>] [--case identity|add|relu|matmul|gemm|gemm_relu_gemm|matmul_add|matmul_add_relu|add_relu|sigmoid|tanh|gelu|softmax|layernorm|concat|all] [--output <path>]\n";
       std::exit(0);
     } else {
       if (error_out != nullptr) {
@@ -462,16 +482,22 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
       options.case_selector == "identity" ||
       options.case_selector == "add" ||
       options.case_selector == "relu" ||
+      options.case_selector == "sigmoid" ||
+      options.case_selector == "tanh" ||
+      options.case_selector == "gelu" ||
       options.case_selector == "matmul" ||
       options.case_selector == "gemm" ||
       options.case_selector == "gemm_relu_gemm" ||
       options.case_selector == "matmul_add" ||
       options.case_selector == "matmul_add_relu" ||
-      options.case_selector == "add_relu";
+      options.case_selector == "add_relu" ||
+      options.case_selector == "softmax" ||
+      options.case_selector == "layernorm" ||
+      options.case_selector == "concat";
   if (!valid_case_selector) {
     if (error_out != nullptr) {
       *error_out = "unsupported --case value '" + options.case_selector +
-                   "'; expected identity, add, relu, matmul, gemm, gemm_relu_gemm, matmul_add, matmul_add_relu, add_relu, or all.";
+                   "'; expected one of identity, add, relu, sigmoid, tanh, gelu, matmul, gemm, gemm_relu_gemm, matmul_add, matmul_add_relu, add_relu, softmax, layernorm, concat, all.";
     }
     return std::nullopt;
   }
@@ -618,6 +644,9 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"claimedGeluNodes\": " << counters.claimed_gelu_nodes << ",\n";
   json << child_indent << "\"claimedMatMulNodes\": " << counters.claimed_matmul_nodes << ",\n";
   json << child_indent << "\"claimedGemmNodes\": " << counters.claimed_gemm_nodes << ",\n";
+  json << child_indent << "\"claimedSoftmaxNodes\": " << counters.claimed_softmax_nodes << ",\n";
+  json << child_indent << "\"claimedLayerNormNodes\": " << counters.claimed_layernorm_nodes << ",\n";
+  json << child_indent << "\"claimedConcatNodes\": " << counters.claimed_concat_nodes << ",\n";
   json << child_indent << "\"compileCalls\": " << counters.compile_calls << ",\n";
   json << child_indent << "\"compiledIdentityGroups\": " << counters.compiled_identity_groups << ",\n";
   json << child_indent << "\"compiledAddGroups\": " << counters.compiled_add_groups << ",\n";
@@ -631,6 +660,9 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"compiledMatMulAddGroups\": " << counters.compiled_matmul_add_groups << ",\n";
   json << child_indent << "\"compiledMatMulAddReluGroups\": " << counters.compiled_matmul_add_relu_groups << ",\n";
   json << child_indent << "\"compiledAddReluGroups\": " << counters.compiled_add_relu_groups << ",\n";
+  json << child_indent << "\"compiledSoftmaxGroups\": " << counters.compiled_softmax_groups << ",\n";
+  json << child_indent << "\"compiledLayerNormGroups\": " << counters.compiled_layernorm_groups << ",\n";
+  json << child_indent << "\"compiledConcatGroups\": " << counters.compiled_concat_groups << ",\n";
   json << child_indent << "\"createStateCalls\": " << counters.create_state_calls << ",\n";
   json << child_indent << "\"computeCalls\": " << counters.compute_calls << ",\n";
   json << child_indent << "\"computeIdentityCalls\": " << counters.compute_identity_calls << ",\n";
@@ -645,6 +677,9 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"computeMatMulAddCalls\": " << counters.compute_matmul_add_calls << ",\n";
   json << child_indent << "\"computeMatMulAddReluCalls\": " << counters.compute_matmul_add_relu_calls << ",\n";
   json << child_indent << "\"computeAddReluCalls\": " << counters.compute_add_relu_calls << ",\n";
+  json << child_indent << "\"computeSoftmaxCalls\": " << counters.compute_softmax_calls << ",\n";
+  json << child_indent << "\"computeLayerNormCalls\": " << counters.compute_layernorm_calls << ",\n";
+  json << child_indent << "\"computeConcatCalls\": " << counters.compute_concat_calls << ",\n";
   json << child_indent << "\"releaseStateCalls\": " << counters.release_state_calls << '\n';
   json << indent << '}';
   return json.str();
@@ -888,6 +923,39 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
           .inputs = {{0.0f, 1.0f, -1.0f, 2.0f}},
           .expected_output = {0.0f, 0.84134465f, -0.15865529f, 1.9544997f},
       },
+      // Attention-shape ops added 2026-04-18. Each case covers one axis/shape
+      // combination that the Doe EP claim path recognizes end-to-end.
+      SmokeCaseSpec{
+          .case_name = "softmax",
+          .model_kind = SmokeModelKind::kSoftmax,
+          .input_dims = {{1, 4}},
+          .output_dims = {1, 4},
+          // Softmax along axis -1 (default, opset 13+).
+          // For x = [1, 2, 3, 4]: shifted by max=4 -> [-3, -2, -1, 0],
+          // exp -> [0.049787, 0.135335, 0.367879, 1.000000],
+          // sum = 1.553001, softmax = [0.032059, 0.087144, 0.236883, 0.643914].
+          .inputs = {{1.0f, 2.0f, 3.0f, 4.0f}},
+          .expected_output = {0.032058604f, 0.087144322f, 0.23688284f, 0.64391428f},
+      },
+      SmokeCaseSpec{
+          .case_name = "layernorm",
+          .model_kind = SmokeModelKind::kLayerNorm,
+          // X = [1, 2, 3, 4], Scale = [1, 1, 1, 1].
+          // mean = 2.5; var = 1.25; inv_std = 1/sqrt(1.25 + 1e-5).
+          // y = (x - 2.5) * inv_std * scale.
+          .input_dims = {{1, 4}, {4}},
+          .output_dims = {1, 4},
+          .inputs = {{1.0f, 2.0f, 3.0f, 4.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+          .expected_output = {-1.3416355f, -0.44721183f, 0.44721183f, 1.3416355f},
+      },
+      // Concat case is claimed and executed end-to-end by the Doe EP, but
+      // its session-smoke model build hits a libonnx.so SIGSEGV inside
+      // ReleaseOpAttr/CreateNode for the required `axis` integer attribute.
+      // The ownership contract between CreateOpAttr and CreateNode needs to
+      // be pinned down before this case can run inside the smoke harness.
+      // The CreateBinaryConcatModel helper below is kept so follow-up work
+      // only has to re-enable the SmokeCaseSpec once the ownership edge
+      // case is understood.
   };
 }
 
@@ -1619,6 +1687,147 @@ cleanup:
   return status;
 }
 
+// LayerNormalization was added in ONNX opset 17. The 2-input form (X, Scale)
+// with no Bias is what the Doe EP claims today; default axis=-1 and
+// epsilon=1e-5 match the EP's CPU kernel.
+OrtStatus* CreateLayerNormModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& x_dims,
+    const std::vector<int64_t>& scale_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* x = nullptr;
+  OrtValueInfo* scale = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* node = nullptr;
+  OrtStatus* status = CreateModelShellAtOpset(model_editor_api, 17, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "X", x_dims, &x);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "Scale", scale_dims, &scale);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {x, scale};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 2);
+    if (status != nullptr) goto cleanup;
+    x = nullptr;
+    scale = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"X", "Scale"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode(
+        "LayerNormalization", "", "layernorm0", input_names, 2, output_names, 1, nullptr, 0, &node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, node);
+  if (status != nullptr) goto cleanup;
+  node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (node != nullptr) api->ReleaseNode(node);
+  if (x != nullptr) api->ReleaseValueInfo(x);
+  if (scale != nullptr) api->ReleaseValueInfo(scale);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
+// Concat takes an integer axis attribute; the Doe EP claims the binary
+// float32 form where the non-axis dims match on both inputs and the output
+// axis dim is the sum of the two input axis dims.
+OrtStatus* CreateBinaryConcatModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    int64_t axis,
+    const std::vector<int64_t>& a_dims,
+    const std::vector<int64_t>& b_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* a = nullptr;
+  OrtValueInfo* b = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* node = nullptr;
+  OrtOpAttr* axis_attr = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "a", a_dims, &a);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "b", b_dims, &b);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {a, b};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 2);
+    if (status != nullptr) goto cleanup;
+    a = nullptr;
+    b = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  status = api->CreateOpAttr("axis", &axis, 1, ORT_OP_ATTR_INT, &axis_attr);
+  if (status != nullptr) goto cleanup;
+  {
+    const char* const input_names[] = {"a", "b"};
+    const char* const output_names[] = {"output"};
+    OrtOpAttr* attrs[] = {axis_attr};
+    status = model_editor_api->CreateNode(
+        "Concat", "", "concat0", input_names, 2, output_names, 1, attrs, 1, &node);
+  }
+  // Release the attr immediately after CreateNode returns. CreateNode copies
+  // the attribute, and retaining the original past this point risks double
+  // free when the graph later tears down its owned copies.
+  api->ReleaseOpAttr(axis_attr);
+  axis_attr = nullptr;
+  if (status != nullptr) goto cleanup;
+  status = model_editor_api->AddNodeToGraph(graph, node);
+  if (status != nullptr) goto cleanup;
+  node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (node != nullptr) api->ReleaseNode(node);
+  if (axis_attr != nullptr) api->ReleaseOpAttr(axis_attr);
+  if (a != nullptr) api->ReleaseValueInfo(a);
+  if (b != nullptr) api->ReleaseValueInfo(b);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
 OrtStatus* CreateSmokeModel(
     const OrtApi* api,
     const OrtModelEditorApi* model_editor_api,
@@ -1681,6 +1890,14 @@ OrtStatus* CreateSmokeModel(
           out_model);
     case SmokeModelKind::kAddRelu:
       return CreateAddReluModel(api, model_editor_api, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
+    case SmokeModelKind::kSoftmax:
+      // Softmax is in opset 13+; default axis=-1 matches the Doe EP kernel's
+      // last-axis reduction. No attribute needed.
+      return CreateUnaryModelAtOpset(api, model_editor_api, "Softmax", "softmax0", 13, spec.input_dims[0], spec.output_dims, out_model);
+    case SmokeModelKind::kLayerNorm:
+      return CreateLayerNormModel(api, model_editor_api, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
+    case SmokeModelKind::kConcat:
+      return CreateBinaryConcatModel(api, model_editor_api, /*axis=*/0, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
   }
   return api->CreateStatus(ORT_FAIL, "Doe ORT plugin EP smoke reached an unknown model kind.");
 }

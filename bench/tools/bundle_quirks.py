@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 
-def serialize_fawn_quirks(input_dir: str, output_file: str) -> None:
+def serialize_quirks(input_dir: str, output_file: str) -> None:
     """Read all .json files in the given directory and bundle them into a single list."""
     logging.info(f"Scanning for quirks in {input_dir}")
     search_pattern = os.path.join(input_dir, "**/*.json")
@@ -52,7 +52,7 @@ def serialize_fawn_quirks(input_dir: str, output_file: str) -> None:
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    parser = argparse.ArgumentParser(description="Bundle multiple Fawn JSON quirks into a single array payload.")
+    parser = argparse.ArgumentParser(description="Bundle multiple Doe JSON quirks into a single array payload.")
     parser.add_argument("--input-dir", required=True, help="Directory containing .json quirk files.")
     parser.add_argument("--output", required=True, help="Destination filename for the bundled JSON array.")
 
@@ -62,7 +62,7 @@ def main():
         logging.critical(f"Input directory does not exist: {args.input_dir}")
         sys.exit(1)
 
-    serialize_fawn_quirks(args.input_dir, args.output)
+    serialize_quirks(args.input_dir, args.output)
 
 
 if __name__ == "__main__":

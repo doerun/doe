@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fawn Auto-Calibration Tool
+Doe Auto-Calibration Tool
 
 This script dynamically explores the parameter space for `commandRepeat` and `uploadSubmitEvery`
 on a given workload to find the optimal configuration that minimizes volatility and achieves
@@ -10,8 +10,6 @@ on a given workload to find the optimal configuration that minimizes volatility 
 import argparse
 import json
 import logging
-import math
-import subprocess
 import sys
 from pathlib import Path
 
@@ -104,7 +102,7 @@ def main():
         
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        with out_path.open("w") as f:
+        with out_path.open("w", encoding="utf-8") as f:
             json.dump({workload_id: best_config}, f, indent=2)
             
         logging.info(f"Results written to {args.out}")

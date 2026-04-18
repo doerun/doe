@@ -3,6 +3,7 @@ const model_resource_types = @import("../../../model_resource_types.zig");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const d3d12_texture = @import("../resources/d3d12_texture.zig");
+const dc = @import("../d3d12_constants.zig");
 const bridge = @import("../d3d12_bridge_decls.zig");
 
 const HEAP_TYPE_DEFAULT: c_int = 1;
@@ -105,9 +106,10 @@ pub const CopyState = struct {
     }
 };
 
-// Canonical D3D12 values: COPY_DEST=0x400, COPY_SOURCE=0x800.
-const D3D12_RESOURCE_STATE_COPY_DEST: c_int = 0x400;
-const D3D12_RESOURCE_STATE_COPY_SOURCE: c_int = 0x800;
+// RESOURCE_STATE values are centralized in d3d12_constants.zig so
+// spec_diff_gate.py audits them against the canonical d3d12.h header.
+const D3D12_RESOURCE_STATE_COPY_DEST = dc.RESOURCE_STATE_COPY_DEST;
+const D3D12_RESOURCE_STATE_COPY_SOURCE = dc.RESOURCE_STATE_COPY_SOURCE;
 
 fn alignedSize(bytes: usize, alignment: u32) usize {
     if (alignment <= 1) return bytes;

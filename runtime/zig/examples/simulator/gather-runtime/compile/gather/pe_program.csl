@@ -1,0 +1,44 @@
+// PE program: embedding gather (auto-generated from WGSL)
+// Each PE holds a chunk of the embedding table.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+param hidden_size: i16;
+param rows_per_pe: i16;
+param num_tokens: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+var indices: [num_tokens]u32 = @zeros([num_tokens]u32);
+var table: [rows_per_pe * hidden_size]f32 = @zeros([rows_per_pe * hidden_size]f32);
+var output: [num_tokens * hidden_size]f32 = @zeros([num_tokens * hidden_size]f32);
+
+var indices_ptr: [*]u32 = &indices;
+var table_ptr: [*]f32 = &table;
+var output_ptr: [*]f32 = &output;
+
+fn compute() void {
+    const row_start = @as(u32, pe_id) * @as(u32, rows_per_pe);
+    const row_end = row_start + @as(u32, rows_per_pe);
+
+    for (@range(i16, num_tokens)) |t| {
+        const token_id = indices[@as(u32, t)];
+        if (token_id >= row_start and token_id < row_end) {
+            const local_row = token_id - row_start;
+            for (@range(i16, hidden_size)) |d| {
+                const src = local_row * @as(u32, hidden_size) + @as(u32, d);
+                const dst = @as(u32, t) * @as(u32, hidden_size) + @as(u32, d);
+                output[dst] = table[src];
+            }
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(indices_ptr, "indices");
+    @export_symbol(table_ptr, "table");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

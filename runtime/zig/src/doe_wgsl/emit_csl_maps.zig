@@ -6,7 +6,6 @@
 
 const std = @import("std");
 const ir = @import("ir.zig");
-const spec = @import("csl_spec.zig");
 
 // ---------------------------------------------------------------------------
 // Operators

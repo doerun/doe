@@ -349,6 +349,56 @@ theorem gid_loop_affine_matcher_contract_sound_tight
     h_lid
     h_fit
 
+/-- Contract for the loop-only affine matcher: `i * loop_stride + offset`,
+    with no gid term. This is the matvec inner-loop `vectorData[col]` pattern
+    where the index is the pure loop induction variable plus a constant. -/
+inductive MatchesLoopAffine :
+    BoundsMatcherExpr → Nat → Nat → Prop where
+  | mk
+      (loop_stride offset : Nat)
+      (h_loop_stride : 0 < loop_stride) :
+      MatchesLoopAffine
+        (.add
+          (.mul .loopIndex (.lit loop_stride))
+          (.lit offset))
+        loop_stride offset
+
+theorem matches_loop_affine_eval
+    (env : BoundsMatcherEnv)
+    (i : Nat)
+    {expr : BoundsMatcherExpr}
+    {loop_stride offset : Nat}
+    (h_match : MatchesLoopAffine expr loop_stride offset) :
+    evalBoundsMatcherExpr env i expr =
+      i * loop_stride + offset := by
+  cases h_match
+  simp [evalBoundsMatcherExpr]
+
+theorem matches_loop_affine_loop_stride_pos
+    {expr : BoundsMatcherExpr}
+    {loop_stride offset : Nat}
+    (h_match : MatchesLoopAffine expr loop_stride offset) :
+    0 < loop_stride := by
+  cases h_match
+  assumption
+
+/-- Tight-precondition contract for the loop-only affine matcher.
+    The runtime check uses the strict supremum + 1 formula
+    `(limit - 1) * loop_stride + offset + 1 ≤ array_length`, matching
+    `loop_index_affine_inbounds_when_loop_fits_tight`. -/
+theorem loop_affine_matcher_contract_sound_tight
+    (env : BoundsMatcherEnv)
+    (expr : BoundsMatcherExpr)
+    (limit i loop_stride offset array_length : Nat)
+    (h_match : MatchesLoopAffine expr loop_stride offset)
+    (h_i : i < limit)
+    (h_fit :
+      (limit - 1) * loop_stride + offset + 1 ≤ array_length) :
+    evalBoundsMatcherExpr env i expr < array_length := by
+  rw [matches_loop_affine_eval env i h_match]
+  exact loop_index_affine_inbounds_when_loop_fits_tight
+    array_length limit i loop_stride offset h_i h_fit
+
 /-- Contract for the tiled matcher shape:
     `(gid / tile_width) * tile_stride + (gid % tile_width) + offset`. -/
 inductive MatchesGidTiled :

@@ -388,7 +388,7 @@ fn execute_native_command(self: anytype, command: model.Command) !webgpu.NativeE
         const copy_len = @min(status_code.len, self.pending_artifact_status_storage.len);
         std.mem.copyForwards(u8, self.pending_artifact_status_storage[0..copy_len], status_code[0..copy_len]);
         self.pending_artifact_status_len = copy_len;
-        self.pending_artifact_module = command_info.manifest_module(command);
+        self.pending_artifact_module = command_info.shader_artifact_module(command);
         self.pending_artifact_meta = meta;
         self.pending_artifact_write = true;
     }

@@ -75,6 +75,23 @@ def parse_args() -> argparse.Namespace:
         default="",
     )
     parser.add_argument(
+        "--csl-sdk-root",
+        default=os.environ.get("DOE_CSL_SDK_ROOT", ""),
+        help=(
+            "Optional Cerebras SDK root. When set, cslc and cs_python are "
+            "resolved from the root/bin directory unless explicit executable "
+            "flags are provided."
+        ),
+    )
+    parser.add_argument(
+        "--csl-cmaddr",
+        default=os.environ.get("DOE_CSL_CMADDR", ""),
+        help=(
+            "Optional Cerebras CM endpoint (IP_ADDRESS:PORT). When omitted, "
+            "the SDK runtime command targets local simfabric."
+        ),
+    )
+    parser.add_argument(
         "--out-json",
         default="bench/out/csl-governed-lane.report.json",
     )
@@ -143,6 +160,25 @@ def write_markdown(path: Path, report: dict[str, Any]) -> None:
         f"- Simulator result: `{report['artifacts']['simulatorResultPath']}`",
         f"- Driver result: `{report['artifacts']['driverResultPath']}`",
     ]
+    op_graph_receipt = report.get("receipts", {}).get("operationGraph") or {}
+    if op_graph_receipt:
+        lines.extend([
+            "",
+            "## Operation graph receipt",
+            f"- Status: `{op_graph_receipt.get('status', 'absent')}`",
+        ])
+        if op_graph_receipt.get("graphId"):
+            lines.append(f"- Graph id: `{op_graph_receipt['graphId']}`")
+        if op_graph_receipt.get("executionPattern"):
+            lines.append(f"- Execution pattern: `{op_graph_receipt['executionPattern']}`")
+        if "operationCount" in op_graph_receipt:
+            lines.append(f"- Operations: `{op_graph_receipt['operationCount']}`")
+        if "exportedSymbolCount" in op_graph_receipt:
+            lines.append(f"- Exported symbols: `{op_graph_receipt['exportedSymbolCount']}`")
+        if "kernelPatternCount" in op_graph_receipt:
+            lines.append(f"- HostPlan kernel patterns: `{op_graph_receipt['kernelPatternCount']}`")
+        if op_graph_receipt.get("sdkVersionFloor"):
+            lines.append(f"- SDK version floor: `{op_graph_receipt['sdkVersionFloor']}`")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -161,6 +197,22 @@ def run_command(
         "command": command,
         "exitCode": proc.returncode,
     }
+
+
+def resolve_sdk_tool(sdk_root: str, tool_name: str) -> str:
+    raw_root = Path(sdk_root).expanduser()
+    root = raw_root.resolve() if raw_root.is_absolute() else (REPO_ROOT / raw_root).resolve()
+    candidates = [
+        root / "bin" / tool_name,
+        root / tool_name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate.resolve())
+    candidate_list = ", ".join(str(path) for path in candidates)
+    raise FileNotFoundError(
+        f"missing {tool_name} under --csl-sdk-root {root}; checked {candidate_list}"
+    )
 
 
 BUNDLE_EMITTER = REPO_ROOT / "runtime" / "zig" / "zig-out" / "bin" / "doe-csl-bundle-emitter"
@@ -316,12 +368,19 @@ def main() -> int:
     )
 
     env = dict(os.environ)
+    csl_sdk_root = args.csl_sdk_root.strip()
     if args.driver_executable.strip():
         env["DOE_CSL_SIM_EXECUTABLE"] = str(resolve_repo_path(args.driver_executable))
     if args.cslc_executable.strip():
         env["DOE_CSLC_EXECUTABLE"] = str(resolve_repo_path(args.cslc_executable))
+    elif csl_sdk_root:
+        env["DOE_CSLC_EXECUTABLE"] = resolve_sdk_tool(csl_sdk_root, "cslc")
     if args.runtime_executable.strip():
         env["DOE_CSL_RUNTIME_EXECUTABLE"] = str(resolve_repo_path(args.runtime_executable))
+    elif csl_sdk_root:
+        env["DOE_CSL_RUNTIME_EXECUTABLE"] = resolve_sdk_tool(csl_sdk_root, "cs_python")
+    if args.csl_cmaddr.strip():
+        env["DOE_CSL_CMADDR"] = args.csl_cmaddr.strip()
 
     sim_step = run_command(
         "sim-runner",
@@ -386,6 +445,7 @@ def main() -> int:
             "orchestrationMode": graph.get("orchestrationMode", "memcpy"),
             "operationCount": len(graph.get("operations", [])),
             "exportedSymbolCount": len(graph.get("exportedSymbols", [])),
+            "kernelPatternCount": len(graph.get("kernelPatterns", [])),
             "sdkVersionFloor": graph.get("sdkVersionFloor", ""),
         }
         # Drop empty-string fields so the schema's optional checks stay clean.

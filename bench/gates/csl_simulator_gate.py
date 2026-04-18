@@ -14,20 +14,32 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 
 import argparse
-from pathlib import Path
 
 from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--report", default="bench/out/csl-simulator/csl-gelu-smoke.json")
-    parser.add_argument("--report-schema", default="config/csl-governed-lane-report.schema.json")
+    parser.add_argument("--report", default="bench/out/csl-governed-lane.report.json")
+    parser.add_argument(
+        "--report-schema",
+        default="config/csl-governed-lane-report.schema.json",
+    )
     parser.add_argument("--host-plan-schema", default="config/doe-wgsl-host-plan.schema.json")
-    parser.add_argument("--result-schema", default="config/doe-wgsl-simulator-result.schema.json")
-    parser.add_argument("--driver-result-schema", default="config/doe-wgsl-simulator-driver-result.schema.json")
+    parser.add_argument(
+        "--result-schema",
+        default="config/doe-wgsl-simulator-result.schema.json",
+    )
+    parser.add_argument(
+        "--driver-result-schema",
+        default="config/doe-wgsl-simulator-driver-result.schema.json",
+    )
     parser.add_argument("--trace-schema", default="config/doe-wgsl-simulator-trace.schema.json")
-    parser.add_argument("--require-ready", action="store_true", help="Fail unless laneStatus=ready.")
+    parser.add_argument(
+        "--require-ready",
+        action="store_true",
+        help="Fail unless laneStatus=ready.",
+    )
     return parser.parse_args()
 
 
@@ -61,56 +73,88 @@ def main() -> int:
         return 1
 
     failures = []
-    host_plan_path = artifacts.get("hostPlanArtifactPath")
-    host_plan_hash = artifacts.get("hostPlanArtifactHash")
+    host_plan_path = artifacts.get("hostPlanArtifactPath") or artifacts.get(
+        "actualHostPlanPath"
+    )
+    host_plan_hash = artifacts.get("hostPlanArtifactHash") or artifacts.get(
+        "actualHostPlanHash"
+    )
     if isinstance(host_plan_path, str) and host_plan_path:
         failures.extend(
             contracts.validate_artifact(
                 contracts.resolve_relative_path(report_path.parent, host_plan_path),
                 host_plan_schema,
-                expected_hash=host_plan_hash if isinstance(host_plan_hash, str) and host_plan_hash else None,
+                expected_hash=host_plan_hash
+                if isinstance(host_plan_hash, str) and host_plan_hash
+                else None,
             )
         )
 
     result_path = artifacts.get("simulatorResultPath")
     result_hash = artifacts.get("simulatorResultHash")
     if isinstance(result_path, str) and result_path:
-        resolved_result_path = contracts.resolve_relative_path(report_path.parent, result_path)
+        resolved_result_path = contracts.resolve_relative_path(
+            report_path.parent,
+            result_path,
+        )
         if resolved_result_path.exists():
             failures.extend(
                 contracts.validate_artifact(
                     resolved_result_path,
                     result_schema,
-                    expected_hash=result_hash if isinstance(result_hash, str) and result_hash else None,
+                    expected_hash=result_hash
+                    if isinstance(result_hash, str) and result_hash
+                    else None,
                 )
             )
         elif run_payload.get("status") == "succeeded":
             failures.append(f"missing simulator result artifact: {resolved_result_path}")
 
+    driver_result_payload = {}
     driver_result_path = artifacts.get("driverResultPath")
     if isinstance(driver_result_path, str) and driver_result_path:
-        failures.extend(
-            contracts.validate_artifact(
-                contracts.resolve_relative_path(report_path.parent, driver_result_path),
-                driver_result_schema,
-            )
+        resolved_driver_result_path = contracts.resolve_relative_path(
+            report_path.parent,
+            driver_result_path,
         )
+        failures.extend(
+            contracts.validate_artifact(resolved_driver_result_path, driver_result_schema)
+        )
+        if resolved_driver_result_path.exists():
+            driver_result_payload = contracts.load_json(resolved_driver_result_path)
 
     trace_path = artifacts.get("tracePath")
     trace_hash = artifacts.get("traceHash")
+    if not trace_path and isinstance(driver_result_payload, dict):
+        driver_run = driver_result_payload.get("run", {})
+        if isinstance(driver_run, dict):
+            trace_path = driver_run.get("tracePath")
     if isinstance(trace_path, str) and trace_path:
-        resolved_trace_path = contracts.resolve_relative_path(report_path.parent, trace_path)
+        resolved_trace_path = contracts.resolve_relative_path(
+            report_path.parent,
+            trace_path,
+        )
         if resolved_trace_path.exists():
             failures.extend(
                 contracts.validate_artifact(
                     resolved_trace_path,
                     trace_schema,
-                    expected_hash=trace_hash if isinstance(trace_hash, str) and trace_hash else None,
+                    expected_hash=trace_hash
+                    if isinstance(trace_hash, str) and trace_hash
+                    else None,
                 )
             )
             parity = report.get("parity", {})
+            trace_payload = contracts.load_json(resolved_trace_path)
+            if (
+                trace_payload.get("contract") == "explicit_simulator_trace"
+                and trace_payload.get("runtimePassed") is not True
+            ):
+                failures.append(
+                    "runtime trace did not pass: runtimePassed="
+                    f"{trace_payload.get('runtimePassed')!r}"
+                )
             if isinstance(parity, dict) and parity.get("status") == "matched":
-                trace_payload = contracts.load_json(resolved_trace_path)
                 expected_trace = parity.get("traceExpected", {})
                 if not isinstance(expected_trace, dict):
                     expected_trace = {}

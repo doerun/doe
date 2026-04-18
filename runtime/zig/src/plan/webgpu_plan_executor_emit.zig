@@ -92,33 +92,33 @@ pub fn writeTraceJsonl(path: []const u8, results: []const support.StepResult) !v
         const semantic_op_id = support.semanticOpId(result.seq, &semantic_buf);
         try writer.writeAll("{\"traceVersion\":1,\"module\":");
         try support.writeJsonString(&writer, support.DEFAULT_MODULE_NAME);
-        try writer.print(",\"opCode\":", .{});
+        try writer.writeAll(",\"opCode\":");
         try support.writeJsonString(&writer, result.command_kind);
         try writer.print(",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":", .{ result.seq, result.timestamp_mono_ns, hash, previous_hash });
         try support.writeJsonString(&writer, result.command_kind);
-        try writer.print(",\"semanticOpId\":", .{});
+        try writer.writeAll(",\"semanticOpId\":");
         try support.writeJsonString(&writer, semantic_op_id);
-        try writer.print(",\"semanticStage\":", .{});
+        try writer.writeAll(",\"semanticStage\":");
         try support.writeJsonString(&writer, result.semantic_stage);
-        try writer.print(",\"semanticPhase\":", .{});
+        try writer.writeAll(",\"semanticPhase\":");
         try support.writeJsonString(&writer, result.semantic_phase);
-        try writer.print(",\"semanticExecutionPlanHash\":", .{});
+        try writer.writeAll(",\"semanticExecutionPlanHash\":");
         try support.writeJsonString(&writer, result.plan_hash);
         if (result.kernel) |kernel| {
-            try writer.print(",\"kernel\":", .{});
+            try writer.writeAll(",\"kernel\":");
             try support.writeJsonString(&writer, kernel);
         }
-        try writer.print(",\"executionBackend\":", .{});
+        try writer.writeAll(",\"executionBackend\":");
         try support.writeJsonString(&writer, result.execution_backend);
-        try writer.print(",\"backendId\":", .{});
+        try writer.writeAll(",\"backendId\":");
         try support.writeJsonString(&writer, result.backend_id);
-        try writer.print(",\"executionStatus\":", .{});
+        try writer.writeAll(",\"executionStatus\":");
         try support.writeJsonString(&writer, result.status);
-        try writer.print(",\"executionStatusCode\":", .{});
+        try writer.writeAll(",\"executionStatusCode\":");
         try support.writeJsonString(&writer, result.status_code);
-        try writer.print(",\"executionStatusMessage\":", .{});
+        try writer.writeAll(",\"executionStatusMessage\":");
         try support.writeJsonString(&writer, result.status_message);
-        try writer.print(",\"executionBackendLane\":", .{});
+        try writer.writeAll(",\"executionBackendLane\":");
         try support.writeJsonString(&writer, result.backend_lane);
         try writer.print(",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":0,\"executionGpuTimestampAttempted\":false,\"executionGpuTimestampValid\":false}}\n", .{
             result.duration_ns,
