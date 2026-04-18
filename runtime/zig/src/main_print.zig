@@ -8,16 +8,7 @@ const model = struct {
     pub const command_kind_name = model_commands.command_kind_name;
 };
 
-fn printJsonU16Array(stdout: anytype, values: []const u16) !void {
-    try stdout.writeByte('[');
-    for (values, 0..) |value, idx| {
-        if (idx != 0) try stdout.writeByte(',');
-        try stdout.print("{}", .{value});
-    }
-    try stdout.writeByte(']');
-}
-
-fn printJsonU32Array(stdout: anytype, values: []const u32) !void {
+fn printJsonIntArray(stdout: anytype, values: anytype) !void {
     try stdout.writeByte('[');
     for (values, 0..) |value, idx| {
         if (idx != 0) try stdout.writeByte(',');
@@ -65,13 +56,7 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.writeAll("{\"seq\":");
             try stdout.print("{}", .{seq});
             try stdout.writeAll(",\"kind\":\"copy_buffer_to_texture\",\"direction\":\"");
-            const direction = switch (copy.direction) {
-                .buffer_to_buffer => "buffer_to_buffer",
-                .buffer_to_texture => "buffer_to_texture",
-                .texture_to_buffer => "texture_to_buffer",
-                .texture_to_texture => "texture_to_texture",
-            };
-            try stdout.writeAll(direction);
+            try stdout.writeAll(@tagName(copy.direction));
             try stdout.writeAll("\",\"srcHandle\":");
             try stdout.print("{}", .{copy.src.handle});
             try stdout.writeAll(",\"dstHandle\":");
@@ -140,11 +125,11 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
                     switch (index_data) {
                         .uint16 => |values| {
                             try stdout.writeAll("uint16\",\"indexData\":");
-                            try printJsonU16Array(stdout, values);
+                            try printJsonIntArray(stdout, values);
                         },
                         .uint32 => |values| {
                             try stdout.writeAll("uint32\",\"indexData\":");
-                            try printJsonU32Array(stdout, values);
+                            try printJsonIntArray(stdout, values);
                         },
                     }
                 }
@@ -201,7 +186,7 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{render_cmd.stencil_reference});
             if (render_cmd.bind_group_dynamic_offsets) |offsets| {
                 try stdout.writeAll(",\"bindGroupDynamicOffsets\":");
-                try printJsonU32Array(stdout, offsets);
+                try printJsonIntArray(stdout, offsets);
             }
             try stdout.writeAll("}\n");
         },

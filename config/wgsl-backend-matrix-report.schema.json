@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WGSL Backend Matrix Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "generatedAtUtc", "sourceRegistryPath", "summary", "rows"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_backend_matrix_report" },
+    "generatedAtUtc": { "type": "string", "minLength": 1 },
+    "sourceRegistryPath": { "type": "string", "minLength": 1 },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rowCount", "vulkanReady", "metalReady", "d3d12Ready", "cslRuntimeReady"],
+      "properties": {
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "vulkanReady": { "type": "integer", "minimum": 0 },
+        "metalReady": { "type": "integer", "minimum": 0 },
+        "d3d12Ready": { "type": "integer", "minimum": 0 },
+        "cslRuntimeReady": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/row" }
+    }
+  },
+  "$defs": {
+    "path": { "type": "string", "minLength": 1 },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "missing", "failed", "blocked", "not_wired"]
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": { "$ref": "#/$defs/status" },
+        "reason": { "type": "string", "minLength": 1 },
+        "artifactPath": { "$ref": "#/$defs/path" },
+        "artifactSha256": { "$ref": "#/$defs/sha256" },
+        "traceMaxAbsErr": { "type": "number" }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixtureId",
+        "kernelPattern",
+        "sourceWgslPath",
+        "sourceWgslSha256",
+        "backends"
+      ],
+      "properties": {
+        "fixtureId": { "type": "string", "minLength": 1 },
+        "kernelPattern": { "type": "string", "minLength": 1 },
+        "sourceWgslPath": { "$ref": "#/$defs/path" },
+        "sourceWgslSha256": { "$ref": "#/$defs/sha256" },
+        "backends": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["vulkan_spirv", "metal_msl", "d3d12_hlsl", "d3d12_dxil", "csl"],
+          "properties": {
+            "vulkan_spirv": { "$ref": "#/$defs/backend" },
+            "metal_msl": { "$ref": "#/$defs/backend" },
+            "d3d12_hlsl": { "$ref": "#/$defs/backend" },
+            "d3d12_dxil": { "$ref": "#/$defs/backend" },
+            "csl": { "$ref": "#/$defs/backend" }
+          }
+        }
+      }
+    }
+  }
+}

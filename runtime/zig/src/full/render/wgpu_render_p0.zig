@@ -1,4 +1,3 @@
-const loader = @import("../../core/abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
 const render_types_mod = @import("wgpu_render_types.zig");

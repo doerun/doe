@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_backend_matrix_report",
+  "generatedAtUtc": "2026-04-18T00:00:00Z",
+  "sourceRegistryPath": "config/csl-runtime-fixtures.json",
+  "summary": {
+    "rowCount": 1,
+    "vulkanReady": 1,
+    "metalReady": 1,
+    "d3d12Ready": 1,
+    "cslRuntimeReady": 1
+  },
+  "rows": [
+    {
+      "fixtureId": "elementwise-double",
+      "kernelPattern": "element_wise",
+      "sourceWgslPath": "bench/out/dual-compile-evidence/elementwise-double/source.wgsl",
+      "sourceWgslSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "backends": {
+        "vulkan_spirv": {
+          "status": "ready",
+          "reason": "SPIR-V artifact exists",
+          "artifactPath": "bench/out/dual-compile-evidence/elementwise-double/spirv/elementwise-double.spv",
+          "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "metal_msl": {
+          "status": "ready",
+          "reason": "MSL emitter completed",
+          "artifactPath": "bench/out/cross-backend-matrix/msl/elementwise-double.msl",
+          "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "d3d12_hlsl": {
+          "status": "ready",
+          "reason": "HLSL emitter completed",
+          "artifactPath": "bench/out/cross-backend-matrix/hlsl/elementwise-double.hlsl",
+          "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "d3d12_dxil": {
+          "status": "ready",
+          "reason": "DXIL emitter completed",
+          "artifactPath": "bench/out/cross-backend-matrix/dxil/elementwise-double.dxil",
+          "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "csl": {
+          "status": "ready",
+          "reason": "CSL governed lane report is ready",
+          "artifactPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/governed-lane-report.json",
+          "artifactSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "traceMaxAbsErr": 0
+        }
+      }
+    }
+  ]
+}

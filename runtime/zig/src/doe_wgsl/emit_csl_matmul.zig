@@ -135,22 +135,19 @@ pub fn emit(
     try write(buf, pos, "    const Ap = if (px == step) &A_tile else &A_buf;\n");
     try write(buf, pos, "    const Bp = if (py == step) &B_tile else &B_buf;\n\n");
 
-    try write(buf, pos, "    // Local GEMM step: accumulate Ap * Bp^T into C_tile via @fmacs\n");
+    try write(buf, pos, "    // Local GEMM step: accumulate Ap * Bp into C_tile via @fmacs.\n");
+    try write(buf, pos, "    // Matches canonical SUMMA pattern from csl-extras gemm-collectives_2d/pe.csl:\n");
+    try write(buf, pos, "    // A_dsd declared outside k-loop, advanced by @increment_dsd_offset each k.\n");
+    try write(buf, pos, "    var A_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> A_tile[i] });\n");
+    try write(buf, pos, "    A_dsd = @set_dsd_base_addr(A_dsd, Ap);\n");
     try write(buf, pos, "    for (@range(i16, Kt)) |k| {\n");
-    try write(buf, pos, "        var C_dsd = @get_dsd(mem1d_dsd, .{\n");
-    try write(buf, pos, "            .base_address = &C_tile,\n");
-    try write(buf, pos, "            .extent = Mt,\n");
-    try write(buf, pos, "        });\n");
-    try write(buf, pos, "        var A_dsd = @get_dsd(mem1d_dsd, .{\n");
-    try write(buf, pos, "            .base_address = Ap,\n");
-    try write(buf, pos, "            .extent = Mt,\n");
-    try write(buf, pos, "            .offset = @as(i16, k) * @as(i16, Mt),\n");
-    try write(buf, pos, "        });\n");
+    try write(buf, pos, "        var C_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> C_tile[i] });\n");
     try write(buf, pos, "        for (@range(i16, Nt)) |j| {\n");
     try write(buf, pos, "            const b_val = Bp.*[@as(u32, j) * @as(u32, Kt) + @as(u32, k)];\n");
     try write(buf, pos, "            @fmacs(C_dsd, C_dsd, A_dsd, b_val);\n");
     try write(buf, pos, "            C_dsd = @increment_dsd_offset(C_dsd, Mt, f32);\n");
     try write(buf, pos, "        }\n");
+    try write(buf, pos, "        A_dsd = @increment_dsd_offset(A_dsd, Mt, f32);\n");
     try write(buf, pos, "    }\n\n");
 
     try write(buf, pos, "    step += 1;\n");

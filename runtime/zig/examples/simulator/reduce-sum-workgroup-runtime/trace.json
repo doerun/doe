@@ -3,7 +3,7 @@
   "artifactKind": "csl_simulator_trace",
   "target": "wse3",
   "contract": "explicit_simulator_trace",
-  "kernel": "elementwise-double",
+  "kernel": "reduce-sum-workgroup",
   "executionTarget": "simfabric",
   "width": 4,
   "chunkSize": 1024,
@@ -11,21 +11,21 @@
   "runtimePassed": true,
   "runtimeMaxAbsErr": 0.0,
   "sampleInput": [
-    0.5,
-    1.5,
-    2.5,
-    3.5
+    0.0,
+    1.0,
+    2.0,
+    3.0
   ],
   "sampleExpected": [
-    1.0,
-    3.0,
-    5.0,
-    7.0
+    32640.0,
+    294784.0,
+    556928.0,
+    819072.0
   ],
   "sampleActual": [
-    1.0,
-    3.0,
-    5.0,
-    7.0
+    32640.0,
+    294784.0,
+    556928.0,
+    819072.0
   ]
 }

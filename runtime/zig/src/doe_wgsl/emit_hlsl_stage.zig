@@ -1,4 +1,3 @@
-const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
 

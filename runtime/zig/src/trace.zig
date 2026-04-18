@@ -122,12 +122,7 @@ pub fn normalizeExecutionStatusCode(
 
 pub fn actionName(action: ?model.QuirkAction) []const u8 {
     const actual = action orelse return "none";
-    return switch (actual) {
-        .no_op => "no_op",
-        .use_temporary_buffer => "use_temporary_buffer",
-        .use_temporary_render_texture => "use_temporary_render_texture",
-        .toggle => "toggle",
-    };
+    return @tagName(actual);
 }
 
 pub fn scopeName(value: ?model.Scope) []const u8 {
@@ -151,12 +146,7 @@ pub fn verificationModeName(value: ?model.VerificationMode) []const u8 {
 }
 
 pub fn apiName(value: model.Api) []const u8 {
-    return switch (value) {
-        .vulkan => "vulkan",
-        .metal => "metal",
-        .d3d12 => "d3d12",
-        .webgpu => "webgpu",
-    };
+    return @tagName(value);
 }
 
 fn traceHashByte(value: u64, byte: u8) u64 {
