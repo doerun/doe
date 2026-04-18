@@ -2,22 +2,30 @@
   "schemaVersion": 1,
   "artifactKind": "csl_simulator_trace",
   "target": "wse3",
-  "contract": "compile_run_smoke_summary",
-  "driverExecutable": "cs_python",
-  "compiledTargetCount": 1,
-  "compiledTargets": [
-    {
-      "name": "gather",
-      "artifactDir": "/home/x/deco/doe/runtime/zig/examples/simulator/gather-runtime/compile/compiled/gather"
-    }
+  "contract": "explicit_simulator_trace",
+  "kernel": "gather",
+  "executionTarget": "simfabric",
+  "width": 4,
+  "chunkSize": 64,
+  "totalElements": 256,
+  "runtimePassed": true,
+  "runtimeMaxAbsErr": 0.0,
+  "sampleInput": [
+    3.0,
+    0.0,
+    27.0,
+    25.0
   ],
-  "peGrid": {
-    "width": 4,
-    "height": 1
-  },
-  "prefillLaunchCount": 1,
-  "decodeLaunchCount": 0,
-  "runtimeMode": "sdk_runtime_smoke",
-  "simfabTracesPath": null,
-  "generatedAtUtc": "2026-04-18T23:12:24.137579Z"
+  "sampleExpected": [
+    2.011885166168213,
+    1.3047758340835571,
+    -1.9165111780166626,
+    0.39451324939727783
+  ],
+  "sampleActual": [
+    2.011885166168213,
+    1.3047758340835571,
+    -1.9165111780166626,
+    0.39451324939727783
+  ]
 }

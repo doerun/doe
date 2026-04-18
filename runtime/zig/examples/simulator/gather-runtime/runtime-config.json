@@ -7,6 +7,6 @@
     "bench/runners/csl-runners/gather_sim_runner.py",
     "--compile-dir={compile_output_dir}",
     "--trace-out={trace_path}",
-    "--cmaddr={cmaddr}"
+    "{cmaddr_arg}"
   ]
 }
