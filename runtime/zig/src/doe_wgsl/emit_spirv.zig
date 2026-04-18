@@ -33,6 +33,14 @@ pub const Emitter = struct {
     type_ids: []u32,
     global_ids: []u32,
     global_buffer_wrapped: []bool,
+    /// Parallel to `global_ids`. For WGSL `const` globals with a compile-time
+    /// literal initializer, holds the SPIR-V constant id directly. Load sites
+    /// short-circuit against this table and return the constant id instead of
+    /// emitting OpLoad of a Private variable. Zero means "not a const-with-
+    /// initializer", fall through to the variable-backed load path. Added to
+    /// remove per-iteration OpLoad of `const kPackedCols : u32 = 512u` style
+    /// declarations which were costing ~2% on the matvec inner loop on RADV.
+    global_constant_ids: []u32,
     function_ids: []u32,
     entry_wrapper_ids: []u32,
     decorated_array_types: std.AutoHashMapUnmanaged(u32, void) = .{},
@@ -55,6 +63,10 @@ pub const Emitter = struct {
         errdefer alloc.free(global_buffer_wrapped);
         @memset(global_buffer_wrapped, false);
 
+        const global_constant_ids = try alloc.alloc(u32, module.globals.items.len);
+        errdefer alloc.free(global_constant_ids);
+        @memset(global_constant_ids, 0);
+
         const function_ids = try alloc.alloc(u32, module.functions.items.len);
         errdefer alloc.free(function_ids);
         @memset(function_ids, 0);
@@ -70,6 +82,7 @@ pub const Emitter = struct {
             .type_ids = type_ids,
             .global_ids = global_ids,
             .global_buffer_wrapped = global_buffer_wrapped,
+            .global_constant_ids = global_constant_ids,
             .function_ids = function_ids,
             .entry_wrapper_ids = entry_wrapper_ids,
         };
@@ -82,6 +95,7 @@ pub const Emitter = struct {
         self.decorated_array_types.deinit(self.alloc);
         self.alloc.free(self.entry_wrapper_ids);
         self.alloc.free(self.function_ids);
+        self.alloc.free(self.global_constant_ids);
         self.alloc.free(self.global_buffer_wrapped);
         self.alloc.free(self.global_ids);
         self.alloc.free(self.type_ids);
@@ -143,6 +157,18 @@ pub const Emitter = struct {
 
             try self.builder.emit_name(var_id, global.name);
             self.global_ids[index] = var_id;
+
+            // For WGSL `const` globals with a compile-time initializer, also
+            // record the constant id so load sites can short-circuit the
+            // Private-variable OpLoad. The Private OpVariable stays live as a
+            // fallback so any caller that still does OpAccessChain / OpLoad
+            // (e.g., pointer-taken contexts) continues to work unchanged.
+            if (global.class == .const_) {
+                if (global.initializer) |initializer| {
+                    self.global_constant_ids[index] =
+                        try self.lower_constant(initializer, global.ty);
+                }
+            }
         }
     }
 
@@ -234,15 +260,24 @@ pub const Emitter = struct {
                     try self.builder.emit_name(param_value_ids[param_index], param.name);
                 },
                 else => {
-                    const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(param.ty));
-                    const ptr_id = try self.builder.variable_function(ptr_type);
-                    state.param_ptr_ids[param_index] = ptr_id;
-                    try self.builder.emit_name(ptr_id, param.name);
+                    if (state.is_ssa_promotable_param(@intCast(param_index))) {
+                        // SSA-promoted: skip the Function OpVariable + OpStore
+                        // and cache the raw param id. Reads go through the
+                        // param_value_ids short-circuit in emit_load_from_ref.
+                        state.param_value_ids[param_index] = param_value_ids[param_index];
+                        try self.builder.emit_name(param_value_ids[param_index], param.name);
+                    } else {
+                        const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(param.ty));
+                        const ptr_id = try self.builder.variable_function(ptr_type);
+                        state.param_ptr_ids[param_index] = ptr_id;
+                        try self.builder.emit_name(ptr_id, param.name);
+                    }
                 },
             }
         }
 
         for (function.locals.items, 0..) |local, local_index| {
+            if (state.is_ssa_promotable_local(@intCast(local_index))) continue;
             const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Function, try self.lower_type(local.ty));
             const ptr_id = try self.builder.variable_function(ptr_type);
             state.local_ptr_ids[local_index] = ptr_id;
@@ -252,7 +287,11 @@ pub const Emitter = struct {
         for (function.params.items, 0..) |param, param_index| {
             switch (self.module.types.get(param.ty)) {
                 .ref => {},
-                else => try self.emit_store(state.param_ptr_ids[param_index], param_value_ids[param_index]),
+                else => {
+                    if (state.param_ptr_ids[param_index] != 0) {
+                        try self.emit_store(state.param_ptr_ids[param_index], param_value_ids[param_index]);
+                    }
+                },
             }
         }
 

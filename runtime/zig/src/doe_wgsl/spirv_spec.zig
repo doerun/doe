@@ -12,7 +12,10 @@ pub const MAGIC: u32 = 0x07230203;
 
 pub const Capability = struct {
     pub const Shader: u32 = 1;
-    pub const ClipDistance: u32 = 5;
+    // Capability.ClipDistance is 32 per Khronos; Doe previously used 5 which
+    // is Linkage. Latent bug -- only hit by shaders using
+    // @builtin(clip_distances), which the current compute cohort does not.
+    pub const ClipDistance: u32 = 32;
     pub const Float16: u32 = 9;
     pub const SampleRateShading: u32 = 35;
     pub const GroupNonUniform: u32 = 61;
@@ -38,6 +41,12 @@ pub const Dim = struct {
 };
 
 pub const ImageFormat = struct {
+    // Values from Khronos SPIR-V unified spec section "Image Format". Prior
+    // int/uint entries (Rgba32i through Rg32ui) were shifted up by ~15, all
+    // out of range in the spec. Latent: compute cohort does not use storage
+    // images; any shader declaring texture_storage_Nd<rXsint|rXuint> would
+    // have emitted invalid OpTypeImage. Cross-verified via Tint emission
+    // for texture_storage_2d<r32sint, write> (format=24 in Tint).
     pub const Unknown: u32 = 0;
     pub const Rgba32f: u32 = 1;
     pub const Rgba16f: u32 = 2;
@@ -48,16 +57,16 @@ pub const ImageFormat = struct {
     pub const Rg16f: u32 = 7;
     pub const R16f: u32 = 9;
     pub const Rgba16: u32 = 10;
-    pub const Rgba32i: u32 = 36;
-    pub const Rgba16i: u32 = 37;
-    pub const Rgba8i: u32 = 39;
-    pub const R32i: u32 = 40;
-    pub const Rg32i: u32 = 41;
-    pub const Rgba32ui: u32 = 44;
-    pub const Rgba16ui: u32 = 45;
-    pub const Rgba8ui: u32 = 47;
-    pub const R32ui: u32 = 48;
-    pub const Rg32ui: u32 = 49;
+    pub const Rgba32i: u32 = 21;
+    pub const Rgba16i: u32 = 22;
+    pub const Rgba8i: u32 = 23;
+    pub const R32i: u32 = 24;
+    pub const Rg32i: u32 = 25;
+    pub const Rgba32ui: u32 = 30;
+    pub const Rgba16ui: u32 = 31;
+    pub const Rgba8ui: u32 = 32;
+    pub const R32ui: u32 = 33;
+    pub const Rg32ui: u32 = 35;
 };
 
 pub const ImageOperandsMask = struct {
@@ -117,7 +126,9 @@ pub const StorageClass = struct {
 };
 
 pub const Decoration = struct {
-    pub const Invariant: u32 = 0;
+    // Previously had Invariant=0 (actually RelaxedPrecision) and Index=31
+    // (actually Component). Latent bugs hit by @invariant-decorated builtins
+    // and @blend_src dual-source-blend locations on vertex/fragment stages.
     pub const Block: u32 = 2;
     pub const ColMajor: u32 = 5;
     pub const ArrayStride: u32 = 6;
@@ -127,33 +138,39 @@ pub const Decoration = struct {
     pub const Flat: u32 = 14;
     pub const Centroid: u32 = 16;
     pub const Sample: u32 = 17;
+    pub const Invariant: u32 = 18;
     pub const NonWritable: u32 = 24;
     pub const NonReadable: u32 = 25;
     pub const Location: u32 = 30;
-    pub const Index: u32 = 31;
+    pub const Index: u32 = 32;
     pub const Binding: u32 = 33;
     pub const DescriptorSet: u32 = 34;
     pub const Offset: u32 = 35;
 };
 
 pub const Builtin = struct {
+    // Values from the Khronos SPIR-V unified spec section "Builtin". Prior
+    // entries for ClipDistance, NumWorkgroups, LocalInvocationId, and
+    // LocalInvocationIndex were off by one; 2D/3D compute workloads that
+    // read `local_invocation_id.y` / `.z` were silently getting zero on
+    // RADV because the decoration landed on LocalInvocationIndex (a scalar).
     pub const Position: u32 = 0;
-    pub const ClipDistance: u32 = 2;
+    pub const ClipDistance: u32 = 3;
     pub const PrimitiveId: u32 = 7;
     pub const FragCoord: u32 = 15;
     pub const FrontFacing: u32 = 17;
     pub const SampleIndex: u32 = 18;
     pub const SampleMask: u32 = 20;
     pub const FragDepth: u32 = 22;
-    pub const NumWorkgroups: u32 = 25;
+    pub const NumWorkgroups: u32 = 24;
     pub const WorkgroupId: u32 = 26;
+    pub const LocalInvocationId: u32 = 27;
     pub const GlobalInvocationId: u32 = 28;
-    pub const LocalInvocationId: u32 = 29;
-    pub const LocalInvocationIndex: u32 = 30;
-    pub const VertexIndex: u32 = 42;
-    pub const InstanceIndex: u32 = 43;
+    pub const LocalInvocationIndex: u32 = 29;
     pub const SubgroupSize: u32 = 36;
     pub const SubgroupLocalInvocationId: u32 = 41;
+    pub const VertexIndex: u32 = 42;
+    pub const InstanceIndex: u32 = 43;
 };
 
 pub const FunctionControl = struct {
@@ -201,6 +218,7 @@ pub const Opcode = struct {
     pub const AccessChain: u16 = 65;
     pub const Decorate: u16 = 71;
     pub const MemberDecorate: u16 = 72;
+    pub const VectorExtractDynamic: u16 = 77;
     pub const CompositeConstruct: u16 = 80;
     pub const CompositeExtract: u16 = 81;
     pub const ImageFetch: u16 = 95;

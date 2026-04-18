@@ -747,8 +747,12 @@ test "vulkan upload: VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO is 12" {
     try std.testing.expectEqual(@as(i32, 12), vk_constants.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
 }
 
-test "vulkan upload: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO is 17" {
-    try std.testing.expectEqual(@as(i32, 17), vk_constants.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+test "vulkan upload: VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO is 5" {
+    // Per canonical vulkan_core.h. Previously asserted 17, which was
+    // actually VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO -- every
+    // vkAllocateMemory call silently passed a wrong sType that the AMDGPU
+    // driver tolerated in release builds.
+    try std.testing.expectEqual(@as(i32, 5), vk_constants.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 }
 
 test "vulkan upload: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO is 42" {

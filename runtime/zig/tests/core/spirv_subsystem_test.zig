@@ -179,25 +179,37 @@ test "spec: storage classes" {
 }
 
 test "spec: decorations" {
+    // Values from Khronos SPIR-V unified spec. Invariant / Index entries
+    // are pinned here explicitly because prior code encoded Invariant=0
+    // (actually RelaxedPrecision) and Index=31 (actually Component) --
+    // latent bugs on vertex/fragment shaders with @invariant or @blend_src.
     try testing.expectEqual(@as(u32, 2), spec.Decoration.Block);
     try testing.expectEqual(@as(u32, 6), spec.Decoration.ArrayStride);
     try testing.expectEqual(@as(u32, 11), spec.Decoration.BuiltIn);
     try testing.expectEqual(@as(u32, 14), spec.Decoration.Flat);
+    try testing.expectEqual(@as(u32, 18), spec.Decoration.Invariant);
     try testing.expectEqual(@as(u32, 30), spec.Decoration.Location);
+    try testing.expectEqual(@as(u32, 32), spec.Decoration.Index);
     try testing.expectEqual(@as(u32, 33), spec.Decoration.Binding);
     try testing.expectEqual(@as(u32, 34), spec.Decoration.DescriptorSet);
     try testing.expectEqual(@as(u32, 35), spec.Decoration.Offset);
 }
 
 test "spec: builtins" {
+    // Values from Khronos SPIR-V unified spec. LocalInvocationId / Index
+    // previously asserted 29/30, which was off-by-one (landed in Doe's
+    // emission as LocalInvocationIndex / uninitialized). 2D/3D compute
+    // workloads reading local_invocation_id.y would silently get 0 on
+    // RADV. Fixed along with spirv_spec.zig.
     try testing.expectEqual(@as(u32, 0), spec.Builtin.Position);
     try testing.expectEqual(@as(u32, 22), spec.Builtin.FragDepth);
+    try testing.expectEqual(@as(u32, 24), spec.Builtin.NumWorkgroups);
+    try testing.expectEqual(@as(u32, 27), spec.Builtin.LocalInvocationId);
     try testing.expectEqual(@as(u32, 28), spec.Builtin.GlobalInvocationId);
-    try testing.expectEqual(@as(u32, 29), spec.Builtin.LocalInvocationId);
-    try testing.expectEqual(@as(u32, 30), spec.Builtin.LocalInvocationIndex);
+    try testing.expectEqual(@as(u32, 29), spec.Builtin.LocalInvocationIndex);
+    try testing.expectEqual(@as(u32, 36), spec.Builtin.SubgroupSize);
     try testing.expectEqual(@as(u32, 42), spec.Builtin.VertexIndex);
     try testing.expectEqual(@as(u32, 43), spec.Builtin.InstanceIndex);
-    try testing.expectEqual(@as(u32, 36), spec.Builtin.SubgroupSize);
 }
 
 test "spec: execution models and modes" {
@@ -214,6 +226,22 @@ test "spec: dimensions" {
     try testing.expectEqual(@as(u32, 1), spec.Dim._2D);
     try testing.expectEqual(@as(u32, 2), spec.Dim._3D);
     try testing.expectEqual(@as(u32, 3), spec.Dim.Cube);
+}
+
+test "spec: image formats" {
+    // Values from Khronos SPIR-V unified spec. Integer/uint formats were
+    // previously shifted up by ~15 (Rgba32i=36 actually meant Rg16ui in the
+    // spec, R32i=40 was out of range). Pin the canonical values so any
+    // future regression trips the test rather than silently emitting
+    // out-of-range OpTypeImage.
+    try testing.expectEqual(@as(u32, 0), spec.ImageFormat.Unknown);
+    try testing.expectEqual(@as(u32, 1), spec.ImageFormat.Rgba32f);
+    try testing.expectEqual(@as(u32, 4), spec.ImageFormat.Rgba8);
+    try testing.expectEqual(@as(u32, 21), spec.ImageFormat.Rgba32i);
+    try testing.expectEqual(@as(u32, 24), spec.ImageFormat.R32i);
+    try testing.expectEqual(@as(u32, 30), spec.ImageFormat.Rgba32ui);
+    try testing.expectEqual(@as(u32, 33), spec.ImageFormat.R32ui);
+    try testing.expectEqual(@as(u32, 35), spec.ImageFormat.Rg32ui);
 }
 
 test "spec: memory semantics" {

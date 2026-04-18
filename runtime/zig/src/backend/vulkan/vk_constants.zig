@@ -238,7 +238,13 @@ pub const VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO: i32 = 14;
 pub const VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO: i32 = 15;
 pub const VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO: i32 = 16;
 pub const VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO: i32 = 17;
-pub const VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO: i32 = 17;
+// Canonical value is 5 per vulkan_core.h. Previously 17 (colliding with
+// VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO). The AMDGPU driver ignored
+// the mismatch in release builds because validation layers are off and
+// VkMemoryAllocateInfo's first four fields (sType, pNext, allocationSize,
+// memoryTypeIndex) line up with VkPipelineCacheCreateInfo. Every
+// vkAllocateMemory call in the backend used this sType.
+pub const VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO: i32 = 5;
 pub const VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO: i32 = 18;
 pub const VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO: i32 = 29;
 pub const VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO: i32 = 30;
@@ -405,7 +411,9 @@ pub const VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO: i32 = 31;
 pub const VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO: i32 = 25;
 
 // --- VK_EXT_depth_clip_enable ---
-pub const VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT: i32 = 1000102000;
+// Canonical value is 1000102001 per vulkan_core.h; 1000102000 is actually
+// VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT.
+pub const VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT: i32 = 1000102001;
 pub const VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME: [*:0]const u8 = "VK_EXT_depth_clip_enable";
 
 // --- Graphics topology and polygon mode ---

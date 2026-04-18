@@ -1,6 +1,7 @@
 const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
+const ir_const_eval = @import("ir_const_eval.zig");
 const sema = @import("sema.zig");
 const sema_helpers = @import("sema_helpers.zig");
 const token_mod = @import("token.zig");
@@ -616,57 +617,7 @@ fn scalar_constant_from_node(
 }
 
 fn fold_scalar_binary(op: ir.BinaryOp, lhs: ir.ConstantValue, rhs: ir.ConstantValue) BuildError!ir.ConstantValue {
-    return switch (lhs) {
-        .bool => |lhs_bool| switch (rhs) {
-            .bool => |rhs_bool| switch (op) {
-                .equal => ir.ConstantValue{ .bool = lhs_bool == rhs_bool },
-                .not_equal => ir.ConstantValue{ .bool = lhs_bool != rhs_bool },
-                .logical_and => ir.ConstantValue{ .bool = lhs_bool and rhs_bool },
-                .logical_or => ir.ConstantValue{ .bool = lhs_bool or rhs_bool },
-                else => error.UnsupportedConstruct,
-            },
-            else => error.UnsupportedConstruct,
-        },
-        .int => |lhs_int| switch (rhs) {
-            .int => |rhs_int| switch (op) {
-                .add => ir.ConstantValue{ .int = lhs_int +% rhs_int },
-                .sub => ir.ConstantValue{ .int = lhs_int -% rhs_int },
-                .mul => ir.ConstantValue{ .int = lhs_int *% rhs_int },
-                .div => if (rhs_int == 0) error.UnsupportedConstruct else ir.ConstantValue{ .int = @divTrunc(lhs_int, rhs_int) },
-                .rem => if (rhs_int == 0) error.UnsupportedConstruct else ir.ConstantValue{ .int = @mod(lhs_int, rhs_int) },
-                .bit_and => ir.ConstantValue{ .int = lhs_int & rhs_int },
-                .bit_or => ir.ConstantValue{ .int = lhs_int | rhs_int },
-                .bit_xor => ir.ConstantValue{ .int = lhs_int ^ rhs_int },
-                .shift_left => if (rhs_int >= 64) error.UnsupportedConstruct else ir.ConstantValue{ .int = lhs_int << @as(std.math.Log2Int(u64), @intCast(rhs_int)) },
-                .shift_right => if (rhs_int >= 64) error.UnsupportedConstruct else ir.ConstantValue{ .int = lhs_int >> @as(std.math.Log2Int(u64), @intCast(rhs_int)) },
-                .equal => ir.ConstantValue{ .bool = lhs_int == rhs_int },
-                .not_equal => ir.ConstantValue{ .bool = lhs_int != rhs_int },
-                .less => ir.ConstantValue{ .bool = lhs_int < rhs_int },
-                .less_equal => ir.ConstantValue{ .bool = lhs_int <= rhs_int },
-                .greater => ir.ConstantValue{ .bool = lhs_int > rhs_int },
-                .greater_equal => ir.ConstantValue{ .bool = lhs_int >= rhs_int },
-                else => error.UnsupportedConstruct,
-            },
-            else => error.UnsupportedConstruct,
-        },
-        .float => |lhs_float| switch (rhs) {
-            .float => |rhs_float| switch (op) {
-                .add => ir.ConstantValue{ .float = lhs_float + rhs_float },
-                .sub => ir.ConstantValue{ .float = lhs_float - rhs_float },
-                .mul => ir.ConstantValue{ .float = lhs_float * rhs_float },
-                .div => ir.ConstantValue{ .float = lhs_float / rhs_float },
-                .rem => ir.ConstantValue{ .float = @mod(lhs_float, rhs_float) },
-                .equal => ir.ConstantValue{ .bool = lhs_float == rhs_float },
-                .not_equal => ir.ConstantValue{ .bool = lhs_float != rhs_float },
-                .less => ir.ConstantValue{ .bool = lhs_float < rhs_float },
-                .less_equal => ir.ConstantValue{ .bool = lhs_float <= rhs_float },
-                .greater => ir.ConstantValue{ .bool = lhs_float > rhs_float },
-                .greater_equal => ir.ConstantValue{ .bool = lhs_float >= rhs_float },
-                else => error.UnsupportedConstruct,
-            },
-            else => error.UnsupportedConstruct,
-        },
-    };
+    return ir_const_eval.fold_scalar_binary(op, lhs, rhs) catch error.UnsupportedConstruct;
 }
 
 fn captureFailureNode(tree: *const Ast, node_idx: u32) void {

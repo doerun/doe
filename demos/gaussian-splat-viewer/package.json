@@ -1,0 +1,16 @@
+{
+  "name": "@doe/demo-gaussian-splat-viewer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "doe-gpu": "file:../../packages/doe-gpu"
+  }
+}

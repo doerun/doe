@@ -64,7 +64,111 @@ Landing that change would:
 - likely close similar small gaps on other compute workloads where the driver optimizer reacts to SPV structure
 - require Doe's WGSL IR → SPIR-V lowering pass to emit `OpTypeStruct { array<T> }` wrappers consistently and update all downstream access chains
 
-Out of scope for the 2026-04-17 session; flagged as a follow-up in the Vulkan optimization queue.
+~~Out of scope for the 2026-04-17 session; flagged as a follow-up in the Vulkan optimization queue.~~
+
+**Update 2026-04-17:** landed as `type_struct_fresh` in `spirv_builder.zig` plus callsite in `emit_spirv.zig`. 14 tracked SPVs regenerated. A/B medians came back tight (new 2768.77 ms vs old 2774.15 ms vs Tint 2701.84 ms) -- only about 0.2% of the matvec residual closed. The larger SPV-emission-style difference is elsewhere.
+
+**Update 2026-04-17 (second pass):** landed scalar-only SSA promotion for immutable `let` bindings in `emit_spirv_fn.zig::FunctionState`. Scalars with `mutable=false` now skip the `OpVariable`/`OpStore`/`OpLoad` triple and are cached as SPIR-V SSA ids; subsequent reads return the cached id directly. All 27 tracked `bench/kernels/*.spv` regenerated and revalidated (`spirv-val` clean, total size 91856B -> 86692B, -5.6%). In `matrix_vector_mul_32768x2048_f32_naive_swizzle0.spv` the `rowBy4` Function variable is gone: `%uint_32768 / uint_4` compares directly against the once-loaded `gid.x` SSA value, and the inner 512-iteration loop references `rowBy4` as SSA through the 4 dot products instead of reloading per use. Matches Tint's emission shape for `let rowBy4 = gid.x`.
+
+Scoped to scalars because WGSL single-swizzle member access (`v.x`) inherits the base's ref category, so a promoted vector local can be reached through a member-on-local_ref chain that still expects a Function pointer -- the scalar-only narrowing sidesteps that while capturing the dominant loop-index hot path.
+
+Vector/composite `let` bindings (e.g. `let v = vectorData[col]` in matvec) still use Function variables. Expanding to vectors requires handling member-load-from-ref with a promoted-local base (OpCompositeExtract / OpVectorExtractDynamic instead of OpAccessChain + OpLoad). Tracked as the next step.
+
+**Update 2026-04-17 (third pass):** landed vector-typed SSA promotion. `is_ssa_promotable_local` now covers `.scalar` and `.vector`; `emit_load_from_ref` grew two new paths for `load(member(local_ref(promoted), field))` and `load(index(local_ref(promoted), idx))` that extract from the cached SSA composite via `OpCompositeExtract` (scalar or multi-swizzle) and `OpVectorExtractDynamic` (vector dynamic index). Added `spirv_spec.Opcode.VectorExtractDynamic = 77`. In `matrix_vector_mul_32768x2048_f32_naive_swizzle0.spv` the `v` Function variable is gone: `%61 = OpLoad %v4float %54` loads once from `vectorData[col]` and all four `OpDot` instructions in the inner loop feed from `%61` directly -- matches Tint's emission shape. 27 tracked SPVs revalidated (`spirv-val` clean, aggregate size 86692B -> 82716B, another -4.6% for this pass; cumulative from pre-change 91856B -> 82716B = -10.0%).
+
+Local A/B on the matvec `compute_matvec_32768x2048_f32` workload (doe_direct_vulkan, 15 iterations timed, 5 warmup): `min=2074.18ms p50=2098.48ms max=2142.23ms stdev<14ms` vs pre-change standalone run `min=2147.37ms p50=2236.26ms max=3233.39ms`. Min dropped -3.4%; tail tightened dramatically (the outlier-prone 3s samples disappeared). Against the last comparable-lane Dawn baseline at `bench/out/amd-vulkan/compare/20260417T124709Z` (Dawn p50 = 2040.92ms), the gap narrows from -4.18% to approximately -2.8%. Full compare re-run via the strict lane needed to lock in a revised delta.
+
+**Update 2026-04-17 (fourth pass):** landed SSA-promotion of scalar/vector function parameters. `is_ssa_promotable_param` screens by type and calls `param_is_assigned` (lightweight scan over stmts/exprs that follows member/index/load chains) to skip any param that the body reassigns -- WGSL params are locally mutable by default so this guard is required. Promoted params reuse the new `try_ssa_composite_id` helper so member and index reads go through the same `OpCompositeExtract` / `OpVectorExtractDynamic` paths as promoted locals. In `matrix_vector_mul_32768x2048_f32_naive_swizzle0.spv` the `gid` Function variable and its OpStore/OpAccessChain prelude are gone: `%gid = OpFunctionParameter %v3uint` followed immediately by `%30 = OpCompositeExtract %uint %gid 0` for `gid.x` -- exactly Tint's shape. All 27 tracked SPVs revalidate; aggregate size 82716B -> 77784B (-6.0% this pass; cumulative from pre-session baseline 91856B -> 77784B = -15.3%).
+
+Local A/B p50=2099.08ms min=2060.17ms stdev=13.90 (20 iterations, 5 warmup) vs previous-iteration param-less run min=2074.18. Another -0.7% on min; stdev tightened further. Cumulative matvec min improvement from pre-session baseline ~2147ms is -4.1%. Gap vs Dawn baseline remains roughly -2.8%; compare-lane re-run required to lock in a strict number.
+
+**Strict-compare confirmation (2026-04-17):** re-ran `amd-vulkan-backend-compare-dev` receipts-first (20 iterations, 5 warmup) and stitched against a fresh Dawn baseline. Results locked in:
+
+| Workload | 2026-04-17 pre-SSA | 2026-04-17 post-SSA | Δ |
+| --- | ---: | ---: | ---: |
+| `compute_matvec_32768x2048_f32` (naive_swizzle0) | -4.18% | **-3.13%** | +1.05pp |
+| `compute_matvec_32768x2048_f32_swizzle1` | +0.10% | **+0.38%** | +0.28pp |
+| `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` | +10.80% | **+11.88%** | +1.08pp |
+| `compute_concurrent_execution_single` | +15.14% | **+15.99%** | +0.85pp |
+
+All four governed compute workloads improved. Naive_swizzle0 is the primary regression target and narrowed by ~25% of the remaining gap in a single session (without further driver/hardware work). Upload and monte-carlo workloads are unchanged as expected (they have no scalar/vector-let patterns that the SSA-promotion can help).
+
+**Backend-side audit (2026-04-17):** Walked the Vulkan dispatch path looking for additional hotspots. `prepare_descriptor_sets` in `vk_pipeline.zig` already early-returns on matching bindings hash (100-dispatch workloads pay one write per repeat). `use_explicit_submit_boundaries` deliberately returns `false` with a comment that deferred-replay regressed compute wall time on dependent streams, so per-command submit is intentional. Fence wait uses a 2048-spin `vkGetFenceStatus` fast path before falling to `vkWaitForFences`. Command buffer reset relies on the `RESET_COMMAND_BUFFER_BIT` pool flag to save one driver call per flush. All the CPU-side encode paths look intentionally optimized; the residual ~3% naive_swizzle0 gap is now almost entirely driver-side ISA scheduling on RADV's response to SPIR-V emission style.
+
+**Update 2026-04-17 (fifth pass):** added integer constant-folding to the SPV emitter. `try_fold_const_binary` in `emit_spirv_fn.zig` evaluates binary ops at emit time when both operands resolve to integer constants via `resolve_constant_int`, which peeks through `.load` and `.global_ref` onto `const` globals with `ConstantValue.int` initializers. Covers add/sub/mul/div/rem/bit-and/bit-or/bit-xor/shift-left/shift-right for `u32`/`i32`/`abstract_int` with WGSL-spec wrapping semantics. In `matrix_vector_mul_32768x2048_f32_naive_swizzle0.spv` the `kRows / 4u` expression now emits as `%uint_8192` directly (matches Tint; previously emitted `OpUDiv %uint_32768 %uint_4`). 27 tracked SPVs revalidated; aggregate 77784B -> 77708B (-76B this pass, modest since most kernels had no literal-literal arithmetic left in the IR after existing sema simplifications). Cumulative pre-session -> current: 91856B -> 77708B = -15.4%. Local matvec p50 = 2148.89ms min = 2086.76 stdev = 22.21 (20 iters, 5 warmup); within noise of the prior iteration's 2099/2060/13.9, i.e. no measurable GPU-side gain because the folded UDiv sat outside the inner loop. The value is cleaner SPV (fewer ops for the driver optimizer to chase) rather than hot-path speed.
+
+**Update 2026-04-17 (sixth pass):** added identity-element folds to the binary-op emission. `try_fold_identity_binary` handles `x+0`, `x*1`, `x*0`, `x-0`, `x<<0`, `x>>0`, and bitwise or/xor/and with 0, as well as the symmetric 0+x / 1*x / 0*x / 0|x / 0^x / 0&x forms; emits the surviving operand's SSA id (or a `const_u32(0)` for absorbing cases) instead of an op. Triggers on matvec's `(4u * rowBy4 + 0u)` for the first dot product — emit now writes `%67 = OpIMul %66 %uint_512` directly, skipping the `OpIAdd %66 %uint_0`. The remaining three dots keep their `+ 1u / + 2u / + 3u` IAdds (non-zero literals). 27 tracked SPVs revalidate; aggregate 77708B -> 77648B (-60B this pass). Sharded the emit file to stay under the 999-line runtime cap: moved `scalar_construct_kind`, `assign_op_to_binary`, `param_is_assigned`, `ref_chain_roots_at_param`, and the `ScalarKind` enum into a new `emit_spirv_fn_helpers.zig` (55 lines); `emit_spirv_fn.zig` is now 985 lines.
+
+Cumulative emitter-series totals for this session: tracked SPV size 91856B -> 77648B = **-15.5%**, and the naive_swizzle0 matvec gap closed from -4.18% to -3.13% per the strict-compare lane (+1.05pp absolute). Further sub-1% wins on this workload would need driver-side RADV ISA scheduling changes that the SPV emission style can no longer influence.
+
+**Update 2026-04-17 (seventh pass):** coalesced the two-OpAccessChain pattern for wrapped storage-buffer access into a single chain. Rewrote `emit_ref_expr` to walk the ref chain leaf-to-root, collect each member/index as a SPIR-V index operand, and emit one OpAccessChain at the root with all indices in root-first order. For the matvec inner loop the pair of `OpAccessChain %matrixData %uint_0` then `OpAccessChain %intermediate %index` collapses to `OpAccessChain %matrixData %uint_0 %index` -- exactly Tint's shape. Works across the full member/index/global/local/param chain space; no callers relied on the intermediate pointer being materialized as a separate id.
+
+27 tracked SPVs revalidate; aggregate 77648B -> 74992B (**-2.656KB this pass**, the biggest single shave in the emitter series). Cumulative pre-session -> current: 91856B -> 74992B = **-18.4%**.
+
+Strict-compare receipts (`bench/out/amd-vulkan/compare-dev/20260417T19{1211,1335}Z`, 20 iterations / 5 warmup) landed the real delta:
+
+| Workload | pre-session | post-SSA (earlier today) | post-coalesce | Δ from start |
+| --- | ---: | ---: | ---: | ---: |
+| `compute_matvec_32768x2048_f32` (naive_swizzle0) | -4.18% | -3.13% | **-1.87%** | **+2.31pp** |
+| `compute_matvec_32768x2048_f32_swizzle1` | +0.10% | +0.38% | **+0.52%** | +0.42pp |
+| `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` | +10.80% | +11.88% | **+11.27%** | +0.47pp |
+| `compute_concurrent_execution_single` | +15.14% | +15.99% | **+15.38%** | +0.24pp |
+
+Naive_swizzle0 is now within 2% of Dawn — less than the usual run-to-run variance on a 2-second GPU workload. Closing the remaining gap would need changes the SPV emission style can no longer influence (RADV ISA scheduling or algorithmic choices); the compile-time emitter optimization path is effectively at parity with Tint.
+
+**Update 2026-04-17 (eighth pass):** added per-function CSE for `OpAccessChain` results. `FunctionState.access_chain_cache` is a small list of `(root_id, ptr_type, indices[])` entries populated by `emit_ref_expr` as chains are emitted; repeat visits with the same shape return the prior SSA id and skip re-emission. Hits the read-modify-write case where `sum.x = sum.x + dot(...)` previously paid for two `OpAccessChain %_ptr_Function_float %sum %uint_0` in the same statement (one for the store target, one inside `emit_load_from_ref` for the read operand) -- now emits one. Only helps when the repeat indices carry stable SSA ids; constant field indices (via `const_u32`) always qualify. Each matvec inner-loop iteration saves 4 chains (one per `sum.{x,y,z,w}` read-modify-write). 27 tracked SPVs revalidate; aggregate 74992B -> 74220B (-772B this pass).
+
+Also sharded `emit_spirv_fn.zig` again: moved the three fold helpers (`resolve_constant_int`, `try_fold_identity_binary`, `try_fold_const_binary`) to a new `emit_spirv_fn_folds.zig` module that takes `self: anytype` so it can call back into the generic `FunctionState` without recursion-through-generic complications. Current file sizes: `emit_spirv_fn.zig` 929 lines, `emit_spirv_fn_helpers.zig` 55 lines, `emit_spirv_fn_folds.zig` 105 lines.
+
+Strict-compare confirmed (`bench/out/amd-vulkan/compare-dev/20260417T19{4609,4734}Z`):
+
+| Workload | pre-session | post-coalesce | **post-CSE** |
+| --- | ---: | ---: | ---: |
+| `compute_matvec_32768x2048_f32` (naive_swizzle0) | -4.18% | -1.87% | **-1.89%** |
+| `compute_matvec_32768x2048_f32_swizzle1` | +0.10% | +0.52% | +0.37% |
+| `compute_matvec_32768x2048_f32_workgroupshared_swizzle1` | +10.80% | +11.27% | +11.75% |
+| `compute_concurrent_execution_single` | +15.14% | +15.38% | +15.27% |
+
+All deltas moved within run-to-run variance of the prior iteration. The CSE fires correctly (verified: only one `OpAccessChain %_ptr_Function_float %sum %uint_0` per statement, vs two pre-change) but the GPU-side effect is within noise -- RADV's optimizer was already deduping these chains, so the SPV-level dedup is cleaner-SPV rather than hot-path speed. Cumulative session SPV shave: **91856B -> 74220B = -19.2%**.
+
+**Correctness hardening (same session):** added a label-boundary flush to the access-chain cache. SPIR-V requires the defining block of any `<id>` to dominate its use site; caching an OpAccessChain from one branch of an `if-else` and reusing it in a sibling branch would produce dominance-violating SPIR-V. `emit_label` now frees all cached entries at each OpLabel so CSE only fires within a straight-line basic block. Tracked SPV aggregate landed at 74612 B (-392 B vs the pre-flush CSE pass; some prior across-block hits got correctly undone). Post-flush, `spirv-val` still clean across all 27 SPVs. The matvec inner loop CSE win is preserved because it's a single straight-line basic block; every `sum.{x,y,z,w}` field still emits one chain per statement.
+
+**Claim-gate milestone (2026-04-17 evening):** ran a higher-iteration strict-compare (40 iterations / 8 warmup) through `amd-vulkan-backend-compare-dev` to tighten tail statistics. Artifact: `bench/out/amd-vulkan/scratch/post-cse-tight-compare.{json,claim.json}`. Result:
+
+- **15 of 16 governed workloads are Doe-claimable** (both p50 and p95 positive).
+- `compute_matvec_32768x2048_f32_swizzle1` flipped from p95=-0.037% at 20-iter to claimable at 40-iter -- the previous iteration's near-zero negative p95 was measurement noise rather than a real regression.
+- `compute_matvec_32768x2048_f32` (naive_swizzle0) remains the single non-claim row: p50=-2.85%, p95=-1.87% with the higher sample count. The tighter stats show the true stable delta sits near -3%; the -1.89% from the 20-iter run was a noise low point. Cumulative emitter-series improvement vs pre-session is still ~1pp absolute rather than ~2pp, but the underlying trajectory (distinct-struct + const-inline + SSA + coalesce + fold + CSE) is real and documented above.
+
+The `compute_matvec_32768x2048_f32` naive_swizzle0 residual is now the only engineering-visible Doe-slower row on AMD Vulkan's governed lane. All remaining lever for closing it is driver-side (RADV ISA scheduling on the dot-product inner-loop shape); the SPV emission path is tighter than Tint's (Doe 41 SSA ops and 2980 B vs Tint 56 ops and 3968 B on this kernel) yet the GPU-side cost continues to favor Tint's emission style by a small amount. Further compile-time emitter work cannot move this needle.
+
+## Second-pass diff: const globals emitted as Private variables
+
+After the distinct-struct landing, comparing Doe's and Tint's main function bodies surfaced a bigger emission-style gap. Doe's `emit_spirv.zig::global_storage_class` maps WGSL `const` and `override` globals to `StorageClass.Private`:
+
+```zig
+.const_, .override_ => spirv.StorageClass.Private,
+```
+
+The result: `kRows = 32768u` and `kPackedCols = 512u` each become an `OpVariable %_ptr_Private_uint Private %uint_32768` with initializer, and every reference in the shader becomes an `OpLoad %uint %kPackedCols`. The 512-iteration inner loop on `compute_matvec_32768x2048_f32` therefore does 2-3 extra `OpLoad` instructions per iteration that compete with the real dot-product work.
+
+Tint emits WGSL `const` as SPIR-V immediate constants directly: `OpConstant %uint 512` is used in place wherever `kPackedCols` appears, with no Private variable, no load, no aliasing story the driver has to reason about. The post-optimization ISA is cleaner.
+
+Doe's Private-variable-with-initializer shape is legal SPIR-V and functionally correct. The RADV optimizer does promote loads of a never-written Private variable back to constants, but that promotion runs on every shader invocation rather than at compile time, and appears to be partial -- some of the loads stay in the ISA.
+
+## Fix scope
+
+Targeted change across the emitter pipeline:
+
+1. In `runtime/zig/src/doe_wgsl/emit_spirv.zig::emit_globals`, detect `global.class == .const_ or .override_` with a literal initializer and skip emitting the OpVariable. Compute the constant id via `lower_constant(initializer, global.ty)` and store it in a parallel `global_constant_ids` array.
+2. In `emit_spirv_fn.zig::emit_ref_expr` (the `.global_ref` branch) and `emit_load_from_ref`, detect the const-global case and return the constant id directly instead of emitting an OpAccessChain / OpLoad.
+3. In `emit_load_from_ref`, short-circuit when the global_id is actually a constant id (constants can't be loaded via OpLoad; this would be invalid SPIR-V).
+4. Preserve the existing Private-variable path for overrides that lack a compile-time initializer (if any).
+
+Scope: roughly 80-150 LoC across three files. Regression risk is non-trivial because the change touches the core emit-ref / emit-load path used by every shader. Needs a full smoke-suite of WGSL fixtures covering const / override / var patterns to validate no false-positive const-substitution on actual storage.
+
+Expected impact: matvec naive_swizzle0 gap closes to within noise (likely positive for Doe); other compute workloads that reference WGSL `const` dimensions in inner loops (the dispatch_workgroups family, the atomic tests, most hand-authored kernels) gain similar 1-3%.
+
+Tracked as the primary compiler-level follow-up after the 2026-04-17 session. The distinct-struct change landed today; const-inlining is the next step.
 
 ## Ruled out (updated)
 

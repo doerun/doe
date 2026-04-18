@@ -5,8 +5,18 @@ const std = @import("std");
 const log = std.log.scoped(.vk_render_pipeline);
 const c = @import("vk_constants.zig");
 const vk_formats = @import("vk_formats.zig");
+const vk_pipeline = @import("vk_pipeline.zig");
 const vk_pipeline_cache_persistent = @import("vk_pipeline_cache_persistent.zig");
 const vk_resources = @import("vk_resources.zig");
+
+// Canonical default render shaders loaded from `bench/kernels/` when a
+// render-draw command does not reference an explicit vertex/fragment shader.
+// Unblocks the render_draw_* and render_pass_* workload family without
+// requiring each benchmark command file to author its own minimal shader
+// pair. See bench/kernels/draw_call_proxy_vertex.wgsl and
+// draw_call_proxy_fragment.wgsl for the source.
+const DEFAULT_VERTEX_SHADER_NAME = "draw_call_proxy_vertex";
+const DEFAULT_FRAGMENT_SHADER_NAME = "draw_call_proxy_fragment";
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 
@@ -194,8 +204,19 @@ pub fn create_graphics_pipeline(
     cmd: model_render_types.RenderDrawCommand,
 ) !void {
     _ = vk_format;
-    const vertex_spirv_words = cmd.vertex_spirv orelse return error.ShaderCompileFailed;
-    const fragment_spirv_words = cmd.fragment_spirv orelse return error.ShaderCompileFailed;
+    // When the render-draw command carries explicit shader SPIR-V, use it.
+    // Otherwise fall back to Doe's canonical draw_call_proxy_vertex /
+    // draw_call_proxy_fragment pair shipped under bench/kernels/ so draws
+    // without bound shaders (bench harness draw_call_indexed_proxy and its
+    // family) have a functional render pipeline. The load goes through the
+    // backend's kernel SPV cache so the first-use compile is shared across
+    // subsequent draws in the same process.
+    const vertex_spirv_words = cmd.vertex_spirv orelse
+        vk_pipeline.load_kernel_spirv_cached(self, DEFAULT_VERTEX_SHADER_NAME) catch
+            return error.ShaderCompileFailed;
+    const fragment_spirv_words = cmd.fragment_spirv orelse
+        vk_pipeline.load_kernel_spirv_cached(self, DEFAULT_FRAGMENT_SHADER_NAME) catch
+            return error.ShaderCompileFailed;
     var vertex_entry_buf: [64]u8 = undefined;
     var fragment_entry_buf: [64]u8 = undefined;
     const vertex_entry = resolve_entry_point_name(cmd.vertex_entry_point, "main", &vertex_entry_buf);

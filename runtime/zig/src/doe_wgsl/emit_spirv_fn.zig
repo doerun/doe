@@ -4,16 +4,52 @@ const sema_helpers = @import("sema_helpers.zig");
 const spirv = @import("spirv_builder.zig");
 const emit_spirv_shared = @import("emit_spirv_shared.zig");
 const emit_spirv_builtins = @import("emit_spirv_builtins.zig");
+const emit_spirv_fn_helpers = @import("emit_spirv_fn_helpers.zig");
+const emit_spirv_fn_folds = @import("emit_spirv_fn_folds.zig");
 
 const EmitError = emit_spirv_shared.EmitError;
-const ScalarKind = enum { bool, signed, unsigned, float };
+const ScalarKind = emit_spirv_fn_helpers.ScalarKind;
+const scalar_construct_kind = emit_spirv_fn_helpers.scalar_construct_kind;
+const assign_op_to_binary = emit_spirv_fn_helpers.assign_op_to_binary;
+const param_is_assigned = emit_spirv_fn_helpers.param_is_assigned;
+
+const AccessChainEntry = struct {
+    root_id: u32,
+    ptr_type: u32,
+    result_id: u32,
+    indices: []u32,
+};
 
 pub fn FunctionState(comptime EmitterT: type) type {
     return struct {
         emitter: *EmitterT,
         function: *const ir.Function,
         param_ptr_ids: []u32,
+        // Parallel to params.items. Non-zero means the param is SSA-promoted
+        // (scalar/vector, non-ref) and the entry holds the SPIR-V value id of
+        // the OpFunctionParameter itself. Reads short-circuit to this id so
+        // `gid.x` becomes OpCompositeExtract on the SSA param rather than
+        // OpAccessChain + OpLoad on a Function-variable copy. Matches Tint.
+        param_value_ids: []u32,
         local_ptr_ids: []u32,
+        // Parallel to locals.items. Non-zero means the local is SSA-promoted
+        // (immutable scalar/vector `let`) and the entry holds the current
+        // SPIR-V value id; reads short-circuit to this id instead of doing
+        // OpAccessChain+OpLoad on a Function OpVariable. Cutting those
+        // per-use memory round-trips in the matvec inner loop matches the
+        // emission shape Tint produces and closes the residual RADV
+        // optimizer gap on AMD Vulkan.
+        local_value_ids: []u32,
+        // Per-function CSE cache for OpAccessChain results. Keyed by the
+        // (root_id, indices...) tuple that the chain walker collects; when
+        // the same shape comes up again (e.g. a read-modify-write on `sum.x`
+        // that evaluates the ref both as a store target and as a load operand)
+        // we return the prior chain's result id and skip re-emission. Only
+        // helps when the repeat indices carry stable SSA ids -- constant
+        // field_indices (via const_u32) and immediate-literal array indices
+        // both qualify; dynamically-loaded indices get a fresh OpLoad each
+        // visit and miss the cache, which is fine.
+        access_chain_cache: std.ArrayListUnmanaged(AccessChainEntry) = .{},
         break_targets: std.ArrayListUnmanaged(u32) = .{},
         continue_targets: std.ArrayListUnmanaged(u32) = .{},
 
@@ -22,22 +58,66 @@ pub fn FunctionState(comptime EmitterT: type) type {
             const param_ptr_ids = try emitter.alloc.alloc(u32, function.params.items.len);
             errdefer emitter.alloc.free(param_ptr_ids);
             @memset(param_ptr_ids, 0);
+            const param_value_ids = try emitter.alloc.alloc(u32, function.params.items.len);
+            errdefer emitter.alloc.free(param_value_ids);
+            @memset(param_value_ids, 0);
             const local_ptr_ids = try emitter.alloc.alloc(u32, function.locals.items.len);
             errdefer emitter.alloc.free(local_ptr_ids);
             @memset(local_ptr_ids, 0);
+            const local_value_ids = try emitter.alloc.alloc(u32, function.locals.items.len);
+            errdefer emitter.alloc.free(local_value_ids);
+            @memset(local_value_ids, 0);
             return .{
                 .emitter = emitter,
                 .function = function,
                 .param_ptr_ids = param_ptr_ids,
+                .param_value_ids = param_value_ids,
                 .local_ptr_ids = local_ptr_ids,
+                .local_value_ids = local_value_ids,
             };
         }
 
         pub fn deinit(self: *@This()) void {
+            for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
+            self.access_chain_cache.deinit(self.emitter.alloc);
             self.break_targets.deinit(self.emitter.alloc);
             self.continue_targets.deinit(self.emitter.alloc);
+            self.emitter.alloc.free(self.local_value_ids);
             self.emitter.alloc.free(self.local_ptr_ids);
+            self.emitter.alloc.free(self.param_value_ids);
             self.emitter.alloc.free(self.param_ptr_ids);
+        }
+
+        pub fn is_ssa_promotable_local(self: *@This(), local_index: u32) bool {
+            const local = self.function.locals.items[local_index];
+            if (local.mutable) return false;
+            // Scalars and vectors are safe: both are leaf composite types for
+            // WGSL swizzle/index, and `emit_load_from_ref` handles the two
+            // ref-chain shapes that can reach a promoted local through a load
+            // (single/multi swizzle and vector index) via OpCompositeExtract
+            // and OpVectorExtractDynamic against the cached SSA value. Matrix
+            // and struct-typed lets would need matrix-column or struct-field
+            // extraction paths that aren't wired yet.
+            return switch (self.emitter.module.types.get(local.ty)) {
+                .scalar => |s| s != .void,
+                .vector => true,
+                else => false,
+            };
+        }
+
+        pub fn is_ssa_promotable_param(self: *@This(), param_index: u32) bool {
+            const param = self.function.params.items[param_index];
+            const type_ok = switch (self.emitter.module.types.get(param.ty)) {
+                .scalar => |s| s != .void,
+                .vector => true,
+                else => false,
+            };
+            if (!type_ok) return false;
+            // WGSL function parameters are locally mutable — `fn f(x: u32) { x = 1; }`
+            // is legal — so promoting to SSA is only safe when the body never
+            // writes to the param. Scan for any `.assign` whose lhs chains to
+            // this param_ref; bail out if found.
+            return !param_is_assigned(self.function, param_index);
         }
 
         pub fn emit_stmt(self: *@This(), stmt_id: ir.StmtId) EmitError!bool {
@@ -52,7 +132,12 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 },
                 .local_decl => |decl| {
                     if (decl.initializer) |expr_id| {
-                        try self.emitter.emit_store(self.local_ptr_ids[decl.local], try self.emit_value_expr(expr_id));
+                        const value_id = try self.emit_value_expr(expr_id);
+                        if (self.local_ptr_ids[decl.local] != 0) {
+                            try self.emitter.emit_store(self.local_ptr_ids[decl.local], value_id);
+                        } else {
+                            self.local_value_ids[decl.local] = value_id;
+                        }
                     }
                     return false;
                 },
@@ -213,6 +298,14 @@ pub fn FunctionState(comptime EmitterT: type) type {
 
         fn emit_label(self: *@This(), label_id: u32) EmitError!void {
             try self.emitter.builder.append_function_inst(spirv.Opcode.Label, &.{label_id});
+            // SPIR-V dominance: an <id> is only usable where its defining
+            // block dominates the use. Cached OpAccessChain ids from a
+            // previous block might not dominate this new block (e.g. reusing
+            // a THEN-branch chain inside an ELSE branch would be invalid).
+            // Flush at every label boundary so CSE only fires within a
+            // straight-line basic block, which is always safe.
+            for (self.access_chain_cache.items) |entry| self.emitter.alloc.free(entry.indices);
+            self.access_chain_cache.clearRetainingCapacity();
         }
 
         pub fn emit_value_expr(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
@@ -249,15 +342,30 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 },
                 .load => |inner| try self.emit_load_from_ref(inner),
                 .unary => |unary| try self.emit_unary(unary.op, try self.emit_value_expr(unary.operand), expr.ty),
-                .binary => |binary| try self.emit_binary(
-                    binary.op,
-                    try self.emit_value_expr(binary.lhs),
-                    try self.emit_value_expr(binary.rhs),
-                    self.function.exprs.items[binary.lhs].ty,
-                    self.function.exprs.items[binary.rhs].ty,
-                    self.function.exprs.items[binary.lhs].ty,
-                    expr.ty,
-                ),
+                .binary => |binary| blk: {
+                    // Constant-fold integer binary ops at emit time. WGSL often
+                    // encodes grid math like `kRows / 4u` or `4u * stride` from
+                    // compile-time `const` values; folding here removes an
+                    // OpUDiv / OpIMul per expression and matches Tint's shape
+                    // (Tint inlines these via its constant-propagation pass).
+                    if (try emit_spirv_fn_folds.try_fold_const_binary(self, binary, expr.ty)) |folded_id| break :blk folded_id;
+                    // Identity / absorbing folds: `x + 0`, `x * 1`, `x * 0`,
+                    // `x - 0`, `x << 0`, `x >> 0`, bitwise with 0 or all-ones.
+                    // These appear in address math like `(4u * rowBy4 + 0u) *
+                    // kPackedCols` and can't be caught by const-const fold
+                    // alone since one side is non-literal. Emit-time folding
+                    // shaves ops from inner loops across the kernel corpus.
+                    if (try emit_spirv_fn_folds.try_fold_identity_binary(self, binary, expr.ty)) |folded_id| break :blk folded_id;
+                    break :blk try self.emit_binary(
+                        binary.op,
+                        try self.emit_value_expr(binary.lhs),
+                        try self.emit_value_expr(binary.rhs),
+                        self.function.exprs.items[binary.lhs].ty,
+                        self.function.exprs.items[binary.rhs].ty,
+                        self.function.exprs.items[binary.lhs].ty,
+                        expr.ty,
+                    );
+                },
                 .call => |call| try self.emit_call(call, expr.ty),
                 .construct => |construct| try self.emit_construct(construct.ty, construct.args),
                 .member => |member| if (expr.category == .ref)
@@ -272,51 +380,169 @@ pub fn FunctionState(comptime EmitterT: type) type {
         }
 
         pub fn emit_ref_expr(self: *@This(), expr_id: ir.ExprId) EmitError!u32 {
-            const expr = self.function.exprs.items[expr_id];
-            return switch (expr.data) {
+            // Walk leaf-to-root collecting member/index operands, then emit a
+            // single OpAccessChain with all indices. Matches Tint's shape and
+            // avoids the two-chain pattern that forced driver CSE for wrapped
+            // storage-buffer access like `dye_in[i]`.
+            var indices = std.ArrayListUnmanaged(u32){};
+            defer indices.deinit(self.emitter.alloc);
+            var current = expr_id;
+            while (true) {
+                const node = self.function.exprs.items[current];
+                switch (node.data) {
+                    .member => |m| {
+                        try indices.append(self.emitter.alloc, try self.emitter.builder.const_u32(m.field_index));
+                        current = m.base;
+                    },
+                    .index => |idx| {
+                        try indices.append(self.emitter.alloc, try self.emit_value_expr(idx.index));
+                        current = idx.base;
+                    },
+                    .param_ref, .local_ref, .global_ref => break,
+                    else => return error.InvalidIr,
+                }
+            }
+            const root_node = self.function.exprs.items[current];
+            const root_id: u32 = switch (root_node.data) {
                 .param_ref => |index| self.param_ptr_ids[index],
                 .local_ref => |index| self.local_ptr_ids[index],
                 .global_ref => |index| blk: {
-                    if (!self.emitter.global_buffer_wrapped[index]) break :blk self.emitter.global_ids[index];
-                    const global = self.emitter.module.globals.items[index];
-                    const ptr_type = try self.emitter.builder.type_pointer(
-                        try self.emitter.global_storage_class(global),
-                        try self.emitter.lower_type(expr.ty),
-                    );
-                    const result_id = self.emitter.builder.reserve_id();
-                    try self.emitter.builder.append_function_inst(
-                        spirv.Opcode.AccessChain,
-                        &.{ ptr_type, result_id, self.emitter.global_ids[index], try self.emitter.builder.const_u32(0) },
-                    );
-                    break :blk result_id;
-                },
-                .member => |member| blk: {
-                    const base_ptr = try self.emit_ref_expr(member.base);
-                    const ptr_type = try self.emitter.builder.type_pointer(try self.ref_storage_class(member.base), try self.emitter.lower_type(expr.ty));
-                    const result_id = self.emitter.builder.reserve_id();
-                    try self.emitter.builder.append_function_inst(
-                        spirv.Opcode.AccessChain,
-                        &.{ ptr_type, result_id, base_ptr, try self.emitter.builder.const_u32(member.field_index) },
-                    );
-                    break :blk result_id;
-                },
-                .index => |index| blk: {
-                    const base_ptr = try self.emit_ref_expr(index.base);
-                    const ptr_type = try self.emitter.builder.type_pointer(try self.ref_storage_class(index.base), try self.emitter.lower_type(expr.ty));
-                    const result_id = self.emitter.builder.reserve_id();
-                    try self.emitter.builder.append_function_inst(
-                        spirv.Opcode.AccessChain,
-                        &.{ ptr_type, result_id, base_ptr, try self.emit_value_expr(index.index) },
-                    );
-                    break :blk result_id;
+                    if (self.emitter.global_buffer_wrapped[index]) {
+                        try indices.append(self.emitter.alloc, try self.emitter.builder.const_u32(0));
+                    }
+                    break :blk self.emitter.global_ids[index];
                 },
                 else => return error.InvalidIr,
             };
+            if (indices.items.len == 0) return root_id;
+            // Reverse indices into root-first order.
+            std.mem.reverse(u32, indices.items);
+            const leaf_expr = self.function.exprs.items[expr_id];
+            const ptr_type = try self.emitter.builder.type_pointer(
+                try self.ref_storage_class(expr_id),
+                try self.emitter.lower_type(leaf_expr.ty),
+            );
+            for (self.access_chain_cache.items) |entry| {
+                if (entry.root_id != root_id) continue;
+                if (entry.ptr_type != ptr_type) continue;
+                if (entry.indices.len != indices.items.len) continue;
+                if (std.mem.eql(u32, entry.indices, indices.items)) return entry.result_id;
+            }
+            const result_id = self.emitter.builder.reserve_id();
+            var operands = std.ArrayListUnmanaged(u32){};
+            defer operands.deinit(self.emitter.alloc);
+            try operands.append(self.emitter.alloc, ptr_type);
+            try operands.append(self.emitter.alloc, result_id);
+            try operands.append(self.emitter.alloc, root_id);
+            try operands.appendSlice(self.emitter.alloc, indices.items);
+            try self.emitter.builder.append_function_inst(spirv.Opcode.AccessChain, operands.items);
+            const cached_indices = try self.emitter.alloc.dupe(u32, indices.items);
+            errdefer self.emitter.alloc.free(cached_indices);
+            try self.access_chain_cache.append(self.emitter.alloc, .{
+                .root_id = root_id,
+                .ptr_type = ptr_type,
+                .result_id = result_id,
+                .indices = cached_indices,
+            });
+            return result_id;
         }
 
         fn emit_load_from_ref(self: *@This(), ref_expr_id: ir.ExprId) EmitError!u32 {
             const ref_expr = self.function.exprs.items[ref_expr_id];
+            // Short-circuit: loading a WGSL `const` global returns the pre-
+            // computed constant id directly, skipping the Private-variable
+            // OpLoad. Removes per-iteration memory loads for declarations like
+            // `const kPackedCols : u32 = 512u;` that the RADV optimizer does
+            // not fully fold back to immediates. Zero is the "not a const"
+            // sentinel so non-const globals fall through unchanged.
+            if (ref_expr.data == .global_ref) {
+                const index = ref_expr.data.global_ref;
+                const constant_id = self.emitter.global_constant_ids[index];
+                if (constant_id != 0) return constant_id;
+            }
+            // SSA-promoted `let` locals: return the cached value id directly
+            // so reads inside loops avoid the OpAccessChain+OpLoad pattern.
+            if (ref_expr.data == .local_ref) {
+                const index = ref_expr.data.local_ref;
+                const value_id = self.local_value_ids[index];
+                if (value_id != 0) return value_id;
+            }
+            // SSA-promoted function params: same treatment. The param's own
+            // OpFunctionParameter id is the SSA value; skipping the Function-
+            // variable copy lets `gid.x` compile to OpCompositeExtract on the
+            // raw param, which is what Tint emits.
+            if (ref_expr.data == .param_ref) {
+                const index = ref_expr.data.param_ref;
+                const value_id = self.param_value_ids[index];
+                if (value_id != 0) return value_id;
+            }
+            // `load(member(local_ref(promoted), field))`: WGSL single-char
+            // swizzles inherit the ref category of their base, so reads of
+            // `v.x` on a promoted vector arrive here as a member-on-local_ref
+            // pair rather than a member-on-load. The pointer path would need
+            // an address for `v`, which SSA-promoted locals do not have;
+            // extract directly from the cached SSA composite instead.
+            if (ref_expr.data == .member) {
+                const member = ref_expr.data.member;
+                const base = self.function.exprs.items[member.base];
+                if (self.try_ssa_composite_id(base)) |composite_id| {
+                    return try self.emit_swizzle_from_ssa(composite_id, base.ty, member, ref_expr.ty);
+                }
+            }
+            // `load(index(local_ref(promoted), idx))`: same shape for vector
+            // dynamic-index reads. OpVectorExtractDynamic operates directly
+            // on the SSA composite.
+            if (ref_expr.data == .index) {
+                const index_node = ref_expr.data.index;
+                const base = self.function.exprs.items[index_node.base];
+                if (self.try_ssa_composite_id(base)) |composite_id| {
+                    const index_id = try self.emit_value_expr(index_node.index);
+                    return try self.emit_result_inst(
+                        spirv.Opcode.VectorExtractDynamic,
+                        try self.emitter.lower_type(ref_expr.ty),
+                        &.{ composite_id, index_id },
+                    );
+                }
+            }
             return try self.emitter.emit_function_load(try self.emitter.lower_type(ref_expr.ty), try self.emit_ref_expr(ref_expr_id));
+        }
+
+        fn try_ssa_composite_id(self: *@This(), base: ir.ExprNode) ?u32 {
+            switch (base.data) {
+                .local_ref => |index| {
+                    const id = self.local_value_ids[index];
+                    return if (id != 0) id else null;
+                },
+                .param_ref => |index| {
+                    const id = self.param_value_ids[index];
+                    return if (id != 0) id else null;
+                },
+                else => return null,
+            }
+        }
+
+        fn emit_swizzle_from_ssa(
+            self: *@This(),
+            composite_id: u32,
+            base_ty: ir.TypeId,
+            member: @FieldType(ir.Expr, "member"),
+            result_ty: ir.TypeId,
+        ) EmitError!u32 {
+            if (member.field_name.len == 1) {
+                return try self.emit_composite_extract(composite_id, result_ty, member.field_index);
+            }
+            const vec = switch (self.emitter.module.types.get(base_ty)) {
+                .vector => |v| v,
+                else => return error.InvalidIr,
+            };
+            const swizzle = sema_helpers.parse_vector_swizzle(member.field_name, vec.len) catch return error.InvalidIr;
+            var operands = std.ArrayListUnmanaged(u32){};
+            defer operands.deinit(self.emitter.alloc);
+            var i: usize = 0;
+            while (i < swizzle.len) : (i += 1) {
+                try operands.append(self.emitter.alloc, try self.emit_composite_extract(composite_id, vec.elem, swizzle.indices[i]));
+            }
+            return try self.emit_construct_from_operands(result_ty, operands.items);
         }
 
         fn emit_member_value(self: *@This(), member: @FieldType(ir.Expr, "member"), result_ty: ir.TypeId) EmitError!u32 {
@@ -709,25 +935,3 @@ pub fn FunctionState(comptime EmitterT: type) type {
     };
 }
 
-fn scalar_construct_kind(scalar: ir.ScalarType) ScalarKind {
-    return switch (scalar) {
-        .bool => .bool,
-        .u32 => .unsigned,
-        .f16, .f32, .abstract_float => .float,
-        else => .signed,
-    };
-}
-
-fn assign_op_to_binary(op: ir.AssignOp) ir.BinaryOp {
-    return switch (op) {
-        .assign => .add,
-        .add => .add,
-        .sub => .sub,
-        .mul => .mul,
-        .div => .div,
-        .rem => .rem,
-        .bit_and => .bit_and,
-        .bit_or => .bit_or,
-        .bit_xor => .bit_xor,
-    };
-}
