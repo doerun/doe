@@ -81,41 +81,28 @@ def main() -> int:
         print(f"FAIL: max_abs_err={max_abs_err:.6f}")
         return 1
 
+    # explicit_simulator_trace variant (user's iter-39 schema update).
+    # Numerical detail lives inline; schema requires runtimePassed=true
+    # so reaching here (after the passed guard) keeps the trace valid.
     trace = {
         "schemaVersion": 1,
         "artifactKind": "csl_simulator_trace",
         "target": "wse3",
-        "contract": "compile_run_smoke_summary",
-        "driverExecutable": os.environ.get("DOE_CSL_RUNTIME_EXECUTABLE", "cs_python"),
-        "compiledTargetCount": 1,
-        "compiledTargets": [
-            {"name": "gather", "artifactDir": args.compile_dir},
-        ],
-        "peGrid": {"width": width, "height": 1},
-        "prefillLaunchCount": 1,
-        "decodeLaunchCount": 0,
-        "runtimeMode": "sdk_runtime_smoke",
-        "simfabTracesPath": None,
-        "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "contract": "explicit_simulator_trace",
+        "kernel": "gather",
+        "executionTarget": "system" if cmaddr else "simfabric",
+        "width": width,
+        "chunkSize": hidden_size,
+        "totalElements": num_tokens * hidden_size,
+        "runtimePassed": True,
+        "runtimeMaxAbsErr": max_abs_err,
+        "sampleInput": indices_host.astype(np.float32).tolist(),
+        "sampleExpected": expected[0, :4].tolist(),
+        "sampleActual": actual[0, :4].tolist(),
     }
     trace_path = Path(args.trace_out)
     trace_path.parent.mkdir(parents=True, exist_ok=True)
     trace_path.write_text(json.dumps(trace, indent=2) + "\n", encoding="utf-8")
-    result_path = trace_path.with_suffix(".kernel-result.json")
-    result_path.write_text(
-        json.dumps({
-            "kernel": "gather",
-            "passed": True,
-            "maxAbsErr": max_abs_err,
-            "width": width,
-            "hiddenSize": hidden_size,
-            "rowsPerPe": rows_per_pe,
-            "numTokens": num_tokens,
-            "executionTarget": "system" if cmaddr else "simfabric",
-            "indices": indices_host.tolist(),
-        }, indent=2) + "\n",
-        encoding="utf-8",
-    )
     print(f"PASS: {num_tokens} tokens gathered, max_abs_err={max_abs_err:.3e}, trace={trace_path}")
     return 0
 
