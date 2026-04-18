@@ -87,6 +87,70 @@ The current repo contains two related CSL surfaces:
 The smoke bundle path is documented as a governed preparation surface. It does
 not claim full model-runtime execution on its own.
 
+## SDK version compatibility
+
+The CSL lane targets Cerebras SDK v1.4 as its compile/runtime floor. Two v1.4
+breaking changes are relevant to emitted CSL code and already satisfied by the
+emitters in-tree:
+
+- *Tasks must be activated, not called.* All task invocations emitted by
+  `runtime/zig/src/doe_wgsl/emit_csl_*.zig` use `@activate(task_id)` form.
+- *Config-space pointer access is illegal; `@get_config` / `@set_config` are
+  required.* The emitters do not construct pointers into config space.
+
+WSE-1 is no longer supported by SDK v1.4. The HostPlan fabric/arch constraints
+should not assume WSE-1 as a deployment target.
+
+`cslc` in SDK v1.4 is shipped as a Singularity/Apptainer SIF runner, not a
+static native binary. Host preflight for the CSL lane therefore has to verify
+that `singularity` (or `apptainer`) is on `PATH` in addition to the usual
+`DOE_CSLC_EXECUTABLE` resolution.
+
+## Receipt discipline: three outcomes, no fourth path
+
+Every Doppler/WGSL operator routed toward the CSL lane terminates in exactly
+one of the outcomes declared for the `doe_csl` backend in
+`config/shader-error-taxonomy.json` under `laneContracts.doe_csl`:
+
+1. Supported CSL pattern with emitted HostPlan and CSL artifacts.
+2. Explicit `csl_unsupported_*` receipt carrying a code from
+   `laneContracts.doe_csl.unsupportedCodes` (currently
+   `csl_unsupported_pattern`, `csl_unsupported_shader_stage`,
+   `csl_unsupported_builtin`, `csl_unrecognized_compute_pattern`).
+3. Hard compiler or runtime failure whose code matches one of the prefixes in
+   `laneContracts.doe_csl.failureCodePatterns` (`csl_compile_*`,
+   `csl_simulator_run_*` — populated after SDK diagnostics surface the
+   concrete failure shapes).
+
+No fourth path: no Cerebras-only fork of a Doppler operator, no silent
+fallback onto a non-governed backend, and no directional promotion of a CSL
+result that has not cleared the governed-lane gate.
+
+## Scale-up direction: E2B first, 31B as streaming add-on
+
+The near-term execution target is Gemma 4 E2B, whose host-plan / memory-plan /
+runtime-config / simulator-plan fixtures already exist under
+`examples/doe-wgsl-*.gemma-4-e2b-smoke.json`. Gemma 3 270M is the smaller
+graduation target used to debug the SDK v1.4 driver seam before repointing the
+governed lane at E2B fixtures.
+
+Gemma 4 31B does not fit resident in WSE memory. The SDK v1.4 primitive that
+maps cleanly to streamed weights is `SdkRuntime.send` / `receive` for program
+input/output ports, introduced in v1.4 alongside memcpy-based data transfer.
+The 31B memory-plan schema migration is therefore expected to add a
+`csl_weight_streaming_policy` contract so receipts can distinguish resident
+weights from streamed weights and bind port IDs / wavelet counts / chunks /
+trace paths into the governed artifact.
+
+`SdkLayout` (v1.4 beta: rectangular code regions, color routing, auto-routing
+between regions) is the second-generation layout backend, not the first
+integration seam. Its current beta restrictions — `memcpy` API not supported
+for data transfers or remote launches, CSL libraries with internal color
+routing not supported — conflict with Doe's existing memcpy-based driver. The
+CSL emitters stay on the current HostPlan path until the governed lane has
+working compile + trace receipts on E2B; `SdkLayout` adoption is a later
+refactor gated on beta restrictions clearing or a parallel driver shape.
+
 ## Source of truth
 
 The most relevant implementation docs today are the module comments in:

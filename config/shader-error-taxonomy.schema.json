@@ -30,6 +30,10 @@
               "spirv_validate",
               "ir_to_dxil",
               "dxil_validate",
+              "csl_classify",
+              "ir_to_csl",
+              "csl_compile",
+              "csl_simulator_run",
               "manifest"
             ]
           },
@@ -40,8 +44,31 @@
             "uniqueItems": true,
             "items": {
               "type": "string",
-              "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+              "enum": ["doe_metal", "doe_vulkan", "doe_d3d12", "doe_csl"]
             }
+          }
+        }
+      }
+    },
+    "laneContracts": {
+      "type": "object",
+      "description": "Per-backend lane contracts asserting the allowed set of terminal outcomes for a shader/operator compilation. Gates use this to reject silent fallbacks and forks that do not match a declared outcome.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string", "minLength": 1 },
+          "unsupportedCodes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+          },
+          "failureCodePatterns": {
+            "type": "array",
+            "uniqueItems": true,
+            "description": "Glob-ish prefixes (e.g. 'csl_compile_*') that name the hard-failure taxonomy codes this lane may emit. Used to allow-list future codes without forcing a schema change on every SDK diagnostic.",
+            "items": { "type": "string", "pattern": "^[a-z0-9_]+(_\\*)?$" }
           }
         }
       }

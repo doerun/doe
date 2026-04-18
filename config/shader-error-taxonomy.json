@@ -97,7 +97,50 @@
       "stage": "manifest",
       "severity": "error",
       "description": "Manifest hash chain mismatch",
-      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12"]
+      "backendIds": ["doe_metal", "doe_vulkan", "doe_d3d12", "doe_csl"]
+    },
+    {
+      "code": "csl_unsupported_shader_stage",
+      "stage": "csl_classify",
+      "severity": "error",
+      "description": "Shader stage is not compute; CSL lane only accepts compute entry points. Emitted at runtime/zig/src/doe_wgsl/emit_csl_classify.zig when KernelPattern.classify observes a non-compute entry.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_unsupported_builtin",
+      "stage": "csl_classify",
+      "severity": "error",
+      "description": "Compute kernel references a WGSL builtin (textures, atomics, derivatives) with no CSL equivalent. Emitted at runtime/zig/src/doe_wgsl/emit_csl_classify.zig when hasUnsupportedBuiltins returns true.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_unrecognized_compute_pattern",
+      "stage": "csl_classify",
+      "severity": "error",
+      "description": "Compute kernel did not match any known CSL lowering pattern (gather, reduce, matmul, softmax, attention, kv-read, fused-ffn). Emitted at runtime/zig/src/doe_wgsl/emit_csl_classify.zig when no specific pattern match succeeds.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_unsupported_pattern",
+      "stage": "ir_to_csl",
+      "severity": "error",
+      "description": "IR pattern accepted by the CSL classifier but the lowering pass could not produce HostPlan or CSL artifacts for it. General catch-all for classifier/lowering disagreement; prefer a more specific csl_unsupported_* code when the failure mode is known.",
+      "backendIds": ["doe_csl"]
     }
-  ]
+  ],
+  "laneContracts": {
+    "doe_csl": {
+      "description": "Every Doppler/WGSL operator routed toward the CSL lane must terminate in exactly one of three outcomes: (1) supported CSL pattern with emitted HostPlan and CSL artifacts; (2) explicit csl_unsupported_* receipt carrying a code from `unsupportedCodes`; (3) hard compiler or runtime failure whose code matches one of the prefixes in `failureCodePatterns` (populated after SDK v1.4 diagnostics surface the concrete failure shapes). No fourth path: no Cerebras-only fork, no silent fallback, no directional promotion.",
+      "unsupportedCodes": [
+        "csl_unsupported_pattern",
+        "csl_unsupported_shader_stage",
+        "csl_unsupported_builtin",
+        "csl_unrecognized_compute_pattern"
+      ],
+      "failureCodePatterns": [
+        "csl_compile_*",
+        "csl_simulator_run_*"
+      ]
+    }
+  }
 }
