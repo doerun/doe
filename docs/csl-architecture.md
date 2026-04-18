@@ -153,18 +153,50 @@ refactor gated on beta restrictions clearing or a parallel driver shape.
 
 ## Source of truth
 
-The most relevant implementation docs today are the module comments in:
+CSL-related sources of truth are layered by concern. Read the layer that
+matches the question, not a nearby one:
 
-- `runtime/zig/src/doe_wgsl/emit_csl_classify.zig`
-- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig`
+| Concern | Source of truth | Notes |
+| --- | --- | --- |
+| Product/strategy boundaries (Doe vs Doppler vs Ouroboros) | `ouroboros/docs/` | Canonical: `ouroboros/docs/go-to-market/verified/doe-doppler-positioning.md` and `ouroboros/docs/strategy/doe-doppler-operator-diffing-implementation.md` ("Doppler owns meaning, Doe owns execution truth"). Runtime/API/operational docs deliberately live in project repos, not Ouroboros. |
+| CSL abstraction and contract boundary | This file (`docs/csl-architecture.md`) | Architecture only; does not enumerate individual stages, pattern-family templates, or SDK flags. |
+| Artifact contracts (host-plan, memory-plan, runtime-config, simulator-plan/result/trace, governed-lane report) | `config/*.schema.json` registered in `config/schema-targets.json` | Cross-validated by `python3 bench/gates/schema_gate.py`. Schema is authoritative even where prose disagrees. |
+| CSL target constants, fabric limits, architecture enums | `runtime/zig/src/doe_wgsl/csl_spec.zig` | Self-declared single source of truth; `emit_csl_*.zig` must consume constants from here rather than redefining them. |
+| Taxonomy: outcome codes + `laneContracts.doe_csl` | `config/shader-error-taxonomy.schema.json` and `config/shader-error-taxonomy.json` | Defines the three-outcomes contract below and the allow-list of failure-code prefixes. |
+| Classifier: which WGSL kernel patterns are recognized | `runtime/zig/src/doe_wgsl/emit_csl_classify.zig` | Pattern coverage changes here, not in prose. |
+| Doppler `execution-v1` → CSL pattern mapping | `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` | |
+| HostPlan emission | `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig` | Schema-backed; HostPlan is the contract boundary. |
+| External SDK driver seam | `runtime/zig/tools/csl_sdk_driver.py` | Fail-closed behavior; no fabricated traces. |
+| Fixture canonicity | `examples/doe-wgsl-*.json` registered in `config/schema-targets.json` | See "Fixture mirrors" below. |
+
+Related pattern and surface modules (implementation SSoT for the specific
+family they cover):
+
 - `runtime/zig/src/doe_wgsl/emit_csl_host.zig`
-- `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig`
 - `runtime/zig/src/doe_wgsl/emit_csl_maps.zig`
 - `runtime/zig/src/doe_wgsl/emit_csl_matmul.zig`
 - `runtime/zig/src/doe_wgsl/emit_csl_host_runtime.zig`
-- `runtime/zig/src/doe_wgsl/csl_spec.zig`
+- `runtime/zig/src/doe_wgsl/emit_csl_attention.zig`, `emit_csl_fused_ffn.zig`,
+  `emit_csl_fused.zig`, `emit_csl_reduce_dist.zig`, `emit_csl_sample.zig`
 
 Related user-facing entrypoints:
 
 - [`runtime/zig/README.md`](../runtime/zig/README.md)
 - [`runtime/zig/examples/csl-runtime-smoke.json`](../runtime/zig/examples/csl-runtime-smoke.json)
+
+## Fixture mirrors: `examples/` vs `runtime/zig/examples/`
+
+Some CSL fixture files appear at both `examples/<name>.json` and
+`runtime/zig/examples/<name>.json`. The canonical copy is the one under
+`examples/` — that is the path registered in `config/schema-targets.json` and
+cross-validated by the schema hard gate. The `runtime/zig/examples/` copy is
+a runtime-local mirror kept path-adjacent to the Zig build so the runtime can
+resolve fixtures relative to its own tree without reaching up the repo.
+
+Rules when modifying a mirrored fixture:
+
+- Edit `examples/<name>.json` first; re-run `python3 bench/gates/schema_gate.py`.
+- Update the `runtime/zig/examples/<name>.json` mirror in the same change so
+  the two stay bytewise identical.
+- A divergence between the two copies is a contract bug, not a design choice.
+  Treat it as a blocker on any change that touches either copy.

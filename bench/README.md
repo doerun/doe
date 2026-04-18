@@ -2091,7 +2091,7 @@ Use this to exercise the non-hardware CSL prep path end to end:
 
 ```bash
 python3 bench/runners/run_csl_governed_lane.py \
-  --config bench/csl_governed_lane.gelu.smoke.json \
+  --config bench/fixtures/csl_governed_lane.gelu.smoke.json \
   --with-gate
 ```
 
