@@ -1,0 +1,48 @@
+// PE program: reduction kernel (auto-generated from WGSL)
+// Single-PE mode: each PE processes one full token.
+// Lane-preserving lowering: pre-barrier statements execute inside
+// a per-lane for-loop (WGSL local invocation index maps to lane_idx);
+// post-barrier runs once with the local index folded to 0, matching
+// the `thread 0` aggregation guard in the source.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+param reduce_color: color;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+const wg_size_x: u32 = 256;
+
+// Storage buffers — each PE holds its local data.
+param hidden_size: i16 = 1024;
+
+var input: [hidden_size]f32 = @zeros([hidden_size]f32);
+var input_ptr: [*]f32 = &input;
+var output: [hidden_size]f32 = @zeros([hidden_size]f32);
+var output_ptr: [*]f32 = &output;
+
+// Workgroup shared → PE-local in single-PE mode.
+var scratch: [256]f32 = @zeros([256]f32);
+
+fn compute() void {
+    for (@range(u32, 256)) |lane_idx| {
+        scratch[lane_idx] = input[(if (lane_idx < (@as(u32, hidden_size) - 1)) lane_idx else (@as(u32, hidden_size) - 1))];
+    }
+    if ((0 == 0)) {
+        var sum: f32 = 0.0;
+                var i: u32 = 0;
+while ((i < 256)) : (i = (i + 1)) {
+            sum = (sum + scratch[i]);
+        }
+        output[(if (@as(u32, pe_id) < (@as(u32, hidden_size) - 1)) @as(u32, pe_id) else (@as(u32, hidden_size) - 1))] = sum;
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}
