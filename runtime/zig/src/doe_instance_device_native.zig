@@ -76,9 +76,9 @@ fn device_add_ref(device: *DoeDevice) void {
 }
 
 fn parse_requested_backend(raw: []const u8) ?RequestedBackend {
-    if (std.ascii.eqlIgnoreCase(raw, "metal")) return .metal;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan")) return .vulkan;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12")) return .d3d12;
+    inline for (@typeInfo(RequestedBackend).@"enum".fields) |field| {
+        if (std.ascii.eqlIgnoreCase(raw, field.name)) return @enumFromInt(field.value);
+    }
     return null;
 }
 
