@@ -6,6 +6,21 @@ const Allocator = std.mem.Allocator;
 pub const RunOptions = config.RunOptions;
 pub const CliRunFn = *const fn (Allocator, RunOptions) anyerror!void;
 
+fn tryConsumeStringArg(
+    arg: []const u8,
+    argv: []const [:0]u8,
+    i: *usize,
+    flag: []const u8,
+    allocator: Allocator,
+    out: *?[]const u8,
+) !bool {
+    if (!std.mem.eql(u8, arg, flag)) return false;
+    if (i.* + 1 >= argv.len) return false;
+    i.* += 1;
+    out.* = try allocator.dupe(u8, argv[i.*]);
+    return true;
+}
+
 fn parseArgs(allocator: Allocator) !RunOptions {
     const argv = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, argv);
@@ -24,31 +39,11 @@ fn parseArgs(allocator: Allocator) !RunOptions {
             dry_run = true;
             continue;
         }
-        if (std.mem.eql(u8, arg, "--plan") and i + 1 < argv.len) {
-            i += 1;
-            plan_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--trace-meta") and i + 1 < argv.len) {
-            i += 1;
-            trace_meta_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--trace-jsonl") and i + 1 < argv.len) {
-            i += 1;
-            trace_jsonl_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--workload") and i + 1 < argv.len) {
-            i += 1;
-            workload_id = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--backend-id") and i + 1 < argv.len) {
-            i += 1;
-            backend_id_override = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
+        if (try tryConsumeStringArg(arg, argv, &i, "--plan", allocator, &plan_path)) continue;
+        if (try tryConsumeStringArg(arg, argv, &i, "--trace-meta", allocator, &trace_meta_path)) continue;
+        if (try tryConsumeStringArg(arg, argv, &i, "--trace-jsonl", allocator, &trace_jsonl_path)) continue;
+        if (try tryConsumeStringArg(arg, argv, &i, "--workload", allocator, &workload_id)) continue;
+        if (try tryConsumeStringArg(arg, argv, &i, "--backend-id", allocator, &backend_id_override)) continue;
         return error.InvalidCommandLine;
     }
 

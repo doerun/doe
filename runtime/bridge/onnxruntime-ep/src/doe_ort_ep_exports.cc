@@ -4,8 +4,6 @@
 
 #ifdef _WIN32
 #define DOE_ORT_EP_EXPORT __declspec(dllexport)
-#elif defined(__APPLE__)
-#define DOE_ORT_EP_EXPORT __attribute__((visibility("default")))
 #else
 #define DOE_ORT_EP_EXPORT __attribute__((visibility("default")))
 #endif

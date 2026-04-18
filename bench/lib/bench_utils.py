@@ -50,26 +50,22 @@ def load_json_object(path: Path) -> dict[str, Any]:
     return payload
 
 
-def canonical(source: str) -> str:
+def canonical(source: Any) -> str:
     """Return the canonical timing-source identifier.
 
     Strips any ``+``-suffixed qualifier (e.g. ``"gpu+cpu"`` -> ``"gpu"``).
-    Returns an empty string for falsy inputs.
+    Returns an empty string for falsy or non-string inputs; accepts ``Any``
+    so callers loading raw JSON values can route directly through this
+    helper without a separate type-guard pass.
     """
-    if not source:
+    if not isinstance(source, str) or not source:
         return ""
     return source.split("+", 1)[0]
 
 
 def canonical_source(source: Any) -> str:
-    """Return the canonical timing-source identifier (lenient input).
-
-    Like :func:`canonical` but accepts ``Any`` and returns ``""`` for
-    non-string or empty values.
-    """
-    if not isinstance(source, str) or not source:
-        return ""
-    return source.split("+", 1)[0]
+    """Alias for :func:`canonical` kept for callers that use the longer name."""
+    return canonical(source)
 
 
 def detect_repo_root(explicit_root: str) -> Path:

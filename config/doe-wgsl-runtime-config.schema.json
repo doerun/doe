@@ -4,6 +4,19 @@
   "title": "DOE WGSL CSL runtime config artifact",
   "type": "object",
   "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": { "const": "sdk-runtime-command" }
+        },
+        "required": ["mode"]
+      },
+      "then": {
+        "required": ["command"]
+      }
+    }
+  ],
   "required": [
     "schemaVersion",
     "artifactKind",
@@ -23,10 +36,22 @@
     "artifactKind": { "type": "string", "const": "csl_runtime_config" },
     "target": { "type": "string", "const": "wse3" },
     "contract": { "type": "string", "const": "explicit_runtime_config" },
-    "mode": { "type": "string", "const": "compile-only" },
+    "mode": {
+      "type": "string",
+      "enum": ["compile-only", "sdk-runtime-command"]
+    },
     "runtimeExecutableEnvVar": {
       "type": "string",
       "const": "DOE_CSL_RUNTIME_EXECUTABLE"
+    },
+    "cmaddrEnvVar": {
+      "type": "string",
+      "const": "DOE_CSL_CMADDR"
+    },
+    "command": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
     },
     "modelConfig": {
       "type": "object",

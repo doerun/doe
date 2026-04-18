@@ -61,8 +61,8 @@ fn ensureInit() void {
         return;
     };
 
-    for (parsed.value.toggles, 0..) |t, i| {
-        entries[i] = .{
+    for (parsed.value.toggles, entries) |t, *dest| {
+        dest.* = .{
             .toggle_name = std.heap.page_allocator.dupe(u8, t.toggle_name) catch t.toggle_name,
             .effect = parseEffect(t.effect),
             .description = std.heap.page_allocator.dupe(u8, t.description) catch t.description,

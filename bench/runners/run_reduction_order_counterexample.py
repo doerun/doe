@@ -101,13 +101,15 @@ def summarize_lane(
                     "ulpDistance": ulp_distance(left_word, right_word),
                 }
             )
+    unique_values = {entry["outputValueF32"] for entry in per_variant}
+    unique_digests = {entry["dominantDigest"] for entry in per_variant}
     return {
         "laneId": lane_id,
         "variantCount": len(per_variant),
         "variantOutputs": per_variant,
-        "uniqueOutputValueCount": len({entry["outputValueF32"] for entry in per_variant}),
-        "uniqueDigestCount": len({entry["dominantDigest"] for entry in per_variant}),
-        "counterexampleObserved": len({entry["outputValueF32"] for entry in per_variant}) > 1,
+        "uniqueOutputValueCount": len(unique_values),
+        "uniqueDigestCount": len(unique_digests),
+        "counterexampleObserved": len(unique_values) > 1,
         "comparisons": comparisons,
     }
 

@@ -139,8 +139,8 @@ fn parse_numeric_stability(
     if (raw_candidates.len < 2) return error.InvalidCommandStream;
     const candidates = try allocator.alloc(numeric_stability.annotation.Candidate, raw_candidates.len);
     errdefer allocator.free(candidates);
-    for (raw_candidates, 0..) |candidate, index| {
-        candidates[index] = try parse_numeric_stability_candidate(candidate);
+    for (raw_candidates, candidates) |candidate, *dest| {
+        dest.* = try parse_numeric_stability_candidate(candidate);
     }
     return .{
         .operator_family = payload.operator_family orelse payload.operatorFamily orelse numeric_stability.annotation.DEFAULT_OPERATOR_FAMILY,

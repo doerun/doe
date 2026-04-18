@@ -40,6 +40,15 @@ pub fn round_up(value: u32, alignment: u32) u32 {
     return value + alignment - remainder;
 }
 
+/// std430 vector/matrix lane-count alignment multiplier: vec2→2, vec3/vec4→4.
+fn lane_align(count: u32) u32 {
+    return switch (count) {
+        2 => 2,
+        3, 4 => 4,
+        else => 1,
+    };
+}
+
 /// Return the natural alignment of a type for storage address space layout.
 pub fn type_alignment(module: *const ir.Module, ty: ir.TypeId) u32 {
     return switch (module.types.get(ty)) {
@@ -48,16 +57,8 @@ pub fn type_alignment(module: *const ir.Module, ty: ir.TypeId) u32 {
             .bool, .i32, .u32, .f32, .abstract_int, .abstract_float => 4,
             else => 4,
         },
-        .vector => |v| type_alignment(module, v.elem) * switch (v.len) {
-            2 => @as(u32, 2),
-            3, 4 => @as(u32, 4),
-            else => 1,
-        },
-        .matrix => |m| type_alignment(module, m.elem) * switch (m.rows) {
-            2 => @as(u32, 2),
-            3, 4 => @as(u32, 4),
-            else => 1,
-        },
+        .vector => |v| type_alignment(module, v.elem) * lane_align(v.len),
+        .matrix => |m| type_alignment(module, m.elem) * lane_align(m.rows),
         .array => |a| type_alignment(module, a.elem),
         .atomic => |inner| type_alignment(module, inner),
         .struct_ => |sid| blk: {
@@ -82,11 +83,7 @@ pub fn type_size(module: *const ir.Module, ty: ir.TypeId) u32 {
         .vector => |v| type_size(module, v.elem) * v.len,
         .matrix => |m| blk: {
             const col_size = type_size(module, m.elem) * m.rows;
-            const col_align = type_alignment(module, m.elem) * switch (m.rows) {
-                2 => @as(u32, 2),
-                3, 4 => @as(u32, 4),
-                else => 1,
-            };
+            const col_align = type_alignment(module, m.elem) * lane_align(m.rows);
             const stride = round_up(col_size, col_align);
             break :blk stride * m.columns;
         },

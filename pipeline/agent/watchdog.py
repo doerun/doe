@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 
 TOGGLE_RE = re.compile(r"Toggle::([A-Za-z0-9_]+)")
@@ -26,7 +27,7 @@ def build_candidate(
     vendor: str,
     api: str,
     observed_at: str,
- ) -> dict:
+) -> dict[str, Any]:
     return {
         "schemaVersion": 2,
         "quirkId": f"auto.{toggle.lower()}",

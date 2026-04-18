@@ -2091,12 +2091,20 @@ npm install
 
 ## Governed CSL smoke surface
 
-Use this to exercise the non-hardware CSL prep path end to end:
+Use this to exercise the CSL prep path end to end. Without `--csl-cmaddr`,
+SDK runtime commands target local simfabric. With `--csl-cmaddr IP_ADDRESS:PORT`,
+the same runtime command targets a CS system; credentials remain external to
+Doe and are inherited from the SDK environment.
 
 ```bash
 python3 bench/runners/run_csl_governed_lane.py \
-  --config bench/fixtures/csl_governed_lane.gelu.smoke.json \
-  --with-gate
+  --driver-executable runtime/zig/tools/csl_sdk_driver.py \
+  --csl-sdk-root /path/to/cerebras-sdk
+
+python3 bench/runners/run_csl_governed_lane.py \
+  --driver-executable runtime/zig/tools/csl_sdk_driver.py \
+  --csl-sdk-root /path/to/cerebras-sdk \
+  --csl-cmaddr IP_ADDRESS:PORT
 ```
 
 What it does:
@@ -2105,6 +2113,27 @@ What it does:
 - materializes a `csl_simulator_plan`
 - probes the external Cerebras SDK driver contract
 - writes a governed CSL compare-surface report plus referenced artifacts
+
+Executable resolution:
+- `--csl-sdk-root` resolves `cslc` and `cs_python` from the SDK root unless
+  `--cslc-executable` or `--runtime-executable` is passed explicitly.
+- `--csl-cmaddr` is also accepted through `$DOE_CSL_CMADDR`; command receipts
+  record that a system endpoint was requested but redact the actual endpoint.
+- other SDK credentials stay in the host environment and are not serialized
+  into Doe artifacts.
+
+Optional simulator receipt gate:
+
+```bash
+python3 bench/runners/run_blocking_gates.py \
+  --report bench/out/dawn-vs-doe.json \
+  --with-csl-simulator-gate \
+  --csl-simulator-report bench/out/csl-governed-lane.report.json
+```
+
+Add `--csl-simulator-require-ready` only when the host has the Cerebras SDK
+runtime or a CS system endpoint configured and simulator/runtime execution is
+expected to succeed.
 
 Without `cslc` and the Cerebras SDK installed, this surface should finish as
 `blocked` / diagnostic with explicit blocker reasons rather than pretending to run.

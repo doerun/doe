@@ -19,13 +19,7 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
-import sys
-
-BENCH_ROOT = Path(__file__).resolve().parents[1]
-if str(BENCH_ROOT) not in sys.path:
-    sys.path.insert(0, str(BENCH_ROOT))
 
 from bench.lib import output_paths
 
@@ -164,7 +158,7 @@ def main() -> int:
             raise FileNotFoundError(f"missing header directory: {header_dir}")
 
         artifact_dir = artifact_path.resolve().parent
-        with tempfile.TemporaryDirectory(prefix="fawn-dropin-behavior-") as tmp_dir:
+        with tempfile.TemporaryDirectory(prefix="doe-dropin-behavior-") as tmp_dir:
             binary_path = Path(tmp_dir) / "dropin_behavior_suite"
             compile_command = [
                 args.cc,

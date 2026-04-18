@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from bench.lib import output_paths
+from bench.runners.release_pipeline_receipts import run_receipt_first_compare
 
 
 def parse_args() -> argparse.Namespace:
@@ -726,22 +727,16 @@ def main() -> int:
         if not args.skip_compare:
             compare_ran = True
             current_step = "compare"
-            compare_command = [
-                python_exe,
-                str(compare),
-                "compare",
-                "--config",
-                str(config_path),
-                "--out",
-                str(report_path),
-                "--workspace",
-                str(workspace_path),
-            ]
-            if args.timestamp_output:
-                compare_command.extend(["--timestamp", output_timestamp])
-            else:
-                compare_command.append("--no-timestamp-output")
-            run_step("compare", compare_command, dry_run=args.dry_run)
+            run_receipt_first_compare(
+                python_exe=python_exe,
+                compare=compare,
+                config_path=config_path,
+                report_path=report_path,
+                workspace_path=workspace_path,
+                output_timestamp=output_timestamp,
+                timestamp_output=args.timestamp_output,
+                dry_run=args.dry_run,
+            )
         if args.compare_html_output:
             compare_html_ran = True
             current_step = "visualize"

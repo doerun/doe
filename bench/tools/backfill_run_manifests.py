@@ -15,15 +15,10 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 import argparse
 import json
-import re
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from bench.lib import output_paths
-
-
-TIMESTAMP_RE = re.compile(r"^\d{8}T\d{6}Z$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -50,10 +45,6 @@ def parse_args() -> argparse.Namespace:
         help="Print planned writes without changing files.",
     )
     return parser.parse_args()
-
-
-def is_timestamp_folder(path: Path) -> bool:
-    return bool(TIMESTAMP_RE.fullmatch(path.name))
 
 
 def now_utc() -> str:

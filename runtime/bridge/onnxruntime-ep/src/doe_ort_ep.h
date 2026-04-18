@@ -19,6 +19,9 @@ struct DoeOrtEpDebugCounters {
   uint64_t claimed_gelu_nodes = 0;
   uint64_t claimed_matmul_nodes = 0;
   uint64_t claimed_gemm_nodes = 0;
+  uint64_t claimed_softmax_nodes = 0;
+  uint64_t claimed_layernorm_nodes = 0;
+  uint64_t claimed_concat_nodes = 0;
   uint64_t compile_calls = 0;
   uint64_t compiled_identity_groups = 0;
   uint64_t compiled_add_groups = 0;
@@ -32,6 +35,9 @@ struct DoeOrtEpDebugCounters {
   uint64_t compiled_matmul_add_groups = 0;
   uint64_t compiled_matmul_add_relu_groups = 0;
   uint64_t compiled_add_relu_groups = 0;
+  uint64_t compiled_softmax_groups = 0;
+  uint64_t compiled_layernorm_groups = 0;
+  uint64_t compiled_concat_groups = 0;
   uint64_t create_state_calls = 0;
   uint64_t compute_calls = 0;
   uint64_t compute_identity_calls = 0;
@@ -46,6 +52,9 @@ struct DoeOrtEpDebugCounters {
   uint64_t compute_matmul_add_calls = 0;
   uint64_t compute_matmul_add_relu_calls = 0;
   uint64_t compute_add_relu_calls = 0;
+  uint64_t compute_softmax_calls = 0;
+  uint64_t compute_layernorm_calls = 0;
+  uint64_t compute_concat_calls = 0;
   uint64_t release_state_calls = 0;
 };
 

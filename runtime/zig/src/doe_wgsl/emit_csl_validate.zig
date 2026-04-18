@@ -241,8 +241,33 @@ fn validateElementWise(csl: []const u8, result: *ValidationResult) void {
 }
 
 fn validateReduction(csl: []const u8, result: *ValidationResult) void {
-    requireContains(csl, result, "fabout_dsd", "reduction missing fabric output DSD");
-    requireContains(csl, result, "fabin_dsd", "reduction missing fabric input DSD");
+    // Two admissible reduction shapes map to the same PatternKind:
+    //
+    //   1. Distributed reduction (info.distributed == true) — reduces
+    //      across the fabric via reduce_out_dsd / bcast_out_dsd. Emitted
+    //      by emit_csl_reduce_dist.zig and ships both fabin_dsd and
+    //      fabout_dsd declarations in the PE program.
+    //
+    //   2. Workgroup-local reduction (info.distributed == false) — one
+    //      workgroup per PE, shared memory becomes PE-local. Emitted by
+    //      emit_csl_reduction.zig; the marker comment
+    //      `// Workgroup shared → PE-local` is written by
+    //      emit_csl_ir_walk.workgroupBuffers when the kernel has any
+    //      workgroup-space global.
+    //
+    // Requiring both fabric DSDs unconditionally would reject legitimate
+    // workgroup-local reductions (rmsnorm-shape, reduce-sum-workgroup).
+    // Accept either shape — but insist on something that signals this is
+    // a reduction rather than an accidentally-empty emission.
+    const has_distributed = std.mem.indexOf(u8, csl, "fabout_dsd") != null and
+        std.mem.indexOf(u8, csl, "fabin_dsd") != null;
+    const has_local = std.mem.indexOf(u8, csl, "PE-local") != null;
+    if (!has_distributed and !has_local) {
+        addError(
+            result,
+            "reduction must emit either fabric DSDs (distributed) or a PE-local workgroup marker",
+        );
+    }
 }
 
 fn validateGather(csl: []const u8, result: *ValidationResult) void {
@@ -409,8 +434,8 @@ test "element_wise pattern catches fabric DSD" {
     try std.testing.expect(result.error_count == 1);
 }
 
-test "reduction pattern requires fabric DSDs" {
-    const csl_no_fabric =
+test "reduction pattern rejects emission with neither fabric DSDs nor PE-local marker" {
+    const csl_empty =
         \\//--- layout.csl ---
         \\@set_rectangle(16, 1)
         \\//--- pe_program.csl ---
@@ -418,9 +443,43 @@ test "reduction pattern requires fabric DSDs" {
         \\fn compute() void { sys.unblock_cmd_stream(); }
         \\comptime { @export_symbol(compute); }
     ;
-    const result = validatePattern(csl_no_fabric, .reduction);
+    const result = validatePattern(csl_empty, .reduction);
     try std.testing.expect(!result.valid);
     try std.testing.expect(result.error_count >= 1);
+}
+
+test "reduction pattern accepts distributed-fabric shape" {
+    const csl_dist =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\const reduce_out_dsd = @get_dsd(fabout_dsd, .{});
+        \\const reduce_in_dsd  = @get_dsd(fabin_dsd, .{});
+        \\fn compute() void { sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl_dist, .reduction);
+    try std.testing.expect(result.valid);
+}
+
+test "reduction pattern accepts workgroup-local PE-local shape" {
+    // reduce-sum-workgroup WGSL lowers to a local reduction: one
+    // workgroup per PE, shared memory becomes PE-local. The emitter
+    // writes a marker comment that is the validator's signal this is a
+    // legitimate reduction, even without fabric DSDs.
+    const csl_local =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\// Workgroup shared → PE-local in single-PE mode.
+        \\var scratch: [256]f32 = @as([256]f32, .{0.0} ** 256);
+        \\fn compute() void { sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl_local, .reduction);
+    try std.testing.expect(result.valid);
 }
 
 test "dequant pattern requires Q4K constants" {

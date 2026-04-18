@@ -15,7 +15,6 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 import argparse
 import json
-from pathlib import Path
 from typing import Any
 
 from bench.lib.bench_utils import canonical_source, load_json_object as load_json

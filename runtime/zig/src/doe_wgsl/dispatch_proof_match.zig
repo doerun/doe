@@ -101,6 +101,23 @@ pub fn try_elide_storage_index(
         }
     }
 
+    if (lean_proof.boundsProven(.loop_1d_storage_buffer_affine)) {
+        if (match_loop_only_affine_plus_offset(module, function, index_data.index)) |match| {
+            if (loop_match.find_bounded_loop_limit(module, function, expr_id, match.local_idx)) |loop_limit| {
+                return .{
+                    .kind = .loop_component,
+                    .gid_axis = 0,
+                    .storage_binding = binding,
+                    .element_multiplier = 0,
+                    .loop_limit = loop_limit,
+                    .loop_limit_multiplier = match.loop_multiplier,
+                    .element_stride_bytes = element_stride_bytes,
+                    .element_offset = match.offset,
+                };
+            }
+        }
+    }
+
     if (lean_proof.boundsProven(.gid_2d_flat_storage_buffer_offset)) {
         if (match_flat_index_2d_dispatch_x(module, function, function_id, index_data.index)) |offset| {
             return .{
@@ -588,6 +605,24 @@ fn match_gid_component_loop_affine_plus_offset(
         .axis = state.axis orelse return null,
         .local_idx = state.local_idx orelse return null,
         .gid_multiplier = state.gid_multiplier,
+        .loop_multiplier = state.loop_multiplier,
+        .offset = state.offset,
+    };
+}
+
+/// Match `loop_local * loop_stride + offset` with no gid term. Covers the
+/// matvec `vectorData[col]` inner-loop load. Returns the local index, its
+/// scale, and the additive offset.
+fn match_loop_only_affine_plus_offset(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+) ?struct { local_idx: u32, loop_multiplier: u64, offset: u64 } {
+    var state = AdditiveLoopIndexState{};
+    if (!collect_additive_loop_terms(module, function, expr_id, .global_invocation_id, &state)) return null;
+    if (state.gid_multiplier != 0 or state.loop_multiplier == 0) return null;
+    return .{
+        .local_idx = state.local_idx orelse return null,
         .loop_multiplier = state.loop_multiplier,
         .offset = state.offset,
     };

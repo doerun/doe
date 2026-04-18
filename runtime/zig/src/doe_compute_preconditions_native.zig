@@ -33,24 +33,18 @@ pub fn validate_bind_groups(
         const view = native_helpers.cast(native_types.DoeTextureView, raw_view) orelse return error.DispatchPreconditionFailed;
         const required_x = try required_texture_axis_extent(precondition, 0, dispatch_workgroups, workgroup_size);
         if (required_x > mip_extent(view.tex.width, precondition.mip_level)) return error.DispatchPreconditionFailed;
-        switch (precondition.kind) {
-            .gid_coords_1d => {},
-            .gid_coords_2d => {
-                const required_y = try required_texture_axis_extent(precondition, 1, dispatch_workgroups, workgroup_size);
-                if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
-                    return error.DispatchPreconditionFailed;
-                }
-            },
-            .gid_coords_3d => {
-                const required_y = try required_texture_axis_extent(precondition, 1, dispatch_workgroups, workgroup_size);
-                if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
-                    return error.DispatchPreconditionFailed;
-                }
-                const required_z = try required_texture_axis_extent(precondition, 2, dispatch_workgroups, workgroup_size);
-                if (required_z > mip_extent(view.tex.depth_or_array_layers, precondition.mip_level)) {
-                    return error.DispatchPreconditionFailed;
-                }
-            },
+        const axis_count: u8 = switch (precondition.kind) {
+            .gid_coords_1d => 1,
+            .gid_coords_2d => 2,
+            .gid_coords_3d => 3,
+        };
+        if (axis_count >= 2) {
+            const required_y = try required_texture_axis_extent(precondition, 1, dispatch_workgroups, workgroup_size);
+            if (required_y > mip_extent(view.tex.height, precondition.mip_level)) return error.DispatchPreconditionFailed;
+        }
+        if (axis_count >= 3) {
+            const required_z = try required_texture_axis_extent(precondition, 2, dispatch_workgroups, workgroup_size);
+            if (required_z > mip_extent(view.tex.depth_or_array_layers, precondition.mip_level)) return error.DispatchPreconditionFailed;
         }
     }
 }

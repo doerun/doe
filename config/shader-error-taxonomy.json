@@ -126,6 +126,90 @@
       "severity": "error",
       "description": "IR pattern accepted by the CSL classifier but the lowering pass could not produce HostPlan or CSL artifacts for it. General catch-all for classifier/lowering disagreement; prefer a more specific csl_unsupported_* code when the failure mode is known.",
       "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_deprecated_cselfrunner",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc v1.4 rejected a compile targeting the deprecated CSELFRunner runtime. Detected when cslc stderr matches 'n_channels=0 corresponds to the deprecated runtime CSELFRunner'. Driver fix: pass --channels=N with N>=1 to route through SdkRuntime.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_fabric_offsets_required",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc v1.4 requires explicit --fabric-offsets for memcpy-mode compiles. Detected when cslc stderr matches 'The core must have --fabric-offsets='. Driver fix: derive offsets=(4+width_west_buf,1) from the plan's peGrid.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_uninitialized_param",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "Emitted CSL declares a `param X: T;` without a default value and the host didn't supply it via --params. v1.4 semantic: 'only var and extern const variables may be uninitialized'. Emitter or driver fix depending on the param.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_export_type_mismatch",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "layout.csl @export_name(... , T1, mutable) does not match the pe_program.csl @export_symbol(<name>_ptr) pointer element type. v1.4 enforces this where 1.3 tolerated it. Emitter fix: keep layout export type and pe_program var type in lockstep.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_undeclared_identifier",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "Emitted CSL references an identifier that was not declared. Commonly an @export_symbol(<name>_ptr) where <name>_ptr is missing, or a body reference to a WGSL-only identifier (gid, arrayLength) not translated. Emitter fix.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_pe_memory_exhausted",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "lld ran out of PE memory for the emitted program. Emitted CSL per-PE footprint exceeds the WSE PE memory budget (~48 KB data + task tables). Kernel/emitter fix: shrink chunk_size, split the workload across more PEs, or stream weights rather than resident.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_type_mismatch",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc rejected an expression because the inferred type differed from the expected type (e.g. 'expected type u32, got: i16'). Commonly from mixing param-typed constants with u32 indices without @as(u32, ...). Emitter fix.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_arity_mismatch",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc rejected a function/builtin call with the wrong number of arguments. Commonly the v1.3-to-v1.4 math.min/max signature change (dropped the leading type parameter). Emitter fix.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_parser_reject",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc parser rejected a token — 'Unexpected character at this location'. Commonly the v1.4 change that bans `[N][M]T` array-of-vector declarations (canonical shape is flat `[N*M]scalar`). Emitter fix.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_sandbox_runtime_missing",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "SDK v1.4 cslc wraps a SIF container. The host needs singularity or apptainer on PATH. Detected when cslc stderr matches 'singularity not in $PATH'. Host preflight should verify apptainer/singularity presence.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_unclassified",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "cslc exited non-zero but the stderr did not match any known v1.4 failure pattern. The full stderr log path is preserved in driver-result.compile.targets[].stderrPath and is the canonical evidence. Add a new explicit code to _CSLC_FAILURE_PATTERNS when a pattern is confirmed.",
+      "backendIds": ["doe_csl"]
+    },
+    {
+      "code": "csl_compile_failed_multi",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "Two or more compile targets in the same lane failed with different csl_compile_* classifications. The summary.failureCodes[] field lists the distinct codes; per-target codes live in driver-result.compile.targets[].failureCode. Fix each target individually.",
+      "backendIds": ["doe_csl"]
     }
   ],
   "laneContracts": {

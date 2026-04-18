@@ -13,6 +13,7 @@
 //
 // Buffer names are resolved from the IR module via the info struct.
 
+const std = @import("std");
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
 const spec = @import("csl_spec.zig");
@@ -268,7 +269,9 @@ pub fn emitTiled(
 
     try W.write(buf, pos, "    var kv_start: i16 = 0;\n");
     try W.write(buf, pos, "    while (kv_start < kv_len) : (kv_start += block_size) {\n");
-    try W.write(buf, pos, "        const blk_end = math.min(i16, kv_start + block_size, kv_len);\n");
+    // SDK v1.4 removed the 3-arg `math.min(T, a, b)` form; use inline
+    // ternary. Same pattern the element_wise emitter uses.
+    try W.write(buf, pos, "        const blk_end = (if ((kv_start + block_size) < kv_len) (kv_start + block_size) else kv_len);\n");
     try W.write(buf, pos, "        const blk_len = blk_end - kv_start;\n\n");
 
     // Load K/V tile
@@ -299,7 +302,7 @@ pub fn emitTiled(
     try W.write(buf, pos, "        }\n\n");
 
     // Update running max and rescale
-    try W.write(buf, pos, "        const m_new = math.max(f32, m_i, blk_max);\n");
+    try W.write(buf, pos, "        const m_new = (if (m_i > blk_max) m_i else blk_max);\n");
     try W.write(buf, pos, "        const rescale = math.exp(m_i - m_new);\n");
     try W.write(buf, pos, "        l_i *= rescale;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
@@ -395,15 +398,30 @@ fn emitDecodeRuntimeExports(buf: []u8, pos: *usize) EmitError!void {
 }
 
 fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    // CSL rejects `var x: [*]f32 = undefined;` (and `&x` on a pointer
+    // yields a pointer-to-pointer, not [*]f32). Use the sized-array +
+    // aliased-pointer pattern the elementwise / rope / gather /
+    // linear-attn emitters use. Size heuristic by name:
+    //   K / V names   → [kv_len * head_dim]f32     (full KV matrix)
+    //   Q / O names   → [q_len * head_dim]f32      (query / output rows)
+    //   fallback      → [q_len * head_dim]f32      (safe upper bound)
+    // The access patterns in emitTiled / emitStreaming stay in-bounds
+    // for these sizes.
     for (module.globals.items) |global| {
         if (global.binding == null) continue;
         const space = global.addr_space orelse continue;
         if (space != .storage) continue;
+        const size_expr: []const u8 = if (isKvStorageName(global.name))
+            "kv_len * head_dim"
+        else
+            "q_len * head_dim";
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ": [*]");
-        try writeScalarType(buf, pos, module, global.ty);
-        try W.write(buf, pos, " = undefined;\n");
+        try W.write(buf, pos, ": [");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32 = @zeros([");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32);\n");
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, "_ptr: [*]");
@@ -413,6 +431,18 @@ fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!v
         try W.write(buf, pos, ";\n");
     }
     try W.write(buf, pos, "\n");
+}
+
+fn isKvStorageName(name: []const u8) bool {
+    // A kernel's K and V buffers hold the full kv_len rows. Q and O
+    // only hold q_len rows. Conservative: default to q_len sizing when
+    // unrecognized, since kv_len is typically >= q_len in decode.
+    return std.mem.indexOf(u8, name, "K") != null or
+        std.mem.indexOf(u8, name, "V") != null or
+        std.mem.indexOf(u8, name, "key") != null or
+        std.mem.indexOf(u8, name, "val") != null or
+        std.mem.indexOf(u8, name, "_k") != null or
+        std.mem.indexOf(u8, name, "_v") != null;
 }
 
 fn emitStorageExports(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {

@@ -110,9 +110,7 @@ def commands_dispatched_kernel_names(commands: list[dict[str, Any]]) -> set[str]
         if not isinstance(entry, dict):
             continue
         kind = entry.get("kind") or entry.get("command") or entry.get("command_kind")
-        if not isinstance(kind, str):
-            continue
-        if kind not in ("kernel_dispatch",):
+        if not isinstance(kind, str) or kind != "kernel_dispatch":
             continue
         kernel_field = entry.get("kernel") or entry.get("kernel_name")
         base = _kernel_base_name(kernel_field)

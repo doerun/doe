@@ -50,16 +50,15 @@ fn matchesAny(raw_kind: []const u8, comptime candidates: []const []const u8) boo
     return false;
 }
 
-pub fn parseKind(raw: RawCommand) ParseError!NormalizedKind {
-    const kind = getCommandName(raw) orelse return ParseError.MissingCommandKind;
+const KindAliases = struct {
+    kind: NormalizedKind,
+    aliases: []const []const u8,
+};
 
-    if (matchesAny(kind, &.{ "upload", "buffer_upload" })) {
-        return .upload;
-    }
-    if (matchesAny(kind, &.{ "buffer_write", "write_buffer", "queue_write_buffer" })) {
-        return .buffer_write;
-    }
-    if (matchesAny(kind, &.{
+const KIND_ALIASES = [_]KindAliases{
+    .{ .kind = .upload, .aliases = &.{ "upload", "buffer_upload" } },
+    .{ .kind = .buffer_write, .aliases = &.{ "buffer_write", "write_buffer", "queue_write_buffer" } },
+    .{ .kind = .copy, .aliases = &.{
         "copy_buffer_to_texture",
         "copy_texture",
         "texture_copy",
@@ -70,75 +69,35 @@ pub fn parseKind(raw: RawCommand) ParseError!NormalizedKind {
         "copyTextureToBuffer",
         "copyBufferToBuffer",
         "copy_texture_to_texture",
-    })) {
-        return .copy;
-    }
-    if (matchesAny(kind, &.{"barrier"})) {
-        return .barrier;
-    }
-    if (matchesAny(kind, &.{ "dispatch", "dispatch_workgroups", "dispatch_invocations" })) {
-        return .dispatch;
-    }
-    if (matchesAny(kind, &.{"dispatch_indirect"})) {
-        return .dispatch_indirect;
-    }
-    if (matchesAny(kind, &.{"kernel_dispatch"})) {
-        return .kernel_dispatch;
-    }
-    if (matchesAny(kind, &.{"draw_indirect"})) {
-        return .draw_indirect;
-    }
-    if (matchesAny(kind, &.{"draw_indexed_indirect"})) {
-        return .draw_indexed_indirect;
-    }
-    if (matchesAny(kind, &.{"render_pass"})) {
-        return .render_pass;
-    }
-    if (matchesAny(kind, &.{ "render_draw", "draw", "draw_call", "draw_indexed" })) {
-        return .render_draw;
-    }
-    if (matchesAny(kind, &.{ "sampler_create", "create_sampler" })) {
-        return .sampler_create;
-    }
-    if (matchesAny(kind, &.{ "sampler_destroy", "destroy_sampler" })) {
-        return .sampler_destroy;
-    }
-    if (matchesAny(kind, &.{ "texture_write", "write_texture", "queue_write_texture" })) {
-        return .texture_write;
-    }
-    if (matchesAny(kind, &.{ "texture_query", "query_texture" })) {
-        return .texture_query;
-    }
-    if (matchesAny(kind, &.{ "texture_destroy", "destroy_texture" })) {
-        return .texture_destroy;
-    }
-    if (matchesAny(kind, &.{ "surface_create", "create_surface" })) {
-        return .surface_create;
-    }
-    if (matchesAny(kind, &.{ "surface_capabilities", "surface_get_capabilities" })) {
-        return .surface_capabilities;
-    }
-    if (matchesAny(kind, &.{ "surface_configure", "configure_surface" })) {
-        return .surface_configure;
-    }
-    if (matchesAny(kind, &.{ "surface_acquire", "surface_get_current_texture", "surface_current_texture" })) {
-        return .surface_acquire;
-    }
-    if (matchesAny(kind, &.{ "surface_present", "present_surface" })) {
-        return .surface_present;
-    }
-    if (matchesAny(kind, &.{ "surface_unconfigure", "unconfigure_surface" })) {
-        return .surface_unconfigure;
-    }
-    if (matchesAny(kind, &.{ "surface_release", "release_surface" })) {
-        return .surface_release;
-    }
-    if (matchesAny(kind, &.{ "async_diagnostics", "pipeline_async_diagnostics" })) {
-        return .async_diagnostics;
-    }
-    if (matchesAny(kind, &.{ "map_async", "buffer_map_async" })) {
-        return .map_async;
-    }
+    } },
+    .{ .kind = .barrier, .aliases = &.{"barrier"} },
+    .{ .kind = .dispatch, .aliases = &.{ "dispatch", "dispatch_workgroups", "dispatch_invocations" } },
+    .{ .kind = .dispatch_indirect, .aliases = &.{"dispatch_indirect"} },
+    .{ .kind = .kernel_dispatch, .aliases = &.{"kernel_dispatch"} },
+    .{ .kind = .draw_indirect, .aliases = &.{"draw_indirect"} },
+    .{ .kind = .draw_indexed_indirect, .aliases = &.{"draw_indexed_indirect"} },
+    .{ .kind = .render_pass, .aliases = &.{"render_pass"} },
+    .{ .kind = .render_draw, .aliases = &.{ "render_draw", "draw", "draw_call", "draw_indexed" } },
+    .{ .kind = .sampler_create, .aliases = &.{ "sampler_create", "create_sampler" } },
+    .{ .kind = .sampler_destroy, .aliases = &.{ "sampler_destroy", "destroy_sampler" } },
+    .{ .kind = .texture_write, .aliases = &.{ "texture_write", "write_texture", "queue_write_texture" } },
+    .{ .kind = .texture_query, .aliases = &.{ "texture_query", "query_texture" } },
+    .{ .kind = .texture_destroy, .aliases = &.{ "texture_destroy", "destroy_texture" } },
+    .{ .kind = .surface_create, .aliases = &.{ "surface_create", "create_surface" } },
+    .{ .kind = .surface_capabilities, .aliases = &.{ "surface_capabilities", "surface_get_capabilities" } },
+    .{ .kind = .surface_configure, .aliases = &.{ "surface_configure", "configure_surface" } },
+    .{ .kind = .surface_acquire, .aliases = &.{ "surface_acquire", "surface_get_current_texture", "surface_current_texture" } },
+    .{ .kind = .surface_present, .aliases = &.{ "surface_present", "present_surface" } },
+    .{ .kind = .surface_unconfigure, .aliases = &.{ "surface_unconfigure", "unconfigure_surface" } },
+    .{ .kind = .surface_release, .aliases = &.{ "surface_release", "release_surface" } },
+    .{ .kind = .async_diagnostics, .aliases = &.{ "async_diagnostics", "pipeline_async_diagnostics" } },
+    .{ .kind = .map_async, .aliases = &.{ "map_async", "buffer_map_async" } },
+};
 
+pub fn parseKind(raw: RawCommand) ParseError!NormalizedKind {
+    const kind = getCommandName(raw) orelse return ParseError.MissingCommandKind;
+    inline for (KIND_ALIASES) |entry| {
+        if (matchesAny(kind, entry.aliases)) return entry.kind;
+    }
     return ParseError.UnknownCommandKind;
 }

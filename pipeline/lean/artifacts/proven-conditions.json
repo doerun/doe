@@ -3,8 +3,8 @@
   "status": "verified",
   "provenance": {
     "leanToolchainRef": "leanprover/lean4:v4.16.0",
-    "extractProgramSha256": "6c272b509b447bfec6c0317f31be9370e8dd37b892da05f74c697f885d76eef2",
-    "leanSourceTreeSha256": "b0bda7caecbf85187e982a090c0e1e12d8912f558bc820483c20883f16ed2cb4",
+    "extractProgramSha256": "7c77fe2ba78c0211d89f218ff3df6581262def3253ab7e42fec156eb0f37b0ba",
+    "leanSourceTreeSha256": "c80c6ecf6d02e447c278ecd3c0a2437e25ccb62817c347c62b362d6a80a52952",
     "generatedComparabilityContractSha256": "a5f14bae1ece1251c60181fd57be18e117da649e3059cb684a60560adc9376ea",
     "proofPatternSpecSha256": "a556746e3f77c774ac5abb4ae9a9d8e0ade26bad15137e0c179805d1bf8252ec"
   },
@@ -123,6 +123,8 @@
     { "name": "gid_loop_offset_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_loop_affine_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_loop_affine_matcher_contract_sound_tight", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
+    { "name": "loop_index_affine_inbounds_when_loop_fits_tight", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "loop_affine_matcher_contract_sound_tight", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "gid_tiled_matcher_contract_sound", "module": "Doe.Shader.BoundsElisionMatcher", "category": "lean_required" },
     { "name": "clamp_noop_when_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
@@ -223,6 +225,15 @@
       "pattern": "canonical counted-loop local i with global_invocation_id.{component} * gid_stride + i * loop_stride + constant indexing a storage buffer",
       "precondition": "supported counted-loop form with i < limit, gid_stride > 0, loop_stride > 0, and workgroup_size.{component} * num_workgroups.{component} * gid_stride + limit * loop_stride + offset <= buffer_element_count",
       "eliminates": "min(gid.{component} * gid_stride + i * loop_stride + offset, arrayLength(&buf) - 1) -> gid.{component} * gid_stride + i * loop_stride + offset",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "loop_affine_matcher_contract_sound_tight",
+      "module": "Doe.Shader.BoundsElisionMatcher",
+      "category": "lean_required",
+      "pattern": "canonical counted-loop local i with i * loop_stride + constant indexing a storage buffer (no gid term)",
+      "precondition": "supported counted-loop form with i < limit, loop_stride > 0, and (limit - 1) * loop_stride + offset + 1 <= buffer_element_count",
+      "eliminates": "min(i * loop_stride + offset, arrayLength(&buf) - 1) -> i * loop_stride + offset",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
     },
     {

@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
 
 def domain_policy(policy: dict[str, Any], domain: str) -> dict[str, Any]:
     domains = policy.get("domains") if isinstance(policy.get("domains"), dict) else {}
-    entry = domains.get(domain) if isinstance(domains, dict) else None
+    entry = domains.get(domain)
     return entry if isinstance(entry, dict) else {}
 
 

@@ -21,31 +21,17 @@ const model = struct {
 };
 
 fn parseDispatchDimensions(raw: RawCommand) !model.DispatchCommand {
-    var dims: [3]u32 = .{ 1, 1, 1 };
-
-    if (raw.workgroupCount) |group_count| {
-        dims[0] = group_count[0];
-        dims[1] = group_count[1];
-        dims[2] = group_count[2];
-    } else if (raw.workgroups) |group_count| {
-        dims[0] = group_count[0];
-        dims[1] = group_count[1];
-        dims[2] = group_count[2];
-    } else {
-        dims[0] = raw.x orelse 1;
-        dims[1] = raw.y orelse 1;
-        dims[2] = raw.z orelse 1;
-    }
+    const dims: [3]u32 = raw.workgroupCount orelse raw.workgroups orelse .{
+        raw.x orelse 1,
+        raw.y orelse 1,
+        raw.z orelse 1,
+    };
 
     if (dims[0] == 0 or dims[1] == 0 or dims[2] == 0) {
         return ParseError.InvalidCommandPayload;
     }
 
-    return .{
-        .x = dims[0],
-        .y = dims[1],
-        .z = dims[2],
-    };
+    return .{ .x = dims[0], .y = dims[1], .z = dims[2] };
 }
 
 fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBinding) ![]const model.KernelBinding {

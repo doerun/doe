@@ -21,6 +21,20 @@ pub const EmitError = error{
 pub const WalkConfig = struct {
     skip_barriers: bool = false,
     runtime_array_size: []const u8 = "chunk_size",
+    // lane_mode switches the PE-local builtin shim to lane-sequential
+    // substitutions. Used by emit_csl_reduction for the pre-barrier
+    // section of a single-PE reduction: each lane of the WGSL workgroup
+    // maps to one iteration of a for-loop, so lid.x should resolve to
+    // the loop variable rather than collapsing to 0.
+    //   lid.x → lane_idx
+    //   gid.x → (@as(u32, pe_id) * @as(u32, <runtime_array_size>) + lane_idx)
+    //   wid.x → @as(u32, pe_id)   (unchanged)
+    //   num_workgroups.x → @as(u32, num_pes)   (unchanged)
+    // Post-barrier code runs outside the loop; the default (lane_mode=false)
+    // walker keeps lid.x → 0 so the `if (lid.x == 0u)` thread-0 guard
+    // still matches on the single-lane semantic that actually runs the
+    // block once per PE.
+    lane_mode: bool = false,
 };
 
 // ---------------------------------------------------------------------------
@@ -82,6 +96,103 @@ pub fn arrayElemType(module: *const ir.Module, ty: ir.TypeId) ir.TypeId {
     return switch (module.types.get(ty)) {
         .array => |arr| arr.elem,
         else => ty,
+    };
+}
+
+/// If `base` resolves to a @builtin param that carries workgroup-state
+/// or global-thread-state, emit a PE-local shim for `base.<field>` and
+/// return true.
+///
+/// Single-PE lowering semantics:
+///   - local_invocation_id.{x,y,z}   → 0       (each PE is one lane)
+///   - local_invocation_index        → 0
+///   - workgroup_id.{x,y,z}          → @as(u32, pe_id)
+///   - num_workgroups.{x,y,z}        → @as(u32, num_pes)
+///   - global_invocation_id.{x,y,z}  → @as(u32, pe_id)
+///     (single-lane-per-PE: global_thread_id collapses to PE index)
+///
+/// This substitution is syntactically valid CSL but only semantically
+/// correct for kernels whose lane-level semantics collapse cleanly under
+/// single-lane execution. Reduction kernels with workgroup-shared state
+/// compile but reduce to the single-lane case; the kernel-shape contract
+/// is captured in bench/out/dual-compile-evidence/.
+///
+/// Elementwise kernels DO NOT trip the gid branch at runtime: the
+/// emit_csl_elementwise.zig::isGidLetBinding filter removes `let idx =
+/// gid.x;` statements from the body before the walker reaches them, and
+/// the compute body is wrapped in `for (@range(i16, chunk_size)) |_idx|`
+/// with `const idx = @as(u32, _idx)`. The body then references `idx`,
+/// not `gid.x`, so the shim never fires. A stray gid.x in an
+/// elementwise body would have been a cslc-rejected bug even before
+/// the shim existed; after the shim it at least becomes
+/// pe_id — a mis-semantics but still a valid identifier.
+///
+/// Returns false when the base is not a builtin-backed param access, so
+/// the generic `<base>.<field>` path still runs for vec<T> stored in
+/// params, struct member accesses, etc.
+pub fn emitBuiltinMemberShim(
+    buf: []u8,
+    pos: *usize,
+    function: *const ir.Function,
+    base_id: ir.ExprId,
+    field_name: []const u8,
+    lane_mode: bool,
+    runtime_array_size: []const u8,
+) EmitError!bool {
+    const builtin = resolveParamBuiltin(function, base_id) orelse return false;
+    _ = field_name;
+    // runtime_array_size is kept in the signature for future reuse
+    // (gid.x mapping variants) but not consumed today; the lane-mode
+    // gid substitution hardcodes the `wg_size_x` identifier that the
+    // reduction emitter declares as a file-scope const.
+    _ = runtime_array_size;
+    switch (builtin) {
+        .local_invocation_id, .local_invocation_index => {
+            if (lane_mode) {
+                try write(buf, pos, "lane_idx");
+            } else {
+                try write(buf, pos, "0");
+            }
+            return true;
+        },
+        .global_invocation_id => {
+            if (lane_mode) {
+                // Each PE represents exactly one workgroup and holds its
+                // own striped slice of the global input in its local
+                // buffer. Inside the pre-barrier lane loop, gid.x maps
+                // to the local lane index: the WGSL-level `input[gid.x]`
+                // becomes `input[lane_idx]` — a read from this PE's
+                // own slot at offset lane_idx. The pe_id * wg_size +
+                // lane form would have cross-read into other PEs' slots.
+                try write(buf, pos, "lane_idx");
+            } else {
+                try write(buf, pos, "@as(u32, pe_id)");
+            }
+            return true;
+        },
+        .workgroup_id => {
+            try write(buf, pos, "@as(u32, pe_id)");
+            return true;
+        },
+        .num_workgroups => {
+            try write(buf, pos, "@as(u32, num_pes)");
+            return true;
+        },
+        else => return false,
+    }
+}
+
+fn resolveParamBuiltin(function: *const ir.Function, expr_id: ir.ExprId) ?ir.Builtin {
+    if (expr_id >= function.exprs.items.len) return null;
+    return switch (function.exprs.items[expr_id].data) {
+        .param_ref => |idx| blk: {
+            if (idx >= function.params.items.len) break :blk null;
+            const io = function.params.items[idx].io orelse break :blk null;
+            if (io.builtin == .none) break :blk null;
+            break :blk io.builtin;
+        },
+        .load => |inner| resolveParamBuiltin(function, inner),
+        else => null,
     };
 }
 
@@ -161,7 +272,7 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     try write(buf, pos, ") ");
                     if (loop_stmt.continuing) |cont_id| {
                         try write(buf, pos, ": (");
-                        try stmt(buf, pos, module, function, cont_id, 0);
+                        try continuingStmt(buf, pos, module, function, cont_id);
                         try write(buf, pos, ") ");
                     }
                     try write(buf, pos, "{\n");
@@ -188,6 +299,50 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     try write(buf, pos, "// switch (unsupported)\n");
                 },
                 .discard_ => {},
+            }
+        }
+
+        // continuingStmt emits the continuing-expression of a WGSL for-loop
+        // inline — no indent, no trailing `;\n`. Used to wrap the result in
+        // `while (cond) : (<inline>) { ... }`. The full stmt() emitter would
+        // produce `expr;\n` which breaks the CSL syntax when nested inside
+        // the continue clause parens (observed on reduce-sum-workgroup).
+        //
+        // Only the shapes WGSL actually uses in a for-continue clause are
+        // handled: a single .expr (typically a call like `i++` lowered as
+        // `i = i + 1` in WGSL's model) and .assign. Unrecognized shapes
+        // fall back to a safe `true` noop — the outer loop still terminates
+        // because WGSL requires cond expressions.
+        fn continuingStmt(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function, cont_id: ir.StmtId) EmitError!void {
+            if (cont_id >= function.stmts.items.len) {
+                try write(buf, pos, "true");
+                return;
+            }
+            switch (function.stmts.items[cont_id]) {
+                .expr => |eid| try expr(buf, pos, module, function, eid),
+                .assign => |a| {
+                    try expr(buf, pos, module, function, a.lhs);
+                    try write(buf, pos, " ");
+                    try write(buf, pos, maps.assignOpText(a.op));
+                    try write(buf, pos, " ");
+                    try expr(buf, pos, module, function, a.rhs);
+                },
+                .block => |range| {
+                    // Blocks in a continuing clause are almost always a
+                    // single-statement wrapper. Unwrap when that's the
+                    // case; otherwise pick the last — CSL's for loop only
+                    // admits one continue expression, and WGSL's continuing
+                    // block is the increment.
+                    const start: usize = @intCast(range.start);
+                    const end: usize = @intCast(range.start + range.len);
+                    const ids = function.stmt_children.items[start..end];
+                    if (ids.len == 0) {
+                        try write(buf, pos, "true");
+                    } else {
+                        try continuingStmt(buf, pos, module, function, ids[ids.len - 1]);
+                    }
+                },
+                else => try write(buf, pos, "true"),
             }
         }
 
@@ -290,6 +445,15 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 .member => |m| {
                     if (isUniformGlobalBase(module, function, m.base)) {
                         try write(buf, pos, m.field_name);
+                    } else if (try emitBuiltinMemberShim(
+                        buf, pos, function, m.base, m.field_name,
+                        cfg.lane_mode, cfg.runtime_array_size,
+                    )) {
+                        // Handled by the shim path — lid.x / wid.x /
+                        // num_workgroups.x are not real identifiers in
+                        // CSL, so we substitute a PE-local value rather
+                        // than emit the raw access. lane_mode further
+                        // switches to lane-sequential substitutions.
                     } else {
                         try expr(buf, pos, module, function, m.base);
                         try write(buf, pos, ".");

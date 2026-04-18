@@ -103,6 +103,14 @@ pub const BoundsPattern = enum {
     ///               limit * loop_stride + offset <= arrayLength(&buf)
     gid_1d_storage_buffer_loop_affine,
 
+    /// buf[i * loop_stride + offset] on a runtime-sized storage buffer with
+    /// no gid term, where `i` is the induction variable of a supported
+    /// counted loop and `loop_stride` is a positive compile-time constant.
+    /// Covers the matvec `vectorData[col]` inner-loop load shape.
+    /// Theorem: loop_affine_matcher_contract_sound_tight
+    /// Precondition: (limit - 1) * loop_stride + offset + 1 <= arrayLength(&buf)
+    loop_1d_storage_buffer_affine,
+
     /// buf[(global_invocation_id.x / tile_width) * tile_stride +
     ///     (global_invocation_id.x % tile_width) + offset] on a runtime-sized
     /// storage buffer, where tile_width and tile_stride are positive
@@ -199,6 +207,10 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
             // packed to exactly `total*gid_stride` elements fail the fit
             // check even though the maximum accessed index is in range.
             break :blk comptimeContains(proof_json.?, "\"gid_loop_affine_matcher_contract_sound_tight\"");
+        },
+        .loop_1d_storage_buffer_affine => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"loop_affine_matcher_contract_sound_tight\"");
         },
         .gid_1d_storage_buffer_tiled => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);

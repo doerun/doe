@@ -128,25 +128,44 @@ pub fn emit_shader_artifact_manifest_for_signature_with_artifacts(
 ) common_errors.BackendNativeError!void {
     self.manifest_emit_count +|= 1;
 
-    var path_buffer: [256]u8 = undefined;
-    const path = std.fmt.bufPrint(
-        &path_buffer,
-        "{s}/{s}_shader_artifact_{d}.json",
-        .{ SHADER_ARTIFACT_DIR, spec.file_prefix, self.manifest_emit_count },
-    ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
     const toolchain_hash = load_toolchain_sha256(self.allocator) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
     var taxonomy_buffer: [TAXONOMY_CODE_CAPACITY]u8 = undefined;
     const taxonomy_code = normalize_taxonomy_code(&taxonomy_buffer, status_code);
+    const wgsl_hash = hash_utils.sha256_hex(module);
+
+    std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
+    const stage_artifact_paths = write_stage_artifact_blobs(
+        self.allocator,
+        spec,
+        stage_artifacts,
+    ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+    defer free_stage_artifact_paths(self.allocator, stage_artifact_paths);
+
+    const stage_hashes = derive_stage_hashes(
+        self.allocator,
+        spec.stages,
+        wgsl_hash,
+        stage_artifact_paths,
+    ) catch {
+        return common_errors.BackendNativeError.ShaderCompileFailed;
+    };
+    defer self.allocator.free(stage_hashes);
+
+    const pipeline_stage_hash = if (stage_hashes.len > 0)
+        stage_hashes[stage_hashes.len - 1][0..]
+    else
+        wgsl_hash[0..];
 
     var pipeline_seed_buffer: [HASH_INPUT_CAPACITY]u8 = undefined;
     const pipeline_seed = std.fmt.bufPrint(
         &pipeline_seed_buffer,
-        "{s}|{s}|{s}|{s}|{s}|{}",
+        "{s}|{s}|{s}|{s}|{s}|{s}|{}",
         .{
             spec.backend_id,
             module,
+            pipeline_stage_hash,
             taxonomy_code,
             meta.backend_kind.name(),
             meta.timing_source.name(),
@@ -155,22 +174,6 @@ pub fn emit_shader_artifact_manifest_for_signature_with_artifacts(
     ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
 
     const pipeline_hash = hash_utils.sha256_hex(pipeline_seed);
-    const wgsl_hash = hash_utils.sha256_hex(module);
-    const stage_hashes = derive_stage_hashes(self.allocator, spec.stages, wgsl_hash) catch {
-        return common_errors.BackendNativeError.ShaderCompileFailed;
-    };
-    defer self.allocator.free(stage_hashes);
-
-    std.fs.cwd().makePath(SHADER_ARTIFACT_DIR) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-
-    const stage_artifact_paths = write_stage_artifact_blobs(
-        self.allocator,
-        spec,
-        self.manifest_emit_count,
-        stage_artifacts,
-    ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
-    defer free_stage_artifact_paths(self.allocator, stage_artifact_paths);
-
     const stages_json = build_stages_json(
         self.allocator,
         spec.stages,
@@ -208,6 +211,13 @@ pub fn emit_shader_artifact_manifest_for_signature_with_artifacts(
     ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
     defer self.allocator.free(content);
 
+    var path_buffer: [256]u8 = undefined;
+    const path = std.fmt.bufPrint(
+        &path_buffer,
+        "{s}/{s}_shader_artifact_{s}.json",
+        .{ SHADER_ARTIFACT_DIR, spec.file_prefix, hash[0..] },
+    ) catch return common_errors.BackendNativeError.ShaderCompileFailed;
+
     const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch return common_errors.BackendNativeError.ShaderCompileFailed;
     defer file.close();
     file.writeAll(content) catch return common_errors.BackendNativeError.ShaderCompileFailed;
@@ -240,11 +250,13 @@ fn derive_stage_hashes(
     allocator: std.mem.Allocator,
     stages: []const StageDescriptor,
     wgsl_hash: [hash_utils.SHA256_HEX_SIZE]u8,
+    stage_artifact_paths: []const StageArtifactPath,
 ) ![][hash_utils.SHA256_HEX_SIZE]u8 {
     const hashes = try allocator.alloc([hash_utils.SHA256_HEX_SIZE]u8, stages.len);
     var previous = wgsl_hash;
     for (stages, 0..) |stage, index| {
-        hashes[index] = derive_stage_hash(previous[0..], stage.hash_label);
+        hashes[index] = lookup_artifact_hash(stage, stage_artifact_paths) orelse
+            derive_stage_hash(previous[0..], stage.hash_label);
         previous = hashes[index];
     }
     return hashes;
@@ -253,12 +265,12 @@ fn derive_stage_hashes(
 const StageArtifactPath = struct {
     manifest_field: []const u8,
     filename: []u8,
+    artifact_hash: [hash_utils.SHA256_HEX_SIZE]u8,
 };
 
 fn write_stage_artifact_blobs(
     allocator: std.mem.Allocator,
     spec: ManifestSpec,
-    manifest_emit_count: u64,
     stage_artifacts: []const StageArtifact,
 ) ![]StageArtifactPath {
     if (stage_artifacts.len == 0) return allocator.alloc(StageArtifactPath, 0);
@@ -269,10 +281,11 @@ fn write_stage_artifact_blobs(
         allocator.free(out);
     }
     for (stage_artifacts) |artifact| {
+        const artifact_hash = hash_utils.sha256_hex(artifact.bytes);
         const filename = try std.fmt.allocPrint(
             allocator,
-            "{s}_shader_artifact_{d}{s}",
-            .{ spec.file_prefix, manifest_emit_count, artifact.extension },
+            "{s}_shader_artifact_{s}{s}",
+            .{ spec.file_prefix, artifact_hash[0..], artifact.extension },
         );
         errdefer allocator.free(filename);
         const full_path = try std.fmt.allocPrint(
@@ -284,7 +297,11 @@ fn write_stage_artifact_blobs(
         const file = try std.fs.cwd().createFile(full_path, .{ .truncate = true });
         defer file.close();
         try file.writeAll(artifact.bytes);
-        out[written] = .{ .manifest_field = artifact.manifest_field, .filename = filename };
+        out[written] = .{
+            .manifest_field = artifact.manifest_field,
+            .filename = filename,
+            .artifact_hash = artifact_hash,
+        };
         written += 1;
     }
     return out;
@@ -302,6 +319,17 @@ fn lookup_artifact_path(
     const field = stage.manifest_field orelse return null;
     for (stage_artifact_paths) |entry| {
         if (std.mem.eql(u8, entry.manifest_field, field)) return entry.filename;
+    }
+    return null;
+}
+
+fn lookup_artifact_hash(
+    stage: StageDescriptor,
+    stage_artifact_paths: []const StageArtifactPath,
+) ?[hash_utils.SHA256_HEX_SIZE]u8 {
+    const field = stage.manifest_field orelse return null;
+    for (stage_artifact_paths) |entry| {
+        if (std.mem.eql(u8, entry.manifest_field, field)) return entry.artifact_hash;
     }
     return null;
 }
@@ -439,11 +467,32 @@ test "derive_stage_hashes builds deterministic chained hashes" {
         .{ .stage = "ir_build", .hash_label = "ir_build", .manifest_field = "irSha256" },
     };
     const wgsl_hash = hash_utils.sha256_hex("module");
-    const hashes = try derive_stage_hashes(std.testing.allocator, &stages, wgsl_hash);
+    const hashes = try derive_stage_hashes(std.testing.allocator, &stages, wgsl_hash, &.{});
     defer std.testing.allocator.free(hashes);
 
     try std.testing.expectEqual(derive_stage_hash(wgsl_hash[0..], "sema"), hashes[0]);
     try std.testing.expectEqual(derive_stage_hash(hashes[0][0..], "ir_build"), hashes[1]);
+}
+
+test "derive_stage_hashes uses actual stage artifact hash when present" {
+    const stages = [_]StageDescriptor{
+        .{ .stage = "ir_to_spirv", .hash_label = "ir_to_spirv", .manifest_field = "spirvSha256" },
+    };
+    const wgsl_hash = hash_utils.sha256_hex("module");
+    const filename_owned = try std.testing.allocator.dupe(u8, "shader.spv");
+    defer std.testing.allocator.free(filename_owned);
+    const artifact_hash = hash_utils.sha256_hex("spirv-bytes");
+    const paths = [_]StageArtifactPath{
+        .{
+            .manifest_field = "spirvSha256",
+            .filename = filename_owned,
+            .artifact_hash = artifact_hash,
+        },
+    };
+    const hashes = try derive_stage_hashes(std.testing.allocator, &stages, wgsl_hash, &paths);
+    defer std.testing.allocator.free(hashes);
+
+    try std.testing.expectEqual(artifact_hash, hashes[0]);
 }
 
 test "build_stages_json preserves external tool stage metadata" {
@@ -477,7 +526,11 @@ test "build_stages_json includes artifactPath when provided" {
     const filename_owned = try std.testing.allocator.dupe(u8, "vulkan_shader_artifact_1.spv");
     defer std.testing.allocator.free(filename_owned);
     const paths = [_]StageArtifactPath{
-        .{ .manifest_field = "spirvSha256", .filename = filename_owned },
+        .{
+            .manifest_field = "spirvSha256",
+            .filename = filename_owned,
+            .artifact_hash = hash_utils.sha256_hex("spirv"),
+        },
     };
     const json = try build_stages_json(std.testing.allocator, &stages, wgsl_hash, &stage_hashes, &paths);
     defer std.testing.allocator.free(json);

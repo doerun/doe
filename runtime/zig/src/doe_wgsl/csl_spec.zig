@@ -176,27 +176,17 @@ pub const ValidationError = struct {
 pub fn validateOutput(csl: []const u8) ?ValidationError {
     const std = @import("std");
 
-    // Must contain both sections.
-    if (std.mem.indexOf(u8, csl, LAYOUT_FILENAME) == null) {
-        return .{ .message = "missing layout.csl section" };
-    }
-    if (std.mem.indexOf(u8, csl, PE_PROGRAM_FILENAME) == null) {
-        return .{ .message = "missing pe_program.csl section" };
-    }
-
-    // Layout must define a rectangle.
-    if (std.mem.indexOf(u8, csl, "@set_rectangle") == null) {
-        return .{ .message = "layout missing @set_rectangle" };
-    }
-
-    // PE program must import memcpy.
-    if (std.mem.indexOf(u8, csl, "<memcpy/memcpy>") == null) {
-        return .{ .message = "PE program missing memcpy import" };
-    }
-
-    // PE program must export compute.
-    if (std.mem.indexOf(u8, csl, "@export_symbol(compute)") == null) {
-        return .{ .message = "PE program missing @export_symbol(compute)" };
+    const required_markers = [_]struct { marker: []const u8, message: []const u8 }{
+        .{ .marker = LAYOUT_FILENAME, .message = "missing layout.csl section" },
+        .{ .marker = PE_PROGRAM_FILENAME, .message = "missing pe_program.csl section" },
+        .{ .marker = "@set_rectangle", .message = "layout missing @set_rectangle" },
+        .{ .marker = "<memcpy/memcpy>", .message = "PE program missing memcpy import" },
+        .{ .marker = "@export_symbol(compute)", .message = "PE program missing @export_symbol(compute)" },
+    };
+    for (required_markers) |entry| {
+        if (std.mem.indexOf(u8, csl, entry.marker) == null) {
+            return .{ .message = entry.message };
+        }
     }
 
     // PE program must have sys_mod.unblock_cmd_stream() or @activate for exit.

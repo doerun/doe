@@ -1,3 +1,4 @@
+const std = @import("std");
 const model_commands = @import("../model_commands.zig");
 const model_policy = @import("../model_policy.zig");
 const model_profile = @import("../model_profile.zig");
@@ -21,7 +22,6 @@ pub const QuirkMode = enum {
     active,
 
     pub fn parse(raw: []const u8) ?QuirkMode {
-        const std = @import("std");
         if (std.ascii.eqlIgnoreCase(raw, "off")) return .off;
         if (std.ascii.eqlIgnoreCase(raw, "trace")) return .trace;
         if (std.ascii.eqlIgnoreCase(raw, "active")) return .active;
@@ -29,11 +29,7 @@ pub const QuirkMode = enum {
     }
 
     pub fn name(self: QuirkMode) []const u8 {
-        return switch (self) {
-            .off => "off",
-            .trace => "trace",
-            .active => "active",
-        };
+        return @tagName(self);
     }
 
     pub fn loadsQuirks(self: QuirkMode) bool {
@@ -71,7 +67,6 @@ pub fn dispatchWithMode(
 }
 
 test "QuirkMode.parse recognizes valid modes" {
-    const std = @import("std");
     try std.testing.expectEqual(QuirkMode.off, QuirkMode.parse("off").?);
     try std.testing.expectEqual(QuirkMode.trace, QuirkMode.parse("trace").?);
     try std.testing.expectEqual(QuirkMode.active, QuirkMode.parse("active").?);
@@ -80,21 +75,18 @@ test "QuirkMode.parse recognizes valid modes" {
 }
 
 test "QuirkMode.loadsQuirks" {
-    const std = @import("std");
     try std.testing.expect(!QuirkMode.off.loadsQuirks());
     try std.testing.expect(QuirkMode.trace.loadsQuirks());
     try std.testing.expect(QuirkMode.active.loadsQuirks());
 }
 
 test "QuirkMode.appliesActions" {
-    const std = @import("std");
     try std.testing.expect(!QuirkMode.off.appliesActions());
     try std.testing.expect(!QuirkMode.trace.appliesActions());
     try std.testing.expect(QuirkMode.active.appliesActions());
 }
 
 test "dispatchWithMode active propagates uses_temporary_buffer to command" {
-    const std = @import("std");
     const profile = model.DeviceProfile{
         .vendor = "intel",
         .api = .vulkan,
@@ -137,7 +129,6 @@ test "dispatchWithMode active propagates uses_temporary_buffer to command" {
 }
 
 test "dispatchWithMode active propagates uses_temporary_render_texture to render_draw" {
-    const std = @import("std");
     const profile = model.DeviceProfile{
         .vendor = "intel",
         .api = .metal,

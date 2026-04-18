@@ -102,41 +102,47 @@ pub fn hlsl_bitcast_fn(module: *const ir.Module, result_ty: ir.TypeId) []const u
     };
 }
 
+const HLSL_RENAMED_BUILTINS = [_]struct { wgsl: []const u8, hlsl: []const u8 }{
+    .{ .wgsl = "fract", .hlsl = "frac" },
+    .{ .wgsl = "inverseSqrt", .hlsl = "rsqrt" },
+    .{ .wgsl = "mix", .hlsl = "lerp" },
+    .{ .wgsl = "countOneBits", .hlsl = "countbits" },
+    .{ .wgsl = "reverseBits", .hlsl = "reversebits" },
+    .{ .wgsl = "firstLeadingBit", .hlsl = "firstbithigh" },
+    .{ .wgsl = "firstTrailingBit", .hlsl = "firstbitlow" },
+    .{ .wgsl = "atomicLoad", .hlsl = "doe_atomicLoad" },
+    .{ .wgsl = "atomicStore", .hlsl = "doe_atomicStore" },
+    .{ .wgsl = "atomicAdd", .hlsl = "doe_atomicAdd" },
+    .{ .wgsl = "atomicSub", .hlsl = "doe_atomicSub" },
+    .{ .wgsl = "atomicMin", .hlsl = "doe_atomicMin" },
+    .{ .wgsl = "atomicMax", .hlsl = "doe_atomicMax" },
+    .{ .wgsl = "atomicAnd", .hlsl = "doe_atomicAnd" },
+    .{ .wgsl = "atomicOr", .hlsl = "doe_atomicOr" },
+    .{ .wgsl = "atomicXor", .hlsl = "doe_atomicXor" },
+    .{ .wgsl = "atomicExchange", .hlsl = "doe_atomicExchange" },
+    .{ .wgsl = "unpack2x16float", .hlsl = "doe_unpack2x16float" },
+    .{ .wgsl = "pack2x16float", .hlsl = "doe_pack2x16float" },
+    .{ .wgsl = "unpack4x8unorm", .hlsl = "doe_unpack4x8unorm" },
+    .{ .wgsl = "unpack4x8snorm", .hlsl = "doe_unpack4x8snorm" },
+    .{ .wgsl = "pack4x8unorm", .hlsl = "doe_pack4x8unorm" },
+    .{ .wgsl = "pack4x8snorm", .hlsl = "doe_pack4x8snorm" },
+    .{ .wgsl = "subgroupAdd", .hlsl = "WaveActiveSum" },
+    .{ .wgsl = "subgroupExclusiveAdd", .hlsl = "WavePrefixSum" },
+    .{ .wgsl = "subgroupMin", .hlsl = "WaveActiveMin" },
+    .{ .wgsl = "subgroupMax", .hlsl = "WaveActiveMax" },
+    .{ .wgsl = "subgroupBroadcast", .hlsl = "WaveReadLaneAt" },
+    .{ .wgsl = "subgroupShuffle", .hlsl = "WaveReadLaneAt" },
+    .{ .wgsl = "subgroupAnd", .hlsl = "WaveActiveBitAnd" },
+    .{ .wgsl = "subgroupOr", .hlsl = "WaveActiveBitOr" },
+    .{ .wgsl = "subgroupXor", .hlsl = "WaveActiveBitXor" },
+    .{ .wgsl = "subgroupAll", .hlsl = "WaveActiveAllTrue" },
+    .{ .wgsl = "subgroupAny", .hlsl = "WaveActiveAnyTrue" },
+};
+
 pub fn hlsl_renamed_builtin(name: []const u8) ?[]const u8 {
-    if (std.mem.eql(u8, name, "fract")) return "frac";
-    if (std.mem.eql(u8, name, "inverseSqrt")) return "rsqrt";
-    if (std.mem.eql(u8, name, "mix")) return "lerp";
-    if (std.mem.eql(u8, name, "countOneBits")) return "countbits";
-    if (std.mem.eql(u8, name, "reverseBits")) return "reversebits";
-    if (std.mem.eql(u8, name, "firstLeadingBit")) return "firstbithigh";
-    if (std.mem.eql(u8, name, "firstTrailingBit")) return "firstbitlow";
-    if (std.mem.eql(u8, name, "atomicLoad")) return "doe_atomicLoad";
-    if (std.mem.eql(u8, name, "atomicStore")) return "doe_atomicStore";
-    if (std.mem.eql(u8, name, "atomicAdd")) return "doe_atomicAdd";
-    if (std.mem.eql(u8, name, "atomicSub")) return "doe_atomicSub";
-    if (std.mem.eql(u8, name, "atomicMin")) return "doe_atomicMin";
-    if (std.mem.eql(u8, name, "atomicMax")) return "doe_atomicMax";
-    if (std.mem.eql(u8, name, "atomicAnd")) return "doe_atomicAnd";
-    if (std.mem.eql(u8, name, "atomicOr")) return "doe_atomicOr";
-    if (std.mem.eql(u8, name, "atomicXor")) return "doe_atomicXor";
-    if (std.mem.eql(u8, name, "atomicExchange")) return "doe_atomicExchange";
-    if (std.mem.eql(u8, name, "unpack2x16float")) return "doe_unpack2x16float";
-    if (std.mem.eql(u8, name, "pack2x16float")) return "doe_pack2x16float";
-    if (std.mem.eql(u8, name, "unpack4x8unorm")) return "doe_unpack4x8unorm";
-    if (std.mem.eql(u8, name, "unpack4x8snorm")) return "doe_unpack4x8snorm";
-    if (std.mem.eql(u8, name, "pack4x8unorm")) return "doe_pack4x8unorm";
-    if (std.mem.eql(u8, name, "pack4x8snorm")) return "doe_pack4x8snorm";
-    if (std.mem.eql(u8, name, "subgroupAdd")) return "WaveActiveSum";
-    if (std.mem.eql(u8, name, "subgroupExclusiveAdd")) return "WavePrefixSum";
-    if (std.mem.eql(u8, name, "subgroupMin")) return "WaveActiveMin";
-    if (std.mem.eql(u8, name, "subgroupMax")) return "WaveActiveMax";
-    if (std.mem.eql(u8, name, "subgroupBroadcast")) return "WaveReadLaneAt";
-    if (std.mem.eql(u8, name, "subgroupShuffle")) return "WaveReadLaneAt";
-    if (std.mem.eql(u8, name, "subgroupAnd")) return "WaveActiveBitAnd";
-    if (std.mem.eql(u8, name, "subgroupOr")) return "WaveActiveBitOr";
-    if (std.mem.eql(u8, name, "subgroupXor")) return "WaveActiveBitXor";
-    if (std.mem.eql(u8, name, "subgroupAll")) return "WaveActiveAllTrue";
-    if (std.mem.eql(u8, name, "subgroupAny")) return "WaveActiveAnyTrue";
+    for (HLSL_RENAMED_BUILTINS) |entry| {
+        if (std.mem.eql(u8, name, entry.wgsl)) return entry.hlsl;
+    }
     return null;
 }
 

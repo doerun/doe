@@ -25,6 +25,31 @@ fn within_immediate_budget(layout: ?*DoePipelineLayout, index: u32, data_len: us
     return @as(u64, index) + @as(u64, @intCast(data_len)) <= @as(u64, budget);
 }
 
+// Shared payload validation + structured error logging for the
+// compute/render pass setImmediates entry points. The render-bundle
+// variant does not carry pipeline layout context and validates payload
+// presence only; it therefore does not route through this helper.
+fn log_immediate_validation(
+    label: []const u8,
+    layout: ?*DoePipelineLayout,
+    index: u32,
+    data_ptr: ?[*]const u8,
+    data_len: usize,
+) void {
+    if (!validate_immediate_data(data_ptr, data_len)) {
+        std.log.err("doe: {s} setImmediates rejected null data pointer for non-zero size", .{label});
+        return;
+    }
+    if (!within_immediate_budget(layout, index, data_len)) {
+        std.log.err("doe: {s} setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
+            label,
+            index,
+            data_len,
+            immediate_budget(layout),
+        });
+    }
+}
+
 // ============================================================
 // setImmediates — push constants / immediate data upload
 // ============================================================
@@ -57,18 +82,8 @@ pub export fn doeNativeComputePassSetImmediates(
     data_len: usize,
 ) callconv(.c) void {
     const encoder = native_helpers.cast(native_types.DoeComputePass, encoder_raw) orelse return;
-    if (!validate_immediate_data(data_ptr, data_len)) {
-        std.log.err("doe: compute setImmediates rejected null data pointer for non-zero size", .{});
-        return;
-    }
     const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
-    if (!within_immediate_budget(layout, index, data_len)) {
-        std.log.err("doe: compute setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
-            index,
-            data_len,
-            immediate_budget(layout),
-        });
-    }
+    log_immediate_validation("compute", layout, index, data_ptr, data_len);
 }
 
 pub export fn doeNativeRenderPassSetImmediates(
@@ -78,18 +93,8 @@ pub export fn doeNativeRenderPassSetImmediates(
     data_len: usize,
 ) callconv(.c) void {
     const encoder = native_helpers.cast(native_types.DoeRenderPass, encoder_raw) orelse return;
-    if (!validate_immediate_data(data_ptr, data_len)) {
-        std.log.err("doe: render pass setImmediates rejected null data pointer for non-zero size", .{});
-        return;
-    }
     const layout = if (encoder.pipeline) |pipeline| pipeline.layout else null;
-    if (!within_immediate_budget(layout, index, data_len)) {
-        std.log.err("doe: render pass setImmediates exceeds pipeline layout immediateSize (index={} size={} budget={})", .{
-            index,
-            data_len,
-            immediate_budget(layout),
-        });
-    }
+    log_immediate_validation("render pass", layout, index, data_ptr, data_len);
 }
 
 pub export fn doeNativeRenderBundleEncoderSetImmediates(

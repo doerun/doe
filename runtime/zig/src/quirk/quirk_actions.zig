@@ -53,21 +53,21 @@ pub fn applyTemporaryRenderTexture(payload: model.UseTemporaryRenderTextureActio
     };
 }
 
+fn applyTemporaryCopyBuffer(alignment: u32, command: model.Command) model.Command {
+    return switch (command) {
+        .copy_buffer_to_texture => |copy| blk: {
+            var modified = copy;
+            modified.uses_temporary_buffer = true;
+            modified.temporary_buffer_alignment = alignment;
+            break :blk .{ .copy_buffer_to_texture = modified };
+        },
+        else => command,
+    };
+}
+
 pub fn applyBehavioralToggle(toggle_name: []const u8, command: model.Command) model.Command {
     if (isStagingBufferToggle(toggle_name)) {
-        return switch (command) {
-            .copy_buffer_to_texture => |copy| .{
-                .copy_buffer_to_texture = .{
-                    .direction = copy.direction,
-                    .src = copy.src,
-                    .dst = copy.dst,
-                    .bytes = copy.bytes,
-                    .uses_temporary_buffer = true,
-                    .temporary_buffer_alignment = BEHAVIORAL_TOGGLE_DEFAULT_ALIGNMENT,
-                },
-            },
-            else => command,
-        };
+        return applyTemporaryCopyBuffer(BEHAVIORAL_TOGGLE_DEFAULT_ALIGNMENT, command);
     }
     if (isRenderTextureToggle(toggle_name)) {
         return applyTemporaryRenderTexture(.{ .min_mip_level = RENDER_TEXTURE_DEFAULT_MIN_MIP_LEVEL }, command);
@@ -76,33 +76,15 @@ pub fn applyBehavioralToggle(toggle_name: []const u8, command: model.Command) mo
 }
 
 pub fn applyAction(quirk: model.Quirk, command: model.Command) model.Command {
-    switch (quirk.action) {
-        .use_temporary_buffer => |payload| {
-            return switch (command) {
-                .copy_buffer_to_texture => |copy| .{
-                    .copy_buffer_to_texture = .{
-                        .direction = copy.direction,
-                        .src = copy.src,
-                        .dst = copy.dst,
-                        .bytes = copy.bytes,
-                        .uses_temporary_buffer = true,
-                        .temporary_buffer_alignment = payload.alignment_bytes,
-                    },
-                },
-                else => command,
-            };
-        },
-        .use_temporary_render_texture => |payload| {
-            return applyTemporaryRenderTexture(payload, command);
-        },
-        .toggle => |toggle_payload| {
-            if (toggle_registry.effect(toggle_payload.toggle_name) == .behavioral) {
-                return applyBehavioralToggle(toggle_payload.toggle_name, command);
-            }
-            return command;
-        },
-        .no_op => return command,
-    }
+    return switch (quirk.action) {
+        .use_temporary_buffer => |payload| applyTemporaryCopyBuffer(payload.alignment_bytes, command),
+        .use_temporary_render_texture => |payload| applyTemporaryRenderTexture(payload, command),
+        .toggle => |toggle_payload| if (toggle_registry.effect(toggle_payload.toggle_name) == .behavioral)
+            applyBehavioralToggle(toggle_payload.toggle_name, command)
+        else
+            command,
+        .no_op => command,
+    };
 }
 
 test "behavioral toggle sets uses_temporary_buffer on copy" {

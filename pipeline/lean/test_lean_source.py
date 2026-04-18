@@ -8,7 +8,6 @@ Validates:
   - Optional: Lean typecheck if toolchain is available
 """
 
-import os
 import re
 import shutil
 import subprocess

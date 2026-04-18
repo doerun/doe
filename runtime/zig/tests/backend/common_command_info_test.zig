@@ -11,6 +11,27 @@ test "manifest_module returns correct names for all commands" {
 
     const dispatch_cmd = model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } };
     try std.testing.expectEqualStrings("dispatch", command_info.manifest_module(dispatch_cmd));
+
+    const kernel_cmd = model.Command{ .kernel_dispatch = .{
+        .kernel = "matvec.wgsl",
+        .x = 1,
+        .y = 1,
+        .z = 1,
+    } };
+    try std.testing.expectEqualStrings("kernel_dispatch", command_info.manifest_module(kernel_cmd));
+}
+
+test "shader_artifact_module returns concrete kernel name for kernel dispatch" {
+    const kernel_cmd = model.Command{ .kernel_dispatch = .{
+        .kernel = "matvec.wgsl",
+        .x = 1,
+        .y = 1,
+        .z = 1,
+    } };
+    try std.testing.expectEqualStrings("matvec.wgsl", command_info.shader_artifact_module(kernel_cmd));
+
+    const dispatch_cmd = model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } };
+    try std.testing.expectEqualStrings("dispatch", command_info.shader_artifact_module(dispatch_cmd));
 }
 
 test "is_dispatch identifies dispatch commands" {

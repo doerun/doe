@@ -77,16 +77,19 @@ pub fn doeNativeQueueFlushBreakdown(
 }
 
 pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {
-    if (cast(DoeQueue, raw)) |q| {
-        if (q.ref_count > 1) {
-            q.ref_count -= 1;
-            return;
-        }
-        native_helpers.label_store.remove(raw);
-        if (q.dev.queue == q) {
-            q.dev.queue = null;
-        }
-        if (q.dev.backend == .vulkan) {
+    const q = cast(DoeQueue, raw) orelse return;
+    if (q.ref_count > 1) {
+        q.ref_count -= 1;
+        return;
+    }
+    native_helpers.label_store.remove(raw);
+    if (q.dev.queue == q) {
+        q.dev.queue = null;
+    }
+    // Backend-specific drain of any in-flight GPU work before we release the
+    // device reference. The common teardown at the bottom runs for every path.
+    switch (q.dev.backend) {
+        .vulkan => {
             if (comptime has_vulkan) {
                 if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
                     _ = rt.flush_queue() catch |err| {
@@ -94,28 +97,22 @@ pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {
                     };
                 }
             }
-            const dev = q.dev;
-            alloc.destroy(q);
-            native_exports.doeNativeDeviceRelease(toOpaque(dev));
-            return;
-        }
-        if (q.dev.backend == .d3d12) {
+        },
+        .d3d12 => {
             if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
                 _ = rt.flush_queue() catch |err| {
                     shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 flush on queue release: {s}", .{@errorName(err)});
                 };
             }
-            const dev = q.dev;
-            alloc.destroy(q);
-            native_exports.doeNativeDeviceRelease(toOpaque(dev));
-            return;
-        }
-        shared.flush_pending_work_dropin_sync(q);
-        if (q.mtl_event) |ev| metal_bridge.metal_bridge_release(ev);
-        const dev = q.dev;
-        alloc.destroy(q);
-        native_exports.doeNativeDeviceRelease(toOpaque(dev));
+        },
+        else => {
+            shared.flush_pending_work_dropin_sync(q);
+            if (q.mtl_event) |ev| metal_bridge.metal_bridge_release(ev);
+        },
     }
+    const dev = q.dev;
+    alloc.destroy(q);
+    native_exports.doeNativeDeviceRelease(toOpaque(dev));
 }
 
 pub fn doeNativeQueueAddRef(raw: ?*anyopaque) void {

@@ -163,7 +163,7 @@ def build_rows(
         )
         enrichment_entries.extend(entries)
         entry_by_path = {entry["match"]["receiptPath"]: entry for entry in entries}
-        for receipt_path in canonical_receipt_paths(case):
+        for receipt_path in canonical_paths:
             receipt = load_json(REPO_ROOT / receipt_path)
             overrides = entry_by_path[receipt_path]["overrides"]
             rows.append(build_row(receipt, receipt_path=receipt_path, overrides=overrides))

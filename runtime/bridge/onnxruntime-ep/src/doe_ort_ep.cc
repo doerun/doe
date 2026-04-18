@@ -18,7 +18,7 @@ namespace doe::ort_ep {
 
 namespace {
 
-constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v6";
+constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v7";
 constexpr const char* kIdentityOperatorType = "Identity";
 constexpr const char* kAddOperatorType = "Add";
 constexpr const char* kReluOperatorType = "Relu";
@@ -27,12 +27,17 @@ constexpr const char* kTanhOperatorType = "Tanh";
 constexpr const char* kGeluOperatorType = "Gelu";
 constexpr const char* kMatMulOperatorType = "MatMul";
 constexpr const char* kGemmOperatorType = "Gemm";
+constexpr const char* kSoftmaxOperatorType = "Softmax";
+constexpr const char* kLayerNormOperatorType = "LayerNormalization";
+constexpr const char* kConcatOperatorType = "Concat";
 constexpr const char* kOnnxDomain = "";
 constexpr const char* kOnnxAiDomain = "ai.onnx";
 constexpr const char* kGemmAlphaAttribute = "alpha";
 constexpr const char* kGemmBetaAttribute = "beta";
 constexpr const char* kGemmTransAAttribute = "transA";
 constexpr const char* kGemmTransBAttribute = "transB";
+constexpr const char* kAxisAttribute = "axis";
+constexpr const char* kEpsilonAttribute = "epsilon";
 constexpr ONNXTensorElementDataType kSupportedElementType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
 constexpr size_t kUnaryInputCount = 1;
 constexpr size_t kBinaryInputCount = 2;
@@ -44,6 +49,7 @@ constexpr float kSupportedGemmAlpha = 1.0f;
 constexpr float kSupportedGemmBeta = 1.0f;
 constexpr int64_t kSupportedGemmTransA = 0;
 constexpr int64_t kSupportedGemmTransB = 0;
+constexpr float kDefaultLayerNormEpsilon = 1e-5f;
 
 enum class CompiledOpKind : uint8_t {
   kIdentity,
@@ -58,6 +64,9 @@ enum class CompiledOpKind : uint8_t {
   kMatMulAdd,
   kMatMulAddRelu,
   kAddRelu,
+  kSoftmax,
+  kLayerNorm,
+  kConcat,
 };
 
 std::atomic<uint64_t> g_get_capability_calls{0};
@@ -83,6 +92,12 @@ std::atomic<uint64_t> g_compiled_gemm_relu_gemm_groups{0};
 std::atomic<uint64_t> g_compiled_matmul_add_groups{0};
 std::atomic<uint64_t> g_compiled_matmul_add_relu_groups{0};
 std::atomic<uint64_t> g_compiled_add_relu_groups{0};
+std::atomic<uint64_t> g_claimed_softmax_nodes{0};
+std::atomic<uint64_t> g_claimed_layernorm_nodes{0};
+std::atomic<uint64_t> g_claimed_concat_nodes{0};
+std::atomic<uint64_t> g_compiled_softmax_groups{0};
+std::atomic<uint64_t> g_compiled_layernorm_groups{0};
+std::atomic<uint64_t> g_compiled_concat_groups{0};
 std::atomic<uint64_t> g_create_state_calls{0};
 std::atomic<uint64_t> g_compute_calls{0};
 std::atomic<uint64_t> g_compute_identity_calls{0};
@@ -97,6 +112,9 @@ std::atomic<uint64_t> g_compute_gemm_relu_gemm_calls{0};
 std::atomic<uint64_t> g_compute_matmul_add_calls{0};
 std::atomic<uint64_t> g_compute_matmul_add_relu_calls{0};
 std::atomic<uint64_t> g_compute_add_relu_calls{0};
+std::atomic<uint64_t> g_compute_softmax_calls{0};
+std::atomic<uint64_t> g_compute_layernorm_calls{0};
+std::atomic<uint64_t> g_compute_concat_calls{0};
 std::atomic<uint64_t> g_release_state_calls{0};
 
 struct TensorValueDescriptor {
@@ -188,6 +206,12 @@ const char* CompiledOpKindName(const CompiledOpKind kind) {
       return "MatMul->Add->Relu";
     case CompiledOpKind::kAddRelu:
       return "Add->Relu";
+    case CompiledOpKind::kSoftmax:
+      return kSoftmaxOperatorType;
+    case CompiledOpKind::kLayerNorm:
+      return kLayerNormOperatorType;
+    case CompiledOpKind::kConcat:
+      return kConcatOperatorType;
   }
   return "unknown";
 }
@@ -209,6 +233,9 @@ size_t ClaimedNodeCountForKind(const CompiledOpKind kind) {
     case CompiledOpKind::kGelu:
     case CompiledOpKind::kMatMul:
     case CompiledOpKind::kGemm:
+    case CompiledOpKind::kSoftmax:
+    case CompiledOpKind::kLayerNorm:
+    case CompiledOpKind::kConcat:
       return 1;
   }
   return 0;
@@ -221,10 +248,13 @@ size_t ExpectedInputCountForKind(const CompiledOpKind kind) {
     case CompiledOpKind::kSigmoid:
     case CompiledOpKind::kTanh:
     case CompiledOpKind::kGelu:
+    case CompiledOpKind::kSoftmax:
       return kUnaryInputCount;
     case CompiledOpKind::kAdd:
     case CompiledOpKind::kMatMul:
     case CompiledOpKind::kAddRelu:
+    case CompiledOpKind::kLayerNorm:
+    case CompiledOpKind::kConcat:
       return kBinaryInputCount;
     case CompiledOpKind::kGemmReluGemm:
       return kQuinaryInputCount;
@@ -288,6 +318,15 @@ void IncrementClaimCounters(const CompiledOpKind kind) {
       g_claimed_add_nodes.fetch_add(1, std::memory_order_relaxed);
       g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kSoftmax:
+      g_claimed_softmax_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kLayerNorm:
+      g_claimed_layernorm_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kConcat:
+      g_claimed_concat_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
   }
 }
 
@@ -329,6 +368,15 @@ void IncrementCompiledGroupCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kAddRelu:
       g_compiled_add_relu_groups.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kSoftmax:
+      g_compiled_softmax_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kLayerNorm:
+      g_compiled_layernorm_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kConcat:
+      g_compiled_concat_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
   }
 }
 
@@ -369,6 +417,15 @@ void IncrementComputeCounters(const CompiledOpKind kind) {
       break;
     case CompiledOpKind::kAddRelu:
       g_compute_add_relu_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kSoftmax:
+      g_compute_softmax_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kLayerNorm:
+      g_compute_layernorm_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kConcat:
+      g_compute_concat_calls.fetch_add(1, std::memory_order_relaxed);
       break;
   }
 }
@@ -764,6 +821,15 @@ OrtStatus* GetSupportedNodeSpec(
   } else if (std::string_view(operator_type) == kGemmOperatorType) {
     spec_out->kind = CompiledOpKind::kGemm;
     expected_inputs = kTernaryInputCount;
+  } else if (std::string_view(operator_type) == kSoftmaxOperatorType) {
+    spec_out->kind = CompiledOpKind::kSoftmax;
+    expected_inputs = kUnaryInputCount;
+  } else if (std::string_view(operator_type) == kLayerNormOperatorType) {
+    spec_out->kind = CompiledOpKind::kLayerNorm;
+    expected_inputs = kBinaryInputCount;
+  } else if (std::string_view(operator_type) == kConcatOperatorType) {
+    spec_out->kind = CompiledOpKind::kConcat;
+    expected_inputs = kBinaryInputCount;
   } else {
     return nullptr;
   }
@@ -814,8 +880,61 @@ OrtStatus* GetSupportedNodeSpec(
     case CompiledOpKind::kSigmoid:
     case CompiledOpKind::kTanh:
     case CompiledOpKind::kGelu:
+    case CompiledOpKind::kSoftmax:
       if (!SameTypeAndShape(spec_out->inputs[0], spec_out->outputs[0])) {
         return nullptr;
+      }
+      break;
+    case CompiledOpKind::kLayerNorm:
+      {
+        if (spec_out->inputs[0].dims.empty()) {
+          return nullptr;
+        }
+        if (!SameTypeAndShape(spec_out->inputs[0], spec_out->outputs[0])) {
+          return nullptr;
+        }
+        if (spec_out->inputs[1].element_type != kSupportedElementType) {
+          return nullptr;
+        }
+        const int64_t last_dim = spec_out->inputs[0].dims.back();
+        if (spec_out->inputs[1].dims.size() != 1 ||
+            spec_out->inputs[1].dims[0] != last_dim) {
+          return nullptr;
+        }
+      }
+      break;
+    case CompiledOpKind::kConcat:
+      {
+        const auto& a = spec_out->inputs[0];
+        const auto& b = spec_out->inputs[1];
+        const auto& y = spec_out->outputs[0];
+        if (a.element_type != kSupportedElementType ||
+            b.element_type != kSupportedElementType ||
+            y.element_type != kSupportedElementType) {
+          return nullptr;
+        }
+        if (a.dims.empty() || a.dims.size() != b.dims.size() ||
+            a.dims.size() != y.dims.size()) {
+          return nullptr;
+        }
+        int64_t axis_attr = 0;
+        OrtStatus* axis_status = ReadOptionalIntAttribute(api, node, kAxisAttribute, 0, &axis_attr);
+        if (axis_status != nullptr) return axis_status;
+        const int64_t rank = static_cast<int64_t>(a.dims.size());
+        int64_t axis = axis_attr < 0 ? axis_attr + rank : axis_attr;
+        if (axis < 0 || axis >= rank) {
+          return nullptr;
+        }
+        for (size_t i = 0; i < a.dims.size(); ++i) {
+          if (static_cast<int64_t>(i) == axis) continue;
+          if (a.dims[i] != b.dims[i] || a.dims[i] != y.dims[i]) {
+            return nullptr;
+          }
+        }
+        if (y.dims[static_cast<size_t>(axis)] !=
+            a.dims[static_cast<size_t>(axis)] + b.dims[static_cast<size_t>(axis)]) {
+          return nullptr;
+        }
       }
       break;
     case CompiledOpKind::kAdd:
@@ -1897,6 +2016,152 @@ OrtStatus* ExecuteGelu(const CompiledNodeComputeInfo& info, OrtKernelContext* ke
   return nullptr;
 }
 
+// Softmax along the last axis, following ONNX opset 13+ semantics.
+// Uses the numerically stable subtract-max trick: exp(x - max) / sum(exp(x - max)).
+OrtStatus* ExecuteSoftmax(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  const float* input_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, input_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  if (input_descriptor.dims.empty()) {
+    return MakeInvalidGraphStatus(info.bindings.api,
+        "Doe ORT plugin EP Softmax requires a tensor with rank >= 1.");
+  }
+  const size_t reduce_dim = static_cast<size_t>(input_descriptor.dims.back());
+  if (reduce_dim == 0) {
+    return nullptr;
+  }
+  const size_t outer = input_descriptor.element_count / reduce_dim;
+  for (size_t row = 0; row < outer; ++row) {
+    const size_t base = row * reduce_dim;
+    float row_max = input_data[base];
+    for (size_t i = 1; i < reduce_dim; ++i) {
+      if (input_data[base + i] > row_max) row_max = input_data[base + i];
+    }
+    float row_sum = 0.0f;
+    for (size_t i = 0; i < reduce_dim; ++i) {
+      const float shifted = std::exp(input_data[base + i] - row_max);
+      output_data[base + i] = shifted;
+      row_sum += shifted;
+    }
+    const float inv = row_sum != 0.0f ? 1.0f / row_sum : 0.0f;
+    for (size_t i = 0; i < reduce_dim; ++i) {
+      output_data[base + i] *= inv;
+    }
+  }
+  return nullptr;
+}
+
+// LayerNormalization along the last axis with scale only (no bias), ONNX opset 17.
+// Matches the reference: y = (x - mean) / sqrt(var + epsilon) * scale.
+OrtStatus* ExecuteLayerNorm(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  RuntimeTensorDescriptor scale_descriptor;
+  const float* input_data = nullptr;
+  const float* scale_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 1, &scale_descriptor, &scale_data);
+  if (status != nullptr) return status;
+  if (input_descriptor.dims.empty()) {
+    return MakeInvalidGraphStatus(info.bindings.api,
+        "Doe ORT plugin EP LayerNormalization requires a tensor with rank >= 1.");
+  }
+  const size_t last = static_cast<size_t>(input_descriptor.dims.back());
+  if (scale_descriptor.element_count != last) {
+    return MakeInvalidGraphStatus(info.bindings.api,
+        "Doe ORT plugin EP LayerNormalization scale length must match the last input dimension.");
+  }
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, input_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  if (last == 0) return nullptr;
+  const size_t outer = input_descriptor.element_count / last;
+  const float epsilon = kDefaultLayerNormEpsilon;
+  const float inv_last = 1.0f / static_cast<float>(last);
+  for (size_t row = 0; row < outer; ++row) {
+    const size_t base = row * last;
+    float mean = 0.0f;
+    for (size_t i = 0; i < last; ++i) mean += input_data[base + i];
+    mean *= inv_last;
+    float var = 0.0f;
+    for (size_t i = 0; i < last; ++i) {
+      const float diff = input_data[base + i] - mean;
+      var += diff * diff;
+    }
+    var *= inv_last;
+    const float inv_std = 1.0f / std::sqrt(var + epsilon);
+    for (size_t i = 0; i < last; ++i) {
+      output_data[base + i] = (input_data[base + i] - mean) * inv_std * scale_data[i];
+    }
+  }
+  return nullptr;
+}
+
+// Concat along a non-negative, in-range axis. Inputs must match in every
+// non-axis dim; the output carries input0 then input1 along the concat axis.
+OrtStatus* ExecuteConcat(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor a_descriptor;
+  RuntimeTensorDescriptor b_descriptor;
+  const float* a_data = nullptr;
+  const float* b_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &a_descriptor, &a_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 1, &b_descriptor, &b_data);
+  if (status != nullptr) return status;
+  if (a_descriptor.dims.empty() || a_descriptor.dims.size() != b_descriptor.dims.size()) {
+    return MakeInvalidGraphStatus(info.bindings.api,
+        "Doe ORT plugin EP Concat inputs must share rank.");
+  }
+
+  RuntimeTensorDescriptor output_descriptor = a_descriptor;
+  // The node reference is gone at compute time, so recover axis from the
+  // two input shapes: for a binary concat, the one dim that differs is the
+  // concat axis. If the shapes are identical the axis default (0) applies.
+  int64_t axis = -1;
+  for (size_t i = 0; i < a_descriptor.dims.size(); ++i) {
+    if (a_descriptor.dims[i] != b_descriptor.dims[i]) {
+      axis = static_cast<int64_t>(i);
+      break;
+    }
+  }
+  if (axis < 0) axis = 0;
+  output_descriptor.dims[static_cast<size_t>(axis)] =
+      a_descriptor.dims[static_cast<size_t>(axis)] + b_descriptor.dims[static_cast<size_t>(axis)];
+  output_descriptor.element_count =
+      a_descriptor.element_count + b_descriptor.element_count;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, output_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  // Compute outer/inner products relative to the axis.
+  size_t outer = 1;
+  for (size_t i = 0; i < static_cast<size_t>(axis); ++i) outer *= static_cast<size_t>(a_descriptor.dims[i]);
+  size_t inner = 1;
+  for (size_t i = static_cast<size_t>(axis) + 1; i < a_descriptor.dims.size(); ++i) {
+    inner *= static_cast<size_t>(a_descriptor.dims[i]);
+  }
+  const size_t a_axis = static_cast<size_t>(a_descriptor.dims[static_cast<size_t>(axis)]);
+  const size_t b_axis = static_cast<size_t>(b_descriptor.dims[static_cast<size_t>(axis)]);
+  const size_t out_axis = a_axis + b_axis;
+  for (size_t o = 0; o < outer; ++o) {
+    const size_t out_base = o * out_axis * inner;
+    const size_t a_base = o * a_axis * inner;
+    const size_t b_base = o * b_axis * inner;
+    std::memmove(output_data + out_base, a_data + a_base, a_axis * inner * sizeof(float));
+    std::memmove(output_data + out_base + a_axis * inner, b_data + b_base, b_axis * inner * sizeof(float));
+  }
+  return nullptr;
+}
+
 OrtStatus* ExecuteMatMul(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
   RuntimeTensorDescriptor lhs_descriptor;
   RuntimeTensorDescriptor rhs_descriptor;
@@ -2199,6 +2464,12 @@ OrtStatus* ORT_API_CALL ComputeImpl(
       return ExecuteMatMulAddRelu(info, kernel_context);
     case CompiledOpKind::kAddRelu:
       return ExecuteAddRelu(info, kernel_context);
+    case CompiledOpKind::kSoftmax:
+      return ExecuteSoftmax(info, kernel_context);
+    case CompiledOpKind::kLayerNorm:
+      return ExecuteLayerNorm(info, kernel_context);
+    case CompiledOpKind::kConcat:
+      return ExecuteConcat(info, kernel_context);
   }
 
   return MakeStatus(info.bindings.api, ORT_FAIL, "Doe ORT plugin EP reached an unknown compiled op kind.");
@@ -2263,6 +2534,12 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_compiled_matmul_add_groups.store(0, std::memory_order_relaxed);
   g_compiled_matmul_add_relu_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_relu_groups.store(0, std::memory_order_relaxed);
+  g_claimed_softmax_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_layernorm_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_concat_nodes.store(0, std::memory_order_relaxed);
+  g_compiled_softmax_groups.store(0, std::memory_order_relaxed);
+  g_compiled_layernorm_groups.store(0, std::memory_order_relaxed);
+  g_compiled_concat_groups.store(0, std::memory_order_relaxed);
   g_create_state_calls.store(0, std::memory_order_relaxed);
   g_compute_calls.store(0, std::memory_order_relaxed);
   g_compute_identity_calls.store(0, std::memory_order_relaxed);
@@ -2277,6 +2554,9 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_compute_matmul_add_calls.store(0, std::memory_order_relaxed);
   g_compute_matmul_add_relu_calls.store(0, std::memory_order_relaxed);
   g_compute_add_relu_calls.store(0, std::memory_order_relaxed);
+  g_compute_softmax_calls.store(0, std::memory_order_relaxed);
+  g_compute_layernorm_calls.store(0, std::memory_order_relaxed);
+  g_compute_concat_calls.store(0, std::memory_order_relaxed);
   g_release_state_calls.store(0, std::memory_order_relaxed);
 }
 
@@ -2292,6 +2572,9 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .claimed_gelu_nodes = g_claimed_gelu_nodes.load(std::memory_order_relaxed),
       .claimed_matmul_nodes = g_claimed_matmul_nodes.load(std::memory_order_relaxed),
       .claimed_gemm_nodes = g_claimed_gemm_nodes.load(std::memory_order_relaxed),
+      .claimed_softmax_nodes = g_claimed_softmax_nodes.load(std::memory_order_relaxed),
+      .claimed_layernorm_nodes = g_claimed_layernorm_nodes.load(std::memory_order_relaxed),
+      .claimed_concat_nodes = g_claimed_concat_nodes.load(std::memory_order_relaxed),
       .compile_calls = g_compile_calls.load(std::memory_order_relaxed),
       .compiled_identity_groups = g_compiled_identity_groups.load(std::memory_order_relaxed),
       .compiled_add_groups = g_compiled_add_groups.load(std::memory_order_relaxed),
@@ -2305,6 +2588,9 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .compiled_matmul_add_groups = g_compiled_matmul_add_groups.load(std::memory_order_relaxed),
       .compiled_matmul_add_relu_groups = g_compiled_matmul_add_relu_groups.load(std::memory_order_relaxed),
       .compiled_add_relu_groups = g_compiled_add_relu_groups.load(std::memory_order_relaxed),
+      .compiled_softmax_groups = g_compiled_softmax_groups.load(std::memory_order_relaxed),
+      .compiled_layernorm_groups = g_compiled_layernorm_groups.load(std::memory_order_relaxed),
+      .compiled_concat_groups = g_compiled_concat_groups.load(std::memory_order_relaxed),
       .create_state_calls = g_create_state_calls.load(std::memory_order_relaxed),
       .compute_calls = g_compute_calls.load(std::memory_order_relaxed),
       .compute_identity_calls = g_compute_identity_calls.load(std::memory_order_relaxed),
@@ -2319,6 +2605,9 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .compute_matmul_add_calls = g_compute_matmul_add_calls.load(std::memory_order_relaxed),
       .compute_matmul_add_relu_calls = g_compute_matmul_add_relu_calls.load(std::memory_order_relaxed),
       .compute_add_relu_calls = g_compute_add_relu_calls.load(std::memory_order_relaxed),
+      .compute_softmax_calls = g_compute_softmax_calls.load(std::memory_order_relaxed),
+      .compute_layernorm_calls = g_compute_layernorm_calls.load(std::memory_order_relaxed),
+      .compute_concat_calls = g_compute_concat_calls.load(std::memory_order_relaxed),
       .release_state_calls = g_release_state_calls.load(std::memory_order_relaxed),
   };
 }

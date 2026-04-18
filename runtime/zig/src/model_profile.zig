@@ -35,13 +35,11 @@ pub const SemVer = struct {
     }
 
     pub fn cmp(self: SemVer, other: SemVer) std.math.Order {
-        if (self.major > other.major) return .gt;
-        if (self.major < other.major) return .lt;
-        if (self.minor > other.minor) return .gt;
-        if (self.minor < other.minor) return .lt;
-        if (self.patch > other.patch) return .gt;
-        if (self.patch < other.patch) return .lt;
-        return .eq;
+        const major = std.math.order(self.major, other.major);
+        if (major != .eq) return major;
+        const minor = std.math.order(self.minor, other.minor);
+        if (minor != .eq) return minor;
+        return std.math.order(self.patch, other.patch);
     }
 
     pub fn equals(self: SemVer, other: SemVer) bool {

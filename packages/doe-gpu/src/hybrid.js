@@ -8,13 +8,13 @@ const DEFAULT_LOCAL_TIMEOUT_MS = 10000;
 const DEFAULT_LOCAL_MODEL = 'gemma3-270m';
 const DEFAULT_CLOUD_MODEL = 'gpt-4o-mini';
 const DEFAULT_MODE = 'prefer-local';
+const VALID_MODES = ['prefer-local', 'prefer-cloud', 'local-only', 'cloud-only'];
 
 function resolveMode(mode) {
-  const valid = ['prefer-local', 'prefer-cloud', 'local-only', 'cloud-only'];
   if (!mode) return DEFAULT_MODE;
-  if (!valid.includes(mode)) {
+  if (!VALID_MODES.includes(mode)) {
     throw new Error(
-      `Invalid hybrid routing mode "${mode}". Expected one of: ${valid.join(', ')}`
+      `Invalid hybrid routing mode "${mode}". Expected one of: ${VALID_MODES.join(', ')}`
     );
   }
   return mode;

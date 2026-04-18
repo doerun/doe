@@ -88,7 +88,7 @@ pub const GpuTimeline = struct {
     pending_work_done_count: usize,
 
     pub fn init(shared_event: ?*anyopaque) GpuTimeline {
-        var self = GpuTimeline{
+        return .{
             .submit_counter = 0,
             .shared_event = shared_event,
             .pending_maps = undefined,
@@ -96,9 +96,6 @@ pub const GpuTimeline = struct {
             .pending_work_done = undefined,
             .pending_work_done_count = 0,
         };
-        _ = &self.pending_maps; // suppress unused field warning
-        _ = &self.pending_work_done;
-        return self;
     }
 
     // Advance the timeline counter and return the new value.

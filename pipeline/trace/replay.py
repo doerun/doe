@@ -23,12 +23,6 @@ def safe_int(value: Any, default: int = 0) -> int:
     return default
 
 
-def safe_bool(value: Any, default: bool = False) -> bool:
-    if isinstance(value, bool):
-        return value
-    return default
-
-
 def parse_hex_u64(value: Any) -> int:
     if not isinstance(value, str):
         raise ValueError("hash must be string")
@@ -73,11 +67,7 @@ def main() -> int:
         print(f"FAIL: missing trace jsonl: {trace_jsonl}")
         return 1
 
-    try:
-        meta = meta_payload
-    except json.JSONDecodeError as exc:
-        print(f"FAIL: invalid trace meta json: {exc}")
-        return 1
+    meta = meta_payload
 
     required = ["traceVersion", "seqMax", "rowCount", "hash", "previousHash"]
     missing = [k for k in required if k not in meta]

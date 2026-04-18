@@ -79,8 +79,27 @@ pub fn emitElementWiseLayout(
     try write(buf, pos, "}\n");
 }
 
-/// Emit the layout.csl section for a reduction kernel.
-/// Grid: width × 1 with fabric routing for east→west allreduce.
+/// Emit the layout.csl section for a single-PE reduction kernel.
+///
+/// Grid: width × 1. The PE program runs independently on each PE —
+/// barriers become no-ops, workgroup shared memory becomes PE-local
+/// (per emit_csl_reduction.zig's single-PE lowering). The layout thus
+/// only needs memcpy wiring; a true distributed allreduce is emitted
+/// by emit_csl_reduce_dist.zig when info.distributed is set.
+///
+/// Earlier revisions of this function emitted an east-west allreduce
+/// chain with middle-PE routing `.rx = .{WEST, RAMP}` — valid on wse2
+/// but wse3 rejects with "expected at most 1 input direction(s)". The
+/// fabric topology mismatch wasn't hiding a real feature: the PE
+/// program never actually consumed the chained value because it ran
+/// in single-PE-per-workgroup mode. Dropping the bogus routing here
+/// matches the PE program's actual semantics and unblocks wse3 cslc.
+///
+/// `reduce_color` is still declared and plumbed into the tile code
+/// because emit_csl_reduction.zig declares a matching `param reduce_color`
+/// in every PE program it emits. Keeping the param in the layout avoids
+/// a cross-file edit for an unused color; the color just has no
+/// configured routes.
 pub fn emitReductionLayout(
     buf: []u8,
     pos: *usize,
@@ -91,7 +110,7 @@ pub fn emitReductionLayout(
     _ = entry;
     _ = info;
 
-    try write(buf, pos, "// Layout: reduction kernel with east-west allreduce chain.\n\n");
+    try write(buf, pos, "// Layout: single-PE reduction kernel (width x 1, no cross-PE fabric).\n\n");
     try write(buf, pos, "param width: i16;\n\n");
 
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
@@ -99,7 +118,9 @@ pub fn emitReductionLayout(
     try write(buf, pos, "    .height = 1,\n");
     try write(buf, pos, "});\n\n");
 
-    // Reduce color for partial-sum accumulation along the row.
+    // reduce_color is reserved for a future distributed-reduce pass and
+    // passed through unused. emit_csl_reduction.zig declares the matching
+    // `param reduce_color: color;` in the PE program.
     try write(buf, pos, "const reduce_color: color = @get_color(");
     try writeInt(buf, pos, spec.MEMCPY_RESERVED_COLORS);
     try write(buf, pos, ");\n\n");
@@ -115,23 +136,7 @@ pub fn emitReductionLayout(
     try write(buf, pos, "            .pe_id = pe_x,\n");
     try write(buf, pos, "            .num_pes = width,\n");
     try write(buf, pos, "            .reduce_color = reduce_color,\n");
-    try write(buf, pos, "        });\n\n");
-
-    // Route reduce color: RAMP → EAST for all PEs except last,
-    // WEST → RAMP for all PEs except first.
-    try write(buf, pos, "        if (pe_x == 0) {\n");
-    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
-    try write(buf, pos, "                .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
-    try write(buf, pos, "            });\n");
-    try write(buf, pos, "        } else if (pe_x == width - 1) {\n");
-    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
-    try write(buf, pos, "                .routes = .{ .rx = .{WEST}, .tx = .{RAMP} },\n");
-    try write(buf, pos, "            });\n");
-    try write(buf, pos, "        } else {\n");
-    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
-    try write(buf, pos, "                .routes = .{ .rx = .{WEST, RAMP}, .tx = .{EAST} },\n");
-    try write(buf, pos, "            });\n");
-    try write(buf, pos, "        }\n");
+    try write(buf, pos, "        });\n");
     try write(buf, pos, "    }\n\n");
 
     // Exports
@@ -177,12 +182,24 @@ pub fn emitMatmulLayout(
     try write(buf, pos, "layout {\n");
     try write(buf, pos, "    @set_rectangle(P, P);\n\n");
 
+    // Per-PE c2d_params stitching. Each tile gets an independent
+    // c2d_params struct whose `.x` / `.y` halves are consumed by the
+    // two dim-bound `<collectives_2d/pe>` imports in pe_program.csl.
+    // x_entrypoints {8,9} and y_entrypoints {10,11} are reserved for
+    // the c2d library — user tasks in pe_program live at 12..15.
     try write(buf, pos, "    for (@range(u16, P)) |pe_y| {\n");
     try write(buf, pos, "        for (@range(u16, P)) |pe_x| {\n");
+    try write(buf, pos, "            const c2d_tile_params = c2d.get_params(pe_x, pe_y, .{\n");
+    try write(buf, pos, "                .x_colors      = .{ @get_color(0),         @get_color(1)         },\n");
+    try write(buf, pos, "                .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },\n");
+    try write(buf, pos, "                .y_colors      = .{ @get_color(4),         @get_color(5)         },\n");
+    try write(buf, pos, "                .y_entrypoints = .{ @get_local_task_id(10), @get_local_task_id(11) },\n");
+    try write(buf, pos, "            });\n");
     try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
     try write(buf, pos, spec.PE_PROGRAM_FILENAME);
     try write(buf, pos, "\", .{\n");
     try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .c2d_params = c2d_tile_params,\n");
     try write(buf, pos, "                .Mt = Mt,\n");
     try write(buf, pos, "                .Kt = Kt,\n");
     try write(buf, pos, "                .Nt = Nt,\n");
@@ -217,9 +234,12 @@ pub fn emitGatherLayout(
     _ = info;
     try write(buf, pos, "// Layout: embedding gather on a 1-D PE row.\n\n");
     try write(buf, pos, "param width: i16;\n");
-    try write(buf, pos, "param hidden_size: i16;\n");
-    try write(buf, pos, "param rows_per_pe: i16;\n");
-    try write(buf, pos, "param num_tokens: i16;\n\n");
+    // Defaults let the driver's --params=width:W,height:H invocation compile
+    // without requiring extra knobs; callers that want different dims override
+    // via their own --params flags. Same pattern as elementwise chunk_size.
+    try write(buf, pos, "param hidden_size: i16 = 64;\n");
+    try write(buf, pos, "param rows_per_pe: i16 = 8;\n");
+    try write(buf, pos, "param num_tokens: i16 = 4;\n\n");
     try emitMemcpyRow(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitRowTileLoop(buf, pos, ".hidden_size = hidden_size, .rows_per_pe = rows_per_pe, .num_tokens = num_tokens,\n");
@@ -266,8 +286,39 @@ pub fn emitDequantLayout(
     try emitMemcpyRow(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitRowTileLoop(buf, pos, ".num_blocks = num_blocks,\n");
-    try emitStorageExports(buf, pos, module);
+    // Dequant's PE program declares the struct-array global as packed
+    // `[<n>]u8` (emit_csl_dequant unpacks the Q4K bit layout manually),
+    // so the layout-level @export_name must also declare `[*]u8` for it.
+    // The generic emitStorageExports falls through writeScalarType ->
+    // u32 for struct elements, which would cause an exported-symbol
+    // type mismatch at cslc time ([*]u32 vs [*]u8). Inline the export
+    // loop here with a struct-array -> u8 override.
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage and space != .uniform) continue;
+        try write(buf, pos, "    @export_name(\"");
+        try write(buf, pos, global.name);
+        try write(buf, pos, "\", [*]");
+        if (isStructArray(module, global.ty)) {
+            try write(buf, pos, "u8");
+        } else {
+            try writeScalarType(buf, pos, module, global.ty);
+        }
+        try write(buf, pos, ", true);\n");
+    }
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+fn isStructArray(module: *const ir.Module, ty: ir.TypeId) bool {
+    switch (module.types.get(ty)) {
+        .array => |arr| return switch (module.types.get(arr.elem)) {
+            .struct_ => true,
+            else => false,
+        },
+        .struct_ => return true,
+        else => return false,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -381,7 +432,24 @@ pub fn emitFusedGemvLayout(
     try emitReduceColor(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitReduceRowTileLoop(buf, pos, ".out_dim = out_dim, .in_dim_per_pe = in_dim_per_pe, .num_blocks_per_row = num_blocks_per_row,\n");
-    try emitStorageExports(buf, pos, module);
+    // Same as emitDequantLayout: struct-array globals (the quantized
+    // weight blocks) must export as [*]u8 to match the PE program's
+    // byte-granularity unpacking. The generic emitStorageExports falls
+    // through writeScalarType to [*]u32.
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage and space != .uniform) continue;
+        try write(buf, pos, "    @export_name(\"");
+        try write(buf, pos, global.name);
+        try write(buf, pos, "\", [*]");
+        if (isStructArray(module, global.ty)) {
+            try write(buf, pos, "u8");
+        } else {
+            try writeScalarType(buf, pos, module, global.ty);
+        }
+        try write(buf, pos, ", true);\n");
+    }
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }
 
@@ -516,7 +584,19 @@ fn emitReduceRowTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitE
     try write(buf, pos, "            ");
     try write(buf, pos, extra_params);
     try write(buf, pos, "        });\n\n");
-    // Reduce color routing: RAMP→EAST, WEST→EAST, WEST→RAMP
+    // Reduce color routing (wse3-compatible: one rx direction per color).
+    //   PE 0:   rx=RAMP, tx=EAST   — seed PE pushes local value east via its
+    //                                @fmovs(reduce_out, ...).
+    //   middle: rx=WEST, tx=EAST   — receive chain, combine with local state
+    //                                in the task handler (e.g. math.max with
+    //                                local_max_val from registers), forward.
+    //   PE N-1: rx=WEST, tx=RAMP   — final sink; receive chain, deliver to
+    //                                the PE's own logic via RAMP.
+    // Earlier revisions routed middle PEs with rx={WEST, RAMP} — valid on
+    // wse2 but wse3 rejects: "expected at most 1 input direction(s)". The
+    // RAMP rx on middle PEs was redundant anyway — no emitted task handler
+    // consumes a ramp-routed wavelet there; the local contribution is read
+    // from register state (local_max_val / local_accum / ...).
     try write(buf, pos, "        if (pe_x == 0) {\n");
     try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
     try write(buf, pos, "                .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
@@ -527,7 +607,7 @@ fn emitReduceRowTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitE
     try write(buf, pos, "            });\n");
     try write(buf, pos, "        } else {\n");
     try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
-    try write(buf, pos, "                .routes = .{ .rx = .{WEST, RAMP}, .tx = .{EAST} },\n");
+    try write(buf, pos, "                .routes = .{ .rx = .{WEST}, .tx = .{EAST} },\n");
     try write(buf, pos, "            });\n");
     try write(buf, pos, "        }\n");
     try write(buf, pos, "    }\n\n");

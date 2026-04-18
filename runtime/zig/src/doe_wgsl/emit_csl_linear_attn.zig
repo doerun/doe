@@ -6,6 +6,7 @@
 //
 // output[d] = sum_k( Q[d] * K[k,d] * V[k,d] ) * scale
 
+const std = @import("std");
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
 const W = @import("emit_csl_ir_walk.zig");
@@ -74,13 +75,25 @@ pub fn emit(
 }
 
 fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    // CSL doesn't accept `var x: [*]f32 = undefined;` (nor does `&x` yield
+    // [*]f32 when x is itself a pointer). Use the same sized-array +
+    // aliased pointer pattern the elementwise / rope / gather emitters
+    // use. Size heuristic by name: K and V store kv_len * head_dim
+    // entries, Q / output store a single head. Names outside that set
+    // fall back to the larger kv-sized buffer so the body indexing
+    // stays in-bounds.
     for (module.globals.items) |global| {
         if (global.binding == null) continue;
         const space = global.addr_space orelse continue;
         if (space != .storage) continue;
+        const size_expr: []const u8 = if (isKvScaledName(global.name)) "kv_len * head_dim" else "head_dim";
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ": [*]f32 = undefined;\n");
+        try W.write(buf, pos, ": [");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32 = @zeros([");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32);\n");
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, "_ptr: [*]f32 = &");
@@ -88,6 +101,16 @@ fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!v
         try W.write(buf, pos, ";\n");
     }
     try W.write(buf, pos, "\n");
+}
+
+fn isKvScaledName(name: []const u8) bool {
+    // True when the buffer stores the full K or V matrix (kv_len rows of
+    // head_dim each). Conservative — matches common naming conventions
+    // and defaults to not-scaled for unrecognized names.
+    return std.mem.indexOf(u8, name, "key") != null or
+        std.mem.indexOf(u8, name, "val") != null or
+        std.mem.indexOf(u8, name, "_k") != null or
+        std.mem.indexOf(u8, name, "_v") != null;
 }
 
 fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {

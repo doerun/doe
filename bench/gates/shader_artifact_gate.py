@@ -14,6 +14,7 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 
 import argparse
+import hashlib
 import json
 import subprocess
 from typing import Any
@@ -124,6 +125,14 @@ def is_spirv_artifact_stage(stage: dict[str, Any]) -> bool:
     return not stage_name.endswith("validate")
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main() -> int:
     args = parse_args()
     report = load_json(Path(args.report))
@@ -174,6 +183,17 @@ def main() -> int:
             else:
                 validated += 1
                 manifest = load_json(manifest_path)
+                expected_manifest_hash = trace_meta.get("shaderArtifactManifestHash")
+                actual_manifest_hash = manifest.get("hash")
+                if (
+                    isinstance(expected_manifest_hash, str)
+                    and expected_manifest_hash
+                    and actual_manifest_hash != expected_manifest_hash
+                ):
+                    failures.append(
+                        f"{workload_id}: manifest hash mismatch for {manifest_path}: "
+                        f"trace={expected_manifest_hash} manifest={actual_manifest_hash}"
+                    )
                 spirv_failures, spirv_count = validate_spirv_artifacts(
                     manifest_path,
                     manifest,
@@ -223,6 +243,24 @@ def validate_spirv_artifacts(
         resolved_artifact_path = artifact_path
         if not Path(artifact_path).is_absolute():
             resolved_artifact_path = str((manifest_path.parent / artifact_path).resolve())
+        resolved_path = Path(resolved_artifact_path)
+        try:
+            actual_hash = file_sha256(resolved_path)
+        except OSError as exc:
+            failures.append(f"SPIR-V artifact unreadable {resolved_artifact_path}: {exc}")
+            continue
+        declared_stage_hash = stage.get("artifactSha256")
+        if declared_stage_hash != actual_hash:
+            failures.append(
+                "SPIR-V stage artifactSha256 mismatch for "
+                f"{resolved_artifact_path}: declared={declared_stage_hash} actual={actual_hash}"
+            )
+        declared_manifest_hash = manifest.get("spirvSha256")
+        if declared_manifest_hash != actual_hash:
+            failures.append(
+                "SPIR-V manifest spirvSha256 mismatch for "
+                f"{resolved_artifact_path}: declared={declared_manifest_hash} actual={actual_hash}"
+            )
         if not spirv_val:
             if require_spirv_validation:
                 failures.append("SPIR-V stage present but --spirv-val not provided")

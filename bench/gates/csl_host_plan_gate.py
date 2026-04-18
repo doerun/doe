@@ -15,7 +15,6 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 
 import argparse
 import json
-from pathlib import Path
 from typing import Any
 
 from native_compare_modules import contracts

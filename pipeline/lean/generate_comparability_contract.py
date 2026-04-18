@@ -25,10 +25,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def snake_to_pascal(name: str) -> str:
-    return "".join(part.capitalize() for part in name.split("_"))
-
-
 def snake_to_camel(name: str) -> str:
     parts = name.split("_")
     if not parts:
