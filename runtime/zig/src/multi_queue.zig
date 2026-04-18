@@ -5,7 +5,6 @@
 // Queue types map to Metal's queue priority API for scheduling preference.
 
 const std = @import("std");
-const builtin = @import("builtin");
 const process_roots = @import("runtime/process_roots.zig");
 
 // Metal bridge declarations — resolved at link time from metal_bridge.m.

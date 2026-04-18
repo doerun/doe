@@ -8,7 +8,6 @@ const spec = @import("dxil_spec.zig");
 const builder_mod = @import("dxil_builder.zig");
 const serialize_mod = @import("dxil_serialize.zig");
 const container = @import("dxil_container.zig");
-const layout = @import("layout_utils.zig");
 
 pub const EmitError = spec.EmitError;
 

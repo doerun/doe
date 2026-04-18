@@ -20,13 +20,11 @@ Behavior:
 
 from __future__ import annotations
 
-import argparse
-import json
-import os
 import sys
-from pathlib import Path
 
 import numpy as np
+
+import common
 
 from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-in-module
     SdkRuntime,
@@ -36,11 +34,7 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--compile-dir", required=True, help="cslc -o directory containing bin/")
-    parser.add_argument("--trace-out", required=True)
-    parser.add_argument("--cmaddr", default="", help="Optional CS system endpoint")
-    args = parser.parse_args()
+    args = common.parse_runtime_args(__doc__ or "")
 
     width = 4
     chunk_size = 1024
@@ -48,7 +42,7 @@ def main() -> int:
     input_host = (np.arange(total, dtype=np.float32) + 0.5)
     expected = input_host * 2.0
 
-    cmaddr = args.cmaddr.strip() or None
+    cmaddr = common.endpoint(args.cmaddr)
     runner = SdkRuntime(args.compile_dir, cmaddr=cmaddr)
     input_sym = runner.get_id("input")
     output_sym = runner.get_id("output")
@@ -68,55 +62,24 @@ def main() -> int:
     )
     runner.stop()
 
-    max_abs_err = float(np.max(np.abs(actual - expected)))
+    max_abs_err = common.max_abs_error(actual, expected)
     passed = bool(np.allclose(actual, expected, atol=1e-6, rtol=0.0))
 
     if not passed:
         print(f"FAIL: max_abs_err={max_abs_err:.6f}")
         return 1
 
-    # Write a csl_simulator_trace artifact conforming to
-    # config/doe-wgsl-simulator-trace.schema.json (contract:
-    # compile_run_smoke_summary, runtimeMode: sdk_runtime_smoke,
-    # additionalProperties: false). Kernel-specific numerical details
-    # (max_abs_err, samples) live in the sibling result JSON below.
-    from datetime import datetime, timezone
-    trace = {
-        "schemaVersion": 1,
-        "artifactKind": "csl_simulator_trace",
-        "target": "wse3",
-        "contract": "compile_run_smoke_summary",
-        "driverExecutable": os.environ.get("DOE_CSL_RUNTIME_EXECUTABLE", "cs_python"),
-        "compiledTargetCount": 1,
-        "compiledTargets": [
-            {"name": "elementwise-double", "artifactDir": args.compile_dir},
-        ],
-        "peGrid": {"width": width, "height": 1},
-        "prefillLaunchCount": 1,
-        "decodeLaunchCount": 0,
-        "runtimeMode": "sdk_runtime_smoke",
-        "simfabTracesPath": None,
-        "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-    }
-    trace_path = Path(args.trace_out)
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    trace_path.write_text(json.dumps(trace, indent=2) + "\n", encoding="utf-8")
-    # Kernel-specific numerical receipt alongside the schema-conforming trace.
-    result_path = trace_path.with_suffix(".kernel-result.json")
-    result_path.write_text(
-        json.dumps({
-            "kernel": "elementwise-double",
-            "passed": True,
-            "maxAbsErr": max_abs_err,
-            "width": width,
-            "chunkSize": chunk_size,
-            "totalElements": total,
-            "executionTarget": "system" if cmaddr else "simfabric",
-            "sampleInput": input_host[:4].tolist(),
-            "sampleExpected": expected[:4].tolist(),
-            "sampleActual": actual[:4].tolist(),
-        }, indent=2) + "\n",
-        encoding="utf-8",
+    trace_path = common.write_explicit_trace(
+        trace_out=args.trace_out,
+        kernel="elementwise-double",
+        cmaddr=cmaddr,
+        width=width,
+        chunk_size=chunk_size,
+        total_elements=total,
+        max_abs_err=max_abs_err,
+        sample_input=input_host[:4].tolist(),
+        sample_expected=expected[:4].tolist(),
+        sample_actual=actual[:4].tolist(),
     )
     print(f"PASS: {total} elements, max_abs_err={max_abs_err:.3e}, trace={trace_path}")
     return 0

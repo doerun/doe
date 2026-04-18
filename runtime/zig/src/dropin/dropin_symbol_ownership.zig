@@ -87,11 +87,5 @@ pub fn find_symbol_ownership(
 }
 
 pub fn symbol_owner_name(owner: SymbolOwner) []const u8 {
-    return switch (owner) {
-        .dawn_delegate => "dawn_delegate",
-        .doe_metal => "doe_metal",
-        .doe_vulkan => "doe_vulkan",
-        .doe_d3d12 => "doe_d3d12",
-        .shared => "shared",
-    };
+    return @tagName(owner);
 }

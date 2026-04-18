@@ -82,6 +82,7 @@ lean/artifacts/
 *.tmp
 nohup.out
 *.log
+simfab_traces/
 doe_pipeline_archive.fingerprint
 doe_pipeline_archive.manifest
 doe_pipeline_archive.metallib

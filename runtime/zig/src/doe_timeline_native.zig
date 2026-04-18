@@ -13,7 +13,6 @@
 // event_counter + mtl_event fields). This is a backwards-compatible extension:
 // the queue is only constructed by doeNativeDeviceGetQueue, which we update here.
 
-const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const native_types = @import("doe_native_object_types.zig");

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CSL Runtime Fixture Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "fixtures"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_runtime_fixture_registry" },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/fixture" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "fixtureId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]*$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kernelPattern": {
+      "type": "string",
+      "enum": [
+        "attention_decode",
+        "attention_linear",
+        "attention_tiled",
+        "element_wise",
+        "fused_gemv_dequant",
+        "gather",
+        "reduction",
+        "rope",
+        "sample",
+        "tiled_matmul"
+      ]
+    },
+    "backendStatus": {
+      "type": "string",
+      "enum": [
+        "artifact_present",
+        "compile_validated",
+        "runtime_ready",
+        "compile_ready",
+        "blocked",
+        "missing",
+        "not_wired"
+      ]
+    },
+    "backendCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vulkan", "metal", "d3d12", "csl"],
+      "properties": {
+        "vulkan": { "$ref": "#/$defs/backendStatus" },
+        "metal": { "$ref": "#/$defs/backendStatus" },
+        "d3d12": { "$ref": "#/$defs/backendStatus" },
+        "csl": { "$ref": "#/$defs/backendStatus" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceWgslPath", "simulatorPlanPath", "hostPlanPath", "runtimeConfigPath"],
+      "properties": {
+        "sourceWgslPath": { "$ref": "#/$defs/path" },
+        "sourceEvidenceDir": { "$ref": "#/$defs/path" },
+        "simulatorPlanPath": { "$ref": "#/$defs/path" },
+        "hostPlanPath": { "$ref": "#/$defs/path" },
+        "runtimeConfigPath": { "$ref": "#/$defs/path" },
+        "runnerPath": { "$ref": "#/$defs/path" },
+        "governedLaneReportPath": { "$ref": "#/$defs/path" },
+        "driverResultPath": { "$ref": "#/$defs/path" },
+        "tracePath": { "$ref": "#/$defs/path" }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kernelPattern",
+        "runtimeMode",
+        "governedStatus",
+        "backendCoverage",
+        "evidence",
+        "nextAction"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/fixtureId" },
+        "kernelPattern": { "$ref": "#/$defs/kernelPattern" },
+        "runtimeMode": {
+          "type": "string",
+          "enum": ["sdk-runtime-command", "compile-only"]
+        },
+        "governedStatus": {
+          "type": "string",
+          "enum": ["runtime_ready", "compile_ready", "blocked"]
+        },
+        "backendCoverage": { "$ref": "#/$defs/backendCoverage" },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "nextAction": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

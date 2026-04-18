@@ -720,6 +720,40 @@ pub fn build(b: *std.Build) void {
     emit_msl_step.dependOn(&install_emit_msl.step);
     b.getInstallStep().dependOn(emit_msl_step);
 
+    const emit_hlsl_exe = b.addExecutable(.{
+        .name = "doe-emit-hlsl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_hlsl.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_hlsl_exe.linkLibC();
+    const install_emit_hlsl = b.addInstallArtifact(emit_hlsl_exe, .{});
+    const emit_hlsl_step = b.step("emit-hlsl", "Build the WGSL-to-HLSL emitter tool");
+    emit_hlsl_step.dependOn(&install_emit_hlsl.step);
+    b.getInstallStep().dependOn(emit_hlsl_step);
+
+    const emit_dxil_exe = b.addExecutable(.{
+        .name = "doe-emit-dxil",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_dxil.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_dxil_exe.linkLibC();
+    const install_emit_dxil = b.addInstallArtifact(emit_dxil_exe, .{});
+    const emit_dxil_step = b.step("emit-dxil", "Build the WGSL-to-DXIL emitter tool");
+    emit_dxil_step.dependOn(&install_emit_dxil.step);
+    b.getInstallStep().dependOn(emit_dxil_step);
+
     const emit_spirv_exe = b.addExecutable(.{
         .name = "doe-emit-spirv",
         .root_module = b.createModule(.{

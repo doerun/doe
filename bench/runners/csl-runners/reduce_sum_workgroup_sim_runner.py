@@ -8,12 +8,11 @@ correct per-PE partial sums (not collapsed single-lane semantics).
 
 from __future__ import annotations
 
-import argparse
-import json
 import sys
-from pathlib import Path
 
 import numpy as np
+
+import common
 
 from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-in-module
     SdkRuntime,
@@ -23,11 +22,7 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--compile-dir", required=True)
-    parser.add_argument("--trace-out", required=True)
-    parser.add_argument("--cmaddr", default="")
-    args = parser.parse_args()
+    args = common.parse_runtime_args(__doc__ or "")
 
     width = 4
     wg_size = 256       # WGSL @workgroup_size(256)
@@ -43,7 +38,7 @@ def main() -> int:
     for p in range(width):
         expected_per_pe[p] = sum(p * hidden_size + lane for lane in range(wg_size))
 
-    cmaddr = args.cmaddr.strip() or None
+    cmaddr = common.endpoint(args.cmaddr)
     runner = SdkRuntime(args.compile_dir, cmaddr=cmaddr)
     input_sym = runner.get_id("input")
     output_sym = runner.get_id("output")
@@ -69,30 +64,24 @@ def main() -> int:
     # The WGSL writes output[wid.x] = sum; wid.x maps to pe_id in the
     # lowering, so PE p's sum lives at actual_full[p, p] (local slot p).
     actual_per_pe = np.array([actual_full[p, p] for p in range(width)], dtype=np.float32)
-    max_abs_err = float(np.max(np.abs(actual_per_pe - expected_per_pe)))
+    max_abs_err = common.max_abs_error(actual_per_pe, expected_per_pe)
     passed = bool(np.allclose(actual_per_pe, expected_per_pe, atol=1e-3, rtol=1e-6))
     if not passed:
         print(f"FAIL: max_abs_err={max_abs_err}")
         return 1
 
-    trace = {
-        "schemaVersion": 1,
-        "artifactKind": "csl_simulator_trace",
-        "target": "wse3",
-        "contract": "explicit_simulator_trace",
-        "kernel": "reduce-sum-workgroup",
-        "executionTarget": "system" if cmaddr else "simfabric",
-        "width": width,
-        "chunkSize": hidden_size,
-        "totalElements": width * hidden_size,
-        "runtimePassed": True,
-        "runtimeMaxAbsErr": max_abs_err,
-        "sampleInput": per_pe_input[0, :4].tolist(),
-        "sampleExpected": expected_per_pe.tolist(),
-        "sampleActual": actual_per_pe.tolist(),
-    }
-    Path(args.trace_out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.trace_out).write_text(json.dumps(trace, indent=2) + "\n", encoding="utf-8")
+    common.write_explicit_trace(
+        trace_out=args.trace_out,
+        kernel="reduce-sum-workgroup",
+        cmaddr=cmaddr,
+        width=width,
+        chunk_size=hidden_size,
+        total_elements=width * hidden_size,
+        max_abs_err=max_abs_err,
+        sample_input=per_pe_input[0, :4].tolist(),
+        sample_expected=expected_per_pe.tolist(),
+        sample_actual=actual_per_pe.tolist(),
+    )
     print(f"PASS: reduce-sum-workgroup {width} PEs, max_abs_err={max_abs_err:.3e}")
     return 0
 

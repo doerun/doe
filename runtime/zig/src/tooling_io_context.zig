@@ -22,11 +22,7 @@ pub const IoContext = struct {
     }
 
     pub fn modeName(self: IoContext) []const u8 {
-        return switch (self.mode) {
-            .sync => "sync",
-            .cooperative_same_thread => "cooperative_same_thread",
-            .threaded_parallel => "threaded_parallel",
-        };
+        return @tagName(self.mode);
     }
 
     pub fn readFileAlloc(self: IoContext, allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) ![]u8 {

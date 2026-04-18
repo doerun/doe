@@ -4,7 +4,6 @@
 // call expressions, type constructors, and type expression parsing.
 // All functions take an `anytype` self matching the Parser interface.
 
-const std = @import("std");
 const ast_mod = @import("ast.zig");
 const token_mod = @import("token.zig");
 const NodeTag = ast_mod.NodeTag;

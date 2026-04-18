@@ -166,6 +166,14 @@
       "data": "config/csl-fixture-mirrors.json"
     },
     {
+      "schema": "config/csl-runtime-fixtures.schema.json",
+      "data": "config/csl-runtime-fixtures.json"
+    },
+    {
+      "schema": "config/wgsl-backend-matrix-report.schema.json",
+      "data": "examples/wgsl-backend-matrix-report.sample.json"
+    },
+    {
       "schema": "config/shader-error-taxonomy.schema.json",
       "data": "config/shader-error-taxonomy.json"
     },
