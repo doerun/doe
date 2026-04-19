@@ -29,11 +29,20 @@ byte-stable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def parse_args() -> argparse.Namespace:
@@ -160,10 +169,11 @@ def main() -> int:
 
     region.place(4, 2)
 
-    rows_stream = layout.create_input_stream(rows_port)
-    proj_stream = layout.create_input_stream(proj_port)
-    wts_stream  = layout.create_input_stream(wts_port)
-    act_stream  = layout.create_output_stream(act_port)
+    io_buffer_size = 1024  # SdkLayout default; exposed for the receipt.
+    rows_stream = layout.create_input_stream(rows_port, io_buffer_size=io_buffer_size)
+    proj_stream = layout.create_input_stream(proj_port, io_buffer_size=io_buffer_size)
+    wts_stream  = layout.create_input_stream(wts_port, io_buffer_size=io_buffer_size)
+    act_stream  = layout.create_output_stream(act_port, io_buffer_size=io_buffer_size)
 
     compile_prefix = str(compile_out / "transformer_layer_shape")
     compile_artifacts = layout.compile(out_prefix=compile_prefix)
@@ -238,11 +248,57 @@ def main() -> int:
         ],
         "layerBlockSmoke": {{
             "planPath": "{plan_path_rel}",
+            "planSha256": "{plan_sha256}",
             "layerIndex": {layer_index},
             "regionName": "{region_name}",
+            "kernelSourcePath": "{kernel_source_rel}",
+            "kernelSourceSha256": "{kernel_source_sha256}",
             "kernelIsStub": True,
             "combineRule": "activation_out[i] = ple_rows[i] + ple_projection[i] + layer_weights[i]",
             "status": run_status,
+            "targetMode": "local_simfabric",
+            "compileArtifactDir": str(compile_out.relative_to(REPO_ROOT)),
+            "compileArtifactPrefix": str(Path(compile_prefix).relative_to(REPO_ROOT)),
+            "connectionGraph": {{
+                "region": "{region_name}",
+                "grid": {{"width": 1, "height": 1, "peCount": 1, "place": [4, 2]}},
+                "inputPorts": [
+                    {{"color": "rx_ple_rows",       "edge": "LEFT",   "size": args.size}},
+                    {{"color": "rx_ple_projection", "edge": "TOP",    "size": args.size}},
+                    {{"color": "rx_layer_weights",  "edge": "BOTTOM", "size": args.size}},
+                ],
+                "outputPorts": [
+                    {{"color": "tx_activation",     "edge": "RIGHT",  "size": args.size}},
+                ],
+                "crossRegionConnections": [],
+            }},
+            "hostIoLayout": [
+                {{"streamId": "ple_rows_stream",       "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 2}},
+                {{"streamId": "ple_projection_stream", "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 23}},
+                {{"streamId": "layer_weights_stream",  "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 2166}},
+                {{"streamId": "activation_out_stream", "role": "output", "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 0}},
+            ],
+            "ioBufferSizes": {{
+                "rows": io_buffer_size,
+                "proj": io_buffer_size,
+                "wts":  io_buffer_size,
+                "activation": io_buffer_size,
+            }},
+            "sendReceiveCounts": {{"sends": 3, "receives": 1}},
+            "simulatorArtifactPaths": {{
+                "compileDir": str(compile_out.relative_to(REPO_ROOT)),
+                "runLogs": [],
+                "coreFile": None,
+            }},
+            "sourceModelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
         }},
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
@@ -294,14 +350,19 @@ def main() -> int:
         )
     stream_contract_comment = "\n".join(stream_contract_lines)
 
-    kernel_source_rel = str(resolve(args.kernel_source).relative_to(REPO_ROOT))
+    kernel_source_path = resolve(args.kernel_source)
+    kernel_source_rel = str(kernel_source_path.relative_to(REPO_ROOT))
     plan_path_rel = str(plan_path.relative_to(REPO_ROOT))
+    plan_sha256 = sha256(plan_path)
+    kernel_source_sha256 = sha256(kernel_source_path)
 
     runner_text = TEMPLATE.format(
         plan_path_rel=plan_path_rel,
+        plan_sha256=plan_sha256,
         layer_index=args.layer_index,
         smoke_size=args.smoke_size,
         kernel_source_rel=kernel_source_rel,
+        kernel_source_sha256=kernel_source_sha256,
         region_name=layer["codeRegion"],
         model_id=plan.get("modelId", ""),
         stream_contract_comment=stream_contract_comment,
