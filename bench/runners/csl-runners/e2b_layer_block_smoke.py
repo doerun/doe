@@ -231,6 +231,27 @@ def main() -> int:
                 "coreFile": None,
             },
             "sourceModelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+            "perKernelShapes": [
+    {
+        "pattern": "gather",
+        "emitter": "emitGatherLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:237)",
+        "emitterWidened2D": True,
+        "paramsShape": {
+            "width": 16,
+            "height": 1,
+            "hidden_size": 1536,
+            "rows_per_pe": 8,
+            "num_tokens": 16
+        },
+        "cslcParamsString": "width:16,height:1,hidden_size:1536,rows_per_pe:8,num_tokens:16",
+        "derivationSource": "width/num_tokens from --size smoke arg; hidden_size from manifest.modelConfig.hiddenDim; height=1 for smoke (2-D needed for 31B full-grid per layout-2d-needs audit); rows_per_pe is the emitter default with no manifest override yet.",
+        "manifestSteps": [
+            "embed_tokens",
+            "ple_gather",
+            "ple_gather"
+        ]
+    }
+],
         },
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "

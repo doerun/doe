@@ -299,6 +299,7 @@ def main() -> int:
                 "coreFile": None,
             }},
             "sourceModelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+            "perKernelShapes": {per_kernel_shapes_literal},
         }},
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
@@ -329,6 +330,65 @@ if __name__ == "__main__":
 '''
 
 
+def derive_per_kernel_shapes(
+    plan: dict,
+    manifest: dict,
+    smoke_size: int,
+) -> list[dict]:
+    """Pick --params shape for each real kernel pattern this layer touches.
+
+    Today only gather is widened (see plan Build-order step 2 audit at
+    bench/out/layout-2d-needs/layout-2d-needs.json). This function
+    demonstrates the per-kernel-shape-emission pattern that plan step 1
+    owes the step-2 sweep. Extending to more patterns (rope, attention,
+    dequant, etc.) is follow-up; the data structure's shape is what
+    matters for cross-step readability.
+
+    Derivation rule for gather:
+      width         = smoke_size (so num_tokens = smoke_size stays <= i16;
+                      real deployment uses num_tokens from the step expansion)
+      height        = 1    (1-D smoke; 2-D for 31B full-grid is a future flip)
+      hidden_size   = manifest.modelConfig.hiddenDim
+      rows_per_pe   = 8    (emitter default; the manifest has no override yet)
+      num_tokens    = smoke_size
+    """
+    mc = manifest.get("modelConfig", {})
+    hidden_dim = int(mc.get("hiddenDim", 0))
+    shapes: list[dict] = []
+    # Smoke-shape gather: the manifest has two gather steps
+    # (embed_tokens and ple_gather); emit one shape entry that covers
+    # the shared pattern-level --params. Real deployment would pick
+    # per-step widths based on the weight matrix / token count.
+    shapes.append({
+        "pattern": "gather",
+        "emitter": "emitGatherLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:237)",
+        "emitterWidened2D": True,
+        "paramsShape": {
+            "width": smoke_size,
+            "height": 1,
+            "hidden_size": hidden_dim or 64,
+            "rows_per_pe": 8,
+            "num_tokens": smoke_size,
+        },
+        "cslcParamsString": (
+            f"width:{smoke_size},height:1,"
+            f"hidden_size:{hidden_dim or 64},"
+            f"rows_per_pe:8,num_tokens:{smoke_size}"
+        ),
+        "derivationSource": (
+            "width/num_tokens from --size smoke arg; hidden_size from "
+            "manifest.modelConfig.hiddenDim; height=1 for smoke (2-D "
+            "needed for 31B full-grid per layout-2d-needs audit); "
+            "rows_per_pe is the emitter default with no manifest override yet."
+        ),
+        "manifestSteps": [
+            s["name"] for s in manifest.get("steps", [])
+            if s.get("op") in ("embed", "ple_gather")
+        ],
+    })
+    return shapes
+
+
 def main() -> int:
     args = parse_args()
     plan_path = resolve(args.execution_plan)
@@ -338,6 +398,13 @@ def main() -> int:
     if args.layer_index < 0 or args.layer_index >= len(layers):
         raise SystemExit(f"--layer-index {args.layer_index} out of range 0..{len(layers) - 1}")
     layer = layers[args.layer_index]
+
+    # Read the manifest that produced this plan so per-kernel shapes can be
+    # grounded in modelConfig dims, not hand-typed numbers.
+    manifest_rel = "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
+    manifest_path = REPO_ROOT / manifest_rel
+    manifest = json.loads(manifest_path.read_text())
+    per_kernel_shapes = derive_per_kernel_shapes(plan, manifest, args.smoke_size)
 
     # Build the comment that captures the stream contract from the plan.
     stream_contract_lines = [
@@ -356,6 +423,14 @@ def main() -> int:
     plan_sha256 = sha256(plan_path)
     kernel_source_sha256 = sha256(kernel_source_path)
 
+    # Render perKernelShapes as a Python-literal dict inside the runner
+    # (the runner embeds it verbatim in the trace). json.dumps gives valid
+    # Python for the values we emit here (True is JSON true, which Python
+    # also accepts under json.loads; the generated runner serializes via
+    # json.dumps so the True/False/None mapping round-trips cleanly).
+    per_kernel_shapes_literal = json.dumps(per_kernel_shapes, indent=4) \
+        .replace("true", "True").replace("false", "False").replace("null", "None")
+
     runner_text = TEMPLATE.format(
         plan_path_rel=plan_path_rel,
         plan_sha256=plan_sha256,
@@ -366,6 +441,7 @@ def main() -> int:
         region_name=layer["codeRegion"],
         model_id=plan.get("modelId", ""),
         stream_contract_comment=stream_contract_comment,
+        per_kernel_shapes_literal=per_kernel_shapes_literal,
     )
 
     runner_out = resolve(args.runner_out)
