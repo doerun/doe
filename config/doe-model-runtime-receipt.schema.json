@@ -186,15 +186,26 @@
     },
     "executionBlocker": {
       "type": "string",
-      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed.",
+      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. Note that 'sdk_layout_streaming_executor_missing' is legacy — as of bench/out/streaming-executor/ landing, the primitives exist and run on simfabric; the current blocker for full-model execution is 'streaming_executor_not_bound_to_execution_plan' (the plan generator doesn't yet emit stage-kernel code the executor can dispatch).",
       "enum": [
         "none",
         "sdk_layout_streaming_executor_missing",
+        "streaming_executor_not_bound_to_execution_plan",
         "hardware_endpoint_unavailable",
         "full_grid_compile_unattempted",
         "partial_kernel_coverage",
         "memory_plan_does_not_fit"
       ]
+    },
+    "streamingExecutorPrimitivesEvidence": {
+      "type": "object",
+      "description": "Optional pointer block. When the SdkLayout streaming executor primitives (stream I/O, compute transform, region-to-region chain, multi-PE SPMD, compile cache, layer-block-shaped chain) have been proven on simfabric, this field lists where the traces live. Lets downstream consumers (e.g. the demo status page) show 'streaming executor primitives: pass' as a distinct row from 'full-model execution: blocked'.",
+      "properties": {
+        "description": { "type": "string" },
+        "tracesDir": { "type": "string" },
+        "tracesSample": { "type": "array", "items": { "type": "string" } },
+        "primitivesProven": { "type": "array", "items": { "type": "string" } }
+      }
     },
     "fullGridCompileProbeEvidence": {
       "type": "object",
