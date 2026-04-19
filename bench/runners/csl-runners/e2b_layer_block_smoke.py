@@ -419,6 +419,44 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "dequant",
+        "emitter": "emitDequantLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:305)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": 16,
+                    "num_blocks": 1
+                },
+                "cslcParamsString": "width:16,num_blocks:1"
+            }
+        ],
+        "derivationSource": "width = --size smoke arg; num_blocks = 1 fallback (no manifest step drives this). Gemma-4 fuses dequant into fused_gemv_dequant rather than issuing standalone dequant \u2014 this emitter stays live for future models that separate the two.",
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step"
+    },
+    {
+        "pattern": "fused_ffn",
+        "emitter": "emitFusedFfnLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:557)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": 16,
+                    "in_dim": 1536,
+                    "out_dim": 6144,
+                    "in_per_pe": 96
+                },
+                "cslcParamsString": "width:16,in_dim:1536,out_dim:6144,in_per_pe:96"
+            }
+        ],
+        "derivationSource": "width = --size; in_dim = hiddenDim; out_dim = intermediate = hiddenDim*ffnExpansionFactor; in_per_pe = in_dim // width. No manifest step \u2014 Gemma-4 runs the FFN as three separate matmul steps (gate_proj / up_proj / down_proj) rather than fusing into one kernel, so this entry covers emitter presence only.",
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step"
+    },
+    {
         "pattern": "sample",
         "emitter": "emitSampleLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:428)",
         "emitterWidened2D": False,

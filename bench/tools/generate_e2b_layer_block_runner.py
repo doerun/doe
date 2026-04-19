@@ -568,6 +568,74 @@ def derive_per_kernel_shapes(
             ),
             "manifestSteps": [inv["stepName"] for inv in decode_invocations],
         })
+    # Smoke-shape dequant (dormant): emitter at L305 takes width +
+    # num_blocks. Gemma-4 fuses dequant into GEMV (see
+    # fused_gemv_dequant above), so no standalone dequant step appears
+    # in the manifest. Record emitter-default shape and flag as dormant.
+    dequant_steps = [s["name"] for s in manifest.get("steps", []) if s.get("op") == "dequant"]
+    if not dequant_steps:
+        shapes.append({
+            "pattern": "dequant",
+            "emitter": "emitDequantLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:305)",
+            "emitterWidened2D": False,
+            "invocations": [{
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": smoke_size,
+                    "num_blocks": 1,
+                },
+                "cslcParamsString": f"width:{smoke_size},num_blocks:1",
+            }],
+            "derivationSource": (
+                "width = --size smoke arg; num_blocks = 1 fallback (no "
+                "manifest step drives this). Gemma-4 fuses dequant into "
+                "fused_gemv_dequant rather than issuing standalone "
+                "dequant — this emitter stays live for future models "
+                "that separate the two."
+            ),
+            "manifestSteps": [],
+            "status": "dormant_pattern_no_manifest_step",
+        })
+
+    # Smoke-shape fused_ffn (dormant): emitter at L557 takes width +
+    # in_dim + out_dim + in_per_pe. Gemma-4 decomposes FFN into
+    # gate_proj / up_proj / down_proj matmuls (via tiled_matmul and
+    # fused_gemv_dequant) rather than one fused op, so no manifest
+    # step references this emitter today.
+    fused_ffn_steps = [s["name"] for s in manifest.get("steps", []) if s.get("op") == "fused_ffn"]
+    if not fused_ffn_steps:
+        in_per_pe = max(1, hidden // smoke_size)
+        shapes.append({
+            "pattern": "fused_ffn",
+            "emitter": "emitFusedFfnLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:557)",
+            "emitterWidened2D": False,
+            "invocations": [{
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": smoke_size,
+                    "in_dim": hidden,
+                    "out_dim": intermediate,
+                    "in_per_pe": in_per_pe,
+                },
+                "cslcParamsString": (
+                    f"width:{smoke_size},"
+                    f"in_dim:{hidden},"
+                    f"out_dim:{intermediate},"
+                    f"in_per_pe:{in_per_pe}"
+                ),
+            }],
+            "derivationSource": (
+                "width = --size; in_dim = hiddenDim; out_dim = "
+                "intermediate = hiddenDim*ffnExpansionFactor; in_per_pe "
+                "= in_dim // width. No manifest step — Gemma-4 runs the "
+                "FFN as three separate matmul steps (gate_proj / up_proj "
+                "/ down_proj) rather than fusing into one kernel, so "
+                "this entry covers emitter presence only."
+            ),
+            "manifestSteps": [],
+            "status": "dormant_pattern_no_manifest_step",
+        })
+
     # Smoke-shape sample: emitter at L428 takes width + chunk_size.
     # vocabSize = 262,144 for Gemma-4 (both E2B and 31B) — well above
     # i16 if distributed with chunk_size=1. Per the audit this is one
