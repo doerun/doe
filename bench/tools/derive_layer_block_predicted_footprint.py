@@ -206,7 +206,12 @@ def elements_per_pe(pattern: str, params: dict) -> int:
         width = max(1, int(p.get("width", 1)))
         return int(p.get("num_tokens", 0)) * int(p.get("hidden_size", 0)) // width
     if pattern == "rope":
-        return int(p.get("head_dim", 0)) * int(p.get("num_pairs", 1))
+        # RoPE's per-PE input is (width, head_dim) — one token per PE
+        # rotated in place. See bench/runners/csl-runners/
+        # rope_sim_runner.py:27 and trace.json's chunkSize == head_dim
+        # (128 for the fixture). num_pairs is a param threading count,
+        # not a multiplier of per-PE work.
+        return int(p.get("head_dim", 0))
     if pattern == "reduction":
         # Single-PE-per-token mode (emit_csl_reduction.zig): each PE sums
         # hidden_size f32 values for one token. Prior formula returned 1
