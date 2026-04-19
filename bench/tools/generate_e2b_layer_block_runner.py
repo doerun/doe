@@ -376,11 +376,28 @@ def derive_per_kernel_shapes(
             f"hidden_size:{hidden_dim or 64},"
             f"rows_per_pe:8,num_tokens:{smoke_size}"
         ),
+        # The governed-lane gather fixture runs at width:4,height:1 with
+        # emitter defaults for the non-layout params. Provide a matching
+        # shape set so the predicted-vs-observed diff can test for
+        # "fixture-mode match" separately from the deployment shape.
+        # When the step-1 generator emits real deployment widths, the
+        # primary paramsShape shifts; fixtureEquivalentParams stays the
+        # smoke-fixture shape so predictedMatchesObservedShape keeps
+        # testing what the fixture actually ran.
+        "fixtureEquivalentParams": {
+            "width": 4,
+            "height": 1,
+        },
+        "fixtureEquivalentCslcParamsString": "width:4,height:1",
         "derivationSource": (
             "width/num_tokens from --size smoke arg; hidden_size from "
             "manifest.modelConfig.hiddenDim; height=1 for smoke (2-D "
             "needed for 31B full-grid per layout-2d-needs audit); "
-            "rows_per_pe is the emitter default with no manifest override yet."
+            "rows_per_pe is the emitter default with no manifest override yet. "
+            "fixtureEquivalentParams carries the governed-lane fixture's "
+            "width/height (the fixture only passes --params=width:4,height:1 "
+            "and relies on emitter defaults for the rest); used by the "
+            "footprint derivation's predictedMatchesObservedShape test."
         ),
         "manifestSteps": [
             s["name"] for s in manifest.get("steps", [])

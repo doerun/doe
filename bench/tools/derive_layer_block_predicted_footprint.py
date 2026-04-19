@@ -258,10 +258,16 @@ def main() -> int:
             invocations[0].get("cslcParamsString") if invocations else
             entry.get("cslcParamsString", "")
         )
+        # Prefer fixtureEquivalentCslcParamsString when the entry carries
+        # one — it's the smoke-shape counterpart of the deployment shape
+        # and matches what the governed-lane fixture actually passed to
+        # cslc. Without it, fall back to the primary (deployment) cslc
+        # string, which will miss match at fixture scale.
+        match_cslc = entry.get("fixtureEquivalentCslcParamsString") or predicted_cslc
         shape_match = None
         if observed_fixture and observed_fixture.get("observedCslcParamsString"):
             shape_match = (
-                predicted_cslc == observed_fixture["observedCslcParamsString"]
+                match_cslc == observed_fixture["observedCslcParamsString"]
             )
 
         # Quantitative predicted-vs-observed ratio — null when observed

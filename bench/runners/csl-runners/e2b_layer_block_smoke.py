@@ -244,7 +244,12 @@ def main() -> int:
             "num_tokens": 16
         },
         "cslcParamsString": "width:16,height:1,hidden_size:1536,rows_per_pe:8,num_tokens:16",
-        "derivationSource": "width/num_tokens from --size smoke arg; hidden_size from manifest.modelConfig.hiddenDim; height=1 for smoke (2-D needed for 31B full-grid per layout-2d-needs audit); rows_per_pe is the emitter default with no manifest override yet.",
+        "fixtureEquivalentParams": {
+            "width": 4,
+            "height": 1
+        },
+        "fixtureEquivalentCslcParamsString": "width:4,height:1",
+        "derivationSource": "width/num_tokens from --size smoke arg; hidden_size from manifest.modelConfig.hiddenDim; height=1 for smoke (2-D needed for 31B full-grid per layout-2d-needs audit); rows_per_pe is the emitter default with no manifest override yet. fixtureEquivalentParams carries the governed-lane fixture's width/height (the fixture only passes --params=width:4,height:1 and relies on emitter defaults for the rest); used by the footprint derivation's predictedMatchesObservedShape test.",
         "manifestSteps": [
             "embed_tokens",
             "ple_gather",
