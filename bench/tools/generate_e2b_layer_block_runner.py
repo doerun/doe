@@ -60,8 +60,8 @@ def parse_args() -> argparse.Namespace:
         default="bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
     )
     p.add_argument("--layer-index", type=int, default=0)
-    p.add_argument("--smoke-size", type=int, default=256,
-                   help="Per-stream f32 count for smoke payloads (default 256).")
+    p.add_argument("--smoke-size", type=int, default=512,
+                   help="Per-stream f32 count for smoke payloads (default 512).")
     p.add_argument(
         "--kernel-source",
         default="bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
@@ -247,7 +247,7 @@ def main() -> int:
         #     f32 bit patterns in both CSL and numpy (IEEE-754).
         num_heads = 8
         head_dim = 4
-        kv_len_per_head = 2
+        kv_len_per_head = 4
         num_pairs = head_dim // 2
         per_head_K_len = head_dim * kv_len_per_head
         per_head_stride = 2 * per_head_K_len
@@ -261,28 +261,37 @@ def main() -> int:
 
         # Rope table indexed by (position, pair_index). head_dim=4 has
         # 2 rope pairs at theta_d = base^(-2d/head_dim) with base=100,
-        # so theta_0=1.0 and theta_1=0.1. 9-decimal-digit literals
-        # round-trip to identical f32 bit patterns in both CSL and
-        # numpy under IEEE-754 correct rounding.
+        # so theta_0=1.0 and theta_1=0.1. Positions 0..3 are the four
+        # KV entries; position 4 is Q (= kv_len_per_head). 9-decimal-
+        # digit literals round-trip to identical f32 bit patterns in
+        # both CSL and numpy under IEEE-754 correct rounding.
         def rope_cos_at(p, d):
             if d == 0:
                 if p == 0: return np.float32(1.0)
                 if p == 1: return np.float32(0.540302277)   # cos(1)
-                return np.float32(-0.416146845)              # cos(2)
+                if p == 2: return np.float32(-0.416146845)  # cos(2)
+                if p == 3: return np.float32(-0.989992499)  # cos(3)
+                return np.float32(-0.653643608)              # cos(4)
             # d == 1, theta = 0.1
             if p == 0: return np.float32(1.0)
             if p == 1: return np.float32(0.995004177)        # cos(0.1)
-            return np.float32(0.980066597)                   # cos(0.2)
+            if p == 2: return np.float32(0.980066597)        # cos(0.2)
+            if p == 3: return np.float32(0.955336511)        # cos(0.3)
+            return np.float32(0.921060979)                   # cos(0.4)
 
         def rope_sin_at(p, d):
             if d == 0:
                 if p == 0: return np.float32(0.0)
                 if p == 1: return np.float32(0.841470957)    # sin(1)
-                return np.float32(0.909297407)               # sin(2)
+                if p == 2: return np.float32(0.909297407)    # sin(2)
+                if p == 3: return np.float32(0.141120002)    # sin(3)
+                return np.float32(-0.756802499)              # sin(4)
             # d == 1, theta = 0.1
             if p == 0: return np.float32(0.0)
             if p == 1: return np.float32(0.0998334140)       # sin(0.1)
-            return np.float32(0.198669329)                   # sin(0.2)
+            if p == 2: return np.float32(0.198669329)        # sin(0.2)
+            if p == 3: return np.float32(0.295520216)        # sin(0.3)
+            return np.float32(0.389418334)                   # sin(0.4)
 
         attn_vals = np.zeros(attn_flat_len, dtype=np.float32)
         for h in range(num_heads):
@@ -639,7 +648,7 @@ def main() -> int:
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
-                "num_heads = 8; head_dim = 4; kv_len_per_head = 2; num_pairs = head_dim/2; "
+                "num_heads = 8; head_dim = 4; kv_len_per_head = 4; num_pairs = head_dim/2; "
                 "per_head_K_len = head_dim * kv_len_per_head; stride = 2*per_head_K_len; "
                 "flat_len = num_heads*head_dim; mlp_len = qs/2; "
                 "rope_table[p,d]: pair d=0 at theta_0=1 -> "
@@ -671,7 +680,7 @@ def main() -> int:
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_8head_hd4_multi_pair_rope_real"
+                "pre_attn_rmsnorm+mha_8head_hd4_kv4_multi_pair_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
                 "+multi_layer_chain"

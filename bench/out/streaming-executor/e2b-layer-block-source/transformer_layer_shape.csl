@@ -87,15 +87,14 @@
 // division by sum_w is safe (sum_w >= 0.25).
 //
 // Per-head vector KV layout: num_heads = 8 (matches manifest.
-// modelConfig.numHeads), head_dim = 4, kv_len_per_head = 2. The
+// modelConfig.numHeads), head_dim = 4, kv_len_per_head = 4. The
 // attn output space (num_heads * head_dim = 32) broadcasts
-// size/(num_heads*head_dim) = 8 times over the full token (size =
-// 256 default). size must be a multiple of (num_heads * head_dim);
+// size/(num_heads*head_dim) = 16 times over the full token (size =
+// 512 default). size must be a multiple of (num_heads * head_dim);
 // qs must satisfy 2*qs >= num_heads * 2 * head_dim * kv_len_per_head
-// = 128. Default smoke_size = 256 gives qs = 64. head_dim=4 keeps
-// two rope pairs per head (dims 0,1 form pair 0; dims 2,3 form
-// pair 1) at theta_d = base^(-2d/head_dim) — same multi-pair rope
-// table as the head_dim=4 tick.
+// = 256. Default smoke_size = 512 gives qs = 128. head_dim=4 keeps
+// two rope pairs per head; the rope table now extends to 5 positions
+// (KV entries 0..3 plus Q at position 4 = kv_len_per_head).
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -125,31 +124,39 @@ const rmsnorm_eps: f32 = 1.0e-6;
 // per head (pair d=0 covers dims 0,1; pair d=1 covers dims 2,3).
 // Each pair has its own frequency theta_d = base^(-2d/head_dim);
 // here base=100 so theta_0 = 1.0, theta_1 = 0.1. The angle at
-// position p for pair d is p*theta_d. Positions 0 and 1 are the
-// two KV entries; position 2 is the Q rotation. All values are
-// 9-decimal-digit literals that round-trip exactly to identical
-// f32 bit patterns in both CSL and numpy under IEEE-754.
+// position p for pair d is p*theta_d. Positions 0..3 are the four
+// KV entries; position 4 is the Q rotation (= kv_len_per_head).
+// All values are 9-decimal-digit literals that round-trip exactly
+// to identical f32 bit patterns in both CSL and numpy under IEEE-754.
 fn rope_cos_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return  1.0;          }
         if (p == 1) { return  0.540302277;  }  // cos(1)
-        return -0.416146845;                   // cos(2)
+        if (p == 2) { return -0.416146845;  }  // cos(2)
+        if (p == 3) { return -0.989992499;  }  // cos(3)
+        return -0.653643608;                   // cos(4)
     }
     // d == 1, theta = 0.1
     if (p == 0) { return 1.0;          }
     if (p == 1) { return 0.995004177;  }       // cos(0.1)
-    return 0.980066597;                        // cos(0.2)
+    if (p == 2) { return 0.980066597;  }       // cos(0.2)
+    if (p == 3) { return 0.955336511;  }       // cos(0.3)
+    return 0.921060979;                        // cos(0.4)
 }
 fn rope_sin_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return 0.0;          }
         if (p == 1) { return 0.841470957;  }   // sin(1)
-        return 0.909297407;                    // sin(2)
+        if (p == 2) { return 0.909297407;  }   // sin(2)
+        if (p == 3) { return 0.141120002;  }   // sin(3)
+        return -0.756802499;                   // sin(4)
     }
     // d == 1, theta = 0.1
     if (p == 0) { return 0.0;           }
     if (p == 1) { return 0.0998334140;  }      // sin(0.1)
-    return 0.198669329;                        // sin(0.2)
+    if (p == 2) { return 0.198669329;   }      // sin(0.2)
+    if (p == 3) { return 0.295520216;   }      // sin(0.3)
+    return 0.389418334;                        // sin(0.4)
 }
 
 const in_q_0 = @get_input_queue(0);
@@ -228,7 +235,7 @@ task done() void {
     //   Q_h[d] = buf_out[h*head_dim + d]
     const num_heads: u16 = 8;
     const head_dim: u16 = 4;
-    const kv_len_per_head: u16 = 2;
+    const kv_len_per_head: u16 = 4;
     const num_pairs: u16 = head_dim / 2;
     const per_head_K_len: u16 = head_dim * kv_len_per_head;
     const per_head_stride: u16 = 2 * per_head_K_len;
