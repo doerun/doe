@@ -42,6 +42,67 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 TRACE = REPO_ROOT / "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
 MANIFEST = REPO_ROOT / "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
 OUT = REPO_ROOT / "bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json"
+GOVERNED_LANE_ROOT = REPO_ROOT / "bench/out/dual-compile-evidence/governed-lane-sdk-handoff"
+
+
+# Pattern → governed-lane sim-success dir (relative to GOVERNED_LANE_ROOT).
+# Only patterns with an existing governed-lane receipt — dormant and
+# audit-blocked patterns will leave observedFixtureEvidence null.
+OBSERVED_FIXTURE_DIRS: dict[str, str] = {
+    "gather":              "sim-success-gather",
+    "element_wise":        "sim-success-elementwise-double",
+    "reduction":           "sim-success-reduce-sum-workgroup",
+    "rope":                "sim-success-rope",
+    "tiled_matmul":        "sim-success-tiled-matmul",
+    "attention_tiled":     "sim-success-attention-tiled",
+    "attention_decode":    "sim-success-attention-decode",
+    "attention_linear":    "sim-success-attention-linear",
+    "sample":              "sim-success-sample",
+    "fused_gemv_dequant":  "sim-success-fused-gemv-dequant",
+    "kv_write":            "sim-success-kv-write",
+    "dequant":             "sim-success-dequant",
+}
+
+
+def parse_cslc_params(cmd_list: list[str]) -> str | None:
+    for tok in cmd_list or []:
+        if tok.startswith("--params="):
+            return tok[len("--params="):]
+    return None
+
+
+def load_observed_evidence(pattern: str) -> dict | None:
+    """Return observed governed-lane evidence for a pattern, or None."""
+    sub = OBSERVED_FIXTURE_DIRS.get(pattern)
+    if not sub:
+        return None
+    fixture_dir = GOVERNED_LANE_ROOT / sub
+    driver_path = fixture_dir / "driver-result.json"
+    trace_path = fixture_dir / "trace.json"
+    if not driver_path.exists():
+        return None
+    dr = json.loads(driver_path.read_text())
+    compile_targets = dr.get("compile", {}).get("targets") or []
+    compile_cmd = compile_targets[0].get("command") if compile_targets else []
+    observed_params = parse_cslc_params(compile_cmd)
+    run_status = dr.get("run", {}).get("status", "unknown")
+    compile_status = dr.get("compile", {}).get("status", "unknown")
+    out = {
+        "fixtureDir": str(fixture_dir.relative_to(REPO_ROOT)),
+        "driverResultPath": str(driver_path.relative_to(REPO_ROOT)),
+        "driverResultSha256": sha256(driver_path),
+        "observedCslcParamsString": observed_params,
+        "compileStatus": compile_status,
+        "runStatus": run_status,
+    }
+    if trace_path.exists():
+        out["tracePath"] = str(trace_path.relative_to(REPO_ROOT))
+        out["traceSha256"] = sha256(trace_path)
+        trace_data = json.loads(trace_path.read_text())
+        for k in ("width", "chunkSize", "totalElements", "runtimePassed", "runtimeMaxAbsErr"):
+            if k in trace_data:
+                out[k] = trace_data[k]
+    return out
 
 
 def sha256(path: Path) -> str:
@@ -126,6 +187,19 @@ def main() -> int:
                 "cyclesPerPe": cycles_per_pe,
             })
 
+        # Bind observed governed-lane evidence (existing) so each
+        # pattern carries a predicted-vs-observed pair where available.
+        observed_fixture = load_observed_evidence(pattern)
+        predicted_cslc = (
+            invocations[0].get("cslcParamsString") if invocations else
+            entry.get("cslcParamsString", "")
+        )
+        shape_match = None
+        if observed_fixture and observed_fixture.get("observedCslcParamsString"):
+            shape_match = (
+                predicted_cslc == observed_fixture["observedCslcParamsString"]
+            )
+
         pattern_entry = {
             "pattern": pattern,
             "status": status,
@@ -133,6 +207,9 @@ def main() -> int:
             "bytesPerPe": pattern_bytes,
             "cyclesPerPe": pattern_cycles,
             "invocations": inv_predictions,
+            "predictedCslcParamsString": predicted_cslc,
+            "observedFixtureEvidence": observed_fixture,
+            "predictedMatchesObservedShape": shape_match,
         }
         per_pattern.append(pattern_entry)
         if status == "dormant_pattern_no_manifest_step":

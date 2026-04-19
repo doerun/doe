@@ -69,7 +69,33 @@
                 "cyclesPerPe": { "type": "integer", "minimum": 0 }
               }
             }
-          }
+          },
+          "predictedCslcParamsString": { "type": ["string", "null"] },
+          "observedFixtureEvidence": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["fixtureDir", "driverResultPath"],
+                "properties": {
+                  "fixtureDir": { "type": "string" },
+                  "driverResultPath": { "type": "string" },
+                  "driverResultSha256": { "type": "string" },
+                  "observedCslcParamsString": { "type": ["string", "null"] },
+                  "compileStatus": { "type": "string" },
+                  "runStatus": { "type": "string" },
+                  "tracePath": { "type": "string" },
+                  "traceSha256": { "type": "string" },
+                  "width": { "type": "integer" },
+                  "chunkSize": { "type": "integer" },
+                  "totalElements": { "type": "integer" },
+                  "runtimePassed": { "type": "boolean" },
+                  "runtimeMaxAbsErr": { "type": "number" }
+                }
+              }
+            ]
+          },
+          "predictedMatchesObservedShape": { "type": ["boolean", "null"] }
         }
       }
     },
