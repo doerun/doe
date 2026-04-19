@@ -123,15 +123,19 @@ const rmsnorm_eps: f32 = 1.0e-6;
 
 // Rope positional encoding table. head_dim=8 means 4 rope pairs
 // per head (pair d covers dims 2d, 2d+1). Each pair has its own
-// frequency theta_d = base^(-2d/head_dim); here base=100 so
+// frequency theta_d = base^(-2d/head_dim); base=10000 matches the
+// manifest's rope base, so:
 //   theta_0 = 1.0
-//   theta_1 = 100^(-0.25) ≈ 0.316
-//   theta_2 = 100^(-0.5)  = 0.1
-//   theta_3 = 100^(-0.75) ≈ 0.0316
+//   theta_1 = 10000^(-0.25) = 0.1
+//   theta_2 = 10000^(-0.5)  = 0.01
+//   theta_3 = 10000^(-0.75) = 0.001
 // Positions 0..3 are the four KV entries; position 4 is the Q
 // rotation (= kv_len_per_head). Twenty 9-decimal-digit literals
 // (4 pairs * 5 positions) round-trip exactly to identical f32 bit
-// patterns in both CSL and numpy under IEEE-754.
+// patterns in both CSL and numpy under IEEE-754. Pairs 2 and 3
+// rotate by very small angles so cos ≈ 1 and sin ≈ p*theta — the
+// rope effectively encodes position via tiny perturbations on
+// those high-frequency dims.
 fn rope_cos_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return  1.0;          }
@@ -142,24 +146,24 @@ fn rope_cos_at(p: u16, d: u16) f32 {
     }
     if (d == 1) {
         if (p == 0) { return 1.0;          }
-        if (p == 1) { return 0.950415254;  }   // cos(0.316)
-        if (p == 2) { return 0.806578398;  }   // cos(0.632)
-        if (p == 3) { return 0.582753599;  }   // cos(0.949)
-        return 0.301137477;                    // cos(1.265)
-    }
-    if (d == 2) {
-        if (p == 0) { return 1.0;          }
         if (p == 1) { return 0.995004177;  }   // cos(0.1)
         if (p == 2) { return 0.980066597;  }   // cos(0.2)
         if (p == 3) { return 0.955336511;  }   // cos(0.3)
         return 0.921060979;                    // cos(0.4)
     }
-    // d == 3, theta = 0.0316
+    if (d == 2) {
+        if (p == 0) { return 1.0;          }
+        if (p == 1) { return 0.999949992;  }   // cos(0.01)
+        if (p == 2) { return 0.999800026;  }   // cos(0.02)
+        if (p == 3) { return 0.999550045;  }   // cos(0.03)
+        return 0.999200106;                    // cos(0.04)
+    }
+    // d == 3, theta = 0.001
     if (p == 0) { return 1.0;          }
-    if (p == 1) { return 0.999500036;  }       // cos(0.0316)
-    if (p == 2) { return 0.998000681;  }       // cos(0.0632)
-    if (p == 3) { return 0.995503366;  }       // cos(0.0949)
-    return 0.992010653;                        // cos(0.126)
+    if (p == 1) { return 0.999999523;  }       // cos(0.001)
+    if (p == 2) { return 0.999997973;  }       // cos(0.002)
+    if (p == 3) { return 0.999995530;  }       // cos(0.003)
+    return 0.999992013;                        // cos(0.004)
 }
 fn rope_sin_at(p: u16, d: u16) f32 {
     if (d == 0) {
@@ -170,25 +174,25 @@ fn rope_sin_at(p: u16, d: u16) f32 {
         return -0.756802499;                   // sin(4)
     }
     if (d == 1) {
-        if (p == 0) { return 0.0;          }
-        if (p == 1) { return 0.310983598;  }   // sin(0.316)
-        if (p == 2) { return 0.591127098;  }   // sin(0.632)
-        if (p == 3) { return 0.812648892;  }   // sin(0.949)
-        return 0.953580737;                    // sin(1.265)
-    }
-    if (d == 2) {
         if (p == 0) { return 0.0;           }
         if (p == 1) { return 0.0998334140;  }  // sin(0.1)
         if (p == 2) { return 0.198669329;   }  // sin(0.2)
         if (p == 3) { return 0.295520216;   }  // sin(0.3)
         return 0.389418334;                    // sin(0.4)
     }
-    // d == 3, theta = 0.0316
-    if (p == 0) { return 0.0;           }
-    if (p == 1) { return 0.0316175073;  }      // sin(0.0316)
-    if (p == 2) { return 0.0632033944;  }      // sin(0.0632)
-    if (p == 3) { return 0.0947260931;  }      // sin(0.0949)
-    return 0.126154065;                        // sin(0.126)
+    if (d == 2) {
+        if (p == 0) { return 0.0;           }
+        if (p == 1) { return 0.00999983307; }  // sin(0.01)
+        if (p == 2) { return 0.0199986659;  }  // sin(0.02)
+        if (p == 3) { return 0.029995501;   }  // sin(0.03)
+        return 0.0399893336;                   // sin(0.04)
+    }
+    // d == 3, theta = 0.001
+    if (p == 0) { return 0.0;             }
+    if (p == 1) { return 0.000999999815;  }    // sin(0.001)
+    if (p == 2) { return 0.00199999870;   }    // sin(0.002)
+    if (p == 3) { return 0.00299999560;   }    // sin(0.003)
+    return 0.00399998948;                      // sin(0.004)
 }
 
 const in_q_0 = @get_input_queue(0);

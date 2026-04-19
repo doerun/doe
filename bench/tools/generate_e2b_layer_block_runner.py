@@ -260,11 +260,11 @@ def main() -> int:
         )
 
         # Rope table indexed by (position, pair_index). head_dim=8 has
-        # 4 rope pairs at theta_d = base^(-2d/head_dim) with base=100:
-        # theta_0=1.0, theta_1≈0.316, theta_2=0.1, theta_3≈0.0316.
-        # Positions 0..3 are KV entries; position 4 is Q (= kv_len).
-        # Twenty 9-decimal-digit literals round-trip to identical f32
-        # bit patterns in both CSL and numpy under IEEE-754.
+        # 4 rope pairs at theta_d = base^(-2d/head_dim) with base=10000
+        # (matches manifest): theta_0=1.0, theta_1=0.1, theta_2=0.01,
+        # theta_3=0.001. Positions 0..3 are KV entries; position 4 is
+        # Q. Twenty 9-decimal-digit literals round-trip to identical
+        # f32 bit patterns in both CSL and numpy under IEEE-754.
         def rope_cos_at(p, d):
             if d == 0:
                 if p == 0: return np.float32(1.0)
@@ -274,22 +274,22 @@ def main() -> int:
                 return np.float32(-0.653643608)
             if d == 1:
                 if p == 0: return np.float32(1.0)
-                if p == 1: return np.float32(0.950415254)
-                if p == 2: return np.float32(0.806578398)
-                if p == 3: return np.float32(0.582753599)
-                return np.float32(0.301137477)
-            if d == 2:
-                if p == 0: return np.float32(1.0)
                 if p == 1: return np.float32(0.995004177)
                 if p == 2: return np.float32(0.980066597)
                 if p == 3: return np.float32(0.955336511)
                 return np.float32(0.921060979)
+            if d == 2:
+                if p == 0: return np.float32(1.0)
+                if p == 1: return np.float32(0.999949992)
+                if p == 2: return np.float32(0.999800026)
+                if p == 3: return np.float32(0.999550045)
+                return np.float32(0.999200106)
             # d == 3
             if p == 0: return np.float32(1.0)
-            if p == 1: return np.float32(0.999500036)
-            if p == 2: return np.float32(0.998000681)
-            if p == 3: return np.float32(0.995503366)
-            return np.float32(0.992010653)
+            if p == 1: return np.float32(0.999999523)
+            if p == 2: return np.float32(0.999997973)
+            if p == 3: return np.float32(0.999995530)
+            return np.float32(0.999992013)
 
         def rope_sin_at(p, d):
             if d == 0:
@@ -300,22 +300,22 @@ def main() -> int:
                 return np.float32(-0.756802499)
             if d == 1:
                 if p == 0: return np.float32(0.0)
-                if p == 1: return np.float32(0.310983598)
-                if p == 2: return np.float32(0.591127098)
-                if p == 3: return np.float32(0.812648892)
-                return np.float32(0.953580737)
-            if d == 2:
-                if p == 0: return np.float32(0.0)
                 if p == 1: return np.float32(0.0998334140)
                 if p == 2: return np.float32(0.198669329)
                 if p == 3: return np.float32(0.295520216)
                 return np.float32(0.389418334)
+            if d == 2:
+                if p == 0: return np.float32(0.0)
+                if p == 1: return np.float32(0.00999983307)
+                if p == 2: return np.float32(0.0199986659)
+                if p == 3: return np.float32(0.029995501)
+                return np.float32(0.0399893336)
             # d == 3
             if p == 0: return np.float32(0.0)
-            if p == 1: return np.float32(0.0316175073)
-            if p == 2: return np.float32(0.0632033944)
-            if p == 3: return np.float32(0.0947260931)
-            return np.float32(0.126154065)
+            if p == 1: return np.float32(0.000999999815)
+            if p == 2: return np.float32(0.00199999870)
+            if p == 3: return np.float32(0.00299999560)
+            return np.float32(0.00399998948)
 
         attn_vals = np.zeros(attn_flat_len, dtype=np.float32)
         for h in range(num_heads):

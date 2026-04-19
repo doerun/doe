@@ -524,18 +524,21 @@ def main() -> int:
                 "MULTI-PAIR ROPE. num_heads = 8 (matches manifest."
                 "modelConfig.numHeads), head_dim = 8 (4 rope pairs), "
                 "kv_len_per_head = 4. theta_d = base^(-2d/head_dim) "
-                "with base=100: theta_0=1.0, theta_1≈0.316, "
-                "theta_2=0.1, theta_3≈0.0316. The (cos, sin) table "
-                "indexed by (position, pair_index) now carries 20 "
-                "entries — five positions {0..4} cross four pair "
-                "indices — all 9-decimal-digit f32 literals verified "
-                "to round-trip identically in CSL and numpy under "
-                "IEEE-754. Q_h is rope-rotated at position "
-                "kv_len_per_head=4; each K_h[j] at position j in "
-                "[0, 4); V_h is NOT rotated. The smoke uses base=100 "
-                "(real Gemma-4 uses base=10000); the only remaining "
-                "structural gaps are real manifest-derived weight "
-                "loading and head_dim toward the manifest's 512."
+                "with base=10000 (matches the manifest rope base): "
+                "theta_0=1.0, theta_1=0.1, theta_2=0.01, theta_3=0.001. "
+                "The (cos, sin) table indexed by (position, "
+                "pair_index) carries 20 entries — five positions "
+                "{0..4} cross four pair indices — all 9-decimal-digit "
+                "f32 literals verified to round-trip identically in "
+                "CSL and numpy under IEEE-754. Pairs 2 and 3 rotate "
+                "by very small angles so cos~1 and sin~p*theta — "
+                "rope still encodes position via tiny perturbations "
+                "on the high-frequency dims. Q_h is rope-rotated at "
+                "position kv_len_per_head=4; each K_h[j] at position "
+                "j in [0, 4); V_h is NOT rotated. The remaining "
+                "structural gaps to a real Gemma-4 attention block "
+                "are real manifest-derived weight loading and "
+                "head_dim toward the manifest's 512."
             ),
             **layer_block_trace_evidence,
             "multiLayerChain": (
@@ -564,7 +567,6 @@ def main() -> int:
             "pendingStages": [
                 "publish_real_per_layer_weight_slices_to_weights_dir",
                 "head_dim_toward_manifest_512",
-                "rope_base_to_manifest_10000",
             ],
         },
     }
