@@ -155,19 +155,47 @@
   }
 
   // ── Proven rows ──────────────────────────────────────────────────
+  // Row order matches the plan §"Build the evidence-matrix demo" at
+  // ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md.
 
+  // One per-backend row, each reading the cross-backend matrix for the
+  // specific readiness counter. Separating these (instead of one
+  // lumped row) is what the plan §6 row list calls for.
+  let wgslMatrix = null;
   try {
-    const wgslMatrix = await fetchJson('bench/out/cross-backend-matrix/wgsl-backend-matrix.json');
-    // Best-effort summary — the schema may evolve, so show any count-like field.
-    const kernelCount = (wgslMatrix.kernels || wgslMatrix.rows || []).length ||
-      Object.keys(wgslMatrix).length;
-    addRow('proven-rows',
-      'WGSL → multi-backend compile (csl, spirv, msl, hlsl, dxil)',
-      badge('pass', 'pass'),
-      `${kernelCount} kernels in matrix · ${evidenceLink('bench/out/cross-backend-matrix/wgsl-backend-matrix.json')}`);
+    wgslMatrix = await fetchJson('bench/out/cross-backend-matrix/wgsl-backend-matrix.json');
   } catch (e) {
-    addError('proven-rows', 'WGSL → multi-backend compile', e.message);
+    addError('proven-rows', 'WGSL backend matrix load', e.message);
   }
+
+  function perBackendRow(label, readyField, note) {
+    if (!wgslMatrix) return;
+    const total = (wgslMatrix.kernels || wgslMatrix.rows || []).length ||
+      wgslMatrix.totalKernels || 0;
+    const ready = wgslMatrix[readyField] ?? (wgslMatrix.summary || {})[readyField] ?? null;
+    const count = ready == null
+      ? `${total} kernels`
+      : `${ready} / ${total} kernels ready`;
+    addRow('proven-rows',
+      label,
+      badge(ready != null && ready === total ? 'pass' : 'partial',
+        ready != null && ready === total ? 'pass' : 'partial'),
+      `${count}${note ? ' · ' + note : ''}<br>` +
+      evidenceLink('bench/out/cross-backend-matrix/wgsl-backend-matrix.json'));
+  }
+
+  perBackendRow('Vulkan: Doe SPIR-V emission',        'vulkanReady');
+  perBackendRow('Metal: Doe MSL emission',            'metalReady');
+  perBackendRow('D3D12: Doe HLSL / DXIL emission',    'd3d12Ready');
+  perBackendRow('CSL kernel simulator parity',        'cslRuntimeReady',
+    'per-kernel bit-exact/bit-close receipts under bench/out/dual-compile-evidence/governed-lane-sdk-handoff/');
+
+  // Doppler browser WebGPU is a cross-repo row. Not attempted here;
+  // the plan notes this row belongs to Doppler's runtime evidence.
+  addRow('proven-rows',
+    'Browser WebGPU: Doppler runtime evidence',
+    badge('aspirational', 'cross_repo'),
+    'cross-repo row — owned by Doppler (<code>../../../doppler/demo/</code>). This dashboard renders Doe artifacts; the Doppler demo is the browser WebGPU evidence surface per plan §"Real: Doppler is the upstream model/runtime surface".');
 
   // WGSL backend equivalence crosswalk (index covers bit-exact/bit-close per kernel).
   try {
@@ -270,19 +298,55 @@
     'CSL full 31B execution (simulator)',
     'bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json');
 
-  // Hardware execution — rendered from the receipt's blocker name when it
-  // is hardware_endpoint_unavailable, else note that the simulator blocker
-  // has to clear first.
+  // Hardware execution — direct CS system endpoint via $DOE_CSL_CMADDR.
+  // targetMode='direct_system_cmaddr' per plan §"Newly identified: WSC
+  // appliance hardware path". Receipts today carry targetMode only in
+  // the layerBlockSmoke trace; for the model receipts this row reads
+  // the ordinary executionBlocker and notes the hardware-specific gate.
   try {
     const e2b = await fetchJson('bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
     const simBlocker = e2b.executionBlocker;
     addRow('aspirational-rows',
-      'CSL E2B execution (hardware, $DOE_CSL_CMADDR)',
+      'CSL E2B execution (direct_system_cmaddr)',
       badge('aspirational', 'not_attempted'),
       `gated on simulator executionBlocker: <code>${simBlocker}</code> clearing first · ` +
-      `then swap SimfabConfig for cmaddr`);
+      `then swap SimfabConfig for cmaddr and set $DOE_CSL_CMADDR<br>` +
+      `verified by <a class="mono" href="${repoRoot}bench/out/cmaddr-propagation-smoke.json">bench/out/cmaddr-propagation-smoke.json</a>`);
   } catch (e) {
-    addError('aspirational-rows', 'CSL E2B execution (hardware)', e.message);
+    addError('aspirational-rows', 'CSL E2B execution (direct_system_cmaddr)', e.message);
+  }
+
+  // WSC appliance: plan §"Newly identified: WSC appliance hardware path"
+  // introduces SdkCompiler + SdkLauncher. Neither tool is wired in Doe
+  // yet; no receipts exist.
+  addRow('aspirational-rows',
+    'CSL E2B execution (wsc_appliance_system)',
+    badge('aspirational', 'not_attempted'),
+    `blocker: <code>sdk_compiler_launcher_not_wired</code><br>` +
+    `plan §"Newly identified: WSC appliance hardware path": wrap host Python runners through <code>SdkLauncher.run("cs_python … --cmaddr %CMADDR%")</code>. Not yet implemented.`);
+
+  // Local SDK GUI command — available when the evidence bundle has the
+  // compile/run/core paths for a row. Today: only layerBlockSmoke carries
+  // compile dir; no run dir yet. Plan §5 "Preserve SDK GUI-ready local
+  // evidence bundles" is the follow-up.
+  try {
+    const smoke = await fetchJson('bench/out/streaming-executor/e2b-layer-block-smoke-trace.json');
+    const lb = smoke.layerBlockSmoke || {};
+    const compileDir = lb.compileArtifactDir || null;
+    if (compileDir) {
+      addRow('aspirational-rows',
+        'Local SDK GUI: sdk_debug_shell visualize (compile)',
+        badge('aspirational', 'local_only'),
+        `command: <code>sdk_debug_shell visualize ${compileDir}</code><br>` +
+        `runDir and coreFile fields not yet populated — plan step 5 follow-up`);
+    } else {
+      addRow('aspirational-rows',
+        'Local SDK GUI: sdk_debug_shell visualize',
+        badge('aspirational', 'not_wired'),
+        'blocker: layerBlockSmoke receipt missing compileArtifactDir');
+    }
+  } catch (e) {
+    addError('aspirational-rows', 'Local SDK GUI visualize', e.message);
   }
 </script>
 </body>
