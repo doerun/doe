@@ -1,29 +1,36 @@
-// Stub CSL kernel for the first generated E2B layer-block executor.
+// First real stage for the E2B layer-block executor: RMSNorm.
 //
 // The E2B stream-execution-plan names a code region
 // `transformer_layer_shape` and feeds it three input streams
-// (ple_rows, ple_projection, layer_weights) per layer. The real per-
-// stage compute (RMSNorm -> attention -> RMSNorm -> MLP) lives in
-// 14 dual-compile-evidence kernels elsewhere; wiring those real
-// kernels into this code region is the follow-up.
+// (ple_rows, ple_projection, layer_weights) per layer. This kernel
+// executes step 1 of the full-layer pipeline (RMSNorm -> attention
+// -> RMSNorm -> MLP); the remaining stages land in follow-up ticks
+// without changing the SdkLayout stream contract.
 //
-// For the FIRST generated runner, this stub accepts the three fabric
-// streams exactly as the plan specifies, pulls them into PE-local
-// buffers, emits a deterministic combine so the smoke path is
-// numerically checkable, and writes the result to `activation_out`.
-// When real kernels replace this stub, only the `done` task's body
-// changes — the stream contract stays stable.
+// Stage semantics for this file:
+//   rows = pre-norm hidden activation (x)
+//   proj = RMSNorm gamma (per-element scale weight)
+//   wts  = (reserved for the attention stage; ignored here)
 //
-// Combine rule (trivial, just enough to verify every stream flowed):
-//     activation_out[i] = ple_rows[i] + ple_projection[i] + layer_weights[i]
+// Combine rule (RMSNorm):
+//     rms          = sqrt(mean(rows[i]^2) + eps)
+//     activation_out[i] = (rows[i] / rms) * proj[i]
 //
-// Numerical parity: bit-exact (pure f32 addition).
+// Reduction lowering mirrors the translator-emitted CSL at
+// bench/out/dual-compile-evidence/reduce-sum-workgroup/csl/pe_program.csl
+// (single-PE: each PE processes one full token in-order).
+//
+// Numerical parity target: bit-exact vs the host numpy reference that
+// accumulates sum-of-squares in the same scalar left-to-right order.
 
 param size: u16;
 param rx_ple_rows:       color;
 param rx_ple_projection: color;
 param rx_layer_weights:  color;
 param tx_activation:     color;
+
+const math = @import_module("<math>");
+const rmsnorm_eps: f32 = 1.0e-6;
 
 const in_q_0 = @get_input_queue(0);
 const in_q_1 = @get_input_queue(1);
@@ -71,8 +78,17 @@ task got_wts() void {
 }
 
 task done() void {
+    // Pass 1: sum-of-squares in left-to-right scalar order.
+    var sum_sq: f32 = 0.0;
     for (@range(u16, size)) |i| {
-        buf_out[i] = buf_rows[i] + buf_proj[i] + buf_wts[i];
+        sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
+    }
+    const mean_sq: f32 = sum_sq / @as(f32, size);
+    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
+    const inv_rms: f32 = 1.0 / rms;
+    // Pass 2: per-element normalize + gamma scale.
+    for (@range(u16, size)) |i| {
+        buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
     @mov32(output, mem_out);
 }

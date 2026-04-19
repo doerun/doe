@@ -12,11 +12,14 @@ Plan stream contract for this layer:
 //   input:   ple_projection_stream (23 bytes/PE)
 //   input:   layer_weights_stream (2166 bytes/PE)
 
-Smoke path: each stream carries 16 f32 values; the stub
-kernel combines them as activation_out = ple_rows + ple_projection +
-layer_weights and emits the result. When the stub is replaced by
-real per-stage kernels, the stream IDs and payload types above are
-the stable contract.
+Smoke path: each stream carries 16 f32 values. The kernel
+runs step 1 of the full-layer pipeline (RMSNorm) using ple_rows as
+x and ple_projection as gamma; layer_weights is reserved for the
+attention stage that lands in a follow-up tick. The runner verifies
+activation_out bit-exact against a host numpy reference that
+accumulates sum-of-squares in the same scalar left-to-right order
+as the CSL kernel. The stream contract is stable across follow-up
+stage swaps.
 """
 
 from __future__ import annotations
@@ -123,7 +126,18 @@ def main() -> int:
         rows = rng.standard_normal(size=args.size, dtype=np.float32)
         proj = rng.standard_normal(size=args.size, dtype=np.float32)
         wts  = rng.standard_normal(size=args.size, dtype=np.float32)
-        expected = rows + proj + wts
+        # RMSNorm reference: mirror the CSL kernel's in-order scalar
+        # sum-of-squares so bit-exact comparison is meaningful. numpy's
+        # vectorised .sum() may use pairwise summation, which diverges
+        # from the device's left-to-right f32 accumulation.
+        rmsnorm_eps = np.float32(1.0e-6)
+        sum_sq = np.float32(0.0)
+        for v in rows:
+            sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
+        mean_sq = np.float32(sum_sq / np.float32(args.size))
+        rms = np.float32(np.sqrt(np.float32(mean_sq + rmsnorm_eps)))
+        inv_rms = np.float32(np.float32(1.0) / rms)
+        expected = ((rows * inv_rms).astype(np.float32) * proj).astype(np.float32)
         received = np.empty(args.size, dtype=np.float32)
 
         runtime.send(rows_stream, rows, nonblock=True)
@@ -184,9 +198,10 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "ceb12027ca5781107559bfb1121df8935d0ffd42d0f3d7980b7950cccda56662",
-            "kernelIsStub": True,
-            "combineRule": "activation_out[i] = ple_rows[i] + ple_projection[i] + layer_weights[i]",
+            "kernelSourceSha256": "cf49e5546265972fd5829e180887fe0aba9958ede6d8da221926acb67c21d375",
+            "kernelIsStub": False,
+            "combineRule": "activation_out[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]  # RMSNorm; layer_weights reserved for attention stage",
+            "kernelStage": "rmsnorm",
             "status": run_status,
             "targetMode": "local_simfabric",
             "compileArtifactDir": str(compile_out.relative_to(REPO_ROOT)),
@@ -695,11 +710,11 @@ def main() -> int:
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
             "First SdkLayout runner emitted from the E2B stream-execution-plan. "
-            "The kernel is a stub that combines the 3 plan-named streams into "
-            "one activation output; real per-stage kernels (RMSNorm, attention, "
-            "MLP) replace the stub in follow-up. The stream contract "
+            "Step 1 real stage is RMSNorm (ple_rows as x, ple_projection as "
+            "gamma). Remaining stages (attention, MLP) land in follow-up "
+            "ticks without changing the stream contract "
             "(rx_ple_rows + rx_ple_projection + rx_layer_weights -> "
-            "tx_activation) stays stable across that swap."
+            "tx_activation)."
         ),
     }
 
