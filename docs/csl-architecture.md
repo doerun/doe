@@ -293,7 +293,7 @@ matches the question, not a nearby one:
 
 | Concern | Source of truth | Notes |
 | --- | --- | --- |
-| Product/strategy boundaries (Doe vs Doppler vs Ouroboros) | `ouroboros/docs/` | Canonical: `ouroboros/docs/go-to-market/verified/doe-doppler-positioning.md` and `ouroboros/docs/strategy/doe-doppler-operator-diffing-implementation.md` ("Doppler owns meaning, Doe owns execution truth"). Runtime/API/operational docs deliberately live in project repos, not Ouroboros. |
+| Runtime/API/operational docs | This repo under `docs/` | Doe's canonical public documentation. Cross-project product framing is intentionally not kept here. |
 | CSL abstraction and contract boundary | This file (`docs/csl-architecture.md`) | Architecture only; does not enumerate individual stages, pattern-family templates, or SDK flags. |
 | Artifact contracts (host-plan, memory-plan, runtime-config, simulator-plan/result/trace, governed-lane report) | `config/*.schema.json` registered in `config/schema-targets.json` | Cross-validated by `python3 bench/gates/schema_gate.py`. Schema is authoritative even where prose disagrees. |
 | CSL target constants, fabric limits, architecture enums | `runtime/zig/src/doe_wgsl/csl_spec.zig` | Self-declared single source of truth; `emit_csl_*.zig` must consume constants from here rather than redefining them. |

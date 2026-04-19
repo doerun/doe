@@ -155,8 +155,8 @@
   }
 
   // ── Proven rows ──────────────────────────────────────────────────
-  // Row order matches the plan §"Build the evidence-matrix demo" at
-  // ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md.
+  // Row order: browser runtime → cross-backend WGSL → CSL kernel runtime →
+  // SdkLayout primitives → structural E2B/31B → full execution → hardware.
 
   // One per-backend row, each reading the cross-backend matrix for the
   // specific readiness counter. Separating these (instead of one

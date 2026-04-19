@@ -88,15 +88,19 @@ The `laneStatus` field reports structural coverage
 (`structural_full_coverage` means every host-plan kernel resolves to a
 runtime-ready fixture and the memory plan fits). The `executionStatus`
 field stays honest at `not_attempted`; the current `executionBlocker`
-is `streaming_executor_not_bound_to_execution_plan`. The SdkLayout
-streaming executor primitives now compile and run under simfabric
-(section 8 below lists the traces) — the remaining gap is generated
-stage-kernel code that the executor dispatches per layer, per the
-Gemma4 Doppler→Doe→Cerebras plan's Build-order step 1
-(`ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md`).
-Each model receipt now carries a `streamingExecutorPrimitivesEvidence`
-block pointing at the primitive traces, so downstream consumers can
-render "primitives: pass" as a distinct row from "full-model: blocked".
+is `full_transformer_layer_block_incomplete`. The SdkLayout streaming
+executor primitives compile and run under simfabric (section 8 below
+lists the traces), and the generated E2B layer-block runner now binds a
+non-stub smoke trace for pre-attn RMSNorm, scalar attention-inner-
+product with residual, post-attn RMSNorm, and a gated MLP stage with a
+bit-exact ReLU stand-in for GELU. The remaining gap is the rest of the
+transformer layer block — full multi-head attention over KV cache plus
+a shared polynomial GELU replacement — which the E2B layer-block runner
+is incrementally closing stage by stage.
+Each model receipt carries a `streamingExecutorPrimitivesEvidence` block
+pointing at the primitive traces and the layer-block smoke trace, so
+downstream consumers can render "partial layer-block simulator proof:
+pass" as distinct from "full-model execution: blocked".
 
 ### 5. Stream graph + execution plan + dry-run trace + comparison tools
 
@@ -217,9 +221,7 @@ trace is schema-validated by `config/doe-streaming-executor-trace.schema.json`.
   `streaming_executor_not_bound_to_execution_plan`: the SdkLayout
   streaming executor primitives exist and run on simfabric (section 8
   below), but the stream-execution-plan's stage codegen is not yet
-  emitting kernels the executor dispatches per layer. Maps to
-  Build-order step 1 of the cross-repo plan at
-  `ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md`.
+  emitting kernels the executor dispatches per layer.
 - **Longer Gemma chains.** Current chains are 2 or 3 kernels. The
   shape-plumbing for deeper chains (attention+MLP block) is tractable;
   we just have not added those receipts yet.

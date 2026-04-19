@@ -159,5 +159,3 @@ What remains is mostly packaging and productization:
 
 - `bench/README.md`
 - `docs/status.md`
-- `../ouroboros/docs/strategy/capabilities/01-operator-diffing.md`
-- `../ouroboros/docs/strategy/capabilities/06-doe-gpu-diagnose.md`

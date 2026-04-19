@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Per-pattern 2D-layout-need analysis for CSL emitters.
 
-Build-order step 2 (`ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md`,
-§"Sweep full-grid kernel compile") requires compiling all 17 kernel
-instances at E2B (149x117 = 17,433 PE) and 31B (246x236 = 58,056 PE)
-grid shapes. The plan names "2-D emission across all 14 layout
-emitters" as the precondition.
+The full-grid compile sweep requires compiling all 17 kernel instances at
+E2B (149x117 = 17,433 PE) and 31B (246x236 = 58,056 PE) grid shapes. A
+naive precondition would be "2-D emission across all 14 layout emitters".
 
 That framing is imprecise: the uniform widening is wrong. The SDK
 memcpy module's i16 width only overflows when a single emitter's
@@ -349,8 +347,6 @@ def main() -> int:
         "artifactKind": "doe_layout_2d_needs_analysis",
         "emitterSourcePath": str(EMITTER_PATH.relative_to(REPO_ROOT)),
         "emitterSourceSha256": emitter_sha,
-        "planBuildOrderStep": 2,
-        "planDocPath": "ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md",
         "patterns": PER_PATTERN,
         "summary": {
             "totalEmitters": len(PER_PATTERN),

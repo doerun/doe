@@ -41,7 +41,6 @@ contracts even when they share scripts or projection manifests.
 
 Track B proposed optional Chromium-internal GPU modules (SDF renderer, path
 engine, effects pipeline, compute services, resource scheduler). It was
-archived 2026-03-19: the infrastructure dominance strategy determined that
-building parallel browser subsystem replacements duplicates work that arrives
-for free once Track A ships. See `browser/chromium/README.md` and
-`docs/status.md` for the full rationale.
+archived 2026-03-19: building parallel browser subsystem replacements
+duplicates work that arrives for free once Track A ships. See
+`browser/chromium/README.md` and `docs/status.md` for the full rationale.

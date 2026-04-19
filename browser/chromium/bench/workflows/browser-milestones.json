@@ -310,7 +310,7 @@
       "title": "Track B module 1 (fawn_2d_sdf_renderer) incubation",
       "track": "modules",
       "status": "archived",
-      "summary": "Archived 2026-03-19. Track B modules archived by strategic decision: browser vendors are routing subsystems through WebGPU on their own timeline; building parallel replacements duplicates that work. See ouroboros/docs/strategy/doe-infrastructure-dominance.md.",
+      "summary": "Archived 2026-03-19. Track B modules archived: browser vendors are routing subsystems through WebGPU on their own timeline; building parallel replacements duplicates that work. See docs/browser-lane.md.",
       "dependencies": [
         "M0"
       ],

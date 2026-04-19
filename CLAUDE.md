@@ -192,6 +192,20 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
   - test status: `zig build test-wgsl` exit code
 - prose describes what kind of thing exists, not how many; the artifact has the count
 
+## Private-strategy hygiene
+
+- Doe public docs describe what the code does, what the contracts are, and what
+  measurable artifact state is. They do not narrate private strategy.
+- Doe docs must not link into upstream cross-repo planning paths. Cross-repo
+  planning, commercial packaging, outreach, named prospects, competitive
+  framing, and roadmap/positioning content live in the upstream planning repo
+  and stay there. When a Doe doc needs to reference motivating context,
+  describe it in Doe-local language without naming the upstream artifact.
+- `bench/gates/doe_private_strategy_leak_gate.py` is the hard regression
+  guard; it runs as a blocking gate in `run_blocking_gates.py`. The gate's
+  own forbidden-pattern table names the specific tokens it rejects — consult
+  the gate source rather than restating them here.
+
 ## Documentation style
 
 - Markdown document titles and section headings use sentence case

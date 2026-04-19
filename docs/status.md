@@ -118,8 +118,8 @@ Read this file first. Use the shard files under
   `bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json`
   and
   `bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json`.
-- Current status terminology now treats numeric stability as a `strategy`
-  surface rather than a `moat` surface.
+- Current status terminology refers to the numeric stability surface as
+  `numeric-stability-strategy.md`.
 - Shader proof-backed robustness now covers additional 3D storage and texture
   coord families in the native Zig runtime path.
 - Lean artifact regeneration and `-Dlean-verified=true` WGSL builds are green

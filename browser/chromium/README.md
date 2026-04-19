@@ -131,10 +131,10 @@ modules (`fawn_2d_sdf_renderer`, `fawn_path_engine`, `fawn_effects_pipeline`,
 `fawn_compute_services`, `fawn_resource_scheduler`) that would use WebGPU
 through Doe for internal browser GPU work.
 
-This was superseded by the infrastructure dominance strategy: Chromium is
-already routing Skia Graphite, WebGL, and compositor through WebGPU on its own
-timeline. If Track A ever lands and Doe replaces Dawn, those subsystems
-automatically run on Doe without any Doe-side plumbing. Building parallel
+This was superseded once it became clear that Chromium is already routing
+Skia Graphite, WebGL, and compositor through WebGPU on its own timeline.
+If Track A ever lands and Doe replaces Dawn, those subsystems automatically
+run on Doe without any Doe-side plumbing. Building parallel
 replacements duplicates work Google has 100+ GPU engineers doing and creates
 fork divergence on every Chromium update.
 

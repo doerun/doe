@@ -595,6 +595,7 @@ def main() -> int:
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
     csl_simulator_gate = gates_dir / "csl_simulator_gate.py"
     cerebras_artifact_gate = gates_dir / "cerebras_artifact_gate.py"
+    doe_private_strategy_leak_gate = gates_dir / "doe_private_strategy_leak_gate.py"
     wgsl_backend_matrix_gate = gates_dir / "wgsl_backend_matrix_gate.py"
     model_runtime_receipt_gate = gates_dir / "model_runtime_receipt_gate.py"
     kernel_chain_parity_gate = gates_dir / "kernel_chain_parity_gate.py"
@@ -648,6 +649,7 @@ def main() -> int:
     try:
         run_gate("schema", [sys.executable, str(schema_gate)])
         run_gate("cerebras-artifact", [sys.executable, str(cerebras_artifact_gate)])
+        run_gate("doe-private-strategy-leak", [sys.executable, str(doe_private_strategy_leak_gate)])
         run_gate("csl-fixture-mirrors", [sys.executable, str(csl_fixture_mirror_gate)])
         run_gate("csl-operation-graph", [sys.executable, str(csl_operation_graph_gate)])
         if args.with_pilot_evidence_gate:
