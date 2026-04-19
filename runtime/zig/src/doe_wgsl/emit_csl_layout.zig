@@ -241,17 +241,35 @@ pub fn emitGatherLayout(
     info: classify.GatherInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: embedding gather on a 1-D PE row.\n\n");
-    try write(buf, pos, "param width: i16;\n");
+    // u16 width x height so 31B's 58,056 PE flat row_count fits as 246x236.
+    // Per bench/out/layout-2d-needs/layout-2d-needs.json: gather is the only
+    // confirmed-need emitter among the non-elementwise patterns. Other
+    // emitters sharing emitRowTileLoop (rope, attention variants) stay 1-D
+    // because their width semantic is per-token/per-head, not per-row.
+    try write(buf, pos, "// Layout: embedding gather on a width x height PE grid (height defaults to 1).\n\n");
+    try write(buf, pos, "param width: u16;\n");
+    try write(buf, pos, "param height: u16;\n");
     // Defaults let the driver's --params=width:W,height:H invocation compile
     // without requiring extra knobs; callers that want different dims override
-    // via their own --params flags. Same pattern as elementwise chunk_size.
+    // via their own --params flags.
     try write(buf, pos, "param hidden_size: i16 = 64;\n");
     try write(buf, pos, "param rows_per_pe: i16 = 8;\n");
     try write(buf, pos, "param num_tokens: i16 = 4;\n\n");
-    try emitMemcpyRow(buf, pos);
-    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitRowTileLoop(buf, pos, ".hidden_size = hidden_size, .rows_per_pe = rows_per_pe, .num_tokens = num_tokens,\n");
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n    .height = height,\n});\n\n");
+    try write(buf, pos, "layout {\n    @set_rectangle(width, height);\n\n");
+    try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .pe_id = pe_y * width + pe_x,\n");
+    try write(buf, pos, "                .num_pes = width * height,\n");
+    try write(buf, pos, "                .hidden_size = hidden_size, .rows_per_pe = rows_per_pe, .num_tokens = num_tokens,\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
     try emitStorageExports(buf, pos, module);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }

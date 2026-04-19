@@ -27,8 +27,10 @@ pub fn emit(
     try W.write(buf, pos, "// Each PE holds a chunk of the embedding table.\n\n");
 
     try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
-    try W.write(buf, pos, "param pe_id: i16;\n");
-    try W.write(buf, pos, "param num_pes: i16;\n");
+    // u16 for 2-D grids up to 65,535 total PEs (covers 31B 58,056 PE as
+    // 246x236). See bench/out/layout-2d-needs/layout-2d-needs.json.
+    try W.write(buf, pos, "param pe_id: u16;\n");
+    try W.write(buf, pos, "param num_pes: u16;\n");
     try W.write(buf, pos, "param hidden_size: i16;\n");
     try W.write(buf, pos, "param rows_per_pe: i16;\n");
     try W.write(buf, pos, "param num_tokens: i16;\n\n");

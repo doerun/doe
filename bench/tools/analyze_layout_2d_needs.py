@@ -111,15 +111,17 @@ PER_PATTERN: list[dict] = [
         "emitter": "emitGatherLayout",
         "emitterLine": 237,
         "pattern": "gather",
-        "currentGrid": "width x 1 (i16, via emitRowTileLoop)",
+        "currentGrid": "width x height (u16)",
         "widthSemantic": "flat_row_count",
-        "widenedTo2D": False,
+        "widenedTo2D": True,
         "needs2DFor31B": True,
         "rationale": (
             "gather indexes one embedding row per PE; on a flat model grid "
-            "with 58,056 PE the i16 width overflows. Widening emitGatherLayout "
-            "+ emitRowTileLoop to u16 width x height is a plan step 2 "
-            "precondition. Same 1-D shape as element_wise today."
+            "with 58,056 PE the i16 width overflows. emitGatherLayout was "
+            "widened to u16 width x height inline (not via emitRowTileLoop, "
+            "which stays 1-D because other patterns sharing it are per-token/"
+            "per-head and don't overflow). cslc verified at --params=width:4,"
+            "height:1 (1-D E2B shape) and --params=width:4,height:4 (2-D)."
         ),
     },
     {
