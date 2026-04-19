@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-kernel-chain-parity.schema.json",
+  "title": "Doe kernel-chain parity receipt",
+  "description": "Records the bit-close equivalence of a composed sequence of Doe CSL kernels against a numpy reference that applies the same math in the same order. Replaces per-kernel parity with end-to-end chain parity — the step between 'each kernel matches numpy' and 'the model matches numpy'. The chain driver d2h's each kernel's output and h2d's it into the next kernel's input, so chain assembly is a host-side composition today; the future SdkLayout streaming executor will do the same composition in-fabric.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "chainName",
+    "steps",
+    "endToEndParity",
+    "laneStatus"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_kernel_chain_parity" },
+    "target": { "const": "wse3" },
+    "chainName": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "executionTarget": { "type": "string", "enum": ["simfabric", "system"] },
+    "steps": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["stepIndex", "fixtureId", "kernelPattern", "perStepParity"],
+        "properties": {
+          "stepIndex": { "type": "integer", "minimum": 0 },
+          "fixtureId": { "type": "string" },
+          "kernelPattern": { "type": "string" },
+          "compileDir": { "type": "string" },
+          "perStepParity": {
+            "type": "object",
+            "required": ["maxAbsErr", "passed"],
+            "properties": {
+              "maxAbsErr": { "type": "number", "minimum": 0 },
+              "passed": { "type": "boolean" },
+              "atol": { "type": "number", "minimum": 0 },
+              "rtol": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "endToEndParity": {
+      "type": "object",
+      "required": ["maxAbsErr", "passed"],
+      "properties": {
+        "maxAbsErr": { "type": "number", "minimum": 0 },
+        "passed": { "type": "boolean" },
+        "atol": { "type": "number", "minimum": 0 },
+        "rtol": { "type": "number", "minimum": 0 },
+        "sampleExpected": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "sampleActual": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    },
+    "laneStatus": {
+      "type": "string",
+      "enum": ["bit_exact", "bit_close", "structural_only", "failed"]
+    }
+  }
+}

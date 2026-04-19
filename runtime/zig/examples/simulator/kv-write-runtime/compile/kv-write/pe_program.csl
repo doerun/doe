@@ -1,0 +1,50 @@
+// PE program: KV cache write (standalone runtime variant).
+//
+// Appends a single position's projected K/V vectors to the per-PE cache
+// at `position`. Each PE holds a head_dim-sized chunk of K/V. The cache
+// stores [max_seq_len, head_dim] in row-major form, so position=p writes
+// into slots [p*head_dim .. p*head_dim + head_dim).
+//
+// Unlike the emitter-generated kv_write.csl (which uses `[*]f32 = undefined`
+// externally-wired pointers tailored for multi-kernel residency), this
+// variant declares fixed-size local buffers so the governed-lane driver
+// can memcpy them directly.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+param head_dim: i16;
+param max_seq_len: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+var k_proj:  [head_dim]f32 = @zeros([head_dim]f32);
+var v_proj:  [head_dim]f32 = @zeros([head_dim]f32);
+var k_cache: [max_seq_len * head_dim]f32 = @zeros([max_seq_len * head_dim]f32);
+var v_cache: [max_seq_len * head_dim]f32 = @zeros([max_seq_len * head_dim]f32);
+var position: [1]u32 = @zeros([1]u32);
+
+var k_proj_ptr:  [*]f32 = &k_proj;
+var v_proj_ptr:  [*]f32 = &v_proj;
+var k_cache_ptr: [*]f32 = &k_cache;
+var v_cache_ptr: [*]f32 = &v_cache;
+var position_ptr: [*]u32 = &position;
+
+fn compute() void {
+    const base = position[0] * @as(u32, head_dim);
+    for (@range(i16, head_dim)) |d| {
+        const idx = base + @as(u32, d);
+        k_cache[idx] = k_proj[@as(u32, d)];
+        v_cache[idx] = v_proj[@as(u32, d)];
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(k_proj_ptr,  "k_proj");
+    @export_symbol(v_proj_ptr,  "v_proj");
+    @export_symbol(k_cache_ptr, "k_cache");
+    @export_symbol(v_cache_ptr, "v_cache");
+    @export_symbol(position_ptr, "position");
+    @export_symbol(compute);
+}

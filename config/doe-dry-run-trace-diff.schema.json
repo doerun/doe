@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-dry-run-trace-diff.schema.json",
+  "title": "Doe dry-run trace diff",
+  "description": "Per-field delta between two doe_streaming_executor_dry_run_trace artifacts. Use cases: predicted-vs-hardware residual analysis (after substituting observed bandwidth into the dry-run), A/B configuration comparison (different lookahead / KV policy), and cross-model sanity (E2B vs 31B).",
+  "type": "object",
+  "required": ["schemaVersion", "artifactKind", "target", "sides", "perPe", "aggregate", "layerCountMatch", "perLayer", "allMatch"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_dry_run_trace_diff" },
+    "target": { "const": "wse3" },
+    "sides": {
+      "type": "object",
+      "required": ["left", "right"],
+      "properties": {
+        "left": {
+          "type": "object",
+          "required": ["label", "tracePath", "modelId"],
+          "properties": {
+            "label": { "type": "string" },
+            "tracePath": { "type": "string" },
+            "modelId": { "type": "string" },
+            "assumedBandwidthBytesPerCycle": { "type": "number" }
+          }
+        },
+        "right": {
+          "type": "object",
+          "required": ["label", "tracePath", "modelId"],
+          "properties": {
+            "label": { "type": "string" },
+            "tracePath": { "type": "string" },
+            "modelId": { "type": "string" },
+            "assumedBandwidthBytesPerCycle": { "type": "number" }
+          }
+        }
+      }
+    },
+    "perPe": { "type": "object" },
+    "aggregate": { "type": "object" },
+    "layerCountMatch": { "type": "boolean" },
+    "perLayer": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layerIndex", "payloadBytes", "latencyCycles"],
+        "properties": {
+          "layerIndex": { "type": ["integer", "null"] },
+          "payloadBytes": { "type": "object" },
+          "latencyCycles": { "type": "object" },
+          "prefetchTargetLayer": { "type": "object" }
+        }
+      }
+    },
+    "allMatch": { "type": "boolean" }
+  }
+}

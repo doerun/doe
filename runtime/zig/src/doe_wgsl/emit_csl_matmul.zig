@@ -15,7 +15,6 @@
 
 const std = @import("std");
 const ir = @import("ir.zig");
-const spec = @import("csl_spec.zig");
 const classify = @import("emit_csl_classify.zig");
 
 pub const EmitError = error{

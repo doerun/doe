@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-model-runtime-receipt.schema.json",
+  "title": "Doe model runtime receipt",
+  "description": "Binds execution manifest + host-plan + memory-plan + runtime-config + per-kernel CSL runtime fixtures into one artifact that answers 'can Doe run this model end-to-end'.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "modelId",
+    "modelFamily",
+    "grid",
+    "residencyMode",
+    "fits",
+    "memorySummary",
+    "artifactHashes",
+    "kernels",
+    "kernelCoverage",
+    "phaseSummary",
+    "laneStatus",
+    "executionStatus",
+    "executionBlocker"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_model_runtime_receipt" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "modelFamily": { "type": "string", "minLength": 1 },
+    "modelConfig": { "type": "object" },
+    "grid": {
+      "type": "object",
+      "required": ["width", "height", "peCount"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "peCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "residencyMode": {
+      "type": "string",
+      "enum": ["resident", "layer_streaming", "unknown"]
+    },
+    "fits": { "type": "boolean" },
+    "memorySummary": {
+      "type": "object",
+      "required": [
+        "totalModelBytes",
+        "totalPersistentBytes",
+        "totalStreamedBytes",
+        "totalSramAvailable",
+        "utilizationPct"
+      ],
+      "properties": {
+        "totalModelBytes": { "type": "integer", "minimum": 0 },
+        "totalPersistentBytes": { "type": "integer", "minimum": 0 },
+        "totalStreamedBytes": { "type": "integer", "minimum": 0 },
+        "totalSramAvailable": { "type": "integer", "minimum": 0 },
+        "utilizationPct": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "artifactHashes": {
+      "type": "object",
+      "required": [
+        "executionManifest",
+        "hostPlan",
+        "memoryPlan",
+        "runtimeConfig",
+        "simulatorPlan",
+        "cslRuntimeFixtureRegistry"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "kernels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "pattern", "count", "runtimeStatus"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "pattern": { "type": "string", "minLength": 1 },
+          "count": { "type": "integer", "minimum": 1 },
+          "runtimeStatus": {
+            "type": "string",
+            "enum": ["runtime_ready", "compile_ready", "missing", "unknown"]
+          },
+          "fixtureId": { "type": "string" },
+          "reduceStrategy": {
+            "type": "string",
+            "enum": ["none", "on_device_fabric", "host_partial"]
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "kernelCoverage": {
+      "type": "object",
+      "required": ["total", "byStatus", "patternsCovered", "patternsMissing"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "byStatus": { "type": "object" },
+        "patternsCovered": { "type": "array", "items": { "type": "string" } },
+        "patternsMissing": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "phaseSummary": {
+      "type": "object",
+      "required": ["prefillLaunches", "decodeLaunches"],
+      "properties": {
+        "prefillLaunches": { "type": "integer", "minimum": 0 },
+        "decodeLaunches": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "streamingMigration": {
+      "type": "object",
+      "description": "Derived fields that decide whether the simple memcpy RPC runtime path is sufficient or whether the SdkLayout streaming runtime (priority #6 — code regions, ports, streams, async send/receive, demux/mux, KV spill) must be adopted for this model. Computed from the memory plan + model config; no new memory-plan schema fields are required upstream.",
+      "required": ["runtimePath", "streamingRuntimeRequired", "doubleBufferedFits", "numTransformerLayers"],
+      "properties": {
+        "perPeSramBudget": { "type": "integer", "minimum": 0 },
+        "persistentBytesPerPe": { "type": "integer", "minimum": 0 },
+        "streamedWorkingSetBytesPerPe": { "type": "integer", "minimum": 0 },
+        "headroomBytesPerPe": { "type": "integer" },
+        "kvCacheBytesPerPe": { "type": "integer", "minimum": 0 },
+        "maxPerLayerStage": {
+          "type": "object",
+          "description": "Largest stream stage with repeatCount > 1 (per-transformer-layer). Double-buffering targets this stage.",
+          "properties": {
+            "name": { "type": "string" },
+            "bytesPerPe": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "maxSetupStage": {
+          "type": "object",
+          "description": "Largest one-shot stream stage (repeatCount == 1). Loaded at init; not double-buffered.",
+          "properties": {
+            "name": { "type": "string" },
+            "bytesPerPe": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "doubleBufferedWorkingSetPerPe": { "type": "integer", "minimum": 0 },
+        "doubleBufferedFits": { "type": "boolean" },
+        "numTransformerLayers": { "type": "integer", "minimum": 0 },
+        "distinctLayerCompileShapes": { "type": "integer", "minimum": 0 },
+        "compileArtifactReuseFactor": { "type": "integer", "minimum": 0 },
+        "streamingRuntimeRequired": { "type": "boolean" },
+        "runtimePath": {
+          "type": "string",
+          "enum": ["memcpy_rpc", "sdk_layout_streaming"]
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "laneStatus": {
+      "type": "string",
+      "description": "Structural coverage — does every host-plan kernel resolve to a runtime-ready fixture, and does the memory plan fit? 'structural_full_coverage' does NOT mean the model executed end-to-end; that is captured separately in executionStatus. Kept alongside the legacy values so older receipts stay parseable.",
+      "enum": [
+        "structural_full_coverage",
+        "structural_partial_coverage_kernel_gap",
+        "structural_memory_plan_does_not_fit",
+        "full_coverage",
+        "partial_coverage_kernel_gap",
+        "memory_plan_does_not_fit",
+        "compile_failure",
+        "runtime_failure"
+      ]
+    },
+    "executionStatus": {
+      "type": "string",
+      "description": "Has this model been executed end-to-end through the simulator or hardware? Structural full-coverage is a precondition but not a proof of execution.",
+      "enum": [
+        "not_attempted",
+        "simulator_success",
+        "simulator_failure",
+        "hardware_success",
+        "hardware_failure",
+        "compile_failure"
+      ]
+    },
+    "executionBlocker": {
+      "type": "string",
+      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed.",
+      "enum": [
+        "none",
+        "sdk_layout_streaming_executor_missing",
+        "hardware_endpoint_unavailable",
+        "full_grid_compile_unattempted",
+        "partial_kernel_coverage",
+        "memory_plan_does_not_fit"
+      ]
+    },
+    "fullGridCompileProbeEvidence": {
+      "type": "object",
+      "description": "Optional pointer to the cslc grid-probe aggregate documenting which PE counts cslc accepts for this arch. Captured once per repo; referenced by every model receipt so downstream consumers can correlate 'this model wants NN PEs' against 'cslc has been proven to handle up to MM PEs'.",
+      "properties": {
+        "description": { "type": "string" },
+        "reportPath": { "type": "string" },
+        "maxProvenPeCount1D": { "type": "integer", "minimum": 0 },
+        "maxProvenPeCount2D": { "type": "integer", "minimum": 0 },
+        "thirtyOneBFullGridCompileVerified": { "type": "boolean" },
+        "thirtyOneBCompileSeconds2D": { "type": "number", "minimum": 0 }
+      }
+    },
+    "chainParityEvidence": {
+      "type": "object",
+      "description": "Binds model-level chain-parity receipts to this model. Each chain-parity receipt proves that N specific kernels (of the model's host-plan patterns) compose end-to-end with bit-exact or bit-close numerical parity against numpy. The derived kernelPatternsChainProven array lists every classifier outcome that has appeared in at least one passing chain — it's the bridge between per-kernel parity (each kernel alone matches numpy) and model-level parity (the whole graph matches numpy).",
+      "required": ["chains", "kernelPatternsChainProven", "kernelPatternsChainUnproven"],
+      "properties": {
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["chainName", "receiptPath", "kernelPatterns", "endToEndMaxAbsErr", "laneStatus"],
+            "properties": {
+              "chainName": { "type": "string" },
+              "receiptPath": { "type": "string" },
+              "kernelPatterns": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "endToEndMaxAbsErr": { "type": "number", "minimum": 0 },
+              "laneStatus": { "type": "string" }
+            }
+          }
+        },
+        "kernelPatternsChainProven": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Host-plan kernel patterns that appear in at least one passing chain-parity receipt."
+        },
+        "kernelPatternsChainUnproven": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Host-plan kernel patterns for which no chain-parity evidence exists yet."
+        },
+        "chainCoverageCount": { "type": "integer", "minimum": 0 },
+        "chainCoverageTotal": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

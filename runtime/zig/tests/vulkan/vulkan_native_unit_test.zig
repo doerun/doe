@@ -5,7 +5,6 @@ const vk_resources = @import("../../src/backend/vulkan/vk_resources.zig");
 const vk_device = @import("../../src/backend/vulkan/vk_device.zig");
 const vk_constants = @import("../../src/backend/vulkan/vk_constants.zig");
 const backend_policy = @import("../../src/backend/backend_policy.zig");
-const webgpu = @import("../../src/webgpu_ffi.zig");
 const native_runtime = @import("../../src/backend/vulkan/native_runtime.zig");
 const model = @import("../../src/model.zig");
 

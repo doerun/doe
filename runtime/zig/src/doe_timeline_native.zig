@@ -23,12 +23,7 @@ const cast = native_helpers.cast;
 const DoeQueue = native_types.DoeQueue;
 const DoeBuffer = native_types.DoeBuffer;
 
-// Metal bridge externs needed for timeline management.
-extern fn metal_bridge_device_new_shared_event(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_command_buffer_encode_signal_event(cmd: ?*anyopaque, event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_shared_event_signaled_value(event: ?*anyopaque) callconv(.c) u64;
-extern fn metal_bridge_shared_event_wait(event: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 // ============================================================
 // Queue: onSubmittedWorkDone (real async version)

@@ -2,7 +2,6 @@ const std = @import("std");
 const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
-const d3d12_mod = @import("../../src/backend/d3d12/mod.zig");
 const d3d12_timing = @import("../../src/backend/d3d12/d3d12_timing.zig");
 const d3d12_test_support = @import("d3d12_mod_test_support.zig");
 

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_trace",
+  "target": "wse3",
+  "contract": "explicit_simulator_trace",
+  "kernel": "sample",
+  "executionTarget": "simfabric",
+  "width": 4,
+  "chunkSize": 1024,
+  "totalElements": 4096,
+  "runtimePassed": true,
+  "runtimeMaxAbsErr": 0.0,
+  "sampleInput": [
+    0.03602660074830055,
+    -0.6676080822944641,
+    0.6979981660842896,
+    -0.528890073299408
+  ],
+  "sampleExpected": [
+    1913.0
+  ],
+  "sampleActual": [
+    1913.0
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "mode": "sdk-runtime-command",
+  "notes": "Governed-lane runtime-config for attention_decode (single-query Flash Attention). Each PE computes the decode attention output row (head_dim f32) given Q (single query), K/V of kv_len tokens. Same emitter body as attention_tiled with q_len=1.",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "cmaddrEnvVar": "DOE_CSL_CMADDR",
+  "command": [
+    "bench/runners/csl-runners/attention_decode_sim_runner.py",
+    "--compile-dir={compile_output_dir}",
+    "--trace-out={trace_path}",
+    "{cmaddr_arg}"
+  ]
+}
