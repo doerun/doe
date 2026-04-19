@@ -76,6 +76,8 @@
           "observedBytesPerPe": { "type": ["integer", "null"], "minimum": 0 },
           "observedCyclesPerPe": { "type": ["integer", "null"], "minimum": 0 },
           "predictedToObservedBytesRatio": { "type": ["number", "null"], "minimum": 0 },
+          "fixtureEquivalentBytesPerPe": { "type": ["integer", "null"], "minimum": 0 },
+          "fixtureEquivalentToObservedBytesRatio": { "type": ["number", "null"], "minimum": 0 },
           "observedFixtureEvidence": {
             "oneOf": [
               { "type": "null" },

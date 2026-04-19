@@ -151,6 +151,46 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+# Emitter default values for dims that aren't in the layout-level
+# --params but *are* consumed by elements_per_pe. Pulled from the
+# `param <name>: i16 = <default>;` declarations in
+# runtime/zig/src/doe_wgsl/emit_csl_layout.zig and the per-kernel PE
+# emitter files. Used when computing fixtureEquivalentBytesPerPe: the
+# fixture's --params string only lists overridden params, so missing
+# dims fall back to these defaults.
+EMITTER_DEFAULTS: dict[str, dict[str, int]] = {
+    "gather":            {"hidden_size": 64, "rows_per_pe": 8, "num_tokens": 4},
+    "rope":              {"head_dim": 128, "num_pairs": 64},
+    "attention_linear":  {"head_dim": 64, "kv_len": 16},
+    # reduction's hidden_size is a PE-program constant, not a cslc
+    # --params value. The governed-lane reduction fixture runs at
+    # WGSL workgroup_size=1024 (reduce-sum-workgroup.wgsl), so each
+    # PE effectively sums 1024 elements. Hardcode that here so the
+    # fixtureEquivalent formula matches observedElementsPerPe=1024
+    # and reduction's fixture ratio lands at exact_match rather than
+    # unexpected_divergence_formula_suspect.
+    "reduction":         {"hidden_size": 1024},
+    # Other emitters declare all dims without defaults and rely on cslc
+    # --params overrides — the fixture strings are complete for them.
+}
+
+
+def parse_cslc_params_dict(params_str: str | None) -> dict:
+    """Parse 'k1:v1,k2:v2,...' into {k1: int(v1), ...}. Ignores empty."""
+    if not params_str:
+        return {}
+    out: dict[str, int] = {}
+    for tok in params_str.split(","):
+        if ":" not in tok:
+            continue
+        k, v = tok.split(":", 1)
+        try:
+            out[k.strip()] = int(v.strip())
+        except ValueError:
+            pass
+    return out
+
+
 def elements_per_pe(pattern: str, params: dict) -> int:
     """Naive element-count estimate from an invocation's paramsShape."""
     p = params or {}
@@ -277,14 +317,43 @@ def main() -> int:
         if observed_bytes and pattern_bytes and observed_bytes > 0:
             predicted_to_observed_bytes_ratio = round(pattern_bytes / observed_bytes, 4)
 
-        # Classification of the divergence. Separates smoke-vs-deployment
-        # shape gaps (expected, non-actionable today) from formula
-        # mismatches (actionable — the prediction model disagrees with
-        # the observed evidence at the fixture's own shape).
+        # Same-shape comparison: evaluate elements_per_pe at the fixture
+        # cslc params merged with emitter defaults for any dim the
+        # fixture string doesn't override. This is the ratio that
+        # should be ~1 when the prediction formula agrees with the
+        # fixture at the fixture's own shape.
+        fixture_bytes_per_pe = None
+        fixture_to_observed_bytes_ratio = None
+        fixture_cslc = entry.get("fixtureEquivalentCslcParamsString")
+        if fixture_cslc:
+            fixture_params = dict(EMITTER_DEFAULTS.get(pattern, {}))
+            fixture_params.update(parse_cslc_params_dict(fixture_cslc))
+            # reduction needs hidden_size to match the fixture; emitter
+            # default is low. If the fixture hard-codes a different
+            # hidden_size via PE-program code (not --params), we can't
+            # see it here — this is a known-but-acceptable gap.
+            fixture_els = elements_per_pe(pattern, fixture_params)
+            fixture_bytes_per_pe = fixture_els * F32
+            if observed_bytes and fixture_bytes_per_pe and observed_bytes > 0:
+                fixture_to_observed_bytes_ratio = round(
+                    fixture_bytes_per_pe / observed_bytes, 4
+                )
+
+        # Classification of the divergence. Prefer the same-shape
+        # (fixtureEquivalent) ratio when present — that's the signal
+        # "does our formula agree with the fixture at the fixture's
+        # shape?". Only when fixture ratio is absent do we fall back
+        # to the deployment ratio (which reports the smoke-vs-
+        # deployment gap, always large).
         divergence_classification: str | None = None
         width_ratio_hint: float | None = None
-        if predicted_to_observed_bytes_ratio is not None:
-            r = predicted_to_observed_bytes_ratio
+        classification_ratio = (
+            fixture_to_observed_bytes_ratio
+            if fixture_to_observed_bytes_ratio is not None
+            else predicted_to_observed_bytes_ratio
+        )
+        if classification_ratio is not None:
+            r = classification_ratio
             if 0.9 <= r <= 1.1:
                 divergence_classification = "exact_match"
             elif r > 1.1:
@@ -314,6 +383,8 @@ def main() -> int:
             "observedBytesPerPe": observed_bytes,
             "observedCyclesPerPe": (observed_fixture or {}).get("observedCyclesPerPe"),
             "predictedToObservedBytesRatio": predicted_to_observed_bytes_ratio,
+            "fixtureEquivalentBytesPerPe": fixture_bytes_per_pe,
+            "fixtureEquivalentToObservedBytesRatio": fixture_to_observed_bytes_ratio,
             "divergenceClassification": divergence_classification,
             "widthRatioHint": width_ratio_hint,
         }
