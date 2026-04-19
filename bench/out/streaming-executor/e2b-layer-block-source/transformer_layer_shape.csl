@@ -1,10 +1,11 @@
 // Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
-//   stage 2 = multi-query attention (num_heads = 4 scalar queries
-//             from rmsnorm_out[0..num_heads), shared K/V from
-//             layer_weights), poly_c1 softmax per head, per-head
-//             attn_val broadcast via (i mod num_heads) into the
-//             residual — no transcendentals, bit-exact gate
+//   stage 2 = multi-head attention with PER-HEAD K/V slices
+//             (num_heads = 2, kv_len_per_head = 2). Each head
+//             owns its own K_h and V_h carved from layer_weights;
+//             per-head poly_c1 softmax over the non-degenerate
+//             kv_len=2 keys. Per-head attn_val broadcast via
+//             (i mod num_heads) — no transcendentals, bit-exact.
 //   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
 //             full token)
 //   stage 4 = gated MLP with a shared piecewise-polynomial GELU
@@ -15,32 +16,42 @@
 // `transformer_layer_shape` and feeds it three input streams
 // (ple_rows, ple_projection, layer_weights) per layer. This kernel
 // exercises all three streams through real compute; layer_weights
-// is now reshaped to carry four tensors back-to-back in one stream
-// (gamma2, attn_scale, gate_w, up_w — each size/4), keeping the
-// SdkLayout stream contract stable. The remaining stages (full
-// multi-head attention over KV cache, real GELU) land in follow-
-// up ticks without changing the stream contract.
+// is now reshaped to carry four tensors back-to-back in one stream:
+//   [gamma2(qs), per_head_KV(2*qs), gate_w(qs/2), up_w(qs/2)].
+// Compared to the earlier shared-KV MQA layout, the attn_scale
+// region grew to 2*qs to hold per-head K_h/V_h slices; gate_w and
+// up_w shrank to qs/2 and now inner-product against post_norm
+// slices of matching length. The SdkLayout stream contract stays
+// stable (still 3 input streams + 1 output).
 //
 // Stage semantics for this file:
 //   rows                 = pre-norm hidden activation (x) AND residual
 //   proj                 = pre-attn RMSNorm gamma (per-element scale)
 //   wts[0..qs)           = post-attn RMSNorm gamma2 (broadcast 4x)
-//   wts[qs..qs+kv_len)   = K vector (kv_len = qs/2 keys)
-//   wts[qs+kv_len..2*qs) = V vector (kv_len values)
-//   wts[2*qs..3*qs)      = MLP gate weights (inner-product with
-//                          post_norm[0..qs) forms the gate scalar)
-//   wts[3*qs..4*qs)      = MLP up weights (inner-product with
-//                          post_norm[qs..2*qs) forms the up scalar)
+//   wts[qs..3*qs)        = per-head KV region (num_heads * per_head_stride)
+//                          with per_head_stride = 2 * kv_len_per_head.
+//                          Head h occupies wts[qs + h*per_head_stride ..
+//                          qs + (h+1)*per_head_stride): first
+//                          kv_len_per_head values are K_h, next
+//                          kv_len_per_head values are V_h.
+//   wts[3*qs..3*qs+qs/2) = MLP gate weights (inner-product with
+//                          post_norm[0..qs/2) forms the gate scalar)
+//   wts[3*qs+qs/2..4*qs) = MLP up weights (inner-product with
+//                          post_norm[qs/2..qs) forms the up scalar)
 //
 // Combine rule:
 //     rms1             = sqrt(mean(rows[i]^2) + eps)
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
+//     per_head_stride  = 2 * kv_len_per_head
 //     for head h in [0, num_heads):
 //       Q_h            = rmsnorm[h]
-//       logits_h[j]    = Q_h * wts[qs+j]             (j in [0, kv_len))
+//       base_h         = qs + h * per_head_stride
+//       K_h[j]         = wts[base_h + j]             (j in [0, kv_len_per_head))
+//       V_h[j]         = wts[base_h + kv_len_per_head + j]
+//       logits_h[j]    = Q_h * K_h[j]
 //       m_h            = max_j logits_h[j]
 //       w_h[j]         = poly_c1(logits_h[j] - m_h)
-//       attn_val[h]    = sum_j (w_h[j]/sum_j w_h[j]) * wts[qs+kv_len+j]
+//       attn_val[h]    = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j]
 //     attn_out[i]      = attn_val[i mod num_heads] + rows[i]
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
@@ -56,11 +67,12 @@
 // guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
 //
-// Multi-query attention (MQA) layout: the kernel runs num_heads = 4
-// heads that share K and V but each have their own scalar query. This
-// matches Gemma-4's MQA pattern structurally (real E2B uses 8 heads
-// sharing a smaller number of KV heads; the smoke kernel scales it
-// down). size must be a multiple of num_heads.
+// Per-head KV layout: the kernel runs num_heads = 2 heads with
+// DISTINCT K_h and V_h slices. This moves beyond the prior shared-KV
+// MQA toward real multi-head attention while keeping the smoke
+// tractable at size=16. size must be a multiple of num_heads; qs
+// must be a multiple of 2*kv_len_per_head to fit the per-head slice
+// layout without fractional offsets.
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -152,32 +164,35 @@ task done() void {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2: multi-query attention (MQA). num_heads = 4 shared KV.
-    //   kv_len = qs/2
-    //   K[j]  = buf_wts[qs + j]                  (shared across heads)
-    //   V[j]  = buf_wts[qs + kv_len + j]         (shared across heads)
-    //   Q_h   = buf_out[h]  for h in [0, num_heads)
-    const num_heads: u16 = 4;
-    const kv_len: u16 = qs / 2;
+    // Stage 2: multi-head attention with PER-HEAD K/V slices.
+    //   num_heads = 2, kv_len_per_head = 2
+    //   per_head_stride = 2 * kv_len_per_head = 4
+    //   head h owns wts[qs + h*per_head_stride .. qs + (h+1)*per_head_stride):
+    //     first kv_len_per_head entries = K_h, next = V_h
+    //   Q_h = buf_out[h] for h in [0, num_heads)
+    const num_heads: u16 = 2;
+    const kv_len_per_head: u16 = 2;
+    const per_head_stride: u16 = 2 * kv_len_per_head;
 
-    // Per-head attn_val. num_heads is comptime so the array fits.
+    // Per-head attn_val.
     var attn_vals: [num_heads]f32;
 
     for (@range(u16, num_heads)) |h| {
         const q_h: f32 = buf_out[h];
+        const base_h: u16 = qs + h * per_head_stride;
 
-        // Pass 1: find max logit for numerical stability.
-        var lmax: f32 = q_h * buf_wts[qs];
-        for (@range(u16, kv_len)) |j| {
-            const l: f32 = q_h * buf_wts[qs + j];
+        // Pass 1: max logit for numerical stability (over K_h).
+        var lmax: f32 = q_h * buf_wts[base_h];
+        for (@range(u16, kv_len_per_head)) |j| {
+            const l: f32 = q_h * buf_wts[base_h + j];
             if (l > lmax) { lmax = l; }
         }
 
-        // Pass 2: accumulate poly_c1 weights and weighted-V numerator.
+        // Pass 2: accumulate poly_c1 softmax weights and weighted-V.
         var sum_w: f32     = 0.0;
         var weighted_v: f32 = 0.0;
-        for (@range(u16, kv_len)) |j| {
-            const l: f32 = q_h * buf_wts[qs + j];
+        for (@range(u16, kv_len_per_head)) |j| {
+            const l: f32 = q_h * buf_wts[base_h + j];
             const x: f32 = l - lmax;
             var wj: f32 = 0.0;
             if (x > -1.0) {
@@ -186,14 +201,13 @@ task done() void {
                 wj = 0.25 * sq;
             }
             sum_w = sum_w + wj;
-            weighted_v = weighted_v + (wj * buf_wts[qs + kv_len + j]);
+            weighted_v = weighted_v + (wj * buf_wts[base_h + kv_len_per_head + j]);
         }
-        // sum_w >= 0.25 (max-centered poly_c1(0) = 0.25), so safe.
+        // sum_w >= 0.25 (max-centered poly_c1(0) = 0.25), safe.
         attn_vals[h] = weighted_v / sum_w;
     }
 
-    // Stage 2c: residual add. Per-head attn_val broadcast via
-    // (i mod num_heads) so head h's scalar lands at indices
+    // Stage 2c: residual add. head h's scalar broadcasts to indices
     // {h, h + num_heads, h + 2*num_heads, ...}.
     for (@range(u16, size)) |i| {
         const h_idx: u16 = i - ((i / num_heads) * num_heads);
@@ -217,17 +231,20 @@ task done() void {
         buf_out[i] = (buf_out[i] * inv_rms2) * buf_wts[g_idx];
     }
 
-    // Stage 4a: gate scalar = inner-product of wts[2*qs..3*qs)
-    // with post_norm[0..qs).
+    // Stage 4a: gate scalar from shrunken gate_w (qs/2 elems at
+    // wts[3*qs..3*qs+qs/2)) dotted with post_norm[0..qs/2).
+    const mlp_len: u16 = qs / 2;
+    const gate_base: u16 = 3 * qs;
     var gate: f32 = 0.0;
-    for (@range(u16, qs)) |k| {
-        gate = gate + (buf_wts[2 * qs + k] * buf_out[k]);
+    for (@range(u16, mlp_len)) |k| {
+        gate = gate + (buf_wts[gate_base + k] * buf_out[k]);
     }
-    // Stage 4b: up scalar = inner-product of wts[3*qs..4*qs) with
-    // post_norm[qs..2*qs).
+    // Stage 4b: up scalar from up_w (qs/2 elems at wts[3*qs+qs/2..
+    // 4*qs)) dotted with post_norm[qs/2..qs).
+    const up_base: u16 = 3 * qs + mlp_len;
     var up: f32 = 0.0;
-    for (@range(u16, qs)) |k| {
-        up = up + (buf_wts[3 * qs + k] * buf_out[qs + k]);
+    for (@range(u16, mlp_len)) |k| {
+        up = up + (buf_wts[up_base + k] * buf_out[mlp_len + k]);
     }
     // Stage 4c: activation_out[i] = gate * act(up * post_norm[i])
     // + post_norm[i]. act() is a shared piecewise polynomial GELU

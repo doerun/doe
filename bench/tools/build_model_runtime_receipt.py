@@ -344,14 +344,14 @@ def main() -> int:
         if streaming_required:
             # Streaming executor primitives run on simfabric, and the
             # generated E2B layer-block runner now executes real
-            # pre-attn RMSNorm + 4-head MQA attention (poly_c1
-            # softmax per head over shared K/V packed in
-            # layer_weights) + per-head residual broadcast + post-
+            # pre-attn RMSNorm + 2-head MHA with PER-HEAD K/V slices
+            # (poly_c1 softmax per head, kv_len_per_head=2 for
+            # non-degenerate softmax) + per-head residual + post-
             # attn RMSNorm + gated MLP with poly_c1 activation.
             # Every input stream of the 3-stream SdkLayout contract
             # flows through compute. The model receipt still cannot
-            # claim simulator_success: per-head KV slices, longer
-            # KV, and rope are not yet wired in, and cs_python is
+            # claim simulator_success: longer KV, vector Q/K per
+            # head, and rope are not yet wired in, and cs_python is
             # not on PATH in this build environment so the
             # simfabric driver cannot actually run the kernel.
             execution_blocker = "full_transformer_layer_block_incomplete"
@@ -426,54 +426,62 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mqa_4head_poly_c1_softmax",
+            "layer_block_mha_2head_per_head_kv_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
         ],
         "layerBlockKernelEvidence": {
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
-                "now executes pre-attn RMSNorm + multi-query "
-                "attention with num_heads=4 (shared K/V, per-head "
-                "scalar queries, max-centered poly_c1 softmax per "
-                "head, per-head attn_val broadcast into the "
-                "residual via i mod num_heads) + post-attn RMSNorm "
-                "+ gated MLP with poly_c1 activation. Every input "
-                "stream of the 3-stream SdkLayout contract is an "
-                "operand in the final write; rx_layer_weights is "
-                "reshaped as [gamma2, attn_scale=(K,V), gate_w, "
-                "up_w] (four back-to-back quarters of size/4). "
+                "now executes pre-attn RMSNorm + multi-head "
+                "attention with PER-HEAD K/V slices (num_heads=2, "
+                "kv_len_per_head=2; each head has its own K_h and "
+                "V_h carved from layer_weights, max-centered "
+                "poly_c1 softmax per head, attn_val broadcast into "
+                "the residual via i mod num_heads) + post-attn "
+                "RMSNorm + gated MLP with shrunken gate_w/up_w and "
+                "poly_c1 activation. Every input stream of the "
+                "3-stream SdkLayout contract is an operand in the "
+                "final write; rx_layer_weights is reshaped as "
+                "[gamma2(qs), per_head_KV(2*qs), gate_w(qs/2), "
+                "up_w(qs/2)] — the per_head_KV region grew to 2*qs "
+                "to hold distinct K_h/V_h, and gate_w/up_w shrank "
+                "to qs/2 to keep the total wts footprint at size. "
                 "The same poly_c1 family drives both the stage-2 "
                 "per-head softmax weighting and the stage-4 "
                 "activation — only +, -, *, /, and comparison, so "
                 "CSL and numpy compute the identical f32 op "
                 "sequence (no tanh / exp / erf divergence). "
-                "Remaining upgrades (per-head KV slices, longer KV, "
-                "rope positional encoding) land in follow-up ticks."
+                "Remaining upgrades (longer KV, vector Q/K per "
+                "head, rope positional encoding) land in follow-"
+                "up ticks."
             ),
             "kernelSourcePath": layer_block_kernel_path,
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mqa_4head_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mha_2head_per_head_kv_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
                 "* ple_projection[i]; "
-                "num_heads = 4; kv_len = qs/2; "
+                "num_heads = 2; kv_len_per_head = 2; "
+                "stride = 2 * kv_len_per_head; mlp_len = qs/2; "
                 "for h in [0, num_heads): "
-                "Q_h = rmsnorm[h]; "
-                "logits_h[j] = Q_h * layer_weights[qs+j]  (j in [0,kv_len)); "
+                "Q_h = rmsnorm[h]; base_h = qs + h * stride; "
+                "K_h[j] = layer_weights[base_h + j]; "
+                "V_h[j] = layer_weights[base_h + kv_len_per_head + j]; "
+                "logits_h[j] = Q_h * K_h[j]; "
                 "m_h = max_j logits_h[j]; "
                 "w_h[j] = poly_c1(logits_h[j] - m_h); "
-                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) "
-                "* layer_weights[qs+kv_len+j]; "
+                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j]; "
                 "attn_out[i] = attn_val[i mod num_heads] + ple_rows[i]; "
                 "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
                 "* layer_weights[i mod qs]; "
-                "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
-                "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
+                "gate = sum_k layer_weights[3*qs + k] * post_norm[k]     "
+                "(k in [0, mlp_len)); "
+                "up = sum_k layer_weights[3*qs + mlp_len + k] * post_norm[mlp_len + k]; "
                 "poly_c1(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
@@ -488,14 +496,19 @@ def main() -> int:
                 "rx_layer_weights",
             ],
             "layerWeightsReshape": (
-                "layer_weights carries [gamma2(qs), attn_scale(qs), gate_w(qs), "
-                "up_w(qs)] back-to-back (qs = size/4). The attn_scale "
-                "quarter is further split in stage 2 as K = "
-                "wts[qs..qs+kv_len) and V = wts[qs+kv_len..2qs) with "
-                "kv_len = qs/2. gamma2 broadcasts 4x over the post-attn "
-                "RMSNorm; gate_w is dotted with post_norm[0..qs) for the "
-                "MLP gate scalar; up_w with post_norm[qs..2qs) for the "
-                "MLP up scalar."
+                "layer_weights carries [gamma2(qs), per_head_KV(2*qs), "
+                "gate_w(qs/2), up_w(qs/2)] back-to-back (qs = size/4). "
+                "The per_head_KV region splits into num_heads = 2 "
+                "contiguous slices of length per_head_stride = "
+                "2*kv_len_per_head = 4: head h occupies "
+                "wts[qs + h*4 .. qs + (h+1)*4) = (K_h(2), V_h(2)). "
+                "gamma2 broadcasts 4x over the post-attn RMSNorm; "
+                "gate_w (shrunken to qs/2) is dotted with "
+                "post_norm[0..qs/2); up_w with post_norm[qs/2..qs). "
+                "Compared to the prior shared-KV MQA layout the "
+                "attn_scale region grew to 2*qs to hold per-head KV; "
+                "gate_w and up_w shrank to qs/2 to keep the total "
+                "wts footprint at size."
             ),
             "sharedPolynomialC1": (
                 "poly_c1(x) = 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
@@ -508,24 +521,22 @@ def main() -> int:
                 "platform-dependence."
             ),
             "stageTwoAttention": (
-                "Multi-query attention (MQA) with num_heads = 4 "
-                "shared K/V. Per-head Q_h = rmsnorm_out[h]; K[j] = "
-                "wts[qs+j], V[j] = wts[qs+kv_len+j] for j in [0, "
-                "kv_len) with kv_len = qs/2 (shared across heads). "
-                "Per-head logits_h = Q_h * K, max-centered poly_c1 "
-                "softmax, attn_val[h] = sum_j sm_h[j] * V[j]. "
-                "attn_out[i] = attn_val[i mod num_heads] + rows[i] "
-                "— head h's scalar broadcasts over indices "
-                "{h, h+num_heads, h+2*num_heads, ...}. This MQA "
-                "layout mirrors Gemma-4's query-group structure "
-                "structurally (real E2B has 8 heads with fewer KV "
-                "heads). Upgrade path: per-head KV slices, longer "
-                "KV, rope positional encoding."
+                "Multi-head attention with PER-HEAD K/V slices. "
+                "num_heads = 2, kv_len_per_head = 2; per_head_stride "
+                "= 2 * kv_len_per_head = 4. Head h owns "
+                "wts[qs + h*stride .. qs + (h+1)*stride): first "
+                "kv_len_per_head values are K_h, next are V_h. "
+                "Q_h = rmsnorm_out[h]; per-head logits, max-centered "
+                "poly_c1 softmax, attn_val[h] = sum_j sm_h[j] * "
+                "V_h[j]. attn_out[i] = attn_val[i mod num_heads] + "
+                "rows[i]. Non-degenerate softmax (kv_len_per_head = "
+                "2 > 1). Upgrade path: longer KV, rope positional "
+                "encoding, vector Q/K per head."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
-                "per_head_kv_slices_replacing_shared_mqa",
-                "longer_kv_cache",
+                "longer_kv_cache_per_head",
+                "vector_Q_and_K_per_head",
                 "rope_positional_encoding_on_Q_and_K",
             ],
         },

@@ -89,18 +89,18 @@ Plan stream contract for this layer:
 {stream_contract_comment}
 
 Smoke path: each stream carries {smoke_size} f32 values. The kernel
-runs stage 1 (pre-attn RMSNorm), stage 2 (multi-query attention with
-num_heads=4 scalar queries from rmsnorm_out[0..num_heads) + shared
-K/V from the attn_scale quarter, poly_c1 softmax per head, per-head
-attn_val broadcast into the residual via i mod num_heads), stage 3
-(post-attn RMSNorm using gamma2 packed into layer_weights), and
-stage 4 (gated MLP with the same poly_c1 family as the activation).
-Every input stream flows through compute. The runner verifies
-activation_out bit-exact against a host numpy reference that replays
-every reduction, every per-head softmax normalization, and every
-activation in the same scalar f32 op sequence as the CSL kernel. The
-stream contract is stable across follow-up upgrades (per-head KV
-slices, longer KV, rope).
+runs stage 1 (pre-attn RMSNorm), stage 2 (multi-head attention with
+num_heads=2 and PER-HEAD K/V slices carved from the attn_scale region,
+kv_len_per_head=2, poly_c1 softmax per head, per-head attn_val
+broadcast into the residual via i mod num_heads), stage 3 (post-attn
+RMSNorm using gamma2 packed into layer_weights), and stage 4 (gated
+MLP with shrunken gate_w/up_w of length qs/2, same poly_c1 activation
+as before). Every input stream flows through compute. The runner
+verifies activation_out bit-exact against a host numpy reference that
+replays every reduction, every per-head softmax normalization, and
+every activation in the same scalar f32 op sequence as the CSL kernel.
+The stream contract is stable across follow-up upgrades (longer KV,
+rope positional encoding, vector Q/K per head).
 """
 
 from __future__ import annotations
@@ -228,25 +228,30 @@ def main() -> int:
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
-        # Stage 2: multi-query attention with poly_c1 softmax.
-        #   num_heads = 4 (must divide size); kv_len = qs/2.
-        #   K, V shared across heads; per-head Q_h = rmsnorm_out[h].
-        #   attn_out[i] = attn_val[i mod num_heads] + rows[i].
-        num_heads = 4
+        # Stage 2: multi-head attention with PER-HEAD K/V slices.
+        #   num_heads = 2, kv_len_per_head = 2
+        #   per_head_stride = 2 * kv_len_per_head = 4
+        #   head h: K_h = wts[qs + h*stride .. qs + h*stride + kv_len)
+        #           V_h = wts[qs + h*stride + kv_len .. qs + (h+1)*stride)
+        #   Q_h = rmsnorm_out[h]; attn_out[i] = attn_val[i mod num_heads] + rows[i]
+        num_heads = 2
+        kv_len_per_head = 2
+        per_head_stride = 2 * kv_len_per_head
         assert args.size % num_heads == 0, "size must be divisible by num_heads"
-        kv_len = qs // 2
+        assert qs >= num_heads * per_head_stride // 2, "qs too small for per-head KV"
         attn_vals = np.zeros(num_heads, dtype=np.float32)
         for h in range(num_heads):
             q_h = np.float32(rmsnorm_out[h])
-            lmax = np.float32(q_h * np.float32(wts[qs]))
-            for j in range(kv_len):
-                l = np.float32(q_h * np.float32(wts[qs + j]))
+            base_h = qs + h * per_head_stride
+            lmax = np.float32(q_h * np.float32(wts[base_h]))
+            for j in range(kv_len_per_head):
+                l = np.float32(q_h * np.float32(wts[base_h + j]))
                 if l > lmax:
                     lmax = l
             sum_w = np.float32(0.0)
             weighted_v = np.float32(0.0)
-            for j in range(kv_len):
-                l = np.float32(q_h * np.float32(wts[qs + j]))
+            for j in range(kv_len_per_head):
+                l = np.float32(q_h * np.float32(wts[base_h + j]))
                 x = np.float32(l - lmax)
                 if x > np.float32(-1.0):
                     xp1 = np.float32(x + np.float32(1.0))
@@ -257,7 +262,9 @@ def main() -> int:
                 sum_w = np.float32(sum_w + wj)
                 weighted_v = np.float32(
                     weighted_v
-                    + np.float32(wj * np.float32(wts[qs + kv_len + j]))
+                    + np.float32(
+                        wj * np.float32(wts[base_h + kv_len_per_head + j])
+                    )
                 )
             attn_vals[h] = np.float32(weighted_v / sum_w)
         attn_out = np.empty(args.size, dtype=np.float32)
@@ -282,20 +289,25 @@ def main() -> int:
             post_norm[i] = np.float32(
                 np.float32(attn_out[i] * inv_rms2) * np.float32(wts[g_idx])
             )
-        # Stage 4: gated MLP. gate scalar = wts[2qs..3qs) . post_norm[0..qs);
-        # up scalar = wts[3qs..4qs) . post_norm[qs..2qs); activation is a
-        # shared piecewise-polynomial GELU approximation (see act_poly_c1).
+        # Stage 4: gated MLP. gate_w and up_w are now qs/2 elems each
+        # (shrunken to make room for per-head KV in stage 2).
+        #   gate = wts[3qs..3qs+qs/2) . post_norm[0..qs/2)
+        #   up   = wts[3qs+qs/2..4qs) . post_norm[qs/2..qs)
+        # Activation is the shared piecewise-polynomial GELU (act_poly_c1).
+        mlp_len = qs // 2
+        gate_base = 3 * qs
+        up_base = gate_base + mlp_len
         gate = np.float32(0.0)
-        for k in range(qs):
+        for k in range(mlp_len):
             gate = np.float32(
-                gate + np.float32(wts[2 * qs + k])
+                gate + np.float32(wts[gate_base + k])
                 * np.float32(post_norm[k])
             )
         up = np.float32(0.0)
-        for k in range(qs):
+        for k in range(mlp_len):
             up = np.float32(
-                up + np.float32(wts[3 * qs + k])
-                * np.float32(post_norm[qs + k])
+                up + np.float32(wts[up_base + k])
+                * np.float32(post_norm[mlp_len + k])
             )
         # Piecewise-polynomial GELU approximation, C^1-continuous at
         # the break points +/- 1. Explicitly parenthesized so CSL and
@@ -380,24 +392,25 @@ def main() -> int:
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
-                "num_heads = 4; kv_len = qs/2; "
+                "num_heads = 2; kv_len_per_head = 2; stride = 2*kv_len_per_head; mlp_len = qs/2; "
                 "for h in [0, num_heads): "
-                "Q_h = rmsnorm[h]; "
-                "logits_h[j] = Q_h * layer_weights[qs+j]  (j in [0,kv_len)); "
+                "Q_h = rmsnorm[h]; base_h = qs + h*stride; "
+                "K_h[j] = layer_weights[base_h + j]; "
+                "V_h[j] = layer_weights[base_h + kv_len_per_head + j]; "
+                "logits_h[j] = Q_h * K_h[j]; "
                 "m_h = max_j logits_h[j]; "
                 "w_h[j] = poly_c1(logits_h[j] - m_h); "
-                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) "
-                "* layer_weights[qs+kv_len+j]; "
+                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j]; "
                 "attn_out[i] = attn_val[i mod num_heads] + ple_rows[i]; "
                 "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
                 "* layer_weights[i mod qs]; "
-                "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
-                "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
+                "gate = sum_k layer_weights[3*qs + k] * post_norm[k]     (k in [0, mlp_len)); "
+                "up   = sum_k layer_weights[3*qs + mlp_len + k] * post_norm[mlp_len + k]; "
                 "poly_c1(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+mqa_4head_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mha_2head_per_head_kv_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "status": run_status,
