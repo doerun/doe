@@ -364,6 +364,27 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "attention_tiled",
+        "emitter": "emitTiledAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:403)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "attention",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "kv_len": 4096,
+                    "q_len": 16
+                },
+                "cslcParamsString": "width:16,head_dim:512,kv_len:4096,q_len:16"
+            }
+        ],
+        "derivationSource": "width/q_len = num_tokens from --size (1-D per-tile row); head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen as the prefill upper bound (4096 for both E2B and 31B \u2014 well under i16). Per the layout-2d-needs audit, attention_tiled stays 1-D.",
+        "manifestSteps": [
+            "attention"
+        ]
+    },
+    {
         "pattern": "reduction",
         "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
         "emitterWidened2D": False,

@@ -477,6 +477,47 @@ def derive_per_kernel_shapes(
             if s.get("op") == "matmul" and s.get("kernelKey") == "tiled"
         ],
     })
+    # Smoke-shape attention_tiled: emitter at L403 takes width + head_dim
+    # + kv_len + q_len. Per the audit attention_tiled stays 1-D since the
+    # width is per-tile (per-head-per-row). Manifest has one tiled
+    # attention step per layer (prefill); the decode variants land on
+    # attention_decode, not this pattern.
+    max_seq_len = int(mc.get("maxSeqLen", 4096))
+    attn_tiled_steps = [
+        s["name"] for s in manifest.get("steps", [])
+        if s.get("op") == "attention_prefill"
+    ]
+    shapes.append({
+        "pattern": "attention_tiled",
+        "emitter": "emitTiledAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:403)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": step_name,
+                "paramsShape": {
+                    "width": smoke_size,
+                    "head_dim": head_dim or 128,
+                    "kv_len": max_seq_len,
+                    "q_len": smoke_size,
+                },
+                "cslcParamsString": (
+                    f"width:{smoke_size},"
+                    f"head_dim:{head_dim or 128},"
+                    f"kv_len:{max_seq_len},"
+                    f"q_len:{smoke_size}"
+                ),
+            }
+            for step_name in (attn_tiled_steps or ["attention"])
+        ],
+        "derivationSource": (
+            "width/q_len = num_tokens from --size (1-D per-tile row); "
+            "head_dim from manifest.modelConfig.headDim; kv_len = "
+            "manifest.modelConfig.maxSeqLen as the prefill upper bound "
+            "(4096 for both E2B and 31B — well under i16). Per the "
+            "layout-2d-needs audit, attention_tiled stays 1-D."
+        ),
+        "manifestSteps": attn_tiled_steps,
+    })
     # Smoke-shape reduction (RMSNorm / softmax single-PE lowering): the
     # emitter at L112 declares only `param width: i16;` — reduce_color,
     # pe_id, and num_pes are set at tile-code time by the layout, not
