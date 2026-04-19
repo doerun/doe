@@ -1,11 +1,14 @@
 // Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
-//   stage 2 = multi-head attention with PER-HEAD K/V slices
-//             (num_heads = 2, kv_len_per_head = 2). Each head
-//             owns its own K_h and V_h carved from layer_weights;
-//             per-head poly_c1 softmax over the non-degenerate
-//             kv_len=2 keys. Per-head attn_val broadcast via
-//             (i mod num_heads) — no transcendentals, bit-exact.
+//   stage 2 = multi-head attention with PER-HEAD VECTOR Q/K/V
+//             (num_heads = 2, head_dim = 2, kv_len_per_head = 2).
+//             Per-head Q_h is a head_dim-vector from rmsnorm_out;
+//             K_h[j] and V_h[j] are head_dim-vectors from
+//             layer_weights; logits_h[j] = sum_d Q_h[d]*K_h[j][d];
+//             poly_c1 softmax; attn_val[h][d] = sum_j sm[j]*V_h[j][d].
+//             attn_val flattens to length num_heads*head_dim and
+//             broadcasts over the full token via (i mod flat_len).
+//             Vector Q/K sets up rope positional encoding next tick.
 //   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
 //             full token)
 //   stage 4 = gated MLP with a shared piecewise-polynomial GELU
@@ -15,25 +18,26 @@
 // The E2B stream-execution-plan names a code region
 // `transformer_layer_shape` and feeds it three input streams
 // (ple_rows, ple_projection, layer_weights) per layer. This kernel
-// exercises all three streams through real compute; layer_weights
-// is now reshaped to carry four tensors back-to-back in one stream:
+// exercises all three streams through real compute. size bumped to
+// 32 (qs = 8) so per-head vector Q/K/V fit without degenerating
+// the softmax. layer_weights reshape:
 //   [gamma2(qs), per_head_KV(2*qs), gate_w(qs/2), up_w(qs/2)].
-// Compared to the earlier shared-KV MQA layout, the attn_scale
-// region grew to 2*qs to hold per-head K_h/V_h slices; gate_w and
-// up_w shrank to qs/2 and now inner-product against post_norm
-// slices of matching length. The SdkLayout stream contract stays
-// stable (still 3 input streams + 1 output).
+// The per_head_KV region carries num_heads * 2 * head_dim *
+// kv_len_per_head = 2*2*2*2 = 16 = 2*qs elements. gate_w and up_w
+// grow back to qs/2 = 4 now that qs itself is larger. The SdkLayout
+// stream contract stays stable (still 3 input streams + 1 output).
 //
 // Stage semantics for this file:
 //   rows                 = pre-norm hidden activation (x) AND residual
 //   proj                 = pre-attn RMSNorm gamma (per-element scale)
 //   wts[0..qs)           = post-attn RMSNorm gamma2 (broadcast 4x)
-//   wts[qs..3*qs)        = per-head KV region (num_heads * per_head_stride)
-//                          with per_head_stride = 2 * kv_len_per_head.
-//                          Head h occupies wts[qs + h*per_head_stride ..
+//   wts[qs..3*qs)        = per-head VECTOR KV region. Per-head slice
+//                          of length per_head_stride = 2*head_dim*
+//                          kv_len_per_head = 8. Head h occupies
+//                          wts[qs + h*per_head_stride ..
 //                          qs + (h+1)*per_head_stride): first
-//                          kv_len_per_head values are K_h, next
-//                          kv_len_per_head values are V_h.
+//                          head_dim*kv_len_per_head values are K_h
+//                          (laid out as K_h[j][d]), next are V_h.
 //   wts[3*qs..3*qs+qs/2) = MLP gate weights (inner-product with
 //                          post_norm[0..qs/2) forms the gate scalar)
 //   wts[3*qs+qs/2..4*qs) = MLP up weights (inner-product with
@@ -42,17 +46,19 @@
 // Combine rule:
 //     rms1             = sqrt(mean(rows[i]^2) + eps)
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
-//     per_head_stride  = 2 * kv_len_per_head
+//     per_head_K_len   = head_dim * kv_len_per_head
+//     per_head_stride  = 2 * per_head_K_len
 //     for head h in [0, num_heads):
-//       Q_h            = rmsnorm[h]
+//       Q_h[d]         = rmsnorm[h*head_dim + d]    (d in [0, head_dim))
 //       base_h         = qs + h * per_head_stride
-//       K_h[j]         = wts[base_h + j]             (j in [0, kv_len_per_head))
-//       V_h[j]         = wts[base_h + kv_len_per_head + j]
-//       logits_h[j]    = Q_h * K_h[j]
+//       K_h[j][d]      = wts[base_h + j*head_dim + d]
+//       V_h[j][d]      = wts[base_h + per_head_K_len + j*head_dim + d]
+//       logits_h[j]    = sum_d Q_h[d] * K_h[j][d]
 //       m_h            = max_j logits_h[j]
 //       w_h[j]         = poly_c1(logits_h[j] - m_h)
-//       attn_val[h]    = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j]
-//     attn_out[i]      = attn_val[i mod num_heads] + rows[i]
+//       attn_val[h][d] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j][d]
+//     attn_flat        = flatten attn_val to length num_heads*head_dim
+//     attn_out[i]      = attn_flat[i mod (num_heads*head_dim)] + rows[i]
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
@@ -67,12 +73,14 @@
 // guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
 //
-// Per-head KV layout: the kernel runs num_heads = 2 heads with
-// DISTINCT K_h and V_h slices. This moves beyond the prior shared-KV
-// MQA toward real multi-head attention while keeping the smoke
-// tractable at size=16. size must be a multiple of num_heads; qs
-// must be a multiple of 2*kv_len_per_head to fit the per-head slice
-// layout without fractional offsets.
+// Per-head vector KV layout: num_heads = 2 heads, head_dim = 2,
+// kv_len_per_head = 2. The attn output space (num_heads * head_dim
+// = 4) broadcasts size/(num_heads*head_dim) = 8 times over the full
+// token. size must be a multiple of (num_heads*head_dim); qs must
+// be >= 2 * num_heads * head_dim * kv_len_per_head / 2 = num_heads *
+// head_dim * kv_len_per_head. Default smoke_size = 32 gives qs = 8,
+// satisfying both constraints and leaving room for rope positional
+// encoding (vector Q/K is a precondition for rope).
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -164,35 +172,50 @@ task done() void {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2: multi-head attention with PER-HEAD K/V slices.
-    //   num_heads = 2, kv_len_per_head = 2
-    //   per_head_stride = 2 * kv_len_per_head = 4
-    //   head h owns wts[qs + h*per_head_stride .. qs + (h+1)*per_head_stride):
-    //     first kv_len_per_head entries = K_h, next = V_h
-    //   Q_h = buf_out[h] for h in [0, num_heads)
+    // Stage 2: multi-head attention with PER-HEAD VECTOR Q/K/V.
+    //   num_heads = 2, head_dim = 2, kv_len_per_head = 2
+    //   per_head_K_len = head_dim * kv_len_per_head = 4
+    //   per_head_stride = 2 * per_head_K_len = 8
+    //   head h owns wts[qs + h*stride .. qs + (h+1)*stride):
+    //     first per_head_K_len entries = K_h (laid out as K_h[j][d]),
+    //     next per_head_K_len = V_h.
+    //   Q_h[d] = buf_out[h*head_dim + d]
     const num_heads: u16 = 2;
+    const head_dim: u16 = 2;
     const kv_len_per_head: u16 = 2;
-    const per_head_stride: u16 = 2 * kv_len_per_head;
+    const per_head_K_len: u16 = head_dim * kv_len_per_head;
+    const per_head_stride: u16 = 2 * per_head_K_len;
+    const attn_flat_len: u16 = num_heads * head_dim;
 
-    // Per-head attn_val.
-    var attn_vals: [num_heads]f32;
+    // Flattened per-head/per-d attention output.
+    var attn_vals: [attn_flat_len]f32;
 
     for (@range(u16, num_heads)) |h| {
-        const q_h: f32 = buf_out[h];
         const base_h: u16 = qs + h * per_head_stride;
+        const q_base: u16 = h * head_dim;
 
-        // Pass 1: max logit for numerical stability (over K_h).
-        var lmax: f32 = q_h * buf_wts[base_h];
+        // Pass 1: max logit. logits[j] = sum_d Q_h[d] * K_h[j][d].
+        var lmax: f32 = 0.0;
+        for (@range(u16, head_dim)) |d| {
+            lmax = lmax + (buf_out[q_base + d] * buf_wts[base_h + d]);
+        }
         for (@range(u16, kv_len_per_head)) |j| {
-            const l: f32 = q_h * buf_wts[base_h + j];
+            var l: f32 = 0.0;
+            for (@range(u16, head_dim)) |d| {
+                l = l + (buf_out[q_base + d] * buf_wts[base_h + j*head_dim + d]);
+            }
             if (l > lmax) { lmax = l; }
         }
 
-        // Pass 2: accumulate poly_c1 softmax weights and weighted-V.
-        var sum_w: f32     = 0.0;
-        var weighted_v: f32 = 0.0;
+        // Pass 2: accumulate poly_c1 weights and per-d weighted-V.
+        var sum_w: f32 = 0.0;
+        var weighted_v: [head_dim]f32;
+        for (@range(u16, head_dim)) |d| { weighted_v[d] = 0.0; }
         for (@range(u16, kv_len_per_head)) |j| {
-            const l: f32 = q_h * buf_wts[base_h + j];
+            var l: f32 = 0.0;
+            for (@range(u16, head_dim)) |d| {
+                l = l + (buf_out[q_base + d] * buf_wts[base_h + j*head_dim + d]);
+            }
             const x: f32 = l - lmax;
             var wj: f32 = 0.0;
             if (x > -1.0) {
@@ -201,17 +224,23 @@ task done() void {
                 wj = 0.25 * sq;
             }
             sum_w = sum_w + wj;
-            weighted_v = weighted_v + (wj * buf_wts[base_h + kv_len_per_head + j]);
+            for (@range(u16, head_dim)) |d| {
+                const v_hjd: f32 = buf_wts[base_h + per_head_K_len + j*head_dim + d];
+                weighted_v[d] = weighted_v[d] + (wj * v_hjd);
+            }
         }
-        // sum_w >= 0.25 (max-centered poly_c1(0) = 0.25), safe.
-        attn_vals[h] = weighted_v / sum_w;
+        // sum_w >= 0.25, safe division per d.
+        for (@range(u16, head_dim)) |d| {
+            attn_vals[q_base + d] = weighted_v[d] / sum_w;
+        }
     }
 
-    // Stage 2c: residual add. head h's scalar broadcasts to indices
-    // {h, h + num_heads, h + 2*num_heads, ...}.
+    // Stage 2c: residual add. Flattened attn_vals broadcasts via
+    // (i mod attn_flat_len) — each (h, d) cell lands at indices
+    // {h*head_dim+d, h*head_dim+d + flat, + 2*flat, ...}.
     for (@range(u16, size)) |i| {
-        const h_idx: u16 = i - ((i / num_heads) * num_heads);
-        buf_out[i] = attn_vals[h_idx] + buf_rows[i];
+        const k_idx: u16 = i - ((i / attn_flat_len) * attn_flat_len);
+        buf_out[i] = attn_vals[k_idx] + buf_rows[i];
     }
 
     // Stage 3a: post-attn RMSNorm sum-of-squares over attn_out.

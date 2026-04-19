@@ -426,7 +426,7 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mha_2head_per_head_kv_poly_c1_softmax",
+            "layer_block_mha_2head_hd2_vector_qkv_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
         ],
@@ -460,7 +460,7 @@ def main() -> int:
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_per_head_kv_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mha_2head_hd2_vector_qkv_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "combineRule": (
@@ -499,16 +499,12 @@ def main() -> int:
                 "layer_weights carries [gamma2(qs), per_head_KV(2*qs), "
                 "gate_w(qs/2), up_w(qs/2)] back-to-back (qs = size/4). "
                 "The per_head_KV region splits into num_heads = 2 "
-                "contiguous slices of length per_head_stride = "
-                "2*kv_len_per_head = 4: head h occupies "
-                "wts[qs + h*4 .. qs + (h+1)*4) = (K_h(2), V_h(2)). "
-                "gamma2 broadcasts 4x over the post-attn RMSNorm; "
-                "gate_w (shrunken to qs/2) is dotted with "
-                "post_norm[0..qs/2); up_w with post_norm[qs/2..qs). "
-                "Compared to the prior shared-KV MQA layout the "
-                "attn_scale region grew to 2*qs to hold per-head KV; "
-                "gate_w and up_w shrank to qs/2 to keep the total "
-                "wts footprint at size."
+                "contiguous slices of length per_head_stride = 2 * "
+                "head_dim * kv_len_per_head = 8: head h occupies "
+                "wts[qs + h*8 .. qs + (h+1)*8) as K_h(head_dim * "
+                "kv_len_per_head) followed by V_h(same). At the "
+                "default smoke_size=32 (qs=8) this gives gate_w and "
+                "up_w = qs/2 = 4 elements each, back to full mlp_len."
             ),
             "sharedPolynomialC1": (
                 "poly_c1(x) = 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
@@ -521,23 +517,26 @@ def main() -> int:
                 "platform-dependence."
             ),
             "stageTwoAttention": (
-                "Multi-head attention with PER-HEAD K/V slices. "
-                "num_heads = 2, kv_len_per_head = 2; per_head_stride "
-                "= 2 * kv_len_per_head = 4. Head h owns "
-                "wts[qs + h*stride .. qs + (h+1)*stride): first "
-                "kv_len_per_head values are K_h, next are V_h. "
-                "Q_h = rmsnorm_out[h]; per-head logits, max-centered "
-                "poly_c1 softmax, attn_val[h] = sum_j sm_h[j] * "
-                "V_h[j]. attn_out[i] = attn_val[i mod num_heads] + "
-                "rows[i]. Non-degenerate softmax (kv_len_per_head = "
-                "2 > 1). Upgrade path: longer KV, rope positional "
-                "encoding, vector Q/K per head."
+                "Multi-head attention with PER-HEAD VECTOR Q/K/V. "
+                "num_heads = 2, head_dim = 2, kv_len_per_head = 2. "
+                "per_head_K_len = head_dim * kv_len_per_head = 4; "
+                "per_head_stride = 2 * per_head_K_len = 8. Q_h[d] "
+                "= rmsnorm[h*head_dim + d]; K_h[j][d], V_h[j][d] "
+                "read from wts at base_h = qs + h*stride. Per-head "
+                "logits use dot product over head_dim; max-centered "
+                "poly_c1 softmax; attn_val[h][d] = sum_j sm_h[j] * "
+                "V_h[j][d]. attn_val flattens to length num_heads * "
+                "head_dim = 4 and broadcasts 8x over size=32 via "
+                "i mod flat_len. Vector Q/K (not scalar) is the "
+                "precondition for rope positional encoding, which "
+                "rotates head_dim=2 pairs — that upgrade lands next "
+                "tick. Upgrade path: rope, longer KV, head_dim > 2."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
+                "rope_positional_encoding_on_vector_Q_and_K",
                 "longer_kv_cache_per_head",
-                "vector_Q_and_K_per_head",
-                "rope_positional_encoding_on_Q_and_K",
+                "head_dim_greater_than_two",
             ],
         },
     }
