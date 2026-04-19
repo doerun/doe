@@ -86,14 +86,16 @@
 // guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
 //
-// Per-head vector KV layout: num_heads = 2 heads, head_dim = 2,
+// Per-head vector KV layout: num_heads = 4 heads, head_dim = 2,
 // kv_len_per_head = 2. The attn output space (num_heads * head_dim
-// = 4) broadcasts size/(num_heads*head_dim) = 8 times over the full
-// token. size must be a multiple of (num_heads*head_dim); qs must
-// be >= 2 * num_heads * head_dim * kv_len_per_head / 2 = num_heads *
-// head_dim * kv_len_per_head. Default smoke_size = 32 gives qs = 8,
-// satisfying both constraints and leaving room for rope positional
-// encoding (vector Q/K is a precondition for rope).
+// = 8) broadcasts size/(num_heads*head_dim) = 8 times over the full
+// token (size = 64 default). size must be a multiple of (num_heads
+// * head_dim); qs must satisfy 2*qs >= num_heads * 2 * head_dim *
+// kv_len_per_head = 32. Default smoke_size = 64 gives qs = 16. The
+// num_heads bump from 2 toward the manifest's 8 is the first step
+// of "manifest-shaped attention"; head_dim is left at 2 so the
+// existing single-pair rope code stays untouched (multi-pair rope
+// is the follow-up tick).
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -209,7 +211,7 @@ task done() void {
     //     first per_head_K_len entries = K_h (laid out as K_h[j][d]),
     //     next per_head_K_len = V_h.
     //   Q_h[d] = buf_out[h*head_dim + d]
-    const num_heads: u16 = 2;
+    const num_heads: u16 = 4;
     const head_dim: u16 = 2;
     const kv_len_per_head: u16 = 2;
     const per_head_K_len: u16 = head_dim * kv_len_per_head;

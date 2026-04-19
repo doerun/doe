@@ -60,8 +60,8 @@ def parse_args() -> argparse.Namespace:
         default="bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
     )
     p.add_argument("--layer-index", type=int, default=0)
-    p.add_argument("--smoke-size", type=int, default=32,
-                   help="Per-stream f32 count for smoke payloads (default 32).")
+    p.add_argument("--smoke-size", type=int, default=64,
+                   help="Per-stream f32 count for smoke payloads (default 64).")
     p.add_argument(
         "--kernel-source",
         default="bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
@@ -237,7 +237,7 @@ def main() -> int:
         #   rope table: actual cos(p), sin(p) for p in [0, 1, 2], as
         #     9-decimal-digit literals that round-trip to identical
         #     f32 bit patterns in both CSL and numpy (IEEE-754).
-        num_heads = 2
+        num_heads = 4
         head_dim = 2
         kv_len_per_head = 2
         per_head_K_len = head_dim * kv_len_per_head
@@ -511,7 +511,7 @@ def main() -> int:
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
-                "num_heads = 2; head_dim = 2; kv_len_per_head = 2; "
+                "num_heads = 4; head_dim = 2; kv_len_per_head = 2; "
                 "per_head_K_len = head_dim * kv_len_per_head; stride = 2*per_head_K_len; "
                 "flat_len = num_heads*head_dim; mlp_len = qs/2; "
                 "rope_table[p=0]=(1,0), rope_table[p=1]=(0.540302277, 0.841470957), "
@@ -537,7 +537,7 @@ def main() -> int:
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
+                "pre_attn_rmsnorm+mha_4head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
                 "+multi_layer_chain"
