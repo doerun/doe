@@ -344,15 +344,16 @@ def main() -> int:
         if streaming_required:
             # Streaming executor primitives run on simfabric, and the
             # generated E2B layer-block runner now executes real
-            # pre-attn RMSNorm + scalar attention-inner-product +
-            # residual + post-attn RMSNorm + gated MLP with every
-            # input stream of the 3-stream SdkLayout contract flowing
-            # through compute.
-            # The model receipt still cannot claim simulator_success:
-            # full multi-head attention over KV cache is not wired
-            # into this runner yet, and cs_python is not on PATH in
-            # this build environment so the simfabric driver cannot
-            # actually run the 4-stage kernel.
+            # pre-attn RMSNorm + minimal single-head attention
+            # (poly_c1 softmax over a small KV packed in
+            # layer_weights) + scalar residual + post-attn RMSNorm
+            # + gated MLP with poly_c1 activation. Every input
+            # stream of the 3-stream SdkLayout contract flows
+            # through compute. The model receipt still cannot claim
+            # simulator_success: multi-head attention (multiple
+            # heads, longer KV, rope) is not yet wired in, and
+            # cs_python is not on PATH in this build environment so
+            # the simfabric driver cannot actually run the kernel.
             execution_blocker = "full_transformer_layer_block_incomplete"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
@@ -425,48 +426,53 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_attn_inner_product_residual",
+            "layer_block_single_head_attn_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
         ],
         "layerBlockKernelEvidence": {
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
-                "now executes pre-attn RMSNorm + scalar attention-"
-                "inner-product + residual + post-attn RMSNorm + "
-                "gated MLP with a shared piecewise-polynomial GELU "
-                "approximation (stages 1 through 4 of the full-"
-                "layer pipeline). Every input stream of the 3-"
-                "stream SdkLayout contract is an operand in the "
-                "final write; rx_layer_weights is reshaped as "
-                "[gamma2, attn_scale, gate_w, up_w] (four back-to-"
-                "back quarters of size/4) to carry all four tensors "
-                "in one stream without changing the contract. The "
-                "stage-4 activation uses only +, -, *, comparison "
-                "so CSL and numpy compute the identical f32 op "
-                "sequence (no tanh / exp / erf divergence). "
-                "Remaining stages (full multi-head attention over "
-                "KV cache) land in follow-up ticks."
+                "now executes pre-attn RMSNorm + minimal single-"
+                "head attention (Q*K logits, max-centered poly_c1 "
+                "softmax, sum sm[j]*V[j], scalar residual) + post-"
+                "attn RMSNorm + gated MLP with poly_c1 activation. "
+                "Every input stream of the 3-stream SdkLayout "
+                "contract is an operand in the final write; "
+                "rx_layer_weights is reshaped as [gamma2, "
+                "attn_scale=(K,V), gate_w, up_w] (four back-to-"
+                "back quarters of size/4). The same poly_c1 family "
+                "drives both the stage-2 softmax weighting and the "
+                "stage-4 activation — only +, -, *, /, and "
+                "comparison, so CSL and numpy compute the "
+                "identical f32 op sequence (no tanh / exp / erf "
+                "divergence). Remaining stages (multi-head "
+                "attention with multiple heads, longer KV, rope) "
+                "land in follow-up ticks."
             ),
             "kernelSourcePath": layer_block_kernel_path,
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+attn_inner_product+residual"
+                "pre_attn_rmsnorm+single_head_attn_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
                 "* ple_projection[i]; "
-                "score = sum_k layer_weights[qs+k] * rmsnorm[k]  "
-                "(k in [0, size/4)); "
-                "attn_out[i] = score * rmsnorm[i] + ple_rows[i]; "
+                "Q = rmsnorm[0]; kv_len = qs/2; "
+                "logits[j] = Q * layer_weights[qs+j]  (j in [0,kv_len)); "
+                "m = max_j logits[j]; "
+                "w[j] = poly_c1(logits[j] - m); "
+                "attn_val = sum_j (w[j]/sum_j w[j]) "
+                "* layer_weights[qs+kv_len+j]; "
+                "attn_out[i] = attn_val + ple_rows[i]; "
                 "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
                 "* layer_weights[i mod qs]; "
                 "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
                 "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
-                "act(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
-                "activation_out[i] = gate * act(up * post_norm[i]) + post_norm[i]"
+                "poly_c1(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
+                "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
             "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
@@ -480,23 +486,38 @@ def main() -> int:
             ],
             "layerWeightsReshape": (
                 "layer_weights carries [gamma2(qs), attn_scale(qs), gate_w(qs), "
-                "up_w(qs)] back-to-back (qs = size/4). gamma2 broadcasts 4x "
-                "over the post-attn RMSNorm; attn_scale is dotted with "
-                "rmsnorm[0..qs) for the stage-2 score; gate_w with "
-                "post_norm[0..qs) for the MLP gate scalar; up_w with "
-                "post_norm[qs..2qs) for the MLP up scalar."
+                "up_w(qs)] back-to-back (qs = size/4). The attn_scale "
+                "quarter is further split in stage 2 as K = "
+                "wts[qs..qs+kv_len) and V = wts[qs+kv_len..2qs) with "
+                "kv_len = qs/2. gamma2 broadcasts 4x over the post-attn "
+                "RMSNorm; gate_w is dotted with post_norm[0..qs) for the "
+                "MLP gate scalar; up_w with post_norm[qs..2qs) for the "
+                "MLP up scalar."
             ),
-            "stageFourActivation": (
-                "Shared piecewise-polynomial GELU approximation "
-                "(poly_c1): 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
-                "on (-1, 1). C^1-continuous at the break points. "
-                "Uses only +, -, *, and comparison so CSL and numpy "
-                "produce an identical f32 op sequence — no "
-                "transcendental platform-dependence."
+            "sharedPolynomialC1": (
+                "poly_c1(x) = 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
+                "on (-1, 1). C^1-continuous at both break points. "
+                "Used by stage 2's softmax weighting (applied to "
+                "max-centered logits, guaranteeing sum_w >= 0.25) "
+                "AND stage 4's activation function. Uses only +, -, "
+                "*, /, and comparison so CSL and numpy produce an "
+                "identical f32 op sequence — no transcendental "
+                "platform-dependence."
+            ),
+            "stageTwoAttention": (
+                "Minimal single-head attention: Q = rmsnorm_out[0] "
+                "(scalar per-PE smoke); K[j] = wts[qs+j], V[j] = "
+                "wts[qs+kv_len+j] for j in [0, kv_len) with kv_len "
+                "= qs/2. logits = Q * K; max-centered poly_c1 "
+                "softmax; attn_val = sum_j sm[j] * V[j]; attn_out "
+                "= attn_val + rows (scalar broadcast residual). "
+                "Upgrade path: multiple heads, longer KV, rope "
+                "positional encoding."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
-                "full_multi_head_attention_over_kv_cache",
+                "multi_head_attention_with_per_head_heads_and_longer_kv",
+                "rope_positional_encoding_on_Q_and_K",
             ],
         },
     }

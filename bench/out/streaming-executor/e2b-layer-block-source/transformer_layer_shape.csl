@@ -1,7 +1,9 @@
 // Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
-//   stage 2 = attention-inner-product score + residual
-//   stage 3 = post-attn RMSNorm (gamma2 broadcast over 4x the
+//   stage 2 = minimal single-head attention: logits = Q * K[j],
+//             polynomial-C^1 softmax, attn_val = sum_j sm[j]*V[j],
+//             residual add — no transcendentals, bit-exact gate
+//   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
 //             full token)
 //   stage 4 = gated MLP with a shared piecewise-polynomial GELU
 //             approximation (no transcendentals — bit-exact
@@ -21,9 +23,8 @@
 //   rows                 = pre-norm hidden activation (x) AND residual
 //   proj                 = pre-attn RMSNorm gamma (per-element scale)
 //   wts[0..qs)           = post-attn RMSNorm gamma2 (broadcast 4x)
-//   wts[qs..2*qs)        = attention-output scale vector (inner-
-//                          product with rmsnorm[0..qs) forms the
-//                          scalar attention score)
+//   wts[qs..qs+kv_len)   = K vector (kv_len = qs/2 keys)
+//   wts[qs+kv_len..2*qs) = V vector (kv_len values)
 //   wts[2*qs..3*qs)      = MLP gate weights (inner-product with
 //                          post_norm[0..qs) forms the gate scalar)
 //   wts[3*qs..4*qs)      = MLP up weights (inner-product with
@@ -32,16 +33,26 @@
 // Combine rule:
 //     rms1             = sqrt(mean(rows[i]^2) + eps)
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
-//     score            = sum_k wts[qs+k] * rmsnorm[k]        (k in [0,qs))
-//     attn_out[i]      = score * rmsnorm[i] + rows[i]
+//     Q                = rmsnorm[0]                             (scalar)
+//     logits[j]        = Q * wts[qs+j]               (j in [0, kv_len))
+//     m                = max_j logits[j]
+//     w[j]             = poly_c1(logits[j] - m)                 (>=0)
+//     sm[j]            = w[j] / sum_j w[j]
+//     attn_val         = sum_j sm[j] * wts[qs+kv_len+j]         (scalar)
+//     attn_out[i]      = attn_val + rows[i]
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
 //     up               = sum_k wts[3*qs+k] * post_norm[qs+k] (k in [0,qs))
-//     act(x)           = 0                  if x <= -1
+//     poly_c1(x)       = 0                  if x <= -1
 //                        x                  if x >=  1
 //                        0.25 * (x+1)^2     otherwise
-//     activation_out[i]= gate * act(up * post_norm[i]) + post_norm[i]
+//     activation_out[i]= gate * poly_c1(up * post_norm[i]) + post_norm[i]
+//
+// Both the softmax weighting in stage 2 and the MLP activation in
+// stage 4 use the same poly_c1 kernel. max-centered softmax
+// guarantees poly_c1(0) = 0.25 is always in the sum, so the stage-2
+// division by sum_w is safe (sum_w >= 0.25).
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -133,15 +144,43 @@ task done() void {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2a: attn score over wts[qs..2*qs) dotted with the
-    // first quarter of rmsnorm_out.
-    var score: f32 = 0.0;
-    for (@range(u16, qs)) |k| {
-        score = score + (buf_wts[qs + k] * buf_out[k]);
+    // Stage 2: minimal single-head attention. kv_len = qs/2.
+    //   K[j] = buf_wts[qs + j]                   for j in [0, kv_len)
+    //   V[j] = buf_wts[qs + kv_len + j]          for j in [0, kv_len)
+    //   Q    = buf_out[0]   (rmsnorm_out[0]; scalar per-PE smoke)
+    const kv_len: u16 = qs / 2;
+    const q_scalar: f32 = buf_out[0];
+
+    // Stage 2a: compute max logit for numerical stability.
+    var lmax: f32 = q_scalar * buf_wts[qs];
+    for (@range(u16, kv_len)) |j| {
+        const l: f32 = q_scalar * buf_wts[qs + j];
+        if (l > lmax) { lmax = l; }
     }
-    // Stage 2b: attn_out = score * rmsnorm + residual(rows).
+
+    // Stage 2b: accumulate poly_c1 softmax weights and the
+    // unnormalized weighted-V numerator in one pass.
+    var sum_w: f32     = 0.0;
+    var weighted_v: f32 = 0.0;
+    for (@range(u16, kv_len)) |j| {
+        const l: f32 = q_scalar * buf_wts[qs + j];
+        const x: f32 = l - lmax;           // <= 0 by construction
+        var wj: f32 = 0.0;
+        if (x > -1.0) {
+            const xp1: f32 = x + 1.0;
+            const sq: f32  = xp1 * xp1;
+            wj = 0.25 * sq;
+        }
+        sum_w = sum_w + wj;
+        weighted_v = weighted_v + (wj * buf_wts[qs + kv_len + j]);
+    }
+    // sum_w >= 0.25 always (max-centered element yields poly_c1(0)=0.25),
+    // so 1/sum_w is safe.
+    const attn_val: f32 = weighted_v / sum_w;
+
+    // Stage 2c: residual add — scalar attn_val broadcast over rows.
     for (@range(u16, size)) |i| {
-        buf_out[i] = (score * buf_out[i]) + buf_rows[i];
+        buf_out[i] = attn_val + buf_rows[i];
     }
 
     // Stage 3a: post-attn RMSNorm sum-of-squares over attn_out.
