@@ -227,6 +227,8 @@ def resolve_kernel_evidence(
     entry["fixtureId"] = fixture.get("id", "")
     if "reduceStrategy" in fixture:
         entry["reduceStrategy"] = fixture["reduceStrategy"]
+    if "reduceStrategyNote" in fixture:
+        entry["reduceStrategyNote"] = fixture["reduceStrategyNote"]
     evidence = fixture.get("evidence", {})
     for k in (
         "sourceWgslPath",

@@ -95,8 +95,16 @@
           "fixtureId": { "type": "string" },
           "reduceStrategy": {
             "type": "string",
-            "enum": ["none", "on_device_fabric", "host_partial"]
+            "enum": [
+              "none",
+              "on_device_fabric",
+              "on_device_fabric_validated",
+              "on_device_fabric_quarantined",
+              "host_partial",
+              "host_reduce_partial"
+            ]
           },
+          "reduceStrategyNote": { "type": "string" },
           "reason": { "type": "string" }
         }
       }

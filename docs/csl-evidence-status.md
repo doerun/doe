@@ -46,8 +46,9 @@ simulator and verifies bit-exact or bit-close output vs numpy.
 
 - Governed-lane receipts: `bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-*/`.
 - Each fixture declares its `reduceStrategy` in the registry (enum:
-  `none` / `on_device_fabric` / `host_partial`) so the orchestration
-  tradeoff is explicit.
+  `none`, fabric-reduce variants, and host-reduced partial variants)
+  plus optional `reduceStrategyNote` so the orchestration tradeoff is
+  explicit.
 - Gate: `bench/gates/csl_runtime_fixture_gate.py --require-ready-receipts`.
 
 ### 3. Full-grid cslc compile
