@@ -130,8 +130,9 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--size", type=int, default={smoke_size})
     p.add_argument(
-        "--num-layers", type=int, default=2,
-        help="How many layer-block invocations to chain (residual stream).",
+        "--num-layers", type=int, default={num_layers_default},
+        help="How many layer-block invocations to chain (residual stream). "
+             "Default = manifest.modelConfig.numLayers ({num_layers_default}).",
     )
     p.add_argument(
         "--compile-out",
@@ -201,6 +202,7 @@ def main() -> int:
     num_layers_smoke = args.num_layers
     max_abs_err = -1.0
     per_layer_max_abs_err = [-1.0] * num_layers_smoke
+    per_layer_elapsed_ms = [-1.0] * num_layers_smoke
     passed = False
 
     # Reference numpy implementation of the full 4-stage layer block.
@@ -423,14 +425,18 @@ def main() -> int:
             rows_ref = expected_l
 
         # Device chain: same loop, threading received[L] -> rows for L+1.
+        # Per-layer elapsed-ms is recorded so timing scales visibly when
+        # the chain depth grows (e.g. 35 layers for full E2B).
         all_received = []
         rows_curr = initial_rows.copy()
         for l_idx in range(num_layers_smoke):
+            layer_start = time.time()
             received = np.empty(args.size, dtype=np.float32)
             runtime.send(rows_stream, rows_curr, nonblock=True)
             runtime.send(proj_stream, per_layer_proj[l_idx], nonblock=True)
             runtime.send(wts_stream,  per_layer_wts[l_idx],  nonblock=True)
             runtime.receive(act_stream, received, args.size, nonblock=True)
+            per_layer_elapsed_ms[l_idx] = (time.time() - layer_start) * 1000.0
             all_received.append(received.copy())
             rows_curr = received
 
@@ -477,6 +483,7 @@ def main() -> int:
             "status": run_status,
             "elapsedMs": run_elapsed_ms,
             "numLayersChained": num_layers_smoke,
+            "perLayerElapsedMs": per_layer_elapsed_ms,
             "observedBytesTransferredPerPe":
                 args.size * 4 * 4 * num_layers_smoke,
             "observedBytesTransferredTotal":
@@ -1243,6 +1250,9 @@ def main() -> int:
     manifest_path = REPO_ROOT / manifest_rel
     manifest = json.loads(manifest_path.read_text())
     per_kernel_shapes = derive_per_kernel_shapes(plan, manifest, args.smoke_size)
+    # Default chain depth comes from the manifest's modelConfig.numLayers
+    # so the smoke matches the model's real transformer-block tower depth.
+    num_layers_default = int(manifest.get("modelConfig", {}).get("numLayers", 2))
 
     # Build the comment that captures the stream contract from the plan.
     stream_contract_lines = [
@@ -1274,6 +1284,7 @@ def main() -> int:
         plan_sha256=plan_sha256,
         layer_index=args.layer_index,
         smoke_size=args.smoke_size,
+        num_layers_default=num_layers_default,
         kernel_source_rel=kernel_source_rel,
         kernel_source_sha256=kernel_source_sha256,
         region_name=layer["codeRegion"],

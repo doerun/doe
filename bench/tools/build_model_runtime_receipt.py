@@ -540,16 +540,19 @@ def main() -> int:
             **layer_block_trace_evidence,
             "multiLayerChain": (
                 "Runner now chains the layer-block kernel num_layers "
-                "times (default 2) via the streaming runtime — "
+                "times (default = manifest.modelConfig.numLayers, "
+                "i.e. 35 for E2B) via the streaming runtime — "
                 "activation_out of layer L feeds back as ple_rows of "
-                "layer L+1 with distinct per-layer ple_projection "
-                "and layer_weights. The same SdkLayout compile "
-                "artifacts are reused across layers (no recompile). "
-                "Bit-exact pass requires every layer to match under "
-                "np.array_equal."
+                "layer L+1 with distinct per-layer ple_projection and "
+                "layer_weights. The same SdkLayout compile artifacts "
+                "are reused across all layers (no recompile per "
+                "layer). Bit-exact pass requires every layer to "
+                "match under np.array_equal. perLayerElapsedMs in "
+                "the trace exposes timing scaling visibly as the "
+                "chain depth grows."
             ),
             "pendingStages": [
-                "scale_chain_to_full_e2b_35_layers",
+                "load_per_layer_weights_from_manifest_not_seeded_rng",
                 "longer_kv_cache_per_head",
                 "head_dim_greater_than_two",
             ],
