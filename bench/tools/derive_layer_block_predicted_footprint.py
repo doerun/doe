@@ -33,16 +33,40 @@ Schema: config/doe-layer-block-predicted-footprint.schema.json
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-TRACE = REPO_ROOT / "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
-MANIFEST = REPO_ROOT / "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
-OUT = REPO_ROOT / "bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json"
 GOVERNED_LANE_ROOT = REPO_ROOT / "bench/out/dual-compile-evidence/governed-lane-sdk-handoff"
+
+# Per-target manifest + output paths. Smoke-trace path is only used
+# for E2B today (no 31B layer-block smoke runner exists yet); 31B
+# derives perKernelShapes on the fly from the manifest via the
+# shared layer-block-runner helper.
+TARGETS: dict[str, dict[str, str]] = {
+    "e2b": {
+        "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+        "smokeTracePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
+        "outPath": "bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json",
+        "modelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+    },
+    "31b": {
+        "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json",
+        "smokeTracePath": "",  # no 31B smoke runner yet
+        "outPath": "bench/out/layer-block-predicted-footprint/31b-predicted-footprint.json",
+        "modelReceiptPath": "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
+    },
+}
+
+
+# Shared per-kernel shape derivation lives in the layer-block-runner
+# generator. Import it so both producers stay in sync instead of
+# duplicating the 14-pattern formula table.
+sys.path.insert(0, str(REPO_ROOT / "bench/tools"))
+from generate_e2b_layer_block_runner import derive_per_kernel_shapes  # noqa: E402
 
 
 # Pattern → governed-lane sim-success dir (relative to GOVERNED_LANE_ROOT).
@@ -165,12 +189,34 @@ def elements_per_pe(pattern: str, params: dict) -> int:
 
 
 def main() -> int:
-    trace = json.loads(TRACE.read_text())
-    manifest = json.loads(MANIFEST.read_text())
-    smoke = trace.get("layerBlockSmoke", {})
-    shapes = smoke.get("perKernelShapes") or []
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--target-model",
+        choices=sorted(TARGETS.keys()),
+        default="e2b",
+        help="Which Gemma-4 target to derive a footprint for.",
+    )
+    p.add_argument("--smoke-size", type=int, default=16,
+                   help="Only used when deriving shapes from the manifest (no smoke trace).")
+    args = p.parse_args()
+
+    target = TARGETS[args.target_model]
+    manifest_path = REPO_ROOT / target["manifestPath"]
+    smoke_trace_path = REPO_ROOT / target["smokeTracePath"] if target["smokeTracePath"] else None
+    out_path = REPO_ROOT / target["outPath"]
+
+    manifest = json.loads(manifest_path.read_text())
     num_layers = int(manifest.get("modelConfig", {}).get("numLayers", 0))
-    num_pes_smoke = int(trace.get("region", {}).get("peCount", 1))  # the stub kernel's peCount
+
+    # Two ways to source perKernelShapes: (a) read from the E2B layer-block
+    # smoke trace (existing path for E2B); (b) derive from the manifest via
+    # the shared helper (needed for 31B, which has no smoke runner yet).
+    trace = None
+    if smoke_trace_path and smoke_trace_path.exists():
+        trace = json.loads(smoke_trace_path.read_text())
+        shapes = (trace.get("layerBlockSmoke") or {}).get("perKernelShapes") or []
+    else:
+        shapes = derive_per_kernel_shapes(plan={}, manifest=manifest, smoke_size=args.smoke_size)
 
     F32 = 4
     total_bytes_per_layer = 0
@@ -276,13 +322,15 @@ def main() -> int:
     artifact = {
         "schemaVersion": 1,
         "artifactKind": "doe_layer_block_predicted_footprint",
+        "targetModel": args.target_model,
         "generatedFrom": {
-            "tracePath": str(TRACE.relative_to(REPO_ROOT)),
-            "traceSha256": sha256(TRACE),
-            "manifestPath": str(MANIFEST.relative_to(REPO_ROOT)),
-            "manifestSha256": sha256(MANIFEST),
+            "tracePath": str(smoke_trace_path.relative_to(REPO_ROOT)) if smoke_trace_path and smoke_trace_path.exists() else None,
+            "traceSha256": sha256(smoke_trace_path) if smoke_trace_path and smoke_trace_path.exists() else None,
+            "manifestPath": target["manifestPath"],
+            "manifestSha256": sha256(manifest_path),
+            "shapesSource": "smoke_trace" if trace is not None else "manifest_derived",
         },
-        "modelId": trace.get("modelId", ""),
+        "modelId": (trace or {}).get("modelId", "") or manifest.get("modelId", ""),
         "numLayers": num_layers,
         "predictionModel": {
             "name": "naive_elements_times_one_cycle_and_f32_bytes",
@@ -348,15 +396,15 @@ def main() -> int:
         ),
     }
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(artifact, indent=2) + "\n")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(artifact, indent=2) + "\n")
     ag = artifact["aggregate"]
     print(
-        f"predicted footprint: {ag['activePatternCount']} active + "
+        f"predicted footprint ({args.target_model}): {ag['activePatternCount']} active + "
         f"{ag['dormantPatternCount']} dormant patterns; "
         f"{ag['bytesPerLayerPerPe']:,} bytes/layer/PE × {num_layers} layers = "
         f"{ag['bytesPerModelPerPe']:,} bytes/PE -> "
-        f"{OUT.relative_to(REPO_ROOT)}"
+        f"{out_path.relative_to(REPO_ROOT)}"
     )
     return 0
 

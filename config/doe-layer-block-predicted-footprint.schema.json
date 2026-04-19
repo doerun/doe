@@ -18,14 +18,16 @@
     "artifactKind": { "const": "doe_layer_block_predicted_footprint" },
     "generatedFrom": {
       "type": "object",
-      "required": ["tracePath", "traceSha256", "manifestPath", "manifestSha256"],
+      "required": ["manifestPath", "manifestSha256"],
       "properties": {
-        "tracePath": { "type": "string" },
-        "traceSha256": { "type": "string" },
+        "tracePath": { "type": ["string", "null"] },
+        "traceSha256": { "type": ["string", "null"] },
         "manifestPath": { "type": "string" },
-        "manifestSha256": { "type": "string" }
+        "manifestSha256": { "type": "string" },
+        "shapesSource": { "type": "string", "enum": ["smoke_trace", "manifest_derived"] }
       }
     },
+    "targetModel": { "type": "string", "enum": ["e2b", "31b"] },
     "modelId": { "type": "string" },
     "numLayers": { "type": "integer", "minimum": 0 },
     "predictionModel": {

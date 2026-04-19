@@ -302,10 +302,17 @@ def main() -> int:
     # predicted-vs-observed diffs once step 3 (simulator execution)
     # lands a real trace.
     passed, note = run_gate(
-        "layer-block-predicted-footprint",
-        [sys.executable, str(REPO_ROOT / "bench/tools/derive_layer_block_predicted_footprint.py")],
+        "layer-block-predicted-footprint:e2b",
+        [sys.executable, str(REPO_ROOT / "bench/tools/derive_layer_block_predicted_footprint.py"),
+         "--target-model", "e2b"],
     )
-    results.append({"gate": "layer-block-predicted-footprint", "passed": passed, "note": note})
+    results.append({"gate": "layer-block-predicted-footprint:e2b", "passed": passed, "note": note})
+    passed, note = run_gate(
+        "layer-block-predicted-footprint:31b",
+        [sys.executable, str(REPO_ROOT / "bench/tools/derive_layer_block_predicted_footprint.py"),
+         "--target-model", "31b"],
+    )
+    results.append({"gate": "layer-block-predicted-footprint:31b", "passed": passed, "note": note})
 
     # 0k. WGSL backend equivalence crosswalk. Ties one WGSL source to
     # every Doe backend that can compile it (csl-memcpy, csl-sdklayout,
