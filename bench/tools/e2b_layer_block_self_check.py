@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """One-shot pipeline smoke for the E2B layer-block in-loop work.
 
-Runs four steps in order, then asserts the contract:
+Runs five steps in order (early-exits on STEP 0 drift), then asserts
+the contract:
 
+  0. test_e2b_layer_block_compute.py
+       -> golden-value unit test for the canonical compute_layer_block
+          (early-exit gate: if goldens drifted, downstream regen is
+          skipped so stale traces don't propagate the divergence)
   1. generate_e2b_layer_block_runner.py
        -> regen the SDK runner from the live CSL kernel + manifest
   2. emit_e2b_layer_block_synthetic_trace.py
@@ -13,6 +18,8 @@ Runs four steps in order, then asserts the contract:
        -> regen the model receipt; binds steps 2 + 3 by path/sha
 
 Then asserts:
+  C0. (implicit) STEP 0 unit test passed — compute_layer_block bit-
+      exactness matches the captured goldens at every sentinel index
   C1. live kernel sha equals synthetic-trace's kernelSourceSha256InTrace
       (no drift between fixture and source)
   C2. receipt validates against doe-model-runtime-receipt.schema.json
@@ -105,6 +112,22 @@ def main() -> int:
     schema_path = REPO_ROOT / "config/doe-model-runtime-receipt.schema.json"
 
     print("E2B layer-block self-check (in-loop pipeline)")
+    print()
+    print("STEP 0: golden-value unit test for compute_layer_block")
+    ok, msg = run_step("unit-test", [
+        "python3", "bench/tools/test_e2b_layer_block_compute.py",
+    ])
+    if not ok:
+        print(f"  FAILED: {msg}")
+        print()
+        print("ABORT: compute_layer_block goldens drifted from the unit "
+              "test. Skipping downstream regen so stale traces don't "
+              "propagate the divergence. If the kernel changed "
+              "intentionally, regenerate the goldens via:")
+        print("  PRINT_GOLDENS=1 python3 bench/tools/test_e2b_layer_block_compute.py")
+        print("then update VARYING_GOLDEN_HEX in the test and re-run.")
+        return 1
+
     print()
     print("STEP 1: regen runner from live CSL kernel + manifest")
     ok, msg = run_step("runner", [
