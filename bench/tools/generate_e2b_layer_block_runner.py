@@ -135,6 +135,10 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--size", type=int, default={smoke_size})
     p.add_argument(
+        "--num-layers", type=int, default=2,
+        help="How many layer-block invocations to chain (residual stream).",
+    )
+    p.add_argument(
         "--compile-out",
         default="bench/out/streaming-executor/e2b-layer-block-smoke",
     )
@@ -199,34 +203,32 @@ def main() -> int:
 
     run_start = time.time()
     runtime = SdkRuntime(compile_artifacts, platform, memcpy_required=False)
+    num_layers_smoke = args.num_layers
     max_abs_err = -1.0
+    per_layer_max_abs_err = [-1.0] * num_layers_smoke
     passed = False
-    try:
-        runtime.load()
-        runtime.run()
 
-        rng = np.random.default_rng(seed=223)
-        rows = rng.standard_normal(size=args.size, dtype=np.float32)
-        proj = rng.standard_normal(size=args.size, dtype=np.float32)
-        wts  = rng.standard_normal(size=args.size, dtype=np.float32)
-        # Four-stage reference mirroring the CSL kernel's in-order
-        # scalar f32 accumulations so np.array_equal can serve as the
-        # bit-exact pass gate. numpy's vectorised .sum() uses pairwise
-        # summation which diverges from device left-to-right order.
+    # Reference numpy implementation of the full 4-stage layer block.
+    # Lifted into a helper so the multi-layer chain below can call it
+    # once per layer with distinct per-layer ple_projection and
+    # layer_weights. All operations mirror the CSL kernel's in-order
+    # scalar f32 accumulations so np.array_equal serves as the
+    # bit-exact pass gate.
+    def compute_layer_block(rows, proj, wts, size):
         # layer_weights reshape: four back-to-back quarters
-        # [gamma2, attn_scale, gate_w, up_w].
-        assert args.size % 4 == 0, "kernel requires size % 4 == 0"
-        qs = args.size // 4
+        # [gamma2, per_head_KV, gate_w, up_w].
+        assert size % 4 == 0, "kernel requires size % 4 == 0"
+        qs = size // 4
         rmsnorm_eps = np.float32(1.0e-6)
         # Stage 1: pre-attn RMSNorm.
         sum_sq = np.float32(0.0)
         for v in rows:
             sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
-        mean_sq = np.float32(sum_sq / np.float32(args.size))
+        mean_sq = np.float32(sum_sq / np.float32(size))
         rms = np.float32(np.sqrt(np.float32(mean_sq + rmsnorm_eps)))
         inv_rms = np.float32(np.float32(1.0) / rms)
-        rmsnorm_out = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        rmsnorm_out = np.empty(size, dtype=np.float32)
+        for i in range(size):
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
@@ -244,7 +246,7 @@ def main() -> int:
         per_head_K_len = head_dim * kv_len_per_head
         per_head_stride = 2 * per_head_K_len
         attn_flat_len = num_heads * head_dim
-        assert args.size % attn_flat_len == 0, (
+        assert size % attn_flat_len == 0, (
             "size must be divisible by num_heads * head_dim"
         )
         assert qs * 2 >= num_heads * per_head_stride, (
@@ -333,8 +335,8 @@ def main() -> int:
                     )
             for d in range(head_dim):
                 attn_vals[q_base + d] = np.float32(weighted_v[d] / sum_w)
-        attn_out = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        attn_out = np.empty(size, dtype=np.float32)
+        for i in range(size):
             k_idx = i - (i // attn_flat_len) * attn_flat_len
             attn_out[i] = np.float32(
                 np.float32(attn_vals[k_idx]) + np.float32(rows[i])
@@ -344,11 +346,11 @@ def main() -> int:
         sum_sq2 = np.float32(0.0)
         for v in attn_out:
             sum_sq2 = np.float32(sum_sq2 + np.float32(v) * np.float32(v))
-        mean_sq2 = np.float32(sum_sq2 / np.float32(args.size))
+        mean_sq2 = np.float32(sum_sq2 / np.float32(size))
         rms2 = np.float32(np.sqrt(np.float32(mean_sq2 + rmsnorm_eps)))
         inv_rms2 = np.float32(np.float32(1.0) / rms2)
-        post_norm = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        post_norm = np.empty(size, dtype=np.float32)
+        for i in range(size):
             g_idx = i
             while g_idx >= qs:
                 g_idx -= qs
@@ -387,23 +389,68 @@ def main() -> int:
             xp1 = np.float32(x + np.float32(1.0))
             sq = np.float32(xp1 * xp1)
             return np.float32(np.float32(0.25) * sq)
-        expected = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        expected = np.empty(size, dtype=np.float32)
+        for i in range(size):
             pre_act = np.float32(up * np.float32(post_norm[i]))
             act = act_poly_c1(pre_act)
             expected[i] = np.float32(
                 np.float32(gate * act) + np.float32(post_norm[i])
             )
-        received = np.empty(args.size, dtype=np.float32)
+        return expected
 
-        runtime.send(rows_stream, rows, nonblock=True)
-        runtime.send(proj_stream, proj, nonblock=True)
-        runtime.send(wts_stream,  wts,  nonblock=True)
-        runtime.receive(act_stream, received, args.size, nonblock=True)
+    # Multi-layer chain. Each layer reads its own ple_projection and
+    # layer_weights; activation_out of layer L is fed back as ple_rows
+    # of layer L+1 (the residual stream pattern of a transformer block
+    # tower). The same SdkLayout compile artifacts are reused across
+    # layers via the streaming-runtime send/receive primitives — no
+    # recompile per layer.
+    try:
+        runtime.load()
+        runtime.run()
+
+        rng = np.random.default_rng(seed=223)
+        initial_rows = rng.standard_normal(size=args.size, dtype=np.float32)
+        per_layer_proj: list = []
+        per_layer_wts:  list = []
+        for _ in range(num_layers_smoke):
+            per_layer_proj.append(rng.standard_normal(size=args.size, dtype=np.float32))
+            per_layer_wts.append(rng.standard_normal(size=args.size, dtype=np.float32))
+
+        # Numpy reference: chain compute_layer_block num_layers_smoke
+        # times, threading expected[L] -> rows for L+1.
+        all_expected = []
+        rows_ref = initial_rows.copy()
+        for l_idx in range(num_layers_smoke):
+            expected_l = compute_layer_block(
+                rows_ref, per_layer_proj[l_idx], per_layer_wts[l_idx], args.size
+            )
+            all_expected.append(expected_l)
+            rows_ref = expected_l
+
+        # Device chain: same loop, threading received[L] -> rows for L+1.
+        all_received = []
+        rows_curr = initial_rows.copy()
+        for l_idx in range(num_layers_smoke):
+            received = np.empty(args.size, dtype=np.float32)
+            runtime.send(rows_stream, rows_curr, nonblock=True)
+            runtime.send(proj_stream, per_layer_proj[l_idx], nonblock=True)
+            runtime.send(wts_stream,  per_layer_wts[l_idx],  nonblock=True)
+            runtime.receive(act_stream, received, args.size, nonblock=True)
+            all_received.append(received.copy())
+            rows_curr = received
+
         runtime.stop()
 
-        max_abs_err = float(np.max(np.abs(received - expected)))
-        passed = bool(np.array_equal(received, expected))
+        # Per-layer parity. Pass requires every layer to be bit-exact.
+        layer_passed = []
+        for l_idx in range(num_layers_smoke):
+            err = float(np.max(np.abs(all_received[l_idx] - all_expected[l_idx])))
+            per_layer_max_abs_err[l_idx] = err
+            layer_passed.append(
+                bool(np.array_equal(all_received[l_idx], all_expected[l_idx]))
+            )
+        max_abs_err = max(per_layer_max_abs_err) if per_layer_max_abs_err else -1.0
+        passed = bool(all(layer_passed))
         run_status = "succeeded" if passed else "mismatch"
     except Exception as exc:  # pylint: disable=broad-except
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]

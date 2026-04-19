@@ -194,12 +194,13 @@
     },
     "executionBlocker": {
       "type": "string",
-      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. 'sdk_layout_streaming_executor_missing' and 'streaming_executor_not_bound_to_execution_plan' are legacy — the streaming-executor primitives exist on simfabric and the layer-block runner now executes real RMSNorm + attention-inner-product + residual with all 3 streams flowing through compute. The remaining blocker is 'cs_python_not_available_in_build_environment' (the current build machine lacks the Cerebras SDK Python interpreter needed to actually drive simfabric); once cs_python is on PATH the runner can promote executionStatus to simulator_success.",
+      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. 'sdk_layout_streaming_executor_missing' and 'streaming_executor_not_bound_to_execution_plan' are legacy. The streaming-executor primitives exist on simfabric, and the layer-block runner now executes real pre-attn RMSNorm + scalar attention-inner-product + residual + post-attn RMSNorm + a gated MLP ReLU/GELU stub with all 3 streams flowing through compute. The current blocker is the remaining full transformer layer block wiring: full multi-head attention over KV cache plus replacement of the bit-exact ReLU stand-in with a shared polynomial GELU path.",
       "enum": [
         "none",
         "sdk_layout_streaming_executor_missing",
         "streaming_executor_not_bound_to_execution_plan",
         "cs_python_not_available_in_build_environment",
+        "full_transformer_layer_block_incomplete",
         "hardware_endpoint_unavailable",
         "full_grid_compile_unattempted",
         "partial_kernel_coverage",
@@ -213,7 +214,29 @@
         "description": { "type": "string" },
         "tracesDir": { "type": "string" },
         "tracesSample": { "type": "array", "items": { "type": "string" } },
-        "primitivesProven": { "type": "array", "items": { "type": "string" } }
+        "primitivesProven": { "type": "array", "items": { "type": "string" } },
+        "layerBlockKernelEvidence": {
+          "type": "object",
+          "description": "Positive simulator evidence for the generated E2B layer-block smoke runner. This does not by itself promote model-level executionStatus; it records which real layer stages have run under simfabric and what remains before a full model-level simulator_success claim is honest.",
+          "properties": {
+            "description": { "type": "string" },
+            "kernelSourcePath": { "type": "string" },
+            "kernelSourceSha256": { "type": "string" },
+            "kernelIsStub": { "type": "boolean" },
+            "kernelStage": { "type": "string" },
+            "combineRule": { "type": "string" },
+            "generatorPath": { "type": "string" },
+            "generatedRunnerPath": { "type": "string" },
+            "numericalParityTarget": { "type": "string" },
+            "streamsExercisedInCompute": { "type": "array", "items": { "type": "string" } },
+            "layerWeightsReshape": { "type": "string" },
+            "pendingStages": { "type": "array", "items": { "type": "string" } },
+            "tracePath": { "type": "string" },
+            "traceSha256": { "type": "string" },
+            "traceStatus": { "type": "string" },
+            "executedRun": { "type": "object" }
+          }
+        }
       }
     },
     "fullGridCompileProbeEvidence": {

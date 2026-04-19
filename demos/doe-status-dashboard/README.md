@@ -41,13 +41,21 @@ already done that. Schema validation lives in `bench/gates/schema_gate.py`.
 
 The `bench/out/streaming-executor/` traces prove stream primitives run on
 simfabric (stream I/O, compute transform, region-to-region chain, multi-PE
-SPMD, compile cache, 4-stage layer-block chain). The E2B receipt still
-carries `executionStatus=not_attempted` because no generated layer-block
-runner exists yet. The dashboard renders these as separate rows so "streaming
-executor primitives: pass" doesn't get conflated with "full-model CSL
+SPMD, compile cache, 4-stage layer-block chain). The generated E2B
+layer-block smoke runner now also records a non-stub simulator trace for
+pre-attn RMSNorm, scalar attention-inner-product with residual, and
+post-attn RMSNorm, plus a gated MLP stage with bit-exact ReLU standing
+in for GELU. The E2B receipt still carries
+`executionStatus=not_attempted` because full multi-head attention over
+KV cache and a shared polynomial GELU replacement are not wired into the
+layer-block runner yet.
+The dashboard renders these as separate rows so "partial layer-block
+simulator proof: pass" doesn't get conflated with "full-model CSL
 execution: blocked".
 
 The schema's `executionBlocker` enum was widened with
-`streaming_executor_not_bound_to_execution_plan` to name this gap precisely;
-the legacy `sdk_layout_streaming_executor_missing` remains in the enum for
-backward compatibility but is no longer emitted by `build_model_runtime_receipt.py`.
+`full_transformer_layer_block_incomplete` to name this gap precisely; the
+legacy `sdk_layout_streaming_executor_missing` and
+`streaming_executor_not_bound_to_execution_plan` values remain in the enum
+for backward compatibility but are no longer emitted by
+`build_model_runtime_receipt.py`.

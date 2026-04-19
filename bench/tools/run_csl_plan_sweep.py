@@ -98,7 +98,16 @@ def rel(p: Path) -> str:
 
 
 def run_gate(label: str, cmd: list[str]) -> tuple[bool, str]:
-    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    except FileNotFoundError as exc:
+        missing = exc.filename or cmd[0]
+        summary = (
+            f"missing executable {missing!r}; set DOE_CS_PYTHON or "
+            "DOE_CSL_TOOLCHAIN for SDK-backed CSL simulator gates"
+        )
+        print(f"  [FAIL] {label}: {summary}")
+        return False, summary
     passed = proc.returncode == 0
     tail = (proc.stdout or "").strip().splitlines()[-1:] + (proc.stderr or "").strip().splitlines()[-1:]
     summary = " ".join(tail)[:240] if tail else ""
