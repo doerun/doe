@@ -878,6 +878,13 @@ def derive_per_kernel_shapes(
         "emitterWidened2D": False,
         "paramsShape": {
             "width": smoke_size,
+            # hidden_size is a PE-program param (not a layout --params), but
+            # it's the key dim for per-PE element count in reduction —
+            # each PE sums hidden_size f32 values per token. Carry it here
+            # so the predicted-footprint derivation has the data it needs
+            # (prior formula returned 1 elem/PE and mispredicted observed
+            # by ~1000x — predictedToObservedBytesRatio fed back the fix).
+            "hidden_size": hidden_dim or 64,
         },
         "cslcParamsString": f"width:{smoke_size}",
         "derivationSource": (
@@ -885,7 +892,9 @@ def derive_per_kernel_shapes(
             "only `param width` at layout level; pe_id/num_pes/reduce_color "
             "are set per-tile by the layout not via --params). Single-PE "
             "mode per emit_csl_reduction.zig: each PE processes one full "
-            "token — width <= max_seq_len <= i16, so 1-D stays fine."
+            "token — width <= max_seq_len <= i16, so 1-D stays fine. "
+            "hidden_size is a PE-program param carried here for the "
+            "predicted-footprint per-PE element derivation only."
         ),
         "manifestSteps": [
             s["name"] for s in manifest.get("steps", [])

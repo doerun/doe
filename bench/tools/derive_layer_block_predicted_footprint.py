@@ -135,8 +135,12 @@ def elements_per_pe(pattern: str, params: dict) -> int:
     if pattern == "rope":
         return int(p.get("head_dim", 0)) * int(p.get("num_pairs", 1))
     if pattern == "reduction":
-        # single-PE-per-token; hidden reduction = hiddenDim ops.
-        return 1
+        # Single-PE-per-token mode (emit_csl_reduction.zig): each PE sums
+        # hidden_size f32 values for one token. Prior formula returned 1
+        # per PE and underpredicted observed by ~1000x for the E2B
+        # hiddenDim=1536 case — divergence ratio fed back and this
+        # correction uses hidden_size from the carried paramsShape.
+        return int(p.get("hidden_size", 1))
     if pattern == "tiled_matmul":
         return int(p.get("Mt", 0)) * int(p.get("Kt", 0)) * int(p.get("Nt", 0))
     if pattern in ("attention_tiled",):
