@@ -549,18 +549,23 @@ def main() -> int:
                 "layer L+1 with distinct per-layer ple_projection and "
                 "layer_weights. The same SdkLayout compile artifacts "
                 "are reused across all layers (no recompile per "
-                "layer). Bit-exact pass requires every layer to "
-                "match under np.array_equal. perLayerElapsedMs in "
-                "the trace exposes timing scaling visibly as the "
-                "chain depth grows. dataSource records the per-"
-                "layer-index deterministic seed scheme "
-                "(PER_LAYER_BASE + l_idx) so a future weight loader "
-                "can swap synthetic layers for manifest-derived "
-                "tensors one layer at a time without disturbing "
-                "the bit-exact gate on the remaining layers."
+                "layer). Bit-exact pass requires every layer to match "
+                "under np.array_equal. perLayerElapsedMs in the trace "
+                "exposes timing scaling visibly as the chain depth "
+                "grows. dataSource has been promoted from a single-"
+                "kind seeded RNG to a real-weight-loader bridge: each "
+                "layer's projection/weights load from a manifest-"
+                "derived tensor slice in --weights-dir if present, "
+                "else fall back to a per-layer-index seed. dataSource."
+                "kind summarizes (synthetic_seeded_rng / "
+                "manifest_weights_with_seed_fallback / "
+                "manifest_weights_only); perLayerProjSource and "
+                "perLayerWtsSource record which path each layer took. "
+                "A release-grade parity claim can demand 'all "
+                "manifest_slice'; early smoke runs accept synthetic."
             ),
             "pendingStages": [
-                "load_per_layer_weights_from_manifest_not_seeded_rng",
+                "publish_real_per_layer_weight_slices_to_weights_dir",
                 "longer_kv_cache_per_head",
                 "head_dim_toward_manifest_512",
             ],

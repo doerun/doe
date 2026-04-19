@@ -59,6 +59,14 @@ def parse_args() -> argparse.Namespace:
              "Default = manifest.modelConfig.numLayers (35).",
     )
     p.add_argument(
+        "--weights-dir", default="",
+        help="Directory containing per-layer weight slice files named "
+             "<weight_key>.f32. When a slice exists for a layer it loads the "
+             "first --size f32 values; otherwise the loader falls back to a "
+             "deterministic per-layer-index seed. Empty (default) means "
+             "every layer uses the seed fallback.",
+    )
+    p.add_argument(
         "--compile-out",
         default="bench/out/streaming-executor/e2b-layer-block-smoke",
     )
@@ -371,28 +379,69 @@ def main() -> int:
         runtime.load()
         runtime.run()
 
-        # Per-layer-index deterministic seeds. Pinning each layer's
-        # data source independently lets a future loader (manifest
-        # weights, Doppler-exported slice) swap in real per-layer
-        # tensors one layer at a time without disturbing the bit-
-        # exact gate on the remaining synthetic layers.
+        # Real-weight-loader bridge with per-layer-index seed fallback.
+        # Each layer's projection/weights load from a manifest-derived
+        # tensor slice if present in --weights-dir, else fall back to
+        # a deterministic seed. Per-layer source-kind is recorded so
+        # the parity-contract gate can read which layers used real
+        # weights vs synthetic.
         INITIAL_ROWS_SEED = 1000
         PER_LAYER_BASE    = 2000
+        weights_dir_abs = (
+            (REPO_ROOT / args.weights_dir) if args.weights_dir else None
+        )
+
+        def load_layer_data(weight_key, fallback_seed, size, kind):
+            """Load size f32 values from <weights_dir>/<weight_key>.f32 if
+            available; else generate via default_rng(fallback_seed).
+            Returns (np.ndarray, source_kind_str)."""
+            if weights_dir_abs is not None:
+                slice_path = weights_dir_abs / (weight_key + ".f32")
+                if slice_path.exists():
+                    raw = np.fromfile(
+                        slice_path, dtype=np.float32, count=size
+                    )
+                    if raw.shape[0] == size:
+                        rel = str(slice_path.relative_to(REPO_ROOT))
+                        return raw, "manifest_slice:" + rel
+            rng_l = np.random.default_rng(seed=fallback_seed)
+            return (
+                rng_l.standard_normal(size=size, dtype=np.float32),
+                "synthetic_seed:" + str(fallback_seed),
+            )
+
         rng_init = np.random.default_rng(seed=INITIAL_ROWS_SEED)
         initial_rows = rng_init.standard_normal(size=args.size, dtype=np.float32)
         per_layer_proj: list = []
         per_layer_wts:  list = []
         per_layer_seeds: list = []
+        per_layer_proj_source: list = []
+        per_layer_wts_source:  list = []
         for l_idx in range(num_layers_smoke):
             seed_l = PER_LAYER_BASE + l_idx
-            rng_l = np.random.default_rng(seed=seed_l)
-            per_layer_proj.append(
-                rng_l.standard_normal(size=args.size, dtype=np.float32)
+            proj_l, proj_src = load_layer_data(
+                "per_layer_inputs.perLayerModelProjection.layer" + str(l_idx),
+                seed_l, args.size, "projection",
             )
-            per_layer_wts.append(
-                rng_l.standard_normal(size=args.size, dtype=np.float32)
+            wts_l, wts_src = load_layer_data(
+                "layer." + str(l_idx) + ".smoke_layer_block_wts",
+                seed_l, args.size, "weights",
             )
+            per_layer_proj.append(proj_l)
+            per_layer_wts.append(wts_l)
             per_layer_seeds.append(seed_l)
+            per_layer_proj_source.append(proj_src)
+            per_layer_wts_source.append(wts_src)
+        # Summarize whether the run used any real-weight slices.
+        all_sources = per_layer_proj_source + per_layer_wts_source
+        is_synthetic = all(s.startswith("synthetic_seed:") for s in all_sources)
+        is_manifest  = all(s.startswith("manifest_slice:") for s in all_sources)
+        if is_synthetic:
+            data_source_kind = "synthetic_seeded_rng"
+        elif is_manifest:
+            data_source_kind = "manifest_weights_only"
+        else:
+            data_source_kind = "manifest_weights_with_seed_fallback"
 
         # Numpy reference: chain compute_layer_block num_layers_smoke
         # times, threading expected[L] -> rows for L+1.
@@ -470,17 +519,25 @@ def main() -> int:
             "observedBytesTransferredTotal":
                 args.size * 4 * 4 * num_layers_smoke,
             "dataSource": {
-                "kind": "synthetic_seeded_rng",
+                "kind": data_source_kind,
                 "initialRowsSeed": INITIAL_ROWS_SEED,
                 "perLayerBase": PER_LAYER_BASE,
                 "perLayerSeeds": per_layer_seeds,
+                "weightsDir": str(weights_dir_abs.relative_to(REPO_ROOT))
+                              if weights_dir_abs and weights_dir_abs.exists()
+                              else None,
+                "perLayerProjSource": per_layer_proj_source,
+                "perLayerWtsSource":  per_layer_wts_source,
                 "swapBoundary": (
-                    "Each layer's projection and weights derive from "
-                    "rng_l = default_rng(PER_LAYER_BASE + l_idx). A "
-                    "future weight loader can replace the per_layer_proj/"
-                    "per_layer_wts arrays one layer at a time without "
-                    "changing the bit-exact gate on the remaining "
-                    "synthetic layers."
+                    "Each layer's projection and weights load via "
+                    "load_layer_data(weight_key, seed_l, size). When "
+                    "<weights-dir>/<weight_key>.f32 exists, the loader "
+                    "reads the first --size f32 values; otherwise it "
+                    "falls back to default_rng(PER_LAYER_BASE + l_idx). "
+                    "perLayerProjSource and perLayerWtsSource record "
+                    "which path each layer took, so the parity-contract "
+                    "gate can demand 'all manifest_slice' for a release-"
+                    "grade claim or accept synthetic for early smoke."
                 ),
             },
             "numericalParity": {
