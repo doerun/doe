@@ -22,7 +22,7 @@
             "dir": "EGRESS",
             "fabric_color": 5,
             "txrx_mode": "4:4",
-            "x_coord": 22,
+            "x_coord": 10,
             "y_coord": 1
         },
         {
@@ -30,7 +30,7 @@
             "dir": "INGRESS",
             "fabric_color": 0,
             "txrx_mode": "4:4",
-            "x_coord": 22,
+            "x_coord": 10,
             "y_coord": 0
         }
     ]

@@ -2,7 +2,9 @@
 // Each PE processes a contiguous chunk of the input array.
 
 // Grid width is set at compile time via --params=width:<N>.
-param width: i16;
+// u16 rather than i16 so layouts beyond 32,767 PEs still coerce — the
+// 31B smoke grid is 58,056 PEs, which overflows i16.
+param width: u16;
 
 const memcpy = @import_module("<memcpy/get_params>", .{
     .width = width,
@@ -12,7 +14,7 @@ const memcpy = @import_module("<memcpy/get_params>", .{
 layout {
     @set_rectangle(width, 1);
 
-    for (@range(i16, width)) |pe_x| {
+    for (@range(u16, width)) |pe_x| {
         @set_tile_code(pe_x, 0, "pe_program.csl", .{
             .memcpy_params = memcpy.get_params(pe_x),
             .pe_id = pe_x,

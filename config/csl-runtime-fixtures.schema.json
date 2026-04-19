@@ -32,6 +32,7 @@
         "element_wise",
         "fused_gemv_dequant",
         "gather",
+        "kv_write",
         "reduction",
         "rope",
         "sample",
@@ -102,6 +103,11 @@
         },
         "backendCoverage": { "$ref": "#/$defs/backendCoverage" },
         "evidence": { "$ref": "#/$defs/evidence" },
+        "reduceStrategy": {
+          "type": "string",
+          "description": "How the kernel produces its final output across PEs. 'none' = no reduction, each PE's output is independent. 'on_device_fabric' = fabric allreduce chain runs on WSE and the host reads a final result. 'host_partial' = each PE exports a partial, host does the final reduction (used when fabric chain teardown is blocked). Surfaces the orchestration tradeoff so downstream tooling can distinguish a kernel that needs a host reduction step from one whose per-PE output is already the answer.",
+          "enum": ["none", "on_device_fabric", "host_partial"]
+        },
         "nextAction": { "type": "string", "minLength": 1 }
       }
     }

@@ -106,45 +106,27 @@ pub fn main() !void {
         try file.writeAll(msl);
     }
 
+    const report_fmt = "{{\"kind\":\"runtime_compile_report\",\"shader\":\"{s}\",\"shaderPath\":\"{s}\",\"leanVerified\":{s},\"mslBytes\":{d},\"minCount\":{d},\"doeSizesPresent\":{s},\"needsSizesBuf\":{s},\"dispatchPreconditions\":{d},\"textureDispatchPreconditions\":{d},\"workgroupSize\":[{d},{d},{d}]}}\n";
+    const report_args = .{
+        shader_name,
+        config.shader_path,
+        boolText(lean_proof.lean_verified),
+        translation.len,
+        min_count,
+        boolText(doe_sizes_present),
+        boolText(translation.info.needs_sizes_buf),
+        translation.info.dispatch_preconditions.len,
+        translation.info.texture_dispatch_preconditions.len,
+        translation.info.workgroup_size[0],
+        translation.info.workgroup_size[1],
+        translation.info.workgroup_size[2],
+    };
+
     if (config.out_path) |path| {
         const file = try std.fs.cwd().createFile(path, .{});
         defer file.close();
-        const writer = file.deprecatedWriter();
-        try writer.print(
-            "{{\"kind\":\"runtime_compile_report\",\"shader\":\"{s}\",\"shaderPath\":\"{s}\",\"leanVerified\":{s},\"mslBytes\":{d},\"minCount\":{d},\"doeSizesPresent\":{s},\"needsSizesBuf\":{s},\"dispatchPreconditions\":{d},\"textureDispatchPreconditions\":{d},\"workgroupSize\":[{d},{d},{d}]}}\n",
-            .{
-                shader_name,
-                config.shader_path,
-                boolText(lean_proof.lean_verified),
-                translation.len,
-                min_count,
-                boolText(doe_sizes_present),
-                boolText(translation.info.needs_sizes_buf),
-                translation.info.dispatch_preconditions.len,
-                translation.info.texture_dispatch_preconditions.len,
-                translation.info.workgroup_size[0],
-                translation.info.workgroup_size[1],
-                translation.info.workgroup_size[2],
-            },
-        );
+        try file.deprecatedWriter().print(report_fmt, report_args);
     } else {
-        const writer = std.fs.File.stdout().deprecatedWriter();
-        try writer.print(
-            "{{\"kind\":\"runtime_compile_report\",\"shader\":\"{s}\",\"shaderPath\":\"{s}\",\"leanVerified\":{s},\"mslBytes\":{d},\"minCount\":{d},\"doeSizesPresent\":{s},\"needsSizesBuf\":{s},\"dispatchPreconditions\":{d},\"textureDispatchPreconditions\":{d},\"workgroupSize\":[{d},{d},{d}]}}\n",
-            .{
-                shader_name,
-                config.shader_path,
-                boolText(lean_proof.lean_verified),
-                translation.len,
-                min_count,
-                boolText(doe_sizes_present),
-                boolText(translation.info.needs_sizes_buf),
-                translation.info.dispatch_preconditions.len,
-                translation.info.texture_dispatch_preconditions.len,
-                translation.info.workgroup_size[0],
-                translation.info.workgroup_size[1],
-                translation.info.workgroup_size[2],
-            },
-        );
+        try std.fs.File.stdout().deprecatedWriter().print(report_fmt, report_args);
     }
 }

@@ -24,7 +24,8 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-elementwise-double/trace.json"
       },
-      "nextAction": "Use this as the smallest end-to-end runner-template fixture."
+      "nextAction": "Use this as the smallest end-to-end runner-template fixture.",
+      "reduceStrategy": "none"
     },
     {
       "id": "gather",
@@ -48,7 +49,8 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gather/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gather/trace.json"
       },
-      "nextAction": "Promote embedding-table role metadata into the runner template."
+      "nextAction": "Promote embedding-table role metadata into the runner template.",
+      "reduceStrategy": "none"
     },
     {
       "id": "rope",
@@ -72,7 +74,8 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-rope/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-rope/trace.json"
       },
-      "nextAction": "Carry cosine/sine fixture generation through the runner template."
+      "nextAction": "Carry cosine/sine fixture generation through the runner template.",
+      "reduceStrategy": "none"
     },
     {
       "id": "attention-linear",
@@ -96,7 +99,8 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-linear/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-linear/trace.json"
       },
-      "nextAction": "Graduate this shape into attention_tiled and attention_decode."
+      "nextAction": "Graduate this shape into attention_tiled and attention_decode.",
+      "reduceStrategy": "none"
     },
     {
       "id": "reduce-sum-workgroup",
@@ -120,7 +124,8 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-reduce-sum-workgroup/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-reduce-sum-workgroup/trace.json"
       },
-      "nextAction": "Use this as the reduction template before tiled matmul and decode attention."
+      "nextAction": "Use this as the reduction template before tiled matmul and decode attention.",
+      "reduceStrategy": "none"
     },
     {
       "id": "tiled-matmul",
@@ -144,27 +149,158 @@
         "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-tiled-matmul/driver-result.json",
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-tiled-matmul/trace.json"
       },
-      "nextAction": "Use this as the collectives_2d template for attention_tiled and attention_decode. Numerical parity at P=2 is bit-exact; scale P for Gemma E2B shapes after validating runtime timing on CS system."
+      "nextAction": "Use this as the collectives_2d template for attention_tiled and attention_decode. Numerical parity at P=2 is bit-exact; scale P for Gemma E2B shapes after validating runtime timing on CS system.",
+      "reduceStrategy": "on_device_fabric"
     },
     {
-      "id": "gelu",
-      "kernelPattern": "element_wise",
-      "runtimeMode": "compile-only",
-      "governedStatus": "compile_ready",
+      "id": "attention-tiled",
+      "kernelPattern": "attention_tiled",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
       "backendCoverage": {
         "vulkan": "artifact_present",
         "metal": "compile_validated",
         "d3d12": "compile_validated",
-        "csl": "compile_ready"
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/attention-tiled/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/attention-tiled",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/attention-tiled-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/attention-tiled-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/attention-tiled-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/attention_tiled_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-tiled/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-tiled/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-tiled/trace.json"
+      },
+      "nextAction": "Scale kv_len/head_dim to Gemma E2B shapes after fused attention_tiled + projection is verified in the full E2B graph lane.",
+      "reduceStrategy": "none"
+    },
+    {
+      "id": "attention-decode",
+      "kernelPattern": "attention_decode",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/attention-decode/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/attention-decode",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/attention-decode-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/attention-decode-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/attention-decode-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/attention_decode_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-decode/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-decode/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-attention-decode/trace.json"
+      },
+      "nextAction": "Token-loop wiring: pair with fused_gemv_dequant + sample for a full decode step. KV-cache residency policy still pending.",
+      "reduceStrategy": "none"
+    },
+    {
+      "id": "fused-gemv-dequant",
+      "kernelPattern": "fused_gemv_dequant",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/fused-gemv-dequant/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/fused-gemv-dequant",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/fused-gemv-dequant-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/fused-gemv-dequant-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/fused-gemv-dequant-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/fused_gemv_dequant_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-fused-gemv-dequant/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-fused-gemv-dequant/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-fused-gemv-dequant/trace.json"
+      },
+      "nextAction": "Host-side reduce variant \u2014 the primary emitter's fabric allreduce still has an async-send teardown stall. Next step is adopting the canonical collectives_2d allreduce module for on-device reduction. Dequant + per-PE GEMV correctness is already verified here.",
+      "reduceStrategy": "host_partial"
+    },
+    {
+      "id": "sample",
+      "kernelPattern": "sample",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/sample/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/sample",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/sample-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/sample-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/sample-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/sample_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-sample/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-sample/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-sample/trace.json"
+      },
+      "nextAction": "Extend to top-k sampling + temperature-scaled softmax for non-greedy decoding.",
+      "reduceStrategy": "host_partial"
+    },
+    {
+      "id": "kv-write",
+      "kernelPattern": "kv_write",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
+      },
+      "evidence": {
+        "sourceWgslPath": "bench/out/dual-compile-evidence/attention-decode/source.wgsl",
+        "sourceEvidenceDir": "bench/out/dual-compile-evidence/attention-decode",
+        "simulatorPlanPath": "runtime/zig/examples/simulator/kv-write-runtime/simulator-plan.template.json",
+        "hostPlanPath": "runtime/zig/examples/simulator/kv-write-runtime/host-plan.json",
+        "runtimeConfigPath": "runtime/zig/examples/simulator/kv-write-runtime/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/kv_write_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-kv-write/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-kv-write/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-kv-write/trace.json"
+      },
+      "nextAction": "Wire kv_write + kv_write_shared into the same fixture; extend with kv_read to close the full cache-access cycle.",
+      "reduceStrategy": "none"
+    },
+    {
+      "id": "gelu",
+      "kernelPattern": "element_wise",
+      "runtimeMode": "sdk-runtime-command",
+      "governedStatus": "runtime_ready",
+      "backendCoverage": {
+        "vulkan": "artifact_present",
+        "metal": "compile_validated",
+        "d3d12": "compile_validated",
+        "csl": "runtime_ready"
       },
       "evidence": {
         "sourceWgslPath": "bench/out/dual-compile-evidence/gelu/source.wgsl",
         "sourceEvidenceDir": "bench/out/dual-compile-evidence/gelu",
         "simulatorPlanPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/simulator-plan.template.json",
         "hostPlanPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/host-plan.json",
-        "runtimeConfigPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/runtime-config.json"
+        "runtimeConfigPath": "runtime/zig/examples/simulator/gelu-wgsl-backed/runtime-config.json",
+        "runnerPath": "bench/runners/csl-runners/gelu_sim_runner.py",
+        "governedLaneReportPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gelu/governed-lane-report.json",
+        "driverResultPath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gelu/driver-result.json",
+        "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-gelu/trace.json"
       },
-      "nextAction": "Attach an sdk-runtime-command fixture and numerical trace."
+      "nextAction": "Tanh-based GELU approximation is now runtime-ready. Extend to exact erf-GELU once tanh tolerance is characterized in decode.",
+      "reduceStrategy": "none"
     }
   ]
 }

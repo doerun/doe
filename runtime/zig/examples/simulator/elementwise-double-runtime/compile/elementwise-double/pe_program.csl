@@ -2,8 +2,8 @@
 // Each PE processes chunk_size elements with no fabric routing.
 
 param memcpy_params: comptime_struct;
-param pe_id: i16;
-param num_pes: i16;
+param pe_id: u16;
+param num_pes: u16;
 
 const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
 const math = @import_module("<math>");

@@ -151,9 +151,6 @@ extern fn metal_bridge_render_encoder_draw(
     pipeline: ?*anyopaque,
 ) callconv(.c) void;
 
-extern fn metal_bridge_render_encoder_end(encoder: ?*anyopaque) callconv(.c) void;
-
-// New bridge functions declared in metal_bridge.h (added below).
 extern fn metal_bridge_render_encoder_set_pipeline(
     encoder: ?*anyopaque,
     pipeline: ?*anyopaque,

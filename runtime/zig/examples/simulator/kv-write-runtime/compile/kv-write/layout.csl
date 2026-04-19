@@ -1,0 +1,31 @@
+// Layout: KV cache write (standalone runtime variant). No fabric.
+
+param width: i16;
+param head_dim: i16;
+param max_seq_len: i16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = 1,
+});
+
+layout {
+    @set_rectangle(width, 1);
+
+    for (@range(i16, width)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = width,
+            .head_dim = head_dim,
+            .max_seq_len = max_seq_len,
+        });
+    }
+
+    @export_name("k_proj",   [*]f32, true);
+    @export_name("v_proj",   [*]f32, true);
+    @export_name("k_cache",  [*]f32, true);
+    @export_name("v_cache",  [*]f32, true);
+    @export_name("position", [*]u32, true);
+    @export_name("compute",  fn()void);
+}

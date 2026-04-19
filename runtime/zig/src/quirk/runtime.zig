@@ -36,20 +36,6 @@ pub const DispatchDecision = struct {
     matched_safety_class: ?model.SafetyClass,
 };
 
-const EMPTY_DECISION = DispatchDecision{
-    .matched_quirk_id = null,
-    .action = null,
-    .score = 0,
-    .matched_count = 0,
-    .requires_lean = false,
-    .is_blocking = false,
-    .proof_level = null,
-    .verification_mode = null,
-    .applied_toggle = null,
-    .matched_scope = null,
-    .matched_safety_class = null,
-};
-
 const ScoredQuirk = struct {
     quirk: model.Quirk,
     score: u32,

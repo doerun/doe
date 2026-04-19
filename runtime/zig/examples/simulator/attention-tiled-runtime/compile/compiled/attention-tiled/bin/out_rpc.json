@@ -1,0 +1,43 @@
+{
+  "rpc_symbols": [
+    {
+      "id": 1,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "Q",
+      "sym_name": "Q_ptr",
+      "type": "[*]f32"
+    },
+    {
+      "id": 3,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "V",
+      "sym_name": "V_ptr",
+      "type": "[*]f32"
+    },
+    {
+      "id": 2,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "K",
+      "sym_name": "K_ptr",
+      "type": "[*]f32"
+    },
+    {
+      "id": 5,
+      "kind": "Func",
+      "name": "compute",
+      "sym_name": "compute",
+      "type": "void"
+    },
+    {
+      "id": 4,
+      "immutable": 0,
+      "kind": "Var",
+      "name": "O",
+      "sym_name": "O_ptr",
+      "type": "[*]f32"
+    }
+  ]
+}

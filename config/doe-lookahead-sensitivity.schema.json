@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-lookahead-sensitivity.schema.json",
+  "title": "Doe lookahead sensitivity sweep",
+  "description": "Per-lookahead dry-run trace summary + cross-baseline diff links. Answers 'how does the streaming runtime's ring-buffer occupancy and SRAM fit change with prefetchSchedule.lookaheadLayers?' without needing the real streaming executor.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "modelId",
+    "baselineLookahead",
+    "lookaheadsTested",
+    "rows",
+    "diffs"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_lookahead_sensitivity" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string" },
+    "baselineLookahead": { "type": "integer", "minimum": 1, "maximum": 4 },
+    "lookaheadsTested": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1, "maximum": 4 }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "lookaheadLayers",
+          "ringBufferOccupancyLayers",
+          "ringBufferOccupancyBytes",
+          "fitsInPerPeSramBudget",
+          "perLayerBytes",
+          "setupBytes",
+          "totalBytesTransferredPerPe"
+        ],
+        "properties": {
+          "lookaheadLayers": { "type": "integer", "minimum": 1 },
+          "ringBufferOccupancyLayers": { "type": "integer", "minimum": 0 },
+          "ringBufferOccupancyBytes": { "type": "integer", "minimum": 0 },
+          "fitsInPerPeSramBudget": { "type": "boolean" },
+          "perLayerBytes": { "type": "integer", "minimum": 0 },
+          "setupBytes": { "type": "integer", "minimum": 0 },
+          "totalBytesTransferredPerPe": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "diffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["lookahead", "diffPath"],
+        "properties": {
+          "lookahead": { "type": "integer", "minimum": 1 },
+          "diffPath": { "type": "string" }
+        }
+      }
+    }
+  }
+}

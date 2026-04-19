@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_trace",
+  "target": "wse3",
+  "contract": "explicit_simulator_trace",
+  "kernel": "fused-gemv-dequant",
+  "executionTarget": "simfabric",
+  "width": 4,
+  "chunkSize": 64,
+  "totalElements": 256,
+  "runtimePassed": true,
+  "runtimeMaxAbsErr": 4.1961669921875e-05,
+  "sampleInput": [
+    1.0728336572647095,
+    1.0527836084365845,
+    0.12623146176338196,
+    0.1972024142742157
+  ],
+  "sampleExpected": [
+    21.332271575927734,
+    2.967397689819336,
+    10.003945350646973,
+    11.785650253295898
+  ],
+  "sampleActual": [
+    21.332275390625,
+    2.9673995971679688,
+    10.003946304321289,
+    11.785642623901367
+  ]
+}

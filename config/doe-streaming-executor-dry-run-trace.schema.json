@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-streaming-executor-dry-run-trace.schema.json",
+  "title": "Doe streaming-executor dry-run trace",
+  "description": "Predicted-runtime trace computed from a doe_stream_execution_plan + doe_model_runtime_receipt by bench/tools/dry_run_streaming_executor.py. Not a hardware trace — pure Python arithmetic over the plan. Emitted deterministically so future hardware traces from the SdkLayout streaming executor can be diff'd against it. The assumed bandwidth constant is explicit so predicted-vs-actual comparisons swap the constant rather than disagreeing on methodology.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "modelId",
+    "sourcePlan",
+    "executorStatus",
+    "assumedBandwidthBytesPerCycle",
+    "perPe",
+    "aggregate",
+    "perLayerSchedule"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_streaming_executor_dry_run_trace" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourcePlan": {
+      "type": "object",
+      "required": ["executionPlanPath", "modelReceiptPath"],
+      "properties": {
+        "executionPlanPath": { "type": "string" },
+        "modelReceiptPath": { "type": "string" },
+        "streamGraphPath": { "type": "string" }
+      }
+    },
+    "executorStatus": {
+      "type": "string",
+      "enum": ["plan_only", "executor_ready", "executed"]
+    },
+    "assumedBandwidthBytesPerCycle": { "type": "number", "exclusiveMinimum": 0 },
+    "perPe": {
+      "type": "object",
+      "required": [
+        "sramBudget",
+        "persistentBytes",
+        "ringBufferOccupancyLayers",
+        "ringBufferOccupancyBytes",
+        "fitsInPerPeSramBudget",
+        "setupBytes",
+        "perLayerBytes",
+        "prefetchOverlapBytes"
+      ],
+      "properties": {
+        "sramBudget": { "type": "integer", "minimum": 0 },
+        "persistentBytes": { "type": "integer", "minimum": 0 },
+        "ringBufferOccupancyLayers": { "type": "integer", "minimum": 0 },
+        "ringBufferOccupancyBytes": { "type": "integer", "minimum": 0 },
+        "fitsInPerPeSramBudget": { "type": "boolean" },
+        "setupBytes": { "type": "integer", "minimum": 0 },
+        "perLayerBytes": { "type": "integer", "minimum": 0 },
+        "prefetchOverlapBytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": [
+        "numTransformerLayers",
+        "totalBytesTransferredPerPe",
+        "totalLatencyCyclesPerPe",
+        "perLayerLatencyCyclesPerPe"
+      ],
+      "properties": {
+        "numTransformerLayers": { "type": "integer", "minimum": 0 },
+        "totalBytesTransferredPerPe": { "type": "integer", "minimum": 0 },
+        "totalLatencyCyclesPerPe": { "type": "number", "minimum": 0 },
+        "perLayerLatencyCyclesPerPe": { "type": "number", "minimum": 0 }
+      }
+    },
+    "perLayerSchedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layerIndex", "prefetchTargetLayer", "payloadBytes", "latencyCycles"],
+        "properties": {
+          "layerIndex": { "type": "integer", "minimum": 0 },
+          "prefetchTargetLayer": { "type": "integer", "minimum": 0 },
+          "payloadBytes": { "type": "integer", "minimum": 0 },
+          "latencyCycles": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}

@@ -703,11 +703,7 @@ const Emitter = struct {
                 try self.write("texture2d<");
                 try self.write(maps.msl_storage_texture_elem(storage_tex.format));
                 try self.write(", access::");
-                try self.write(switch (storage_tex.access) {
-                    .read => "read",
-                    .write => "write",
-                    .read_write => "read_write",
-                });
+                try self.write(@tagName(storage_tex.access));
                 try self.write(">");
             },
             .ref => |ref_ty| try self.emit_type(ref_ty.elem),

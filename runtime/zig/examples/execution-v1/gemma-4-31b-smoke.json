@@ -1,0 +1,314 @@
+{
+  "modelFamily": "gemma4",
+  "modelId": "gemma-4-31b-it-text-q4k-ehf16-af32",
+  "modelConfig": {
+    "hiddenDim": 5120,
+    "numHeads": 32,
+    "headDim": 160,
+    "numLayers": 61,
+    "vocabSize": 262144,
+    "maxSeqLen": 4096,
+    "quantFormat": "q4k",
+    "ffnExpansionFactor": 4,
+    "ffnMatrixCount": 3,
+    "pleWidth": 256,
+    "pleVocabSize": 262144
+  },
+  "placementPolicy": {
+    "maxGridWidth": 512,
+    "maxGridHeight": 512,
+    "preferSquare": true
+  },
+  "eosTokenId": 1,
+  "slidingWindowSize": 512,
+  "layerPattern": {
+    "type": "every_n",
+    "period": 5,
+    "offset": 4
+  },
+  "numKvSharedLayers": 4,
+  "steps": [
+    {
+      "name": "embed_tokens",
+      "phase": "prefill",
+      "op": "embed",
+      "kernelKey": "embed",
+      "weightsKey": "embed_tokens"
+    },
+    {
+      "name": "ple_gather",
+      "phase": "prefill",
+      "op": "ple_gather",
+      "kernelKey": "ple_embed",
+      "weightsKey": "per_layer_inputs.embedTokensPerLayer"
+    },
+    {
+      "name": "ple_project",
+      "phase": "prefill",
+      "op": "ple_project",
+      "kernelKey": "ple_proj",
+      "weightsKey": "per_layer_inputs.perLayerModelProjection"
+    },
+    {
+      "name": "ple_norm",
+      "phase": "prefill",
+      "op": "ple_norm",
+      "kernelKey": "ple_rmsnorm",
+      "weightsKey": "per_layer_inputs.perLayerProjectionNorm"
+    },
+    {
+      "name": "ple_modulate",
+      "phase": "prefill",
+      "op": "ple_modulate",
+      "kernelKey": "ple_residual"
+    },
+    {
+      "name": "input_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "q_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.q_proj"
+    },
+    {
+      "name": "k_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.k_proj"
+    },
+    {
+      "name": "v_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.v_proj"
+    },
+    {
+      "name": "rope_q",
+      "phase": "prefill",
+      "op": "rope",
+      "kernelKey": "rope"
+    },
+    {
+      "name": "rope_k",
+      "phase": "prefill",
+      "op": "rope",
+      "kernelKey": "rope"
+    },
+    {
+      "name": "attention",
+      "phase": "prefill",
+      "op": "attention_prefill",
+      "kernelKey": "attn_small"
+    },
+    {
+      "name": "o_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.o_proj"
+    },
+    {
+      "name": "attn_residual",
+      "phase": "prefill",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "post_attn_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "gate_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.gate_proj"
+    },
+    {
+      "name": "up_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.up_proj"
+    },
+    {
+      "name": "activation",
+      "phase": "prefill",
+      "op": "gelu",
+      "kernelKey": "gelu"
+    },
+    {
+      "name": "down_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.down_proj"
+    },
+    {
+      "name": "ffn_residual",
+      "phase": "prefill",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "ple_gather",
+      "phase": "decode",
+      "op": "ple_gather",
+      "kernelKey": "ple_embed",
+      "weightsKey": "per_layer_inputs.embedTokensPerLayer"
+    },
+    {
+      "name": "ple_project",
+      "phase": "decode",
+      "op": "ple_project",
+      "kernelKey": "ple_proj",
+      "weightsKey": "per_layer_inputs.perLayerModelProjection"
+    },
+    {
+      "name": "ple_norm",
+      "phase": "decode",
+      "op": "ple_norm",
+      "kernelKey": "ple_rmsnorm",
+      "weightsKey": "per_layer_inputs.perLayerProjectionNorm"
+    },
+    {
+      "name": "ple_modulate",
+      "phase": "decode",
+      "op": "ple_modulate",
+      "kernelKey": "ple_residual"
+    },
+    {
+      "name": "input_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "q_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.q_proj"
+    },
+    {
+      "name": "k_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.k_proj"
+    },
+    {
+      "name": "v_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.v_proj"
+    },
+    {
+      "name": "rope_q",
+      "phase": "decode",
+      "op": "rope",
+      "kernelKey": "rope"
+    },
+    {
+      "name": "rope_k",
+      "phase": "decode",
+      "op": "rope",
+      "kernelKey": "rope"
+    },
+    {
+      "name": "kv_write",
+      "phase": "decode",
+      "op": "kv_write",
+      "kernelKey": "kv_write"
+    },
+    {
+      "name": "attention_sliding",
+      "phase": "decode",
+      "op": "attention_sliding",
+      "kernelKey": "attn_decode_sliding",
+      "attentionType": "sliding"
+    },
+    {
+      "name": "o_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.o_proj"
+    },
+    {
+      "name": "attn_residual",
+      "phase": "decode",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "post_attn_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "gate_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.gate_proj"
+    },
+    {
+      "name": "up_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.up_proj"
+    },
+    {
+      "name": "activation",
+      "phase": "decode",
+      "op": "gelu",
+      "kernelKey": "gelu"
+    },
+    {
+      "name": "down_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.down_proj"
+    },
+    {
+      "name": "ffn_residual",
+      "phase": "decode",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "kv_write_shared",
+      "phase": "decode",
+      "op": "kv_write_shared",
+      "kernelKey": "kv_write_shared",
+      "kvCacheAlias": "layer.0.kv"
+    },
+    {
+      "name": "attention_global",
+      "phase": "decode",
+      "op": "attention",
+      "kernelKey": "attn_decode",
+      "attentionType": "global"
+    },
+    {
+      "name": "sample",
+      "phase": "decode",
+      "op": "sample",
+      "kernelKey": "sample"
+    }
+  ]
+}
