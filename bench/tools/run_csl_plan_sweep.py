@@ -121,6 +121,19 @@ def main() -> int:
     )
     results.append({"gate": "csl-kernel-fingerprints-regen", "passed": passed, "note": note})
 
+    # 0a. Regenerate the per-pattern 2-D layout-need audit. The artifact
+    # is sha256-bound to emit_csl_layout.zig so every emitter edit
+    # invalidates the prior summary; regenerating here keeps the audit
+    # accurate and lets the next schema_gate call verify its shape.
+    # Also surfaces the cross-step dependency (step-2 sweep blocked on
+    # step-1 generator for dequant/sample/fused_gemv_dequant/fused_ffn)
+    # once per sweep.
+    passed, note = run_gate(
+        "layout-2d-needs-audit-regen",
+        [sys.executable, str(REPO_ROOT / "bench/tools/analyze_layout_2d_needs.py")],
+    )
+    results.append({"gate": "layout-2d-needs-audit-regen", "passed": passed, "note": note})
+
     # 0b. Regenerate the E2B-vs-31B dry-run trace diff so the cross-model
     # comparison artifact tracks the latest lane outputs.
     passed, note = run_gate(
