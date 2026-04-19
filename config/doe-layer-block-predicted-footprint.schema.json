@@ -71,6 +71,9 @@
             }
           },
           "predictedCslcParamsString": { "type": ["string", "null"] },
+          "observedBytesPerPe": { "type": ["integer", "null"], "minimum": 0 },
+          "observedCyclesPerPe": { "type": ["integer", "null"], "minimum": 0 },
+          "predictedToObservedBytesRatio": { "type": ["number", "null"], "minimum": 0 },
           "observedFixtureEvidence": {
             "oneOf": [
               { "type": "null" },
@@ -115,7 +118,20 @@
         "bytesPerModelPerPe": { "type": "integer", "minimum": 0 },
         "cyclesPerModelPerPe": { "type": "integer", "minimum": 0 },
         "activePatternCount": { "type": "integer", "minimum": 0 },
-        "dormantPatternCount": { "type": "integer", "minimum": 0 }
+        "dormantPatternCount": { "type": "integer", "minimum": 0 },
+        "observedEvidenceBoundCount": { "type": "integer", "minimum": 0 },
+        "predictedMatchesObservedShapeCount": { "type": "integer", "minimum": 0 },
+        "predictedToObservedBytesRatioSamples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pattern", "ratio"],
+            "properties": {
+              "pattern": { "type": "string" },
+              "ratio": { "type": ["number", "null"], "minimum": 0 }
+            }
+          }
+        }
       }
     },
     "notes": { "type": "string" }

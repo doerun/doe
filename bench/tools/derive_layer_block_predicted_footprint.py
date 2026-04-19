@@ -102,6 +102,20 @@ def load_observed_evidence(pattern: str) -> dict | None:
         for k in ("width", "chunkSize", "totalElements", "runtimePassed", "runtimeMaxAbsErr"):
             if k in trace_data:
                 out[k] = trace_data[k]
+        # Quantitative observed bytes/cycles from trace dims. totalElements
+        # counts across all PEs; divide by width for per-PE. f32 baseline
+        # matches the predicted model. cycles are not in trace.json — leave
+        # observedCyclesPerPe null until the simulator's cycle counts land.
+        te = trace_data.get("totalElements")
+        w = trace_data.get("width")
+        if isinstance(te, int) and isinstance(w, int) and w > 0:
+            els = te // w
+            out["observedElementsPerPe"] = els
+            out["observedBytesPerPe"] = els * 4
+        else:
+            out["observedElementsPerPe"] = None
+            out["observedBytesPerPe"] = None
+        out["observedCyclesPerPe"] = None  # not carried by trace.json today
     return out
 
 
@@ -200,6 +214,13 @@ def main() -> int:
                 predicted_cslc == observed_fixture["observedCslcParamsString"]
             )
 
+        # Quantitative predicted-vs-observed ratio — null when observed
+        # bytes aren't available.
+        observed_bytes = (observed_fixture or {}).get("observedBytesPerPe")
+        predicted_to_observed_bytes_ratio = None
+        if observed_bytes and pattern_bytes and observed_bytes > 0:
+            predicted_to_observed_bytes_ratio = round(pattern_bytes / observed_bytes, 4)
+
         pattern_entry = {
             "pattern": pattern,
             "status": status,
@@ -210,6 +231,9 @@ def main() -> int:
             "predictedCslcParamsString": predicted_cslc,
             "observedFixtureEvidence": observed_fixture,
             "predictedMatchesObservedShape": shape_match,
+            "observedBytesPerPe": observed_bytes,
+            "observedCyclesPerPe": (observed_fixture or {}).get("observedCyclesPerPe"),
+            "predictedToObservedBytesRatio": predicted_to_observed_bytes_ratio,
         }
         per_pattern.append(pattern_entry)
         if status == "dormant_pattern_no_manifest_step":
@@ -255,6 +279,25 @@ def main() -> int:
                 1 for p in per_pattern
                 if p["status"] == "dormant_pattern_no_manifest_step"
             ),
+            # Divergence rollup — how many patterns have observed bytes
+            # bound, how many match predicted shape exactly, how many
+            # have non-null ratio. A non-null ratio != 1 is the signal
+            # "this pattern's shape at deployment doesn't match the
+            # smoke fixture run; expect divergence when step-3 real
+            # traces land".
+            "observedEvidenceBoundCount": sum(
+                1 for p in per_pattern
+                if p.get("observedFixtureEvidence") is not None
+            ),
+            "predictedMatchesObservedShapeCount": sum(
+                1 for p in per_pattern
+                if p.get("predictedMatchesObservedShape") is True
+            ),
+            "predictedToObservedBytesRatioSamples": [
+                {"pattern": p["pattern"], "ratio": p["predictedToObservedBytesRatio"]}
+                for p in per_pattern
+                if p.get("predictedToObservedBytesRatio") is not None
+            ],
         },
         "notes": (
             "Derived from layerBlockSmoke.perKernelShapes in the E2B layer-"
