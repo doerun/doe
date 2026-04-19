@@ -242,6 +242,10 @@
       "data": "bench/out/streaming-executor/reduce-trace.json"
     },
     {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
+    },
+    {
       "schema": "config/doe-wgsl-backend-equivalence.schema.json",
       "data": "bench/out/wgsl-backend-equivalence/elementwise-double.equivalence.json"
     },
