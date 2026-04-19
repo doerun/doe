@@ -11,16 +11,18 @@ cs_python runner script that:
     (ple_rows_stream, ple_projection_stream, layer_weights_stream),
   - declares one output port for the activation the layer emits,
   - feeds all streams from the host at smoke-sized payloads,
-  - verifies activation_out == rmsnorm(ple_rows, gamma=ple_projection)
-    bit-exact vs a host numpy reference that accumulates sum-of-squares
+  - verifies activation_out == residual + score * rmsnorm(x, gamma)
+    where score = wts . rmsnorm_out is a scalar inner-product, bit-
+    exact vs a host numpy reference that accumulates both reductions
     in the same scalar left-to-right order as the CSL kernel,
   - writes a trace with layerBlockSmokeStatus=succeeded.
 
 The CSL kernel that consumes these streams is at
 bench/out/streaming-executor/e2b-layer-block-source/
-transformer_layer_shape.csl — step-1 real stage is RMSNorm (this
-file); the remaining stages (attention, MLP) land in follow-up
-ticks without changing the stream contract.
+transformer_layer_shape.csl — it now executes RMSNorm + a minimal
+attention-inner-product + residual, so every input stream flows
+through compute. The remaining stages (full multi-head attention,
+MLP) land in follow-up ticks without changing the stream contract.
 
 The generator itself produces a plain Python file (not a template),
 so reviewers can read the runner directly and the regeneration is
@@ -82,13 +84,13 @@ Plan stream contract for this layer:
 {stream_contract_comment}
 
 Smoke path: each stream carries {smoke_size} f32 values. The kernel
-runs step 1 of the full-layer pipeline (RMSNorm) using ple_rows as
-x and ple_projection as gamma; layer_weights is reserved for the
-attention stage that lands in a follow-up tick. The runner verifies
-activation_out bit-exact against a host numpy reference that
-accumulates sum-of-squares in the same scalar left-to-right order
-as the CSL kernel. The stream contract is stable across follow-up
-stage swaps.
+runs stage 1 (RMSNorm) using ple_rows as x and ple_projection as
+gamma, then stage 2 (scalar inner-product with layer_weights +
+residual add from ple_rows). Every input stream flows through
+compute. The runner verifies activation_out bit-exact against a
+host numpy reference that accumulates both reductions in the same
+scalar left-to-right order as the CSL kernel. The stream contract
+is stable across follow-up stage swaps (full attention, MLP).
 """
 
 from __future__ import annotations
@@ -195,8 +197,9 @@ def main() -> int:
         rows = rng.standard_normal(size=args.size, dtype=np.float32)
         proj = rng.standard_normal(size=args.size, dtype=np.float32)
         wts  = rng.standard_normal(size=args.size, dtype=np.float32)
-        # RMSNorm reference: mirror the CSL kernel's in-order scalar
-        # sum-of-squares so bit-exact comparison is meaningful. numpy's
+        # Stage 1 (RMSNorm) + stage 2 (inner-product + residual)
+        # reference: mirror the CSL kernel's in-order scalar
+        # accumulations so bit-exact comparison is meaningful. numpy's
         # vectorised .sum() may use pairwise summation, which diverges
         # from the device's left-to-right f32 accumulation.
         rmsnorm_eps = np.float32(1.0e-6)
@@ -206,7 +209,21 @@ def main() -> int:
         mean_sq = np.float32(sum_sq / np.float32(args.size))
         rms = np.float32(np.sqrt(np.float32(mean_sq + rmsnorm_eps)))
         inv_rms = np.float32(np.float32(1.0) / rms)
-        expected = ((rows * inv_rms).astype(np.float32) * proj).astype(np.float32)
+        rmsnorm_out = np.empty(args.size, dtype=np.float32)
+        for i in range(args.size):
+            rmsnorm_out[i] = np.float32(
+                np.float32(rows[i] * inv_rms) * np.float32(proj[i])
+            )
+        score = np.float32(0.0)
+        for i in range(args.size):
+            score = np.float32(
+                score + np.float32(wts[i]) * np.float32(rmsnorm_out[i])
+            )
+        expected = np.empty(args.size, dtype=np.float32)
+        for i in range(args.size):
+            expected[i] = np.float32(
+                np.float32(score * rmsnorm_out[i]) + np.float32(rows[i])
+            )
         received = np.empty(args.size, dtype=np.float32)
 
         runtime.send(rows_stream, rows, nonblock=True)
@@ -269,8 +286,12 @@ def main() -> int:
             "kernelSourcePath": "{kernel_source_rel}",
             "kernelSourceSha256": "{kernel_source_sha256}",
             "kernelIsStub": False,
-            "combineRule": "activation_out[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]  # RMSNorm; layer_weights reserved for attention stage",
-            "kernelStage": "rmsnorm",
+            "combineRule": (
+                "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
+                "score = sum_i layer_weights[i] * rmsnorm[i]; "
+                "activation_out[i] = score * rmsnorm[i] + ple_rows[i]"
+            ),
+            "kernelStage": "rmsnorm+attn_inner_product+residual",
             "status": run_status,
             "targetMode": "local_simfabric",
             "compileArtifactDir": str(compile_out.relative_to(REPO_ROOT)),
@@ -320,9 +341,11 @@ def main() -> int:
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
             "First SdkLayout runner emitted from the E2B stream-execution-plan. "
-            "Step 1 real stage is RMSNorm (ple_rows as x, ple_projection as "
-            "gamma). Remaining stages (attention, MLP) land in follow-up "
-            "ticks without changing the stream contract "
+            "Stage 1 = RMSNorm (ple_rows as x, ple_projection as gamma); "
+            "stage 2 = scalar attention-inner-product with layer_weights + "
+            "residual add from ple_rows. Every input stream flows through "
+            "compute. Remaining stages (full multi-head attention, MLP) "
+            "land in follow-up ticks without changing the stream contract "
             "(rx_ple_rows + rx_ple_projection + rx_layer_weights -> "
             "tx_activation)."
         ),
