@@ -195,7 +195,16 @@ def elements_per_pe(pattern: str, params: dict) -> int:
     """Naive element-count estimate from an invocation's paramsShape."""
     p = params or {}
     if pattern == "gather":
-        return int(p.get("num_tokens", 0)) * int(p.get("hidden_size", 0)) * int(p.get("rows_per_pe", 1))
+        # Gather output per PE = (num_tokens * hidden_size) / width.
+        # Per the gather sim runner at bench/runners/csl-runners/
+        # gather_sim_runner.py, out_per_pe is reshaped as
+        # (width, num_tokens, hidden_size) — each PE holds
+        # num_tokens * hidden_size output elements. But trace.totalElements
+        # and chunkSize reflect a per-PE chunk of num_tokens * hidden_size /
+        # width (the per-PE slice after distribution). Match that here
+        # so fixtureEquivalent matches observed.
+        width = max(1, int(p.get("width", 1)))
+        return int(p.get("num_tokens", 0)) * int(p.get("hidden_size", 0)) // width
     if pattern == "rope":
         return int(p.get("head_dim", 0)) * int(p.get("num_pairs", 1))
     if pattern == "reduction":
