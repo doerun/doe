@@ -46,6 +46,29 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _reference_doc_block() -> dict[str, Any]:
+    """Pointer to the human-readable in-loop pipeline reference. The
+    machine-readable evidence is the receipt + parity-check artifacts;
+    this doc is the reading order for triage."""
+    rel = "docs/csl-layer-block-self-check.md"
+    block: dict[str, Any] = {
+        "path": rel,
+        "exists": False,
+        "purpose": (
+            "Single source of truth for the in-loop pipeline that takes "
+            "the generated E2B layer-block from CSL kernel through to a "
+            "model receipt with a parity-contract verdict. Documents the "
+            "artifact graph, the C0..C5 contract, failure-mode triage, "
+            "and the cs_python + real-weights gating story."
+        ),
+    }
+    abs_path = resolve(rel)
+    if abs_path.is_file():
+        block["exists"] = True
+        block["sha256"] = sha256_file(abs_path)
+    return block
+
+
 def resolve(p: str) -> Path:
     path = Path(p)
     return path if path.is_absolute() else (REPO_ROOT / path).resolve()
@@ -578,6 +601,7 @@ def main() -> int:
             ),
             "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
             "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
+            "referenceDoc": _reference_doc_block(),
             "numericalParityTarget": (
                 "bit_exact_vs_ordered_f32_numpy_reference"
             ),
