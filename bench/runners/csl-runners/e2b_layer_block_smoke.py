@@ -270,6 +270,100 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "tiled_matmul",
+        "emitter": "emitMatmulLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:168)",
+        "emitterWidened2D": True,
+        "invocations": [
+            {
+                "stepName": "q_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 768,
+                    "Nt": 2048
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:768,Nt:2048",
+                "weightMatrixShape": "M=16 K=1536 N=4096"
+            },
+            {
+                "stepName": "k_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 768,
+                    "Nt": 2048
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:768,Nt:2048",
+                "weightMatrixShape": "M=16 K=1536 N=4096"
+            },
+            {
+                "stepName": "v_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 768,
+                    "Nt": 2048
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:768,Nt:2048",
+                "weightMatrixShape": "M=16 K=1536 N=4096"
+            },
+            {
+                "stepName": "o_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 2048,
+                    "Nt": 768
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:2048,Nt:768",
+                "weightMatrixShape": "M=16 K=4096 N=1536"
+            },
+            {
+                "stepName": "gate_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 768,
+                    "Nt": 3072
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:768,Nt:3072",
+                "weightMatrixShape": "M=16 K=1536 N=6144"
+            },
+            {
+                "stepName": "up_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 768,
+                    "Nt": 3072
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:768,Nt:3072",
+                "weightMatrixShape": "M=16 K=1536 N=6144"
+            },
+            {
+                "stepName": "down_proj",
+                "paramsShape": {
+                    "P": 2,
+                    "Mt": 8,
+                    "Kt": 3072,
+                    "Nt": 768
+                },
+                "cslcParamsString": "P:2,Mt:8,Kt:3072,Nt:768",
+                "weightMatrixShape": "M=16 K=6144 N=1536"
+            }
+        ],
+        "derivationSource": "P = 2 for smoke (even SUMMA partition; real deployment picks P from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight matrix M/K/N derived from manifest.modelConfig: M = num_tokens (--size), K/N chosen per step \u2014 hiddenDim for projection inputs and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor for FFN gate/up N-dim and down K-dim, qkv_out_dim = numHeads * headDim for QKV N-dim. This per-invocation shape emission is the pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/fused_ffn) will also use.",
+        "manifestSteps": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj"
+        ]
+    },
+    {
         "pattern": "reduction",
         "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
         "emitterWidened2D": False,

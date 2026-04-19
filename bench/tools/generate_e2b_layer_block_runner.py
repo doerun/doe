@@ -417,6 +417,66 @@ def derive_per_kernel_shapes(
             if s.get("op") == "rope"
         ],
     })
+    # Smoke-shape tiled_matmul: emitter at L168 takes P × P SUMMA tiles
+    # with Mt/Kt/Nt per-tile dims. Already 2-D per the audit (emitter
+    # declares P with u16). Unlike gather/rope/reduction, tiled_matmul
+    # has MULTIPLE call sites per layer (q/k/v/o projections plus FFN
+    # gate/up/down), each with different K/N dims. Emit one pattern
+    # entry with an `invocations[]` sub-list — a generalization the
+    # remaining weight-matrix patterns (dequant, fused_gemv, fused_ffn)
+    # will also use.
+    ffn_expansion = int(mc.get("ffnExpansionFactor", 4))
+    num_heads = int(mc.get("numHeads", 0))
+    hidden = hidden_dim or 1536
+    intermediate = hidden * ffn_expansion
+    # Pick a small P for smoke so Mt/Kt/Nt stay small ints cslc can
+    # round-trip. Real deployment uses larger P from memory-plan.
+    P_smoke = 2
+    qkv_out_dim = (num_heads or 8) * (head_dim or 512)  # total Q/K/V dim
+
+    def mm_params(step_name: str, m: int, k: int, n: int) -> dict:
+        """Compute {P, Mt, Kt, Nt} with simple even division; round up if
+        needed. Smoke values — real deployment picks P from the memory plan."""
+        def tile(d: int) -> int:
+            return max(1, d // P_smoke)
+        mt, kt, nt = tile(m), tile(k), tile(n)
+        return {
+            "stepName": step_name,
+            "paramsShape": {"P": P_smoke, "Mt": mt, "Kt": kt, "Nt": nt},
+            "cslcParamsString": f"P:{P_smoke},Mt:{mt},Kt:{kt},Nt:{nt}",
+            "weightMatrixShape": f"M={m} K={k} N={n}",
+        }
+
+    mm_invocations = [
+        mm_params("q_proj",    smoke_size, hidden,       qkv_out_dim),
+        mm_params("k_proj",    smoke_size, hidden,       qkv_out_dim),
+        mm_params("v_proj",    smoke_size, hidden,       qkv_out_dim),
+        mm_params("o_proj",    smoke_size, qkv_out_dim,  hidden),
+        mm_params("gate_proj", smoke_size, hidden,       intermediate),
+        mm_params("up_proj",   smoke_size, hidden,       intermediate),
+        mm_params("down_proj", smoke_size, intermediate, hidden),
+    ]
+    shapes.append({
+        "pattern": "tiled_matmul",
+        "emitter": "emitMatmulLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:168)",
+        "emitterWidened2D": True,
+        "invocations": mm_invocations,
+        "derivationSource": (
+            "P = 2 for smoke (even SUMMA partition; real deployment picks P "
+            "from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight "
+            "matrix M/K/N derived from manifest.modelConfig: M = num_tokens "
+            "(--size), K/N chosen per step — hiddenDim for projection inputs "
+            "and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor "
+            "for FFN gate/up N-dim and down K-dim, qkv_out_dim = numHeads * "
+            "headDim for QKV N-dim. This per-invocation shape emission is the "
+            "pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/"
+            "fused_ffn) will also use."
+        ),
+        "manifestSteps": [
+            s["name"] for s in manifest.get("steps", [])
+            if s.get("op") == "matmul" and s.get("kernelKey") == "tiled"
+        ],
+    })
     # Smoke-shape reduction (RMSNorm / softmax single-PE lowering): the
     # emitter at L112 declares only `param width: i16;` — reduce_color,
     # pe_id, and num_pes are set at tile-code time by the layout, not
