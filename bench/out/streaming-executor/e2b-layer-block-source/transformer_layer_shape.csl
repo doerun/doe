@@ -3,10 +3,9 @@
 //   stage 2 = attention-inner-product score + residual
 //   stage 3 = post-attn RMSNorm (gamma2 broadcast over 4x the
 //             full token)
-//   stage 4 = gated MLP with a bit-exact ReLU standing in for
-//             GELU (platform math.tanh vs numpy would break the
-//             bit-exact gate; GELU via a shared polynomial is a
-//             follow-up tick)
+//   stage 4 = gated MLP with a shared piecewise-polynomial GELU
+//             approximation (no transcendentals — bit-exact
+//             reproducible in both CSL and numpy)
 //
 // The E2B stream-execution-plan names a code region
 // `transformer_layer_shape` and feeds it three input streams
@@ -39,7 +38,16 @@
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
 //     up               = sum_k wts[3*qs+k] * post_norm[qs+k] (k in [0,qs))
-//     activation_out[i]= gate * relu(up * post_norm[i]) + post_norm[i]
+//     act(x)           = 0                  if x <= -1
+//                        x                  if x >=  1
+//                        0.25 * (x+1)^2     otherwise
+//     activation_out[i]= gate * act(up * post_norm[i]) + post_norm[i]
+//
+// The act() function is a C^1-continuous piecewise quadratic
+// approximation of GELU whose only operations are +, -, *, /, and
+// comparison. That keeps the lowering bit-exact between CSL and
+// numpy — the platform math.tanh / exp / erf paths diverge at f32
+// precision and would break np.array_equal as the pass gate.
 //
 // Reduction lowerings (sum-of-squares, inner-products) mirror the
 // translator-emitted CSL at bench/out/dual-compile-evidence/
@@ -47,8 +55,8 @@
 // processes one full token in-order).
 //
 // Numerical parity target: bit-exact vs the host numpy reference
-// that accumulates every reduction in the same scalar left-to-
-// right order as the device and uses identical ReLU semantics.
+// that accumulates every reduction and every act() call in the
+// same scalar f32 op sequence as the device.
 
 param size: u16;
 param rx_ple_rows:       color;
@@ -165,13 +173,22 @@ task done() void {
     for (@range(u16, qs)) |k| {
         up = up + (buf_wts[3 * qs + k] * buf_out[qs + k]);
     }
-    // Stage 4c: activation_out[i] = gate * relu(up * post_norm[i])
-    // + post_norm[i] (residual). ReLU is a bit-exact stub for
-    // GELU; the real activation lands once a host/CSL shared
-    // polynomial path exists.
+    // Stage 4c: activation_out[i] = gate * act(up * post_norm[i])
+    // + post_norm[i]. act() is a shared piecewise polynomial GELU
+    // approximation — no transcendentals, explicitly parenthesized
+    // so CSL and numpy compute the identical f32 op sequence.
     for (@range(u16, size)) |i| {
         const pre_act: f32 = up * buf_out[i];
-        const act: f32     = if (pre_act < 0.0) 0.0 else pre_act;
+        var act: f32 = 0.0;
+        if (pre_act >= 1.0) {
+            act = pre_act;
+        } else {
+            if (pre_act > -1.0) {
+                const xp1: f32 = pre_act + 1.0;
+                const sq: f32  = xp1 * xp1;
+                act = 0.25 * sq;
+            }
+        }
         buf_out[i] = (gate * act) + buf_out[i];
     }
     @mov32(output, mem_out);

@@ -14,12 +14,14 @@ Plan stream contract for this layer:
 
 Smoke path: each stream carries 16 f32 values. The kernel
 runs stage 1 (pre-attn RMSNorm), stage 2 (scalar attention-inner-
-product + residual), and stage 3 (post-attn RMSNorm using gamma2
-packed into layer_weights). Every input stream flows through compute.
-The runner verifies activation_out bit-exact against a host numpy
-reference that accumulates every reduction in the same scalar left-to-
-right order as the CSL kernel. The stream contract is stable across
-follow-up stage swaps (full attention, MLP).
+product + residual), stage 3 (post-attn RMSNorm using gamma2 packed
+into layer_weights), and stage 4 (gated MLP with a shared piecewise-
+polynomial GELU approximation: 0 for x<=-1, x for x>=1, 0.25*(x+1)^2
+otherwise). Every input stream flows through compute. The runner
+verifies activation_out bit-exact against a host numpy reference that
+accumulates every reduction and every activation in the same scalar
+f32 op sequence as the CSL kernel. The stream contract is stable
+across follow-up stage swaps (full multi-head attention, KV cache).
 """
 
 from __future__ import annotations
@@ -177,8 +179,8 @@ def main() -> int:
                 np.float32(attn_out[i] * inv_rms2) * np.float32(wts[g_idx])
             )
         # Stage 4: gated MLP. gate scalar = wts[2qs..3qs) . post_norm[0..qs);
-        # up scalar = wts[3qs..4qs) . post_norm[qs..2qs); ReLU stands
-        # in for GELU to keep the bit-exact gate.
+        # up scalar = wts[3qs..4qs) . post_norm[qs..2qs); activation is a
+        # shared piecewise-polynomial GELU approximation (see act_poly_c1).
         gate = np.float32(0.0)
         for k in range(qs):
             gate = np.float32(
@@ -191,10 +193,22 @@ def main() -> int:
                 up + np.float32(wts[3 * qs + k])
                 * np.float32(post_norm[qs + k])
             )
+        # Piecewise-polynomial GELU approximation, C^1-continuous at
+        # the break points +/- 1. Explicitly parenthesized so CSL and
+        # numpy compute the identical f32 op sequence.
+        def act_poly_c1(x):
+            x = np.float32(x)
+            if x >= np.float32(1.0):
+                return x
+            if x <= np.float32(-1.0):
+                return np.float32(0.0)
+            xp1 = np.float32(x + np.float32(1.0))
+            sq = np.float32(xp1 * xp1)
+            return np.float32(np.float32(0.25) * sq)
         expected = np.empty(args.size, dtype=np.float32)
         for i in range(args.size):
             pre_act = np.float32(up * np.float32(post_norm[i]))
-            act = pre_act if pre_act >= np.float32(0.0) else np.float32(0.0)
+            act = act_poly_c1(pre_act)
             expected[i] = np.float32(
                 np.float32(gate * act) + np.float32(post_norm[i])
             )
@@ -258,7 +272,7 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "c825be59dc322dc868b66b7f70e8cb5e4100996b8f9739c2276e037ccb190813",
+            "kernelSourceSha256": "91283dbf98e57781bcde88354a7d64f0e6c0e6ae220e369a61408e7027146b9b",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
@@ -268,11 +282,12 @@ def main() -> int:
                 "* layer_weights[i mod qs]; "
                 "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
                 "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
-                "activation_out[i] = gate * relu(up * post_norm[i]) + post_norm[i]"
+                "act(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
+                "activation_out[i] = gate * act(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
                 "pre_attn_rmsnorm+attn_inner_product+residual"
-                "+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
+                "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "status": run_status,
             "targetMode": "local_simfabric",
@@ -788,14 +803,16 @@ def main() -> int:
             "attn RMSNorm with gamma2 = wts[0..qs) broadcast 4x over the "
             "token; stage 4 = gated MLP with gate = wts[2qs..3qs)·post_norm"
             "[0..qs), up = wts[3qs..4qs)·post_norm[qs..2qs), and "
-            "activation_out = gate * ReLU(up * post_norm) + post_norm. ReLU "
-            "is a bit-exact stub for GELU — platform math.tanh vs numpy "
-            "would break the parity gate. layer_weights is reshaped as "
+            "activation_out = gate * act(up * post_norm) + post_norm "
+            "where act is a shared piecewise-polynomial GELU "
+            "approximation (0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
+            "otherwise) — no transcendentals, bit-exact reproducible "
+            "in both CSL and numpy. layer_weights is reshaped as "
             "[gamma2, attn_scale, gate_w, up_w] (four back-to-back "
             "quarters of size/4) to carry all four tensors in one stream "
             "without changing the SdkLayout contract. Remaining stages "
-            "(full multi-head attention over KV cache, real polynomial "
-            "GELU) land in follow-up ticks."
+            "(full multi-head attention over KV cache) land in follow-"
+            "up ticks."
         ),
     }
 

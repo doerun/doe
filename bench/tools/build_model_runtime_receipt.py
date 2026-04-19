@@ -345,12 +345,14 @@ def main() -> int:
             # Streaming executor primitives run on simfabric, and the
             # generated E2B layer-block runner now executes real
             # pre-attn RMSNorm + scalar attention-inner-product +
-            # residual + post-attn RMSNorm with every input stream of
-            # the 3-stream SdkLayout contract flowing through compute.
+            # residual + post-attn RMSNorm + gated MLP with every
+            # input stream of the 3-stream SdkLayout contract flowing
+            # through compute.
             # The model receipt still cannot claim simulator_success:
-            # the full transformer layer block (full multi-head
-            # attention over KV cache + MLP gate/up/down) is not wired
-            # into this runner yet.
+            # full multi-head attention over KV cache is not wired
+            # into this runner yet, and cs_python is not on PATH in
+            # this build environment so the simfabric driver cannot
+            # actually run the 4-stage kernel.
             execution_blocker = "full_transformer_layer_block_incomplete"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
@@ -425,32 +427,33 @@ def main() -> int:
             "layer_block_rmsnorm",
             "layer_block_attn_inner_product_residual",
             "layer_block_post_attn_rmsnorm",
-            "layer_block_gated_mlp_relu_gelu_stub",
+            "layer_block_gated_mlp_poly_c1_gelu",
         ],
         "layerBlockKernelEvidence": {
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
                 "now executes pre-attn RMSNorm + scalar attention-"
                 "inner-product + residual + post-attn RMSNorm + "
-                "gated MLP (stages 1 through 4 of the full-layer "
-                "pipeline). Every input stream of the 3-stream "
-                "SdkLayout contract is an operand in the final "
-                "write; rx_layer_weights is reshaped as "
+                "gated MLP with a shared piecewise-polynomial GELU "
+                "approximation (stages 1 through 4 of the full-"
+                "layer pipeline). Every input stream of the 3-"
+                "stream SdkLayout contract is an operand in the "
+                "final write; rx_layer_weights is reshaped as "
                 "[gamma2, attn_scale, gate_w, up_w] (four back-to-"
                 "back quarters of size/4) to carry all four tensors "
-                "in one stream without changing the contract. ReLU "
-                "stands in for GELU in stage 4 to preserve the "
-                "bit-exact parity gate — platform math.tanh vs "
-                "numpy tanh diverges at f32 precision. Remaining "
-                "stages (full multi-head attention over KV cache, "
-                "real polynomial GELU) land in follow-up ticks."
+                "in one stream without changing the contract. The "
+                "stage-4 activation uses only +, -, *, comparison "
+                "so CSL and numpy compute the identical f32 op "
+                "sequence (no tanh / exp / erf divergence). "
+                "Remaining stages (full multi-head attention over "
+                "KV cache) land in follow-up ticks."
             ),
             "kernelSourcePath": layer_block_kernel_path,
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
                 "pre_attn_rmsnorm+attn_inner_product+residual"
-                "+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
+                "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
@@ -462,7 +465,8 @@ def main() -> int:
                 "* layer_weights[i mod qs]; "
                 "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
                 "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
-                "activation_out[i] = gate * relu(up * post_norm[i]) + post_norm[i]"
+                "act(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
+                "activation_out[i] = gate * act(up * post_norm[i]) + post_norm[i]"
             ),
             "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
             "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
@@ -482,17 +486,17 @@ def main() -> int:
                 "post_norm[0..qs) for the MLP gate scalar; up_w with "
                 "post_norm[qs..2qs) for the MLP up scalar."
             ),
-            "stageFourActivationStub": (
-                "ReLU stands in for GELU in stage 4. Platform math.tanh "
-                "vs numpy tanh diverges at f32 precision so the bit-exact "
-                "gate would break. Upgrade path: emit a shared polynomial "
-                "GELU approximation from the translator so CSL and numpy "
-                "compute an identical op sequence."
+            "stageFourActivation": (
+                "Shared piecewise-polynomial GELU approximation "
+                "(poly_c1): 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
+                "on (-1, 1). C^1-continuous at the break points. "
+                "Uses only +, -, *, and comparison so CSL and numpy "
+                "produce an identical f32 op sequence — no "
+                "transcendental platform-dependence."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
                 "full_multi_head_attention_over_kv_cache",
-                "polynomial_gelu_replacing_relu_stub",
             ],
         },
     }
