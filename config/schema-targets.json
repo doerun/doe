@@ -250,6 +250,10 @@
       "data": "bench/out/layout-2d-needs/layout-2d-needs.json"
     },
     {
+      "schema": "config/doe-layer-block-predicted-footprint.schema.json",
+      "data": "bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json"
+    },
+    {
       "schema": "config/doe-wgsl-backend-equivalence.schema.json",
       "data": "bench/out/wgsl-backend-equivalence/elementwise-double.equivalence.json"
     },

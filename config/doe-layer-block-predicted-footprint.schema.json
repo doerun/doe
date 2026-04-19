@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-layer-block-predicted-footprint.schema.json",
+  "title": "Doe layer-block predicted footprint",
+  "description": "Per-pattern predicted cycle/byte footprint for one E2B layer block, derived from layerBlockSmoke.perKernelShapes + modelConfig. Baseline for predicted-vs-observed diffs against future simulator traces (plan Build-order step 3). Coarse prediction model — the interesting signal is divergence from observed, not prediction precision.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "generatedFrom",
+    "numLayers",
+    "predictionModel",
+    "perPattern",
+    "aggregate"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_layer_block_predicted_footprint" },
+    "generatedFrom": {
+      "type": "object",
+      "required": ["tracePath", "traceSha256", "manifestPath", "manifestSha256"],
+      "properties": {
+        "tracePath": { "type": "string" },
+        "traceSha256": { "type": "string" },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" }
+      }
+    },
+    "modelId": { "type": "string" },
+    "numLayers": { "type": "integer", "minimum": 0 },
+    "predictionModel": {
+      "type": "object",
+      "required": ["name", "dtypeBytes", "cyclesPerElement"],
+      "properties": {
+        "name": { "type": "string" },
+        "dtypeBytes": { "type": "integer", "minimum": 1 },
+        "cyclesPerElement": { "type": "number", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    },
+    "perPattern": {
+      "type": "array",
+      "minItems": 14,
+      "items": {
+        "type": "object",
+        "required": ["pattern", "invocationCount", "bytesPerPe", "cyclesPerPe"],
+        "properties": {
+          "pattern": { "type": "string" },
+          "status": {
+            "type": ["string", "null"],
+            "enum": [
+              null,
+              "dormant_pattern_no_manifest_step",
+              "audit_needs_deployment_generator"
+            ]
+          },
+          "invocationCount": { "type": "integer", "minimum": 0 },
+          "bytesPerPe": { "type": "integer", "minimum": 0 },
+          "cyclesPerPe": { "type": "integer", "minimum": 0 },
+          "invocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["stepName", "elementsPerPe", "bytesPerPe", "cyclesPerPe"],
+              "properties": {
+                "stepName": { "type": "string" },
+                "elementsPerPe": { "type": "integer", "minimum": 0 },
+                "bytesPerPe": { "type": "integer", "minimum": 0 },
+                "cyclesPerPe": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "required": [
+        "bytesPerLayerPerPe",
+        "cyclesPerLayerPerPe",
+        "bytesPerModelPerPe",
+        "cyclesPerModelPerPe",
+        "activePatternCount",
+        "dormantPatternCount"
+      ],
+      "properties": {
+        "bytesPerLayerPerPe": { "type": "integer", "minimum": 0 },
+        "cyclesPerLayerPerPe": { "type": "integer", "minimum": 0 },
+        "bytesPerModelPerPe": { "type": "integer", "minimum": 0 },
+        "cyclesPerModelPerPe": { "type": "integer", "minimum": 0 },
+        "activePatternCount": { "type": "integer", "minimum": 0 },
+        "dormantPatternCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}

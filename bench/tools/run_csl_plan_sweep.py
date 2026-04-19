@@ -134,6 +134,7 @@ def main() -> int:
     )
     results.append({"gate": "layout-2d-needs-audit-regen", "passed": passed, "note": note})
 
+
     # 0b. Regenerate the E2B-vs-31B dry-run trace diff so the cross-model
     # comparison artifact tracks the latest lane outputs.
     passed, note = run_gate(
@@ -294,6 +295,17 @@ def main() -> int:
          str(REPO_ROOT / "bench/runners/csl-runners/e2b_layer_block_smoke.py")],
     )
     results.append({"gate": "e2b-layer-block-smoke-run", "passed": passed, "note": note})
+
+    # 0j''''''. Derive per-pattern predicted footprint from the layer-block
+    # smoke trace. Runs after the smoke regenerates the trace so the
+    # footprint tracks the current perKernelShapes. Baseline for
+    # predicted-vs-observed diffs once step 3 (simulator execution)
+    # lands a real trace.
+    passed, note = run_gate(
+        "layer-block-predicted-footprint",
+        [sys.executable, str(REPO_ROOT / "bench/tools/derive_layer_block_predicted_footprint.py")],
+    )
+    results.append({"gate": "layer-block-predicted-footprint", "passed": passed, "note": note})
 
     # 0k. WGSL backend equivalence crosswalk. Ties one WGSL source to
     # every Doe backend that can compile it (csl-memcpy, csl-sdklayout,
