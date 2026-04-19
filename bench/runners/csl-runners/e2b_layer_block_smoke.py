@@ -419,6 +419,27 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "sample",
+        "emitter": "emitSampleLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:428)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "sample",
+                "paramsShape": {
+                    "width": 16,
+                    "chunk_size": 16384
+                },
+                "cslcParamsString": "width:16,chunk_size:16384",
+                "vocabSize": 262144
+            }
+        ],
+        "derivationSource": "width = --size smoke arg; chunk_size = vocabSize // width (vocabSize from manifest.modelConfig.vocabSize = 262,144 for Gemma-4). Smoke partitions evenly but deployment will pick a chunk_size that balances per-PE SRAM budget against reduce-chain hop count \u2014 that choice lives in the step-1 generator, so this entry is flagged audit_needs_deployment_generator.",
+        "manifestSteps": [
+            "sample"
+        ],
+        "status": "audit_needs_deployment_generator"
+    },
+    {
         "pattern": "fused_gemv_dequant",
         "emitter": "emitFusedGemvLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:448)",
         "emitterWidened2D": False,

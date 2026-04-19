@@ -568,6 +568,41 @@ def derive_per_kernel_shapes(
             ),
             "manifestSteps": [inv["stepName"] for inv in decode_invocations],
         })
+    # Smoke-shape sample: emitter at L428 takes width + chunk_size.
+    # vocabSize = 262,144 for Gemma-4 (both E2B and 31B) — well above
+    # i16 if distributed with chunk_size=1. Per the audit this is one
+    # of the 4 audit-blocked emitters: whether deployment chooses a
+    # chunk_size that keeps width below i16 depends on the step-1
+    # generator's output.
+    vocab_size = int(mc.get("vocabSize", 0))
+    sample_steps = [s["name"] for s in manifest.get("steps", []) if s.get("op") == "sample"]
+    if vocab_size and sample_steps:
+        chunk_size = max(1, vocab_size // smoke_size)
+        shapes.append({
+            "pattern": "sample",
+            "emitter": "emitSampleLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:428)",
+            "emitterWidened2D": False,
+            "invocations": [{
+                "stepName": sample_steps[0],
+                "paramsShape": {
+                    "width": smoke_size,
+                    "chunk_size": chunk_size,
+                },
+                "cslcParamsString": f"width:{smoke_size},chunk_size:{chunk_size}",
+                "vocabSize": vocab_size,
+            }],
+            "derivationSource": (
+                "width = --size smoke arg; chunk_size = vocabSize // width "
+                "(vocabSize from manifest.modelConfig.vocabSize = 262,144 "
+                "for Gemma-4). Smoke partitions evenly but deployment "
+                "will pick a chunk_size that balances per-PE SRAM budget "
+                "against reduce-chain hop count — that choice lives in "
+                "the step-1 generator, so this entry is flagged "
+                "audit_needs_deployment_generator."
+            ),
+            "manifestSteps": sample_steps,
+            "status": "audit_needs_deployment_generator",
+        })
     # Smoke-shape fused_gemv_dequant: emitter at L448 takes width +
     # out_dim + in_dim_per_pe + num_blocks_per_row. Per the audit this
     # is one of the 4 entries whose needs2DFor31B resolves to "likely"
