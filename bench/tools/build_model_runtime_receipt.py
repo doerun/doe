@@ -392,6 +392,52 @@ def main() -> int:
                 "tracePath": layer_block_trace_path,
                 "traceStatus": "invalid_json",
             }
+
+    # Numpy-only synthetic trace, emitted by
+    # bench/tools/emit_e2b_layer_block_synthetic_trace.py. Lets the
+    # parity-contract gate bind to a real-shaped trace artifact while
+    # cs_python is unavailable; downstream consumers can compare its
+    # kernelSourceSha256 to the live CSL file to detect drift.
+    synthetic_trace_path = (
+        "bench/out/streaming-executor/e2b-layer-block-synthetic-trace.json"
+    )
+    synthetic_trace_evidence: dict[str, Any] = {
+        "syntheticTrace": {
+            "path": synthetic_trace_path,
+            "exists": False,
+            "note": (
+                "Numpy-only parity-contract gate fixture; emit via "
+                "`python3 bench/tools/emit_e2b_layer_block_synthetic_trace.py`. "
+                "Synthetic markers in the trace itself: "
+                "executedRun.status='synthetic_numpy_only', "
+                "executedRun.dataSource.kind='numpy_only_no_simulator'. "
+                "A simulator_success promotion must NOT consume this "
+                "trace as evidence of execution."
+            ),
+        },
+    }
+    synthetic_abs = resolve(synthetic_trace_path)
+    if synthetic_abs.is_file():
+        try:
+            syn = load_json(synthetic_abs)
+            syn_run = syn.get("executedRun", {})
+            syn_par = syn_run.get("numericalParity", {})
+            synthetic_trace_evidence["syntheticTrace"].update({
+                "exists": True,
+                "sha256": sha256_file(synthetic_abs),
+                "numLayersChained": syn_run.get("numLayersChained"),
+                "perLayerOutputFiniteAll": all(
+                    syn_par.get("perLayerOutputFinite", [])
+                ) if syn_par.get("perLayerOutputFinite") else None,
+                "finalLayerMaxAbs": syn_par.get("finalLayerMaxAbs"),
+                "kernelSourceSha256InTrace": (
+                    syn.get("layerBlockSmoke", {}).get("kernelSourceSha256")
+                ),
+            })
+        except json.JSONDecodeError:
+            synthetic_trace_evidence["syntheticTrace"]["traceStatus"] = (
+                "invalid_json"
+            )
     receipt["streamingExecutorPrimitivesEvidence"] = {
         "description": (
             "SdkLayout streaming executor primitives that have been "
@@ -541,6 +587,7 @@ def main() -> int:
                 "head_dim toward the manifest's 512."
             ),
             **layer_block_trace_evidence,
+            **synthetic_trace_evidence,
             "multiLayerChain": (
                 "Runner now chains the layer-block kernel num_layers "
                 "times (default = manifest.modelConfig.numLayers, "
