@@ -246,6 +246,10 @@
       "data": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
     },
     {
+      "schema": "config/doe-layout-2d-needs-analysis.schema.json",
+      "data": "bench/out/layout-2d-needs/layout-2d-needs.json"
+    },
+    {
       "schema": "config/doe-wgsl-backend-equivalence.schema.json",
       "data": "bench/out/wgsl-backend-equivalence/elementwise-double.equivalence.json"
     },
