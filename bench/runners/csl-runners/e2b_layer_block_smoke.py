@@ -385,6 +385,40 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "attention_decode",
+        "emitter": "emitDecodeAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:379)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "attention_sliding",
+                "variant": "sliding",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "kv_chunk": 32
+                },
+                "cslcParamsString": "width:16,head_dim:512,kv_chunk:32",
+                "kvLenBound": 512
+            },
+            {
+                "stepName": "attention_global",
+                "variant": "global",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "kv_chunk": 256
+                },
+                "cslcParamsString": "width:16,head_dim:512,kv_chunk:256",
+                "kvLenBound": 4096
+            }
+        ],
+        "derivationSource": "width = num_tokens from --size (1-D per-head-per-chunk); head_dim from manifest.modelConfig.headDim; kv_chunk = kv_len_bound // width with kv_len_bound = slidingWindowSize for the sliding variant and maxSeqLen for the global decode. Both bounds stay well under i16 at Gemma-4 shapes. Per the layout-2d-needs audit, attention_decode stays 1-D.",
+        "manifestSteps": [
+            "attention_sliding",
+            "attention_global"
+        ]
+    },
+    {
         "pattern": "reduction",
         "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
         "emitterWidened2D": False,

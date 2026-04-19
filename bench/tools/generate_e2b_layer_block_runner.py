@@ -518,6 +518,56 @@ def derive_per_kernel_shapes(
         ),
         "manifestSteps": attn_tiled_steps,
     })
+    # Smoke-shape attention_decode: emitter at L379 takes width + head_dim
+    # + kv_chunk (NOT kv_len — the decode emitter chunks the KV cache).
+    # Manifest has two decode-attention variants per layer: sliding
+    # (bounded by slidingWindowSize) and global (bounded by maxSeqLen).
+    # Per the audit stays 1-D (per-head-per-chunk width).
+    sliding_window = int(m.get("slidingWindowSize", 0)) if (m := manifest) else 0
+    decode_invocations = []
+    for s in manifest.get("steps", []):
+        op = s.get("op", "")
+        key = s.get("kernelKey", "")
+        if op == "attention_sliding":
+            kv_len = sliding_window or 512
+            variant = "sliding"
+        elif op == "attention" and "decode" in key:
+            kv_len = max_seq_len
+            variant = "global"
+        else:
+            continue
+        kv_chunk = max(1, kv_len // smoke_size)
+        decode_invocations.append({
+            "stepName": s["name"],
+            "variant": variant,
+            "paramsShape": {
+                "width": smoke_size,
+                "head_dim": head_dim or 128,
+                "kv_chunk": kv_chunk,
+            },
+            "cslcParamsString": (
+                f"width:{smoke_size},"
+                f"head_dim:{head_dim or 128},"
+                f"kv_chunk:{kv_chunk}"
+            ),
+            "kvLenBound": kv_len,
+        })
+    if decode_invocations:
+        shapes.append({
+            "pattern": "attention_decode",
+            "emitter": "emitDecodeAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:379)",
+            "emitterWidened2D": False,
+            "invocations": decode_invocations,
+            "derivationSource": (
+                "width = num_tokens from --size (1-D per-head-per-chunk); "
+                "head_dim from manifest.modelConfig.headDim; kv_chunk = "
+                "kv_len_bound // width with kv_len_bound = slidingWindowSize "
+                "for the sliding variant and maxSeqLen for the global decode. "
+                "Both bounds stay well under i16 at Gemma-4 shapes. Per the "
+                "layout-2d-needs audit, attention_decode stays 1-D."
+            ),
+            "manifestSteps": [inv["stepName"] for inv in decode_invocations],
+        })
     # Smoke-shape reduction (RMSNorm / softmax single-PE lowering): the
     # emitter at L112 declares only `param width: i16;` — reduce_color,
     # pe_id, and num_pes are set at tile-code time by the layout, not
