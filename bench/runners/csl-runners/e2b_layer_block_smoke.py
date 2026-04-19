@@ -13,20 +13,15 @@ Plan stream contract for this layer:
 //   input:   layer_weights_stream (2166 bytes/PE)
 
 Smoke path: each stream carries 32 f32 values. The kernel
-runs stage 1 (pre-attn RMSNorm), stage 2 (multi-head attention with
-num_heads=2, head_dim=2, kv_len_per_head=2, ROPE positional encoding
-via a dyadic (cos, sin) table, logits = dot(Q_rot, K_rot_j) with Q
-rotated at position kv_len_per_head and each K_h[j] at position j,
-poly_c1 softmax per head, attn_val[h][d] flattened and broadcast over
-the full token via i mod flat_len), stage 3 (post-attn RMSNorm using
-gamma2 packed into layer_weights), and stage 4 (gated MLP with
-gate_w/up_w of length qs/2 and poly_c1 activation). Every input
-stream flows through compute. The runner verifies activation_out
-bit-exact against a host numpy reference that replays every
-reduction, every rope rotation, and every activation in the same
-scalar f32 op sequence as the CSL kernel. Rope uses only +, -, *
-and a hardcoded dyadic (cos, sin) table — no platform math.cos/sin
-divergence.
+runs the full 4-stage layer block (pre-attn RMSNorm; MHA with vector
+Q/K/V, real-cos/sin rope, poly_c1 softmax; post-attn RMSNorm; gated
+MLP with poly_c1 activation), and the runner CHAINS num_layers (=2
+by default) invocations of that kernel via the streaming runtime —
+activation_out of layer L is fed back as ple_rows of layer L+1 (the
+residual stream pattern of a transformer block tower), with distinct
+per-layer ple_projection and layer_weights. The bit-exact host numpy
+reference replays the same chain. Pass requires every layer to match
+under np.array_equal.
 """
 
 from __future__ import annotations
@@ -58,6 +53,10 @@ KERNEL_SOURCE = REPO_ROOT / "bench/out/streaming-executor/e2b-layer-block-source
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--size", type=int, default=32)
+    p.add_argument(
+        "--num-layers", type=int, default=2,
+        help="How many layer-block invocations to chain (residual stream).",
+    )
     p.add_argument(
         "--compile-out",
         default="bench/out/streaming-executor/e2b-layer-block-smoke",
@@ -123,34 +122,32 @@ def main() -> int:
 
     run_start = time.time()
     runtime = SdkRuntime(compile_artifacts, platform, memcpy_required=False)
+    num_layers_smoke = args.num_layers
     max_abs_err = -1.0
+    per_layer_max_abs_err = [-1.0] * num_layers_smoke
     passed = False
-    try:
-        runtime.load()
-        runtime.run()
 
-        rng = np.random.default_rng(seed=223)
-        rows = rng.standard_normal(size=args.size, dtype=np.float32)
-        proj = rng.standard_normal(size=args.size, dtype=np.float32)
-        wts  = rng.standard_normal(size=args.size, dtype=np.float32)
-        # Four-stage reference mirroring the CSL kernel's in-order
-        # scalar f32 accumulations so np.array_equal can serve as the
-        # bit-exact pass gate. numpy's vectorised .sum() uses pairwise
-        # summation which diverges from device left-to-right order.
+    # Reference numpy implementation of the full 4-stage layer block.
+    # Lifted into a helper so the multi-layer chain below can call it
+    # once per layer with distinct per-layer ple_projection and
+    # layer_weights. All operations mirror the CSL kernel's in-order
+    # scalar f32 accumulations so np.array_equal serves as the
+    # bit-exact pass gate.
+    def compute_layer_block(rows, proj, wts, size):
         # layer_weights reshape: four back-to-back quarters
-        # [gamma2, attn_scale, gate_w, up_w].
-        assert args.size % 4 == 0, "kernel requires size % 4 == 0"
-        qs = args.size // 4
+        # [gamma2, per_head_KV, gate_w, up_w].
+        assert size % 4 == 0, "kernel requires size % 4 == 0"
+        qs = size // 4
         rmsnorm_eps = np.float32(1.0e-6)
         # Stage 1: pre-attn RMSNorm.
         sum_sq = np.float32(0.0)
         for v in rows:
             sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
-        mean_sq = np.float32(sum_sq / np.float32(args.size))
+        mean_sq = np.float32(sum_sq / np.float32(size))
         rms = np.float32(np.sqrt(np.float32(mean_sq + rmsnorm_eps)))
         inv_rms = np.float32(np.float32(1.0) / rms)
-        rmsnorm_out = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        rmsnorm_out = np.empty(size, dtype=np.float32)
+        for i in range(size):
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
@@ -168,7 +165,7 @@ def main() -> int:
         per_head_K_len = head_dim * kv_len_per_head
         per_head_stride = 2 * per_head_K_len
         attn_flat_len = num_heads * head_dim
-        assert args.size % attn_flat_len == 0, (
+        assert size % attn_flat_len == 0, (
             "size must be divisible by num_heads * head_dim"
         )
         assert qs * 2 >= num_heads * per_head_stride, (
@@ -257,8 +254,8 @@ def main() -> int:
                     )
             for d in range(head_dim):
                 attn_vals[q_base + d] = np.float32(weighted_v[d] / sum_w)
-        attn_out = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        attn_out = np.empty(size, dtype=np.float32)
+        for i in range(size):
             k_idx = i - (i // attn_flat_len) * attn_flat_len
             attn_out[i] = np.float32(
                 np.float32(attn_vals[k_idx]) + np.float32(rows[i])
@@ -268,11 +265,11 @@ def main() -> int:
         sum_sq2 = np.float32(0.0)
         for v in attn_out:
             sum_sq2 = np.float32(sum_sq2 + np.float32(v) * np.float32(v))
-        mean_sq2 = np.float32(sum_sq2 / np.float32(args.size))
+        mean_sq2 = np.float32(sum_sq2 / np.float32(size))
         rms2 = np.float32(np.sqrt(np.float32(mean_sq2 + rmsnorm_eps)))
         inv_rms2 = np.float32(np.float32(1.0) / rms2)
-        post_norm = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        post_norm = np.empty(size, dtype=np.float32)
+        for i in range(size):
             g_idx = i
             while g_idx >= qs:
                 g_idx -= qs
@@ -311,23 +308,68 @@ def main() -> int:
             xp1 = np.float32(x + np.float32(1.0))
             sq = np.float32(xp1 * xp1)
             return np.float32(np.float32(0.25) * sq)
-        expected = np.empty(args.size, dtype=np.float32)
-        for i in range(args.size):
+        expected = np.empty(size, dtype=np.float32)
+        for i in range(size):
             pre_act = np.float32(up * np.float32(post_norm[i]))
             act = act_poly_c1(pre_act)
             expected[i] = np.float32(
                 np.float32(gate * act) + np.float32(post_norm[i])
             )
-        received = np.empty(args.size, dtype=np.float32)
+        return expected
 
-        runtime.send(rows_stream, rows, nonblock=True)
-        runtime.send(proj_stream, proj, nonblock=True)
-        runtime.send(wts_stream,  wts,  nonblock=True)
-        runtime.receive(act_stream, received, args.size, nonblock=True)
+    # Multi-layer chain. Each layer reads its own ple_projection and
+    # layer_weights; activation_out of layer L is fed back as ple_rows
+    # of layer L+1 (the residual stream pattern of a transformer block
+    # tower). The same SdkLayout compile artifacts are reused across
+    # layers via the streaming-runtime send/receive primitives — no
+    # recompile per layer.
+    try:
+        runtime.load()
+        runtime.run()
+
+        rng = np.random.default_rng(seed=223)
+        initial_rows = rng.standard_normal(size=args.size, dtype=np.float32)
+        per_layer_proj: list = []
+        per_layer_wts:  list = []
+        for _ in range(num_layers_smoke):
+            per_layer_proj.append(rng.standard_normal(size=args.size, dtype=np.float32))
+            per_layer_wts.append(rng.standard_normal(size=args.size, dtype=np.float32))
+
+        # Numpy reference: chain compute_layer_block num_layers_smoke
+        # times, threading expected[L] -> rows for L+1.
+        all_expected = []
+        rows_ref = initial_rows.copy()
+        for l_idx in range(num_layers_smoke):
+            expected_l = compute_layer_block(
+                rows_ref, per_layer_proj[l_idx], per_layer_wts[l_idx], args.size
+            )
+            all_expected.append(expected_l)
+            rows_ref = expected_l
+
+        # Device chain: same loop, threading received[L] -> rows for L+1.
+        all_received = []
+        rows_curr = initial_rows.copy()
+        for l_idx in range(num_layers_smoke):
+            received = np.empty(args.size, dtype=np.float32)
+            runtime.send(rows_stream, rows_curr, nonblock=True)
+            runtime.send(proj_stream, per_layer_proj[l_idx], nonblock=True)
+            runtime.send(wts_stream,  per_layer_wts[l_idx],  nonblock=True)
+            runtime.receive(act_stream, received, args.size, nonblock=True)
+            all_received.append(received.copy())
+            rows_curr = received
+
         runtime.stop()
 
-        max_abs_err = float(np.max(np.abs(received - expected)))
-        passed = bool(np.array_equal(received, expected))
+        # Per-layer parity. Pass requires every layer to be bit-exact.
+        layer_passed = []
+        for l_idx in range(num_layers_smoke):
+            err = float(np.max(np.abs(all_received[l_idx] - all_expected[l_idx])))
+            per_layer_max_abs_err[l_idx] = err
+            layer_passed.append(
+                bool(np.array_equal(all_received[l_idx], all_expected[l_idx]))
+            )
+        max_abs_err = max(per_layer_max_abs_err) if per_layer_max_abs_err else -1.0
+        passed = bool(all(layer_passed))
         run_status = "succeeded" if passed else "mismatch"
     except Exception as exc:  # pylint: disable=broad-except
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]
@@ -358,10 +400,14 @@ def main() -> int:
         "executedRun": {
             "status": run_status,
             "elapsedMs": run_elapsed_ms,
-            "observedBytesTransferredPerPe": args.size * 4 * 4,
-            "observedBytesTransferredTotal": args.size * 4 * 4,
+            "numLayersChained": num_layers_smoke,
+            "observedBytesTransferredPerPe":
+                args.size * 4 * 4 * num_layers_smoke,
+            "observedBytesTransferredTotal":
+                args.size * 4 * 4 * num_layers_smoke,
             "numericalParity": {
                 "maxAbsErr": max_abs_err,
+                "perLayerMaxAbsErr": per_layer_max_abs_err,
                 "atol": 0,
                 "passed": passed,
             },
@@ -411,6 +457,7 @@ def main() -> int:
                 "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
+                "+multi_layer_chain"
             ),
             "status": run_status,
             "targetMode": "local_simfabric",

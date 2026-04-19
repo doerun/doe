@@ -11,23 +11,23 @@ cs_python runner script that:
     (ple_rows_stream, ple_projection_stream, layer_weights_stream),
   - declares one output port for the activation the layer emits,
   - feeds all streams from the host at smoke-sized payloads,
-  - verifies activation_out against a four-stage pipeline (pre-
-    attn RMSNorm, attn-inner-product + residual, post-attn RMSNorm
-    with broadcast gamma2, and a gated MLP whose activation is a
-    shared piecewise-polynomial GELU approximation) bit-exact vs
-    a host numpy reference that replays every reduction and every
-    act() call in the same scalar left-to-right f32 op sequence,
-  - writes a trace with layerBlockSmokeStatus=succeeded.
+  - verifies activation_out across a num_layers-long chain of
+    layer-block invocations against a host numpy reference that
+    replays every reduction, rope rotation, and activation in the
+    same scalar f32 op sequence as the CSL kernel,
+  - writes a trace with layerBlockSmokeStatus=succeeded and
+    per-layer maxAbsErr.
 
 The CSL kernel that consumes these streams is at
 bench/out/streaming-executor/e2b-layer-block-source/
-transformer_layer_shape.csl — it now executes pre-attn RMSNorm,
-scalar attention-inner-product + residual, post-attn RMSNorm,
-and a gated MLP whose activation is a C^1-continuous piecewise
-polynomial (0 for x<=-1, x for x>=1, 0.25*(x+1)^2 otherwise).
-That polynomial is bit-exact reproducible in both CSL and numpy
-— no tanh / exp / erf — so np.array_equal remains the pass
-gate.
+transformer_layer_shape.csl — it executes the full 4-stage layer
+block (pre-attn RMSNorm, MHA with vector Q/K/V + real-cos/sin
+rope + poly_c1 softmax, post-attn RMSNorm, gated MLP with
+poly_c1 activation). The runner chains the kernel num_layers
+times via the streaming runtime, threading activation_out -> next
+layer's ple_rows. All operations use only +, -, *, /, comparison
+and a hardcoded cos/sin table — no platform math.tanh/exp/erf —
+so np.array_equal remains the pass gate at every layer.
 
 The generator itself produces a plain Python file (not a template),
 so reviewers can read the runner directly and the regeneration is
@@ -89,20 +89,15 @@ Plan stream contract for this layer:
 {stream_contract_comment}
 
 Smoke path: each stream carries {smoke_size} f32 values. The kernel
-runs stage 1 (pre-attn RMSNorm), stage 2 (multi-head attention with
-num_heads=2, head_dim=2, kv_len_per_head=2, ROPE positional encoding
-via a dyadic (cos, sin) table, logits = dot(Q_rot, K_rot_j) with Q
-rotated at position kv_len_per_head and each K_h[j] at position j,
-poly_c1 softmax per head, attn_val[h][d] flattened and broadcast over
-the full token via i mod flat_len), stage 3 (post-attn RMSNorm using
-gamma2 packed into layer_weights), and stage 4 (gated MLP with
-gate_w/up_w of length qs/2 and poly_c1 activation). Every input
-stream flows through compute. The runner verifies activation_out
-bit-exact against a host numpy reference that replays every
-reduction, every rope rotation, and every activation in the same
-scalar f32 op sequence as the CSL kernel. Rope uses only +, -, *
-and a hardcoded dyadic (cos, sin) table — no platform math.cos/sin
-divergence.
+runs the full 4-stage layer block (pre-attn RMSNorm; MHA with vector
+Q/K/V, real-cos/sin rope, poly_c1 softmax; post-attn RMSNorm; gated
+MLP with poly_c1 activation), and the runner CHAINS num_layers (=2
+by default) invocations of that kernel via the streaming runtime —
+activation_out of layer L is fed back as ple_rows of layer L+1 (the
+residual stream pattern of a transformer block tower), with distinct
+per-layer ple_projection and layer_weights. The bit-exact host numpy
+reference replays the same chain. Pass requires every layer to match
+under np.array_equal.
 """
 
 from __future__ import annotations
@@ -481,10 +476,14 @@ def main() -> int:
         "executedRun": {{
             "status": run_status,
             "elapsedMs": run_elapsed_ms,
-            "observedBytesTransferredPerPe": args.size * 4 * 4,
-            "observedBytesTransferredTotal": args.size * 4 * 4,
+            "numLayersChained": num_layers_smoke,
+            "observedBytesTransferredPerPe":
+                args.size * 4 * 4 * num_layers_smoke,
+            "observedBytesTransferredTotal":
+                args.size * 4 * 4 * num_layers_smoke,
             "numericalParity": {{
                 "maxAbsErr": max_abs_err,
+                "perLayerMaxAbsErr": per_layer_max_abs_err,
                 "atol": 0,
                 "passed": passed,
             }},
@@ -534,6 +533,7 @@ def main() -> int:
                 "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
+                "+multi_layer_chain"
             ),
             "status": run_status,
             "targetMode": "local_simfabric",

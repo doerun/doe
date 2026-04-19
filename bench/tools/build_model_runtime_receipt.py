@@ -429,6 +429,7 @@ def main() -> int:
             "layer_block_mha_2head_hd2_rope_real_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
+            "layer_block_multi_layer_residual_chain",
         ],
         "layerBlockKernelEvidence": {
             "description": (
@@ -463,6 +464,7 @@ def main() -> int:
                 "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
+                "+multi_layer_chain"
             ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
@@ -536,10 +538,20 @@ def main() -> int:
                 "per head, head_dim > 2."
             ),
             **layer_block_trace_evidence,
+            "multiLayerChain": (
+                "Runner now chains the layer-block kernel num_layers "
+                "times (default 2) via the streaming runtime — "
+                "activation_out of layer L feeds back as ple_rows of "
+                "layer L+1 with distinct per-layer ple_projection "
+                "and layer_weights. The same SdkLayout compile "
+                "artifacts are reused across layers (no recompile). "
+                "Bit-exact pass requires every layer to match under "
+                "np.array_equal."
+            ),
             "pendingStages": [
+                "scale_chain_to_full_e2b_35_layers",
                 "longer_kv_cache_per_head",
                 "head_dim_greater_than_two",
-                "per_layer_distinct_weights_in_streaming_runner",
             ],
         },
     }
