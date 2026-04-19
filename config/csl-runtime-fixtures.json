@@ -225,7 +225,8 @@
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-fused-gemv-dequant/trace.json"
       },
       "nextAction": "Host-side reduce variant \u2014 the primary emitter's fabric allreduce still has an async-send teardown stall. Next step is adopting the canonical collectives_2d allreduce module for on-device reduction. Dequant + per-PE GEMV correctness is already verified here.",
-      "reduceStrategy": "host_partial"
+      "reduceStrategy": "host_reduce_partial",
+      "reduceStrategyNote": "Fabric allreduce path exists but has an async-send teardown stall in the primary emitter; this fixture falls back to exporting per-PE partials and running the final reduce on the host. Canonical collectives_2d allreduce adoption is the follow-up; see nextAction."
     },
     {
       "id": "sample",
@@ -250,7 +251,8 @@
         "tracePath": "bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-sample/trace.json"
       },
       "nextAction": "Extend to top-k sampling + temperature-scaled softmax for non-greedy decoding.",
-      "reduceStrategy": "host_partial"
+      "reduceStrategy": "host_reduce_partial",
+      "reduceStrategyNote": "Sampling collects per-PE partial argmax + max-logit, host combines. Greedy-decoding contract; non-greedy extensions would likely keep the host-reduce split."
     },
     {
       "id": "kv-write",
