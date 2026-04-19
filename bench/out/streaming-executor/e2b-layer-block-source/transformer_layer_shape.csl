@@ -86,15 +86,16 @@
 // guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
 //
-// Per-head vector KV layout: num_heads = 4 heads, head_dim = 4,
-// kv_len_per_head = 2. The attn output space (num_heads * head_dim
-// = 16) broadcasts size/(num_heads*head_dim) = 8 times over the
-// full token (size = 128 default). size must be a multiple of
-// (num_heads * head_dim); qs must satisfy 2*qs >= num_heads * 2 *
-// head_dim * kv_len_per_head = 64. Default smoke_size = 128 gives
-// qs = 32. head_dim=4 means two rope pairs per head (dims 0,1 form
-// pair 0; dims 2,3 form pair 1) at distinct frequencies theta_d =
-// base^(-2d/head_dim) — the manifest-shaped multi-pair rope.
+// Per-head vector KV layout: num_heads = 8 (matches manifest.
+// modelConfig.numHeads), head_dim = 4, kv_len_per_head = 2. The
+// attn output space (num_heads * head_dim = 32) broadcasts
+// size/(num_heads*head_dim) = 8 times over the full token (size =
+// 256 default). size must be a multiple of (num_heads * head_dim);
+// qs must satisfy 2*qs >= num_heads * 2 * head_dim * kv_len_per_head
+// = 128. Default smoke_size = 256 gives qs = 64. head_dim=4 keeps
+// two rope pairs per head (dims 0,1 form pair 0; dims 2,3 form
+// pair 1) at theta_d = base^(-2d/head_dim) — same multi-pair rope
+// table as the head_dim=4 tick.
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -225,7 +226,7 @@ task done() void {
     //     first per_head_K_len entries = K_h (laid out as K_h[j][d]),
     //     next per_head_K_len = V_h.
     //   Q_h[d] = buf_out[h*head_dim + d]
-    const num_heads: u16 = 4;
+    const num_heads: u16 = 8;
     const head_dim: u16 = 4;
     const kv_len_per_head: u16 = 2;
     const num_pairs: u16 = head_dim / 2;

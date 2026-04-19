@@ -426,7 +426,7 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mha_4head_hd4_multi_pair_rope_real_poly_c1_softmax",
+            "layer_block_mha_8head_hd4_multi_pair_rope_real_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
             "layer_block_multi_layer_residual_chain",
@@ -461,7 +461,7 @@ def main() -> int:
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_4head_hd4_multi_pair_rope_real"
+                "pre_attn_rmsnorm+mha_8head_hd4_multi_pair_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
                 "+multi_layer_chain"
@@ -521,25 +521,24 @@ def main() -> int:
             ),
             "stageTwoAttention": (
                 "Multi-head attention with PER-HEAD VECTOR Q/K/V AND "
-                "MULTI-PAIR ROPE. num_heads = 4 (bumped from 2 "
-                "toward the manifest's 8), head_dim = 4 (bumped from "
-                "2 to enable real multi-pair rope), kv_len_per_head "
+                "MULTI-PAIR ROPE. num_heads = 8 (matches manifest."
+                "modelConfig.numHeads), head_dim = 4, kv_len_per_head "
                 "= 2. Standard rope groups dimensions in pairs and "
                 "gives each pair its own frequency theta_d = base^(-"
                 "2d/head_dim). For head_dim=4 with base=100: pair 0 "
                 "(dims 0,1) at theta_0=1.0; pair 1 (dims 2,3) at "
                 "theta_1=0.1. The (cos, sin) table indexed by "
-                "(position, pair_index) carries 6 entries — the "
-                "three positions {0,1,2} cross the two pair indices "
-                "{0,1} — all expressed as 9-decimal-digit f32 "
-                "literals that round-trip identically in CSL and "
-                "numpy under IEEE-754. Q_h is rope-rotated at "
-                "position kv_len_per_head; each K_h[j] at position "
-                "j; V_h is NOT rotated. Logits dot all head_dim=4 "
-                "rope-rotated dims; max-centered poly_c1 softmax. "
-                "Upgrade path: num_heads to 8 matching the manifest, "
-                "longer KV per head, real manifest-derived weight "
-                "loading via the per-layer-index seed swap point."
+                "(position, pair_index) carries 6 entries — three "
+                "positions cross two pair indices — all 9-decimal-"
+                "digit f32 literals verified to round-trip identically "
+                "in CSL and numpy under IEEE-754. Q_h is rope-rotated "
+                "at position kv_len_per_head; each K_h[j] at position "
+                "j; V_h is NOT rotated. Logits dot all head_dim rope-"
+                "rotated dims; max-centered poly_c1 softmax. With "
+                "num_heads now matching the manifest, the remaining "
+                "structural gaps to a real Gemma-4 attention block "
+                "are head_dim (still 4 vs manifest 512), longer KV "
+                "per head, and real manifest-derived weight loading."
             ),
             **layer_block_trace_evidence,
             "multiLayerChain": (
@@ -561,9 +560,9 @@ def main() -> int:
                 "the bit-exact gate on the remaining layers."
             ),
             "pendingStages": [
-                "num_heads_to_eight_matching_manifest",
                 "load_per_layer_weights_from_manifest_not_seeded_rng",
                 "longer_kv_cache_per_head",
+                "head_dim_toward_manifest_512",
             ],
         },
     }
