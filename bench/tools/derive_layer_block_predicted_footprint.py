@@ -453,10 +453,29 @@ def main() -> int:
         },
         "perPattern": per_pattern,
         "aggregate": {
+            # NAMING NOTE: these fields are cumulative per-invocation
+            # footprints summed across patterns + layers. They do NOT
+            # represent actual per-PE residency — when multiple
+            # invocations share a PE in the real deployment, their
+            # bytes overlap in memory rather than adding. The
+            # cumulative number is still useful as a baseline for
+            # divergence analysis (it moves the same way as observed
+            # when formulas are correct), but callers reading the
+            # aggregate as "memory footprint" will be misled. See
+            # cumulativeInvocationBytes*PerPe below for the honest
+            # label, and residentBytesPerPe (populated when a
+            # generator emits actual PE residency data) for the
+            # eventual memory-accurate field.
             "bytesPerLayerPerPe": total_bytes_per_layer,
             "cyclesPerLayerPerPe": total_cycles_per_layer,
             "bytesPerModelPerPe": total_bytes_per_layer * num_layers,
             "cyclesPerModelPerPe": total_cycles_per_layer * num_layers,
+            "cumulativeInvocationBytesPerLayerPerPe": total_bytes_per_layer,
+            "cumulativeInvocationCyclesPerLayerPerPe": total_cycles_per_layer,
+            "cumulativeInvocationBytesPerModelPerPe": total_bytes_per_layer * num_layers,
+            "cumulativeInvocationCyclesPerModelPerPe": total_cycles_per_layer * num_layers,
+            "residentBytesPerPe": None,
+            "residentBytesPerPeSource": "not_yet_populated",
             "activePatternCount": sum(
                 1 for p in per_pattern
                 if p["status"] != "dormant_pattern_no_manifest_step"
@@ -510,8 +529,9 @@ def main() -> int:
     print(
         f"predicted footprint ({args.target_model}): {ag['activePatternCount']} active + "
         f"{ag['dormantPatternCount']} dormant patterns; "
-        f"{ag['bytesPerLayerPerPe']:,} bytes/layer/PE × {num_layers} layers = "
-        f"{ag['bytesPerModelPerPe']:,} bytes/PE -> "
+        f"cumulative per-invocation {ag['cumulativeInvocationBytesPerLayerPerPe']:,} bytes/layer/PE × "
+        f"{num_layers} layers = "
+        f"{ag['cumulativeInvocationBytesPerModelPerPe']:,} bytes/PE (cumulative, NOT residency) -> "
         f"{out_path.relative_to(REPO_ROOT)}"
     )
     return 0

@@ -288,14 +288,16 @@
       const expected = tally.expected_shape_divergence || 0;
       const unexpected = tally.unexpected_divergence_formula_suspect || 0;
       const kind = unexpected === 0 ? 'pass' : 'partial';
-      const bytesPerModel = (ag.bytesPerModelPerPe ?? 0).toLocaleString();
+      const bytesPerModel = (ag.cumulativeInvocationBytesPerModelPerPe
+                             ?? ag.bytesPerModelPerPe ?? 0).toLocaleString();
       const shapesSource = (fp.generatedFrom || {}).shapesSource || 'unknown';
       const shapeMatchCount = ag.predictedMatchesObservedShapeCount ?? 0;
       addRow('proven-rows',
         label,
         badge(kind, unexpected === 0 ? 'baseline' : 'formula-drift'),
-        `<code>${bytesPerModel}</code> bytes/PE/model predicted · ` +
-        `shapes from <code>${shapesSource}</code><br>` +
+        `<code>${bytesPerModel}</code> cumulative invocation bytes/PE · ` +
+        `shapes from <code>${shapesSource}</code> · ` +
+        `<em>cumulative — not residency</em><br>` +
         `${bound} of ${active + dormant} patterns bound to observed fixtures; ` +
         `shape-match <code>${shapeMatchCount} / ${bound}</code>; ` +
         `classification tally: ` +
