@@ -426,7 +426,7 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mha_2head_hd2_rope_dyadic_poly_c1_softmax",
+            "layer_block_mha_2head_hd2_rope_real_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
         ],
@@ -460,7 +460,7 @@ def main() -> int:
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_hd2_rope_dyadic"
+                "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
@@ -522,24 +522,24 @@ def main() -> int:
                 "ROPE positional encoding. num_heads = 2, head_dim = "
                 "2, kv_len_per_head = 2. Q_h is rotated at position "
                 "p_q = kv_len_per_head = 2; each K_h[j] is rotated "
-                "at position p_k = j. Rope table is a dyadic "
-                "(cos, sin) triplet: (1.0, 0.0), (0.5, 0.5), "
-                "(-0.25, 0.75) for positions 0, 1, 2 respectively — "
-                "dyadic rationals parse exactly to f32 in both CSL "
-                "(decimal literal) and numpy (np.float32 literal), "
-                "preserving the bit-exact parity gate without "
-                "platform math.cos/sin divergence. Logits use dot "
-                "product over head_dim with rope-rotated Q and K; "
-                "max-centered poly_c1 softmax; V_h is NOT rotated "
-                "(standard rope only applies to Q and K). Upgrade "
-                "path: real cos/sin values via exact-decimal f32 "
-                "constants, longer KV per head, head_dim > 2."
+                "at position p_k = j. Rope table uses ACTUAL cos/sin "
+                "values: (1.0, 0.0), (0.540302277, 0.841470957), "
+                "(-0.416146845, 0.909297407) for positions 0, 1, 2. "
+                "9-decimal-digit literals round-trip exactly to the "
+                "same f32 bit pattern in both CSL (decimal literal) "
+                "and numpy (np.float32 literal) under IEEE-754 "
+                "correct rounding — verified for all four non-"
+                "trivial entries. Logits use dot product over "
+                "head_dim with rope-rotated Q and K; max-centered "
+                "poly_c1 softmax; V_h is NOT rotated (standard rope "
+                "only applies to Q and K). Upgrade path: longer KV "
+                "per head, head_dim > 2."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
-                "rope_table_real_cos_sin_values",
                 "longer_kv_cache_per_head",
                 "head_dim_greater_than_two",
+                "per_layer_distinct_weights_in_streaming_runner",
             ],
         },
     }

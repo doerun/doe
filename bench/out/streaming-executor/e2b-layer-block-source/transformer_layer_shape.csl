@@ -67,10 +67,11 @@
 //     attn_flat        = flatten attn_val to length num_heads*head_dim
 //     attn_out[i]      = attn_flat[i mod (num_heads*head_dim)] + rows[i]
 //
-// Rope table (dyadic, bit-exact in f32):
-//     p=0 -> (cos=1.0,  sin=0.0)    identity rotation
-//     p=1 -> (cos=0.5,  sin=0.5)
-//     p=2 -> (cos=-0.25, sin=0.75)
+// Rope table (actual cos/sin, bit-exact in f32 via 9-decimal-digit
+// literals that round-trip under IEEE-754 correct rounding):
+//     p=0 -> (cos=1.0,          sin=0.0)
+//     p=1 -> (cos=0.540302277,  sin=0.841470957)
+//     p=2 -> (cos=-0.416146845, sin=0.909297407)
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
@@ -118,18 +119,20 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
-// Rope positional encoding table (synthetic, dyadic rationals so the
-// literal parses exactly to f32 in both CSL and numpy). Positions 0
-// and 1 are the two KV entries; position 2 is the Q rotation.
+// Rope positional encoding table. Values are actual cos(p), sin(p)
+// for p in {0, 1, 2}, expressed as 9-decimal-digit literals that
+// round-trip exactly to the same f32 bit pattern in both CSL and
+// numpy under IEEE-754 correct rounding. Positions 0 and 1 are the
+// two KV entries; position 2 is the Q rotation.
 fn rope_cos_at(p: u16) f32 {
-    if (p == 0) { return  1.0;  }
-    if (p == 1) { return  0.5;  }
-    return -0.25;   // p == 2
+    if (p == 0) { return  1.0;          }
+    if (p == 1) { return  0.540302277;  }  // cos(1)
+    return -0.416146845;                   // cos(2)
 }
 fn rope_sin_at(p: u16) f32 {
-    if (p == 0) { return 0.0; }
-    if (p == 1) { return 0.5; }
-    return 0.75;    // p == 2
+    if (p == 0) { return 0.0;           }
+    if (p == 1) { return 0.841470957;   }  // sin(1)
+    return 0.909297407;                    // sin(2)
 }
 
 const in_q_0 = @get_input_queue(0);

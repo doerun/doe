@@ -159,9 +159,9 @@ def main() -> int:
         #   num_heads = 2, head_dim = 2, kv_len_per_head = 2
         #   per_head_K_len = head_dim * kv_len_per_head = 4
         #   per_head_stride = 2 * per_head_K_len = 8
-        #   rope table: (cos, sin) = (1, 0), (0.5, 0.5), (-0.25, 0.75)
-        #     for positions 0, 1, 2 respectively. Dyadic so the
-        #     decimal literal parses to the same f32 as CSL.
+        #   rope table: actual cos(p), sin(p) for p in [0, 1, 2], as
+        #     9-decimal-digit literals that round-trip to identical
+        #     f32 bit patterns in both CSL and numpy (IEEE-754).
         num_heads = 2
         head_dim = 2
         kv_len_per_head = 2
@@ -175,15 +175,19 @@ def main() -> int:
             "per_head_KV region (2*qs) too small for vector per-head KV"
         )
 
+        # Rope table: actual cos/sin values at positions 0, 1, 2.
+        # 9-decimal-digit literals round-trip to identical f32 bit
+        # patterns in both CSL and numpy under IEEE-754 correct
+        # rounding (verified for cos(1), sin(1), cos(2), sin(2)).
         def rope_cos_at(p):
             if p == 0: return np.float32(1.0)
-            if p == 1: return np.float32(0.5)
-            return np.float32(-0.25)  # p == 2
+            if p == 1: return np.float32(0.540302277)  # cos(1)
+            return np.float32(-0.416146845)             # cos(2)
 
         def rope_sin_at(p):
             if p == 0: return np.float32(0.0)
-            if p == 1: return np.float32(0.5)
-            return np.float32(0.75)   # p == 2
+            if p == 1: return np.float32(0.841470957)  # sin(1)
+            return np.float32(0.909297407)              # sin(2)
 
         attn_vals = np.zeros(attn_flat_len, dtype=np.float32)
         for h in range(num_heads):
@@ -374,14 +378,15 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "8a824fb7584300dad9ac3601a4dd18ab68ed1f172d59c0d42a6aeb9b9c0b4b07",
+            "kernelSourceSha256": "7f1069b8192559ee4eb54786c2a32624f22bf291a9ac8a21bf209ed10451ff7f",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
                 "num_heads = 2; head_dim = 2; kv_len_per_head = 2; "
                 "per_head_K_len = head_dim * kv_len_per_head; stride = 2*per_head_K_len; "
                 "flat_len = num_heads*head_dim; mlp_len = qs/2; "
-                "rope_table[p=0]=(1,0), rope_table[p=1]=(0.5,0.5), rope_table[p=2]=(-0.25,0.75); "
+                "rope_table[p=0]=(1,0), rope_table[p=1]=(0.540302277, 0.841470957), "
+                "rope_table[p=2]=(-0.416146845, 0.909297407)  (actual cos/sin); "
                 "rope_rot(x0,x1,p) = (cos[p]*x0 - sin[p]*x1, sin[p]*x0 + cos[p]*x1); "
                 "for h in [0, num_heads): "
                 "Q_h[d] = rmsnorm[h*head_dim + d]; "
@@ -403,7 +408,7 @@ def main() -> int:
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_hd2_rope_dyadic"
+                "pre_attn_rmsnorm+mha_2head_hd2_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
