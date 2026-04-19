@@ -86,9 +86,16 @@ graph, and chain-parity evidence into one artifact per model.
 The `laneStatus` field reports structural coverage
 (`structural_full_coverage` means every host-plan kernel resolves to a
 runtime-ready fixture and the memory plan fits). The `executionStatus`
-field stays honest at `not_attempted` until the SdkLayout streaming
-executor lands; the current `executionBlocker` is
-`sdk_layout_streaming_executor_missing`.
+field stays honest at `not_attempted`; the current `executionBlocker`
+is `streaming_executor_not_bound_to_execution_plan`. The SdkLayout
+streaming executor primitives now compile and run under simfabric
+(section 8 below lists the traces) — the remaining gap is generated
+stage-kernel code that the executor dispatches per layer, per the
+Gemma4 Doppler→Doe→Cerebras plan's Build-order step 1
+(`ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md`).
+Each model receipt now carries a `streamingExecutorPrimitivesEvidence`
+block pointing at the primitive traces, so downstream consumers can
+render "primitives: pass" as a distinct row from "full-model: blocked".
 
 ### 5. Stream graph + execution plan + dry-run trace + comparison tools
 
@@ -169,18 +176,58 @@ with `$DOE_CSL_CMADDR` in persisted commands.
 - No live endpoint required; the pure driver functions are verified via
   direct import.
 
+### 8. SdkLayout streaming executor primitives
+
+Bench/out/streaming-executor/ holds SdkLayout compile+run traces for
+every primitive the executor needs to compose a layer block. Each
+trace is schema-validated by `config/doe-streaming-executor-trace.schema.json`.
+
+- Schema: `config/doe-streaming-executor-trace.schema.json`.
+- Primitives proven (each with its own trace): stream passthrough
+  (iter-2), compute transform (iter-3), region-to-region chain
+  (iter-4), multi-PE SPMD via demux/mux (iter-5), compile-artifact
+  cache + io_buffer_size knob (iter-6), four-stage layer-block-shaped
+  chain (iter-7), plus hand-ported WGSL-semantics kernels for
+  elementwise-sigmoid, elementwise-add, gather, and blocked
+  reduce-sum.
+- First generated layer-block smoke (plan Build-order step 1):
+  `bench/out/streaming-executor/e2b-layer-block-smoke-trace.json`,
+  produced by `bench/tools/generate_e2b_layer_block_runner.py` from
+  `bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json`.
+  The trace carries `layerBlockSmoke.{planSha256, kernelSourceSha256,
+  targetMode, connectionGraph, hostIoLayout, ioBufferSizes,
+  sendReceiveCounts, simulatorArtifactPaths, sourceModelReceiptPath}`.
+- WGSL backend equivalence crosswalk: `bench/out/wgsl-backend-equivalence/`
+  ties one WGSL source to every backend emitter (csl-memcpy,
+  csl-sdklayout, spirv) with sha256-bound pointers to each backend's
+  execution evidence (schema: `config/doe-wgsl-backend-equivalence.schema.json`).
+- Vulkan runtime probe: `bench/out/vulkan-runtime-probe/` records
+  per-step infrastructure status for Doe's native WebGPU stack
+  (`libwebgpu_doe.so`). Currently surfaces
+  `knownGap=compute_dispatch_drops_storage_writes` — infrastructure
+  boots and buffers round-trip, but storage writes from compute
+  dispatch don't reach the GPU (schema:
+  `config/doe-vulkan-runtime-probe.schema.json`).
+
 ## What the sweep does not (yet) prove
 
 - **Actual model execution on hardware.** Both models report
-  `executionStatus: not_attempted`. The `executionBlocker` names the
-  first unmet prerequisite; today it is the SdkLayout streaming
-  executor (priority #6) for both models.
+  `executionStatus: not_attempted`. The `executionBlocker` today is
+  `streaming_executor_not_bound_to_execution_plan`: the SdkLayout
+  streaming executor primitives exist and run on simfabric (section 8
+  below), but the stream-execution-plan's stage codegen is not yet
+  emitting kernels the executor dispatches per layer. Maps to
+  Build-order step 1 of the cross-repo plan at
+  `ouroboros/docs/integration/gemma4-doppler-doe-cerebras-plan.md`.
 - **Longer Gemma chains.** Current chains are 2 or 3 kernels. The
   shape-plumbing for deeper chains (attention+MLP block) is tractable;
   we just have not added those receipts yet.
 - **Full-grid per-kernel compile.** The 2D probe proves the PE-count
   ceiling for the simplest kernel. Compiling all 17 emitted kernels at
-  E2B/31B grid with their real shape params is a separate sweep.
+  E2B/31B grid with their real shape params is a separate sweep
+  (Build-order step 2). Precondition: 2D emission must land across all
+  14 layout emitters in `runtime/zig/src/doe_wgsl/emit_csl_layout.zig`
+  — elementwise is done, 13 remain.
 - **Weight-quantized numerical parity at the model level.** Per-kernel
   Q4K parity is covered by `fused_gemv_dequant`; whole-model logit
   parity requires the streaming executor plus a reference weights
