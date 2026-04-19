@@ -268,6 +268,24 @@ def main() -> int:
             "rope_q",
             "rope_k"
         ]
+    },
+    {
+        "pattern": "reduction",
+        "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
+        "emitterWidened2D": False,
+        "paramsShape": {
+            "width": 16
+        },
+        "cslcParamsString": "width:16",
+        "derivationSource": "width = num_tokens from --size (reduction emitter declares only `param width` at layout level; pe_id/num_pes/reduce_color are set per-tile by the layout not via --params). Single-PE mode per emit_csl_reduction.zig: each PE processes one full token \u2014 width <= max_seq_len <= i16, so 1-D stays fine.",
+        "manifestSteps": [
+            "ple_norm",
+            "input_norm",
+            "post_attn_norm",
+            "ple_norm",
+            "input_norm",
+            "post_attn_norm"
+        ]
     }
 ],
         },

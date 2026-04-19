@@ -417,6 +417,33 @@ def derive_per_kernel_shapes(
             if s.get("op") == "rope"
         ],
     })
+    # Smoke-shape reduction (RMSNorm / softmax single-PE lowering): the
+    # emitter at L112 declares only `param width: i16;` — reduce_color,
+    # pe_id, and num_pes are set at tile-code time by the layout, not
+    # via --params. Width is per-token (one PE per token for the single-
+    # PE RMSNorm lowering); per the audit reduction stays 1-D because
+    # num_tokens stays <= i16.
+    reduction_manifest_ops = ("rmsnorm", "ple_norm", "softmax", "layernorm")
+    shapes.append({
+        "pattern": "reduction",
+        "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
+        "emitterWidened2D": False,
+        "paramsShape": {
+            "width": smoke_size,
+        },
+        "cslcParamsString": f"width:{smoke_size}",
+        "derivationSource": (
+            "width = num_tokens from --size (reduction emitter declares "
+            "only `param width` at layout level; pe_id/num_pes/reduce_color "
+            "are set per-tile by the layout not via --params). Single-PE "
+            "mode per emit_csl_reduction.zig: each PE processes one full "
+            "token — width <= max_seq_len <= i16, so 1-D stays fine."
+        ),
+        "manifestSteps": [
+            s["name"] for s in manifest.get("steps", [])
+            if s.get("op") in reduction_manifest_ops
+        ],
+    })
     return shapes
 
 
