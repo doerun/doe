@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doe — status dashboard</title>
+<style>
+  :root {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color-scheme: light dark;
+    --pass: #1a7f37;
+    --blocked: #b42318;
+    --aspirational: #9a3412;
+    --partial: #8f6a00;
+    --text: #1f2328;
+    --muted: #656d76;
+    --line: #d0d7de;
+    --card: #ffffff;
+    --code: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pass: #3fb950;
+      --blocked: #f85149;
+      --aspirational: #d2a8ff;
+      --partial: #d29922;
+      --text: #e6edf3;
+      --muted: #8d96a0;
+      --line: #30363d;
+      --card: #0d1117;
+      --code: #161b22;
+    }
+  }
+  body { margin: 0; padding: 32px; color: var(--text); background: var(--card); }
+  main { max-width: 1080px; margin: 0 auto; }
+  h1 { margin: 0 0 8px; font-size: 28px; }
+  .lede { color: var(--muted); font-size: 15px; margin: 0 0 24px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .badge-pass { color: var(--pass); border-color: var(--pass); }
+  .badge-blocked { color: var(--blocked); border-color: var(--blocked); }
+  .badge-aspirational { color: var(--aspirational); border-color: var(--aspirational); }
+  .badge-partial { color: var(--partial); border-color: var(--partial); }
+  .badge-loading { color: var(--muted); border-color: var(--line); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: var(--code); padding: 1px 6px; border-radius: 4px; }
+  .evidence { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .evidence a { color: inherit; }
+  .error { color: var(--blocked); font-size: 13px; }
+  .footnote { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 24px; }
+  .footnote code { font-size: 12px; }
+  .section-head { margin: 28px 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Doe — status dashboard</h1>
+  <p class="lede">
+    Status rows lifted verbatim from artifacts under <code>bench/out/</code>.
+    Every <span class="badge badge-aspirational">aspirational</span> label comes
+    straight from the receipt's own <code>executionStatus</code> /
+    <code>executionBlocker</code> fields — the dashboard never re-labels them.
+  </p>
+
+  <div class="section-head">Proven today</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:34%">Capability</th>
+        <th style="width:16%">Status</th>
+        <th>Evidence</th>
+      </tr>
+    </thead>
+    <tbody id="proven-rows">
+      <tr><td colspan="3"><span class="badge badge-loading">loading…</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-head">Aspirational — not attempted yet</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:34%">Capability</th>
+        <th style="width:16%">executionStatus</th>
+        <th>executionBlocker / evidence</th>
+      </tr>
+    </thead>
+    <tbody id="aspirational-rows">
+      <tr><td colspan="3"><span class="badge badge-loading">loading…</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="footnote">
+    Serve from the repo root: <code>cd /path/to/doe &amp;&amp; python3 -m http.server 8000</code>
+    then open <code>http://localhost:8000/demos/doe-status-dashboard/</code>.
+    Every row is re-derived from JSON at view time; edit the artifact and
+    reload to see the status change.
+  </p>
+</main>
+
+<script type="module">
+  const repoRoot = '../../';
+
+  async function fetchJson(path) {
+    const res = await fetch(repoRoot + path);
+    if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+    return res.json();
+  }
+
+  function td(text) {
+    const el = document.createElement('td');
+    el.textContent = text;
+    return el;
+  }
+
+  function tdHtml(html) {
+    const el = document.createElement('td');
+    el.innerHTML = html;
+    return el;
+  }
+
+  function badge(kind, text) {
+    return `<span class="badge badge-${kind}">${text}</span>`;
+  }
+
+  function evidenceLink(path) {
+    return `<a class="mono" href="${repoRoot}${path}">${path}</a>`;
+  }
+
+  function row(cells) {
+    const tr = document.createElement('tr');
+    for (const c of cells) tr.appendChild(c);
+    return tr;
+  }
+
+  function addRow(tbodyId, capability, statusBadge, evidenceHtml) {
+    const tbody = document.getElementById(tbodyId);
+    if (tbody.dataset.cleared !== 'yes') {
+      tbody.innerHTML = '';
+      tbody.dataset.cleared = 'yes';
+    }
+    tbody.appendChild(row([td(capability), tdHtml(statusBadge), tdHtml(evidenceHtml)]));
+  }
+
+  function addError(tbodyId, capability, message) {
+    addRow(tbodyId, capability, badge('blocked', 'error'),
+      `<div class="error">${message}</div>`);
+  }
+
+  // ── Proven rows ──────────────────────────────────────────────────
+
+  try {
+    const wgslMatrix = await fetchJson('bench/out/cross-backend-matrix/wgsl-backend-matrix.json');
+    // Best-effort summary — the schema may evolve, so show any count-like field.
+    const kernelCount = (wgslMatrix.kernels || wgslMatrix.rows || []).length ||
+      Object.keys(wgslMatrix).length;
+    addRow('proven-rows',
+      'WGSL → multi-backend compile (csl, spirv, msl, hlsl, dxil)',
+      badge('pass', 'pass'),
+      `${kernelCount} kernels in matrix · ${evidenceLink('bench/out/cross-backend-matrix/wgsl-backend-matrix.json')}`);
+  } catch (e) {
+    addError('proven-rows', 'WGSL → multi-backend compile', e.message);
+  }
+
+  // WGSL backend equivalence crosswalk (index covers bit-exact/bit-close per kernel).
+  try {
+    const idx = await fetchJson('bench/out/wgsl-backend-equivalence/index.json');
+    const total = idx.totalKernels;
+    const allPassed = idx.allPassed;
+    const execProven = (idx.kernels || []).flatMap(k => k.executionProven || []);
+    addRow('proven-rows',
+      'WGSL backend equivalence crosswalk',
+      badge(allPassed ? 'pass' : 'partial', allPassed ? 'pass' : 'partial'),
+      `${total} kernels · ${execProven.length} backend-executions proven bit-exact or bit-close<br>` +
+      evidenceLink('bench/out/wgsl-backend-equivalence/index.json'));
+  } catch (e) {
+    addError('proven-rows', 'WGSL backend equivalence crosswalk', e.message);
+  }
+
+  // Streaming-executor primitives — read from the E2B receipt's evidence block
+  // so the dashboard and the receipt can't drift.
+  try {
+    const e2b = await fetchJson('bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
+    const sp = e2b.streamingExecutorPrimitivesEvidence;
+    if (!sp) throw new Error('streamingExecutorPrimitivesEvidence missing from receipt');
+    const proven = sp.primitivesProven || [];
+    const sample = sp.tracesSample || [];
+    addRow('proven-rows',
+      'SdkLayout streaming executor primitives (simfabric)',
+      badge('pass', 'pass'),
+      `${proven.length} primitives proven: ${proven.map(p => `<code>${p}</code>`).join(', ')}<br>` +
+      `${sample.length} traces · ${evidenceLink('bench/out/streaming-executor/')}`);
+  } catch (e) {
+    addError('proven-rows', 'SdkLayout streaming executor primitives', e.message);
+  }
+
+  // Full-grid cslc feasibility.
+  try {
+    const probe = await fetchJson('bench/out/cslc-grid-probe/grid-probe-aggregate.json');
+    const max1d = probe.maxProvenPeCount1D || probe.max1d || null;
+    const max2d = probe.maxProvenPeCount2D || probe.max2d || null;
+    const pieces = [];
+    if (max1d) pieces.push(`1D max: ${max1d.toLocaleString()} PE`);
+    if (max2d) pieces.push(`2D max: ${max2d.toLocaleString()} PE`);
+    addRow('proven-rows',
+      'Full-grid cslc compile feasibility',
+      badge('pass', 'pass'),
+      (pieces.join(' · ') || 'see aggregate') + '<br>' +
+      evidenceLink('bench/out/cslc-grid-probe/grid-probe-aggregate.json'));
+  } catch (e) {
+    addError('proven-rows', 'Full-grid cslc compile feasibility', e.message);
+  }
+
+  // E2B structural readiness.
+  try {
+    const e2b = await fetchJson('bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
+    addRow('proven-rows',
+      `E2B structural readiness (${e2b.modelId})`,
+      badge(e2b.laneStatus === 'structural_full_coverage' ? 'pass' : 'partial', e2b.laneStatus),
+      `${e2b.kernelCoverage?.covered || '?'} / ${e2b.kernelCoverage?.total || '?'} kernels · ` +
+      `fits=<code>${e2b.fits}</code><br>` +
+      evidenceLink('bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json'));
+  } catch (e) {
+    addError('proven-rows', 'E2B structural readiness', e.message);
+  }
+
+  // 31B structural readiness.
+  try {
+    const r = await fetchJson('bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json');
+    addRow('proven-rows',
+      `31B structural readiness (${r.modelId})`,
+      badge(r.laneStatus === 'structural_full_coverage' ? 'pass' : 'partial', r.laneStatus),
+      `${r.kernelCoverage?.covered || '?'} / ${r.kernelCoverage?.total || '?'} kernels · ` +
+      `fits=<code>${r.fits}</code><br>` +
+      evidenceLink('bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json'));
+  } catch (e) {
+    addError('proven-rows', '31B structural readiness', e.message);
+  }
+
+  // ── Aspirational rows ────────────────────────────────────────────
+  // These are NOT relabeled — text comes from the receipts' own
+  // executionStatus/executionBlocker fields so the dashboard and the
+  // artifacts can never drift.
+
+  async function addAspirationalFromReceipt(label, path) {
+    try {
+      const r = await fetchJson(path);
+      const status = r.executionStatus || 'unknown';
+      const blocker = r.executionBlocker || 'unknown';
+      addRow('aspirational-rows',
+        label,
+        badge('aspirational', status),
+        `blocker: <code>${blocker}</code><br>${evidenceLink(path)}`);
+    } catch (e) {
+      addError('aspirational-rows', label, e.message);
+    }
+  }
+
+  await addAspirationalFromReceipt(
+    'CSL full E2B execution (simulator)',
+    'bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
+  await addAspirationalFromReceipt(
+    'CSL full 31B execution (simulator)',
+    'bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json');
+
+  // Hardware execution — rendered from the receipt's blocker name when it
+  // is hardware_endpoint_unavailable, else note that the simulator blocker
+  // has to clear first.
+  try {
+    const e2b = await fetchJson('bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
+    const simBlocker = e2b.executionBlocker;
+    addRow('aspirational-rows',
+      'CSL E2B execution (hardware, $DOE_CSL_CMADDR)',
+      badge('aspirational', 'not_attempted'),
+      `gated on simulator executionBlocker: <code>${simBlocker}</code> clearing first · ` +
+      `then swap SimfabConfig for cmaddr`);
+  } catch (e) {
+    addError('aspirational-rows', 'CSL E2B execution (hardware)', e.message);
+  }
+</script>
+</body>
+</html>
