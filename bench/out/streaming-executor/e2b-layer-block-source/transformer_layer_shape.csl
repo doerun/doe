@@ -86,16 +86,15 @@
 // guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
 //
-// Per-head vector KV layout: num_heads = 4 heads, head_dim = 2,
+// Per-head vector KV layout: num_heads = 4 heads, head_dim = 4,
 // kv_len_per_head = 2. The attn output space (num_heads * head_dim
-// = 8) broadcasts size/(num_heads*head_dim) = 8 times over the full
-// token (size = 64 default). size must be a multiple of (num_heads
-// * head_dim); qs must satisfy 2*qs >= num_heads * 2 * head_dim *
-// kv_len_per_head = 32. Default smoke_size = 64 gives qs = 16. The
-// num_heads bump from 2 toward the manifest's 8 is the first step
-// of "manifest-shaped attention"; head_dim is left at 2 so the
-// existing single-pair rope code stays untouched (multi-pair rope
-// is the follow-up tick).
+// = 16) broadcasts size/(num_heads*head_dim) = 8 times over the
+// full token (size = 128 default). size must be a multiple of
+// (num_heads * head_dim); qs must satisfy 2*qs >= num_heads * 2 *
+// head_dim * kv_len_per_head = 64. Default smoke_size = 128 gives
+// qs = 32. head_dim=4 means two rope pairs per head (dims 0,1 form
+// pair 0; dims 2,3 form pair 1) at distinct frequencies theta_d =
+// base^(-2d/head_dim) — the manifest-shaped multi-pair rope.
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -121,20 +120,35 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
-// Rope positional encoding table. Values are actual cos(p), sin(p)
-// for p in {0, 1, 2}, expressed as 9-decimal-digit literals that
-// round-trip exactly to the same f32 bit pattern in both CSL and
-// numpy under IEEE-754 correct rounding. Positions 0 and 1 are the
-// two KV entries; position 2 is the Q rotation.
-fn rope_cos_at(p: u16) f32 {
-    if (p == 0) { return  1.0;          }
-    if (p == 1) { return  0.540302277;  }  // cos(1)
-    return -0.416146845;                   // cos(2)
+// Rope positional encoding table. head_dim=4 means 2 rope pairs
+// per head (pair d=0 covers dims 0,1; pair d=1 covers dims 2,3).
+// Each pair has its own frequency theta_d = base^(-2d/head_dim);
+// here base=100 so theta_0 = 1.0, theta_1 = 0.1. The angle at
+// position p for pair d is p*theta_d. Positions 0 and 1 are the
+// two KV entries; position 2 is the Q rotation. All values are
+// 9-decimal-digit literals that round-trip exactly to identical
+// f32 bit patterns in both CSL and numpy under IEEE-754.
+fn rope_cos_at(p: u16, d: u16) f32 {
+    if (d == 0) {
+        if (p == 0) { return  1.0;          }
+        if (p == 1) { return  0.540302277;  }  // cos(1)
+        return -0.416146845;                   // cos(2)
+    }
+    // d == 1, theta = 0.1
+    if (p == 0) { return 1.0;          }
+    if (p == 1) { return 0.995004177;  }       // cos(0.1)
+    return 0.980066597;                        // cos(0.2)
 }
-fn rope_sin_at(p: u16) f32 {
+fn rope_sin_at(p: u16, d: u16) f32 {
+    if (d == 0) {
+        if (p == 0) { return 0.0;          }
+        if (p == 1) { return 0.841470957;  }   // sin(1)
+        return 0.909297407;                    // sin(2)
+    }
+    // d == 1, theta = 0.1
     if (p == 0) { return 0.0;           }
-    if (p == 1) { return 0.841470957;   }  // sin(1)
-    return 0.909297407;                    // sin(2)
+    if (p == 1) { return 0.0998334140;  }      // sin(0.1)
+    return 0.198669329;                        // sin(0.2)
 }
 
 const in_q_0 = @get_input_queue(0);
@@ -212,8 +226,9 @@ task done() void {
     //     next per_head_K_len = V_h.
     //   Q_h[d] = buf_out[h*head_dim + d]
     const num_heads: u16 = 4;
-    const head_dim: u16 = 2;
+    const head_dim: u16 = 4;
     const kv_len_per_head: u16 = 2;
+    const num_pairs: u16 = head_dim / 2;
     const per_head_K_len: u16 = head_dim * kv_len_per_head;
     const per_head_stride: u16 = 2 * per_head_K_len;
     const attn_flat_len: u16 = num_heads * head_dim;
@@ -225,43 +240,61 @@ task done() void {
         const base_h: u16 = qs + h * per_head_stride;
         const q_base: u16 = h * head_dim;
 
-        // Rope-rotate Q_h once per head at position kv_len_per_head
-        // (conceptually the "latest token" asking about the KV context).
-        const q0: f32 = buf_out[q_base + 0];
-        const q1: f32 = buf_out[q_base + 1];
-        const q_c: f32 = rope_cos_at(kv_len_per_head);
-        const q_s: f32 = rope_sin_at(kv_len_per_head);
-        const q_r0: f32 = (q_c * q0) - (q_s * q1);
-        const q_r1: f32 = (q_s * q0) + (q_c * q1);
+        // Rope-rotate Q_h once per head at position kv_len_per_head.
+        // For head_dim=4 there are two rope pairs:
+        //   pair d=0 covers dims (0, 1) at theta_0
+        //   pair d=1 covers dims (2, 3) at theta_1
+        // q_rot stored back into a local buffer so the dot product
+        // below can iterate over all head_dim dims uniformly.
+        var q_rot: [head_dim]f32;
+        for (@range(u16, num_pairs)) |d| {
+            const a: u16 = 2 * d;
+            const q0: f32 = buf_out[q_base + a + 0];
+            const q1: f32 = buf_out[q_base + a + 1];
+            const qc: f32 = rope_cos_at(kv_len_per_head, d);
+            const qs_: f32 = rope_sin_at(kv_len_per_head, d);
+            q_rot[a + 0] = (qc * q0) - (qs_ * q1);
+            q_rot[a + 1] = (qs_ * q0) + (qc * q1);
+        }
 
         // Pass 1: max logit. logits[j] = sum_d Q_rot[d] * K_rot_j[d].
-        // K_rot_j is K_h[j] rotated by rope at position j. We seed
-        // lmax from the j=0 logit so the matching numpy pass has the
-        // same 0.0-init + two-step accumulation pattern — the in-
-        // order f32 +/* sequence is what matters for np.array_equal.
+        // K_rot_j is K_h[j] with each pair rotated by its own theta
+        // at position j. We seed lmax from the j=0 logit so the
+        // matching numpy pass has the same 0.0-init + per-d
+        // accumulation pattern — the in-order f32 +/* sequence is
+        // what matters for np.array_equal.
+        var k_rot: [head_dim]f32;
         var lmax: f32 = 0.0;
         {
-            const k0: f32 = buf_wts[base_h + 0];
-            const k1: f32 = buf_wts[base_h + 1];
-            const kc: f32 = rope_cos_at(0);
-            const ks: f32 = rope_sin_at(0);
-            const kr0: f32 = (kc * k0) - (ks * k1);
-            const kr1: f32 = (ks * k0) + (kc * k1);
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + a + 0];
+                const k1: f32 = buf_wts[base_h + a + 1];
+                const kc: f32 = rope_cos_at(0, d);
+                const ks: f32 = rope_sin_at(0, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
             var l_seed: f32 = 0.0;
-            l_seed = l_seed + (q_r0 * kr0);
-            l_seed = l_seed + (q_r1 * kr1);
+            for (@range(u16, head_dim)) |dd| {
+                l_seed = l_seed + (q_rot[dd] * k_rot[dd]);
+            }
             lmax = l_seed;
         }
         for (@range(u16, kv_len_per_head)) |j| {
-            const k0: f32 = buf_wts[base_h + j*head_dim + 0];
-            const k1: f32 = buf_wts[base_h + j*head_dim + 1];
-            const kc: f32 = rope_cos_at(j);
-            const ks: f32 = rope_sin_at(j);
-            const kr0: f32 = (kc * k0) - (ks * k1);
-            const kr1: f32 = (ks * k0) + (kc * k1);
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + j*head_dim + a + 0];
+                const k1: f32 = buf_wts[base_h + j*head_dim + a + 1];
+                const kc: f32 = rope_cos_at(j, d);
+                const ks: f32 = rope_sin_at(j, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
             var l: f32 = 0.0;
-            l = l + (q_r0 * kr0);
-            l = l + (q_r1 * kr1);
+            for (@range(u16, head_dim)) |dd| {
+                l = l + (q_rot[dd] * k_rot[dd]);
+            }
             if (l > lmax) { lmax = l; }
         }
 
@@ -269,17 +302,21 @@ task done() void {
         // is NOT rope-rotated (standard rope spec applies only to Q, K).
         var sum_w: f32 = 0.0;
         var weighted_v: [head_dim]f32;
-        for (@range(u16, head_dim)) |d| { weighted_v[d] = 0.0; }
+        for (@range(u16, head_dim)) |d2| { weighted_v[d2] = 0.0; }
         for (@range(u16, kv_len_per_head)) |j| {
-            const k0: f32 = buf_wts[base_h + j*head_dim + 0];
-            const k1: f32 = buf_wts[base_h + j*head_dim + 1];
-            const kc: f32 = rope_cos_at(j);
-            const ks: f32 = rope_sin_at(j);
-            const kr0: f32 = (kc * k0) - (ks * k1);
-            const kr1: f32 = (ks * k0) + (kc * k1);
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + j*head_dim + a + 0];
+                const k1: f32 = buf_wts[base_h + j*head_dim + a + 1];
+                const kc: f32 = rope_cos_at(j, d);
+                const ks: f32 = rope_sin_at(j, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
             var l: f32 = 0.0;
-            l = l + (q_r0 * kr0);
-            l = l + (q_r1 * kr1);
+            for (@range(u16, head_dim)) |dd| {
+                l = l + (q_rot[dd] * k_rot[dd]);
+            }
             const x: f32 = l - lmax;
             var wj: f32 = 0.0;
             if (x > -1.0) {
@@ -288,14 +325,14 @@ task done() void {
                 wj = 0.25 * sq;
             }
             sum_w = sum_w + wj;
-            for (@range(u16, head_dim)) |d| {
-                const v_hjd: f32 = buf_wts[base_h + per_head_K_len + j*head_dim + d];
-                weighted_v[d] = weighted_v[d] + (wj * v_hjd);
+            for (@range(u16, head_dim)) |dd| {
+                const v_hjd: f32 = buf_wts[base_h + per_head_K_len + j*head_dim + dd];
+                weighted_v[dd] = weighted_v[dd] + (wj * v_hjd);
             }
         }
         // sum_w >= 0.25, safe division per d.
-        for (@range(u16, head_dim)) |d| {
-            attn_vals[q_base + d] = weighted_v[d] / sum_w;
+        for (@range(u16, head_dim)) |dd| {
+            attn_vals[q_base + dd] = weighted_v[dd] / sum_w;
         }
     }
 

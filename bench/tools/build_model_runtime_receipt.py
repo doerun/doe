@@ -426,7 +426,7 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mha_4head_hd2_rope_real_poly_c1_softmax",
+            "layer_block_mha_4head_hd4_multi_pair_rope_real_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
             "layer_block_multi_layer_residual_chain",
@@ -461,7 +461,7 @@ def main() -> int:
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_4head_hd2_rope_real"
+                "pre_attn_rmsnorm+mha_4head_hd4_multi_pair_rope_real"
                 "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
                 "+multi_layer_chain"
@@ -521,22 +521,25 @@ def main() -> int:
             ),
             "stageTwoAttention": (
                 "Multi-head attention with PER-HEAD VECTOR Q/K/V AND "
-                "ROPE positional encoding. num_heads = 4 (bumped "
-                "from 2 toward the manifest's 8), head_dim = 2, "
-                "kv_len_per_head = 2. Q_h is rotated at position "
-                "p_q = kv_len_per_head = 2; each K_h[j] is rotated "
-                "at position p_k = j. Rope table uses ACTUAL cos/sin "
-                "values: (1.0, 0.0), (0.540302277, 0.841470957), "
-                "(-0.416146845, 0.909297407) for positions 0, 1, 2. "
-                "9-decimal-digit literals round-trip exactly to the "
-                "same f32 bit pattern in both CSL (decimal literal) "
-                "and numpy (np.float32 literal) under IEEE-754 "
-                "correct rounding. Logits use dot product over "
-                "head_dim with rope-rotated Q and K; max-centered "
-                "poly_c1 softmax; V_h is NOT rotated (standard rope "
-                "only applies to Q and K). Upgrade path: head_dim > "
-                "2 with multi-pair rope, longer KV per head, real "
-                "manifest-derived weight loading."
+                "MULTI-PAIR ROPE. num_heads = 4 (bumped from 2 "
+                "toward the manifest's 8), head_dim = 4 (bumped from "
+                "2 to enable real multi-pair rope), kv_len_per_head "
+                "= 2. Standard rope groups dimensions in pairs and "
+                "gives each pair its own frequency theta_d = base^(-"
+                "2d/head_dim). For head_dim=4 with base=100: pair 0 "
+                "(dims 0,1) at theta_0=1.0; pair 1 (dims 2,3) at "
+                "theta_1=0.1. The (cos, sin) table indexed by "
+                "(position, pair_index) carries 6 entries — the "
+                "three positions {0,1,2} cross the two pair indices "
+                "{0,1} — all expressed as 9-decimal-digit f32 "
+                "literals that round-trip identically in CSL and "
+                "numpy under IEEE-754. Q_h is rope-rotated at "
+                "position kv_len_per_head; each K_h[j] at position "
+                "j; V_h is NOT rotated. Logits dot all head_dim=4 "
+                "rope-rotated dims; max-centered poly_c1 softmax. "
+                "Upgrade path: num_heads to 8 matching the manifest, "
+                "longer KV per head, real manifest-derived weight "
+                "loading via the per-layer-index seed swap point."
             ),
             **layer_block_trace_evidence,
             "multiLayerChain": (
@@ -558,7 +561,6 @@ def main() -> int:
                 "the bit-exact gate on the remaining layers."
             ),
             "pendingStages": [
-                "head_dim_greater_than_two_with_multi_pair_rope",
                 "num_heads_to_eight_matching_manifest",
                 "load_per_layer_weights_from_manifest_not_seeded_rng",
                 "longer_kv_cache_per_head",
