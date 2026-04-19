@@ -149,6 +149,23 @@ browser/chromium/.external-lane.env
 bench/vendor/
 /fawn/
 
+# Cerebras SDK packages, examples, and generated compile/run outputs are local
+# evidence only. Do not publish SDK-distributed files or cslc products.
+csl-extras-*/
+csl-extras-*.tar.gz
+cerebras-software-eula.pdf
+sdk-cbcore-*.sif
+cerebras_sdk*.whl
+cerebras-appliance*.whl
+cerebras_appliance*.whl
+*.elf
+*.pelf
+runtime/zig/examples/simulator/**/compile/compiled/
+runtime/zig/examples/simulator/**/compile/**/out*.json
+runtime/zig/examples/simulator/**/compile/**/sim.log
+runtime/zig/examples/simulator/**/compile/**/simfab_traces/
+runtime/zig/examples/simulator/**/compile/**/corefile.cs1
+
 # Streaming executor hand-written CSL kernel sources — these are source
 # code, not generated artifacts, and are required by the runners in
 # bench/runners/csl-runners/streaming_executor_*.py. The rest of
@@ -156,3 +173,19 @@ bench/vendor/
 # ignored.
 !bench/out/streaming-executor/*-source/
 !bench/out/streaming-executor/*-source/**/*.csl
+
+# Cerebras SDK compile outputs — ELFs, cslc metadata, and SDK logs are
+# "direct product of Software" under the Cerebras EULA and must not be
+# redistributed. User-authored .csl source under
+# examples/simulator/*/compile/<name>/ stays tracked; the sibling
+# compile/compiled/ tree and any cslc/SDK log output does not.
+runtime/zig/examples/simulator/*/compile/compiled/
+runtime/zig/examples/**/compile/compiled/
+**/compile/compiled/
+**/*.elf
+**/*.pelf
+**/driver-logs/
+runtime/zig/examples/simulator/*/stderr.log
+runtime/zig/examples/simulator/*/stdout.log
+runtime/zig/examples/simulator/*/sim.log
+runtime/zig/examples/**/sim_core.*
