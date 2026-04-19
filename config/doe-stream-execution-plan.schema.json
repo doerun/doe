@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-stream-execution-plan.schema.json",
+  "title": "Doe streaming-runtime execution plan",
+  "description": "Concrete per-layer firing sequence derived from a doe_stream_graph artifact. The actual SdkLayout streaming executor (priority #6) consumes this plan to drive async prefetch + compute. Produced by bench/tools/validate_stream_graph.py.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "modelId",
+    "numTransformerLayers",
+    "setupPhase",
+    "perLayerSchedule",
+    "prefetchPolicy",
+    "kvPolicy",
+    "steadyStatePayloadBytesPerLayer",
+    "executorStatus"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_stream_execution_plan" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "numTransformerLayers": { "type": "integer", "minimum": 0 },
+    "setupPhase": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "streamId", "source"],
+        "properties": {
+          "phase": { "const": "setup" },
+          "streamId": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "perLayerSchedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "layerIndex", "prefetchTargetLayer", "streams"],
+        "properties": {
+          "phase": { "const": "layer" },
+          "layerIndex": { "type": "integer", "minimum": 0 },
+          "prefetchTargetLayer": { "type": "integer", "minimum": 0 },
+          "kickoffTrigger": { "type": ["string", "null"] },
+          "codeRegion": { "type": ["string", "null"] },
+          "streams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["streamId", "payloadBytes"],
+              "properties": {
+                "streamId": { "type": "string" },
+                "payloadBytes": { "type": "integer", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "prefetchPolicy": { "type": "object" },
+    "kvPolicy": { "type": "object" },
+    "steadyStatePayloadBytesPerLayer": { "type": "integer", "minimum": 0 },
+    "executorStatus": {
+      "type": "string",
+      "enum": ["plan_only", "executor_ready", "executed"]
+    },
+    "executorStatusReason": { "type": "string" },
+    "source": {
+      "type": "object",
+      "properties": {
+        "streamGraphPath": { "type": "string" }
+      }
+    }
+  }
+}

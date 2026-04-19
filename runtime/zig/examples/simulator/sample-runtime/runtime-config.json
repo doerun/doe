@@ -1,0 +1,12 @@
+{
+  "mode": "sdk-runtime-command",
+  "notes": "Governed-lane runtime-config for sample (greedy argmax token sampling). Host-side reduce variant: each PE runs local argmax over its chunk_size logit slice and exports (local_max_val, local_max_idx); the host computes final argmax across PEs. Bypasses the hand-rolled fabric-reduce chain stall (same pattern as the fused_gemv_dequant variant).",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "cmaddrEnvVar": "DOE_CSL_CMADDR",
+  "command": [
+    "bench/runners/csl-runners/sample_sim_runner.py",
+    "--compile-dir={compile_output_dir}",
+    "--trace-out={trace_path}",
+    "{cmaddr_arg}"
+  ]
+}

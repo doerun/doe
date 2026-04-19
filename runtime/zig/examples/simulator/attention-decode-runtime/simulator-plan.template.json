@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "csl_simulator_plan",
+  "target": "wse3",
+  "contract": "explicit_simulator_launch",
+  "driver": {
+    "protocol": "doe.csl.simulator/v1",
+    "executableEnvVar": "DOE_CSL_SIM_EXECUTABLE",
+    "failClosedIfMissing": true
+  },
+  "inputs": {
+    "hostPlanArtifactPath": "host-plan.json",
+    "runtimeConfigPath": "runtime-config.json",
+    "compileRootPath": "compile",
+    "compileTargets": [
+      {
+        "name": "attention-decode",
+        "layout": "attention-decode/layout.csl",
+        "peProgram": "attention-decode/pe_program.csl",
+        "sourceWgslPath": "bench/out/dual-compile-evidence/attention-decode/source.wgsl",
+        "compileParams": {"head_dim": 32, "kv_len": 64, "q_len": 1}
+      }
+    ]
+  },
+  "runtime": {
+    "peGrid": {"width": 4, "height": 1},
+    "prefillLaunchCount": 0,
+    "decodeLaunchCount": 1,
+    "weightMappingCount": 0,
+    "stateBufferCount": 0,
+    "maxDecodeTokens": 1,
+    "timeoutMs": 90000,
+    "batchSize": 1,
+    "eosTokenId": null
+  },
+  "outputs": {
+    "stdoutPath": "stdout.log",
+    "stderrPath": "stderr.log",
+    "tracePath": "trace.json"
+  }
+}

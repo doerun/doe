@@ -1,0 +1,90 @@
+// PE program: tiled Flash Attention for prefill (auto-generated)
+// KV tiles broadcast via collectives, online softmax accumulation.
+
+param memcpy_params: comptime_struct;
+param head_dim: i16;
+param block_size: i16 = 32;
+param kv_len: i16;
+param q_len: i16;
+param scale: f32 = 0.125;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var Q: [q_len * head_dim]f32 = @zeros([q_len * head_dim]f32);
+var Q_ptr: [*]f32 = &Q;
+var K: [kv_len * head_dim]f32 = @zeros([kv_len * head_dim]f32);
+var K_ptr: [*]f32 = &K;
+var V: [kv_len * head_dim]f32 = @zeros([kv_len * head_dim]f32);
+var V_ptr: [*]f32 = &V;
+var O: [q_len * head_dim]f32 = @zeros([q_len * head_dim]f32);
+var O_ptr: [*]f32 = &O;
+
+var K_tile = @zeros([block_size * head_dim]f32);
+var V_tile = @zeros([block_size * head_dim]f32);
+
+var m_i: f32 = -3.4028235e+38;
+var l_i: f32 = 0.0;
+
+fn compute() void {
+    for (@range(i16, head_dim)) |d| { O[@as(u32, d)] = 0.0; }
+    m_i = -3.4028235e+38;
+    l_i = 0.0;
+
+    var kv_start: i16 = 0;
+    while (kv_start < kv_len) : (kv_start += block_size) {
+        const blk_end = (if ((kv_start + block_size) < kv_len) (kv_start + block_size) else kv_len);
+        const blk_len = blk_end - kv_start;
+
+        for (@range(i16, blk_len)) |bi| {
+            for (@range(i16, head_dim)) |d| {
+                const src = @as(u32, kv_start + bi) * @as(u32, head_dim) + @as(u32, d);
+                const dst = @as(u32, bi) * @as(u32, head_dim) + @as(u32, d);
+                K_tile[dst] = K[src];
+                V_tile[dst] = V[src];
+            }
+        }
+
+        var blk_max: f32 = -3.4028235e+38;
+        for (@range(i16, blk_len)) |bi| {
+            var score: f32 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                score += Q[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            score *= scale;
+            if (score > blk_max) blk_max = score;
+        }
+
+        const m_new = (if (m_i > blk_max) m_i else blk_max);
+        const rescale = math.exp(m_i - m_new);
+        l_i *= rescale;
+        for (@range(i16, head_dim)) |d| {
+            O[@as(u32, d)] *= rescale;
+        }
+
+        for (@range(i16, blk_len)) |bi| {
+            var score: f32 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                score += Q[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            const w = math.exp(score * scale - m_new);
+            l_i += w;
+            for (@range(i16, head_dim)) |d| {
+                O[@as(u32, d)] += w * V_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+        }
+        m_i = m_new;
+    }
+
+    const inv = 1.0 / l_i;
+    for (@range(i16, head_dim)) |d| { O[@as(u32, d)] *= inv; }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(Q_ptr, "Q");
+    @export_symbol(K_ptr, "K");
+    @export_symbol(V_ptr, "V");
+    @export_symbol(O_ptr, "O");
+    @export_symbol(compute);
+}

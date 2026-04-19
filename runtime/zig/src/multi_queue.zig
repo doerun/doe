@@ -233,7 +233,7 @@ pub const MultiQueueDevice = struct {
                 // Metal's encodeWait on a command buffer ensures the GPU
                 // won't begin executing this buffer until the event reaches
                 // the target value — zero kernel transitions required.
-                encode_wait_event(cmd_buf, ev, fence.epoch);
+                metal_bridge_command_buffer_encode_wait_event(cmd_buf, ev, fence.epoch);
             }
         }
 
@@ -253,13 +253,6 @@ pub const MultiQueueDevice = struct {
         q.wait_for_epoch(fence.epoch);
     }
 };
-
-// Encode a wait on an MTLSharedEvent into a command buffer.
-// MTLCommandBuffer encodeWaitForEvent:value: ensures GPU ordering without
-// CPU involvement — the GPU stalls until the event reaches `value`.
-fn encode_wait_event(cmd_buf: ?*anyopaque, event: ?*anyopaque, value: u64) void {
-    metal_bridge_command_buffer_encode_wait_event(cmd_buf, event, value);
-}
 
 // ============================================================
 // C ABI exports consumed by doe_napi.c and JS glue.

@@ -1,0 +1,63 @@
+// PE program: fused GEMV + Q4K dequant (host-side reduce variant).
+//
+// Each PE dequants its weight slice and computes partial dot products into
+// `partial`. The host memcpy_d2h's partial from every PE and does the final
+// cross-PE summation on the CPU. This variant bypasses the fabric allreduce
+// (the hand-rolled async-send chain has a teardown-ordering stall that
+// requires adopting the full canonical collectives_2d allreduce module —
+// deferred). Kernel correctness for dequant + per-PE GEMV is preserved.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+param out_dim: i16;
+param in_dim_per_pe: i16;
+param num_blocks_per_row: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+
+const QK_K: u32 = 256;
+const Q4K_BLOCK_BYTES: u32 = 144;
+const Q4K_BLOCK_BYTES_I16: i16 = 144;
+
+var activations: [in_dim_per_pe]f32 = @zeros([in_dim_per_pe]f32);
+var weights: [out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8 = @zeros([out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8);
+var partial: [out_dim]f32 = @zeros([out_dim]f32);
+
+var activations_ptr: [*]f32 = &activations;
+var weights_ptr: [*]u8 = &weights;
+var partial_ptr: [*]f32 = &partial;
+
+fn compute() void {
+    for (@range(i16, out_dim)) |row| {
+        var sum: f32 = 0.0;
+        const row_base = @as(u32, row) * @as(u32, num_blocks_per_row) * Q4K_BLOCK_BYTES;
+
+        for (@range(i16, num_blocks_per_row)) |blk| {
+            const blk_base = row_base + @as(u32, blk) * Q4K_BLOCK_BYTES;
+            const d_bits = @as(u16, weights[blk_base]) | (@as(u16, weights[blk_base + 1]) << 8);
+            const d = @as(f32, @bitcast(f16, d_bits));
+            const data_off = blk_base + 16;
+            const act_off = @as(u32, blk) * QK_K;
+
+            for (@range(u32, 128)) |i| {
+                const byte = weights[data_off + i];
+                const lo = @as(f32, byte & 0x0F) * d;
+                const hi = @as(f32, byte >> 4) * d;
+                sum += lo * activations[act_off + i * 2];
+                sum += hi * activations[act_off + i * 2 + 1];
+            }
+        }
+        partial[@as(u32, row)] = sum;
+    }
+
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(activations_ptr, "activations");
+    @export_symbol(weights_ptr, "weights");
+    @export_symbol(partial_ptr, "partial");
+    @export_symbol(compute);
+}

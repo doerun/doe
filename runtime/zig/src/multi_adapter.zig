@@ -18,7 +18,6 @@ const MAGIC_ADAPTER_LIST: u32 = 0xD0E1_AD71;
 const MAX_ADAPTERS: usize = 16;
 const MAX_DEVICE_NAME_BYTES: usize = 256;
 const DEVICE_LOST_REASON_DESTROYED: u32 = 1;
-const DEVICE_LOST_REASON_UNKNOWN: u32 = 0;
 
 // WebGPU power preference constants — match wgpu.h values.
 const WGPU_POWER_PREF_UNDEFINED: u32 = 0;

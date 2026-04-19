@@ -262,6 +262,66 @@ def parse_args() -> argparse.Namespace:
         help="Run csl_simulator_gate.py to validate governed CSL simulator/run receipts.",
     )
     parser.add_argument(
+        "--with-wgsl-backend-matrix-gate",
+        action="store_true",
+        help=(
+            "Run wgsl_backend_matrix_gate.py to lock cross-backend parity. "
+            "Vulkan/Metal/D3D12 readiness is required unconditionally; the CSL "
+            "runtime-ready threshold is enforced only when the Cerebras SDK is "
+            "detected (DOE_CSL_SDK_ROOT / DOE_CSLC_EXECUTABLE / cslc on PATH). "
+            "Prevents Doe regressions on the shared WGSL emitter path across "
+            "SDK-absent dev hosts and SDK-present lane runners."
+        ),
+    )
+    parser.add_argument(
+        "--with-model-runtime-receipt",
+        action="append",
+        default=[],
+        help=(
+            "Run model_runtime_receipt_gate.py on the given doe_model_runtime_receipt "
+            "JSON. Repeatable — one invocation per model. Each receipt is gated with "
+            "--require-fits --require-structural-full-coverage "
+            "--min-kernel-coverage-pct 100 --min-chain-parity-patterns "
+            "(--model-runtime-receipt-min-chain-parity, default 0)."
+        ),
+    )
+    parser.add_argument(
+        "--model-runtime-receipt-min-chain-parity",
+        type=int,
+        default=0,
+        help="Chain-parity coverage floor applied to every --with-model-runtime-receipt receipt.",
+    )
+    parser.add_argument(
+        "--with-kernel-chain-parity",
+        action="append",
+        default=[],
+        help=(
+            "Run kernel_chain_parity_gate.py on the given doe_kernel_chain_parity "
+            "JSON. Repeatable — one invocation per chain receipt. Each receipt "
+            "gated with --require-bit-close; tighten to --require-bit-exact via "
+            "--kernel-chain-parity-bit-exact."
+        ),
+    )
+    parser.add_argument(
+        "--kernel-chain-parity-bit-exact",
+        action="store_true",
+        help="Upgrade --with-kernel-chain-parity from --require-bit-close to --require-bit-exact.",
+    )
+    parser.add_argument(
+        "--wgsl-backend-matrix-report",
+        default="bench/out/cross-backend-matrix/wgsl-backend-matrix.json",
+    )
+    parser.add_argument(
+        "--wgsl-backend-matrix-schema",
+        default="config/wgsl-backend-matrix-report.schema.json",
+    )
+    parser.add_argument(
+        "--wgsl-backend-matrix-min-csl-runtime-ready",
+        type=int,
+        default=0,
+        help="Enforced only when the Cerebras SDK is detected locally.",
+    )
+    parser.add_argument(
         "--csl-governed-report",
         default="bench/out/csl-governed-lane.report.json",
         help="Governed CSL lane report path passed to csl_governed_lane_gate.py.",
@@ -534,6 +594,9 @@ def main() -> int:
     cts_baseline_compare = tools_dir / "cts_baseline_compare.py"
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
     csl_simulator_gate = gates_dir / "csl_simulator_gate.py"
+    wgsl_backend_matrix_gate = gates_dir / "wgsl_backend_matrix_gate.py"
+    model_runtime_receipt_gate = gates_dir / "model_runtime_receipt_gate.py"
+    kernel_chain_parity_gate = gates_dir / "kernel_chain_parity_gate.py"
     csl_fixture_mirror_gate = gates_dir / "csl_fixture_mirror_gate.py"
     csl_operation_graph_gate = gates_dir / "csl_operation_graph_gate.py"
     pilot_evidence_gate = gates_dir / "pilot_evidence_gate.py"
@@ -683,6 +746,46 @@ def main() -> int:
             if args.csl_simulator_require_ready:
                 gate_cmd.append("--require-ready")
             run_gate("csl-simulator", gate_cmd)
+
+        if args.with_wgsl_backend_matrix_gate:
+            gate_cmd = [
+                sys.executable,
+                str(wgsl_backend_matrix_gate),
+                "--report",
+                args.wgsl_backend_matrix_report,
+                "--schema",
+                args.wgsl_backend_matrix_schema,
+                "--require-vulkan-ready",
+                "--require-metal-ready",
+                "--require-d3d12-ready",
+                "--sdk-optional",
+                "--min-csl-runtime-ready",
+                str(args.wgsl_backend_matrix_min_csl_runtime_ready),
+            ]
+            run_gate("wgsl-backend-matrix", gate_cmd)
+
+        for receipt_path in args.with_model_runtime_receipt:
+            gate_cmd = [
+                sys.executable,
+                str(model_runtime_receipt_gate),
+                "--receipt", receipt_path,
+                "--require-fits",
+                "--require-structural-full-coverage",
+                "--min-kernel-coverage-pct", "100",
+                "--min-chain-parity-patterns",
+                str(args.model_runtime_receipt_min_chain_parity),
+            ]
+            stem = Path(receipt_path).stem
+            run_gate(f"model-runtime-receipt:{stem}", gate_cmd)
+
+        for receipt_path in args.with_kernel_chain_parity:
+            gate_cmd = [sys.executable, str(kernel_chain_parity_gate), "--receipt", receipt_path]
+            if args.kernel_chain_parity_bit_exact:
+                gate_cmd.append("--require-bit-exact")
+            else:
+                gate_cmd.append("--require-bit-close")
+            stem = Path(receipt_path).stem
+            run_gate(f"kernel-chain-parity:{stem}", gate_cmd)
 
         if args.with_modules:
             run_gate(

@@ -174,6 +174,90 @@
       "data": "examples/wgsl-backend-matrix-report.sample.json"
     },
     {
+      "schema": "config/doe-model-runtime-receipt.schema.json",
+      "data": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json"
+    },
+    {
+      "schema": "config/doe-stream-graph.schema.json",
+      "data": "bench/out/31b-full-graph/gemma-4-31b-stream-graph.json"
+    },
+    {
+      "schema": "config/doe-stream-execution-plan.schema.json",
+      "data": "bench/out/31b-full-graph/gemma-4-31b-stream-execution-plan.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-dry-run-trace.schema.json",
+      "data": "bench/out/e2b-full-graph/gemma-4-e2b-dry-run-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-dry-run-trace.schema.json",
+      "data": "bench/out/31b-full-graph/gemma-4-31b-dry-run-trace.json"
+    },
+    {
+      "schema": "config/doe-csl-kernel-fingerprints.schema.json",
+      "data": "bench/out/csl-kernel-fingerprints.json"
+    },
+    {
+      "schema": "config/doe-dry-run-trace-diff.schema.json",
+      "data": "bench/out/e2b-vs-31b-dry-run-diff.json"
+    },
+    {
+      "schema": "config/doe-lookahead-sensitivity.schema.json",
+      "data": "bench/out/lookahead-sensitivity/e2b-lookahead-sensitivity.json"
+    },
+    {
+      "schema": "config/doe-lookahead-sensitivity.schema.json",
+      "data": "bench/out/lookahead-sensitivity/31b-lookahead-sensitivity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/elementwise-double-x2/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/elementwise-subprocess/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/gather-then-double/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/rope-then-attention/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/gather-rope-attention/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/reduce-then-double/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/rope-then-decode/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/gemv-then-double/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/attention-then-sample/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/rope-then-kv-write/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/tiled-matmul-chain/chain-parity.json"
+    },
+    {
+      "schema": "config/doe-kernel-chain-parity.schema.json",
+      "data": "bench/out/kernel-chain-evidence/gather-rope-attention-sample/chain-parity.json"
+    },
+    {
       "schema": "config/shader-error-taxonomy.schema.json",
       "data": "config/shader-error-taxonomy.json"
     },

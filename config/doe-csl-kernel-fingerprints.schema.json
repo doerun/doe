@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-kernel-fingerprints.schema.json",
+  "title": "Doe CSL kernel fingerprints",
+  "description": "SHA-256 fingerprint of every compiled CSL ELF in the runtime-ready fixture set plus the cslc grid-probe compile outputs. Catches emitter-output drift: any change to the WGSL→CSL path, the Zig emitter, or the cslc toolchain that touches ELF bytes shows up as a hash delta when the artifact is regenerated. Per-fixture ELFs are listed in full; per-probe ELFs are summarized by `aggregateSha256` (a sha256 over the concatenated per-ELF records) because 31B-scale probe grids have >50k ELFs per run.",
+  "type": "object",
+  "required": ["schemaVersion", "artifactKind", "target", "fixtures", "probes", "summary"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_kernel_fingerprints" },
+    "target": { "const": "wse3" },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["fixtureId", "status"],
+            "properties": {
+              "fixtureId": { "type": "string" },
+              "status": { "const": "source_only" },
+              "reason": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["fixtureId", "kernelName", "status", "binDir", "elfCount", "totalBytes", "aggregateSha256"],
+            "properties": {
+              "fixtureId": { "type": "string" },
+              "kernelName": { "type": "string" },
+              "status": { "const": "compiled" },
+              "binDir": { "type": "string" },
+              "elfCount": { "type": "integer", "minimum": 0 },
+              "totalBytes": { "type": "integer", "minimum": 0 },
+              "aggregateSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "elfs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "bytes", "sha256"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "bytes": { "type": "integer", "minimum": 0 },
+                    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["probeKind", "sizeTag", "binDir", "elfCount", "totalBytes", "aggregateSha256"],
+        "properties": {
+          "probeKind": { "type": "string" },
+          "sizeTag": { "type": "string" },
+          "binDir": { "type": "string" },
+          "elfCount": { "type": "integer", "minimum": 0 },
+          "totalBytes": { "type": "integer", "minimum": 0 },
+          "aggregateSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["fixtureCount", "sourceOnlyFixtureCount", "probeCount", "totalElfsFingerprinted", "totalBytesFingerprinted"],
+      "properties": {
+        "fixtureCount": { "type": "integer", "minimum": 0 },
+        "sourceOnlyFixtureCount": { "type": "integer", "minimum": 0 },
+        "probeCount": { "type": "integer", "minimum": 0 },
+        "totalElfsFingerprinted": { "type": "integer", "minimum": 0 },
+        "totalBytesFingerprinted": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

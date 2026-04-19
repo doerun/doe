@@ -1,0 +1,12 @@
+{
+  "mode": "sdk-runtime-command",
+  "notes": "Governed-lane runtime-config for fused_gemv_dequant (Q4K dequant + partial GEMV, host-side reduce variant). Each PE dequants its weight slice and computes partials; the host reads per-PE partials and sums. Bypasses the hand-rolled fabric allreduce whose async-send teardown stalls — see bench/out/dual-compile-evidence/fused-gemv-dequant/runtime-run/result.json iter-35/36 notes for the deferred fabric fix.",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "cmaddrEnvVar": "DOE_CSL_CMADDR",
+  "command": [
+    "bench/runners/csl-runners/fused_gemv_dequant_sim_runner.py",
+    "--compile-dir={compile_output_dir}",
+    "--trace-out={trace_path}",
+    "{cmaddr_arg}"
+  ]
+}

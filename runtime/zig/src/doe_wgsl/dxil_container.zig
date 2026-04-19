@@ -25,10 +25,9 @@ pub const DxilProgramHeader = struct {
 /// Encode a DXIL program header + bitcode into the buffer.
 /// Returns the number of bytes written.
 pub fn write_dxil_program_part(header: DxilProgramHeader, out: []u8) EmitError!usize {
-    const PROGRAM_HEADER_WORDS: u32 = 6;
     const bitcode_size: u32 = @intCast(header.bitcode.len);
     const padded_bitcode = (bitcode_size + 3) & ~@as(u32, 3);
-    const total_size = PROGRAM_HEADER_WORDS * 4 + padded_bitcode;
+    const total_size = spec.DXIL_PROGRAM_HEADER_SIZE + padded_bitcode;
     if (total_size > out.len) return error.OutputTooLarge;
 
     var pos: usize = 0;
@@ -44,7 +43,7 @@ pub fn write_dxil_program_part(header: DxilProgramHeader, out: []u8) EmitError!u
     write_u32(out, &pos, dxil_version);
 
     // Bitcode offset (from start of this header, in bytes)
-    write_u32(out, &pos, PROGRAM_HEADER_WORDS * 4);
+    write_u32(out, &pos, spec.DXIL_PROGRAM_HEADER_SIZE);
 
     // Bitcode size (in bytes)
     write_u32(out, &pos, bitcode_size);

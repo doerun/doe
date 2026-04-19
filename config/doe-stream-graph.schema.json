@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-stream-graph.schema.json",
+  "title": "Doe streaming-runtime graph",
+  "description": "Expresses the SdkLayout streaming-runtime configuration for a model whose memory plan's streamingMigration section reports runtimePath=sdk_layout_streaming. This schema captures the orchestration knobs (code regions, ports, streams, async send/receive, demux/mux, KV residency policy) before the runtime itself is implemented (priority #6). Artifacts conforming to this schema can already be validated and compared; the consuming runtime lands in a follow-up.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "modelId",
+    "residencyMode",
+    "codeRegions",
+    "streams",
+    "prefetchSchedule",
+    "kvPolicy",
+    "compileArtifactCache"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_stream_graph" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "residencyMode": { "const": "layer_streaming" },
+    "codeRegions": {
+      "type": "array",
+      "description": "Per-layer ELF placement. Each region binds a compile-artifact hash to a PE range + layer-index range. Different layers sharing the same compile shape reuse one region.",
+      "items": {
+        "type": "object",
+        "required": ["regionId", "compileArtifactSha256", "peRange", "layerRange"],
+        "properties": {
+          "regionId": { "type": "string" },
+          "compileArtifactSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "peRange": {
+            "type": "object",
+            "required": ["start", "end"],
+            "properties": {
+              "start": { "type": "integer", "minimum": 0 },
+              "end": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "layerRange": {
+            "type": "object",
+            "required": ["start", "end"],
+            "properties": {
+              "start": { "type": "integer", "minimum": 0 },
+              "end": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "streams": {
+      "type": "array",
+      "description": "Async prefetch streams. Each stream binds a source (host buffer or KV overflow region) to a destination port on a PE range, with a ring-buffer depth for double-buffering.",
+      "items": {
+        "type": "object",
+        "required": ["streamId", "source", "destinationPort", "ringBufferDepth", "payloadBytes"],
+        "properties": {
+          "streamId": { "type": "string" },
+          "source": { "type": "string", "enum": ["host_weights", "host_embeddings", "host_ple_table", "kv_overflow", "activation_input"] },
+          "destinationPort": { "type": "string" },
+          "ringBufferDepth": { "type": "integer", "minimum": 2, "maximum": 8 },
+          "payloadBytes": { "type": "integer", "minimum": 1 },
+          "muxPattern": { "type": "string", "enum": ["broadcast", "row_broadcast", "column_broadcast", "unicast", "demux_round_robin"] }
+        }
+      }
+    },
+    "prefetchSchedule": {
+      "type": "object",
+      "description": "Host/device transfer schedule. Prefetch layer N+lookahead while compute runs on layer N.",
+      "required": ["lookaheadLayers", "kickoffTrigger"],
+      "properties": {
+        "lookaheadLayers": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "kickoffTrigger": { "type": "string", "enum": ["layer_start", "activation_ready", "unblock_signal"] },
+        "stallPolicy": { "type": "string", "enum": ["fail_closed", "backpressure", "drop_oldest"] }
+      }
+    },
+    "kvPolicy": {
+      "type": "object",
+      "description": "KV cache residency policy. When per-PE KV cache exceeds the SRAM budget, KV spills to host DRAM and is streamed back on demand.",
+      "required": ["residency", "spillBehavior"],
+      "properties": {
+        "residency": { "type": "string", "enum": ["resident", "spill_to_host", "partitioned_across_pes"] },
+        "spillBehavior": { "type": "string", "enum": ["eager", "on_demand", "lru"] },
+        "maxResidentTokens": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "compileArtifactCache": {
+      "type": "object",
+      "description": "compile-input hash → compile-artifact hash cache boundary. Lets the streaming runtime avoid recompiling layer N when its compile params match a cached ELF.",
+      "required": ["mode", "keyHashAlgorithm", "valueHashAlgorithm"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["disabled", "per_session", "shared_across_sessions"] },
+        "keyHashAlgorithm": { "const": "sha256" },
+        "valueHashAlgorithm": { "const": "sha256" },
+        "cacheRootPath": { "type": "string" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Fail-closed stream-graph validation: router-level checks that every stream destination is reachable, every port is bound, and no cycles exist.",
+      "properties": {
+        "routingReachable": { "type": "boolean" },
+        "portBindingComplete": { "type": "boolean" },
+        "acyclic": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -40,7 +40,7 @@ pub fn emitWrite(
     try emitDecodePositionState(buf, pos);
 
     try W.write(buf, pos, "fn compute() void {\n");
-    try W.write(buf, pos, "    const base = decode_position[0] * @as(u32, @intCast(head_dim));\n");
+    try W.write(buf, pos, "    const base = decode_position[0] * @as(u32, head_dim);\n");
     try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "        const idx = base + @as(u32, d);\n");
     try W.write(buf, pos, "        ");
