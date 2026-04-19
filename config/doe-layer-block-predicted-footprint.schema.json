@@ -98,7 +98,17 @@
               }
             ]
           },
-          "predictedMatchesObservedShape": { "type": ["boolean", "null"] }
+          "predictedMatchesObservedShape": { "type": ["boolean", "null"] },
+          "divergenceClassification": {
+            "type": ["string", "null"],
+            "enum": [
+              null,
+              "exact_match",
+              "expected_shape_divergence",
+              "unexpected_divergence_formula_suspect"
+            ]
+          },
+          "widthRatioHint": { "type": ["number", "null"], "minimum": 0 }
         }
       }
     },
@@ -130,6 +140,14 @@
               "pattern": { "type": "string" },
               "ratio": { "type": ["number", "null"], "minimum": 0 }
             }
+          }
+        },
+        "divergenceClassificationTally": {
+          "type": "object",
+          "properties": {
+            "exact_match": { "type": "integer", "minimum": 0 },
+            "expected_shape_divergence": { "type": "integer", "minimum": 0 },
+            "unexpected_divergence_formula_suspect": { "type": "integer", "minimum": 0 }
           }
         }
       }

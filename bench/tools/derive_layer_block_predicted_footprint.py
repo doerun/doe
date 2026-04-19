@@ -225,6 +225,30 @@ def main() -> int:
         if observed_bytes and pattern_bytes and observed_bytes > 0:
             predicted_to_observed_bytes_ratio = round(pattern_bytes / observed_bytes, 4)
 
+        # Classification of the divergence. Separates smoke-vs-deployment
+        # shape gaps (expected, non-actionable today) from formula
+        # mismatches (actionable — the prediction model disagrees with
+        # the observed evidence at the fixture's own shape).
+        divergence_classification: str | None = None
+        width_ratio_hint: float | None = None
+        if predicted_to_observed_bytes_ratio is not None:
+            r = predicted_to_observed_bytes_ratio
+            if 0.9 <= r <= 1.1:
+                divergence_classification = "exact_match"
+            elif r > 1.1:
+                divergence_classification = "expected_shape_divergence"
+            else:
+                divergence_classification = "unexpected_divergence_formula_suspect"
+            # Width-ratio hint: the fixture usually runs at width:4 while
+            # the predicted uses the --size arg. A ratio that matches
+            # (predicted_width / observed_width)^k for small k is
+            # consistent with pure shape scaling. Record the raw width
+            # ratio so downstream consumers can spot-check.
+            pred_width = (invocations[0].get("paramsShape", {}).get("width") if invocations else None) or 0
+            obs_width = (observed_fixture or {}).get("width") or 0
+            if pred_width and obs_width:
+                width_ratio_hint = round(pred_width / obs_width, 4)
+
         pattern_entry = {
             "pattern": pattern,
             "status": status,
@@ -238,6 +262,8 @@ def main() -> int:
             "observedBytesPerPe": observed_bytes,
             "observedCyclesPerPe": (observed_fixture or {}).get("observedCyclesPerPe"),
             "predictedToObservedBytesRatio": predicted_to_observed_bytes_ratio,
+            "divergenceClassification": divergence_classification,
+            "widthRatioHint": width_ratio_hint,
         }
         per_pattern.append(pattern_entry)
         if status == "dormant_pattern_no_manifest_step":
@@ -302,6 +328,14 @@ def main() -> int:
                 for p in per_pattern
                 if p.get("predictedToObservedBytesRatio") is not None
             ],
+            "divergenceClassificationTally": {
+                cls: sum(1 for p in per_pattern if p.get("divergenceClassification") == cls)
+                for cls in (
+                    "exact_match",
+                    "expected_shape_divergence",
+                    "unexpected_divergence_formula_suspect",
+                )
+            },
         },
         "notes": (
             "Derived from layerBlockSmoke.perKernelShapes in the E2B layer-"
