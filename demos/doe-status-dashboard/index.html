@@ -272,6 +272,37 @@
     addError('proven-rows', '31B structural readiness', e.message);
   }
 
+  // Predicted-vs-observed bytes — derived from layerBlockSmoke.perKernelShapes
+  // against existing governed-lane fixture traces. The aggregate tells us
+  // (a) how many patterns carry observed evidence and (b) how many land in
+  // each divergence tier.
+  try {
+    const fp = await fetchJson('bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json');
+    const ag = fp.aggregate || {};
+    const tally = ag.divergenceClassificationTally || {};
+    const bound = ag.observedEvidenceBoundCount || 0;
+    const active = ag.activePatternCount || 0;
+    const dormant = ag.dormantPatternCount || 0;
+    const exact = tally.exact_match || 0;
+    const expected = tally.expected_shape_divergence || 0;
+    const unexpected = tally.unexpected_divergence_formula_suspect || 0;
+    // status: pass if no formula-suspect entries, partial otherwise.
+    // "exact_match == bound" flips to a stronger pass once deployment
+    // widths land (step 1 generator completion).
+    const kind = unexpected === 0 ? 'pass' : 'partial';
+    addRow('proven-rows',
+      'Predicted-vs-observed bytes per pattern',
+      badge(kind, unexpected === 0 ? 'baseline' : 'formula-drift'),
+      `${bound} of ${active + dormant} patterns bound to observed fixtures<br>` +
+      `classification tally: ` +
+      `<code>exact_match=${exact}</code>, ` +
+      `<code>expected_shape_divergence=${expected}</code>, ` +
+      `<code>unexpected_divergence_formula_suspect=${unexpected}</code><br>` +
+      evidenceLink('bench/out/layer-block-predicted-footprint/e2b-predicted-footprint.json'));
+  } catch (e) {
+    addError('proven-rows', 'Predicted-vs-observed bytes per pattern', e.message);
+  }
+
   // ── Aspirational rows ────────────────────────────────────────────
   // These are NOT relabeled — text comes from the receipts' own
   // executionStatus/executionBlocker fields so the dashboard and the
