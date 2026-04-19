@@ -1,8 +1,10 @@
 // Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
-//   stage 2 = minimal single-head attention: logits = Q * K[j],
-//             polynomial-C^1 softmax, attn_val = sum_j sm[j]*V[j],
-//             residual add — no transcendentals, bit-exact gate
+//   stage 2 = multi-query attention (num_heads = 4 scalar queries
+//             from rmsnorm_out[0..num_heads), shared K/V from
+//             layer_weights), poly_c1 softmax per head, per-head
+//             attn_val broadcast via (i mod num_heads) into the
+//             residual — no transcendentals, bit-exact gate
 //   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
 //             full token)
 //   stage 4 = gated MLP with a shared piecewise-polynomial GELU
@@ -33,13 +35,13 @@
 // Combine rule:
 //     rms1             = sqrt(mean(rows[i]^2) + eps)
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
-//     Q                = rmsnorm[0]                             (scalar)
-//     logits[j]        = Q * wts[qs+j]               (j in [0, kv_len))
-//     m                = max_j logits[j]
-//     w[j]             = poly_c1(logits[j] - m)                 (>=0)
-//     sm[j]            = w[j] / sum_j w[j]
-//     attn_val         = sum_j sm[j] * wts[qs+kv_len+j]         (scalar)
-//     attn_out[i]      = attn_val + rows[i]
+//     for head h in [0, num_heads):
+//       Q_h            = rmsnorm[h]
+//       logits_h[j]    = Q_h * wts[qs+j]             (j in [0, kv_len))
+//       m_h            = max_j logits_h[j]
+//       w_h[j]         = poly_c1(logits_h[j] - m_h)
+//       attn_val[h]    = sum_j (w_h[j]/sum_j w_h[j]) * wts[qs+kv_len+j]
+//     attn_out[i]      = attn_val[i mod num_heads] + rows[i]
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
@@ -51,8 +53,14 @@
 //
 // Both the softmax weighting in stage 2 and the MLP activation in
 // stage 4 use the same poly_c1 kernel. max-centered softmax
-// guarantees poly_c1(0) = 0.25 is always in the sum, so the stage-2
+// guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
 // division by sum_w is safe (sum_w >= 0.25).
+//
+// Multi-query attention (MQA) layout: the kernel runs num_heads = 4
+// heads that share K and V but each have their own scalar query. This
+// matches Gemma-4's MQA pattern structurally (real E2B uses 8 heads
+// sharing a smaller number of KV heads; the smoke kernel scales it
+// down). size must be a multiple of num_heads.
 //
 // The act() function is a C^1-continuous piecewise quadratic
 // approximation of GELU whose only operations are +, -, *, /, and
@@ -144,43 +152,52 @@ task done() void {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2: minimal single-head attention. kv_len = qs/2.
-    //   K[j] = buf_wts[qs + j]                   for j in [0, kv_len)
-    //   V[j] = buf_wts[qs + kv_len + j]          for j in [0, kv_len)
-    //   Q    = buf_out[0]   (rmsnorm_out[0]; scalar per-PE smoke)
+    // Stage 2: multi-query attention (MQA). num_heads = 4 shared KV.
+    //   kv_len = qs/2
+    //   K[j]  = buf_wts[qs + j]                  (shared across heads)
+    //   V[j]  = buf_wts[qs + kv_len + j]         (shared across heads)
+    //   Q_h   = buf_out[h]  for h in [0, num_heads)
+    const num_heads: u16 = 4;
     const kv_len: u16 = qs / 2;
-    const q_scalar: f32 = buf_out[0];
 
-    // Stage 2a: compute max logit for numerical stability.
-    var lmax: f32 = q_scalar * buf_wts[qs];
-    for (@range(u16, kv_len)) |j| {
-        const l: f32 = q_scalar * buf_wts[qs + j];
-        if (l > lmax) { lmax = l; }
-    }
+    // Per-head attn_val. num_heads is comptime so the array fits.
+    var attn_vals: [num_heads]f32;
 
-    // Stage 2b: accumulate poly_c1 softmax weights and the
-    // unnormalized weighted-V numerator in one pass.
-    var sum_w: f32     = 0.0;
-    var weighted_v: f32 = 0.0;
-    for (@range(u16, kv_len)) |j| {
-        const l: f32 = q_scalar * buf_wts[qs + j];
-        const x: f32 = l - lmax;           // <= 0 by construction
-        var wj: f32 = 0.0;
-        if (x > -1.0) {
-            const xp1: f32 = x + 1.0;
-            const sq: f32  = xp1 * xp1;
-            wj = 0.25 * sq;
+    for (@range(u16, num_heads)) |h| {
+        const q_h: f32 = buf_out[h];
+
+        // Pass 1: find max logit for numerical stability.
+        var lmax: f32 = q_h * buf_wts[qs];
+        for (@range(u16, kv_len)) |j| {
+            const l: f32 = q_h * buf_wts[qs + j];
+            if (l > lmax) { lmax = l; }
         }
-        sum_w = sum_w + wj;
-        weighted_v = weighted_v + (wj * buf_wts[qs + kv_len + j]);
-    }
-    // sum_w >= 0.25 always (max-centered element yields poly_c1(0)=0.25),
-    // so 1/sum_w is safe.
-    const attn_val: f32 = weighted_v / sum_w;
 
-    // Stage 2c: residual add — scalar attn_val broadcast over rows.
+        // Pass 2: accumulate poly_c1 weights and weighted-V numerator.
+        var sum_w: f32     = 0.0;
+        var weighted_v: f32 = 0.0;
+        for (@range(u16, kv_len)) |j| {
+            const l: f32 = q_h * buf_wts[qs + j];
+            const x: f32 = l - lmax;
+            var wj: f32 = 0.0;
+            if (x > -1.0) {
+                const xp1: f32 = x + 1.0;
+                const sq: f32  = xp1 * xp1;
+                wj = 0.25 * sq;
+            }
+            sum_w = sum_w + wj;
+            weighted_v = weighted_v + (wj * buf_wts[qs + kv_len + j]);
+        }
+        // sum_w >= 0.25 (max-centered poly_c1(0) = 0.25), so safe.
+        attn_vals[h] = weighted_v / sum_w;
+    }
+
+    // Stage 2c: residual add. Per-head attn_val broadcast via
+    // (i mod num_heads) so head h's scalar lands at indices
+    // {h, h + num_heads, h + 2*num_heads, ...}.
     for (@range(u16, size)) |i| {
-        buf_out[i] = attn_val + buf_rows[i];
+        const h_idx: u16 = i - ((i / num_heads) * num_heads);
+        buf_out[i] = attn_vals[h_idx] + buf_rows[i];
     }
 
     // Stage 3a: post-attn RMSNorm sum-of-squares over attn_out.

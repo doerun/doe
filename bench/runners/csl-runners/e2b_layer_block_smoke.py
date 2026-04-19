@@ -13,16 +13,18 @@ Plan stream contract for this layer:
 //   input:   layer_weights_stream (2166 bytes/PE)
 
 Smoke path: each stream carries 16 f32 values. The kernel
-runs stage 1 (pre-attn RMSNorm), stage 2 (single-head attention with
-poly_c1 softmax over a qs/2-entry KV cache packed into layer_weights,
-then scalar residual add), stage 3 (post-attn RMSNorm using gamma2
-packed into layer_weights), and stage 4 (gated MLP with the same
-poly_c1 family as the activation). Every input stream flows through
-compute. The runner verifies activation_out bit-exact against a host
-numpy reference that replays every reduction, every softmax
-normalization, and every activation in the same scalar f32 op
-sequence as the CSL kernel. The stream contract is stable across
-follow-up upgrades (multi-head, longer KV, rope).
+runs stage 1 (pre-attn RMSNorm), stage 2 (multi-query attention with
+num_heads=4 scalar queries from rmsnorm_out[0..num_heads) + shared
+K/V from the attn_scale quarter, poly_c1 softmax per head, per-head
+attn_val broadcast into the residual via i mod num_heads), stage 3
+(post-attn RMSNorm using gamma2 packed into layer_weights), and
+stage 4 (gated MLP with the same poly_c1 family as the activation).
+Every input stream flows through compute. The runner verifies
+activation_out bit-exact against a host numpy reference that replays
+every reduction, every per-head softmax normalization, and every
+activation in the same scalar f32 op sequence as the CSL kernel. The
+stream contract is stable across follow-up upgrades (per-head KV
+slices, longer KV, rope).
 """
 
 from __future__ import annotations
@@ -150,36 +152,44 @@ def main() -> int:
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
-        # Stage 2: minimal single-head attention with poly_c1 softmax.
-        #   kv_len = qs/2, K[j] = wts[qs+j], V[j] = wts[qs+kv_len+j],
-        #   Q = rmsnorm_out[0]. max-centered softmax guarantees
-        #   sum_w >= 0.25, so 1/sum_w is safe.
+        # Stage 2: multi-query attention with poly_c1 softmax.
+        #   num_heads = 4 (must divide size); kv_len = qs/2.
+        #   K, V shared across heads; per-head Q_h = rmsnorm_out[h].
+        #   attn_out[i] = attn_val[i mod num_heads] + rows[i].
+        num_heads = 4
+        assert args.size % num_heads == 0, "size must be divisible by num_heads"
         kv_len = qs // 2
-        q_scalar = np.float32(rmsnorm_out[0])
-        lmax = np.float32(q_scalar * np.float32(wts[qs]))
-        for j in range(kv_len):
-            l = np.float32(q_scalar * np.float32(wts[qs + j]))
-            if l > lmax:
-                lmax = l
-        sum_w = np.float32(0.0)
-        weighted_v = np.float32(0.0)
-        for j in range(kv_len):
-            l = np.float32(q_scalar * np.float32(wts[qs + j]))
-            x = np.float32(l - lmax)
-            if x > np.float32(-1.0):
-                xp1 = np.float32(x + np.float32(1.0))
-                sq = np.float32(xp1 * xp1)
-                wj = np.float32(np.float32(0.25) * sq)
-            else:
-                wj = np.float32(0.0)
-            sum_w = np.float32(sum_w + wj)
-            weighted_v = np.float32(
-                weighted_v + np.float32(wj * np.float32(wts[qs + kv_len + j]))
-            )
-        attn_val = np.float32(weighted_v / sum_w)
+        attn_vals = np.zeros(num_heads, dtype=np.float32)
+        for h in range(num_heads):
+            q_h = np.float32(rmsnorm_out[h])
+            lmax = np.float32(q_h * np.float32(wts[qs]))
+            for j in range(kv_len):
+                l = np.float32(q_h * np.float32(wts[qs + j]))
+                if l > lmax:
+                    lmax = l
+            sum_w = np.float32(0.0)
+            weighted_v = np.float32(0.0)
+            for j in range(kv_len):
+                l = np.float32(q_h * np.float32(wts[qs + j]))
+                x = np.float32(l - lmax)
+                if x > np.float32(-1.0):
+                    xp1 = np.float32(x + np.float32(1.0))
+                    sq = np.float32(xp1 * xp1)
+                    wj = np.float32(np.float32(0.25) * sq)
+                else:
+                    wj = np.float32(0.0)
+                sum_w = np.float32(sum_w + wj)
+                weighted_v = np.float32(
+                    weighted_v
+                    + np.float32(wj * np.float32(wts[qs + kv_len + j]))
+                )
+            attn_vals[h] = np.float32(weighted_v / sum_w)
         attn_out = np.empty(args.size, dtype=np.float32)
         for i in range(args.size):
-            attn_out[i] = np.float32(attn_val + np.float32(rows[i]))
+            h_idx = i - (i // num_heads) * num_heads
+            attn_out[i] = np.float32(
+                np.float32(attn_vals[h_idx]) + np.float32(rows[i])
+            )
         # Stage 3: post-attn RMSNorm with gamma2 = wts[0..qs)
         # broadcast 4x over the full token.
         sum_sq2 = np.float32(0.0)
@@ -290,16 +300,19 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "7f364c14d01349a396c823cea292a43de1c394d709835ab247dce4825542addc",
+            "kernelSourceSha256": "ff0d8504c97969caaf0d1c48aecd815e1b963353627486699144a0efef942d6e",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
-                "Q = rmsnorm[0]; kv_len = qs/2; "
-                "logits[j] = Q * layer_weights[qs+j]  (j in [0,kv_len)); "
-                "m = max_j logits[j]; "
-                "w[j] = poly_c1(logits[j] - m); "
-                "attn_val = sum_j (w[j]/sum_j w[j]) * layer_weights[qs+kv_len+j]; "
-                "attn_out[i] = attn_val + ple_rows[i]; "
+                "num_heads = 4; kv_len = qs/2; "
+                "for h in [0, num_heads): "
+                "Q_h = rmsnorm[h]; "
+                "logits_h[j] = Q_h * layer_weights[qs+j]  (j in [0,kv_len)); "
+                "m_h = max_j logits_h[j]; "
+                "w_h[j] = poly_c1(logits_h[j] - m_h); "
+                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) "
+                "* layer_weights[qs+kv_len+j]; "
+                "attn_out[i] = attn_val[i mod num_heads] + ple_rows[i]; "
                 "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
                 "* layer_weights[i mod qs]; "
                 "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
@@ -308,7 +321,7 @@ def main() -> int:
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+single_head_attn_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mqa_4head_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "status": run_status,
