@@ -1,36 +1,47 @@
-// First two real stages for the E2B layer-block executor:
-//   stage 1 = RMSNorm
-//   stage 2 = attention-inner-product + residual
+// First three real stages for the E2B layer-block executor:
+//   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
+//   stage 2 = attention-inner-product score + residual
+//   stage 3 = post-attn RMSNorm (gamma2 = first half of
+//             layer_weights, broadcast over the full token)
 //
 // The E2B stream-execution-plan names a code region
 // `transformer_layer_shape` and feeds it three input streams
 // (ple_rows, ple_projection, layer_weights) per layer. This kernel
-// now exercises all three streams through real compute; the
-// remaining stages (full attention over KV cache, MLP) land in
-// follow-up ticks without changing the SdkLayout stream contract.
+// exercises all three streams through real compute; layer_weights
+// is now reshaped to carry two tensors back-to-back in one stream
+// (gamma2 in [0, size/2), attn_scale in [size/2, size)), keeping
+// the SdkLayout stream contract stable. The remaining stages
+// (full multi-head attention over KV cache, MLP) land in follow-
+// up ticks without changing the stream contract.
 //
 // Stage semantics for this file:
-//   rows = pre-norm hidden activation (x) AND residual source
-//   proj = RMSNorm gamma (per-element scale weight)
-//   wts  = attention-output-projection vector (collapsed to a
-//          scalar inner-product with rmsnorm_out for this minimal
-//          stage — the full multi-head path replaces the scalar
-//          score with per-head softmax(QK^T)V in a follow-up).
+//   rows           = pre-norm hidden activation (x) AND residual
+//   proj           = pre-attn RMSNorm gamma (per-element scale)
+//   wts[0..half)   = post-attn RMSNorm gamma2 (broadcast twice to
+//                    cover the full token)
+//   wts[half..size)= attention-output scale vector (inner-product
+//                    with first-half of rmsnorm to form the scalar
+//                    attention score — full multi-head replaces
+//                    this with per-head softmax(QK^T)V in a
+//                    follow-up)
 //
 // Combine rule:
-//     rms           = sqrt(mean(rows[i]^2) + eps)
-//     rmsnorm[i]    = (rows[i] / rms) * proj[i]
-//     score         = sum_i wts[i] * rmsnorm[i]       (scalar)
-//     activation_out[i] = score * rmsnorm[i] + rows[i] (residual)
+//     rms1             = sqrt(mean(rows[i]^2) + eps)
+//     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
+//     score            = sum_k wts[half+k] * rmsnorm[k]       (scalar)
+//     attn_out[i]      = score * rmsnorm[i] + rows[i]          (residual)
+//     rms2             = sqrt(mean(attn_out[i]^2) + eps)
+//     gamma_bcast(i)   = wts[i if i < half else i - half]
+//     activation_out[i]= (attn_out[i] / rms2) * gamma_bcast(i)
 //
-// Reduction lowerings (sum-of-squares and inner-product) mirror the
+// Reduction lowerings (sum-of-squares, inner-product) mirror the
 // translator-emitted CSL at bench/out/dual-compile-evidence/
 // reduce-sum-workgroup/csl/pe_program.csl (single-PE: each PE
 // processes one full token in-order).
 //
 // Numerical parity target: bit-exact vs the host numpy reference
-// that accumulates both reductions in the same scalar left-to-right
-// order.
+// that accumulates every reduction in the same scalar left-to-
+// right order as the device.
 
 param size: u16;
 param rx_ple_rows:       color;
@@ -87,6 +98,11 @@ task got_wts() void {
 }
 
 task done() void {
+    // Half-size constant used to reshape layer_weights into
+    // [gamma2, attn_scale]. size is required to be even (the runner
+    // uses 16 by default; scaling to 35/61 layers keeps this even).
+    const half_size: u16 = size / 2;
+
     // Stage 1a: sum-of-squares in left-to-right scalar order.
     var sum_sq: f32 = 0.0;
     for (@range(u16, size)) |i| {
@@ -95,23 +111,40 @@ task done() void {
     const mean_sq: f32 = sum_sq / @as(f32, size);
     const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
-    // Stage 1b: per-element normalize + gamma scale (written into
-    // buf_out so the scalar inner-product below can reuse it without
-    // a second multiply).
+    // Stage 1b: per-element normalize + gamma scale (stored in
+    // buf_out as rmsnorm_out for the stage-2 score to reuse).
     for (@range(u16, size)) |i| {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
-    // Stage 2a: scalar inner-product score = wts . rmsnorm_out
-    // (left-to-right scalar accumulation matches host numpy ref).
+
+    // Stage 2a: scalar inner-product score using the attention-
+    // output-scale half of wts (wts[half..size)) paired with the
+    // first half of rmsnorm_out. Left-to-right scalar accumulation
+    // matches the host numpy ref exactly.
     var score: f32 = 0.0;
-    for (@range(u16, size)) |i| {
-        score = score + (buf_wts[i] * buf_out[i]);
+    for (@range(u16, half_size)) |k| {
+        score = score + (buf_wts[half_size + k] * buf_out[k]);
     }
-    // Stage 2b: scale rmsnorm_out by score and add the pre-norm
-    // residual from rows. Every input stream (rows, proj, wts)
-    // is now an operand in the final write.
+    // Stage 2b: attn_out = score * rmsnorm_out + residual(rows).
+    // Overwrites buf_out so stage 3 reads the stage-2 result.
     for (@range(u16, size)) |i| {
         buf_out[i] = (score * buf_out[i]) + buf_rows[i];
+    }
+
+    // Stage 3a: sum-of-squares of attn_out for the post-attn RMS.
+    var sum_sq2: f32 = 0.0;
+    for (@range(u16, size)) |i| {
+        sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]);
+    }
+    const mean_sq2: f32 = sum_sq2 / @as(f32, size);
+    const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
+    const inv_rms2: f32 = 1.0 / rms2;
+    // Stage 3b: normalize attn_out and multiply by gamma2 (the
+    // first-half of wts) broadcast over the full token via the
+    // wrap `i if i < half else i - half`.
+    for (@range(u16, size)) |i| {
+        const g_idx: u16 = if (i < half_size) i else (i - half_size);
+        buf_out[i] = (buf_out[i] * inv_rms2) * buf_wts[g_idx];
     }
     @mov32(output, mem_out);
 }

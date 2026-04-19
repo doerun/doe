@@ -126,12 +126,16 @@ def main() -> int:
         rows = rng.standard_normal(size=args.size, dtype=np.float32)
         proj = rng.standard_normal(size=args.size, dtype=np.float32)
         wts  = rng.standard_normal(size=args.size, dtype=np.float32)
-        # Stage 1 (RMSNorm) + stage 2 (inner-product + residual)
-        # reference: mirror the CSL kernel's in-order scalar
-        # accumulations so bit-exact comparison is meaningful. numpy's
-        # vectorised .sum() may use pairwise summation, which diverges
-        # from the device's left-to-right f32 accumulation.
+        # Three-stage reference: pre-attn RMSNorm, scalar attn-inner-
+        # product + residual, post-attn RMSNorm with broadcast gamma2.
+        # All reductions mirror the CSL kernel's in-order scalar f32
+        # accumulation so np.array_equal can serve as the bit-exact
+        # pass gate. numpy's vectorised .sum() uses pairwise summation
+        # which diverges from device left-to-right order.
+        assert args.size % 2 == 0, "kernel requires size % 2 == 0"
+        half_size = args.size // 2
         rmsnorm_eps = np.float32(1.0e-6)
+        # Stage 1: pre-attn RMSNorm.
         sum_sq = np.float32(0.0)
         for v in rows:
             sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
@@ -143,15 +147,33 @@ def main() -> int:
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
+        # Stage 2: scalar score from second-half of wts paired with
+        # first-half of rmsnorm_out, then attn_out = score * rmsnorm
+        # + rows (residual).
         score = np.float32(0.0)
-        for i in range(args.size):
+        for k in range(half_size):
             score = np.float32(
-                score + np.float32(wts[i]) * np.float32(rmsnorm_out[i])
+                score + np.float32(wts[half_size + k])
+                * np.float32(rmsnorm_out[k])
             )
+        attn_out = np.empty(args.size, dtype=np.float32)
+        for i in range(args.size):
+            attn_out[i] = np.float32(
+                np.float32(score * rmsnorm_out[i]) + np.float32(rows[i])
+            )
+        # Stage 3: post-attn RMSNorm with gamma2 = wts[0..half)
+        # broadcast over the full token (g_idx = i if i<half else i-half).
+        sum_sq2 = np.float32(0.0)
+        for v in attn_out:
+            sum_sq2 = np.float32(sum_sq2 + np.float32(v) * np.float32(v))
+        mean_sq2 = np.float32(sum_sq2 / np.float32(args.size))
+        rms2 = np.float32(np.sqrt(np.float32(mean_sq2 + rmsnorm_eps)))
+        inv_rms2 = np.float32(np.float32(1.0) / rms2)
         expected = np.empty(args.size, dtype=np.float32)
         for i in range(args.size):
+            g_idx = i if i < half_size else i - half_size
             expected[i] = np.float32(
-                np.float32(score * rmsnorm_out[i]) + np.float32(rows[i])
+                np.float32(attn_out[i] * inv_rms2) * np.float32(wts[g_idx])
             )
         received = np.empty(args.size, dtype=np.float32)
 
@@ -213,14 +235,16 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "a0efb682be3fe8d7ee5c6065440bea0b27aa526a524b615225ce49f24aab9039",
+            "kernelSourceSha256": "1333965f2bc4b7a543dd005fd36c30933396644d5524fec5efbd14b9b100c29e",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
-                "score = sum_i layer_weights[i] * rmsnorm[i]; "
-                "activation_out[i] = score * rmsnorm[i] + ple_rows[i]"
+                "score = sum_k layer_weights[half+k] * rmsnorm[k]  (k in [0, size/2)); "
+                "attn_out[i] = score * rmsnorm[i] + ple_rows[i]; "
+                "activation_out[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
+                "* layer_weights[i if i<half else i-half]"
             ),
-            "kernelStage": "rmsnorm+attn_inner_product+residual",
+            "kernelStage": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm",
             "status": run_status,
             "targetMode": "local_simfabric",
             "compileArtifactDir": str(compile_out.relative_to(REPO_ROOT)),
@@ -729,13 +753,17 @@ def main() -> int:
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
             "First SdkLayout runner emitted from the E2B stream-execution-plan. "
-            "Stage 1 = RMSNorm (ple_rows as x, ple_projection as gamma); "
-            "stage 2 = scalar attention-inner-product with layer_weights + "
-            "residual add from ple_rows. Every input stream flows through "
-            "compute. Remaining stages (full multi-head attention, MLP) "
-            "land in follow-up ticks without changing the stream contract "
-            "(rx_ple_rows + rx_ple_projection + rx_layer_weights -> "
-            "tx_activation)."
+            "Stage 1 = pre-attn RMSNorm (ple_rows as x, ple_projection as "
+            "gamma); stage 2 = scalar attention-inner-product (second half "
+            "of layer_weights as attn_scale paired with first half of "
+            "rmsnorm) + residual from ple_rows; stage 3 = post-attn RMSNorm "
+            "over stage-2 output, scaled by gamma2 = first half of "
+            "layer_weights broadcast via (i if i<half else i-half). All "
+            "three input streams flow through compute; layer_weights is "
+            "reshaped as [gamma2, attn_scale] to carry both tensors in one "
+            "stream without changing the SdkLayout contract. Remaining "
+            "stages (full multi-head attention over KV cache, MLP) land "
+            "in follow-up ticks."
         ),
     }
 

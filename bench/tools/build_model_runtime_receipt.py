@@ -407,33 +407,39 @@ def main() -> int:
         "layerBlockKernelEvidence": {
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
-                "now executes RMSNorm + scalar attention-inner-product "
-                "+ residual (stages 1 and 2 of the full-layer "
-                "pipeline); every input stream of the 3-stream "
-                "SdkLayout contract (rx_ple_rows, rx_ple_projection, "
-                "rx_layer_weights) is an operand in the final write. "
-                "Remaining stages (full multi-head attention over KV "
-                "cache, MLP) land in follow-up ticks without changing "
-                "the stream contract."
+                "now executes pre-attn RMSNorm + scalar attention-"
+                "inner-product + residual + post-attn RMSNorm "
+                "(stages 1, 2, and 3 of the full-layer pipeline). "
+                "Every input stream of the 3-stream SdkLayout "
+                "contract is an operand in the final write; "
+                "rx_layer_weights is reshaped as [gamma2, attn_scale] "
+                "to carry both tensors in one stream without changing "
+                "the contract. Remaining stages (full multi-head "
+                "attention over KV cache, MLP) land in follow-up "
+                "ticks."
             ),
             "kernelSourcePath": (
                 "bench/out/streaming-executor/e2b-layer-block-source/"
                 "transformer_layer_shape.csl"
             ),
             "kernelSourceSha256": (
-                "a0efb682be3fe8d7ee5c6065440bea0b27aa526a524b615225ce49f24aab9039"
+                "1333965f2bc4b7a543dd005fd36c30933396644d5524fec5efbd14b9b100c29e"
             ),
             "kernelIsStub": False,
-            "kernelStage": "rmsnorm+attn_inner_product+residual",
+            "kernelStage": (
+                "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm"
+            ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
                 "* ple_projection[i]; "
-                "score = sum_i layer_weights[i] * rmsnorm[i]; "
-                "activation_out[i] = score * rmsnorm[i] + ple_rows[i]"
+                "score = sum_k layer_weights[half+k] * rmsnorm[k]  "
+                "(k in [0, size/2)); "
+                "attn_out[i] = score * rmsnorm[i] + ple_rows[i]; "
+                "activation_out[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
+                "* layer_weights[i if i<half else i-half]"
             ),
             "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
             "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
-            "runnerEntryCommit": "ac5a2bc23",
             "numericalParityTarget": (
                 "bit_exact_vs_ordered_f32_numpy_reference"
             ),
@@ -442,6 +448,12 @@ def main() -> int:
                 "rx_ple_projection",
                 "rx_layer_weights",
             ],
+            "layerWeightsReshape": (
+                "layer_weights stream carries [gamma2(size/2), attn_scale(size/2)] "
+                "back-to-back; gamma2 is broadcast over the full token in the "
+                "post-attn RMSNorm, attn_scale is dotted with the first half of "
+                "rmsnorm_out in the stage-2 score."
+            ),
             "pendingStages": [
                 "full_multi_head_attention_over_kv_cache",
                 "mlp_gate_up_down",
