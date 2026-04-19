@@ -37,6 +37,12 @@
               { "type": "string", "enum": ["likely"] }
             ]
           },
+          "stepDependency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "If present, this emitter's 2-D-need is unresolvable without the named Build-order step first landing its shape-emission output."
+          },
           "rationale": { "type": "string" }
         }
       }
@@ -50,6 +56,18 @@
         "needs2DAndNotYet": { "type": "array", "items": { "type": "string" } },
         "needs2DLikelyAuditNeeded": { "type": "array", "items": { "type": "string" } },
         "noWideningNeeded": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Ordering constraints between the audit's findings and other Build-order steps. Surfaced so the sweep report can flag cross-step blockers rather than silently assuming independence.",
+      "properties": {
+        "step2DependsOnStep1ForPatterns": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "finding": { "type": "string" },
+        "blocksSweepCompletion": { "type": "boolean" }
       }
     },
     "notes": { "type": "string" }

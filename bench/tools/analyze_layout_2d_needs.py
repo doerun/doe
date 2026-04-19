@@ -139,20 +139,27 @@ PER_PATTERN: list[dict] = [
     },
     {
         "emitter": "emitDequantLayout",
-        "emitterLine": 287,
+        "emitterLine": 305,
         "pattern": "dequant",
         "currentGrid": "width x 1 (i16, via emitRowTileLoop)",
-        "widthSemantic": "per_weight_row",
+        "widthSemantic": "per_weight_row_block",
         "widenedTo2D": False,
         "needs2DFor31B": "likely",
+        "stepDependency": 1,
         "rationale": (
-            "dequant expands Q4K weight rows to f32. Width scales with the "
-            "weight matrix's row count; 31B weight matrices can exceed "
-            "32,767 rows (e.g. 5120 hidden * 2 = 10,240 for gate/up/down "
-            "projections, and concatenated QKV is 5120*3 = 15,360). "
-            "Per-weight-matrix width is usually under i16, but the unified "
-            "width across all weights may need 2-D. Audit specific "
-            "weight-matrix grid shapes before concluding."
+            "dequant expands Q4K weight rows to f32. The emitter declares "
+            "`param width: i16`; the actual width value is set per-invocation "
+            "by the runner. For the smoke fixture width=4 (see "
+            "bench/runners/csl-runners/fused_gemv_dequant_sim_runner.py:65). "
+            "Whether 31B deployment overflows i16 depends on how the "
+            "execution-plan generator distributes weight-matrix dequant across "
+            "PEs — at the extreme of 'use the full model grid', width = 58,056 "
+            "and overflows; at the typical of 'per-weight-matrix subset', "
+            "width stays under i16. That per-invocation shape emission lives "
+            "in plan Build-order step 1's execution-plan generator, which "
+            "today emits only stub layer-block runners. Audit cannot resolve "
+            "to yes/no until the generator lands the per-kernel --params "
+            "emission."
         ),
     },
     {
@@ -203,12 +210,17 @@ PER_PATTERN: list[dict] = [
         "widthSemantic": "vocab_chunk",
         "widenedTo2D": False,
         "needs2DFor31B": "likely",
+        "stepDependency": 1,
         "rationale": (
-            "Sample runs over vocab logits. Gemma-4 vocab is ~256k; if "
-            "distributed with 1-2 vocab entries per PE the width approaches "
-            "i16 limits. With a larger chunk_size (multi-entry per PE) the "
-            "width can stay below i16. Audit chunk_size actually used before "
-            "concluding."
+            "Sample runs over vocab logits. Gemma-4 vocabSize = 262,144 "
+            "(both E2B and 31B per runtime/zig/examples/execution-v1/"
+            "gemma-4-{e2b,31b}-smoke.json modelConfig). If distributed with "
+            "chunk_size=1 (one vocab entry per PE), width = 262,144 which "
+            "overflows i16 regardless of model. With chunk_size>=9, width "
+            "stays under 32,767. The per-invocation chunk_size is decided "
+            "by the execution-plan generator (plan Build-order step 1), "
+            "which today emits only stub layer-block runners. Audit cannot "
+            "resolve to yes/no until the generator lands."
         ),
     },
     {
@@ -219,10 +231,16 @@ PER_PATTERN: list[dict] = [
         "widthSemantic": "per_weight_row_block",
         "widenedTo2D": False,
         "needs2DFor31B": "likely",
+        "stepDependency": 1,
         "rationale": (
-            "Fused GEMV+dequant distributes weight rows across PEs. 31B weight "
-            "dims can push width above i16 for large weight matrices; same "
-            "audit-needed status as dequant."
+            "Fused GEMV+dequant distributes weight rows across PEs. The "
+            "fixture runner uses width=4 for smoke (same file as dequant). "
+            "Deployment width depends on per-weight-matrix distribution "
+            "emitted by the execution-plan generator (plan step 1). 31B "
+            "hiddenDim=5120 with ffnExpansionFactor=4 gives intermediate "
+            "dim 20,480 — within i16 if each PE handles a few rows, but "
+            "overflows if one PE per row at full grid. Same step-1 "
+            "dependency as dequant."
         ),
     },
     {
@@ -270,11 +288,14 @@ PER_PATTERN: list[dict] = [
         "widthSemantic": "per_ffn_row_block",
         "widenedTo2D": False,
         "needs2DFor31B": "likely",
+        "stepDependency": 1,
         "rationale": (
-            "Fused FFN distributes intermediate dim rows across PEs. "
-            "intermediate_size can exceed 4x hidden (e.g. 31B: 5120 -> 20,480 "
-            "ffn dim). With 1 row/PE, 20,480 fits i16 but depends on "
-            "in_per_pe; audit before concluding."
+            "Fused FFN (gate/up/down) distributes ffn-dim rows across PEs. "
+            "31B intermediate dim = hiddenDim * ffnExpansionFactor = 5120 * "
+            "4 = 20,480 — fits i16 with 1 row/PE. But if the generator "
+            "partitions by the full model grid instead of per-ffn-matrix, "
+            "58,056 would overflow. Per-invocation shape lives in the "
+            "execution-plan generator (plan step 1)."
         ),
     },
 ]
@@ -322,6 +343,7 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     emitter_sha = sha256(EMITTER_PATH)
 
+    step_dep_patterns = [e["pattern"] for e in PER_PATTERN if e.get("stepDependency")]
     artifact = {
         "schemaVersion": 1,
         "artifactKind": "doe_layout_2d_needs_analysis",
@@ -346,13 +368,28 @@ def main() -> int:
                 if e["needs2DFor31B"] is False
             ],
         },
+        "dependencies": {
+            "step2DependsOnStep1ForPatterns": step_dep_patterns,
+            "finding": (
+                "Build-order step 2 (full-grid cslc sweep) cannot fully "
+                "resolve needs2DFor31B for dequant / sample / fused_gemv_dequant "
+                "/ fused_ffn without step 1 (execution-plan generator) landing "
+                "per-kernel --params shape emission. Those emitters all accept "
+                "`param width` as a compile-time constant that the runner "
+                "chooses per-invocation; the choice is a function of how the "
+                "generator distributes weight matrices / vocab chunks across "
+                "PEs. Today only the stub generator at "
+                "bench/tools/generate_e2b_layer_block_runner.py exists and it "
+                "emits a single stub codeRegion, not per-kernel shape params."
+            ),
+            "blocksSweepCompletion": True,
+        },
         "notes": (
-            "This replaces the 'broaden 2-D across all 13 remaining emitters' "
-            "framing with a per-pattern audit. Only element_wise and gather "
-            "are certain-need; dequant / fused_gemv_dequant / fused_ffn / "
-            "sample require a param-range audit; every other pattern's "
-            "current 1-D width is bounded by num_tokens / num_heads / per-tile "
-            "PE count and stays under i16 at 31B shapes."
+            "Per-pattern audit supersedes the 'broaden 2-D across 13 remaining "
+            "emitters' framing. Widened-definitive: 3 (element_wise, "
+            "tiled_matmul, gather). Step-dependent: 4 (need step 1 generator "
+            "for per-invocation shape). Not-needed: 8 (width bounded by "
+            "num_tokens / num_heads / per-tile PE count)."
         ),
     }
 
