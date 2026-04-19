@@ -4,9 +4,10 @@ layer-block runner.
 
 The generated runner at bench/runners/csl-runners/e2b_layer_block_smoke.py
 imports the Cerebras SDK at module top, so it cannot run without
-cs_python on PATH. This tool extracts that runner's compute_layer_block
-helper (the canonical bit-exact-vs-numpy reference) and runs the
-num_layers chain entirely in numpy. The output is a JSON file shaped
+cs_python on PATH. This tool imports the SAME canonical
+compute_layer_block helper that the runner uses
+(bench/runners/csl-runners/_e2b_layer_block_compute.py — single
+source of truth) and runs the num_layers chain entirely in numpy. The output is a JSON file shaped
 like a doe_streaming_executor_trace: same field names, same per-layer
 arrays, with dataSource.kind="numpy_only_no_simulator" and
 executedRun.status="synthetic_numpy_only".
@@ -32,6 +33,12 @@ import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+# Canonical compute_layer_block lives next to the SDK runner. Both
+# the runner and this tool import the same source so the parity-
+# contract gate has one source of truth (no exec/source-extraction).
+sys.path.insert(0, str(REPO_ROOT / "bench" / "runners" / "csl-runners"))
+from _e2b_layer_block_compute import compute_layer_block  # noqa: E402
+
 # Re-use the generator's per-kernel-shape derivation so the synthetic
 # trace satisfies perKernelShapes (minItems: 14) without duplicating
 # the 14-pattern table.
@@ -47,35 +54,6 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def extract_compute_layer_block(runner_path: Path):
-    """Pull the compute_layer_block fn out of the generated runner.
-
-    The runner imports cerebras.sdk.* at module top, so we can't import
-    it directly. Instead we read the file, slice out the def + body
-    (the body is at >= 8 spaces indent inside main()'s try block), de-
-    indent by 4, and exec it in a numpy-only namespace.
-    """
-    src = runner_path.read_text(encoding="utf-8")
-    lines = src.splitlines()
-    i = 0
-    while i < len(lines) and "def compute_layer_block" not in lines[i]:
-        i += 1
-    if i >= len(lines):
-        raise RuntimeError(
-            "compute_layer_block not found in " + str(runner_path)
-        )
-    start = i
-    end = start + 1
-    while end < len(lines) and (
-        lines[end].startswith(" " * 8) or lines[end].strip() == ""
-    ):
-        end += 1
-    fn_text = "\n".join(line[4:] for line in lines[start:end])
-    ns = {"np": np}
-    exec(fn_text, ns)  # noqa: S102 — controlled input from this repo
-    return ns["compute_layer_block"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -117,12 +95,14 @@ def resolve(p: str) -> Path:
 
 def main() -> int:
     args = parse_args()
-    runner_path = resolve(args.runner)
+    runner_path = resolve(args.runner)  # kept for back-compat / inspection
     kernel_path = resolve(args.kernel_source)
     plan_path = resolve(args.execution_plan)
     out_path = resolve(args.out)
-
-    compute_layer_block = extract_compute_layer_block(runner_path)
+    # compute_layer_block is imported at module top from
+    # _e2b_layer_block_compute (the canonical source); the runner-path
+    # arg is no longer used to lift the function via exec.
+    _ = runner_path  # silence "unused" lint without changing the CLI
 
     rng_init = np.random.default_rng(seed=args.initial_rows_seed)
     initial_rows = rng_init.standard_normal(
