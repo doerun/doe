@@ -19,11 +19,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CSL_TOOLCHAIN = os.environ.get("DOE_CSL_TOOLCHAIN")
+DEFAULT_CS_PYTHON = os.environ.get(
+    "DOE_CS_PYTHON",
+    str(Path(DEFAULT_CSL_TOOLCHAIN) / "cs_python")
+    if DEFAULT_CSL_TOOLCHAIN else "cs_python",
+)
 
 DEFAULT_CHAIN_RECEIPTS = [
     "bench/out/kernel-chain-evidence/elementwise-double-x2/chain-parity.json",
@@ -153,7 +160,7 @@ def main() -> int:
     # artifact that schema_gate validates.
     passed, note = run_gate(
         "streaming-executor-iter2-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter2.py")],
     )
     results.append({"gate": "streaming-executor-iter2-regen", "passed": passed, "note": note})
@@ -163,7 +170,7 @@ def main() -> int:
     # a real compute op runs on the PE. Same cs_python harness as iter-2.
     passed, note = run_gate(
         "streaming-executor-iter3-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter3.py")],
     )
     results.append({"gate": "streaming-executor-iter3-regen", "passed": passed, "note": note})
@@ -175,7 +182,7 @@ def main() -> int:
     # block needs.
     passed, note = run_gate(
         "streaming-executor-iter4-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter4.py")],
     )
     results.append({"gate": "streaming-executor-iter4-regen", "passed": passed, "note": note})
@@ -186,7 +193,7 @@ def main() -> int:
     # compute PEs and fans back in to one host stream.
     passed, note = run_gate(
         "streaming-executor-iter5-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter5.py")],
     )
     results.append({"gate": "streaming-executor-iter5-regen", "passed": passed, "note": note})
@@ -210,7 +217,7 @@ def main() -> int:
     # recorded in layerBlock.predictedMatchesObserved.
     passed, note = run_gate(
         "streaming-executor-iter7-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter7.py")],
     )
     results.append({"gate": "streaming-executor-iter7-regen", "passed": passed, "note": note})
@@ -221,7 +228,7 @@ def main() -> int:
     # tolerance because sigmoid's exp() has unavoidable f32 rounding.
     passed, note = run_gate(
         "streaming-executor-sigmoid-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_sigmoid.py")],
     )
     results.append({"gate": "streaming-executor-sigmoid-regen", "passed": passed, "note": note})
@@ -231,7 +238,7 @@ def main() -> int:
     # the multi-operand primitive every matmul/attention needs.
     passed, note = run_gate(
         "streaming-executor-add-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_add.py")],
     )
     results.append({"gate": "streaming-executor-add-regen", "passed": passed, "note": note})
@@ -241,7 +248,7 @@ def main() -> int:
     # First transformer-prefill primitive (token id -> embedding row).
     passed, note = run_gate(
         "streaming-executor-gather-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_gather.py")],
     )
     results.append({"gate": "streaming-executor-gather-regen", "passed": passed, "note": note})
@@ -251,7 +258,7 @@ def main() -> int:
     # tolerance from f32 summation rounding.
     passed, note = run_gate(
         "streaming-executor-reduce-sum-regen",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_reduce_sum.py")],
     )
     results.append({"gate": "streaming-executor-reduce-sum-regen", "passed": passed, "note": note})
@@ -270,7 +277,7 @@ def main() -> int:
     results.append({"gate": "e2b-layer-block-runner-gen", "passed": passed, "note": note})
     passed, note = run_gate(
         "e2b-layer-block-smoke-run",
-        ["/home/x/cerebras-sdk/cs_python",
+        [DEFAULT_CS_PYTHON,
          str(REPO_ROOT / "bench/runners/csl-runners/e2b_layer_block_smoke.py")],
     )
     results.append({"gate": "e2b-layer-block-smoke-run", "passed": passed, "note": note})
