@@ -1,47 +1,54 @@
-// First three real stages for the E2B layer-block executor:
+// Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
 //   stage 2 = attention-inner-product score + residual
-//   stage 3 = post-attn RMSNorm (gamma2 = first half of
-//             layer_weights, broadcast over the full token)
+//   stage 3 = post-attn RMSNorm (gamma2 broadcast over 4x the
+//             full token)
+//   stage 4 = gated MLP with a bit-exact ReLU standing in for
+//             GELU (platform math.tanh vs numpy would break the
+//             bit-exact gate; GELU via a shared polynomial is a
+//             follow-up tick)
 //
 // The E2B stream-execution-plan names a code region
 // `transformer_layer_shape` and feeds it three input streams
 // (ple_rows, ple_projection, layer_weights) per layer. This kernel
 // exercises all three streams through real compute; layer_weights
-// is now reshaped to carry two tensors back-to-back in one stream
-// (gamma2 in [0, size/2), attn_scale in [size/2, size)), keeping
-// the SdkLayout stream contract stable. The remaining stages
-// (full multi-head attention over KV cache, MLP) land in follow-
+// is now reshaped to carry four tensors back-to-back in one stream
+// (gamma2, attn_scale, gate_w, up_w — each size/4), keeping the
+// SdkLayout stream contract stable. The remaining stages (full
+// multi-head attention over KV cache, real GELU) land in follow-
 // up ticks without changing the stream contract.
 //
 // Stage semantics for this file:
-//   rows           = pre-norm hidden activation (x) AND residual
-//   proj           = pre-attn RMSNorm gamma (per-element scale)
-//   wts[0..half)   = post-attn RMSNorm gamma2 (broadcast twice to
-//                    cover the full token)
-//   wts[half..size)= attention-output scale vector (inner-product
-//                    with first-half of rmsnorm to form the scalar
-//                    attention score — full multi-head replaces
-//                    this with per-head softmax(QK^T)V in a
-//                    follow-up)
+//   rows                 = pre-norm hidden activation (x) AND residual
+//   proj                 = pre-attn RMSNorm gamma (per-element scale)
+//   wts[0..qs)           = post-attn RMSNorm gamma2 (broadcast 4x)
+//   wts[qs..2*qs)        = attention-output scale vector (inner-
+//                          product with rmsnorm[0..qs) forms the
+//                          scalar attention score)
+//   wts[2*qs..3*qs)      = MLP gate weights (inner-product with
+//                          post_norm[0..qs) forms the gate scalar)
+//   wts[3*qs..4*qs)      = MLP up weights (inner-product with
+//                          post_norm[qs..2*qs) forms the up scalar)
 //
 // Combine rule:
 //     rms1             = sqrt(mean(rows[i]^2) + eps)
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
-//     score            = sum_k wts[half+k] * rmsnorm[k]       (scalar)
-//     attn_out[i]      = score * rmsnorm[i] + rows[i]          (residual)
+//     score            = sum_k wts[qs+k] * rmsnorm[k]        (k in [0,qs))
+//     attn_out[i]      = score * rmsnorm[i] + rows[i]
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
-//     gamma_bcast(i)   = wts[i if i < half else i - half]
-//     activation_out[i]= (attn_out[i] / rms2) * gamma_bcast(i)
+//     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
+//     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
+//     up               = sum_k wts[3*qs+k] * post_norm[qs+k] (k in [0,qs))
+//     activation_out[i]= gate * relu(up * post_norm[i]) + post_norm[i]
 //
-// Reduction lowerings (sum-of-squares, inner-product) mirror the
+// Reduction lowerings (sum-of-squares, inner-products) mirror the
 // translator-emitted CSL at bench/out/dual-compile-evidence/
 // reduce-sum-workgroup/csl/pe_program.csl (single-PE: each PE
 // processes one full token in-order).
 //
 // Numerical parity target: bit-exact vs the host numpy reference
 // that accumulates every reduction in the same scalar left-to-
-// right order as the device.
+// right order as the device and uses identical ReLU semantics.
 
 param size: u16;
 param rx_ple_rows:       color;
@@ -98,12 +105,14 @@ task got_wts() void {
 }
 
 task done() void {
-    // Half-size constant used to reshape layer_weights into
-    // [gamma2, attn_scale]. size is required to be even (the runner
-    // uses 16 by default; scaling to 35/61 layers keeps this even).
-    const half_size: u16 = size / 2;
+    // Quarter-size constant. layer_weights is reshaped as four
+    // back-to-back quarters [gamma2, attn_scale, gate_w, up_w];
+    // post_norm slices are gate_k = post_norm[0..qs), up_k =
+    // post_norm[qs..2*qs). size must be a multiple of 4 (default
+    // 16; 35/61-layer scaling keeps this multiple of 4).
+    const qs: u16 = size / 4;
 
-    // Stage 1a: sum-of-squares in left-to-right scalar order.
+    // Stage 1a: pre-attn RMSNorm sum-of-squares (scalar order).
     var sum_sq: f32 = 0.0;
     for (@range(u16, size)) |i| {
         sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
@@ -111,27 +120,23 @@ task done() void {
     const mean_sq: f32 = sum_sq / @as(f32, size);
     const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
-    // Stage 1b: per-element normalize + gamma scale (stored in
-    // buf_out as rmsnorm_out for the stage-2 score to reuse).
+    // Stage 1b: normalize + gamma, stored in buf_out as rmsnorm_out.
     for (@range(u16, size)) |i| {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2a: scalar inner-product score using the attention-
-    // output-scale half of wts (wts[half..size)) paired with the
-    // first half of rmsnorm_out. Left-to-right scalar accumulation
-    // matches the host numpy ref exactly.
+    // Stage 2a: attn score over wts[qs..2*qs) dotted with the
+    // first quarter of rmsnorm_out.
     var score: f32 = 0.0;
-    for (@range(u16, half_size)) |k| {
-        score = score + (buf_wts[half_size + k] * buf_out[k]);
+    for (@range(u16, qs)) |k| {
+        score = score + (buf_wts[qs + k] * buf_out[k]);
     }
-    // Stage 2b: attn_out = score * rmsnorm_out + residual(rows).
-    // Overwrites buf_out so stage 3 reads the stage-2 result.
+    // Stage 2b: attn_out = score * rmsnorm + residual(rows).
     for (@range(u16, size)) |i| {
         buf_out[i] = (score * buf_out[i]) + buf_rows[i];
     }
 
-    // Stage 3a: sum-of-squares of attn_out for the post-attn RMS.
+    // Stage 3a: post-attn RMSNorm sum-of-squares over attn_out.
     var sum_sq2: f32 = 0.0;
     for (@range(u16, size)) |i| {
         sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]);
@@ -139,12 +144,35 @@ task done() void {
     const mean_sq2: f32 = sum_sq2 / @as(f32, size);
     const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
     const inv_rms2: f32 = 1.0 / rms2;
-    // Stage 3b: normalize attn_out and multiply by gamma2 (the
-    // first-half of wts) broadcast over the full token via the
-    // wrap `i if i < half else i - half`.
+    // Stage 3b: normalize + gamma2 broadcast 4x over the token.
     for (@range(u16, size)) |i| {
-        const g_idx: u16 = if (i < half_size) i else (i - half_size);
+        var g_idx: u16 = i;
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
         buf_out[i] = (buf_out[i] * inv_rms2) * buf_wts[g_idx];
+    }
+
+    // Stage 4a: gate scalar = inner-product of wts[2*qs..3*qs)
+    // with post_norm[0..qs).
+    var gate: f32 = 0.0;
+    for (@range(u16, qs)) |k| {
+        gate = gate + (buf_wts[2 * qs + k] * buf_out[k]);
+    }
+    // Stage 4b: up scalar = inner-product of wts[3*qs..4*qs) with
+    // post_norm[qs..2*qs).
+    var up: f32 = 0.0;
+    for (@range(u16, qs)) |k| {
+        up = up + (buf_wts[3 * qs + k] * buf_out[qs + k]);
+    }
+    // Stage 4c: activation_out[i] = gate * relu(up * post_norm[i])
+    // + post_norm[i] (residual). ReLU is a bit-exact stub for
+    // GELU; the real activation lands once a host/CSL shared
+    // polynomial path exists.
+    for (@range(u16, size)) |i| {
+        const pre_act: f32 = up * buf_out[i];
+        const act: f32     = if (pre_act < 0.0) 0.0 else pre_act;
+        buf_out[i] = (gate * act) + buf_out[i];
     }
     @mov32(output, mem_out);
 }

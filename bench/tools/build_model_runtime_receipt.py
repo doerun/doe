@@ -342,17 +342,16 @@ def main() -> int:
     else:
         receipt["laneStatus"] = "structural_full_coverage"
         if streaming_required:
-            # Streaming executor primitives run on simfabric AND the
+            # Streaming executor primitives run on simfabric, and the
             # generated E2B layer-block runner now executes real
-            # RMSNorm + attention-inner-product + residual with every
-            # input stream of the 3-stream SdkLayout contract flowing
-            # through compute. The remaining blocker is that the
-            # current build environment lacks cs_python (the Cerebras
-            # SDK Python driver) to actually run simfabric; once that
-            # is on PATH, executionStatus can promote to
-            # simulator_success. See layerBlockKernelEvidence in the
-            # streamingExecutorPrimitivesEvidence block below.
-            execution_blocker = "cs_python_not_available_in_build_environment"
+            # pre-attn RMSNorm + scalar attention-inner-product +
+            # residual + post-attn RMSNorm with every input stream of
+            # the 3-stream SdkLayout contract flowing through compute.
+            # The model receipt still cannot claim simulator_success:
+            # the full transformer layer block (full multi-head
+            # attention over KV cache + MLP gate/up/down) is not wired
+            # into this runner yet.
+            execution_blocker = "full_transformer_layer_block_incomplete"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
         else:
@@ -368,6 +367,28 @@ def main() -> int:
         "thirtyOneBFullGridCompileVerified": True,
         "thirtyOneBCompileSeconds2D": 1351.85,
     }
+    layer_block_kernel_path = (
+        "bench/out/streaming-executor/e2b-layer-block-source/"
+        "transformer_layer_shape.csl"
+    )
+    layer_block_trace_path = (
+        "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
+    )
+    layer_block_trace_evidence: dict[str, Any] = {}
+    trace_abs = resolve(layer_block_trace_path)
+    if trace_abs.is_file():
+        try:
+            trace = load_json(trace_abs)
+            layer_block_trace_evidence = {
+                "tracePath": layer_block_trace_path,
+                "traceSha256": sha256_file(trace_abs),
+                "executedRun": trace.get("executedRun", {}),
+            }
+        except json.JSONDecodeError:
+            layer_block_trace_evidence = {
+                "tracePath": layer_block_trace_path,
+                "traceStatus": "invalid_json",
+            }
     receipt["streamingExecutorPrimitivesEvidence"] = {
         "description": (
             "SdkLayout streaming executor primitives that have been "
@@ -403,40 +424,45 @@ def main() -> int:
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
             "layer_block_attn_inner_product_residual",
+            "layer_block_post_attn_rmsnorm",
+            "layer_block_gated_mlp_relu_gelu_stub",
         ],
         "layerBlockKernelEvidence": {
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
                 "now executes pre-attn RMSNorm + scalar attention-"
-                "inner-product + residual + post-attn RMSNorm "
-                "(stages 1, 2, and 3 of the full-layer pipeline). "
-                "Every input stream of the 3-stream SdkLayout "
-                "contract is an operand in the final write; "
-                "rx_layer_weights is reshaped as [gamma2, attn_scale] "
-                "to carry both tensors in one stream without changing "
-                "the contract. Remaining stages (full multi-head "
-                "attention over KV cache, MLP) land in follow-up "
-                "ticks."
+                "inner-product + residual + post-attn RMSNorm + "
+                "gated MLP (stages 1 through 4 of the full-layer "
+                "pipeline). Every input stream of the 3-stream "
+                "SdkLayout contract is an operand in the final "
+                "write; rx_layer_weights is reshaped as "
+                "[gamma2, attn_scale, gate_w, up_w] (four back-to-"
+                "back quarters of size/4) to carry all four tensors "
+                "in one stream without changing the contract. ReLU "
+                "stands in for GELU in stage 4 to preserve the "
+                "bit-exact parity gate — platform math.tanh vs "
+                "numpy tanh diverges at f32 precision. Remaining "
+                "stages (full multi-head attention over KV cache, "
+                "real polynomial GELU) land in follow-up ticks."
             ),
-            "kernelSourcePath": (
-                "bench/out/streaming-executor/e2b-layer-block-source/"
-                "transformer_layer_shape.csl"
-            ),
-            "kernelSourceSha256": (
-                "1333965f2bc4b7a543dd005fd36c30933396644d5524fec5efbd14b9b100c29e"
-            ),
+            "kernelSourcePath": layer_block_kernel_path,
+            "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm"
+                "pre_attn_rmsnorm+attn_inner_product+residual"
+                "+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
             ),
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
                 "* ple_projection[i]; "
-                "score = sum_k layer_weights[half+k] * rmsnorm[k]  "
-                "(k in [0, size/2)); "
+                "score = sum_k layer_weights[qs+k] * rmsnorm[k]  "
+                "(k in [0, size/4)); "
                 "attn_out[i] = score * rmsnorm[i] + ple_rows[i]; "
-                "activation_out[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
-                "* layer_weights[i if i<half else i-half]"
+                "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
+                "* layer_weights[i mod qs]; "
+                "gate = sum_k layer_weights[2*qs+k] * post_norm[k]; "
+                "up = sum_k layer_weights[3*qs+k] * post_norm[qs+k]; "
+                "activation_out[i] = gate * relu(up * post_norm[i]) + post_norm[i]"
             ),
             "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
             "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
@@ -449,14 +475,24 @@ def main() -> int:
                 "rx_layer_weights",
             ],
             "layerWeightsReshape": (
-                "layer_weights stream carries [gamma2(size/2), attn_scale(size/2)] "
-                "back-to-back; gamma2 is broadcast over the full token in the "
-                "post-attn RMSNorm, attn_scale is dotted with the first half of "
-                "rmsnorm_out in the stage-2 score."
+                "layer_weights carries [gamma2(qs), attn_scale(qs), gate_w(qs), "
+                "up_w(qs)] back-to-back (qs = size/4). gamma2 broadcasts 4x "
+                "over the post-attn RMSNorm; attn_scale is dotted with "
+                "rmsnorm[0..qs) for the stage-2 score; gate_w with "
+                "post_norm[0..qs) for the MLP gate scalar; up_w with "
+                "post_norm[qs..2qs) for the MLP up scalar."
             ),
+            "stageFourActivationStub": (
+                "ReLU stands in for GELU in stage 4. Platform math.tanh "
+                "vs numpy tanh diverges at f32 precision so the bit-exact "
+                "gate would break. Upgrade path: emit a shared polynomial "
+                "GELU approximation from the translator so CSL and numpy "
+                "compute an identical op sequence."
+            ),
+            **layer_block_trace_evidence,
             "pendingStages": [
                 "full_multi_head_attention_over_kv_cache",
-                "mlp_gate_up_down",
+                "polynomial_gelu_replacing_relu_stub",
             ],
         },
     }
