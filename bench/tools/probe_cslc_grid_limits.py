@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -29,7 +30,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_WIDTHS = [4, 16, 64, 256, 1024, 4096, 17433]
-DEFAULT_CSLC = "/home/x/cerebras-sdk/cslc"
+DEFAULT_CSL_TOOLCHAIN = os.environ.get("DOE_CSL_TOOLCHAIN")
+DEFAULT_CSLC = os.environ.get(
+    "DOE_CSLC",
+    str(Path(DEFAULT_CSL_TOOLCHAIN) / "cslc") if DEFAULT_CSL_TOOLCHAIN else "cslc",
+)
 
 
 def parse_args() -> argparse.Namespace:

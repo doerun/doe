@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,7 +55,12 @@ from typing import Any
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CS_PYTHON = "/home/x/cerebras-sdk/cs_python"
+DEFAULT_CSL_TOOLCHAIN = os.environ.get("DOE_CSL_TOOLCHAIN")
+DEFAULT_CS_PYTHON = os.environ.get(
+    "DOE_CS_PYTHON",
+    str(Path(DEFAULT_CSL_TOOLCHAIN) / "cs_python")
+    if DEFAULT_CSL_TOOLCHAIN else "cs_python",
+)
 
 
 def parse_args() -> argparse.Namespace:

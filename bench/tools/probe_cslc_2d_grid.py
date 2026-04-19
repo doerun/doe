@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -21,11 +22,16 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CSL_TOOLCHAIN = os.environ.get("DOE_CSL_TOOLCHAIN")
+DEFAULT_CSLC = os.environ.get(
+    "DOE_CSLC",
+    str(Path(DEFAULT_CSL_TOOLCHAIN) / "cslc") if DEFAULT_CSL_TOOLCHAIN else "cslc",
+)
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("--cslc", default="/home/x/cerebras-sdk/cslc")
+    p.add_argument("--cslc", default=DEFAULT_CSLC)
     p.add_argument(
         "--layout",
         default="bench/out/cslc-grid-probe/elementwise-double-2d/layout.csl",
