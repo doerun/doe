@@ -194,11 +194,12 @@
     },
     "executionBlocker": {
       "type": "string",
-      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. Note that 'sdk_layout_streaming_executor_missing' is legacy — as of bench/out/streaming-executor/ landing, the primitives exist and run on simfabric; the current blocker for full-model execution is 'streaming_executor_not_bound_to_execution_plan' (the plan generator doesn't yet emit stage-kernel code the executor can dispatch).",
+      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. 'sdk_layout_streaming_executor_missing' and 'streaming_executor_not_bound_to_execution_plan' are legacy — the streaming-executor primitives exist on simfabric and the layer-block runner now executes real RMSNorm + attention-inner-product + residual with all 3 streams flowing through compute. The remaining blocker is 'cs_python_not_available_in_build_environment' (the current build machine lacks the Cerebras SDK Python interpreter needed to actually drive simfabric); once cs_python is on PATH the runner can promote executionStatus to simulator_success.",
       "enum": [
         "none",
         "sdk_layout_streaming_executor_missing",
         "streaming_executor_not_bound_to_execution_plan",
+        "cs_python_not_available_in_build_environment",
         "hardware_endpoint_unavailable",
         "full_grid_compile_unattempted",
         "partial_kernel_coverage",

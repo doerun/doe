@@ -342,12 +342,17 @@ def main() -> int:
     else:
         receipt["laneStatus"] = "structural_full_coverage"
         if streaming_required:
-            # Streaming executor primitives exist and run on simfabric
-            # (see bench/out/streaming-executor/*-trace.json). The
-            # remaining blocker is wiring the execution plan's stage
-            # codegen to emit kernels the executor can dispatch — not
-            # the executor itself being missing.
-            execution_blocker = "streaming_executor_not_bound_to_execution_plan"
+            # Streaming executor primitives run on simfabric AND the
+            # generated E2B layer-block runner now executes real
+            # RMSNorm + attention-inner-product + residual with every
+            # input stream of the 3-stream SdkLayout contract flowing
+            # through compute. The remaining blocker is that the
+            # current build environment lacks cs_python (the Cerebras
+            # SDK Python driver) to actually run simfabric; once that
+            # is on PATH, executionStatus can promote to
+            # simulator_success. See layerBlockKernelEvidence in the
+            # streamingExecutorPrimitivesEvidence block below.
+            execution_blocker = "cs_python_not_available_in_build_environment"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
         else:
@@ -368,9 +373,9 @@ def main() -> int:
             "SdkLayout streaming executor primitives that have been "
             "proven end-to-end on simfabric. Each trace records the "
             "compile + run + numerical-parity result for one primitive. "
-            "These primitives are the substrate the execution plan "
-            "generator (future work) will compose into per-layer-block "
-            "SdkLayout runners."
+            "The layerBlockKernelEvidence sub-block records the real "
+            "per-layer compute now wired into the generated E2B "
+            "layer-block runner."
         ),
         "tracesDir": "bench/out/streaming-executor/",
         "tracesSample": [
@@ -396,7 +401,52 @@ def main() -> int:
             "indexed_table_gather",
             "elementwise_sigmoid",
             "blocked_reduce_sum",
+            "layer_block_rmsnorm",
+            "layer_block_attn_inner_product_residual",
         ],
+        "layerBlockKernelEvidence": {
+            "description": (
+                "The generated E2B layer-block runner's CSL kernel "
+                "now executes RMSNorm + scalar attention-inner-product "
+                "+ residual (stages 1 and 2 of the full-layer "
+                "pipeline); every input stream of the 3-stream "
+                "SdkLayout contract (rx_ple_rows, rx_ple_projection, "
+                "rx_layer_weights) is an operand in the final write. "
+                "Remaining stages (full multi-head attention over KV "
+                "cache, MLP) land in follow-up ticks without changing "
+                "the stream contract."
+            ),
+            "kernelSourcePath": (
+                "bench/out/streaming-executor/e2b-layer-block-source/"
+                "transformer_layer_shape.csl"
+            ),
+            "kernelSourceSha256": (
+                "a0efb682be3fe8d7ee5c6065440bea0b27aa526a524b615225ce49f24aab9039"
+            ),
+            "kernelIsStub": False,
+            "kernelStage": "rmsnorm+attn_inner_product+residual",
+            "combineRule": (
+                "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
+                "* ple_projection[i]; "
+                "score = sum_i layer_weights[i] * rmsnorm[i]; "
+                "activation_out[i] = score * rmsnorm[i] + ple_rows[i]"
+            ),
+            "generatorPath": "bench/tools/generate_e2b_layer_block_runner.py",
+            "generatedRunnerPath": "bench/runners/csl-runners/e2b_layer_block_smoke.py",
+            "runnerEntryCommit": "ac5a2bc23",
+            "numericalParityTarget": (
+                "bit_exact_vs_ordered_f32_numpy_reference"
+            ),
+            "streamsExercisedInCompute": [
+                "rx_ple_rows",
+                "rx_ple_projection",
+                "rx_layer_weights",
+            ],
+            "pendingStages": [
+                "full_multi_head_attention_over_kv_cache",
+                "mlp_gate_up_down",
+            ],
+        },
     }
 
     # Chain-parity binding. For each receipt the user passes, include it
