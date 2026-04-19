@@ -228,7 +228,11 @@ def elements_per_pe(pattern: str, params: dict) -> int:
     if pattern in ("attention_tiled",):
         return int(p.get("head_dim", 0)) * int(p.get("kv_len", 0)) * int(p.get("q_len", 1))
     if pattern == "attention_decode":
-        return int(p.get("head_dim", 0)) * int(p.get("kv_chunk", 0))
+        # Per-PE output is (head_dim,) — decode attention collapses kv
+        # across rows to a single output vector. kv_chunk / kv_len size
+        # the inner compute loop, not the output bytes. See
+        # bench/runners/csl-runners/attention_decode_sim_runner.py:50.
+        return int(p.get("head_dim", 0))
     if pattern in ("attention_streaming", "attention_linear"):
         # Per-PE output is (head_dim,) per token. kv_len scales the
         # iteration count but not the output bytes. See
