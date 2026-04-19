@@ -20,7 +20,10 @@ pub const EmitError = error{
 };
 
 /// Emit the layout.csl section for an element-wise kernel.
-/// Grid: width × 1 (one row of PEs, no inter-PE communication).
+/// Grid: width × height (configurable at compile time; height defaults to 1).
+/// 2-D decomposition is needed when total PE count would exceed the i16 axis
+/// ceiling (32,767); e.g. 31B's 58,056 PE fit as 246x236. When height = 1 this
+/// matches the previous 1-D emission byte-for-byte (see probe_cslc_2d_grid.py).
 pub fn emitElementWiseLayout(
     buf: []u8,
     pos: *usize,
@@ -32,32 +35,38 @@ pub fn emitElementWiseLayout(
     const function = &module.functions.items[entry.function];
 
     // Header
-    try write(buf, pos, "// Layout: element-wise kernel distributed across a 1-D PE row.\n");
+    try write(buf, pos, "// Layout: element-wise kernel distributed across a width x height PE grid.\n");
     try write(buf, pos, "// Each PE processes a contiguous chunk of the input array.\n\n");
 
-    // Params
-    try write(buf, pos, "// Grid width is set at compile time via --params=width:<N>.\n");
-    try write(buf, pos, "param width: i16;\n\n");
+    // Params. u16 axes support up to 65535 per axis, which covers E2B (17,433 PE)
+    // in a 1-D layout (width=N, height=1) and 31B (58,056 PE = 246x236) in 2-D.
+    // The flattened pe_id = pe_y*width + pe_x is also u16 so num_pes <= 65535.
+    try write(buf, pos, "// Grid width and height are set at compile time via\n");
+    try write(buf, pos, "// --params=width:<W>,height:<H>. height defaults to 1 for 1-D layouts.\n");
+    try write(buf, pos, "param width: u16;\n");
+    try write(buf, pos, "param height: u16;\n\n");
 
     // Memcpy import
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n");
-    try write(buf, pos, "    .height = 1,\n");
+    try write(buf, pos, "    .height = height,\n");
     try write(buf, pos, "});\n\n");
 
     // Layout block
     try write(buf, pos, "layout {\n");
-    try write(buf, pos, "    @set_rectangle(width, 1);\n\n");
+    try write(buf, pos, "    @set_rectangle(width, height);\n\n");
 
-    // Assign tile code to each PE
-    try write(buf, pos, "    for (@range(i16, width)) |pe_x| {\n");
-    try write(buf, pos, "        @set_tile_code(pe_x, 0, \"");
+    // Assign tile code to each PE (row-major: pe_id = pe_y * width + pe_x).
+    try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
     try write(buf, pos, spec.PE_PROGRAM_FILENAME);
     try write(buf, pos, "\", .{\n");
-    try write(buf, pos, "            .memcpy_params = memcpy.get_params(pe_x),\n");
-    try write(buf, pos, "            .pe_id = pe_x,\n");
-    try write(buf, pos, "            .num_pes = width,\n");
-    try write(buf, pos, "        });\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .pe_id = pe_y * width + pe_x,\n");
+    try write(buf, pos, "                .num_pes = width * height,\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
     try write(buf, pos, "    }\n\n");
 
     // Export storage buffer symbols for host memcpy
