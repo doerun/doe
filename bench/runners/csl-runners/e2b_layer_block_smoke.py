@@ -101,10 +101,11 @@ def main() -> int:
 
     region.place(4, 2)
 
-    rows_stream = layout.create_input_stream(rows_port)
-    proj_stream = layout.create_input_stream(proj_port)
-    wts_stream  = layout.create_input_stream(wts_port)
-    act_stream  = layout.create_output_stream(act_port)
+    io_buffer_size = 1024  # SdkLayout default; exposed for the receipt.
+    rows_stream = layout.create_input_stream(rows_port, io_buffer_size=io_buffer_size)
+    proj_stream = layout.create_input_stream(proj_port, io_buffer_size=io_buffer_size)
+    wts_stream  = layout.create_input_stream(wts_port, io_buffer_size=io_buffer_size)
+    act_stream  = layout.create_output_stream(act_port, io_buffer_size=io_buffer_size)
 
     compile_prefix = str(compile_out / "transformer_layer_shape")
     compile_artifacts = layout.compile(out_prefix=compile_prefix)
@@ -179,11 +180,57 @@ def main() -> int:
         ],
         "layerBlockSmoke": {
             "planPath": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
+            "planSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
+            "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
+            "kernelSourceSha256": "ceb12027ca5781107559bfb1121df8935d0ffd42d0f3d7980b7950cccda56662",
             "kernelIsStub": True,
             "combineRule": "activation_out[i] = ple_rows[i] + ple_projection[i] + layer_weights[i]",
             "status": run_status,
+            "targetMode": "local_simfabric",
+            "compileArtifactDir": str(compile_out.relative_to(REPO_ROOT)),
+            "compileArtifactPrefix": str(Path(compile_prefix).relative_to(REPO_ROOT)),
+            "connectionGraph": {
+                "region": "transformer_layer_shape",
+                "grid": {"width": 1, "height": 1, "peCount": 1, "place": [4, 2]},
+                "inputPorts": [
+                    {"color": "rx_ple_rows",       "edge": "LEFT",   "size": args.size},
+                    {"color": "rx_ple_projection", "edge": "TOP",    "size": args.size},
+                    {"color": "rx_layer_weights",  "edge": "BOTTOM", "size": args.size},
+                ],
+                "outputPorts": [
+                    {"color": "tx_activation",     "edge": "RIGHT",  "size": args.size},
+                ],
+                "crossRegionConnections": [],
+            },
+            "hostIoLayout": [
+                {"streamId": "ple_rows_stream",       "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 2},
+                {"streamId": "ple_projection_stream", "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 23},
+                {"streamId": "layer_weights_stream",  "role": "input",  "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 2166},
+                {"streamId": "activation_out_stream", "role": "output", "elementsPerPe": args.size,
+                  "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
+                  "tileBehavior": "stream", "planPayloadBytes": 0},
+            ],
+            "ioBufferSizes": {
+                "rows": io_buffer_size,
+                "proj": io_buffer_size,
+                "wts":  io_buffer_size,
+                "activation": io_buffer_size,
+            },
+            "sendReceiveCounts": {"sends": 3, "receives": 1},
+            "simulatorArtifactPaths": {
+                "compileDir": str(compile_out.relative_to(REPO_ROOT)),
+                "runLogs": [],
+                "coreFile": None,
+            },
+            "sourceModelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
         },
         "notes": (
             "GENERATED from bench/tools/generate_e2b_layer_block_runner.py. "
