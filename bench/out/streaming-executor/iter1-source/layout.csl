@@ -1,0 +1,31 @@
+// Minimal self-contained layout for the streaming-executor iteration-1
+// smoke test. No external params required — SdkLayout's create_code_region
+// runs cslc in single-PE-per-tile mode, so we bake width/height into
+// constants rather than require --params threading.
+//
+// Kernel shape: elementwise-double (output = input * 2.0) at width=4,
+// height=1 over a 1024-element per-PE chunk.
+
+const kWidth: u16 = 4;
+const kHeight: u16 = 1;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = kWidth,
+    .height = kHeight,
+});
+
+layout {
+    @set_rectangle(kWidth, kHeight);
+
+    for (@range(u16, kWidth)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = kWidth,
+        });
+    }
+
+    @export_name("input",  [*]f32, true);
+    @export_name("output", [*]f32, true);
+    @export_name("compute", fn()void);
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-vulkan-runtime-probe.schema.json",
+  "title": "Doe Vulkan runtime probe",
+  "description": "Per-step diagnostic artifact from bench/tools/probe_vulkan_runtime.mjs. Records how far the Doe native WebGPU stack (libwebgpu_doe.so) gets when asked to execute one WGSL kernel end-to-end (load .so, acquire adapter, acquire device, round-trip a buffer, preflight shader source, compile pipeline, dispatch compute, read back output). summary.computeDispatchBitExact tells the equivalence crosswalk whether Vulkan execution is proven bit-exact; summary.knownGap names the boundary where the probe stops working. Does not itself claim bit-exact execution — it records the current infrastructure state honestly.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "kernelId",
+    "backend",
+    "steps",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_vulkan_runtime_probe" },
+    "kernelId": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "backend": { "type": "string" },
+    "doeLibraryPath": { "type": "string" },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "status"],
+        "properties": {
+          "step": { "type": "string" },
+          "status": { "type": "string", "enum": ["passed", "failed", "skipped"] }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["computeDispatchBitExact", "infrastructureOk"],
+      "properties": {
+        "computeDispatchBitExact": { "type": "boolean" },
+        "infrastructureOk": { "type": "boolean" },
+        "knownGap": { "type": ["string", "null"] }
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}

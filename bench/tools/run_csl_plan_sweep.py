@@ -147,6 +147,137 @@ def main() -> int:
     )
     results.append({"gate": "lookahead-sensitivity-regen:31b", "passed": passed, "note": note})
 
+    # 0e. Streaming-executor iter-2 — real data flow through SdkLayout
+    # streams. Uses cs_python (the SDK's container-hosted python) since
+    # SdkLayout lives inside the SIF. Regenerates the observed trace
+    # artifact that schema_gate validates.
+    passed, note = run_gate(
+        "streaming-executor-iter2-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter2.py")],
+    )
+    results.append({"gate": "streaming-executor-iter2-regen", "passed": passed, "note": note})
+
+    # 0f. Streaming-executor iter-3 — compute transform (@fmuls ×2.0) via
+    # two-task async-completion pattern. Bytes flow through streams PLUS
+    # a real compute op runs on the PE. Same cs_python harness as iter-2.
+    passed, note = run_gate(
+        "streaming-executor-iter3-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter3.py")],
+    )
+    results.append({"gate": "streaming-executor-iter3-regen", "passed": passed, "note": note})
+
+    # 0g. Streaming-executor iter-4 — two-region chain via layout.connect.
+    # Two 1x1 regions, each running the iter-3 stream_double kernel,
+    # stitched over the fabric so the host sees received == sent * 4.0.
+    # Proves region-to-region composition — the primitive every layer
+    # block needs.
+    passed, note = run_gate(
+        "streaming-executor-iter4-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter4.py")],
+    )
+    results.append({"gate": "streaming-executor-iter4-regen", "passed": passed, "note": note})
+
+    # 0h. Streaming-executor iter-5 — multi-PE single-region SPMD via
+    # demux/mux adaptor pipeline (adaptor -> demux -> compute -> mux).
+    # Proves hidden-dim parallelism — one host stream fans out across W
+    # compute PEs and fans back in to one host stream.
+    passed, note = run_gate(
+        "streaming-executor-iter5-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter5.py")],
+    )
+    results.append({"gate": "streaming-executor-iter5-regen", "passed": passed, "note": note})
+
+    # 0i. Streaming-executor iter-6 — compile-artifact cache + io_buffer
+    # knob. Runs cold/warm/large phases in cs_python subprocesses (simfab
+    # is process-global and crashes on multi-runtime reuse). Warm setup
+    # skips cslc, proving executor amortization across forward passes.
+    passed, note = run_gate(
+        "streaming-executor-iter6-regen",
+        [sys.executable,
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter6.py")],
+    )
+    results.append({"gate": "streaming-executor-iter6-regen", "passed": passed, "note": note})
+
+    # 0j. Streaming-executor iter-7 — layer-block-shaped chain. Four 1x1
+    # regions chained via layout.connect, each running a baked-scale
+    # @fmuls kernel modeling a stage (attn_qkv / attn_out / mlp_gate_up
+    # / mlp_down). First end-to-end composition of a Gemma-shaped layer
+    # block on simfabric; predicted-vs-observed host-byte accounting
+    # recorded in layerBlock.predictedMatchesObserved.
+    passed, note = run_gate(
+        "streaming-executor-iter7-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_iter7.py")],
+    )
+    results.append({"gate": "streaming-executor-iter7-regen", "passed": passed, "note": note})
+
+    # 0j'. Streaming-executor sigmoid — second hand-ported kernel into
+    # the SdkLayout form (after iter-3's stream_double). Widens the
+    # csl-sdklayout column in the equivalence crosswalk. bit-close
+    # tolerance because sigmoid's exp() has unavoidable f32 rounding.
+    passed, note = run_gate(
+        "streaming-executor-sigmoid-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_sigmoid.py")],
+    )
+    results.append({"gate": "streaming-executor-sigmoid-regen", "passed": passed, "note": note})
+
+    # 0j''. Streaming-executor elementwise-add — first SdkLayout kernel
+    # with multiple input fabric streams (two rx colors + one tx). Proves
+    # the multi-operand primitive every matmul/attention needs.
+    passed, note = run_gate(
+        "streaming-executor-add-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_add.py")],
+    )
+    results.append({"gate": "streaming-executor-add-regen", "passed": passed, "note": note})
+
+    # 0j'''. Streaming-executor gather — embedding lookup shape, two
+    # input streams (f32 table + u32 indices) converging to one PE.
+    # First transformer-prefill primitive (token id -> embedding row).
+    passed, note = run_gate(
+        "streaming-executor-gather-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_gather.py")],
+    )
+    results.append({"gate": "streaming-executor-gather-regen", "passed": passed, "note": note})
+
+    # 0j''''. Streaming-executor reduce-sum — first asymmetric I/O
+    # kernel (256 in, 16 out via per-block reduction). Bit-close
+    # tolerance from f32 summation rounding.
+    passed, note = run_gate(
+        "streaming-executor-reduce-sum-regen",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/streaming_executor_reduce_sum.py")],
+    )
+    results.append({"gate": "streaming-executor-reduce-sum-regen", "passed": passed, "note": note})
+
+    # 0k. WGSL backend equivalence crosswalk. Ties one WGSL source to
+    # every Doe backend that can compile it (csl-memcpy, csl-sdklayout,
+    # spirv) and surfaces sha256-bound pointers to each backend's
+    # execution evidence. Directly answers the "same JS program runs on
+    # Cerebras and Vulkan via shared Doe IR" claim.
+    passed, note = run_gate(
+        "wgsl-backend-equivalence-regen",
+        [sys.executable, str(REPO_ROOT / "bench/tools/generate_wgsl_backend_equivalence.py")],
+    )
+    results.append({"gate": "wgsl-backend-equivalence-regen", "passed": passed, "note": note})
+
+    # 0l. Vulkan runtime probe — diagnostic only. Passes when the Doe
+    # native WebGPU addon boots end-to-end; does not claim bit-exact
+    # compute execution (that gap is recorded in probe.summary.knownGap
+    # and surfaced by the equivalence crosswalk). Runs via node against
+    # libwebgpu_doe.so.
+    passed, note = run_gate(
+        "vulkan-runtime-probe",
+        ["node", str(REPO_ROOT / "bench/tools/probe_vulkan_runtime.mjs")],
+    )
+    results.append({"gate": "vulkan-runtime-probe", "passed": passed, "note": note})
+
     # 1. schema_gate
     passed, note = run_gate(
         "schema",

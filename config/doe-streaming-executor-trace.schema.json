@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-streaming-executor-trace.schema.json",
+  "title": "Doe streaming-executor trace",
+  "description": "Observed runtime trace from the SdkLayout streaming executor. Mirrors the dry-run trace shape so diff_dry_run_traces.py can compare predicted vs observed. Emitted by bench/runners/csl-runners/streaming_executor*.py, which builds a layout via SdkLayout, compiles, loads, runs send/receive against SdkLayout streams, and records wall clock + observed byte counts.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "executorIteration",
+    "sourcePlan",
+    "region",
+    "executedCompile",
+    "executedRun"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_streaming_executor_trace" },
+    "target": { "const": "wse3" },
+    "modelId": { "type": "string" },
+    "executorIteration": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Which iteration of the executor produced this trace. Iter-1 = compile+load+run+stop only. Iter-2 = real data flow via streams. Later iterations add multi-region, ring buffer, compile-artifact cache, KV spill."
+    },
+    "sourcePlan": {
+      "type": "object",
+      "required": ["kernelSourcePath"],
+      "properties": {
+        "streamGraphPath": { "type": "string" },
+        "executionPlanPath": { "type": "string" },
+        "kernelSourcePath": { "type": "string" }
+      }
+    },
+    "region": {
+      "type": "object",
+      "required": ["regionId", "width", "height", "peCount"],
+      "properties": {
+        "regionId": { "type": "string" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "peCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "executedCompile": {
+      "type": "object",
+      "required": ["elapsedMs", "status"],
+      "properties": {
+        "compilePrefix": { "type": "string" },
+        "elapsedMs": { "type": "number", "minimum": 0 },
+        "status": { "type": "string", "enum": ["succeeded", "failed"] }
+      }
+    },
+    "executedRun": {
+      "type": "object",
+      "required": ["status", "elapsedMs", "observedBytesTransferredTotal"],
+      "properties": {
+        "status": { "type": "string" },
+        "elapsedMs": { "type": "number", "minimum": 0 },
+        "observedBytesTransferredPerPe": { "type": "integer", "minimum": 0 },
+        "observedBytesTransferredTotal": { "type": "integer", "minimum": 0 },
+        "numericalParity": {
+          "type": "object",
+          "properties": {
+            "maxAbsErr": { "type": "number" },
+            "atol": { "type": "number", "minimum": 0 },
+            "passed": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "streams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "color"],
+        "properties": {
+          "role": { "type": "string", "enum": ["input", "output"] },
+          "color": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "dtype": { "type": "string" }
+        }
+      }
+    },
+    "notes": { "type": "string" },
+    "layerBlock": {
+      "type": "object",
+      "description": "Optional iter-7+ reporting on layer-block composition — which semantic stages the pipeline represents, what scale product the host should expect, and predicted-vs-observed byte accounting.",
+      "properties": {
+        "shape": { "type": "string" },
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "scale"],
+            "properties": {
+              "name": { "type": "string" },
+              "scale": { "type": "number" }
+            }
+          }
+        },
+        "expectedScaleProduct": { "type": "number" },
+        "predictedFabricBytesTotal": { "type": "integer", "minimum": 0 },
+        "predictedHostBytes": { "type": "integer", "minimum": 0 },
+        "observedHostBytes": { "type": "integer", "minimum": 0 },
+        "predictedMatchesObserved": { "type": "boolean" }
+      }
+    },
+    "executorPrimitives": {
+      "type": "object",
+      "description": "Optional iter-6+ reporting on executor-level primitives (compile-artifact cache, ring-buffer prefetch) separately from the single-invocation executedCompile/executedRun measurements.",
+      "properties": {
+        "compileCache": {
+          "type": "object",
+          "properties": {
+            "coldCompileMs": { "type": "number", "minimum": 0 },
+            "coldRuntimeCtorMs": { "type": "number", "minimum": 0 },
+            "coldPreRunMs": { "type": "number", "minimum": 0 },
+            "warmSetupMs": { "type": "number", "minimum": 0 },
+            "warmRuntimeCtorMs": { "type": "number", "minimum": 0 },
+            "warmPreRunMs": { "type": "number", "minimum": 0 },
+            "speedupRatioRaw": { "type": "number", "minimum": 0 },
+            "speedupRatioEffective": { "type": "number", "minimum": 0 },
+            "coldRunMs": { "type": "number", "minimum": 0 },
+            "warmRunMs": { "type": "number", "minimum": 0 },
+            "allBitExact": { "type": "boolean" }
+          }
+        },
+        "ioBufferSizeKnob": {
+          "type": "object",
+          "properties": {
+            "smallBytes": { "type": "integer", "minimum": 1 },
+            "largeBytes": { "type": "integer", "minimum": 1 },
+            "smallRunMs": { "type": "number", "minimum": 0 },
+            "largeCompileMs": { "type": "number", "minimum": 0 },
+            "largeRunMs": { "type": "number", "minimum": 0 },
+            "bothBitExact": { "type": "boolean" }
+          }
+        },
+        "wallMs": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}
