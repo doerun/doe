@@ -419,6 +419,101 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "fused_gemv_dequant",
+        "emitter": "emitFusedGemvLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:448)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "q_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 4096,
+                    "in_dim_per_pe": 96,
+                    "num_blocks_per_row": 3
+                },
+                "cslcParamsString": "width:16,out_dim:4096,in_dim_per_pe:96,num_blocks_per_row:3",
+                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+            },
+            {
+                "stepName": "k_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 4096,
+                    "in_dim_per_pe": 96,
+                    "num_blocks_per_row": 3
+                },
+                "cslcParamsString": "width:16,out_dim:4096,in_dim_per_pe:96,num_blocks_per_row:3",
+                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+            },
+            {
+                "stepName": "v_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 4096,
+                    "in_dim_per_pe": 96,
+                    "num_blocks_per_row": 3
+                },
+                "cslcParamsString": "width:16,out_dim:4096,in_dim_per_pe:96,num_blocks_per_row:3",
+                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+            },
+            {
+                "stepName": "o_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 1536,
+                    "in_dim_per_pe": 256,
+                    "num_blocks_per_row": 8
+                },
+                "cslcParamsString": "width:16,out_dim:1536,in_dim_per_pe:256,num_blocks_per_row:8",
+                "weightMatrixShape": "M=1 K=4096 N=1536 (decode row-vector)"
+            },
+            {
+                "stepName": "gate_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 6144,
+                    "in_dim_per_pe": 96,
+                    "num_blocks_per_row": 3
+                },
+                "cslcParamsString": "width:16,out_dim:6144,in_dim_per_pe:96,num_blocks_per_row:3",
+                "weightMatrixShape": "M=1 K=1536 N=6144 (decode row-vector)"
+            },
+            {
+                "stepName": "up_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 6144,
+                    "in_dim_per_pe": 96,
+                    "num_blocks_per_row": 3
+                },
+                "cslcParamsString": "width:16,out_dim:6144,in_dim_per_pe:96,num_blocks_per_row:3",
+                "weightMatrixShape": "M=1 K=1536 N=6144 (decode row-vector)"
+            },
+            {
+                "stepName": "down_proj",
+                "paramsShape": {
+                    "width": 16,
+                    "out_dim": 1536,
+                    "in_dim_per_pe": 384,
+                    "num_blocks_per_row": 12
+                },
+                "cslcParamsString": "width:16,out_dim:1536,in_dim_per_pe:384,num_blocks_per_row:12",
+                "weightMatrixShape": "M=1 K=6144 N=1536 (decode row-vector)"
+            }
+        ],
+        "derivationSource": "width = --size smoke arg (deployment picks per-weight-matrix width from memory-plan budgets; the audit flags this pattern as needs2DFor31B=likely pending step-1 generator output). out_dim per step from manifest.modelConfig: hiddenDim, qkv_out_dim = numHeads*headDim, or intermediate = hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block).",
+        "manifestSteps": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj"
+        ],
+        "status": "audit_needs_deployment_generator"
+    },
+    {
         "pattern": "attention_streaming",
         "emitter": "emitStreamingAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:357)",
         "emitterWidened2D": False,

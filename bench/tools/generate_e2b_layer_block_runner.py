@@ -568,6 +568,70 @@ def derive_per_kernel_shapes(
             ),
             "manifestSteps": [inv["stepName"] for inv in decode_invocations],
         })
+    # Smoke-shape fused_gemv_dequant: emitter at L448 takes width +
+    # out_dim + in_dim_per_pe + num_blocks_per_row. Per the audit this
+    # is one of the 4 entries whose needs2DFor31B resolves to "likely"
+    # and is gated on the step-1 generator's per-weight-matrix width
+    # derivation. The shapes below use a fixed smoke width (--size)
+    # and partition each weight matrix's in_dim by width; deployment
+    # will pick width from memory-plan budgets.
+    #
+    # Q4K packs scales + quants in 32-element blocks (GGML convention).
+    Q4K_BLOCK = 32
+    gemv_invocations = []
+    for s in manifest.get("steps", []):
+        if s.get("op") != "matmul_q4k" or s.get("kernelKey") != "gemv":
+            continue
+        name = s["name"]
+        # Same weight-matrix shape table as tiled_matmul — the decode
+        # path uses the same matrices, dequantized on the fly.
+        if name in ("q_proj", "k_proj", "v_proj"):
+            in_dim, out_dim = hidden, qkv_out_dim
+        elif name == "o_proj":
+            in_dim, out_dim = qkv_out_dim, hidden
+        elif name in ("gate_proj", "up_proj"):
+            in_dim, out_dim = hidden, intermediate
+        elif name == "down_proj":
+            in_dim, out_dim = intermediate, hidden
+        else:
+            # Unknown step — defer to deployment generator.
+            continue
+        in_dim_per_pe = max(1, in_dim // smoke_size)
+        num_blocks_per_row = max(1, in_dim_per_pe // Q4K_BLOCK)
+        gemv_invocations.append({
+            "stepName": name,
+            "paramsShape": {
+                "width": smoke_size,
+                "out_dim": out_dim,
+                "in_dim_per_pe": in_dim_per_pe,
+                "num_blocks_per_row": num_blocks_per_row,
+            },
+            "cslcParamsString": (
+                f"width:{smoke_size},"
+                f"out_dim:{out_dim},"
+                f"in_dim_per_pe:{in_dim_per_pe},"
+                f"num_blocks_per_row:{num_blocks_per_row}"
+            ),
+            "weightMatrixShape": f"M=1 K={in_dim} N={out_dim} (decode row-vector)",
+        })
+    if gemv_invocations:
+        shapes.append({
+            "pattern": "fused_gemv_dequant",
+            "emitter": "emitFusedGemvLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:448)",
+            "emitterWidened2D": False,
+            "invocations": gemv_invocations,
+            "derivationSource": (
+                "width = --size smoke arg (deployment picks per-weight-matrix "
+                "width from memory-plan budgets; the audit flags this pattern "
+                "as needs2DFor31B=likely pending step-1 generator output). "
+                "out_dim per step from manifest.modelConfig: hiddenDim, "
+                "qkv_out_dim = numHeads*headDim, or intermediate = "
+                "hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. "
+                "num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block)."
+            ),
+            "manifestSteps": [inv["stepName"] for inv in gemv_invocations],
+            "status": "audit_needs_deployment_generator",
+        })
     # Smoke-shape attention_streaming (dormant): emitter at L357 takes
     # width + head_dim + kv_len. Per the audit stays 1-D (per-head). No
     # Gemma-4 manifest step currently lands on this pattern — the model
