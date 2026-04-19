@@ -416,6 +416,48 @@ def main() -> int:
             ),
         },
     }
+    # Cross-runtime parity check artifact, emitted by
+    # bench/tools/compare_runner_vs_synthetic.py. Records the gate
+    # verdict (promotionEligible bool + preconditionsMet/Missing
+    # lists) so a downstream consumer reading just the receipt knows
+    # whether the model is currently eligible to promote.
+    parity_check_path = (
+        "bench/out/streaming-executor/"
+        "e2b-layer-block-cross-runtime-parity-check.json"
+    )
+    parity_check_evidence: dict[str, Any] = {
+        "crossRuntimeParityCheck": {
+            "path": parity_check_path,
+            "exists": False,
+            "note": (
+                "Parity-contract gate verdict; emit via "
+                "`python3 bench/tools/compare_runner_vs_synthetic.py`. "
+                "verdict.promotionEligible == True is the necessary "
+                "(but not sufficient) condition for flipping "
+                "executionStatus to simulator_success — schema enum "
+                "still requires cs_python to actually have run."
+            ),
+        },
+    }
+    parity_abs = resolve(parity_check_path)
+    if parity_abs.is_file():
+        try:
+            pc = load_json(parity_abs)
+            verdict = pc.get("verdict", {})
+            parity_check_evidence["crossRuntimeParityCheck"].update({
+                "exists": True,
+                "sha256": sha256_file(parity_abs),
+                "comparedAt": pc.get("comparedAt"),
+                "promotionEligible": verdict.get("promotionEligible"),
+                "preconditionsMet": verdict.get("preconditionsMet", []),
+                "preconditionsMissing": verdict.get("preconditionsMissing", []),
+                "notes": verdict.get("notes", []),
+            })
+        except json.JSONDecodeError:
+            parity_check_evidence["crossRuntimeParityCheck"]["traceStatus"] = (
+                "invalid_json"
+            )
+
     synthetic_abs = resolve(synthetic_trace_path)
     if synthetic_abs.is_file():
         try:
@@ -588,6 +630,7 @@ def main() -> int:
             ),
             **layer_block_trace_evidence,
             **synthetic_trace_evidence,
+            **parity_check_evidence,
             "multiLayerChain": (
                 "Runner now chains the layer-block kernel num_layers "
                 "times (default = manifest.modelConfig.numLayers, "
