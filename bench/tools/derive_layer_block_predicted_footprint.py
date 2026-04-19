@@ -220,7 +220,11 @@ def elements_per_pe(pattern: str, params: dict) -> int:
         # correction uses hidden_size from the carried paramsShape.
         return int(p.get("hidden_size", 1))
     if pattern == "tiled_matmul":
-        return int(p.get("Mt", 0)) * int(p.get("Kt", 0)) * int(p.get("Nt", 0))
+        # Per-PE output tile is Mt x Nt f32 values. Mt*Kt*Nt counts
+        # compute ops (FMACs), not output bytes — the trace's
+        # totalElements reports the output tile, which is Mt*Nt.
+        # See fixture P:2,Mt:8,Kt:8,Nt:8 giving per-PE = 64 = Mt*Nt.
+        return int(p.get("Mt", 0)) * int(p.get("Nt", 0))
     if pattern in ("attention_tiled",):
         return int(p.get("head_dim", 0)) * int(p.get("kv_len", 0)) * int(p.get("q_len", 1))
     if pattern == "attention_decode":
