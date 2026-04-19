@@ -146,6 +146,25 @@ def main() -> int:
     finite_all = all(per_layer_finite)
     final_max_abs = per_layer_max_abs[-1] if per_layer_max_abs else -1.0
 
+    # Output tensor digest: write the final-layer activation_out as f32
+    # bytes next to the trace, then capture {dtype, shape, path, sha256,
+    # preview}. doe_csl_reference_parity gate's cslRun.output field
+    # consumes this — once a Doppler/browser reference output is bound,
+    # --require-output-parity flips the gate to passed.
+    output_path = out_path.with_suffix(".output.f32")
+    rows_curr.astype(np.float32).tofile(output_path)
+    output_sha = hashlib.sha256()
+    with output_path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            output_sha.update(chunk)
+    output_digest = {
+        "dtype": "float32",
+        "shape": [int(args.size)],
+        "path": str(output_path.relative_to(REPO_ROOT)),
+        "sha256": output_sha.hexdigest(),
+        "preview": [float(rows_curr[i]) for i in range(min(8, args.size))],
+    }
+
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     # Per-kernel shapes from the same derivation the generator uses.
     manifest_path = (
@@ -232,6 +251,7 @@ def main() -> int:
                     "comparison."
                 ),
             },
+            "output": output_digest,
         },
         "streams": [
             {"role": "input",  "color": "rx_ple_rows",
