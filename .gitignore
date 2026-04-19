@@ -148,3 +148,11 @@ browser/chromium/.external-lane.env
 # Nested mirror artifacts (accidental local copies)
 bench/vendor/
 /fawn/
+
+# Streaming executor hand-written CSL kernel sources — these are source
+# code, not generated artifacts, and are required by the runners in
+# bench/runners/csl-runners/streaming_executor_*.py. The rest of
+# bench/out/streaming-executor (compile outputs, ELFs, traces) stays
+# ignored.
+!bench/out/streaming-executor/*-source/
+!bench/out/streaming-executor/*-source/**/*.csl

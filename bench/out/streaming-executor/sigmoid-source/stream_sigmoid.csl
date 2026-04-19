@@ -1,0 +1,57 @@
+// SdkLayout streaming executor kernel — elementwise sigmoid.
+// Semantically equivalent to
+//     bench/out/dual-compile-evidence/elementwise-sigmoid/source.wgsl
+// (WGSL: `output[idx] = 1.0 / (1.0 + exp(-input[idx]))`)
+// but expressed for the SdkLayout fabric I/O contract that the
+// streaming executor uses (fabin_dsd/fabout_dsd + two-task async
+// pattern), matching iter-3's stream_double shape.
+//
+// This is the second hand-ported kernel into the SdkLayout form,
+// widening the equivalence crosswalk's csl-sdklayout column beyond
+// elementwise-double.
+
+param size: u16;
+param rx: color;
+param tx: color;
+
+const math = @import_module("<math>");
+
+const in_q  = @get_input_queue(0);
+const out_q = @get_output_queue(0);
+
+const input  = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                       .fabric_color = rx,
+                                       .input_queue = in_q });
+const output = @get_dsd(fabout_dsd, .{ .extent = size,
+                                       .fabric_color = tx,
+                                       .output_queue = out_q });
+
+var buffer: [size]f32;
+const mem_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buffer[i] });
+
+const main_id = @get_local_task_id(8);
+const done_id = @get_local_task_id(9);
+
+task main() void {
+    @mov32(mem_dsd, input, .{ .async = true, .activate = done_id });
+}
+
+task done() void {
+    // Per-element sigmoid on the local buffer.
+    for (@range(u16, size)) |i| {
+        buffer[i] = 1.0 / (1.0 + math.exp(-buffer[i]));
+    }
+    // Sync copy from memory to fabric output.
+    @mov32(output, mem_dsd);
+}
+
+comptime {
+    @bind_local_task(main, main_id);
+    @bind_local_task(done, done_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q,  .{ .color = rx });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx });
+    }
+}

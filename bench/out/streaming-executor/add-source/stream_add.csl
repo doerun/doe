@@ -1,0 +1,75 @@
+// SdkLayout streaming executor kernel — elementwise add.
+// Semantically equivalent to
+//     bench/out/dual-compile-evidence/elementwise-add/source.wgsl
+// (WGSL: `out[idx] = a[idx] + b[idx]`)
+// but expressed for the SdkLayout fabric I/O contract.
+//
+// Two input fabric streams (rx_a, rx_b) feed separate input queues;
+// a chained async @mov32 pulls each into a PE-local buffer; the
+// `done` task then performs per-element f32 addition and emits the
+// result through the output fabric stream.
+//
+// Third hand-ported kernel in the SdkLayout form (after
+// stream_double and stream_sigmoid), proving multi-input-stream
+// execution.
+
+param size: u16;
+param rx_a: color;
+param rx_b: color;
+param tx:   color;
+
+const in_q_a = @get_input_queue(0);
+const in_q_b = @get_input_queue(1);
+const out_q  = @get_output_queue(0);
+
+const input_a = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                        .fabric_color = rx_a,
+                                        .input_queue = in_q_a });
+const input_b = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                        .fabric_color = rx_b,
+                                        .input_queue = in_q_b });
+const output  = @get_dsd(fabout_dsd, .{ .extent = size,
+                                        .fabric_color = tx,
+                                        .output_queue = out_q });
+
+var buffer_a: [size]f32;
+var buffer_b: [size]f32;
+const mem_a = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buffer_a[i] });
+const mem_b = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buffer_b[i] });
+
+const main_id    = @get_local_task_id(8);
+const got_b_id   = @get_local_task_id(9);
+const done_id    = @get_local_task_id(10);
+
+// Stage 1: start the async receive for rx_a; when done activate got_b
+// (which starts the rx_b receive).
+task main() void {
+    @mov32(mem_a, input_a, .{ .async = true, .activate = got_b_id });
+}
+
+// Stage 2: receive the rx_b stream into buffer_b; when done activate
+// the compute task.
+task got_b() void {
+    @mov32(mem_b, input_b, .{ .async = true, .activate = done_id });
+}
+
+// Stage 3: element-wise add and emit.
+task done() void {
+    for (@range(u16, size)) |i| {
+        buffer_a[i] = buffer_a[i] + buffer_b[i];
+    }
+    @mov32(output, mem_a);
+}
+
+comptime {
+    @bind_local_task(main,  main_id);
+    @bind_local_task(got_b, got_b_id);
+    @bind_local_task(done,  done_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q_a, .{ .color = rx_a });
+    @initialize_queue(in_q_b, .{ .color = rx_b });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx });
+    }
+}
