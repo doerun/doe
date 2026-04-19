@@ -228,7 +228,13 @@ def elements_per_pe(pattern: str, params: dict) -> int:
     if pattern in ("attention_streaming", "attention_linear"):
         return int(p.get("head_dim", 0)) * int(p.get("kv_len", 0))
     if pattern == "kv_write":
-        return int(p.get("head_dim", 0)) * int(p.get("max_seq_len", 0))
+        # Per-PE write is K + V slices, each head_dim wide (see
+        # bench/runners/csl-runners/kv_write_sim_runner.py:41-42). The
+        # trace's chunkSize reports head_dim (32 for the fixture), so
+        # treat that as the per-PE figure. max_seq_len sizes the
+        # destination KV cache but doesn't multiply the single-step
+        # write bytes.
+        return int(p.get("head_dim", 0))
     if pattern == "kv_read":
         return int(p.get("head_dim", 0)) * int(p.get("read_len", 0))
     if pattern == "sample":
