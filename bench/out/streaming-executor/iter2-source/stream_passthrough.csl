@@ -1,0 +1,38 @@
+// Iteration-2 smoke kernel for the SdkLayout streaming executor.
+//
+// Minimum stream contract: read `size` u32 values from fabric color `rx`,
+// write them unchanged to fabric color `tx`. Proves that the Python
+// driver's create_input_stream / create_output_stream / connect / send /
+// receive pipeline moves real bytes through the device.
+//
+// Modeled after sdklayout-04-h2d-d2h/add2vec.csl, trimmed to a single
+// input + single output (identity passthrough via @mov32).
+
+param size: u16;
+param rx: color;
+param tx: color;
+
+const in_q  = @get_input_queue(0);
+const out_q = @get_output_queue(0);
+
+const input  = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                       .fabric_color = rx,
+                                       .input_queue = in_q });
+const output = @get_dsd(fabout_dsd, .{ .extent = size,
+                                       .fabric_color = tx,
+                                       .output_queue = out_q });
+
+const main_id = @get_local_task_id(8);
+task main() void {
+    @mov32(output, input, .{ .async = true });
+}
+
+comptime {
+    @bind_local_task(main, main_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q,  .{ .color = rx });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx });
+    }
+}

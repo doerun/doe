@@ -202,6 +202,86 @@
       "data": "bench/out/e2b-vs-31b-dry-run-diff.json"
     },
     {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter2-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter3-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter4-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter5-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter6-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/iter7-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/sigmoid-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/add-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/gather-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/reduce-trace.json"
+    },
+    {
+      "schema": "config/doe-streaming-executor-trace.schema.json",
+      "data": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/elementwise-double.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/tiled-matmul.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/rope.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/gather.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/reduce-sum-workgroup.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/attention-tiled.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/elementwise-sigmoid.equivalence.json"
+    },
+    {
+      "schema": "config/doe-wgsl-backend-equivalence.schema.json",
+      "data": "bench/out/wgsl-backend-equivalence/elementwise-add.equivalence.json"
+    },
+    {
+      "schema": "config/doe-vulkan-runtime-probe.schema.json",
+      "data": "bench/out/vulkan-runtime-probe/elementwise-double/probe.json"
+    },
+    {
       "schema": "config/doe-lookahead-sensitivity.schema.json",
       "data": "bench/out/lookahead-sensitivity/e2b-lookahead-sensitivity.json"
     },

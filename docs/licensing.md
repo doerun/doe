@@ -71,3 +71,20 @@ The upstream ONNX Runtime license is retained at:
 These headers are used only for the repo-only ONNX Runtime plugin EP bridge
 surface. They do not make ONNX Runtime a Doe runtime dependency, and they do
 not change the public `doe-gpu` package contract.
+
+## Cerebras SDK
+
+Doe may reference public Cerebras SDK API names and documentation when
+describing CSL compilation and runtime orchestration. Doe-owned source,
+schemas, gates, generated CSL source, and redacted JSON receipts may be tracked
+when they do not copy SDK-distributed source or bundle SDK artifacts.
+
+Do not track Cerebras SDK packages, EULA PDFs, `csl-extras` contents, SDK
+container images, compiled ELF products, raw simulator logs, core dumps,
+simfabric traces, SDK GUI dumps, disassembly, or hardware endpoint secrets.
+Those files are local evidence only unless the applicable Cerebras license or
+written permission explicitly allows redistribution.
+
+The blocking guard is:
+
+`python3 bench/gates/cerebras_artifact_gate.py`

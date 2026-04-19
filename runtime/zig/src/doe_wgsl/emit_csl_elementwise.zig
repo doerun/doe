@@ -30,8 +30,10 @@ pub fn emit(
     try W.write(buf, pos, "// Each PE processes chunk_size elements with no fabric routing.\n\n");
 
     try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
-    try W.write(buf, pos, "param pe_id: i16;\n");
-    try W.write(buf, pos, "param num_pes: i16;\n\n");
+    // u16 for pe_id/num_pes so 2-D grids up to 65,535 total PEs (covers
+    // 31B's 58,056 PE as 246x236). 1-D layouts (height=1) still fit.
+    try W.write(buf, pos, "param pe_id: u16;\n");
+    try W.write(buf, pos, "param num_pes: u16;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");

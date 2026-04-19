@@ -1,0 +1,50 @@
+// Iteration-5 compute region — SPMD double-by-2.0.
+//
+// Multi-PE region kernel. Each PE receives `size` f32 values on its
+// local fabric input (demux distributes one slice per PE), doubles
+// them via @fmuls, and emits them on its local fabric output (mux
+// collects them into a single host stream).
+//
+// Same two-task async-completion pattern as iter-3: we pull the
+// fabric input into a PE-local memory buffer, then launch the sync
+// @fmuls from the done task because @fmuls with a scalar operand
+// cannot be async (scalars aren't DSDs).
+
+param size: u16;
+param rx: color;
+param tx: color;
+
+const in_q  = @get_input_queue(0);
+const out_q = @get_output_queue(0);
+
+const input  = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                       .fabric_color = rx,
+                                       .input_queue = in_q });
+const output = @get_dsd(fabout_dsd, .{ .extent = size,
+                                       .fabric_color = tx,
+                                       .output_queue = out_q });
+
+var buffer: [size]f32;
+const mem_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buffer[i] });
+
+const main_id = @get_local_task_id(8);
+const done_id = @get_local_task_id(9);
+
+task main() void {
+    @mov32(mem_dsd, input, .{ .async = true, .activate = done_id });
+}
+
+task done() void {
+    @fmuls(output, mem_dsd, 2.0);
+}
+
+comptime {
+    @bind_local_task(main, main_id);
+    @bind_local_task(done, done_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q,  .{ .color = rx });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx });
+    }
+}

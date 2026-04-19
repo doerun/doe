@@ -40,6 +40,9 @@
 - current v0 CI does not execute Lean toolchain proofs as a blocking step.
 - run schema hard gate:
   `python3 bench/gates/schema_gate.py`
+- run Cerebras artifact hard gate (prevents SDK-distributed files and cslc
+  products from entering tracked publish surfaces):
+  `python3 bench/gates/cerebras_artifact_gate.py`
 - run CSL fixture mirror hard gate (runtime-local fixture mirrors must match their canonical copies except declared path-context JSON pointers):
   `python3 bench/gates/csl_fixture_mirror_gate.py`
 - run CSL operation graph hard gate (compile/export/operation references, memcpy RPC/streaming pattern checks, and first source-level `unblock_cmd_stream` checks for registered CSL operation graphs):

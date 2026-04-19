@@ -340,7 +340,12 @@ def main() -> int:
     else:
         receipt["laneStatus"] = "structural_full_coverage"
         if streaming_required:
-            execution_blocker = "sdk_layout_streaming_executor_missing"
+            # Streaming executor primitives exist and run on simfabric
+            # (see bench/out/streaming-executor/*-trace.json). The
+            # remaining blocker is wiring the execution plan's stage
+            # codegen to emit kernels the executor can dispatch — not
+            # the executor itself being missing.
+            execution_blocker = "streaming_executor_not_bound_to_execution_plan"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
         else:
@@ -355,6 +360,41 @@ def main() -> int:
         "maxProvenPeCount2D": 58056,
         "thirtyOneBFullGridCompileVerified": True,
         "thirtyOneBCompileSeconds2D": 1351.85,
+    }
+    receipt["streamingExecutorPrimitivesEvidence"] = {
+        "description": (
+            "SdkLayout streaming executor primitives that have been "
+            "proven end-to-end on simfabric. Each trace records the "
+            "compile + run + numerical-parity result for one primitive. "
+            "These primitives are the substrate the execution plan "
+            "generator (future work) will compose into per-layer-block "
+            "SdkLayout runners."
+        ),
+        "tracesDir": "bench/out/streaming-executor/",
+        "tracesSample": [
+            "bench/out/streaming-executor/iter2-trace.json",
+            "bench/out/streaming-executor/iter3-trace.json",
+            "bench/out/streaming-executor/iter4-trace.json",
+            "bench/out/streaming-executor/iter5-trace.json",
+            "bench/out/streaming-executor/iter6-trace.json",
+            "bench/out/streaming-executor/iter7-trace.json",
+            "bench/out/streaming-executor/add-trace.json",
+            "bench/out/streaming-executor/gather-trace.json",
+            "bench/out/streaming-executor/sigmoid-trace.json",
+            "bench/out/streaming-executor/reduce-trace.json",
+        ],
+        "primitivesProven": [
+            "stream_passthrough",
+            "compute_transform",
+            "region_to_region_chain",
+            "multi_pe_spmd_demux_mux",
+            "compile_artifact_cache",
+            "layer_block_shaped_chain",
+            "multi_input_stream_add",
+            "indexed_table_gather",
+            "elementwise_sigmoid",
+            "blocked_reduce_sum",
+        ],
     }
 
     # Chain-parity binding. For each receipt the user passes, include it
