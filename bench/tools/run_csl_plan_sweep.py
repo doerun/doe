@@ -256,6 +256,25 @@ def main() -> int:
     )
     results.append({"gate": "streaming-executor-reduce-sum-regen", "passed": passed, "note": note})
 
+    # 0j'''''. Generated E2B layer-block smoke runner. First bridge from
+    # the stream-execution-plan to an SdkLayout runner: the generator
+    # reads gemma-4-e2b-stream-execution-plan.json and emits a cs_python
+    # runner that dispatches a stub transformer_layer_shape kernel with
+    # the plan's 3 named input streams. Stub combines the streams into
+    # one activation output; real per-stage kernels replace the stub as
+    # follow-up. Smoke path proves the plan -> runner codegen works.
+    passed, note = run_gate(
+        "e2b-layer-block-runner-gen",
+        [sys.executable, str(REPO_ROOT / "bench/tools/generate_e2b_layer_block_runner.py")],
+    )
+    results.append({"gate": "e2b-layer-block-runner-gen", "passed": passed, "note": note})
+    passed, note = run_gate(
+        "e2b-layer-block-smoke-run",
+        ["/home/x/cerebras-sdk/cs_python",
+         str(REPO_ROOT / "bench/runners/csl-runners/e2b_layer_block_smoke.py")],
+    )
+    results.append({"gate": "e2b-layer-block-smoke-run", "passed": passed, "note": note})
+
     # 0k. WGSL backend equivalence crosswalk. Ties one WGSL source to
     # every Doe backend that can compile it (csl-memcpy, csl-sdklayout,
     # spirv) and surfaces sha256-bound pointers to each backend's
