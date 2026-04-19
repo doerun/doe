@@ -230,7 +230,10 @@ def elements_per_pe(pattern: str, params: dict) -> int:
     if pattern == "attention_decode":
         return int(p.get("head_dim", 0)) * int(p.get("kv_chunk", 0))
     if pattern in ("attention_streaming", "attention_linear"):
-        return int(p.get("head_dim", 0)) * int(p.get("kv_len", 0))
+        # Per-PE output is (head_dim,) per token. kv_len scales the
+        # iteration count but not the output bytes. See
+        # bench/runners/csl-runners/attention_linear_sim_runner.py:31.
+        return int(p.get("head_dim", 0))
     if pattern == "kv_write":
         # Per-PE write is K + V slices, each head_dim wide (see
         # bench/runners/csl-runners/kv_write_sim_runner.py:41-42). The
