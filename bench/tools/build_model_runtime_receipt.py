@@ -550,7 +550,12 @@ def main() -> int:
                 "layer). Bit-exact pass requires every layer to "
                 "match under np.array_equal. perLayerElapsedMs in "
                 "the trace exposes timing scaling visibly as the "
-                "chain depth grows."
+                "chain depth grows. dataSource records the per-"
+                "layer-index deterministic seed scheme "
+                "(PER_LAYER_BASE + l_idx) so a future weight loader "
+                "can swap synthetic layers for manifest-derived "
+                "tensors one layer at a time without disturbing "
+                "the bit-exact gate on the remaining layers."
             ),
             "pendingStages": [
                 "head_dim_greater_than_two_with_multi_pair_rope",

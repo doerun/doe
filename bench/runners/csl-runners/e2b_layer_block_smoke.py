@@ -329,13 +329,28 @@ def main() -> int:
         runtime.load()
         runtime.run()
 
-        rng = np.random.default_rng(seed=223)
-        initial_rows = rng.standard_normal(size=args.size, dtype=np.float32)
+        # Per-layer-index deterministic seeds. Pinning each layer's
+        # data source independently lets a future loader (manifest
+        # weights, Doppler-exported slice) swap in real per-layer
+        # tensors one layer at a time without disturbing the bit-
+        # exact gate on the remaining synthetic layers.
+        INITIAL_ROWS_SEED = 1000
+        PER_LAYER_BASE    = 2000
+        rng_init = np.random.default_rng(seed=INITIAL_ROWS_SEED)
+        initial_rows = rng_init.standard_normal(size=args.size, dtype=np.float32)
         per_layer_proj: list = []
         per_layer_wts:  list = []
-        for _ in range(num_layers_smoke):
-            per_layer_proj.append(rng.standard_normal(size=args.size, dtype=np.float32))
-            per_layer_wts.append(rng.standard_normal(size=args.size, dtype=np.float32))
+        per_layer_seeds: list = []
+        for l_idx in range(num_layers_smoke):
+            seed_l = PER_LAYER_BASE + l_idx
+            rng_l = np.random.default_rng(seed=seed_l)
+            per_layer_proj.append(
+                rng_l.standard_normal(size=args.size, dtype=np.float32)
+            )
+            per_layer_wts.append(
+                rng_l.standard_normal(size=args.size, dtype=np.float32)
+            )
+            per_layer_seeds.append(seed_l)
 
         # Numpy reference: chain compute_layer_block num_layers_smoke
         # times, threading expected[L] -> rows for L+1.
@@ -412,6 +427,20 @@ def main() -> int:
                 args.size * 4 * 4 * num_layers_smoke,
             "observedBytesTransferredTotal":
                 args.size * 4 * 4 * num_layers_smoke,
+            "dataSource": {
+                "kind": "synthetic_seeded_rng",
+                "initialRowsSeed": INITIAL_ROWS_SEED,
+                "perLayerBase": PER_LAYER_BASE,
+                "perLayerSeeds": per_layer_seeds,
+                "swapBoundary": (
+                    "Each layer's projection and weights derive from "
+                    "rng_l = default_rng(PER_LAYER_BASE + l_idx). A "
+                    "future weight loader can replace the per_layer_proj/"
+                    "per_layer_wts arrays one layer at a time without "
+                    "changing the bit-exact gate on the remaining "
+                    "synthetic layers."
+                ),
+            },
             "numericalParity": {
                 "maxAbsErr": max_abs_err,
                 "perLayerMaxAbsErr": per_layer_max_abs_err,
