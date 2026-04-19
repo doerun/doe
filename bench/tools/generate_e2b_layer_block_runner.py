@@ -354,6 +354,7 @@ def derive_per_kernel_shapes(
     """
     mc = manifest.get("modelConfig", {})
     hidden_dim = int(mc.get("hiddenDim", 0))
+    head_dim = int(mc.get("headDim", 0))
     shapes: list[dict] = []
     # Smoke-shape gather: the manifest has two gather steps
     # (embed_tokens and ple_gather); emit one shape entry that covers
@@ -384,6 +385,36 @@ def derive_per_kernel_shapes(
         "manifestSteps": [
             s["name"] for s in manifest.get("steps", [])
             if s.get("op") in ("embed", "ple_gather")
+        ],
+    })
+    # Smoke-shape rope: the audit keeps rope 1-D since its width is
+    # per-token (num_tokens <= max_seq_len <= ~4k, well under i16).
+    # num_pairs follows the standard RoPE complex-rotation layout:
+    # head_dim f32 values pair up into head_dim/2 (cos,sin) pairs.
+    rope_num_pairs = (head_dim // 2) if head_dim else 64
+    shapes.append({
+        "pattern": "rope",
+        "emitter": "emitRoPELayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:263)",
+        "emitterWidened2D": False,
+        "paramsShape": {
+            "width": smoke_size,
+            "head_dim": head_dim or 128,
+            "num_pairs": rope_num_pairs,
+        },
+        "cslcParamsString": (
+            f"width:{smoke_size},"
+            f"head_dim:{head_dim or 128},"
+            f"num_pairs:{rope_num_pairs}"
+        ),
+        "derivationSource": (
+            "width = num_tokens from --size (1-D layout, per-token — "
+            "layout-2d-needs audit keeps rope 1-D since num_tokens<=i16); "
+            "head_dim from manifest.modelConfig.headDim; num_pairs is the "
+            "standard RoPE half-head_dim convention (cos+sin pair count)."
+        ),
+        "manifestSteps": [
+            s["name"] for s in manifest.get("steps", [])
+            if s.get("op") == "rope"
         ],
     })
     return shapes

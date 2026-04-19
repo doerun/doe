@@ -250,6 +250,24 @@ def main() -> int:
             "ple_gather",
             "ple_gather"
         ]
+    },
+    {
+        "pattern": "rope",
+        "emitter": "emitRoPELayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:263)",
+        "emitterWidened2D": False,
+        "paramsShape": {
+            "width": 16,
+            "head_dim": 512,
+            "num_pairs": 256
+        },
+        "cslcParamsString": "width:16,head_dim:512,num_pairs:256",
+        "derivationSource": "width = num_tokens from --size (1-D layout, per-token \u2014 layout-2d-needs audit keeps rope 1-D since num_tokens<=i16); head_dim from manifest.modelConfig.headDim; num_pairs is the standard RoPE half-head_dim convention (cos+sin pair count).",
+        "manifestSteps": [
+            "rope_q",
+            "rope_k",
+            "rope_q",
+            "rope_k"
+        ]
     }
 ],
         },
