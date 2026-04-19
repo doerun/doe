@@ -419,6 +419,44 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "attention_streaming",
+        "emitter": "emitStreamingAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:357)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "kv_len": 4096
+                },
+                "cslcParamsString": "width:16,head_dim:512,kv_len:4096"
+            }
+        ],
+        "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. Pattern is dormant in Gemma-4 \u2014 no manifest step has op=attention_streaming.",
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step"
+    },
+    {
+        "pattern": "attention_linear",
+        "emitter": "emitLinearAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:489)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "kv_len": 4096
+                },
+                "cslcParamsString": "width:16,head_dim:512,kv_len:4096"
+            }
+        ],
+        "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. Pattern is dormant in Gemma-4 \u2014 no manifest step has op=attention_linear.",
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step"
+    },
+    {
         "pattern": "kv_write",
         "emitter": "emitKvWriteLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:512)",
         "emitterWidened2D": False,

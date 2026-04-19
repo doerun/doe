@@ -568,6 +568,66 @@ def derive_per_kernel_shapes(
             ),
             "manifestSteps": [inv["stepName"] for inv in decode_invocations],
         })
+    # Smoke-shape attention_streaming (dormant): emitter at L357 takes
+    # width + head_dim + kv_len. Per the audit stays 1-D (per-head). No
+    # Gemma-4 manifest step currently lands on this pattern — the model
+    # uses attention_tiled for prefill and attention_decode for decode.
+    # The entry records emitter-default shape so the 14-pattern coverage
+    # stays complete; real deployment would populate this when a future
+    # model adds a streaming-attention variant.
+    shapes.append({
+        "pattern": "attention_streaming",
+        "emitter": "emitStreamingAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:357)",
+        "emitterWidened2D": False,
+        "invocations": [{
+            "stepName": "(dormant)",
+            "paramsShape": {
+                "width": smoke_size,
+                "head_dim": head_dim or 128,
+                "kv_len": max_seq_len,
+            },
+            "cslcParamsString": (
+                f"width:{smoke_size},"
+                f"head_dim:{head_dim or 128},"
+                f"kv_len:{max_seq_len}"
+            ),
+        }],
+        "derivationSource": (
+            "width = num_tokens from --size; head_dim from "
+            "manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. "
+            "Pattern is dormant in Gemma-4 — no manifest step has op=attention_streaming."
+        ),
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step",
+    })
+    # Smoke-shape attention_linear (dormant): emitter at L489 takes
+    # width + head_dim + kv_len (no q_len). Same dormant story as
+    # streaming attention — Gemma-4 doesn't use linear attention.
+    shapes.append({
+        "pattern": "attention_linear",
+        "emitter": "emitLinearAttentionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:489)",
+        "emitterWidened2D": False,
+        "invocations": [{
+            "stepName": "(dormant)",
+            "paramsShape": {
+                "width": smoke_size,
+                "head_dim": head_dim or 64,
+                "kv_len": max_seq_len,
+            },
+            "cslcParamsString": (
+                f"width:{smoke_size},"
+                f"head_dim:{head_dim or 64},"
+                f"kv_len:{max_seq_len}"
+            ),
+        }],
+        "derivationSource": (
+            "width = num_tokens from --size; head_dim from "
+            "manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. "
+            "Pattern is dormant in Gemma-4 — no manifest step has op=attention_linear."
+        ),
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step",
+    })
     # Smoke-shape kv_write: emitter at L512 takes width + head_dim +
     # max_seq_len. 1-D per audit (per-head). Manifest has two kv_write
     # variants: standard and shared. Both land on the kv_write pattern.
