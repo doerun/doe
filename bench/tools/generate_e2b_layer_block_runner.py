@@ -356,6 +356,33 @@ def derive_per_kernel_shapes(
     hidden_dim = int(mc.get("hiddenDim", 0))
     head_dim = int(mc.get("headDim", 0))
     shapes: list[dict] = []
+
+    # Pattern -> fixture-scale cslc --params string, one entry per
+    # governed-lane sim-success fixture (pulled from each fixture's
+    # driver-result.json compile.targets[0].command --params=).
+    # Each fixture ran at smoke shapes; these strings let
+    # predictedMatchesObservedShape flip True on the footprint diff
+    # when the generator emits them alongside the deployment-scale
+    # shapes. A mismatch between any entry here and the actual
+    # driver-result would be caught by the footprint's ratio test.
+    FIXTURE_EQUIVALENT_CSLC_PARAMS: dict[str, str] = {
+        "gather":              "width:4,height:1",
+        "rope":                "width:4,height:1",
+        "reduction":           "width:4,height:1",
+        "tiled_matmul":        "width:2,height:2,P:2,Mt:8,Kt:8,Nt:8",
+        "attention_tiled":     "width:4,height:1,head_dim:32,kv_len:64,q_len:32",
+        "attention_decode":    "width:4,height:1,head_dim:32,kv_len:64,q_len:1",
+        "attention_linear":    "width:4,height:1",
+        "kv_write":            "width:4,height:1,head_dim:32,max_seq_len:64",
+        "sample":              "width:4,height:1,chunk_size:1024",
+        "fused_gemv_dequant":  "width:4,height:1,out_dim:64,in_dim_per_pe:512,num_blocks_per_row:2",
+    }
+
+    def attach_fixture_equivalent(entry: dict) -> dict:
+        s = FIXTURE_EQUIVALENT_CSLC_PARAMS.get(entry.get("pattern"))
+        if s:
+            entry["fixtureEquivalentCslcParamsString"] = s
+        return entry
     # Smoke-shape gather: the manifest has two gather steps
     # (embed_tokens and ple_gather); emit one shape entry that covers
     # the shared pattern-level --params. Real deployment would pick
@@ -376,28 +403,14 @@ def derive_per_kernel_shapes(
             f"hidden_size:{hidden_dim or 64},"
             f"rows_per_pe:8,num_tokens:{smoke_size}"
         ),
-        # The governed-lane gather fixture runs at width:4,height:1 with
-        # emitter defaults for the non-layout params. Provide a matching
-        # shape set so the predicted-vs-observed diff can test for
-        # "fixture-mode match" separately from the deployment shape.
-        # When the step-1 generator emits real deployment widths, the
-        # primary paramsShape shifts; fixtureEquivalentParams stays the
-        # smoke-fixture shape so predictedMatchesObservedShape keeps
-        # testing what the fixture actually ran.
-        "fixtureEquivalentParams": {
-            "width": 4,
-            "height": 1,
-        },
-        "fixtureEquivalentCslcParamsString": "width:4,height:1",
+        # fixtureEquivalentCslcParamsString is attached by
+        # attach_fixture_equivalent at the end of this function (all 10
+        # bound-pattern entries share the same post-processing).
         "derivationSource": (
             "width/num_tokens from --size smoke arg; hidden_size from "
             "manifest.modelConfig.hiddenDim; height=1 for smoke (2-D "
             "needed for 31B full-grid per layout-2d-needs audit); "
-            "rows_per_pe is the emitter default with no manifest override yet. "
-            "fixtureEquivalentParams carries the governed-lane fixture's "
-            "width/height (the fixture only passes --params=width:4,height:1 "
-            "and relies on emitter defaults for the rest); used by the "
-            "footprint derivation's predictedMatchesObservedShape test."
+            "rows_per_pe is the emitter default with no manifest override yet."
         ),
         "manifestSteps": [
             s["name"] for s in manifest.get("steps", [])
@@ -918,6 +931,8 @@ def derive_per_kernel_shapes(
             if s.get("op") in reduction_manifest_ops
         ],
     })
+    for entry in shapes:
+        attach_fixture_equivalent(entry)
     return shapes
 
 

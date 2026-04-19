@@ -244,17 +244,13 @@ def main() -> int:
             "num_tokens": 16
         },
         "cslcParamsString": "width:16,height:1,hidden_size:1536,rows_per_pe:8,num_tokens:16",
-        "fixtureEquivalentParams": {
-            "width": 4,
-            "height": 1
-        },
-        "fixtureEquivalentCslcParamsString": "width:4,height:1",
-        "derivationSource": "width/num_tokens from --size smoke arg; hidden_size from manifest.modelConfig.hiddenDim; height=1 for smoke (2-D needed for 31B full-grid per layout-2d-needs audit); rows_per_pe is the emitter default with no manifest override yet. fixtureEquivalentParams carries the governed-lane fixture's width/height (the fixture only passes --params=width:4,height:1 and relies on emitter defaults for the rest); used by the footprint derivation's predictedMatchesObservedShape test.",
+        "derivationSource": "width/num_tokens from --size smoke arg; hidden_size from manifest.modelConfig.hiddenDim; height=1 for smoke (2-D needed for 31B full-grid per layout-2d-needs audit); rows_per_pe is the emitter default with no manifest override yet.",
         "manifestSteps": [
             "embed_tokens",
             "ple_gather",
             "ple_gather"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1"
     },
     {
         "pattern": "rope",
@@ -272,7 +268,8 @@ def main() -> int:
             "rope_k",
             "rope_q",
             "rope_k"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1"
     },
     {
         "pattern": "tiled_matmul",
@@ -366,7 +363,8 @@ def main() -> int:
             "gate_proj",
             "up_proj",
             "down_proj"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:2,height:2,P:2,Mt:8,Kt:8,Nt:8"
     },
     {
         "pattern": "attention_tiled",
@@ -387,7 +385,8 @@ def main() -> int:
         "derivationSource": "width/q_len = num_tokens from --size (1-D per-tile row); head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen as the prefill upper bound (4096 for both E2B and 31B \u2014 well under i16). Per the layout-2d-needs audit, attention_tiled stays 1-D.",
         "manifestSteps": [
             "attention"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1,head_dim:32,kv_len:64,q_len:32"
     },
     {
         "pattern": "attention_decode",
@@ -421,7 +420,8 @@ def main() -> int:
         "manifestSteps": [
             "attention_sliding",
             "attention_global"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1,head_dim:32,kv_len:64,q_len:1"
     },
     {
         "pattern": "dequant",
@@ -480,7 +480,8 @@ def main() -> int:
         "manifestSteps": [
             "sample"
         ],
-        "status": "audit_needs_deployment_generator"
+        "status": "audit_needs_deployment_generator",
+        "fixtureEquivalentCslcParamsString": "width:4,height:1,chunk_size:1024"
     },
     {
         "pattern": "fused_gemv_dequant",
@@ -575,7 +576,8 @@ def main() -> int:
             "up_proj",
             "down_proj"
         ],
-        "status": "audit_needs_deployment_generator"
+        "status": "audit_needs_deployment_generator",
+        "fixtureEquivalentCslcParamsString": "width:4,height:1,out_dim:64,in_dim_per_pe:512,num_blocks_per_row:2"
     },
     {
         "pattern": "attention_streaming",
@@ -613,7 +615,8 @@ def main() -> int:
         ],
         "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. Pattern is dormant in Gemma-4 \u2014 no manifest step has op=attention_linear.",
         "manifestSteps": [],
-        "status": "dormant_pattern_no_manifest_step"
+        "status": "dormant_pattern_no_manifest_step",
+        "fixtureEquivalentCslcParamsString": "width:4,height:1"
     },
     {
         "pattern": "kv_write",
@@ -645,7 +648,8 @@ def main() -> int:
         "manifestSteps": [
             "kv_write",
             "kv_write_shared"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1,head_dim:32,max_seq_len:64"
     },
     {
         "pattern": "kv_read",
@@ -683,7 +687,8 @@ def main() -> int:
             "ple_norm",
             "input_norm",
             "post_attn_norm"
-        ]
+        ],
+        "fixtureEquivalentCslcParamsString": "width:4,height:1"
     }
 ],
         },
