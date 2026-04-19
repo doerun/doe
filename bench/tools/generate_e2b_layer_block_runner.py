@@ -568,6 +568,76 @@ def derive_per_kernel_shapes(
             ),
             "manifestSteps": [inv["stepName"] for inv in decode_invocations],
         })
+    # Smoke-shape kv_write: emitter at L512 takes width + head_dim +
+    # max_seq_len. 1-D per audit (per-head). Manifest has two kv_write
+    # variants: standard and shared. Both land on the kv_write pattern.
+    kv_write_invocations = []
+    for s in manifest.get("steps", []):
+        if s.get("op") in ("kv_write", "kv_write_shared"):
+            kv_write_invocations.append({
+                "stepName": s["name"],
+                "variant": "shared" if s.get("op") == "kv_write_shared" else "standard",
+                "paramsShape": {
+                    "width": smoke_size,
+                    "head_dim": head_dim or 128,
+                    "max_seq_len": max_seq_len,
+                },
+                "cslcParamsString": (
+                    f"width:{smoke_size},"
+                    f"head_dim:{head_dim or 128},"
+                    f"max_seq_len:{max_seq_len}"
+                ),
+            })
+    if kv_write_invocations:
+        shapes.append({
+            "pattern": "kv_write",
+            "emitter": "emitKvWriteLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:512)",
+            "emitterWidened2D": False,
+            "invocations": kv_write_invocations,
+            "derivationSource": (
+                "width = num_tokens from --size (1-D per-head). "
+                "head_dim from manifest.modelConfig.headDim; max_seq_len "
+                "is the KV-cache capacity bound from "
+                "manifest.modelConfig.maxSeqLen. Shared variant uses the "
+                "same --params shape; the shared/standard split is "
+                "surfaced via the invocation's `variant` field for "
+                "downstream routing."
+            ),
+            "manifestSteps": [inv["stepName"] for inv in kv_write_invocations],
+        })
+    # Smoke-shape kv_read: emitter at L535 takes width + head_dim +
+    # read_len. 1-D per audit. Not in E2B/31B manifests today — the
+    # pattern is dormant in current Gemma-4 steps; every attention
+    # kernel inlines its own KV fetch. Emit the entry anyway so the
+    # generator's shape coverage matches the 14-emitter audit.
+    shapes.append({
+        "pattern": "kv_read",
+        "emitter": "emitKvReadLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:535)",
+        "emitterWidened2D": False,
+        "invocations": [{
+            "stepName": "(dormant)",
+            "paramsShape": {
+                "width": smoke_size,
+                "head_dim": head_dim or 128,
+                "read_len": smoke_size,
+            },
+            "cslcParamsString": (
+                f"width:{smoke_size},"
+                f"head_dim:{head_dim or 128},"
+                f"read_len:{smoke_size}"
+            ),
+        }],
+        "derivationSource": (
+            "width = num_tokens from --size; head_dim from "
+            "manifest.modelConfig.headDim; read_len defaults to "
+            "num_tokens for the smoke case — the dormant pattern has "
+            "no manifest step driving its shape. If a future graph adds "
+            "an explicit kv_read step, derivation should key on that "
+            "step's payload."
+        ),
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step",
+    })
     # Smoke-shape reduction (RMSNorm / softmax single-PE lowering): the
     # emitter at L112 declares only `param width: i16;` — reduce_color,
     # pe_id, and num_pes are set at tile-code time by the layout, not

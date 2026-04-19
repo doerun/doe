@@ -419,6 +419,57 @@ def main() -> int:
         ]
     },
     {
+        "pattern": "kv_write",
+        "emitter": "emitKvWriteLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:512)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "kv_write",
+                "variant": "standard",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "max_seq_len": 4096
+                },
+                "cslcParamsString": "width:16,head_dim:512,max_seq_len:4096"
+            },
+            {
+                "stepName": "kv_write_shared",
+                "variant": "shared",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "max_seq_len": 4096
+                },
+                "cslcParamsString": "width:16,head_dim:512,max_seq_len:4096"
+            }
+        ],
+        "derivationSource": "width = num_tokens from --size (1-D per-head). head_dim from manifest.modelConfig.headDim; max_seq_len is the KV-cache capacity bound from manifest.modelConfig.maxSeqLen. Shared variant uses the same --params shape; the shared/standard split is surfaced via the invocation's `variant` field for downstream routing.",
+        "manifestSteps": [
+            "kv_write",
+            "kv_write_shared"
+        ]
+    },
+    {
+        "pattern": "kv_read",
+        "emitter": "emitKvReadLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:535)",
+        "emitterWidened2D": False,
+        "invocations": [
+            {
+                "stepName": "(dormant)",
+                "paramsShape": {
+                    "width": 16,
+                    "head_dim": 512,
+                    "read_len": 16
+                },
+                "cslcParamsString": "width:16,head_dim:512,read_len:16"
+            }
+        ],
+        "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; read_len defaults to num_tokens for the smoke case \u2014 the dormant pattern has no manifest step driving its shape. If a future graph adds an explicit kv_read step, derivation should key on that step's payload.",
+        "manifestSteps": [],
+        "status": "dormant_pattern_no_manifest_step"
+    },
+    {
         "pattern": "reduction",
         "emitter": "emitReductionLayout (runtime/zig/src/doe_wgsl/emit_csl_layout.zig:112)",
         "emitterWidened2D": False,
