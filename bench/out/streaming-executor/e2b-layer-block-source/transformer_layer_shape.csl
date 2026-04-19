@@ -1,14 +1,17 @@
 // Four real stages for the E2B layer-block executor:
 //   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
-//   stage 2 = multi-head attention with PER-HEAD VECTOR Q/K/V
-//             (num_heads = 2, head_dim = 2, kv_len_per_head = 2).
-//             Per-head Q_h is a head_dim-vector from rmsnorm_out;
-//             K_h[j] and V_h[j] are head_dim-vectors from
-//             layer_weights; logits_h[j] = sum_d Q_h[d]*K_h[j][d];
+//   stage 2 = multi-head attention with PER-HEAD VECTOR Q/K/V AND
+//             ROPE positional encoding (num_heads = 2, head_dim = 2,
+//             kv_len_per_head = 2). Q_h is rotated at position
+//             p_q = kv_len_per_head; K_h[j] is rotated at position
+//             p_k = j. The (cos, sin) table is a dyadic-rational
+//             synthetic rope that parses exactly to the same f32 bit
+//             pattern under IEEE round-to-nearest, preserving the
+//             bit-exact parity gate without platform math.cos/sin
+//             divergence. logits_h[j] = sum_d Q_rot[d]*K_rot_j[d];
 //             poly_c1 softmax; attn_val[h][d] = sum_j sm[j]*V_h[j][d].
 //             attn_val flattens to length num_heads*head_dim and
 //             broadcasts over the full token via (i mod flat_len).
-//             Vector Q/K sets up rope positional encoding next tick.
 //   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
 //             full token)
 //   stage 4 = gated MLP with a shared piecewise-polynomial GELU
@@ -48,17 +51,26 @@
 //     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
 //     per_head_K_len   = head_dim * kv_len_per_head
 //     per_head_stride  = 2 * per_head_K_len
+//     rope_rot(x0, x1, p) = (cos[p]*x0 - sin[p]*x1,
+//                             sin[p]*x0 + cos[p]*x1)
 //     for head h in [0, num_heads):
 //       Q_h[d]         = rmsnorm[h*head_dim + d]    (d in [0, head_dim))
+//       (Q_r[0], Q_r[1]) = rope_rot(Q_h[0], Q_h[1], kv_len_per_head)
 //       base_h         = qs + h * per_head_stride
 //       K_h[j][d]      = wts[base_h + j*head_dim + d]
+//       (K_r[j][0], K_r[j][1]) = rope_rot(K_h[j][0], K_h[j][1], j)
 //       V_h[j][d]      = wts[base_h + per_head_K_len + j*head_dim + d]
-//       logits_h[j]    = sum_d Q_h[d] * K_h[j][d]
+//       logits_h[j]    = sum_d Q_r[d] * K_r[j][d]
 //       m_h            = max_j logits_h[j]
 //       w_h[j]         = poly_c1(logits_h[j] - m_h)
 //       attn_val[h][d] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j][d]
 //     attn_flat        = flatten attn_val to length num_heads*head_dim
 //     attn_out[i]      = attn_flat[i mod (num_heads*head_dim)] + rows[i]
+//
+// Rope table (dyadic, bit-exact in f32):
+//     p=0 -> (cos=1.0,  sin=0.0)    identity rotation
+//     p=1 -> (cos=0.5,  sin=0.5)
+//     p=2 -> (cos=-0.25, sin=0.75)
 //     rms2             = sqrt(mean(attn_out[i]^2) + eps)
 //     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
 //     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
@@ -105,6 +117,20 @@ param tx_activation:     color;
 
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
+
+// Rope positional encoding table (synthetic, dyadic rationals so the
+// literal parses exactly to f32 in both CSL and numpy). Positions 0
+// and 1 are the two KV entries; position 2 is the Q rotation.
+fn rope_cos_at(p: u16) f32 {
+    if (p == 0) { return  1.0;  }
+    if (p == 1) { return  0.5;  }
+    return -0.25;   // p == 2
+}
+fn rope_sin_at(p: u16) f32 {
+    if (p == 0) { return 0.0; }
+    if (p == 1) { return 0.5; }
+    return 0.75;    // p == 2
+}
 
 const in_q_0 = @get_input_queue(0);
 const in_q_1 = @get_input_queue(1);
@@ -194,28 +220,61 @@ task done() void {
         const base_h: u16 = qs + h * per_head_stride;
         const q_base: u16 = h * head_dim;
 
-        // Pass 1: max logit. logits[j] = sum_d Q_h[d] * K_h[j][d].
+        // Rope-rotate Q_h once per head at position kv_len_per_head
+        // (conceptually the "latest token" asking about the KV context).
+        const q0: f32 = buf_out[q_base + 0];
+        const q1: f32 = buf_out[q_base + 1];
+        const q_c: f32 = rope_cos_at(kv_len_per_head);
+        const q_s: f32 = rope_sin_at(kv_len_per_head);
+        const q_r0: f32 = (q_c * q0) - (q_s * q1);
+        const q_r1: f32 = (q_s * q0) + (q_c * q1);
+
+        // Pass 1: max logit. logits[j] = sum_d Q_rot[d] * K_rot_j[d].
+        // K_rot_j is K_h[j] rotated by rope at position j. We seed
+        // lmax from the j=0 logit so the matching numpy pass has the
+        // same 0.0-init + two-step accumulation pattern — the in-
+        // order f32 +/* sequence is what matters for np.array_equal.
         var lmax: f32 = 0.0;
-        for (@range(u16, head_dim)) |d| {
-            lmax = lmax + (buf_out[q_base + d] * buf_wts[base_h + d]);
+        {
+            const k0: f32 = buf_wts[base_h + 0];
+            const k1: f32 = buf_wts[base_h + 1];
+            const kc: f32 = rope_cos_at(0);
+            const ks: f32 = rope_sin_at(0);
+            const kr0: f32 = (kc * k0) - (ks * k1);
+            const kr1: f32 = (ks * k0) + (kc * k1);
+            var l_seed: f32 = 0.0;
+            l_seed = l_seed + (q_r0 * kr0);
+            l_seed = l_seed + (q_r1 * kr1);
+            lmax = l_seed;
         }
         for (@range(u16, kv_len_per_head)) |j| {
+            const k0: f32 = buf_wts[base_h + j*head_dim + 0];
+            const k1: f32 = buf_wts[base_h + j*head_dim + 1];
+            const kc: f32 = rope_cos_at(j);
+            const ks: f32 = rope_sin_at(j);
+            const kr0: f32 = (kc * k0) - (ks * k1);
+            const kr1: f32 = (ks * k0) + (kc * k1);
             var l: f32 = 0.0;
-            for (@range(u16, head_dim)) |d| {
-                l = l + (buf_out[q_base + d] * buf_wts[base_h + j*head_dim + d]);
-            }
+            l = l + (q_r0 * kr0);
+            l = l + (q_r1 * kr1);
             if (l > lmax) { lmax = l; }
         }
 
-        // Pass 2: accumulate poly_c1 weights and per-d weighted-V.
+        // Pass 2: poly_c1 softmax weights + per-d weighted-V. V_h[j]
+        // is NOT rope-rotated (standard rope spec applies only to Q, K).
         var sum_w: f32 = 0.0;
         var weighted_v: [head_dim]f32;
         for (@range(u16, head_dim)) |d| { weighted_v[d] = 0.0; }
         for (@range(u16, kv_len_per_head)) |j| {
+            const k0: f32 = buf_wts[base_h + j*head_dim + 0];
+            const k1: f32 = buf_wts[base_h + j*head_dim + 1];
+            const kc: f32 = rope_cos_at(j);
+            const ks: f32 = rope_sin_at(j);
+            const kr0: f32 = (kc * k0) - (ks * k1);
+            const kr1: f32 = (ks * k0) + (kc * k1);
             var l: f32 = 0.0;
-            for (@range(u16, head_dim)) |d| {
-                l = l + (buf_out[q_base + d] * buf_wts[base_h + j*head_dim + d]);
-            }
+            l = l + (q_r0 * kr0);
+            l = l + (q_r1 * kr1);
             const x: f32 = l - lmax;
             var wj: f32 = 0.0;
             if (x > -1.0) {

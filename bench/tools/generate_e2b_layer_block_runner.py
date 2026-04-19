@@ -90,18 +90,19 @@ Plan stream contract for this layer:
 
 Smoke path: each stream carries {smoke_size} f32 values. The kernel
 runs stage 1 (pre-attn RMSNorm), stage 2 (multi-head attention with
-num_heads=2 and PER-HEAD VECTOR Q/K/V — head_dim=2, kv_len_per_head=2,
-logits = dot(Q_h, K_h[j]) over head_dim, poly_c1 softmax per head,
-attn_val[h][d] flattened to length num_heads*head_dim and broadcast
-over the full token via i mod flat_len), stage 3 (post-attn RMSNorm
-using gamma2 packed into layer_weights), and stage 4 (gated MLP with
-gate_w/up_w of length qs/2 and the same poly_c1 activation). Every
-input stream flows through compute. The runner verifies activation_out
-bit-exact against a host numpy reference that replays every reduction,
-every per-head dot-product softmax, and every activation in the same
-scalar f32 op sequence as the CSL kernel. Vector Q/K now sets up rope
-positional encoding as the next upgrade (rope rotates head_dim=2
-pairs).
+num_heads=2, head_dim=2, kv_len_per_head=2, ROPE positional encoding
+via a dyadic (cos, sin) table, logits = dot(Q_rot, K_rot_j) with Q
+rotated at position kv_len_per_head and each K_h[j] at position j,
+poly_c1 softmax per head, attn_val[h][d] flattened and broadcast over
+the full token via i mod flat_len), stage 3 (post-attn RMSNorm using
+gamma2 packed into layer_weights), and stage 4 (gated MLP with
+gate_w/up_w of length qs/2 and poly_c1 activation). Every input
+stream flows through compute. The runner verifies activation_out
+bit-exact against a host numpy reference that replays every
+reduction, every rope rotation, and every activation in the same
+scalar f32 op sequence as the CSL kernel. Rope uses only +, -, *
+and a hardcoded dyadic (cos, sin) table — no platform math.cos/sin
+divergence.
 """
 
 from __future__ import annotations
@@ -229,16 +230,14 @@ def main() -> int:
             rmsnorm_out[i] = np.float32(
                 np.float32(rows[i] * inv_rms) * np.float32(proj[i])
             )
-        # Stage 2: multi-head attention with PER-HEAD VECTOR Q/K/V.
+        # Stage 2: multi-head attention with PER-HEAD VECTOR Q/K/V
+        # and ROPE positional encoding.
         #   num_heads = 2, head_dim = 2, kv_len_per_head = 2
         #   per_head_K_len = head_dim * kv_len_per_head = 4
         #   per_head_stride = 2 * per_head_K_len = 8
-        #   Q_h[d] = rmsnorm_out[h*head_dim + d]
-        #   K_h[j][d] = wts[base_h + j*head_dim + d]
-        #   V_h[j][d] = wts[base_h + per_head_K_len + j*head_dim + d]
-        #   logits_h[j] = sum_d Q_h[d] * K_h[j][d]
-        #   attn_val[h][d] = sum_j sm_h[j] * V_h[j][d] (flattened length 4)
-        #   attn_out[i] = attn_val_flat[i mod (num_heads*head_dim)] + rows[i]
+        #   rope table: (cos, sin) = (1, 0), (0.5, 0.5), (-0.25, 0.75)
+        #     for positions 0, 1, 2 respectively. Dyadic so the
+        #     decimal literal parses to the same f32 as CSL.
         num_heads = 2
         head_dim = 2
         kv_len_per_head = 2
@@ -251,42 +250,68 @@ def main() -> int:
         assert qs * 2 >= num_heads * per_head_stride, (
             "per_head_KV region (2*qs) too small for vector per-head KV"
         )
+
+        def rope_cos_at(p):
+            if p == 0: return np.float32(1.0)
+            if p == 1: return np.float32(0.5)
+            return np.float32(-0.25)  # p == 2
+
+        def rope_sin_at(p):
+            if p == 0: return np.float32(0.0)
+            if p == 1: return np.float32(0.5)
+            return np.float32(0.75)   # p == 2
+
         attn_vals = np.zeros(attn_flat_len, dtype=np.float32)
         for h in range(num_heads):
             base_h = qs + h * per_head_stride
             q_base = h * head_dim
-            # Pass 1: max logit (dot product over head_dim).
+            # Rope-rotate Q_h once per head at position kv_len_per_head.
+            q0 = np.float32(rmsnorm_out[q_base + 0])
+            q1 = np.float32(rmsnorm_out[q_base + 1])
+            q_c = rope_cos_at(kv_len_per_head)
+            q_s = rope_sin_at(kv_len_per_head)
+            q_r0 = np.float32(np.float32(q_c * q0) - np.float32(q_s * q1))
+            q_r1 = np.float32(np.float32(q_s * q0) + np.float32(q_c * q1))
+            # Pass 1: max logit with rope-rotated K_h[j].
+            # Seed lmax from j=0 so the accumulation pattern matches
+            # CSL (0.0-init, two f32 adds) exactly.
             lmax = np.float32(0.0)
-            for d in range(head_dim):
-                lmax = np.float32(
-                    lmax + np.float32(
-                        np.float32(rmsnorm_out[q_base + d])
-                        * np.float32(wts[base_h + d])
-                    )
-                )
+            k0 = np.float32(wts[base_h + 0])
+            k1 = np.float32(wts[base_h + 1])
+            kc = rope_cos_at(0)
+            ks = rope_sin_at(0)
+            kr0 = np.float32(np.float32(kc * k0) - np.float32(ks * k1))
+            kr1 = np.float32(np.float32(ks * k0) + np.float32(kc * k1))
+            l_seed = np.float32(0.0)
+            l_seed = np.float32(l_seed + np.float32(q_r0 * kr0))
+            l_seed = np.float32(l_seed + np.float32(q_r1 * kr1))
+            lmax = l_seed
             for j in range(kv_len_per_head):
+                k0 = np.float32(wts[base_h + j * head_dim + 0])
+                k1 = np.float32(wts[base_h + j * head_dim + 1])
+                kc = rope_cos_at(j)
+                ks = rope_sin_at(j)
+                kr0 = np.float32(np.float32(kc * k0) - np.float32(ks * k1))
+                kr1 = np.float32(np.float32(ks * k0) + np.float32(kc * k1))
                 l = np.float32(0.0)
-                for d in range(head_dim):
-                    l = np.float32(
-                        l + np.float32(
-                            np.float32(rmsnorm_out[q_base + d])
-                            * np.float32(wts[base_h + j * head_dim + d])
-                        )
-                    )
+                l = np.float32(l + np.float32(q_r0 * kr0))
+                l = np.float32(l + np.float32(q_r1 * kr1))
                 if l > lmax:
                     lmax = l
-            # Pass 2: accumulate poly_c1 weights and per-d weighted-V.
+            # Pass 2: poly_c1 softmax weights + per-d weighted V (V is
+            # NOT rope-rotated; rope only applies to Q and K).
             sum_w = np.float32(0.0)
             weighted_v = np.zeros(head_dim, dtype=np.float32)
             for j in range(kv_len_per_head):
+                k0 = np.float32(wts[base_h + j * head_dim + 0])
+                k1 = np.float32(wts[base_h + j * head_dim + 1])
+                kc = rope_cos_at(j)
+                ks = rope_sin_at(j)
+                kr0 = np.float32(np.float32(kc * k0) - np.float32(ks * k1))
+                kr1 = np.float32(np.float32(ks * k0) + np.float32(kc * k1))
                 l = np.float32(0.0)
-                for d in range(head_dim):
-                    l = np.float32(
-                        l + np.float32(
-                            np.float32(rmsnorm_out[q_base + d])
-                            * np.float32(wts[base_h + j * head_dim + d])
-                        )
-                    )
+                l = np.float32(l + np.float32(q_r0 * kr0))
+                l = np.float32(l + np.float32(q_r1 * kr1))
                 x = np.float32(l - lmax)
                 if x > np.float32(-1.0):
                     xp1 = np.float32(x + np.float32(1.0))
@@ -432,11 +457,16 @@ def main() -> int:
                 "num_heads = 2; head_dim = 2; kv_len_per_head = 2; "
                 "per_head_K_len = head_dim * kv_len_per_head; stride = 2*per_head_K_len; "
                 "flat_len = num_heads*head_dim; mlp_len = qs/2; "
+                "rope_table[p=0]=(1,0), rope_table[p=1]=(0.5,0.5), rope_table[p=2]=(-0.25,0.75); "
+                "rope_rot(x0,x1,p) = (cos[p]*x0 - sin[p]*x1, sin[p]*x0 + cos[p]*x1); "
                 "for h in [0, num_heads): "
-                "Q_h[d] = rmsnorm[h*head_dim + d]; base_h = qs + h*stride; "
+                "Q_h[d] = rmsnorm[h*head_dim + d]; "
+                "(Q_r[0], Q_r[1]) = rope_rot(Q_h[0], Q_h[1], kv_len_per_head); "
+                "base_h = qs + h*stride; "
                 "K_h[j][d] = layer_weights[base_h + j*head_dim + d]; "
+                "(K_r[j][0], K_r[j][1]) = rope_rot(K_h[j][0], K_h[j][1], j); "
                 "V_h[j][d] = layer_weights[base_h + per_head_K_len + j*head_dim + d]; "
-                "logits_h[j] = sum_d Q_h[d] * K_h[j][d]; "
+                "logits_h[j] = sum_d Q_r[d] * K_r[j][d]; "
                 "m_h = max_j logits_h[j]; "
                 "w_h[j] = poly_c1(logits_h[j] - m_h); "
                 "attn_val[h][d] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j][d]; "
@@ -449,7 +479,8 @@ def main() -> int:
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_hd2_vector_qkv_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mha_2head_hd2_rope_dyadic"
+                "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "status": run_status,

@@ -426,7 +426,7 @@ def main() -> int:
             "elementwise_sigmoid",
             "blocked_reduce_sum",
             "layer_block_rmsnorm",
-            "layer_block_mha_2head_hd2_vector_qkv_poly_c1_softmax",
+            "layer_block_mha_2head_hd2_rope_dyadic_poly_c1_softmax",
             "layer_block_post_attn_rmsnorm",
             "layer_block_gated_mlp_poly_c1_gelu",
         ],
@@ -460,7 +460,8 @@ def main() -> int:
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
             "kernelIsStub": False,
             "kernelStage": (
-                "pre_attn_rmsnorm+mha_2head_hd2_vector_qkv_poly_c1_softmax+residual"
+                "pre_attn_rmsnorm+mha_2head_hd2_rope_dyadic"
+                "_poly_c1_softmax+residual"
                 "+post_attn_rmsnorm+gated_mlp_poly_c1_gelu"
             ),
             "combineRule": (
@@ -517,24 +518,26 @@ def main() -> int:
                 "platform-dependence."
             ),
             "stageTwoAttention": (
-                "Multi-head attention with PER-HEAD VECTOR Q/K/V. "
-                "num_heads = 2, head_dim = 2, kv_len_per_head = 2. "
-                "per_head_K_len = head_dim * kv_len_per_head = 4; "
-                "per_head_stride = 2 * per_head_K_len = 8. Q_h[d] "
-                "= rmsnorm[h*head_dim + d]; K_h[j][d], V_h[j][d] "
-                "read from wts at base_h = qs + h*stride. Per-head "
-                "logits use dot product over head_dim; max-centered "
-                "poly_c1 softmax; attn_val[h][d] = sum_j sm_h[j] * "
-                "V_h[j][d]. attn_val flattens to length num_heads * "
-                "head_dim = 4 and broadcasts 8x over size=32 via "
-                "i mod flat_len. Vector Q/K (not scalar) is the "
-                "precondition for rope positional encoding, which "
-                "rotates head_dim=2 pairs — that upgrade lands next "
-                "tick. Upgrade path: rope, longer KV, head_dim > 2."
+                "Multi-head attention with PER-HEAD VECTOR Q/K/V AND "
+                "ROPE positional encoding. num_heads = 2, head_dim = "
+                "2, kv_len_per_head = 2. Q_h is rotated at position "
+                "p_q = kv_len_per_head = 2; each K_h[j] is rotated "
+                "at position p_k = j. Rope table is a dyadic "
+                "(cos, sin) triplet: (1.0, 0.0), (0.5, 0.5), "
+                "(-0.25, 0.75) for positions 0, 1, 2 respectively — "
+                "dyadic rationals parse exactly to f32 in both CSL "
+                "(decimal literal) and numpy (np.float32 literal), "
+                "preserving the bit-exact parity gate without "
+                "platform math.cos/sin divergence. Logits use dot "
+                "product over head_dim with rope-rotated Q and K; "
+                "max-centered poly_c1 softmax; V_h is NOT rotated "
+                "(standard rope only applies to Q and K). Upgrade "
+                "path: real cos/sin values via exact-decimal f32 "
+                "constants, longer KV per head, head_dim > 2."
             ),
             **layer_block_trace_evidence,
             "pendingStages": [
-                "rope_positional_encoding_on_vector_Q_and_K",
+                "rope_table_real_cos_sin_values",
                 "longer_kv_cache_per_head",
                 "head_dim_greater_than_two",
             ],
