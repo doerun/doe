@@ -81,6 +81,15 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--out", default=DEFAULT_OUT)
     p.add_argument(
+        "--smoke-trace-path",
+        default=SMOKE_TRACE_PATH,
+        help="Override for the CSL smoke-trace to bind as cslRun.* "
+             "evidence. Defaults to the canonical 35-layer trace. Set "
+             "to a per-layer (L=1) trace when binding a cross-runtime "
+             "reference that only covers a single layer, so the comparison "
+             "frame matches.",
+    )
+    p.add_argument(
         "--external-reference-output",
         default="",
         help="Path to a Doppler-emitted f32 reference output vector. "
@@ -126,7 +135,7 @@ def main() -> int:
     manifest_path = resolve(MANIFEST_PATH)
     graph_path = resolve(GRAPH_PATH)
     kernel_path = resolve(KERNEL_SOURCE_PATH)
-    smoke_trace_path = resolve(SMOKE_TRACE_PATH)
+    smoke_trace_path = resolve(args.smoke_trace_path)
     synthetic_trace_path = resolve(SYNTHETIC_TRACE_PATH)
 
     for label, p in [
@@ -161,7 +170,7 @@ def main() -> int:
 
     smoke_output = smoke_run.get("output") or {}
     csl_run: dict[str, Any] = {
-        "tracePath": SMOKE_TRACE_PATH,
+        "tracePath": args.smoke_trace_path,
         "traceSha256": sha256_file(smoke_trace_path),
         "status": smoke_run.get("status", "unknown"),
         "kernelStage": smoke_layer.get("kernelStage", ""),

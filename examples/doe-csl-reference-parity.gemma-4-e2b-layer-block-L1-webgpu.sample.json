@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_csl_reference_parity",
+  "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+    "manifestSha256": "67e13946350e69ee62c75f06e80b94d44e15a18ba5858a8e9011636cfa6c9c26",
+    "graphPath": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
+    "graphSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
+    "weightSetId": "synthetic-layer-block-smoke"
+  },
+  "referenceRun": {
+    "producer": "doppler_browser_webgpu",
+    "status": "output_ready",
+    "inputsSynthetic": false,
+    "weightsSynthetic": false,
+    "output": {
+      "dtype": "float32",
+      "path": "bench/out/doppler-reference/gemma-4-e2b-layer-block-webgpu-isolated/per_layer/layer0.f32",
+      "sha256": "b0624c6e8655db28f865592cb61c78c5cc63a6a84d0c60a5f3bfb85396784ff1"
+    }
+  },
+  "cslRun": {
+    "tracePath": "bench/out/doppler-reference/csl-L1-reference-trace.json",
+    "traceSha256": "e8da75b2e2fc45ec8abe4551470f69904b7b25f6c8635ca56b70eda16cc4ba06",
+    "status": "succeeded",
+    "kernelStage": "pre_attn_rmsnorm+mha_8head_hd8_kv4_multi_pair_rope_real_poly_c1_softmax+residual+post_attn_rmsnorm+gated_mlp_poly_c1_gelu+multi_layer_chain",
+    "kernelIsStub": false,
+    "numericalParity": {
+      "maxAbsErr": 0.0,
+      "atol": 0,
+      "passed": true
+    },
+    "output": {
+      "dtype": "float32",
+      "shape": [
+        1024
+      ],
+      "path": "bench/out/doppler-reference/csl-L1-reference-trace.output.f32",
+      "sha256": "123681d6b54a92c1098867f077d1b011656160728fb2954d5ff4cdfec36e3b3d"
+    }
+  },
+  "comparison": {
+    "status": "passed",
+    "sameManifestHash": true,
+    "sameGraphHash": true,
+    "outputHashMatch": false,
+    "blocker": "",
+    "atol": 0.001,
+    "maxAbsErr": 1.52587890625e-05
+  },
+  "promotionCriteria": {
+    "fullModelDepthExecuted": false,
+    "manifestHashMatched": true,
+    "graphHashMatched": true,
+    "weightHashMatched": false,
+    "externalReferenceOutputBound": true,
+    "cslOutputHashBound": true,
+    "outputParityPassed": true,
+    "stubStagesAbsent": true,
+    "syntheticInputsAbsent": true,
+    "syntheticWeightsAbsent": true,
+    "hardwareReceiptRequiredForHardwareClaim": true
+  }
+}

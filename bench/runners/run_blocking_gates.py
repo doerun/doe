@@ -262,6 +262,14 @@ def parse_args() -> argparse.Namespace:
         help="Run csl_simulator_gate.py to validate governed CSL simulator/run receipts.",
     )
     parser.add_argument(
+        "--with-sdklayout-streaming-hardening-gate",
+        action="store_true",
+        help=(
+            "Run sdklayout_streaming_hardening_gate.py on explicit SdkLayout "
+            "streaming traces."
+        ),
+    )
+    parser.add_argument(
         "--with-wgsl-backend-matrix-gate",
         action="store_true",
         help=(
@@ -355,6 +363,24 @@ def parse_args() -> argparse.Namespace:
         "--csl-simulator-require-ready",
         action="store_true",
         help="Require laneStatus=ready in csl_simulator_gate.py.",
+    )
+    parser.add_argument(
+        "--sdklayout-streaming-hardening-trace",
+        action="append",
+        default=[],
+        help=(
+            "SdkLayout streaming trace passed to "
+            "sdklayout_streaming_hardening_gate.py. Repeatable and required "
+            "when --with-sdklayout-streaming-hardening-gate is set."
+        ),
+    )
+    parser.add_argument(
+        "--sdklayout-streaming-hardening-fail-on-overalloc",
+        action="store_true",
+        help=(
+            "Forward --fail-on-overalloc to "
+            "sdklayout_streaming_hardening_gate.py."
+        ),
     )
     parser.add_argument(
         "--cts-baseline-snapshot",
@@ -594,6 +620,9 @@ def main() -> int:
     cts_baseline_compare = tools_dir / "cts_baseline_compare.py"
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
     csl_simulator_gate = gates_dir / "csl_simulator_gate.py"
+    sdklayout_streaming_hardening_gate = (
+        gates_dir / "sdklayout_streaming_hardening_gate.py"
+    )
     cerebras_artifact_gate = gates_dir / "cerebras_artifact_gate.py"
     doe_private_strategy_leak_gate = gates_dir / "doe_private_strategy_leak_gate.py"
     wgsl_backend_matrix_gate = gates_dir / "wgsl_backend_matrix_gate.py"
@@ -750,6 +779,17 @@ def main() -> int:
             if args.csl_simulator_require_ready:
                 gate_cmd.append("--require-ready")
             run_gate("csl-simulator", gate_cmd)
+
+        if args.with_sdklayout_streaming_hardening_gate:
+            gate_cmd = [
+                sys.executable,
+                str(sdklayout_streaming_hardening_gate),
+            ]
+            for trace_path in args.sdklayout_streaming_hardening_trace:
+                gate_cmd.extend(["--trace", trace_path])
+            if args.sdklayout_streaming_hardening_fail_on_overalloc:
+                gate_cmd.append("--fail-on-overalloc")
+            run_gate("sdklayout-streaming-hardening", gate_cmd)
 
         if args.with_wgsl_backend_matrix_gate:
             gate_cmd = [

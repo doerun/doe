@@ -47,6 +47,12 @@ function parseArgs() {
     initialRowsSeed: 1000,
     perLayerBase: 2000,
     outDir: 'bench/out/doppler-reference/gemma-4-e2b-layer-block-webgpu',
+    // When true: for each layer, rows come from numpyReferenceRowsDir
+    // rather than from the previous WebGPU layer's output. This
+    // isolates per-layer kernel drift from chain-compounding.
+    perLayerIsolated: false,
+    numpyReferenceRowsDir:
+      'bench/out/doppler-reference/numpy-per-layer-rows',
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
@@ -58,6 +64,8 @@ function parseArgs() {
     else if (k === '--initial-rows-seed') { opts.initialRowsSeed = parseInt(v, 10); i++; }
     else if (k === '--per-layer-base') { opts.perLayerBase = parseInt(v, 10); i++; }
     else if (k === '--out-dir') { opts.outDir = v; i++; }
+    else if (k === '--per-layer-isolated') { opts.perLayerIsolated = true; }
+    else if (k === '--numpy-reference-rows-dir') { opts.numpyReferenceRowsDir = v; i++; }
   }
   return opts;
 }
@@ -206,6 +214,17 @@ fn rope_sin_at(p: u32, d: u32) -> f32 {
   return 0.00399998948;
 }
 
+// IEEE-correctly-rounded f32 sqrt via math.sqrt seed + one Newton-
+// Raphson refinement step. Driver sqrt alone may be 1 ULP off (as
+// on WSE); the extra NR step converges to IEEE-round from a near-
+// correct seed. This mirrors the CSL kernel's sqrt_nr fix that
+// unlocked simulator_success — without it, drift across 35-layer
+// chain compounds to ~8 absolute.
+fn sqrt_nr(x: f32) -> f32 {
+  let y0: f32 = sqrt(x);
+  return 0.5 * (y0 + x / y0);
+}
+
 @compute @workgroup_size(1)
 fn layer_block() {
   let size: u32 = params.size;
@@ -218,7 +237,7 @@ fn layer_block() {
     sum_sq = sum_sq + rows[i] * rows[i];
   }
   let mean_sq: f32 = sum_sq / f32(size);
-  let rms: f32 = sqrt(mean_sq + eps);
+  let rms: f32 = sqrt_nr(mean_sq + eps);
   let inv_rms: f32 = 1.0 / rms;
   for (var i: u32 = 0u; i < size; i = i + 1u) {
     buf_out[i] = (rows[i] * inv_rms) * proj[i];
@@ -340,7 +359,7 @@ fn layer_block() {
     sum_sq2 = sum_sq2 + buf_out[i] * buf_out[i];
   }
   let mean_sq2: f32 = sum_sq2 / f32(size);
-  let rms2: f32 = sqrt(mean_sq2 + eps);
+  let rms2: f32 = sqrt_nr(mean_sq2 + eps);
   let inv_rms2: f32 = 1.0 / rms2;
   for (var i: u32 = 0u; i < size; i = i + 1u) {
     var g_idx: u32 = i;
@@ -496,15 +515,36 @@ async function main() {
 
   // Chain num_layers dispatches. For layer 0, rowsBuf = initialRows.
   // For layer l>0, rowsBuf = bufOut of layer l-1 (copied on-device).
-  // After all layers, copy final bufOut to staging and read back.
+  // After EACH layer, copy bufOut to staging and read it back so we
+  // can emit per-layer activation_out for granular cross-runtime diff.
+  // Per-layer readback is the right granularity for deep chains
+  // because final-chain drift compounds ULP-per-layer into larger
+  // absolute errors that aren't meaningful as a single comparison.
   const t0 = Date.now();
   const perLayerShas = [];
-  let lastBuf = null;
+  const perLayerDir = path.join(outDir, 'per_layer');
+  fs.mkdirSync(perLayerDir, { recursive: true });
+  let finalOutF32 = null;
   for (let l = 0; l < opts.numLayers; l++) {
-    // Write rows for this layer. For l=0 use initialRows; for l>0
-    // we already copied bufOut -> rowsBuf on the device at end of
-    // the prior iteration.
-    if (l === 0) {
+    // Per-layer-isolated mode: always load numpy-reference rows for
+    // this layer (so WebGPU kernel-drift doesn't compound). Chained
+    // mode: use initialRows for l=0 and WebGPU's previous buf_out
+    // for l>0 (via on-device copyBufferToBuffer at the end of the
+    // prior iteration, or writeBuffer-once on first pass).
+    if (opts.perLayerIsolated) {
+      const rowsPath = path.resolve(REPO_ROOT, opts.numpyReferenceRowsDir, `rows_for_layer${l}.f32`);
+      if (!fs.existsSync(rowsPath)) {
+        throw new Error(
+          `--per-layer-isolated needs numpy reference rows at ${rowsPath}. ` +
+          `Run \`python3\` to materialize them first.`
+        );
+      }
+      const rowsBytes = fs.readFileSync(rowsPath);
+      if (rowsBytes.byteLength !== bytes) {
+        throw new Error(`rows_for_layer${l}.f32 wrong size`);
+      }
+      device.queue.writeBuffer(rowsBuf, 0, rowsBytes.buffer, rowsBytes.byteOffset, bytes);
+    } else if (l === 0) {
       device.queue.writeBuffer(
         rowsBuf, 0, initialRowsF32.buffer,
         initialRowsF32.byteOffset, bytes
@@ -525,30 +565,25 @@ async function main() {
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(1);
     pass.end();
-    // Copy bufOut -> rowsBuf for next layer. (For last layer this is
-    // harmless; we still staging-copy after the loop.)
-    if (l + 1 < opts.numLayers) {
+    enc.copyBufferToBuffer(bufOut, 0, stagingBuf, 0, bytes);
+    if (!opts.perLayerIsolated && l + 1 < opts.numLayers) {
       enc.copyBufferToBuffer(bufOut, 0, rowsBuf, 0, bytes);
     }
     device.queue.submit([enc.finish()]);
 
-    // Optional: per-layer digest would require staging read each
-    // layer. For speed, skip it and emit a single per-layer-final
-    // digest at end. (If needed, add staging read here.)
-    perLayerShas.push(null);
+    await stagingBuf.mapAsync(GPUMapMode.READ);
+    const mapped = stagingBuf.getMappedRange();
+    const layerOutF32 = new Float32Array(mapped.slice(0));
+    stagingBuf.unmap();
+    const layerPath = path.join(perLayerDir, `layer${l}.f32`);
+    fs.writeFileSync(layerPath, Buffer.from(layerOutF32.buffer));
+    perLayerShas.push(sha256Bytes(Buffer.from(layerOutF32.buffer)));
+    if (l === opts.numLayers - 1) {
+      finalOutF32 = layerOutF32;
+    }
   }
-
-  // Final staging readback of the last layer's bufOut.
-  const encFinal = device.createCommandEncoder();
-  encFinal.copyBufferToBuffer(bufOut, 0, stagingBuf, 0, bytes);
-  device.queue.submit([encFinal.finish()]);
-  await stagingBuf.mapAsync(GPUMapMode.READ);
-  const mapped = stagingBuf.getMappedRange();
-  const outF32 = new Float32Array(mapped.slice(0));
-  stagingBuf.unmap();
-
   const outPath = path.join(outDir, 'activation_out.f32');
-  fs.writeFileSync(outPath, Buffer.from(outF32.buffer));
+  fs.writeFileSync(outPath, Buffer.from(finalOutF32.buffer));
   const elapsedMs = Date.now() - t0;
 
   const outputSha = sha256File(outPath);
@@ -572,6 +607,8 @@ async function main() {
     outputShape: [size],
     outputDtype: 'float32',
     elapsedMs,
+    perLayerOutputDir: path.relative(REPO_ROOT, perLayerDir),
+    perLayerOutputSha256: perLayerShas,
     adapterInfo: {
       vendor: adapter.info?.vendor || null,
       device: adapter.info?.device || adapter.info?.description || null,

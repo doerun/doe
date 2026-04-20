@@ -91,8 +91,18 @@ def resolve(raw: str) -> Path:
     return p if p.is_absolute() else REPO_ROOT / p
 
 
+def next_power_of_two(n: int) -> int:
+    if n <= 1:
+        return 1
+    return 1 << (n - 1).bit_length()
+
+
+def stream_buffer_size(payload_bytes: int) -> int:
+    return next_power_of_two(max(1024, payload_bytes))
+
+
 TEMPLATE = '''#!/usr/bin/env cs_python
-"""GENERATED — first E2B layer-block smoke runner.
+"""GENERATED — {model_label} layer-block smoke runner.
 
 Produced by bench/tools/generate_e2b_layer_block_runner.py from
 {plan_path_rel} (layer {layer_index}). Do not hand-edit; rerun the
@@ -104,8 +114,9 @@ Plan stream contract for this layer:
 Smoke path: each stream carries {smoke_size} f32 values. The kernel
 runs the full 4-stage layer block (pre-attn RMSNorm; MHA with vector
 Q/K/V, real-cos/sin rope, poly_c1 softmax; post-attn RMSNorm; gated
-MLP with poly_c1 activation), and the runner CHAINS num_layers (=2
-by default) invocations of that kernel via the streaming runtime —
+MLP with poly_c1 activation), and the runner CHAINS num_layers
+(={num_layers_default} by default) invocations of that kernel via
+the streaming runtime —
 activation_out of layer L is fed back as ple_rows of layer L+1 (the
 residual stream pattern of a transformer block tower), with distinct
 per-layer ple_projection and layer_weights. The bit-exact host numpy
@@ -236,11 +247,24 @@ def main() -> int:
 
     region.place(4, 2)
 
-    io_buffer_size = 1024  # SdkLayout default; exposed for the receipt.
-    rows_stream = layout.create_input_stream(rows_port, io_buffer_size=io_buffer_size)
-    proj_stream = layout.create_input_stream(proj_port, io_buffer_size=io_buffer_size)
-    wts_stream  = layout.create_input_stream(wts_port, io_buffer_size=io_buffer_size)
-    act_stream  = layout.create_output_stream(act_port, io_buffer_size=io_buffer_size)
+    io_buffer_sizes = {{
+        "rows": {rows_io_buffer_size},
+        "proj": {proj_io_buffer_size},
+        "wts": {wts_io_buffer_size},
+        "activation": {activation_io_buffer_size},
+    }}
+    rows_stream = layout.create_input_stream(
+        rows_port, io_buffer_size=io_buffer_sizes["rows"]
+    )
+    proj_stream = layout.create_input_stream(
+        proj_port, io_buffer_size=io_buffer_sizes["proj"]
+    )
+    wts_stream  = layout.create_input_stream(
+        wts_port, io_buffer_size=io_buffer_sizes["wts"]
+    )
+    act_stream  = layout.create_output_stream(
+        act_port, io_buffer_size=io_buffer_sizes["activation"]
+    )
 
     compile_prefix = str(compile_out / "transformer_layer_shape")
     compile_artifacts = layout.compile(out_prefix=compile_prefix)
@@ -593,23 +617,27 @@ def main() -> int:
             "hostIoLayout": [
                 {{"streamId": "ple_rows_stream",       "role": "input",  "elementsPerPe": args.size,
                   "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
-                  "tileBehavior": "stream", "planPayloadBytes": 2}},
+                  "tileBehavior": "stream", "planPayloadBytes": {rows_payload_bytes},
+                  "ioBufferSize": io_buffer_sizes["rows"]}},
                 {{"streamId": "ple_projection_stream", "role": "input",  "elementsPerPe": args.size,
                   "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
-                  "tileBehavior": "stream", "planPayloadBytes": 23}},
+                  "tileBehavior": "stream", "planPayloadBytes": {proj_payload_bytes},
+                  "ioBufferSize": io_buffer_sizes["proj"]}},
                 {{"streamId": "layer_weights_stream",  "role": "input",  "elementsPerPe": args.size,
                   "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
-                  "tileBehavior": "stream", "planPayloadBytes": 2166}},
+                  "tileBehavior": "stream", "planPayloadBytes": {wts_payload_bytes},
+                  "ioBufferSize": io_buffer_sizes["wts"]}},
                 {{"streamId": "activation_out_stream", "role": "output", "elementsPerPe": args.size,
                   "dtype": "float32", "order": "row_major", "roi": [4, 2, 1, 1],
-                  "tileBehavior": "stream", "planPayloadBytes": 0}},
+                  "tileBehavior": "stream", "planPayloadBytes": 0,
+                  "ioBufferSize": io_buffer_sizes["activation"]}},
             ],
-            "ioBufferSizes": {{
-                "rows": io_buffer_size,
-                "proj": io_buffer_size,
-                "wts":  io_buffer_size,
-                "activation": io_buffer_size,
+            "ioBufferPolicy": {{
+                "rule": "next_power_of_two(max(1024, planPayloadBytes))",
+                "underSizedIsFailure": True,
+                "overFourTimesPayloadIsWarning": True,
             }},
+            "ioBufferSizes": io_buffer_sizes,
             "sendReceiveCounts": {{"sends": 3, "receives": 1}},
             "simulatorArtifactPaths": {{
                 "compileDir": str(compile_out.relative_to(REPO_ROOT)),
@@ -646,7 +674,7 @@ def main() -> int:
     trace_path.write_text(json.dumps(trace, indent=2) + "\\n", encoding="utf-8")
 
     print(
-        "e2b layer-block smoke (L{layer_index:02d}): "
+        "{model_label_slug} layer-block smoke (L{layer_index:02d}): "
         f"compile={{compile_elapsed_ms:.1f}}ms, run={{run_elapsed_ms:.1f}}ms, "
         f"run_status={{run_status!r}}, passed={{passed}}, "
         f"max_abs_err={{max_abs_err:.3e}} -> {{trace_path}}"
@@ -1296,6 +1324,17 @@ def main() -> int:
             f"//   input:   {s['streamId']} ({s['payloadBytes']} bytes/PE)"
         )
     stream_contract_comment = "\n".join(stream_contract_lines)
+    stream_payloads = {
+        str(s["streamId"]): int(s.get("payloadBytes", 0))
+        for s in layer.get("streams", [])
+    }
+    rows_payload_bytes = stream_payloads.get("ple_rows_stream", 0)
+    proj_payload_bytes = stream_payloads.get("ple_projection_stream", 0)
+    wts_payload_bytes = stream_payloads.get("layer_weights_stream", 0)
+    rows_io_buffer_size = stream_buffer_size(rows_payload_bytes)
+    proj_io_buffer_size = stream_buffer_size(proj_payload_bytes)
+    wts_io_buffer_size = stream_buffer_size(wts_payload_bytes)
+    activation_io_buffer_size = 1024
 
     kernel_source_path = resolve(args.kernel_source)
     kernel_source_rel = str(kernel_source_path.relative_to(REPO_ROOT))
@@ -1312,6 +1351,17 @@ def main() -> int:
         .replace("true", "True").replace("false", "False").replace("null", "None")
 
     source_model_receipt_rel = args.source_model_receipt
+    model_id = str(plan.get("modelId", ""))
+    model_id_lower = model_id.lower()
+    if "31b" in model_id_lower:
+        model_label = "Gemma 4 31B"
+        model_label_slug = "gemma-4-31b"
+    elif "e2b" in model_id_lower:
+        model_label = "Gemma 4 E2B"
+        model_label_slug = "gemma-4-e2b"
+    else:
+        model_label = model_id or "model"
+        model_label_slug = model_label.lower().replace(" ", "-")
     runner_text = TEMPLATE.format(
         plan_path_rel=plan_path_rel,
         plan_sha256=plan_sha256,
@@ -1321,8 +1371,17 @@ def main() -> int:
         kernel_source_rel=kernel_source_rel,
         kernel_source_sha256=kernel_source_sha256,
         region_name=layer["codeRegion"],
-        model_id=plan.get("modelId", ""),
+        model_id=model_id,
+        model_label=model_label,
+        model_label_slug=model_label_slug,
         stream_contract_comment=stream_contract_comment,
+        rows_payload_bytes=rows_payload_bytes,
+        proj_payload_bytes=proj_payload_bytes,
+        wts_payload_bytes=wts_payload_bytes,
+        rows_io_buffer_size=rows_io_buffer_size,
+        proj_io_buffer_size=proj_io_buffer_size,
+        wts_io_buffer_size=wts_io_buffer_size,
+        activation_io_buffer_size=activation_io_buffer_size,
         per_kernel_shapes_literal=per_kernel_shapes_literal,
         source_model_receipt_rel=source_model_receipt_rel,
     )

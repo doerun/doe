@@ -316,31 +316,73 @@
     'Predicted-vs-observed bytes per pattern (31B)',
     'bench/out/layer-block-predicted-footprint/31b-predicted-footprint.json');
 
-  // ── Aspirational rows ────────────────────────────────────────────
-  // These are NOT relabeled — text comes from the receipts' own
-  // executionStatus/executionBlocker fields so the dashboard and the
-  // artifacts can never drift.
-
-  async function addAspirationalFromReceipt(label, path) {
+  // ── Simulator execution — now proven for both E2B and 31B ──────────
+  // Row status lifts executionStatus/executionBlocker from the receipt
+  // so the dashboard can't drift from the artifact.
+  async function addSimulatorExecutionFromReceipt(tbodyId, label, path) {
     try {
       const r = await fetchJson(path);
       const status = r.executionStatus || 'unknown';
       const blocker = r.executionBlocker || 'unknown';
-      addRow('aspirational-rows',
+      const kind = status === 'simulator_success' ? 'pass'
+                 : status === 'hardware_success' ? 'pass'
+                 : 'aspirational';
+      addRow(tbodyId,
         label,
-        badge('aspirational', status),
-        `blocker: <code>${blocker}</code><br>${evidenceLink(path)}`);
+        badge(kind, status),
+        `executionStatus: <code>${status}</code>` +
+        (blocker && blocker !== 'none' ? ` · blocker: <code>${blocker}</code>` : '') +
+        `<br>${evidenceLink(path)}`);
     } catch (e) {
-      addError('aspirational-rows', label, e.message);
+      addError(tbodyId, label, e.message);
     }
   }
 
-  await addAspirationalFromReceipt(
-    'CSL full E2B execution (simulator)',
+  await addSimulatorExecutionFromReceipt('proven-rows',
+    'CSL full E2B layer-block chain execution (simulator)',
     'bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
-  await addAspirationalFromReceipt(
-    'CSL full 31B execution (simulator)',
+  await addSimulatorExecutionFromReceipt('proven-rows',
+    'CSL full 31B layer-block chain execution (simulator)',
     'bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json');
+
+  // ── Doppler-equivalent WebGPU cross-runtime parity ───────────────
+  // Real WebGPU execution (Dawn-based via the webgpu npm package
+  // Doppler uses). Two bindings: per-layer isolated parity covering
+  // all 35 E2B layers, and a gate-validated L=1 CSL-vs-WebGPU receipt.
+  try {
+    const perLayer = await fetchJson('bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json');
+    const sum = perLayer.summary || {};
+    const verdict = (perLayer.verdict || {}).crossRuntimeParityPassed;
+    addRow('proven-rows',
+      'Doppler-equivalent WebGPU ↔ numpy per-layer parity (E2B L=35)',
+      badge(verdict ? 'pass' : 'partial', verdict ? 'passed' : 'partial'),
+      `all ${perLayer.numLayers || 35} layers within atol=1e-3: ` +
+      `<code>${sum.allLayersWithinAtol1e3}</code> · ` +
+      `within atol=1e-4: <code>${sum.layersWithinAtol1e4Count}/${perLayer.numLayers}</code> · ` +
+      `max abs any layer: <code>${(sum.maxAbsErrAcrossAllLayers ?? 0).toExponential(3)}</code><br>` +
+      `adapter: <code>${perLayer.comparedRuntimeAdapter || 'unknown'}</code><br>` +
+      evidenceLink('bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json'));
+  } catch (e) {
+    addError('proven-rows', 'Doppler-equivalent WebGPU per-layer parity', e.message);
+  }
+
+  try {
+    const l1 = await fetchJson('examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json');
+    const c = l1.comparison || {};
+    const pc = l1.promotionCriteria || {};
+    const passed = c.status === 'passed' && pc.externalReferenceOutputBound === true;
+    addRow('proven-rows',
+      'CSL ↔ WebGPU tolerance-parity gate (E2B L=1, atol=1e-3)',
+      badge(passed ? 'pass' : 'partial', c.status || 'unknown'),
+      `producer: <code>${(l1.referenceRun || {}).producer}</code> · ` +
+      `maxAbsErr: <code>${(c.maxAbsErr ?? 0).toExponential(3)}</code> · ` +
+      `atol: <code>${c.atol}</code><br>` +
+      `promotion: externalReferenceOutputBound=<code>${pc.externalReferenceOutputBound}</code>, ` +
+      `outputParityPassed=<code>${pc.outputParityPassed}</code><br>` +
+      evidenceLink('examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json'));
+  } catch (e) {
+    addError('proven-rows', 'CSL-vs-WebGPU L=1 tolerance parity', e.message);
+  }
 
   // Hardware execution — direct CS system endpoint via $DOE_CSL_CMADDR.
   // targetMode='direct_system_cmaddr' per plan §"Newly identified: WSC
