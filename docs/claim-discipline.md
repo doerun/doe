@@ -80,6 +80,20 @@ Evidence:
   and multi-pair ROPE, residual, post-attn RMSNorm, and gated MLP with
   `poly_c1` GELU
 
+### The CSL WebGPU emulator is faster than local CSL simfabric on the same host at matched program identity and chain depth
+
+Evidence:
+
+- `bench/tools/compare_csl_emulator_vs_simfabric_speed.py` emits
+  `doe_csl_emulator_speed_verdict` artifacts with matched
+  `manifestSha256` and `graphSha256` on both sides
+- `bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json` and
+  `...-L1.json` record ratios with `verdict=claimable_local_debug_speedup`
+- Both sides are local correctness/debug runtimes — this ratio measures
+  debug-path ergonomics, not hardware performance. Adjacent claims (faster
+  than Cerebras hardware, faster than simfabric on other hosts) remain
+  rejected
+
 ## Rejected claims
 
 None of the following are allowed yet, and each is gated on a specific
@@ -117,11 +131,29 @@ Gate: hardware receipt (item #8). Runner supports `--cmaddr` and
 `runtime/zig/tools/csl_appliance_driver.py` exists, but no
 `hardware_success` receipt has been produced.
 
-### Any performance or efficiency claim
+### Any hardware performance or efficiency claim
 
 Gate: hardware receipt + governed benchmark methodology. Simfabric
 timing is not hardware performance. Until a hardware receipt lands,
-claim **portability and parity**, not performance.
+claim **portability and parity** for hardware, not performance. The
+narrow exception is the local emulator-vs-simfabric debug-path
+comparison above, which is explicitly scoped to "local debug ergonomics"
+by `compare_csl_emulator_vs_simfabric_speed.py`.
+
+### "Gemma 4 26B / A4B MoE runs on Cerebras" (or on CSL, simfabric, WSE)
+
+Gate: MoE-specific receipts. The existing E2B + 31B-dense receipts do
+NOT unlock 26B MoE claims — MoE has distinct machinery (router
+logits, top-k expert selection, token-to-expert dispatch, shared
+expert execution, expert output combine, per-expert batching) and
+needs its own evidence set. Until `doe_moe_*_receipt` artifacts exist
+under `bench/out/` OR a Gemma-4-26B/A4B model-runtime receipt
+promotes past `not_attempted`, `bench/gates/claim_discipline_gate.py`
+rejects any text asserting the MoE is running/working/operational on
+a Cerebras or Doe lane. The 31B-dense-first target order documented
+in `docs/hardware-validation-appendix.md` is the binding policy:
+26B/A4B MoE is explicitly the efficiency-story follow-up, not the
+first-validation target.
 
 ## Promotion rules
 

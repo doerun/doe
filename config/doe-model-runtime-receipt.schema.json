@@ -182,10 +182,11 @@
     },
     "executionStatus": {
       "type": "string",
-      "description": "Has this model been executed end-to-end through the simulator or hardware? Structural full-coverage is a precondition but not a proof of execution.",
+      "description": "Has this model been executed end-to-end through the simulator or hardware? Structural full-coverage is a precondition but not a proof of execution. 'real_weight_layer_block_success' is a stronger simulator-status variant: same as simulator_success, but the run consumed real Gemma-4 weight slices (syntheticWeightsAbsent=true) and the weightSetSha256 matched the fixture pin.",
       "enum": [
         "not_attempted",
         "simulator_success",
+        "real_weight_layer_block_success",
         "simulator_failure",
         "hardware_success",
         "hardware_failure",
@@ -194,7 +195,7 @@
     },
     "executionBlocker": {
       "type": "string",
-      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. 'sdk_layout_streaming_executor_missing' and 'streaming_executor_not_bound_to_execution_plan' are legacy. The streaming-executor primitives exist on simfabric, and the layer-block runner now executes real pre-attn RMSNorm + scalar attention-inner-product + residual + post-attn RMSNorm + a gated MLP ReLU/GELU stub with all 3 streams flowing through compute. The current blocker is the remaining full transformer layer block wiring: full multi-head attention over KV cache plus replacement of the bit-exact ReLU stand-in with a shared polynomial GELU path.",
+      "description": "When executionStatus=not_attempted, names the missing prerequisite so follow-up work is explicit. 'none' means the model is ready to be executed. 'sdk_layout_streaming_executor_missing' and 'streaming_executor_not_bound_to_execution_plan' are legacy. The streaming-executor primitives exist on simfabric, and the layer-block runner now executes real pre-attn RMSNorm + scalar attention-inner-product + residual + post-attn RMSNorm + a gated MLP ReLU/GELU stub with all 3 streams flowing through compute. 'real_weights_absent' means the path to real_weight_layer_block_success is gated only on materialization of the --weights-dir contract.",
       "enum": [
         "none",
         "sdk_layout_streaming_executor_missing",
@@ -204,8 +205,33 @@
         "hardware_endpoint_unavailable",
         "full_grid_compile_unattempted",
         "partial_kernel_coverage",
-        "memory_plan_does_not_fit"
+        "memory_plan_does_not_fit",
+        "real_weights_absent",
+        "real_weight_parity_failed"
       ]
+    },
+    "realWeightEvidence": {
+      "type": "object",
+      "description": "Optional block. When a real-weight layer-block run has been executed (not just synthetic), this pins the fixture contract the run consumed, the weights-dir audit that validated the slice files, and the parity verdict that compared outputs across runtime lanes. Populated only when executionStatus is real_weight_layer_block_success or when executionBlocker names a real-weight-specific reason.",
+      "properties": {
+        "fixturePath": { "type": "string" },
+        "fixtureSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "weightsDir": { "type": "string" },
+        "weightsAuditPath": { "type": "string" },
+        "weightSetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "parityVerdictPath": { "type": "string" },
+        "promotionCriteriaMet": {
+          "type": "object",
+          "description": "Mirror of the parity verdict's 5 real-weight promotion criteria on the model-runtime receipt so downstream consumers see the honest status without cross-loading the parity file.",
+          "properties": {
+            "syntheticInputsAbsent": { "type": "boolean" },
+            "syntheticWeightsAbsent": { "type": "boolean" },
+            "weightHashMatched": { "type": "boolean" },
+            "fullModelDepthExecuted": { "type": "boolean" },
+            "outputParityPassed": { "type": "boolean" }
+          }
+        }
+      }
     },
     "streamingExecutorPrimitivesEvidence": {
       "type": "object",

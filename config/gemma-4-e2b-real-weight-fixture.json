@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_real_weight_fixture_contract",
+  "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
+  "laneLabel": "primary_correctness_target",
+  "laneLabelNote": "E2B is the primary-correctness Gemma-4 lane: first validation target, smallest dense variant, the shape that Doe's simulator + WebGPU + CSL emulator receipts anchor against. 31B is the dense scale-up; 26B/A4B MoE is a later blocked efficiency lane.",
+  "fixtureName": "gemma-4-e2b-layer-block-L1-real-weight",
+  "purpose": "Freeze the canonical bundle that a real-weight Gemma-4 E2B layer-block parity run must match. Doppler WebGPU reference, Doe CSL simfabric, and the CSL WebGPU emulator all ingest the same manifest, graph, input, and weights. Every hash below is pinned so the parity harness can reject a drifted fixture at validate-time rather than debug a digest mismatch at parity-time.",
+
+  "bundle": {
+    "manifest": {
+      "path": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+      "sha256": "67e13946350e69ee62c75f06e80b94d44e15a18ba5858a8e9011636cfa6c9c26"
+    },
+    "graph": {
+      "path": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
+      "sha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729"
+    },
+    "kernelSource": {
+      "path": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
+      "sha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4"
+    }
+  },
+
+  "modelShape": {
+    "numLayers": 35,
+    "numHeads": 8,
+    "headDim": 512,
+    "hiddenDim": 1536,
+    "ffnExpansionFactor": 4,
+    "ffnMatrixCount": 3,
+    "maxSeqLen": 4096,
+    "note": "headDim=512 is the manifest's production shape. Current layer-block kernel runs the smoke shape (numHeads=8, headDim=8, kvLen=4, size=1024). A real-weight receipt at manifest shape requires the head-dim rewrite; until that lands, real-weight runs must be labeled 'real_weight_smoke_shape' and cannot claim manifest-shape execution."
+  },
+
+  "input": {
+    "path": "bench/out/doppler-reference/inputs/input_seed1000_size1024.f32",
+    "sha256": "f5502a88eb3bf5f10d664d62a1a88b62d68bb0f7b3170bba4ef410e1ec7af5e4",
+    "size": 1024,
+    "dtype": "float32",
+    "order": "row_major",
+    "note": "Canonical initial_rows for the layer-block chain at smoke size 1024. Seeded-RNG fixture; every lane reads THIS file, not re-generates from seed."
+  },
+
+  "weightsDir": {
+    "pathPlaceholder": "bench/out/gemma-4-e2b-real-weights/",
+    "status": "absent",
+    "contract": "Two files per layer in [0, numLayers): per_layer_inputs.perLayerModelProjection.layer{l}.f32 and layer.{l}.smoke_layer_block_wts.f32. At smoke shape each file is size * 4 = 4096 bytes. At manifest shape (headDim=512) per-file bytes scale with num_heads * head_dim * 4. Validator cross-checks file sizes against modelShape; see bench/tools/validate_weights_dir.py.",
+    "expectedWeightSetSha256": null,
+    "expectedWeightSetSha256Note": "Populated once an extractor lands. Null today; validate_weights_dir.py prints the computed hash when a candidate dir is presented, and the fixture is updated to pin that hash as canonical."
+  },
+
+  "parityPolicy": {
+    "atol": 1e-3,
+    "perLayerGranularity": true,
+    "crossRuntimeLanes": [
+      "doppler-webgpu",
+      "csl-sdklayout",
+      "csl-webgpu-emulator"
+    ],
+    "outputShape": [1024],
+    "outputDtype": "float32",
+    "note": "Per docs/claim-discipline.md cross-runtime threshold. Chain-final comparison compounds drift; per-layer-isolated evaluation is the authoritative parity granularity."
+  },
+
+  "fixtureChain": [
+    {
+      "chainDepth": 1,
+      "label": "L1_single_layer_real_weight",
+      "expectedOutputSha256": null,
+      "expectedOutputSha256Note": "Populated once a real-weight L1 run produces it; pins cross-lane expected output for regression."
+    },
+    {
+      "chainDepth": 2,
+      "label": "L2_chained_real_weight",
+      "expectedOutputSha256": null
+    },
+    {
+      "chainDepth": 4,
+      "label": "L4_chained_real_weight",
+      "expectedOutputSha256": null
+    },
+    {
+      "chainDepth": 8,
+      "label": "L8_chained_real_weight",
+      "expectedOutputSha256": null
+    },
+    {
+      "chainDepth": 35,
+      "label": "L35_full_depth_real_weight",
+      "expectedOutputSha256": null
+    }
+  ],
+
+  "promotionCriteria": [
+    "syntheticInputsAbsent",
+    "syntheticWeightsAbsent",
+    "weightHashMatched",
+    "fullModelDepthExecuted",
+    "outputParityPassed"
+  ],
+
+  "claimScope": {
+    "claimable": "Same bundle-identity run across three lanes with real weights, bit-exact or within-atol output parity at the stated chain depth.",
+    "notClaimable": [
+      "Gemma-4 manifest-shape execution (until headDim-512 kernel lands)",
+      "Full end-to-end Gemma-4 inference (layer-block only, no embed/unembed/sample)",
+      "Cerebras hardware performance (until hardware_success receipt lands)"
+    ]
+  },
+
+  "stopShipIf": [
+    "bundle.manifest.sha256 or bundle.graph.sha256 diverges from recorded value",
+    "input.sha256 on disk diverges from recorded value",
+    "weightsDir.expectedWeightSetSha256 is set but a candidate dir produces a different sha",
+    "any lane reports a manifest/graph sha different from this fixture's bundle"
+  ]
+}

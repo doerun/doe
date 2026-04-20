@@ -38,6 +38,8 @@ def case(
     parity_promotion_eligible: bool = False,
     model_id: str = E2B_ID,
     default_blocker: str = BLOCKER,
+    real_weight_parity_passed: bool = False,
+    real_weight_hash_matched: bool = False,
     expect_status: str,
     expect_blocker: str,
 ) -> tuple[bool, str]:
@@ -48,6 +50,8 @@ def case(
         parity_promotion_eligible=parity_promotion_eligible,
         model_id=model_id,
         default_blocker=default_blocker,
+        real_weight_parity_passed=real_weight_parity_passed,
+        real_weight_hash_matched=real_weight_hash_matched,
     )
     ok = status == expect_status and blocker == expect_blocker
     msg = (
@@ -140,6 +144,42 @@ def main() -> int:
             "T9 None modelId rejects flip",
             parity_promotion_eligible=True,
             model_id=None,  # type: ignore[arg-type]
+            expect_status="not_attempted",
+            expect_blocker=BLOCKER,
+        ),
+        # Real-weight tier: both flags true → real_weight_layer_block_success.
+        case(
+            "T10 real-weight both flags true promotes past simulator_success",
+            parity_promotion_eligible=True,
+            real_weight_parity_passed=True,
+            real_weight_hash_matched=True,
+            expect_status="real_weight_layer_block_success",
+            expect_blocker="none",
+        ),
+        # Real-weight tier: parity passed but hash not matched → stays simulator_success.
+        case(
+            "T11 real-weight parity passed but hash not matched stays simulator_success",
+            parity_promotion_eligible=True,
+            real_weight_parity_passed=True,
+            real_weight_hash_matched=False,
+            expect_status="simulator_success",
+            expect_blocker="none",
+        ),
+        # Real-weight tier: hash matched but parity not passed → stays simulator_success.
+        case(
+            "T12 real-weight hash matched but parity not passed stays simulator_success",
+            parity_promotion_eligible=True,
+            real_weight_parity_passed=False,
+            real_weight_hash_matched=True,
+            expect_status="simulator_success",
+            expect_blocker="none",
+        ),
+        # Real-weight tier without simulator parity: still not_attempted.
+        case(
+            "T13 real-weight flags true but simulator parity False → not_attempted",
+            parity_promotion_eligible=False,
+            real_weight_parity_passed=True,
+            real_weight_hash_matched=True,
             expect_status="not_attempted",
             expect_blocker=BLOCKER,
         ),

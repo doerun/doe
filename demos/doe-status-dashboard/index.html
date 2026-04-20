@@ -97,11 +97,35 @@
     </tbody>
   </table>
 
+  <div class="section-head">Related browser tools</div>
+  <ul>
+    <li>
+      <a href="../gemma4-e2b-csl-sim/">Gemma 4 E2B side-by-side demo</a>
+      — WebGPU + CSL simfabric + CSL-WebGPU-emulator lanes with
+      evidence cockpit (identity / speed / accuracy / real-weight
+      badges). Requires the demo server for live CSL runs; static
+      paths work without it.
+    </li>
+    <li>
+      <a href="../doe-sdk-gui-viewer/">SDK-GUI-style artifact viewer</a>
+      — 6-panel viewer (fabric, PE drilldown, source, host-I/O,
+      trace timeline, evidence overlay). Point it at a compile
+      artifact directory (e.g.
+      <code>bench/out/scratch/gemma4-e2b-csl-sim/compile-L1</code>)
+      to inspect the SDK artifacts + live CSL trace without unpacking
+      SDK binaries. Requires the E2B demo server for its two
+      <code>/api</code> routes.
+    </li>
+  </ul>
+
   <p class="footnote">
     Serve from the repo root: <code>cd /path/to/doe &amp;&amp; python3 -m http.server 8000</code>
     then open <code>http://localhost:8000/demos/doe-status-dashboard/</code>.
-    Every row is re-derived from JSON at view time; edit the artifact and
-    reload to see the status change.
+    For the side-by-side demo's live CSL runs and the SDK-GUI
+    viewer's <code>/api</code> routes, use
+    <code>python3 demos/gemma4-e2b-csl-sim/server.py --port 8000</code>
+    instead. Every row is re-derived from JSON at view time; edit
+    the artifact and reload to see the status change.
   </p>
 </main>
 

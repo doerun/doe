@@ -270,6 +270,18 @@ def main() -> int:
     compile_artifacts = layout.compile(out_prefix=compile_prefix)
     compile_elapsed_ms = (time.time() - compile_start) * 1000.0
 
+    # Content-addressed compile cache key. A future compile cache
+    # (SdkLayout hardening gap 1) will index compiled artifacts by
+    # this key; today we only record it so every trace carries the
+    # key that cache lookup/insert would use. Components that change
+    # the compile output must appear here: kernel source content,
+    # plan topology, target arch, and the shape parameter baked into
+    # the region.
+    import hashlib as _hashlib_cache  # local to avoid module-top noise
+    compile_cache_key = _hashlib_cache.sha256(
+        ("{kernel_source_sha256}|{plan_sha256}|wse3|size=" + str(args.size)).encode("utf-8")
+    ).hexdigest()
+
     run_start = time.time()
     runtime = SdkRuntime(compile_artifacts, platform, memcpy_required=False)
     num_layers_smoke = args.num_layers
@@ -714,6 +726,14 @@ def main() -> int:
             "compilePrefix": str(Path(compile_prefix).relative_to(REPO_ROOT)),
             "elapsedMs": compile_elapsed_ms,
             "status": "succeeded",
+            "cacheKey": compile_cache_key,
+            "cacheKeyComponents": {{
+                "kernelSourceSha256": "{kernel_source_sha256}",
+                "planSha256": "{plan_sha256}",
+                "target": "wse3",
+                "size": args.size,
+            }},
+            "cacheState": "miss_uncached",
         }},
         "executedRun": {{
             "status": run_status,

@@ -53,6 +53,13 @@ function parseArgs() {
     perLayerIsolated: false,
     numpyReferenceRowsDir:
       'bench/out/doppler-reference/numpy-per-layer-rows',
+    // When set, proj_l and wts_l are loaded as DISTINCT files from
+    // this directory per the CSL runner's real-weight contract:
+    //   per_layer_inputs.perLayerModelProjection.layer{l}.f32  (proj)
+    //   layer.{l}.smoke_layer_block_wts.f32                    (wts)
+    // When unset, the legacy seeded-RNG path runs (proj==wts bytes
+    // for a given layer via same-seed fresh-rng).
+    weightsDir: '',
   };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
@@ -66,8 +73,27 @@ function parseArgs() {
     else if (k === '--out-dir') { opts.outDir = v; i++; }
     else if (k === '--per-layer-isolated') { opts.perLayerIsolated = true; }
     else if (k === '--numpy-reference-rows-dir') { opts.numpyReferenceRowsDir = v; i++; }
+    else if (k === '--weights-dir') { opts.weightsDir = v; i++; }
   }
   return opts;
+}
+
+// Load a size*4-byte f32 file from disk. Mirrors the CSL runner's
+// load_layer_data contract: file must be exactly `size * 4` bytes of
+// native-endian f32. Used for real-weight dispatch when
+// --weights-dir is set.
+function loadF32File(absPath, size) {
+  if (!fs.existsSync(absPath)) {
+    throw new Error(`weights file missing: ${absPath}`);
+  }
+  const buf = fs.readFileSync(absPath);
+  if (buf.byteLength !== size * 4) {
+    throw new Error(
+      `weights file wrong size: ${absPath} has ${buf.byteLength} bytes, ` +
+      `expected ${size * 4}`
+    );
+  }
+  return new Float32Array(buf.buffer, buf.byteOffset, size);
 }
 
 function resolvePath(p) {
@@ -420,13 +446,36 @@ async function main() {
   const bytes = size * 4;
 
   let initialRowsF32;
-  const perLayerInputsF32 = [];
+  // For the seeded path, perLayerInputsF32 holds ONE f32 array per
+  // layer; proj and wts are the same bytes. For the --weights-dir
+  // path, we load TWO distinct arrays per layer and the aggregate
+  // weightSetSha256 mirrors the CSL validator's order (both files
+  // per layer, layer-major).
+  const perLayerProjF32 = [];
+  const perLayerWtsF32 = [];
+  const dataSource = opts.weightsDir ? 'weights_dir' : 'seeded_rng_fixture';
   try {
     initialRowsF32 = loadInputTensorF32(opts.initialRowsSeed, size);
-    for (let l = 0; l < opts.numLayers; l++) {
-      perLayerInputsF32.push(
-        loadInputTensorF32(opts.perLayerBase + l, size)
-      );
+    if (opts.weightsDir) {
+      const wdAbs = resolvePath(opts.weightsDir);
+      for (let l = 0; l < opts.numLayers; l++) {
+        const projPath = path.join(
+          wdAbs,
+          `per_layer_inputs.perLayerModelProjection.layer${l}.f32`,
+        );
+        const wtsPath = path.join(
+          wdAbs,
+          `layer.${l}.smoke_layer_block_wts.f32`,
+        );
+        perLayerProjF32.push(loadF32File(projPath, size));
+        perLayerWtsF32.push(loadF32File(wtsPath, size));
+      }
+    } else {
+      for (let l = 0; l < opts.numLayers; l++) {
+        const same = loadInputTensorF32(opts.perLayerBase + l, size);
+        perLayerProjF32.push(same);
+        perLayerWtsF32.push(same);
+      }
     }
   } catch (e) {
     console.error(`BLOCKER: ${e.message}`);
@@ -435,11 +484,22 @@ async function main() {
   const inputTensorSha = sha256Bytes(
     Buffer.from(initialRowsF32.buffer, initialRowsF32.byteOffset, bytes)
   );
+  // Aggregate weight sha: for --weights-dir, loop layer-major over
+  // (proj, wts) pairs; for seeded, each layer contributes one array
+  // (historical contract — one seeded aggregate entry per layer).
   const weightShaAgg = crypto.createHash('sha256');
-  for (const arr of perLayerInputsF32) {
-    weightShaAgg.update(
-      Buffer.from(arr.buffer, arr.byteOffset, bytes)
-    );
+  if (opts.weightsDir) {
+    for (let l = 0; l < opts.numLayers; l++) {
+      weightShaAgg.update(Buffer.from(
+        perLayerProjF32[l].buffer, perLayerProjF32[l].byteOffset, bytes));
+      weightShaAgg.update(Buffer.from(
+        perLayerWtsF32[l].buffer, perLayerWtsF32[l].byteOffset, bytes));
+    }
+  } else {
+    for (let l = 0; l < opts.numLayers; l++) {
+      weightShaAgg.update(Buffer.from(
+        perLayerProjF32[l].buffer, perLayerProjF32[l].byteOffset, bytes));
+    }
   }
   const weightSha = weightShaAgg.digest('hex');
 
@@ -551,12 +611,12 @@ async function main() {
       );
     }
     device.queue.writeBuffer(
-      projBuf, 0, perLayerInputsF32[l].buffer,
-      perLayerInputsF32[l].byteOffset, bytes
+      projBuf, 0, perLayerProjF32[l].buffer,
+      perLayerProjF32[l].byteOffset, bytes
     );
     device.queue.writeBuffer(
-      wtsBuf, 0, perLayerInputsF32[l].buffer,
-      perLayerInputsF32[l].byteOffset, bytes
+      wtsBuf, 0, perLayerWtsF32[l].buffer,
+      perLayerWtsF32[l].byteOffset, bytes
     );
 
     const enc = device.createCommandEncoder();
@@ -601,6 +661,8 @@ async function main() {
     stagesCovered: ['stage1_rmsnorm', 'stage2_mha', 'stage2c_residual', 'stage3_postnorm', 'stage4_gated_mlp', 'multi_layer_chain'],
     initialRowsSeed: opts.initialRowsSeed,
     perLayerBase: opts.perLayerBase,
+    dataSource,
+    weightsDir: opts.weightsDir || null,
     runtime: 'doppler_node_webgpu',
     outputPath: path.relative(REPO_ROOT, outPath),
     outputSha256: outputSha,

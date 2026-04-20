@@ -4,6 +4,24 @@
 
 Current demos:
 
+- `demos/doe-status-dashboard/`
+  - high-level status rollup of Doe lane statuses, driven from
+    `bench/out/` JSON at view time. Static, no server required.
+    Cross-links to the two Gemma-4 demos below.
+- `demos/gemma4-e2b-csl-sim/`
+  - Gemma 4 E2B layer-block side-by-side: browser WebGPU (via Dawn)
+    + stored/live CSL simfabric + CSL-WebGPU-emulator, with an
+    evidence cockpit (program identity, emulator-vs-simfabric
+    speed, per-layer accuracy, real-weight promotion badges).
+    Has `server.py` for live CSL runs + the two `/api` routes the
+    SDK-GUI viewer depends on.
+- `demos/doe-sdk-gui-viewer/`
+  - SDK-GUI-style Cerebras artifact viewer: 6 panels (fabric,
+    PE drilldown, source, host-I/O contract, trace timeline,
+    evidence overlay). Point it at a compile artifact dir under
+    `bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>` to inspect
+    without unpacking SDK binaries. Requires the E2B demo server
+    running on the same origin for its `/api` routes.
 - `demos/volume-render`
   - local package-backed volume rendering demo for manual exploration
 - `demos/service-worker-compute`

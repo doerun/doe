@@ -254,6 +254,21 @@ runtime-config / simulator-plan fixtures already exist under
 graduation target used to debug the SDK v1.4 driver seam before repointing the
 governed lane at E2B fixtures.
 
+The first scale-up hardware target after E2B is Gemma 4 31B dense. Dense 31B
+keeps the execution contract uniform while Doe proves the WSE path: every token
+uses the same attention, dense FFN, residual, norm, and logits stages. That is
+the right shape for validating streamed weights, layout placement, stream
+ordering, full-grid compile behavior, and parity receipts without adding MoE
+routing variables.
+
+Gemma 4 26B/A4B MoE is a later efficiency lane, not the bring-up lane. It needs
+additional contracts for router logits, top-k expert selection, token-to-expert
+dispatch, shared expert execution, expert output combine, and per-expert
+batching. Its lower active parameter count may reduce arithmetic per token, but
+that does not remove the need for WSE-specific receipts. In particular, a GPU
+MoE advantage that depends on touching fewer HBM-resident weights must be
+remeasured on the Doe CSL path rather than assumed.
+
 Gemma 4 31B does not fit resident in WSE memory. The SDK v1.4 primitive that
 maps cleanly to streamed weights is `SdkRuntime.send` / `receive` for program
 input/output ports, introduced in v1.4 alongside memcpy-based data transfer.

@@ -46,32 +46,37 @@ def compute_execution_status(
     parity_promotion_eligible: bool,
     model_id: str,
     default_blocker: str,
+    real_weight_parity_passed: bool = False,
+    real_weight_hash_matched: bool = False,
 ) -> tuple[str, str]:
     """Pure flip logic for executionStatus / executionBlocker.
 
-    Returns ("simulator_success", "none") iff all structural gates
-    pass (streaming_required, not missing_kernels, fits), the
-    model is E2B or 31B, and the cross-runtime parity check verdict
-    for that model's own artifact is promotionEligible. Otherwise
-    returns ("not_attempted", blocker) where blocker is the caller-
-    supplied structural reason.
+    Three-tier promotion:
+      - real_weight_layer_block_success: structural gates + simulator
+        parity + real-weight parity_passed + weight hash matched.
+        Strictly stronger than simulator_success.
+      - simulator_success: structural gates + simulator parity_
+        promotion_eligible. Synthetic weights are acceptable here.
+      - not_attempted: any structural gate or simulator parity fails.
 
     Since tick 11, each model reads its OWN parity artifact, so the
-    parity_promotion_eligible input is already model-scoped. The
-    model_id check here only rejects other models whose parity
-    machinery doesn't exist yet. Extracted as a pure function so
-    test_execution_status_flip.py can exercise both branches without
-    file I/O or mocks against real artifacts.
+    parity_promotion_eligible input is already model-scoped. Extracted
+    as a pure function so test_execution_status_flip.py can exercise
+    every branch without file I/O or mocks against real artifacts.
     """
     mid = (model_id or "").lower()
     model_has_parity_lane = ("e2b" in mid) or ("31b" in mid)
-    if (streaming_required
-            and not missing_kernels
-            and fits
-            and parity_promotion_eligible
-            and model_has_parity_lane):
-        return ("simulator_success", "none")
-    return ("not_attempted", default_blocker)
+    structural_ok = (
+        streaming_required
+        and not missing_kernels
+        and fits
+        and model_has_parity_lane
+    )
+    if not (structural_ok and parity_promotion_eligible):
+        return ("not_attempted", default_blocker)
+    if real_weight_parity_passed and real_weight_hash_matched:
+        return ("real_weight_layer_block_success", "none")
+    return ("simulator_success", "none")
 
 
 def sha256_file(path: Path) -> str:
@@ -459,6 +464,67 @@ def main() -> int:
         else:
             execution_blocker = "full_grid_compile_unattempted"
 
+    # Read the real-weight parity verdict (E2B only today). When the
+    # verdict is parity_passed AND the weights audit confirms
+    # weightHashMatched, the receipt promotes further to
+    # real_weight_layer_block_success. Absent/blocked verdicts fall
+    # back to simulator_success unchanged.
+    real_weight_parity_passed = False
+    real_weight_hash_matched = False
+    real_weight_evidence_block: dict[str, Any] = {}
+    # Model-aware verdict path: pick the parity file matching this
+    # receipt's modelId, not a hard-coded E2B path. When a 31B
+    # real-weight parity verdict lands, the 31B receipt auto-binds it
+    # without requiring a second edit to this builder.
+    _rw_rel = None
+    if "e2b" in _model_id_early_lc:
+        _rw_rel = "bench/out/gemma-4-e2b-real-weight-parity-L1.json"
+    elif "31b" in _model_id_early_lc:
+        _rw_rel = "bench/out/gemma-4-31b-real-weight-parity-L1.json"
+    if _rw_rel is not None:
+        _rw_path = resolve(_rw_rel)
+        if _rw_path.is_file():
+            try:
+                _rw = load_json(_rw_path)
+            except json.JSONDecodeError:
+                _rw = None
+            if isinstance(_rw, dict):
+                real_weight_parity_passed = (
+                    _rw.get("verdict") == "parity_passed"
+                )
+                _audit_rel = _rw.get("weightsAuditPath")
+                _audit_path = resolve(_audit_rel) if _audit_rel else None
+                if _audit_path and _audit_path.is_file():
+                    try:
+                        _audit = load_json(_audit_path)
+                        real_weight_hash_matched = bool(
+                            _audit.get("passedAudit")
+                            and _audit.get("fixtureWeightSetShaPinMatched")
+                        )
+                    except json.JSONDecodeError:
+                        pass
+                _rw_raw = {
+                    "fixturePath": _rw.get("fixturePath"),
+                    "fixtureSha256": _rw.get("fixtureSha256"),
+                    "weightsDir": _rw.get("weightsDir"),
+                    "weightsAuditPath": _audit_rel,
+                    "weightSetSha256": _rw.get("weightSetSha256"),
+                    "parityVerdictPath": str(_rw_path.relative_to(REPO_ROOT))
+                        if _rw_path.is_relative_to(REPO_ROOT) else str(_rw_path),
+                }
+                real_weight_evidence_block = {
+                    k: v for k, v in _rw_raw.items() if v is not None
+                }
+                real_weight_evidence_block["promotionCriteriaMet"] = {
+                    "syntheticInputsAbsent": bool(_rw.get("weightsDirPresent")),
+                    "syntheticWeightsAbsent": bool(_rw.get("weightsDirPresent")),
+                    "weightHashMatched": real_weight_hash_matched,
+                    "fullModelDepthExecuted": (
+                        int(_rw.get("numLayers", 0)) >= 35
+                    ),
+                    "outputParityPassed": real_weight_parity_passed,
+                }
+
     # Flip logic lives in compute_execution_status() so the truth
     # table can be unit-tested (see test_execution_status_flip.py).
     status, blocker = compute_execution_status(
@@ -468,9 +534,13 @@ def main() -> int:
         parity_promotion_eligible=parity_promotion_eligible,
         model_id=receipt.get("modelId", "") or "",
         default_blocker=execution_blocker,
+        real_weight_parity_passed=real_weight_parity_passed,
+        real_weight_hash_matched=real_weight_hash_matched,
     )
     receipt["executionStatus"] = status
     receipt["executionBlocker"] = blocker
+    if real_weight_evidence_block:
+        receipt["realWeightEvidence"] = real_weight_evidence_block
     receipt["fullGridCompileProbeEvidence"] = {
         "description": "Pointer to the cslc grid-probe aggregate. Documents which grid sizes cslc accepts for this target.",
         "reportPath": "bench/out/cslc-grid-probe/grid-probe-aggregate.json",

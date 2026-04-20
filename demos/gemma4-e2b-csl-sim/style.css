@@ -267,3 +267,120 @@ canvas {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.cockpit {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  margin: 18px 0;
+  padding: 16px;
+}
+
+.cockpit-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cockpit-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+#cockpit-source {
+  color: var(--muted);
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+.claim-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--code);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+.badge.pass {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.badge.warn {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.badge.fail {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.cockpit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cockpit-table th,
+.cockpit-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cockpit-table th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.cockpit-table code,
+.cockpit-table .sha {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.cockpit-empty {
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+}
+
+.demo-nav {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lane-label-table {
+  margin-top: 12px;
+}
+
+.lane-label-table td code {
+  font-size: 12px;
+}
+
+.demo-nav a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.demo-nav a:hover {
+  text-decoration: underline;
+}
+
+.demo-nav strong {
+  color: var(--ink);
+}

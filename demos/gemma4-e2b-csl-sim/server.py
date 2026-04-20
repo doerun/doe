@@ -138,7 +138,9 @@ class DemoHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self) -> None:  # noqa: N802
-        if self.path == "/api/status":
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/status":
             cs_py = cs_python_path()
             self.send_json({
                 "repoRoot": str(REPO_ROOT),
@@ -146,7 +148,235 @@ class DemoHandler(SimpleHTTPRequestHandler):
                 "csPythonAvailable": Path(cs_py).exists() or cs_py == "cs_python",
             })
             return
+        if parsed.path == "/api/artifact-dir-info":
+            qs = parse_qs(parsed.query or "")
+            rel_path = (qs.get("path") or [""])[0]
+            self.send_json(self.inspect_artifact_dir(rel_path))
+            return
+        if parsed.path == "/api/trace-host-io-contract":
+            qs = parse_qs(parsed.query or "")
+            trace_rel = (qs.get("trace") or [""])[0]
+            self.send_json(self.inspect_trace_host_io(trace_rel))
+            return
+        if parsed.path == "/api/bundle-summary":
+            self.send_json(self.inspect_bundle_summary())
+            return
         super().do_GET()
+
+    def inspect_bundle_summary(self) -> dict:
+        # Stable route for the evidence bundle summary. When the bundle
+        # runner has been invoked on this host, returns the passed/
+        # failed verdict + step counts; when absent, returns ok=false
+        # so the cockpit fails closed rather than silently showing
+        # stale state.
+        summary_path = (
+            REPO_ROOT / "bench/out/cerebras-evidence-bundle/summary.json"
+        )
+        if not summary_path.is_file():
+            return {
+                "ok": False,
+                "error": "summary not yet produced",
+                "hint": (
+                    "run bench/tools/run_cerebras_evidence_bundle.py "
+                    "or bench/tools/prepare_cerebras_validation_bundle.sh"
+                ),
+            }
+        try:
+            data = json.loads(summary_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"ok": False, "error": f"summary unreadable: {exc}"}
+        return {
+            "ok": True,
+            "summaryPath": "bench/out/cerebras-evidence-bundle/summary.json",
+            "verdict": data.get("verdict"),
+            "totalSteps": data.get("totalSteps"),
+            "passedSteps": data.get("passedSteps"),
+            "failedSteps": data.get("failedSteps"),
+            "skippedSteps": data.get("skippedSteps"),
+            "stepStatuses": [
+                {
+                    "step": s.get("step"),
+                    "status": s.get("status"),
+                    "elapsedMs": s.get("elapsedMs"),
+                }
+                for s in (data.get("steps") or [])
+                if isinstance(s, dict)
+            ],
+        }
+
+    def inspect_trace_host_io(self, trace_rel: str) -> dict:
+        if not trace_rel:
+            return {"ok": False, "error": "missing trace parameter"}
+        if trace_rel.startswith("/") or ".." in Path(trace_rel).parts:
+            return {
+                "ok": False,
+                "error": "trace must be repo-relative, no '..' allowed",
+            }
+        abs_path = (REPO_ROOT / trace_rel).resolve()
+        try:
+            abs_path.relative_to(REPO_ROOT)
+        except ValueError:
+            return {"ok": False, "error": "path escapes repo root"}
+        if not abs_path.is_file():
+            return {
+                "ok": False,
+                "error": f"trace not found: {trace_rel}",
+            }
+        try:
+            trace = json.loads(abs_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"ok": False, "error": f"trace unreadable: {exc}"}
+        smoke = trace.get("layerBlockSmoke") or {}
+        layout = smoke.get("hostIoLayout") or []
+        executed_run = trace.get("executedRun") or {}
+        stream_events = executed_run.get("streamEventsTail") or []
+        stream_telemetry = executed_run.get("streamTelemetry") or {}
+        per_stream = executed_run.get("streams") or []
+        # Cap to 32 events to keep response payload bounded; 32 covers
+        # ~4 streams x ~8 event flips in practice, which is plenty for
+        # a quick drilldown.
+        event_cap = 32
+        return {
+            "ok": True,
+            "tracePath": trace_rel,
+            "modelId": trace.get("modelId"),
+            "target": trace.get("target"),
+            "kernelSourceSha256": smoke.get("kernelSourceSha256"),
+            "planSha256": smoke.get("planSha256"),
+            "numLayersChained": executed_run.get("numLayersChained"),
+            "executedRunStatus": executed_run.get("status"),
+            "hostIoLayout": [
+                {
+                    "streamId": e.get("streamId"),
+                    "role": e.get("role"),
+                    "dtype": e.get("dtype"),
+                    "order": e.get("order"),
+                    "elementsPerPe": e.get("elementsPerPe"),
+                    "ioBufferSize": e.get("ioBufferSize"),
+                    "planPayloadBytes": e.get("planPayloadBytes"),
+                    "tileBehavior": e.get("tileBehavior"),
+                }
+                for e in layout
+                if isinstance(e, dict)
+            ],
+            "sendReceiveCounts": smoke.get("sendReceiveCounts"),
+            "ioBufferSizes": smoke.get("ioBufferSizes"),
+            "streamTelemetry": {
+                "measurementSource": stream_telemetry.get("measurementSource"),
+                "streamEventsTailCount": stream_telemetry.get(
+                    "streamEventsTailCount"
+                ),
+            },
+            "perStreamCounters": [
+                {
+                    "streamId": s.get("streamId"),
+                    "role": s.get("role"),
+                    "operation": s.get("operation"),
+                    "issuedCount": s.get("issuedCount"),
+                    "completedCount": s.get("completedCount"),
+                    "pendingCount": s.get("pendingCount"),
+                    "maxQueueDepth": s.get("maxQueueDepth"),
+                }
+                for s in per_stream
+                if isinstance(s, dict)
+            ],
+            "streamEventsTail": stream_events[:event_cap],
+            "streamEventsTruncated": len(stream_events) > event_cap,
+            "streamEventsTotalInTrace": len(stream_events),
+            "note": (
+                "Metadata only. Stream payloads are never returned — "
+                "host I/O contract is the schema, not the data."
+            ),
+        }
+
+    def inspect_artifact_dir(self, rel_path: str) -> dict:
+        # Safe enumerator: refuses absolute paths and parent-traversal,
+        # pins everything to REPO_ROOT. Returns structured metadata
+        # the SDK-GUI viewer renders; returns NO file bytes (.elf /
+        # .map / .viz are SDK-owned and excluded from any response).
+        if not rel_path:
+            return {"ok": False, "error": "missing path parameter"}
+        if rel_path.startswith("/") or ".." in Path(rel_path).parts:
+            return {
+                "ok": False, "error":
+                    "path must be repo-relative and must not contain '..'",
+            }
+        abs_path = (REPO_ROOT / rel_path).resolve()
+        try:
+            abs_path.relative_to(REPO_ROOT)
+        except ValueError:
+            return {"ok": False, "error": "path escapes repo root"}
+        if not abs_path.is_dir():
+            return {
+                "ok": False, "error": f"not a directory: {rel_path}",
+                "pathChecked": rel_path,
+            }
+        # SDK compile-artifact shape to surface: colors, elf, lst,
+        # map, symbols, viz, plus any nested generated/ directory.
+        interesting = {".elf", ".lst", ".map", ".symbols", ".viz"}
+        files = []
+        colors_info = None
+        map_info = None
+        for entry in sorted(abs_path.iterdir()):
+            if entry.is_file():
+                stat = entry.stat()
+                files.append({
+                    "name": entry.name,
+                    "sizeBytes": stat.st_size,
+                    "ext": entry.suffix,
+                    "kind": "sdk_artifact" if entry.suffix in interesting
+                            else "other",
+                })
+                if entry.name == "colors.json":
+                    try:
+                        colors_data = json.loads(entry.read_text())
+                        if isinstance(colors_data, dict):
+                            colors_info = {
+                                "numColors": len(colors_data),
+                                "colorNames": sorted(colors_data.keys()),
+                            }
+                        elif isinstance(colors_data, list):
+                            colors_info = {
+                                "numColors": len(colors_data),
+                                "colorNames": [
+                                    str(c.get("name") or i) if isinstance(c, dict) else str(c)
+                                    for i, c in enumerate(colors_data)
+                                ],
+                            }
+                    except (OSError, ValueError):
+                        colors_info = {"error": "colors.json unparseable"}
+                if entry.name.endswith(".map"):
+                    map_info = {
+                        "path": entry.name,
+                        "sizeBytes": stat.st_size,
+                    }
+            elif entry.is_dir():
+                # List child dir name only — no recursion.
+                files.append({
+                    "name": entry.name + "/",
+                    "ext": "",
+                    "kind": "subdir",
+                })
+        return {
+            "ok": True,
+            "pathChecked": rel_path,
+            "numFiles": sum(1 for f in files if f.get("kind") != "subdir"),
+            "numSdkArtifacts": sum(
+                1 for f in files if f.get("kind") == "sdk_artifact"
+            ),
+            "subdirs": [f["name"] for f in files if f.get("kind") == "subdir"],
+            "files": files,
+            "colorsJson": colors_info,
+            "mapFile": map_info,
+            "sdkVisualizeCommand":
+                f"sdk_debug_shell visualize --artifact_dir {rel_path}",
+            "note": (
+                "Metadata only. The server does NOT return .elf / "
+                ".lst / .map / .symbols / .viz file contents — those "
+                "are SDK-owned binary artifacts. File bytes stay on "
+                "the bundler's host."
+            ),
+        }
 
     def do_POST(self) -> None:  # noqa: N802
         # /api/run-csl?num_layers=N  where N in ALLOWED_NUM_LAYERS.

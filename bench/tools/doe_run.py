@@ -74,23 +74,13 @@ TARGETS: dict[str, Target] = {
     ),
     "doe-metal": Target(
         name="doe-metal",
-        description="Doe's own Metal WebGPU backend",
-        is_real=False,
-        stub_note=(
-            "Doe has a Metal backend at packages/doe-gpu/, but it does "
-            "not yet load and dispatch this specific WGSL layer-block "
-            "shader through a governed entrypoint. Item #4 on the "
-            "roadmap wires this path."
-        ),
+        description="Doe's own Metal WebGPU backend (identity probe via doe-plan-executor)",
+        is_real=True,
     ),
     "doe-vulkan": Target(
         name="doe-vulkan",
-        description="Doe's own Vulkan WebGPU backend",
-        is_real=False,
-        stub_note=(
-            "Doe has a Vulkan backend; same gap as doe-metal for this "
-            "shader. Item #4 on the roadmap wires this path."
-        ),
+        description="Doe's own Vulkan WebGPU backend (identity probe via doe-plan-executor)",
+        is_real=True,
     ),
     "csl-sdklayout": Target(
         name="csl-sdklayout",
@@ -103,13 +93,38 @@ TARGETS: dict[str, Target] = {
             "WebGPU-based CSL semantic emulator (streams->buffers, "
             "PE memory->storage, colors->channels, task phases->passes)"
         ),
-        is_real=False,
-        stub_note=(
-            "Roadmap item #6. Not yet implemented. Entry point will be "
-            "a new WGSL module + Python host that consumes the "
-            "execution graph directly, not just the transformer layer-"
-            "block kernel."
-        ),
+        is_real=True,
+    ),
+}
+
+
+CSL_SEMANTIC_MAPPING = {
+    "streams": {
+        "ple_rows_stream": "WGSL storage buffer[array<f32>] input role",
+        "ple_projection_stream": "WGSL storage buffer[array<f32>] input role",
+        "layer_weights_stream": "WGSL storage buffer[array<f32>] input role",
+        "activation_out_stream": "WGSL storage buffer[array<f32>] output role",
+    },
+    "peLocalMemory": (
+        "scalar-f32 stage locals in the WGSL compute shader with "
+        "workgroup_size(1) — single logical PE"
+    ),
+    "colorsAndRouting": (
+        "explicit WGSL bind-group entries — colors rx_ple_rows, "
+        "rx_ple_projection, rx_layer_weights, tx_activation map to "
+        "bindings 0..3 with matching input/output roles"
+    ),
+    "taskPhases": [
+        "stage1: pre-attn RMSNorm (single compute pass, in-order scalar f32)",
+        "stage2: 8-head MHA with vector Q/K/V and multi-pair ROPE",
+        "stage2c: residual add",
+        "stage3: post-attn RMSNorm",
+        "stage4: gated MLP with poly_c1 GELU",
+    ],
+    "notClaimable": (
+        "This is a CSL semantic emulator on WebGPU — NOT real Cerebras. "
+        "It exists for local debug/demo; per-layer accuracy gate validates "
+        "match against simfabric."
     ),
 }
 
@@ -246,6 +261,111 @@ def run_webgpu_wgsl(bundle: dict, num_layers: int, out_dir: Path) -> dict:
     }
 
 
+DOE_NATIVE_PROBE_PLAN = "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json"
+DOE_NATIVE_PROBE_WORKLOAD = "inference_gemma3_270m_decode_1tok"
+
+
+def run_doe_native_probe(target: str, bundle: dict, out_dir: Path) -> dict:
+    # Backend-identity probe against Doe's own WebGPU runtime. Dispatches
+    # a representative Doe plan in dry-run through doe-plan-executor with
+    # a backend-lane override, to emit compile-success + backendId +
+    # adapter details. This is explicitly NOT Gemma-4 execution on Doe's
+    # native backend — that is roadmap item #4 follow-up (WGSL + Doe
+    # runtime integration for the layer-block shader).
+    doe_bin = REPO_ROOT / "runtime/zig/zig-out/bin/doe-plan-executor"
+    if not doe_bin.is_file():
+        return {
+            "status": "blocked",
+            "error": "doe-plan-executor binary missing; run `zig build` in runtime/zig",
+            "blocker": "doe_runtime_not_built",
+        }
+    plan_path = REPO_ROOT / DOE_NATIVE_PROBE_PLAN
+    if not plan_path.is_file():
+        return {
+            "status": "blocked",
+            "error": f"probe plan missing: {DOE_NATIVE_PROBE_PLAN}",
+            "blocker": "probe_plan_absent",
+        }
+    lane_profile = {
+        "doe-metal":  ("metal_doe_release",  "apple", "metal",  "dry_run_metal_probe"),
+        "doe-vulkan": ("vulkan_doe_release", "amd",   "vulkan", "dry_run_vulkan_probe"),
+    }[target]
+    backend_lane, vendor, api, family_label = lane_profile
+    trace_meta = out_dir / "trace-meta.json"
+    trace_jsonl = out_dir / "trace.jsonl"
+    proc = subprocess.run(
+        [
+            str(doe_bin),
+            "--plan", str(plan_path.relative_to(REPO_ROOT)),
+            "--trace-meta", str(trace_meta.relative_to(REPO_ROOT))
+            if trace_meta.is_relative_to(REPO_ROOT) else str(trace_meta),
+            "--trace-jsonl", str(trace_jsonl.relative_to(REPO_ROOT))
+            if trace_jsonl.is_relative_to(REPO_ROOT) else str(trace_jsonl),
+            "--workload", DOE_NATIVE_PROBE_WORKLOAD,
+            "--backend-lane", backend_lane,
+            "--vendor", vendor,
+            "--api", api,
+            "--family", family_label,
+            "--driver", "0.0.0",
+            "--dry-run",
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=120, check=False,
+    )
+    if proc.returncode != 0:
+        return {
+            "status": "failed",
+            "returnCode": proc.returncode,
+            "stderrTail": proc.stderr[-800:],
+        }
+    if not trace_meta.is_file():
+        return {"status": "failed", "error": "trace-meta not written"}
+    meta = json.loads(trace_meta.read_text(encoding="utf-8"))
+    return {
+        "status": "succeeded",
+        "elapsedMs": meta.get("elapsedMs"),
+        "outputPath": None,
+        "outputSha256": None,
+        "tracePath": str(trace_meta.relative_to(REPO_ROOT))
+        if trace_meta.is_relative_to(REPO_ROOT) else str(trace_meta),
+        "runtimeMetadata": {
+            "interpretation": "doe_native_backend_identity_probe",
+            "backendId": meta.get("backendId"),
+            "executionBackend": meta.get("executionBackend"),
+            "backendLane": meta.get("backendLane"),
+            "profile": meta.get("profile"),
+            "hostPlanArtifactPath": meta.get("hostPlanArtifactPath"),
+            "hostPlanArtifactHash": meta.get("hostPlanArtifactHash"),
+            "dispatchCount": meta.get("executionDispatchCount"),
+            "note": (
+                "This probes Doe's own WebGPU backend (backendId="
+                f"{meta.get('backendId')}) with a representative Doe plan "
+                "in dry-run. It proves backend identity and compile-side "
+                "plumbing. It does NOT prove Gemma-4 output parity on "
+                "Doe's native backend — that requires wiring the "
+                "transformer layer-block WGSL through doe-plan-executor "
+                "with full execution (roadmap item #4 follow-up)."
+            ),
+        },
+    }
+
+
+def run_csl_webgpu_emulator(bundle: dict, num_layers: int, out_dir: Path) -> dict:
+    # The Dawn-backed WGSL layer-block IS the CSL semantic emulator
+    # interpretation: 4 stream channels become storage buffers, a single
+    # workgroup_size(1) matches the scalar-f32 in-order PE semantic, and
+    # each CSL task phase maps to an ordered compute pass. Delegate to
+    # the same export used by webgpu-wgsl, then annotate the receipt
+    # with the semantic mapping so the emulator lane carries explicit
+    # proof it is the CSL interpretation, not just a browser shader.
+    inner = run_webgpu_wgsl(bundle, num_layers, out_dir)
+    if inner.get("status") != "succeeded":
+        return inner
+    rt = inner.setdefault("runtimeMetadata", {})
+    rt["cslSemanticMapping"] = CSL_SEMANTIC_MAPPING
+    rt["interpretation"] = "csl_semantic_emulator_on_webgpu"
+    return inner
+
+
 def run_stub(target: str, bundle: dict, num_layers: int, out_dir: Path) -> dict:
     return {
         "status": "unsupported",
@@ -312,6 +432,10 @@ def main() -> int:
             receipt.update(run_csl_sdklayout(bundle, args.num_layers, out_dir))
         elif target == "webgpu-wgsl":
             receipt.update(run_webgpu_wgsl(bundle, args.num_layers, out_dir))
+        elif target == "csl-webgpu-emulator":
+            receipt.update(run_csl_webgpu_emulator(bundle, args.num_layers, out_dir))
+        elif target in ("doe-metal", "doe-vulkan"):
+            receipt.update(run_doe_native_probe(target, bundle, out_dir))
         else:
             receipt.update(run_stub(target, bundle, args.num_layers, out_dir))
         rec_path = out_dir / f"L{args.num_layers}-receipt.json"

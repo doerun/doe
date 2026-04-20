@@ -78,6 +78,30 @@ def parse_args() -> argparse.Namespace:
         help="Per-stream f32 count. Must match the runner's --size.",
     )
     p.add_argument(
+        "--shape",
+        choices=["smoke", "manifest"],
+        default="smoke",
+        help=(
+            "smoke: per-file f32 count = --size (current layer-block smoke, "
+            "size=1024). manifest: per-file f32 count = numHeads * headDim "
+            "from the manifest's modelConfig (production head-dim). Fails "
+            "if the weightsDir file sizes don't match the chosen shape — "
+            "a 'real' weightsDir intended for manifest shape must validate "
+            "against 'manifest', not 'smoke'."
+        ),
+    )
+    p.add_argument(
+        "--fixture",
+        default="",
+        help=(
+            "Optional path to config/gemma-4-*-real-weight-fixture.json. "
+            "When set, the validator cross-checks manifest sha256 against "
+            "the fixture's bundle.manifest.sha256 and, if the fixture pins "
+            "weightsDir.expectedWeightSetSha256, rejects any weightsDir "
+            "whose aggregate sha256 diverges from the pin."
+        ),
+    )
+    p.add_argument(
         "--out",
         default="",
         help="Optional JSON audit artifact path. When unset, skips "
@@ -88,14 +112,49 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    manifest = json.loads(
-        Path(args.manifest).read_text(encoding="utf-8")
-    )
-    num_layers = int(manifest["modelConfig"]["numLayers"])
+    manifest_path = Path(args.manifest)
+    if not manifest_path.is_absolute():
+        manifest_path = REPO_ROOT / manifest_path
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    model_config = manifest.get("modelConfig", {})
+    num_layers = int(model_config["numLayers"])
+    num_heads = int(model_config.get("numHeads", 0)) or None
+    head_dim = int(model_config.get("headDim", 0)) or None
     model_id = manifest.get("modelId", "")
-    expected_bytes = args.size * 4  # f32 = 4 bytes
+    if args.shape == "smoke":
+        expected_f32 = args.size
+    else:  # manifest
+        if not (num_heads and head_dim):
+            print(
+                f"FAIL: --shape=manifest requires modelConfig.numHeads "
+                f"and headDim in the manifest ({args.manifest})"
+            )
+            return 2
+        expected_f32 = num_heads * head_dim
+    expected_bytes = expected_f32 * 4  # f32 = 4 bytes
+
+    fixture = None
+    if args.fixture:
+        fixture_path = Path(args.fixture)
+        if not fixture_path.is_absolute():
+            fixture_path = REPO_ROOT / fixture_path
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        # Manifest-sha identity pin: reject if the provided manifest
+        # doesn't match the fixture's recorded bundle hash.
+        fix_manifest = (fixture.get("bundle") or {}).get("manifest") or {}
+        fix_sha = fix_manifest.get("sha256")
+        if fix_sha:
+            actual_manifest_sha = sha256_file(manifest_path)
+            if actual_manifest_sha != fix_sha:
+                print(
+                    f"FAIL: manifest sha256 {actual_manifest_sha} does not "
+                    f"match fixture's bundle.manifest.sha256 {fix_sha}"
+                )
+                return 1
 
     weights_dir = Path(args.weights_dir)
+    if not weights_dir.is_absolute():
+        weights_dir = REPO_ROOT / weights_dir
     if not weights_dir.is_dir():
         print(
             f"FAIL: weights-dir is not a directory: {weights_dir}"
@@ -142,15 +201,38 @@ def main() -> int:
         per_layer_entries.append(entry)
 
     weight_set_sha256 = per_file_sha.hexdigest()
+    # Fixture-pin cross-check: if the fixture pins
+    # weightsDir.expectedWeightSetSha256, reject a weightsDir whose
+    # aggregate hash diverges.
+    pinned_weight_sha = None
+    if fixture is not None:
+        pinned_weight_sha = (
+            (fixture.get("weightsDir") or {}).get("expectedWeightSetSha256")
+        )
+        if pinned_weight_sha and pinned_weight_sha != weight_set_sha256:
+            failures.append(
+                f"weightSetSha256 {weight_set_sha256} does not match "
+                f"fixture's weightsDir.expectedWeightSetSha256 "
+                f"{pinned_weight_sha}"
+            )
     audit = {
         "schemaVersion": 1,
         "artifactKind": "doe_weights_dir_audit",
         "modelId": model_id,
         "manifestPath": args.manifest,
+        "manifestSha256": sha256_file(manifest_path),
         "numLayersExpected": num_layers,
-        "sizePerFileF32": args.size,
+        "shapeMode": args.shape,
+        "numHeadsManifest": num_heads,
+        "headDimManifest": head_dim,
+        "sizePerFileF32": expected_f32,
         "expectedBytesPerFile": expected_bytes,
         "weightsDir": args.weights_dir,
+        "fixturePath": args.fixture or None,
+        "fixtureWeightSetShaPinMatched": (
+            None if pinned_weight_sha is None
+            else pinned_weight_sha == weight_set_sha256
+        ),
         "perLayer": per_layer_entries,
         "weightSetSha256": weight_set_sha256,
         "passedAudit": not failures,

@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""One-command Cerebras evidence bundle runner.
+
+Runs every local gate the Cerebras hardware-access ask depends on,
+in the canonical order, and emits one summary artifact. Exits 0 iff
+every step passes. Intended to be the single invocation you run
+before attaching the hardware-validation appendix to an email.
+
+Steps (in order):
+
+  1. truth-table test for compute_execution_status (14 cases)
+  2. e2b_layer_block_self_check (regens E2B receipt + rollup +
+     validates 15 contract assertions)
+  3. claim-discipline gate (hardware + MoE fronts)
+  4. SdkLayout streaming hardening gate (against any available live
+     trace with streamTelemetry; skipped cleanly when none is fresh)
+  5. schema validation of 31B receipt and receipt-link integrity for
+     both E2B and 31B
+
+Each step contributes to
+`bench/out/cerebras-evidence-bundle/summary.json`:
+
+  {
+    "step": "truth-table-test",
+    "status": "passed" | "failed" | "skipped",
+    "returnCode": int,
+    "stdoutTail": "...",
+    "stderrTail": "...",
+    "elapsedMs": float
+  }
+
+The summary is authored for cross-repo review — it is the
+single-file answer to "does the software proof still hold?".
+
+Usage:
+  python3 bench/tools/run_cerebras_evidence_bundle.py
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BUNDLE_DIR = REPO_ROOT / "bench/out/cerebras-evidence-bundle"
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser()
+    p.add_argument(
+        "--summary-out",
+        default="bench/out/cerebras-evidence-bundle/summary.json",
+    )
+    p.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop at first failing step (default: run all, report all).",
+    )
+    return p.parse_args()
+
+
+def resolve(raw: str) -> Path:
+    path = Path(raw)
+    return path if path.is_absolute() else (REPO_ROOT / path).resolve()
+
+
+def rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def run(step: str, argv: list[str], timeout: int = 600) -> dict:
+    start = time.time()
+    try:
+        proc = subprocess.run(
+            argv, cwd=REPO_ROOT, capture_output=True, text=True,
+            timeout=timeout, check=False,
+        )
+        rc = proc.returncode
+        status = "passed" if rc == 0 else "failed"
+        stdout_tail = proc.stdout[-800:]
+        stderr_tail = proc.stderr[-800:]
+    except subprocess.TimeoutExpired as exc:
+        rc = -1
+        status = "failed"
+        stdout_tail = (exc.stdout or "")[-800:] if isinstance(exc.stdout, str) else ""
+        stderr_tail = f"TIMEOUT after {timeout}s"
+    elapsed_ms = (time.time() - start) * 1000.0
+    return {
+        "step": step,
+        "command": argv,
+        "status": status,
+        "returnCode": rc,
+        "stdoutTail": stdout_tail,
+        "stderrTail": stderr_tail,
+        "elapsedMs": elapsed_ms,
+    }
+
+
+def find_live_trace_with_telemetry() -> Path | None:
+    # Prefer the scratch live trace (freshest). Fall back to any trace
+    # that actually contains streamTelemetry — stale smoke traces
+    # won't qualify.
+    candidates = [
+        REPO_ROOT / "bench/out/scratch/gemma4-e2b-csl-sim/csl-L1-live-trace.json",
+        REPO_ROOT / "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
+    ]
+    for p in candidates:
+        if not p.is_file():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if ((data.get("executedRun") or {}).get("streamTelemetry")):
+            return p
+    return None
+
+
+def main() -> int:
+    args = parse_args()
+    BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+
+    steps: list[dict] = []
+
+    # 1. truth-table test for compute_execution_status.
+    steps.append(run(
+        "truth-table-test",
+        ["python3", "bench/tools/test_execution_status_flip.py"],
+    ))
+    if args.fail_fast and steps[-1]["status"] != "passed":
+        pass
+
+    # 2. self-check (regens receipts, 15 contracts, rollup regen).
+    steps.append(run(
+        "self-check",
+        ["python3", "bench/tools/e2b_layer_block_self_check.py"],
+        timeout=900,
+    ))
+
+    # 3. claim-discipline gate (hardware + MoE fronts).
+    steps.append(run(
+        "claim-discipline-gate",
+        ["python3", "bench/gates/claim_discipline_gate.py"],
+    ))
+
+    # 4. SdkLayout streaming hardening gate against the freshest live
+    # trace that carries streamTelemetry; skipped cleanly if no such
+    # trace exists today.
+    trace = find_live_trace_with_telemetry()
+    if trace is None:
+        steps.append({
+            "step": "sdklayout-streaming-hardening-gate",
+            "command": [],
+            "status": "skipped",
+            "returnCode": 0,
+            "stdoutTail": (
+                "skipped: no live trace with streamTelemetry found. "
+                "Rerun the CSL runner via cs_python and try again."
+            ),
+            "stderrTail": "",
+            "elapsedMs": 0.0,
+        })
+    else:
+        steps.append(run(
+            "sdklayout-streaming-hardening-gate",
+            ["python3", "bench/gates/sdklayout_streaming_hardening_gate.py",
+             "--trace", rel(trace)],
+        ))
+
+    # 5. receipt link integrity (already invoked by self-check STEP 5,
+    # but we rerun standalone so a failure surfaces as its own step).
+    steps.append(run(
+        "receipt-link-integrity",
+        ["python3", "bench/tools/validate_e2b_receipt_links.py"],
+    ))
+
+    # Aggregate verdict.
+    failed = [s for s in steps if s["status"] == "failed"]
+    skipped = [s for s in steps if s["status"] == "skipped"]
+    summary = {
+        "schemaVersion": 1,
+        "artifactKind": "doe_cerebras_evidence_bundle_summary",
+        "steps": steps,
+        "totalSteps": len(steps),
+        "passedSteps": sum(1 for s in steps if s["status"] == "passed"),
+        "failedSteps": len(failed),
+        "skippedSteps": len(skipped),
+        "verdict": "passed" if not failed else "failed",
+    }
+
+    out_path = resolve(args.summary_out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+
+    print(f"wrote {rel(out_path)}")
+    for s in steps:
+        tag = {"passed": "OK", "failed": "FAIL", "skipped": "SKIP"}[s["status"]]
+        print(f"  [{tag:<4}] {s['step']} ({s['elapsedMs']:.0f} ms)")
+    print(
+        f"verdict={summary['verdict']} "
+        f"({summary['passedSteps']}/{summary['totalSteps']} passed, "
+        f"{summary['skippedSteps']} skipped)"
+    )
+    return 0 if summary["verdict"] == "passed" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

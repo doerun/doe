@@ -1,0 +1,89 @@
+# Cerebras evidence bundle — README
+
+You are holding a packed software-only evidence bundle for Doe's
+Gemma-4-on-Cerebras lane. This file is the front door. Read it first,
+then follow the run order below.
+
+## What's at the archive root
+
+- `README.md` — this file.
+- `BUNDLE_META.json` — build stamp: UTC timestamp, git commit,
+  dirty-tree flag, host OS, cs_python availability on the bundler.
+- `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
+  it does not. Read before drawing any conclusions.
+- `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
+
+Every other file lives under its repo path (`docs/`, `bench/out/`,
+`config/`) inside the tar; the packager preserves layout so
+cross-references inside the receipts resolve as written.
+
+## Run order
+
+1. **Verify the archive itself** before trusting any of its contents:
+
+   ```
+   python3 bench/tools/verify_cerebras_validation_archive.py \
+     --archive <this tarball>
+   ```
+
+   This extracts to a temp dir, re-hashes every file against
+   `MANIFEST.txt`, checks `BUNDLE_META.json` required fields, and
+   confirms the archive filename matches `BUNDLE_META.archiveFilename`.
+   Any integrity failure is a reason to request a rebuild before
+   acting on the contents.
+
+2. **Read `BUNDLE_META.json`.** If `gitDirtyTree: true`, the bundle
+   was built from an uncommitted working tree — prefer a clean
+   rebuild before external circulation.
+
+3. **Read `CLAIM_SCOPE.md`.** It enumerates the 5 claims this bundle
+   backs with evidence, the 6 claims it explicitly does not back,
+   and the external dependencies that unlock further claims. Every
+   backed claim points at a `claim-role` listed in `MANIFEST.txt`.
+
+4. **Read `docs/hardware-validation-appendix.md`.** The external-
+   facing ask. Lists the minimum hardware validation we'd like to
+   run, the receipt fields we'd like returned, and the disclosure
+   boundaries we've committed to.
+
+5. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
+   per file. Open any `model-runtime-receipt` or
+   `cross-runtime-parity-verdict` and confirm the assertions match
+   the appendix's summary. For the paranoid: re-compute sha256 of
+   any `.json` and compare against the manifest row.
+
+6. **Re-run local gates (optional).** If the unpacked archive lives
+   on a host with `git` + Python available:
+
+   ```
+   python3 bench/tools/run_cerebras_evidence_bundle.py
+   ```
+
+   Runs the same 5 gates captured in the bundle's
+   `rollup/cerebras-evidence-bundle/summary.json`. Re-running should
+   yield the same `verdict: passed` unless the repo has drifted.
+
+## Claim taxonomy at a glance
+
+| claim-role | What it is | Who it's for |
+| --- | --- | --- |
+| `governance` | Policy + external ask + this README's source | Anyone |
+| `real-weight-fixture` | Pinned bundle contract for E2B / 31B | Reviewers of the real-weight promotion path |
+| `model-runtime-receipt` | Per-model runtime evidence (E2B, 31B) | Primary reviewers |
+| `cross-runtime-parity-verdict` | Simfabric vs scalar-numpy per-layer parity | Numerical reviewers |
+| `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator | Correctness reviewers |
+| `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
+| `real-weight-parity-verdict` | Real-weight L1 parity (blocked today) | Gated on external checkpoint extractor |
+| `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
+| `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
+
+## Contact and next steps
+
+The external ask lives in `docs/hardware-validation-appendix.md`.
+Nothing in this bundle should be circulated externally until its
+verifier passes and `CLAIM_SCOPE.md` has been reviewed against what
+you plan to claim.
+
+If any required artifact is missing from `MANIFEST.txt` (e.g. you
+see `missing:` lines in the manifest footer), rebuild the bundle
+from a clean tree before external use.

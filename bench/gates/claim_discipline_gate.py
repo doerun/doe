@@ -60,6 +60,10 @@ SKIP_PREFIXES: tuple[str, ...] = (
     # docs/performance-strategy.md is methodology discussion, not
     # claim-making. It's allowed to name the tokens the gate rejects.
     "docs/performance-strategy.md",
+    # Dated status shards often document rule changes by quoting the
+    # rejected phrase. Treat them the same as the claim-discipline
+    # doc itself: rule-enumerating prose, not claim-making.
+    "docs/status/",
 )
 
 
@@ -80,7 +84,7 @@ class Rule:
 _LANE_SUBJECTS = rb"(?:Gemma(?:[- ]?\d)?|Cerebras|CSL|simfabric|WSE|WSC|SdkLayout)"
 _PERF_TOKENS = rb"(?:faster|fastest|speed[- ]?up|outperforms?|beats)"
 
-RULES: list[Rule] = [
+HARDWARE_GATED_RULES: list[Rule] = [
     Rule(
         "Gemma/Cerebras lane speed claim",
         re.compile(
@@ -120,6 +124,45 @@ RULES: list[Rule] = [
     ),
 ]
 
+# 26B / A4B MoE subject tokens. Narrow — only fires when the subject
+# is unambiguously a Gemma-4 MoE variant, not incidental mentions of
+# "MoE architecture" or "mixture of experts" in generic discussion.
+_MOE_SUBJECTS = rb"(?:Gemma[- ]?4[- ]?26B|\b26B[- ]?A4B\b|\bA4B\b|\b26B MoE\b)"
+
+# "runs" / "is working" / "executing" / "succeeded" — the claim verbs
+# that assert the MoE is operational on a Doe/Cerebras lane.
+_MOE_OPERATIONAL_VERBS = (
+    rb"(?:runs|running|works|working|executes|executing|succeeded|"
+    rb"passes|passing|operational|live|validated|supported)"
+)
+
+# MoE claims: until a doe_moe_*_receipt or moe_router_evidence artifact
+# lands, 26B/A4B MoE cannot be claimed to run/work on any Cerebras or
+# Doe lane. This gate rejects those claims independently of the
+# hardware-receipt gate (MoE architecture claims aren't unlocked by a
+# 31B-dense hardware receipt; they need MoE-specific evidence).
+MOE_GATED_RULES: list[Rule] = [
+    Rule(
+        "26B/A4B MoE operational-on-Cerebras claim (needs MoE receipt)",
+        re.compile(
+            rb"\b" + _MOE_SUBJECTS + rb"\b[^.\n]{0,120}?"
+            rb"\b" + _MOE_OPERATIONAL_VERBS + rb"\b[^.\n]{0,40}?"
+            rb"\b(?:on|through|under|via)\b[^.\n]{0,20}?"
+            rb"\b" + _LANE_SUBJECTS + rb"\b",
+            re.IGNORECASE,
+        ),
+    ),
+    Rule(
+        "26B/A4B MoE operational standalone claim",
+        re.compile(
+            rb"\b" + _MOE_SUBJECTS + rb"\b[^.\n]{0,40}?"
+            rb"\b(?:is|are)\b\s+(?:now\s+)?(?:running|working|"
+            rb"operational|live|validated|supported)\b",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
 
 def tracked_files() -> list[str]:
     result = subprocess.run(
@@ -150,14 +193,53 @@ def find_hardware_success_receipt() -> Path | None:
     return None
 
 
-def scan(path: str) -> list[tuple[str, int, str]]:
+def find_moe_receipt() -> Path | None:
+    """Return the first on-disk artifact that proves 26B/A4B MoE has
+    been executed (router + expert dispatch + combine receipts). Today
+    no such receipt exists; this function is the unlock path. Looks
+    for artifactKind values that signal MoE-specific evidence:
+    doe_moe_router_receipt, doe_moe_expert_dispatch_receipt,
+    doe_moe_combine_receipt, or a model-runtime receipt whose
+    modelId contains '26b' or 'a4b' with executionStatus in the
+    simulator_success / real_weight_layer_block_success set."""
+    # MoE-specific receipt files by artifactKind.
+    for p in REPO_ROOT.glob("bench/out/**/*moe*receipt*.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        ak = (data.get("artifactKind") or "").lower()
+        if ak.startswith("doe_moe_") and ak.endswith("_receipt"):
+            return p
+    # Model-runtime receipts for a Gemma-4 MoE model that have
+    # promoted past not_attempted.
+    for p in REPO_ROOT.glob("bench/out/*/gemma-*-runtime-receipt.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        mid = (data.get("modelId") or "").lower()
+        status = data.get("executionStatus")
+        if (
+            ("26b" in mid or "a4b" in mid)
+            and status in {
+                "simulator_success",
+                "real_weight_layer_block_success",
+                "hardware_success",
+            }
+        ):
+            return p
+    return None
+
+
+def scan(path: str, rules: list[Rule]) -> list[tuple[str, int, str]]:
     full = REPO_ROOT / path
     try:
         data = full.read_bytes()
     except OSError:
         return []
     hits: list[tuple[str, int, str]] = []
-    for rule in RULES:
+    for rule in rules:
         for match in rule.pattern.finditer(data):
             line_no = data.count(b"\n", 0, match.start()) + 1
             snippet = match.group(0).decode("utf-8", "replace")
@@ -174,14 +256,28 @@ def main() -> int:
     args = parser.parse_args()
 
     hw_receipt = find_hardware_success_receipt()
-    if hw_receipt is not None:
-        rel = hw_receipt.relative_to(REPO_ROOT)
+    moe_receipt = find_moe_receipt()
+
+    # Build the active rule set. Hardware-gated rules are skipped when
+    # a hardware_success receipt exists; MoE-gated rules are skipped
+    # when a MoE-specific receipt exists. The two gates are
+    # independent — 31B-dense hardware does not unlock 26B MoE claims,
+    # and vice versa.
+    active_rules: list[Rule] = []
+    hw_gate_active = hw_receipt is None
+    moe_gate_active = moe_receipt is None
+    if hw_gate_active:
+        active_rules.extend(HARDWARE_GATED_RULES)
+    if moe_gate_active:
+        active_rules.extend(MOE_GATED_RULES)
+
+    if not active_rules:
         print(
-            f"PASS: claim-discipline gate INACTIVE "
-            f"(hardware_success receipt found at {rel}). "
-            f"Performance claims may cite this receipt, but real-"
-            f"weight / Doppler-production / full-model claims remain "
-            f"gated by their own artifacts."
+            "PASS: claim-discipline gate INACTIVE on both fronts "
+            f"(hardware_success at {hw_receipt.relative_to(REPO_ROOT)}, "
+            f"MoE receipt at {moe_receipt.relative_to(REPO_ROOT)}). "
+            "Specific claims may now cite these receipts; other "
+            "disciplines still gate on their own artifacts."
         )
         return 0
 
@@ -189,23 +285,37 @@ def main() -> int:
     for path in tracked_files():
         if not is_text_path(path) or is_skipped(path):
             continue
-        for label, line_no, snippet in scan(path):
+        for label, line_no, snippet in scan(path, active_rules):
             violations.append((path, label, line_no, snippet))
+
+    hw_tag = "ACTIVE" if hw_gate_active else "inactive"
+    moe_tag = "ACTIVE" if moe_gate_active else "inactive"
+    header_context = (
+        f"hardware-claim gate {hw_tag}"
+        + (
+            f" (receipt at {hw_receipt.relative_to(REPO_ROOT)})"
+            if not hw_gate_active else ""
+        )
+        + f"; MoE-claim gate {moe_tag}"
+        + (
+            f" (receipt at {moe_receipt.relative_to(REPO_ROOT)})"
+            if not moe_gate_active else ""
+        )
+    )
 
     if not violations:
         print(
-            "PASS: claim-discipline gate ACTIVE (no hardware_success "
-            "receipt); no performance-claim patterns found in tracked "
-            "text files. Portability and parity claims are in scope; "
-            "performance claims are gated per docs/claim-discipline.md."
+            f"PASS: claim-discipline gate — {header_context}; "
+            "no forbidden-claim patterns found in tracked text files. "
+            "Portability and parity claims are in scope; other "
+            "claims are gated per docs/claim-discipline.md."
         )
         return 0
 
     print(
         f"FAIL: claim-discipline gate found {len(violations)} "
-        f"performance-claim pattern(s) while ACTIVE (no "
-        f"hardware_success receipt exists). See docs/claim-"
-        f"discipline.md for the allowed-claims policy."
+        f"forbidden-claim pattern(s). {header_context}. See "
+        f"docs/claim-discipline.md for the allowed-claims policy."
     )
     limit = len(violations) if args.show_all else 40
     for path, label, line_no, snippet in violations[:limit]:

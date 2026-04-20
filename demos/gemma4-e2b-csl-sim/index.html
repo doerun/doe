@@ -8,6 +8,11 @@
 </head>
 <body>
   <main>
+    <nav class="demo-nav" aria-label="Sibling demos">
+      <a href="../doe-status-dashboard/">Status dashboard</a>
+      · <strong>E2B side-by-side</strong>
+      · <a href="../doe-sdk-gui-viewer/">SDK-GUI viewer</a>
+    </nav>
     <header class="top">
       <div>
         <p class="eyebrow">Gemma 4 E2B layer-block proof</p>
@@ -54,6 +59,66 @@
         <span class="label">runtime shape</span>
         <strong id="runtime-shape">L1 · 1024 f32</strong>
       </div>
+    </section>
+
+    <section class="compare-strip" aria-label="Cross-runtime evidence binding">
+      <div>
+        <span class="label">program identity</span>
+        <strong id="evidence-identity">-</strong>
+      </div>
+      <div>
+        <span class="label">emu vs local simfabric</span>
+        <strong id="evidence-speedup">-</strong>
+      </div>
+      <div>
+        <span class="label">per-layer accuracy</span>
+        <strong id="evidence-accuracy">-</strong>
+      </div>
+      <div>
+        <span class="label">claim scope</span>
+        <strong id="evidence-claim-scope">local debug path only</strong>
+      </div>
+    </section>
+
+    <section class="cockpit" aria-label="5-lane target matrix + claim badges">
+      <div class="cockpit-head">
+        <h2>Unified target matrix</h2>
+        <span id="cockpit-source">loading rollup...</span>
+      </div>
+      <div class="claim-badges">
+        <span class="badge" id="badge-reference">reference: -</span>
+        <span class="badge" id="badge-simulator">simulator: -</span>
+        <span class="badge" id="badge-emulator">emulator: -</span>
+        <span class="badge" id="badge-realweight">real-weight: -</span>
+        <span class="badge" id="badge-hardware">hardware: pending</span>
+        <span class="badge" id="badge-bundle">bundle: -</span>
+      </div>
+      <table class="cockpit-table lane-label-table" aria-label="Model-lane labels">
+        <thead>
+          <tr>
+            <th>model</th>
+            <th>lane label</th>
+            <th>laneStatus</th>
+          </tr>
+        </thead>
+        <tbody id="lane-label-body">
+          <tr><td colspan="3" class="cockpit-empty">loading lane labels…</td></tr>
+        </tbody>
+      </table>
+      <table class="cockpit-table">
+        <thead>
+          <tr>
+            <th>target</th>
+            <th>status</th>
+            <th>backendId</th>
+            <th>outputSha256</th>
+            <th>elapsed</th>
+          </tr>
+        </thead>
+        <tbody id="cockpit-body">
+          <tr><td colspan="5" class="cockpit-empty">rollup not loaded</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <section class="lan-note" id="secure-context-note" hidden>

@@ -13,6 +13,18 @@ const paths = {
   parityReceipt: "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json",
 };
 
+function speedVerdictPath(numLayers) {
+  return `bench/out/doppler-reference/csl-emulator-speed-verdict-L${numLayers}.json`;
+}
+
+function accuracyVerdictPath(numLayers) {
+  return `bench/out/doppler-reference/csl-emulator-accuracy-verdict-L${numLayers}.json`;
+}
+
+function allLanesSummaryPath(numLayers) {
+  return `bench/out/doe-run/all-lanes-summary-L${numLayers}.json`;
+}
+
 const PER_LAYER_BASE = 2000; // matches CSL runner's default
 const REQUIRED_CSL_STREAMS = [
   { streamId: "ple_rows_stream", role: "input" },
@@ -395,6 +407,7 @@ function compareOutputs() {
     el("verdict").textContent = "waiting";
     el("max-diff").textContent = "-";
     drawPlot();
+    refreshEvidenceStrip();
     return;
   }
   const pass = pairs.every((pair) => pair.maxAbs <= tolerance);
@@ -404,6 +417,65 @@ function compareOutputs() {
     .map((pair) => `${pair.label} ${pair.maxAbs.toExponential(3)} · mean ${pair.meanAbs.toExponential(3)}`)
     .join(" | ");
   drawPlot();
+  refreshEvidenceStrip();
+}
+
+async function refreshEvidenceStrip() {
+  const numLayers = selectedNumLayers();
+  const speedEl = el("evidence-speedup");
+  const accEl = el("evidence-accuracy");
+  const idEl = el("evidence-identity");
+
+  // Identity: from the speed verdict if present. Else leave as "-".
+  let speedVerdict = null;
+  try {
+    speedVerdict = await fetchJson(speedVerdictPath(numLayers));
+  } catch {
+    speedVerdict = null;
+  }
+  if (speedVerdict) {
+    const ident = speedVerdict.programIdentity || {};
+    const both = ident.manifestMatched && ident.graphMatched;
+    idEl.textContent = both
+      ? `matched (manifest+graph, L=${speedVerdict.numLayers})`
+      : `not confirmed (L=${speedVerdict.numLayers})`;
+    idEl.style.color = both ? "var(--green)" : "var(--amber)";
+    const ratio = speedVerdict.emulatorSpeedupOverLocalSimfabric;
+    const emuMs = speedVerdict.emulatorElapsedMs;
+    const cslMs = speedVerdict.cslSimfabricElapsedMs;
+    if (typeof ratio === "number") {
+      speedEl.textContent =
+        `${ratio.toFixed(1)}x (${formatMs(emuMs)} vs ${formatMs(cslMs)})`;
+      speedEl.style.color = ratio > 1.0 ? "var(--green)" : "var(--muted)";
+    } else {
+      speedEl.textContent = "-";
+      speedEl.style.color = "";
+    }
+  } else {
+    idEl.textContent = `no speed verdict for L=${numLayers}`;
+    idEl.style.color = "var(--muted)";
+    speedEl.textContent = "-";
+    speedEl.style.color = "";
+  }
+
+  // Per-layer accuracy verdict: separate artifact.
+  let accVerdict = null;
+  try {
+    accVerdict = await fetchJson(accuracyVerdictPath(numLayers));
+  } catch {
+    accVerdict = null;
+  }
+  if (accVerdict && accVerdict.summary) {
+    const s = accVerdict.summary;
+    const pass = s.allLayersWithinAtol;
+    accEl.textContent = pass
+      ? `all ${accVerdict.numLayers}L within ${accVerdict.atol} (max ${s.maxAbsErrAcrossLayers.toExponential(2)})`
+      : `layer ${s.firstFailureLayer?.layer} exceeds ${accVerdict.atol}`;
+    accEl.style.color = pass ? "var(--green)" : "var(--red)";
+  } else {
+    accEl.textContent = `no accuracy verdict for L=${numLayers}`;
+    accEl.style.color = "var(--muted)";
+  }
 }
 
 function drawPlot() {
@@ -585,6 +657,8 @@ function onDepthChange() {
   el("verdict").textContent = "waiting";
   el("max-diff").textContent = "-";
   el("sample-count").textContent = "0 samples";
+  refreshEvidenceStrip();
+  refreshCockpit();
   updateCslCommand();
   const plot = el("plot");
   if (plot) {
@@ -606,6 +680,182 @@ function init() {
   loadSourceHashes().catch(() => {});
   checkServer();
   drawPlot();
+  refreshEvidenceStrip();
+  refreshCockpit();
+  renderLaneLabels();
+}
+
+function badgeSet(id, label, state) {
+  const node = el(id);
+  if (!node) return;
+  node.textContent = `${label}: ${state.label}`;
+  node.className = `badge ${state.cls}`;
+}
+
+async function renderLaneLabels() {
+  const tbody = el("lane-label-body");
+  if (!tbody) return;
+  // Lane labels are the target-ordering commitment: E2B is the
+  // primary correctness target, 31B is the dense scale target,
+  // 26B/A4B MoE is a blocked efficiency lane. Pulled from the
+  // same JSON files C20 locks in the self-check, so the browser
+  // can never disagree with the repo's source of truth.
+  const sources = [
+    {
+      model: "Gemma 4 E2B",
+      path: "config/gemma-4-e2b-real-weight-fixture.json",
+      labelField: "laneLabel",
+      statusSource: "fixture",
+    },
+    {
+      model: "Gemma 4 31B",
+      path: "config/gemma-4-31b-real-weight-fixture.json",
+      labelField: "laneLabel",
+      statusSource: "fixture",
+    },
+    {
+      model: "Gemma 4 26B / A4B MoE",
+      path: "bench/out/26b-moe-lane/lane-status.json",
+      labelField: "laneLabel",
+      statusSource: "laneStatus",
+    },
+  ];
+  const rows = await Promise.all(sources.map(async (s) => {
+    try {
+      const d = await fetchJson(s.path);
+      const label = d[s.labelField] || "(absent)";
+      const status = d.laneStatus || "(fixture pin only)";
+      return { model: s.model, label, status, path: s.path };
+    } catch (err) {
+      return {
+        model: s.model,
+        label: "(load failed)",
+        status: err.message || "(absent)",
+        path: s.path,
+      };
+    }
+  }));
+  tbody.innerHTML = rows.map((r) => (
+    `<tr>
+      <td>${r.model}</td>
+      <td><code>${r.label}</code></td>
+      <td>${r.status}</td>
+    </tr>`
+  )).join("");
+}
+
+async function refreshCockpit() {
+  const numLayers = selectedNumLayers();
+  const sourceLabel = el("cockpit-source");
+  const tbody = el("cockpit-body");
+  let summary = null;
+  try {
+    summary = await fetchJson(allLanesSummaryPath(numLayers));
+    if (sourceLabel) {
+      sourceLabel.textContent = `rollup: ${allLanesSummaryPath(numLayers)}`;
+    }
+  } catch {
+    if (sourceLabel) {
+      sourceLabel.textContent = `no rollup for L=${numLayers} · run: python3 bench/tools/summarize_doe_run_lanes.py --num-layers ${numLayers} --out-json ${allLanesSummaryPath(numLayers)}`;
+    }
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" class="cockpit-empty">no rollup for L=${numLayers}</td></tr>`;
+    }
+    setClaimBadgesAbsent();
+    return;
+  }
+
+  const lanes = summary.lanes || [];
+  if (tbody) {
+    tbody.innerHTML = lanes.map((lane) => {
+      const status = lane.status || "-";
+      const sha = lane.outputSha256
+        ? `<code class="sha">${lane.outputSha256.slice(0, 16)}...</code>`
+        : "-";
+      const backend = lane.backendId
+        ? `<code>${lane.backendId}</code>${lane.backendLane ? ` · ${lane.backendLane}` : ""}`
+        : "-";
+      const elapsed = lane.elapsedMs !== undefined && lane.elapsedMs !== null
+        ? formatMs(lane.elapsedMs) : "-";
+      return `<tr>
+        <td><code>${lane.lane}</code></td>
+        <td>${status}</td>
+        <td>${backend}</td>
+        <td>${sha}</td>
+        <td>${elapsed}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Claim badges: reference = webgpu-wgsl; simulator = csl-sdklayout;
+  // emulator = csl-webgpu-emulator; hardware = always pending until a
+  // hardware_success receipt lands (not in this demo's scope).
+  const byLane = {};
+  for (const l of lanes) byLane[l.lane] = l;
+  const stateFor = (lane) => {
+    const l = byLane[lane];
+    if (!l || !l.receiptPresent) return { label: "absent", cls: "warn" };
+    if (l.status === "succeeded") return { label: "ok", cls: "pass" };
+    if (l.status === "blocked") return { label: "blocked", cls: "warn" };
+    return { label: l.status || "unknown", cls: "fail" };
+  };
+  badgeSet("badge-reference", "reference (WebGPU)", stateFor("webgpu-wgsl"));
+  badgeSet("badge-simulator", "simulator (CSL)", stateFor("csl-sdklayout"));
+  badgeSet("badge-emulator", "emulator (WebGPU)", stateFor("csl-webgpu-emulator"));
+
+  // Real-weight state derived from the rollup's realWeightEvidence:
+  // promoted only when ALL 5 criteria are met (weightHashMatched,
+  // outputParityPassed, fullModelDepthExecuted, both synthetic-absent
+  // flags). Otherwise "absent" — the blocker is the external
+  // checkpoint extractor, not a receipt bug.
+  const rwe = summary.realWeightEvidence;
+  const execStatus = summary.executionStatus;
+  let rwBadge = { label: "absent", cls: "warn" };
+  if (execStatus === "real_weight_layer_block_success") {
+    rwBadge = { label: "promoted", cls: "pass" };
+  } else if (rwe && rwe.promotionCriteriaMet) {
+    const met = Object.values(rwe.promotionCriteriaMet).filter(Boolean).length;
+    const total = Object.values(rwe.promotionCriteriaMet).length;
+    rwBadge = { label: `${met}/${total} criteria`, cls: "warn" };
+  }
+  badgeSet("badge-realweight", "real-weight", rwBadge);
+
+  badgeSet("badge-hardware", "hardware", { label: "pending", cls: "warn" });
+
+  // Bundle badge from /api/bundle-summary (stable route for the
+  // evidence-bundle summary.json). Fails closed if the summary hasn't
+  // been produced — the cockpit never shows stale state silently.
+  try {
+    const res = await fetch("/api/bundle-summary", { cache: "no-store" });
+    if (res.ok) {
+      const b = await res.json();
+      if (b && b.ok && b.verdict) {
+        const cls = b.verdict === "passed" ? "pass"
+                  : b.verdict === "failed" ? "fail" : "warn";
+        badgeSet("badge-bundle", "bundle",
+                 { label: `${b.verdict} (${b.passedSteps}/${b.totalSteps})`, cls });
+      } else {
+        badgeSet("badge-bundle", "bundle", { label: "not built", cls: "warn" });
+      }
+    } else {
+      badgeSet("badge-bundle", "bundle", { label: "no server route", cls: "warn" });
+    }
+  } catch {
+    badgeSet("badge-bundle", "bundle", { label: "no server", cls: "warn" });
+  }
+}
+
+function setClaimBadgesAbsent() {
+  for (const [id, label] of [
+    ["badge-reference", "reference (WebGPU)"],
+    ["badge-simulator", "simulator (CSL)"],
+    ["badge-emulator", "emulator (WebGPU)"],
+    ["badge-realweight", "real-weight"],
+  ]) {
+    badgeSet(id, label, { label: "absent", cls: "warn" });
+  }
+  badgeSet("badge-hardware", "hardware", { label: "pending", cls: "warn" });
+  badgeSet("badge-bundle", "bundle", { label: "no rollup", cls: "warn" });
 }
 
 init();

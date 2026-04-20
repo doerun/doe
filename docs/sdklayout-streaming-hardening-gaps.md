@@ -36,6 +36,15 @@ underlying `layout.compile()` still runs unconditionally.
 SDK support required: confirm `SdkRuntime(artifacts, ...)` accepts
 pre-existing artifact directories without a fresh `layout.compile()`.
 
+**Progress.** Every runner trace now carries
+`executedCompile.cacheKey` (sha256 of
+`kernelSourceSha256|planSha256|target|size=...`) plus
+`cacheKeyComponents` and `cacheState='miss_uncached'`. Lookup/insert
+is not yet wired, but every new trace is content-addressable.
+`bench/tools/audit_compile_cache_savings.py` groups traces by cacheKey
+and reports `compileElapsedMsSavingsIfCached` — the wall time a cache
+would have amortized — as gap-1 motivation evidence.
+
 ## Gap 2: weight staging
 
 **Current state.** Each layer re-sends `ple_projection` and
@@ -105,6 +114,16 @@ fails on undersized buffers and warns on `> 4x` over-allocation.
 **Remaining work.** Replace the 1024-byte floor for tiny control
 streams with a measured per-stream minimum once the executor exposes
 backpressure and queue-depth telemetry.
+
+**Progress.** `bench/tools/recommend_stream_buffer_sizes.py` reads a
+plan and emits `doe_stream_buffer_size_recommendation` with per-stream
+current vs payload-derived-minimum sizes and the savings if the floor
+were dropped. Current evidence: E2B control streams are
+44.5x–512x overallocated (`bench/out/e2b-full-graph/stream-buffer-size-recommendation.json`);
+31B is 44.5x–1024x
+(`bench/out/31b-full-graph/stream-buffer-size-recommendation.json`).
+Runtime behavior is unchanged — the residual still waits on SDK
+backpressure exposure before we can confirm the minima are safe.
 
 ## Gap 5: backpressure handling
 

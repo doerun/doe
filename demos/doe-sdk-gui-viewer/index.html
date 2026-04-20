@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doe SDK-GUI-style artifact viewer</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <nav class="demo-nav" aria-label="Sibling demos">
+      <a href="../doe-status-dashboard/">Status dashboard</a>
+      · <a href="../gemma4-e2b-csl-sim/">E2B side-by-side</a>
+      · <strong>SDK-GUI viewer</strong>
+    </nav>
+    <header class="top">
+      <div>
+        <p class="eyebrow">Doe — SDK-GUI-style artifact viewer (scaffold)</p>
+        <h1>Cerebras artifact directory inspector</h1>
+      </div>
+      <div class="hashes" id="artifact-summary">
+        <span>artifact dir: not configured</span>
+      </div>
+    </header>
+
+    <section class="lan-note">
+      Methodology matches Cerebras' own <code>sdk_debug_shell visualize</code>:
+      artifact-dir selector, compile / run / core / source paths, fabric grid,
+      PE drilldown, timeline, source/code panel. Improves on it with
+      hash-bound receipts, WebGPU-vs-CSL per-op diffs, stream-role and
+      host-I/O-contract overlays, and CSL-WebGPU-emulator semantic mapping.
+      This scaffold lays out the shape; artifact introspection wires in
+      the next tick.
+    </section>
+
+    <section class="controls" aria-label="Artifact controls">
+      <label for="artifact-dir-input" style="display:inline-flex;gap:0.4rem;align-items:center;">
+        <span class="label">artifact dir</span>
+        <input type="text" id="artifact-dir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
+      </label>
+      <button id="load-artifact" type="button">Inspect</button>
+      <span id="artifact-status" class="status-pill pending">awaiting path</span>
+    </section>
+
+    <section class="compare-strip" aria-label="SDK visualize command">
+      <div style="grid-column: 1 / -1;">
+        <span class="label">exported sdk_debug_shell command
+          <button type="button" id="sdk-command-copy" class="inline-copy" title="Copy to clipboard">copy</button>
+        </span>
+        <code id="sdk-command">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+      </div>
+    </section>
+
+    <section class="panels" aria-label="SDK-GUI-style panels">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Fabric grid</h2>
+          <span class="panel-sub">PE layout, routes, colors</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-fabric">
+          awaiting server-side artifact introspection
+          <br>
+          (dimensions from compile-prefix.map; colors from colors.json)
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>PE drilldown</h2>
+          <span class="panel-sub">click a PE on the fabric to inspect</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-pe">
+          awaiting PE selection
+          <br>
+          (local memory, task state, wavelet counts)
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Source / code</h2>
+          <span class="panel-sub">CSL kernel, generator, runner</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-source">
+          awaiting source path
+          <br>
+          (transformer_layer_shape.csl, runner, generator)
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Trace timeline</h2>
+          <span class="panel-sub">wavelet / instruction stream</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-trace">
+          awaiting trace/jsonl from executedRun
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Host I/O contract</h2>
+          <span class="panel-sub">stream roles, dtypes, buffer sizes</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-io">
+          awaiting layerBlockSmoke.hostIoLayout from the CSL runner trace
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Evidence overlay</h2>
+          <span class="panel-sub">hash chain + diff vs WebGPU reference</span>
+        </div>
+        <div class="panel-body placeholder" id="panel-evidence">
+          awaiting cross-runtime parity artifact + this artifact's receipt
+        </div>
+      </article>
+    </section>
+  </main>
+  <script type="module" src="./viewer.js"></script>
+</body>
+</html>

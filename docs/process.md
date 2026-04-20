@@ -53,6 +53,21 @@
 - run SdkLayout streaming hardening gate (opt-in because it needs fresh SdkLayout traces from a configured SDK simulator or CS system):
   `python3 bench/runners/run_blocking_gates.py --with-sdklayout-streaming-hardening-gate --sdklayout-streaming-hardening-trace bench/out/scratch/e2b-buffer-gate-trace.json`
   Repeat `--sdklayout-streaming-hardening-trace` for E2B/31B traces. The gate checks stream buffer sizing plus host SDK task-handle telemetry; add `--sdklayout-streaming-hardening-fail-on-overalloc` only after small-stream buffer floors are measured.
+- prepare the Cerebras hardware-validation ask bundle (one command
+  chains gates → pack → verify before external circulation):
+  `bench/tools/prepare_cerebras_validation_bundle.sh`
+  This runs `run_cerebras_evidence_bundle.py` (5 local gates),
+  `pack_cerebras_validation_archive.py` (produces
+  `doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz`
+  with top-level README/CLAIM_SCOPE/CEREBRAS_ASK/LOCAL_INSPECTION
+  plus the evidence manifest), and
+  `verify_cerebras_validation_archive.py` against the packed
+  archive (manifest sha integrity, claim-role taxonomy,
+  BUNDLE_META completeness, live claim-discipline scan). All
+  three must pass before the archive is attached to an external
+  ask. See `docs/hardware-validation-appendix.md` for the parent
+  ask and `docs/cerebras-evidence-bundle-readme.md` for the
+  bundle's own workflow.
 - run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):
   `python3 bench/gates/spec_diff_gate.py`
 - run comparability parity verification gate (advisory unless explicitly enabled in gate orchestration):

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_real_weight_fixture_contract",
+  "modelId": "gemma-4-31b-it-text-q4k-ehf16-af32",
+  "laneLabel": "dense_scale_target",
+  "laneLabelNote": "31B is the dense scale target after E2B per docs/hardware-validation-appendix.md section 'Target order'. It is NOT a MoE lane; NOT a first-validation target; NOT an efficiency lane. Dense means every parameter contributes to every token.",
+  "fixtureName": "gemma-4-31b-layer-block-L1-real-weight",
+  "purpose": "Pin the canonical bundle for 31B-dense real-weight layer-block parity. Parallels config/gemma-4-e2b-real-weight-fixture.json; 31B is the scale target after E2B per docs/hardware-validation-appendix.md. Every hash below pins the 31B program so the parity harness rejects fixture drift at validate-time.",
+
+  "bundle": {
+    "manifest": {
+      "path": "runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json",
+      "sha256": "753bce9331c65f84badb297658362bc158b2ada4e494d4da5a199716cba37f2e"
+    },
+    "graph": {
+      "path": "bench/out/31b-full-graph/gemma-4-31b-stream-execution-plan.json",
+      "sha256": "7cbaeaebbf48a53a41f0667cec91bd4618faff9e6befca5a3294ca21aa04b86a"
+    },
+    "kernelSource": {
+      "path": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
+      "sha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4"
+    }
+  },
+
+  "modelShape": {
+    "numLayers": 61,
+    "numHeads": 32,
+    "headDim": 160,
+    "hiddenDim": 5120,
+    "ffnExpansionFactor": 4,
+    "ffnMatrixCount": 3,
+    "maxSeqLen": 4096,
+    "note": "Manifest-shape 31B has headDim=160, numHeads=32. Current layer-block kernel runs smoke shape (headDim=8, numHeads=8, size=1024). A real-weight receipt at manifest shape needs the head-dim rewrite before numerical parity claims are meaningful. Until that lands, any 31B real-weight run must be labeled 'real_weight_smoke_shape'."
+  },
+
+  "input": {
+    "path": "bench/out/doppler-reference/inputs/input_seed1000_size1024.f32",
+    "sha256": "f5502a88eb3bf5f10d664d62a1a88b62d68bb0f7b3170bba4ef410e1ec7af5e4",
+    "size": 1024,
+    "dtype": "float32",
+    "order": "row_major",
+    "note": "Canonical initial_rows at smoke size 1024. Same fixture as E2B — both models run the same layer-block kernel under smoke shape."
+  },
+
+  "weightsDir": {
+    "pathPlaceholder": "bench/out/gemma-4-31b-real-weights/",
+    "status": "absent",
+    "contract": "Two files per layer in [0, numLayers). At smoke shape size=1024 each file is 4096 bytes. At manifest shape headDim=160*numHeads=32=5120, per-file bytes scale accordingly. Validator cross-checks file sizes against modelShape via bench/tools/validate_weights_dir.py --shape manifest.",
+    "expectedWeightSetSha256": null,
+    "expectedWeightSetSha256Note": "Pinned when an extractor lands. Null today."
+  },
+
+  "parityPolicy": {
+    "atol": 1e-3,
+    "perLayerGranularity": true,
+    "crossRuntimeLanes": [
+      "doppler-webgpu",
+      "csl-sdklayout",
+      "csl-webgpu-emulator"
+    ],
+    "outputShape": [1024],
+    "outputDtype": "float32",
+    "note": "Per docs/claim-discipline.md cross-runtime threshold."
+  },
+
+  "fixtureChain": [
+    {"chainDepth": 1, "label": "L1_single_layer_real_weight", "expectedOutputSha256": null},
+    {"chainDepth": 2, "label": "L2_chained_real_weight", "expectedOutputSha256": null},
+    {"chainDepth": 4, "label": "L4_chained_real_weight", "expectedOutputSha256": null},
+    {"chainDepth": 8, "label": "L8_chained_real_weight", "expectedOutputSha256": null},
+    {"chainDepth": 61, "label": "L61_full_depth_real_weight", "expectedOutputSha256": null}
+  ],
+
+  "promotionCriteria": [
+    "syntheticInputsAbsent",
+    "syntheticWeightsAbsent",
+    "weightHashMatched",
+    "fullModelDepthExecuted",
+    "outputParityPassed"
+  ],
+
+  "claimScope": {
+    "claimable": "Same bundle-identity run across three lanes with real 31B weights, bit-exact or within-atol output parity at the stated chain depth.",
+    "notClaimable": [
+      "31B manifest-shape execution (until headDim=160 kernel lands)",
+      "Full end-to-end Gemma-4 31B inference (layer-block only)",
+      "Cerebras hardware performance (until hardware_success receipt lands)"
+    ]
+  },
+
+  "stopShipIf": [
+    "bundle.manifest.sha256 or bundle.graph.sha256 diverges from recorded value",
+    "input.sha256 on disk diverges from recorded value",
+    "weightsDir.expectedWeightSetSha256 is set but a candidate dir produces a different sha",
+    "any lane reports a manifest/graph sha different from this fixture's bundle"
+  ]
+}
