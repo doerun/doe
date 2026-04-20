@@ -52,7 +52,7 @@
   Add `--csl-simulator-require-ready` only on hosts with a configured SDK simulator or CS system endpoint.
 - run SdkLayout streaming hardening gate (opt-in because it needs fresh SdkLayout traces from a configured SDK simulator or CS system):
   `python3 bench/runners/run_blocking_gates.py --with-sdklayout-streaming-hardening-gate --sdklayout-streaming-hardening-trace bench/out/scratch/e2b-buffer-gate-trace.json`
-  Repeat `--sdklayout-streaming-hardening-trace` for E2B/31B traces; add `--sdklayout-streaming-hardening-fail-on-overalloc` only after small-stream buffer floors are measured.
+  Repeat `--sdklayout-streaming-hardening-trace` for E2B/31B traces. The gate checks stream buffer sizing plus host SDK task-handle telemetry; add `--sdklayout-streaming-hardening-fail-on-overalloc` only after small-stream buffer floors are measured.
 - run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):
   `python3 bench/gates/spec_diff_gate.py`
 - run comparability parity verification gate (advisory unless explicitly enabled in gate orchestration):

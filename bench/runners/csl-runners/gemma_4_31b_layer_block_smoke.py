@@ -179,6 +179,161 @@ def main() -> int:
     per_layer_elapsed_ms = [-1.0] * num_layers_smoke
     passed = False
     output_digest = None
+    per_layer_output_records = []
+    failure_context = None
+    current_stage = "runtime_constructed"
+    current_dispatch_index = None
+    current_stream_id = None
+    current_operation = None
+    stream_order = [
+        "ple_rows_stream",
+        "ple_projection_stream",
+        "layer_weights_stream",
+        "activation_out_stream",
+    ]
+    stream_counters = {
+        "ple_rows_stream": {
+            "role": "input",
+            "operation": "send",
+            "issuedCount": 0,
+            "completedCount": 0,
+            "pendingCount": 0,
+            "maxQueueDepth": 0,
+            "droppedSendCount": 0,
+            "submissionFailureCount": 0,
+            "doneBeforeWaitCount": 0,
+            "taskWaitTotalMs": 0.0,
+            "taskWaitMaxMs": 0.0,
+        },
+        "ple_projection_stream": {
+            "role": "input",
+            "operation": "send",
+            "issuedCount": 0,
+            "completedCount": 0,
+            "pendingCount": 0,
+            "maxQueueDepth": 0,
+            "droppedSendCount": 0,
+            "submissionFailureCount": 0,
+            "doneBeforeWaitCount": 0,
+            "taskWaitTotalMs": 0.0,
+            "taskWaitMaxMs": 0.0,
+        },
+        "layer_weights_stream": {
+            "role": "input",
+            "operation": "send",
+            "issuedCount": 0,
+            "completedCount": 0,
+            "pendingCount": 0,
+            "maxQueueDepth": 0,
+            "droppedSendCount": 0,
+            "submissionFailureCount": 0,
+            "doneBeforeWaitCount": 0,
+            "taskWaitTotalMs": 0.0,
+            "taskWaitMaxMs": 0.0,
+        },
+        "activation_out_stream": {
+            "role": "output",
+            "operation": "receive",
+            "issuedCount": 0,
+            "completedCount": 0,
+            "pendingCount": 0,
+            "maxQueueDepth": 0,
+            "droppedSendCount": 0,
+            "submissionFailureCount": 0,
+            "doneBeforeWaitCount": 0,
+            "taskWaitTotalMs": 0.0,
+            "taskWaitMaxMs": 0.0,
+        },
+    }
+    stream_events = []
+    last_completed_stream_send_receive = None
+
+    def stream_counter_list():
+        out = []
+        for stream_id in stream_order:
+            item = dict(stream_counters[stream_id])
+            item["streamId"] = stream_id
+            out.append(item)
+        return out
+
+    def record_issue(stream_id, operation, layer_index):
+        state = stream_counters[stream_id]
+        state["issuedCount"] += 1
+        state["pendingCount"] += 1
+        state["maxQueueDepth"] = max(
+            state["maxQueueDepth"], state["pendingCount"]
+        )
+        stream_events.append({
+            "event": "issued",
+            "streamId": stream_id,
+            "operation": operation,
+            "layerIndex": layer_index,
+            "pendingAfter": state["pendingCount"],
+        })
+
+    def submit_stream_task(stream_id, operation, layer_index, submit_fn):
+        nonlocal current_stage
+        nonlocal current_dispatch_index
+        nonlocal current_stream_id
+        nonlocal current_operation
+        current_stage = "stream_submit"
+        current_dispatch_index = layer_index
+        current_stream_id = stream_id
+        current_operation = operation
+        try:
+            task = submit_fn()
+        except Exception:
+            state = stream_counters[stream_id]
+            state["submissionFailureCount"] += 1
+            if operation == "send":
+                state["droppedSendCount"] += 1
+            raise
+        record_issue(stream_id, operation, layer_index)
+        return task
+
+    def wait_stream_task(stream_id, operation, layer_index, task):
+        nonlocal current_stage
+        nonlocal current_dispatch_index
+        nonlocal current_stream_id
+        nonlocal current_operation
+        nonlocal last_completed_stream_send_receive
+        current_stage = "stream_wait"
+        current_dispatch_index = layer_index
+        current_stream_id = stream_id
+        current_operation = operation
+        done_before_wait = None
+        done_probe_error = None
+        try:
+            done_before_wait = bool(runtime.is_task_done(task))
+        except Exception as probe_exc:
+            done_probe_error = (
+                type(probe_exc).__name__ + ":" + str(probe_exc)[:120]
+            )
+        wait_start = time.time()
+        runtime.task_wait(task)
+        wait_elapsed_ms = (time.time() - wait_start) * 1000.0
+        state = stream_counters[stream_id]
+        state["completedCount"] += 1
+        state["pendingCount"] = max(0, state["pendingCount"] - 1)
+        if done_before_wait:
+            state["doneBeforeWaitCount"] += 1
+        state["taskWaitTotalMs"] += wait_elapsed_ms
+        state["taskWaitMaxMs"] = max(state["taskWaitMaxMs"], wait_elapsed_ms)
+        event = {
+            "event": "completed",
+            "streamId": stream_id,
+            "operation": operation,
+            "layerIndex": layer_index,
+            "pendingAfter": state["pendingCount"],
+            "doneBeforeWait": done_before_wait,
+            "taskWaitMs": wait_elapsed_ms,
+        }
+        if done_probe_error is not None:
+            event["doneProbeError"] = done_probe_error
+        stream_events.append(event)
+        last_completed_stream_send_receive = event
+        current_stream_id = None
+        current_operation = None
 
     # Bit-exact numpy reference is the canonical compute_layer_block
     # imported at module top from _e2b_layer_block_compute.py (which
@@ -307,27 +462,53 @@ def main() -> int:
         all_received = []
         rows_curr = initial_rows.copy()
         for l_idx in range(num_layers_smoke):
+            current_stage = "layer_dispatch"
+            current_dispatch_index = l_idx
             layer_start = time.time()
             received = np.empty(args.size, dtype=np.float32)
             rows_for_layer = (
                 initial_rows if args.reset_rows_each_layer else rows_curr
             )
-            task_rows = runtime.send(rows_stream, rows_for_layer, nonblock=True)
-            task_proj = runtime.send(
-                proj_stream, per_layer_proj[l_idx], nonblock=True
+            task_rows = submit_stream_task(
+                "ple_rows_stream",
+                "send",
+                l_idx,
+                lambda: runtime.send(
+                    rows_stream, rows_for_layer, nonblock=True
+                ),
             )
-            task_wts = runtime.send(
-                wts_stream, per_layer_wts[l_idx], nonblock=True
+            task_proj = submit_stream_task(
+                "ple_projection_stream",
+                "send",
+                l_idx,
+                lambda: runtime.send(
+                    proj_stream, per_layer_proj[l_idx], nonblock=True
+                ),
             )
-            task_act = runtime.receive(
-                act_stream, received, args.size, nonblock=True
+            task_wts = submit_stream_task(
+                "layer_weights_stream",
+                "send",
+                l_idx,
+                lambda: runtime.send(
+                    wts_stream, per_layer_wts[l_idx], nonblock=True
+                ),
+            )
+            task_act = submit_stream_task(
+                "activation_out_stream",
+                "receive",
+                l_idx,
+                lambda: runtime.receive(
+                    act_stream, received, args.size, nonblock=True
+                ),
             )
             # The next layer consumes activation_out as ple_rows. Wait for
             # all per-layer direct-link tasks before copying or feeding it.
-            runtime.task_wait(task_rows)
-            runtime.task_wait(task_proj)
-            runtime.task_wait(task_wts)
-            runtime.task_wait(task_act)
+            wait_stream_task("ple_rows_stream", "send", l_idx, task_rows)
+            wait_stream_task("ple_projection_stream", "send", l_idx, task_proj)
+            wait_stream_task("layer_weights_stream", "send", l_idx, task_wts)
+            wait_stream_task(
+                "activation_out_stream", "receive", l_idx, task_act
+            )
             per_layer_elapsed_ms[l_idx] = (time.time() - layer_start) * 1000.0
             all_received.append(received.copy())
             if not args.reset_rows_each_layer:
@@ -372,8 +553,44 @@ def main() -> int:
                 for _i in range(min(8, int(_final.shape[0])))
             ],
         }
+
+        # Per-layer activation_out dumps: one .f32 per layer so the
+        # demo page and downstream parity gates can compare CSL vs
+        # WebGPU layer-by-layer (the right granularity for deep
+        # chains where ULP-per-layer drift compounds). Writes to
+        # <trace>.per_layer/layer{N}.f32 beside the final output.
+        per_layer_output_dir = _trace_path.parent / (_trace_path.stem + ".per_layer")
+        per_layer_output_dir.mkdir(parents=True, exist_ok=True)
+        for _l_idx, _layer_out in enumerate(all_received):
+            _layer_path = per_layer_output_dir / ("layer" + str(_l_idx) + ".f32")
+            _layer_out.astype(np.float32).tofile(_layer_path)
+            _h_layer = _hashlib.sha256()
+            with _layer_path.open("rb") as _fh:
+                for _ck in iter(lambda: _fh.read(1 << 20), b""):
+                    _h_layer.update(_ck)
+            per_layer_output_records.append({
+                "layer": _l_idx,
+                "path": str(_layer_path.relative_to(REPO_ROOT)),
+                "sha256": _h_layer.hexdigest(),
+                "shape": [int(_layer_out.shape[0])],
+            })
     except Exception as exc:  # pylint: disable=broad-except
+        if current_stream_id in stream_counters and current_operation is not None:
+            state = stream_counters[current_stream_id]
+            state["lastErrorType"] = type(exc).__name__
+            state["lastErrorMessage"] = str(exc)[:160]
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]
+        failure_context = {
+            "failedAtStage": current_stage,
+            "failedAtDispatchIndex": current_dispatch_index,
+            "lastActiveStreamId": current_stream_id,
+            "lastActiveOperation": current_operation,
+            "lastCompletedStreamSendReceive": last_completed_stream_send_receive,
+            "streamCounters": stream_counter_list(),
+            "streamEventsTail": stream_events[-16:],
+            "errorType": type(exc).__name__,
+            "message": str(exc)[:500],
+        }
         output_digest = None
     run_elapsed_ms = (time.time() - run_start) * 1000.0
 
@@ -404,10 +621,27 @@ def main() -> int:
             "elapsedMs": run_elapsed_ms,
             "numLayersChained": num_layers_smoke,
             "perLayerElapsedMs": per_layer_elapsed_ms,
+            "perLayerOutputs": per_layer_output_records,
             "observedBytesTransferredPerPe":
                 args.size * 4 * 4 * num_layers_smoke,
             "observedBytesTransferredTotal":
                 args.size * 4 * 4 * num_layers_smoke,
+            "streams": stream_counter_list(),
+            "streamTelemetry": {
+                "measurementSource": "host_sdk_task_handles",
+                "queueDepthDefinition": (
+                    "submitted nonblocking SDK tasks not yet observed "
+                    "complete by task_wait, counted per stream"
+                ),
+                "droppedSendCountSource": (
+                    "host SDK submission exceptions before a task handle "
+                    "is returned; SDK fabric-level drop counters are not "
+                    "exposed here"
+                ),
+                "streamEventsTailCount": len(stream_events[-64:]),
+            },
+            "streamEventsTail": stream_events[-64:],
+            "failure": failure_context,
             "dataSource": {
                 "kind": data_source_kind,
                 "initialRowsSeed": INITIAL_ROWS_SEED,

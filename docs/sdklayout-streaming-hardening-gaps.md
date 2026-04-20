@@ -108,23 +108,28 @@ backpressure and queue-depth telemetry.
 
 ## Gap 5: backpressure handling
 
-**Current state.** Runner uses `runtime.send(..., nonblock=True)`
-for inputs and `runtime.receive(..., nonblock=False)` for output.
-Nonblocking sends can queue indefinitely; there's no instrumentation
-on queue depth or dropped messages.
+**Current state.** Runner uses nonblocking SDK task handles for all
+direct-link sends and receives, then waits before feeding
+`activation_out` into the next layer. The trace now records
+host-side per-stream task telemetry: issued/completed/pending
+counts, `maxQueueDepth`, `droppedSendCount`, submission failures,
+and task-wait timing.
 
 **Why this blocks full-model execution.** At manifest-shape scale
 with full weight staging and KV movement, stream queue depth
 matters. Silent buffer overflow would manifest as an unexplained
 mismatch or a hang; a graceful backpressure signal is needed.
 
-**Detection signal.** Absent. No counter today. Runner trace would
-need `perStream.maxQueueDepth` and `droppedSendCount` fields.
+**Detection signal.** `executedRun.streams[*]` plus
+`executedRun.streamTelemetry`. The SdkLayout hardening gate requires
+those fields on fresh traces and fails successful runs with pending
+tasks, missing completions, submission failures, or non-zero
+`droppedSendCount`.
 
-**Implementation direction.** Add per-stream counters + periodic
-sampling in the runner. Surface them in the trace's
-`executedRun.streams` array as `maxQueueDepth` and
-`droppedSendCount` per stream.
+**Remaining work.** SDK fabric-level queue depth and drop counters
+are not exposed to this host runner. Current `maxQueueDepth` is a
+host task-handle proxy; replace or augment it if SdkRuntime exposes
+direct queue/backpressure counters.
 
 ## Gap 6: traceable failure modes
 

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemma 4 E2B — WebGPU / CSL Sim</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div>
+        <p class="eyebrow">Gemma 4 E2B layer-block proof</p>
+        <h1>Same graph, WebGPU, CSL simfabric, and CSL WebGPU emulation</h1>
+      </div>
+      <div class="hashes" id="source-hashes">
+        <span>manifest: loading</span>
+        <span>graph: loading</span>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Run controls">
+      <label for="num-layers-select" style="display:inline-flex;gap:0.4rem;align-items:center;">
+        <span class="label">chain depth</span>
+        <select id="num-layers-select">
+          <option value="1" selected>L=1 (single layer)</option>
+          <option value="2">L=2</option>
+          <option value="4">L=4</option>
+          <option value="8">L=8</option>
+          <option value="35">L=35 (full E2B depth)</option>
+        </select>
+      </label>
+      <button id="run-webgpu" type="button">Run WebGPU</button>
+      <button id="run-csl" type="button">Run CSL Simulator</button>
+      <button id="run-emulator" type="button">Run CSL WebGPU Emulator</button>
+      <button id="load-stored-csl" type="button">Load Stored CSL</button>
+      <span id="server-status" class="status-pill pending">server: checking</span>
+    </section>
+
+    <section class="compare-strip" aria-label="Comparison summary">
+      <div>
+        <span class="label">verdict</span>
+        <strong id="verdict">waiting</strong>
+      </div>
+      <div>
+        <span class="label">max abs diff</span>
+        <strong id="max-diff">-</strong>
+      </div>
+      <div>
+        <span class="label">tolerance</span>
+        <strong>1e-3</strong>
+      </div>
+      <div>
+        <span class="label">runtime shape</span>
+        <strong id="runtime-shape">L1 · 1024 f32</strong>
+      </div>
+    </section>
+
+    <section class="lan-note" id="secure-context-note" hidden>
+      Browser WebGPU requires a secure context. If you open this from a LAN
+      HTTP URL, Chrome may block <code>navigator.gpu</code>. Use localhost,
+      an SSH tunnel, or mark this origin as trusted for the live browser run.
+      The CSL simulator side can still run through the local demo server.
+    </section>
+
+    <section class="lan-note">
+      This demo runs the browser side live. The CSL side runs live only when
+      served by <code>demos/gemma4-e2b-csl-sim/server.py</code>; otherwise it
+      can load the stored simfabric receipt.
+    </section>
+
+    <section class="lanes" aria-label="Runtime lanes">
+      <article class="lane webgpu">
+        <div class="lane-head">
+          <div>
+            <p class="eyebrow">left runtime</p>
+            <h2>Browser WebGPU</h2>
+          </div>
+          <span id="webgpu-status" class="status-pill pending">idle</span>
+        </div>
+        <dl>
+          <div><dt>adapter</dt><dd id="webgpu-adapter">-</dd></div>
+          <div><dt>elapsed</dt><dd id="webgpu-elapsed">-</dd></div>
+          <div><dt>output sha256</dt><dd id="webgpu-sha">-</dd></div>
+          <div><dt>source</dt><dd>WGSL extracted from <code>bench/tools/doppler_webgpu_reference_export.cjs</code></dd></div>
+        </dl>
+        <pre id="webgpu-preview">Run WebGPU to compute activation_out.</pre>
+      </article>
+
+      <article class="lane csl">
+        <div class="lane-head">
+          <div>
+            <p class="eyebrow">right runtime</p>
+            <h2>CSL simfabric</h2>
+          </div>
+          <span id="csl-status" class="status-pill pending">idle</span>
+        </div>
+        <dl>
+          <div><dt>runner</dt><dd><code id="csl-command">e2b_layer_block_smoke.py --num-layers 1</code></dd></div>
+          <div><dt>elapsed</dt><dd id="csl-elapsed">-</dd></div>
+          <div><dt>output sha256</dt><dd id="csl-sha">-</dd></div>
+          <div><dt>trace</dt><dd id="csl-trace">-</dd></div>
+        </dl>
+        <pre id="csl-preview">Run or load CSL to fetch activation_out.</pre>
+      </article>
+
+      <article class="lane emulator">
+        <div class="lane-head">
+          <div>
+            <p class="eyebrow">emulated runtime</p>
+            <h2>CSL semantic WebGPU</h2>
+          </div>
+          <span id="emulator-status" class="status-pill pending">idle</span>
+        </div>
+        <dl>
+          <div><dt>elapsed</dt><dd id="emulator-elapsed">-</dd></div>
+          <div><dt>output sha256</dt><dd id="emulator-sha">-</dd></div>
+          <div><dt>semantics</dt><dd id="emulator-semantics">-</dd></div>
+          <div><dt>source</dt><dd>CSL <code>hostIoLayout</code> + shared WebGPU layer kernel</dd></div>
+        </dl>
+        <pre id="emulator-preview">Run emulator to compute activation_out.</pre>
+      </article>
+    </section>
+
+    <section class="viz" aria-label="Output comparison">
+      <div class="viz-head">
+        <h2>Output overlay</h2>
+        <span id="sample-count">0 samples</span>
+      </div>
+      <canvas id="plot" width="1080" height="260"></canvas>
+    </section>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

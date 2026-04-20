@@ -67,6 +67,86 @@
             "atol": { "type": "number", "minimum": 0 },
             "passed": { "type": "boolean" }
           }
+        },
+        "streams": {
+          "type": "array",
+          "description": "Per-stream host SDK task-handle telemetry for SdkLayout direct-link send/receive operations.",
+          "items": {
+            "type": "object",
+            "required": [
+              "streamId",
+              "role",
+              "operation",
+              "issuedCount",
+              "completedCount",
+              "pendingCount",
+              "maxQueueDepth",
+              "droppedSendCount",
+              "submissionFailureCount"
+            ],
+            "properties": {
+              "streamId": { "type": "string" },
+              "role": { "type": "string", "enum": ["input", "output"] },
+              "operation": { "type": "string", "enum": ["send", "receive"] },
+              "issuedCount": { "type": "integer", "minimum": 0 },
+              "completedCount": { "type": "integer", "minimum": 0 },
+              "pendingCount": { "type": "integer", "minimum": 0 },
+              "maxQueueDepth": { "type": "integer", "minimum": 0 },
+              "droppedSendCount": { "type": "integer", "minimum": 0 },
+              "submissionFailureCount": { "type": "integer", "minimum": 0 },
+              "doneBeforeWaitCount": { "type": "integer", "minimum": 0 },
+              "taskWaitTotalMs": { "type": "number", "minimum": 0 },
+              "taskWaitMaxMs": { "type": "number", "minimum": 0 },
+              "lastErrorType": { "type": "string" },
+              "lastErrorMessage": { "type": "string" }
+            }
+          }
+        },
+        "streamTelemetry": {
+          "type": "object",
+          "properties": {
+            "measurementSource": { "type": "string" },
+            "queueDepthDefinition": { "type": "string" },
+            "droppedSendCountSource": { "type": "string" },
+            "streamEventsTailCount": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "streamEventsTail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "event",
+              "streamId",
+              "operation",
+              "layerIndex",
+              "pendingAfter"
+            ],
+            "properties": {
+              "event": { "type": "string", "enum": ["issued", "completed"] },
+              "streamId": { "type": "string" },
+              "operation": { "type": "string", "enum": ["send", "receive"] },
+              "layerIndex": { "type": "integer", "minimum": 0 },
+              "pendingAfter": { "type": "integer", "minimum": 0 },
+              "doneBeforeWait": { "type": ["boolean", "null"] },
+              "taskWaitMs": { "type": "number", "minimum": 0 },
+              "doneProbeError": { "type": "string" }
+            }
+          }
+        },
+        "failure": {
+          "type": ["object", "null"],
+          "properties": {
+            "failedAtStage": { "type": "string" },
+            "failedAtDispatchIndex": { "type": ["integer", "null"], "minimum": 0 },
+            "lastActiveStreamId": { "type": ["string", "null"] },
+            "lastActiveOperation": { "type": ["string", "null"] },
+            "lastCompletedStreamSendReceive": { "type": ["object", "null"] },
+            "streamCounters": { "type": "array" },
+            "streamEventsTail": { "type": "array" },
+            "errorType": { "type": "string" },
+            "message": { "type": "string" }
+          }
         }
       }
     },
