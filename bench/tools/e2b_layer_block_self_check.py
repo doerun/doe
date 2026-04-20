@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """One-shot pipeline smoke for the E2B layer-block in-loop work.
 
-Runs five steps in order (early-exits on STEP 0 drift), then asserts
-the contract:
+Runs six steps in order (early-exits on STEP 0 or STEP 5 drift),
+then asserts the contract:
 
   0. test_e2b_layer_block_compute.py
        -> golden-value unit test for the canonical compute_layer_block
@@ -16,6 +16,12 @@ the contract:
        -> regen the cross-runtime parity check verdict
   4. build_model_runtime_receipt.py (with E2B inputs)
        -> regen the model receipt; binds steps 2 + 3 by path/sha
+  5. validate_e2b_receipt_links.py
+       -> walk every (path, sha256) pair the receipt records and
+          assert the file is on-disk with matching sha (early-exit
+          gate: a stale link means the receipt now disagrees with
+          the file system, downstream contract assertions can't
+          trust the receipt content)
 
 Then asserts:
   C0. (implicit) STEP 0 unit test passed — compute_layer_block bit-
@@ -169,6 +175,21 @@ def main() -> int:
     ])
     if not ok:
         print(f"  FAILED: {msg}")
+        return 1
+
+    print()
+    print("STEP 5: validate receipt link integrity (path + sha for every "
+          "linked artifact)")
+    ok, msg = run_step("link-integrity", [
+        "python3", "bench/tools/validate_e2b_receipt_links.py",
+    ])
+    if not ok:
+        print(f"  FAILED: {msg}")
+        print()
+        print("ABORT: at least one receipt-linked artifact has drifted "
+              "on disk (path missing or sha mismatch). The receipt "
+              "now disagrees with the file system; rerun the self-"
+              "check after fixing the drift.")
         return 1
 
     print()
