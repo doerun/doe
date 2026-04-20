@@ -246,6 +246,23 @@ strong[data-tone="fail"] {
   background: color-mix(in srgb, var(--amber) 8%, transparent);
 }
 
+.truth-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--pink);
+  background: var(--panel);
+  margin: 14px 0 0;
+  padding: 12px 14px;
+}
+
+.truth-strip span {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .lanes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -379,6 +396,29 @@ canvas {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+}
+
+.evidence-ladder {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.ladder-row {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  padding: 10px;
+}
+
+.ladder-row strong {
+  color: var(--ink);
+}
+
+.ladder-row span {
+  color: var(--muted);
 }
 
 .badge {

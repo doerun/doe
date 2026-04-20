@@ -87,20 +87,23 @@ graph, and chain-parity evidence into one artifact per model.
 The `laneStatus` field reports structural coverage
 (`structural_full_coverage` means every host-plan kernel resolves to a
 runtime-ready fixture and the memory plan fits). The `executionStatus`
-field stays honest at `not_attempted`; the current `executionBlocker`
-is `full_transformer_layer_block_incomplete`. The SdkLayout streaming
-executor primitives compile and run under simfabric (section 8 below
-lists the traces), and the generated E2B layer-block runner now binds a
-non-stub smoke trace for pre-attn RMSNorm, scalar attention-inner-
-product with residual, post-attn RMSNorm, and a gated MLP stage with a
-bit-exact ReLU stand-in for GELU. The remaining gap is the rest of the
-transformer layer block — full multi-head attention over KV cache plus
-a shared polynomial GELU replacement — which the E2B layer-block runner
-is incrementally closing stage by stage.
+field reports the strongest model-receipt execution evidence currently
+bound into the receipt: `simulator_success` is simulator execution, not
+release-grade real-weight or hardware evidence. Claimable model depth is
+still governed by the receipt's `realWeightEvidence`,
+`evidenceEligibility`, and future `hardware_success` receipts. If a
+receipt reports `not_attempted`, its `executionBlocker` names the next
+missing step.
+
+The SdkLayout streaming executor primitives compile and run under
+simfabric (section 8 below lists the traces), and the generated E2B
+layer-block runner now binds a non-stub smoke trace for pre-attn
+RMSNorm, scalar attention-inner-product with residual, post-attn
+RMSNorm, and a gated MLP stage with a bit-exact ReLU stand-in for GELU.
 Each model receipt carries a `streamingExecutorPrimitivesEvidence` block
 pointing at the primitive traces and the layer-block smoke trace, so
-downstream consumers can render "partial layer-block simulator proof:
-pass" as distinct from "full-model execution: blocked".
+downstream consumers can render "simulator proof: pass" as distinct from
+"real-weight/hardware claim evidence: pending".
 
 ### 5. Stream graph + execution plan + dry-run trace + comparison tools
 
@@ -216,12 +219,10 @@ trace is schema-validated by `config/doe-streaming-executor-trace.schema.json`.
 
 ## What the sweep does not (yet) prove
 
-- **Actual model execution on hardware.** Both models report
-  `executionStatus: not_attempted`. The `executionBlocker` today is
-  `streaming_executor_not_bound_to_execution_plan`: the SdkLayout
-  streaming executor primitives exist and run on simfabric (section 8
-  below), but the stream-execution-plan's stage codegen is not yet
-  emitting kernels the executor dispatches per layer.
+- **Promoted model execution on real weights or hardware.** Model
+  receipts may report simulator execution, but release-grade claims need
+  real-weight evidence, full-depth parity, and hardware receipts when a
+  hardware claim is made.
 - **Longer Gemma chains.** Current chains are 2 or 3 kernels. The
   shape-plumbing for deeper chains (attention+MLP block) is tractable;
   we just have not added those receipts yet.

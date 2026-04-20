@@ -340,7 +340,7 @@
     'Predicted-vs-observed bytes per pattern (31B)',
     'bench/out/layer-block-predicted-footprint/31b-predicted-footprint.json');
 
-  // ── Simulator execution — now proven for both E2B and 31B ──────────
+  // ── Simulator execution — compiler/runtime receipts, not full-model claims ──
   // Row status lifts executionStatus/executionBlocker from the receipt
   // so the dashboard can't drift from the artifact.
   async function addSimulatorExecutionFromReceipt(tbodyId, label, path) {
@@ -363,23 +363,25 @@
   }
 
   await addSimulatorExecutionFromReceipt('proven-rows',
-    'CSL full E2B layer-block chain execution (simulator)',
+    'CSL E2B layer-block compiler/runtime receipt',
     'bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json');
   await addSimulatorExecutionFromReceipt('proven-rows',
-    'CSL full 31B layer-block chain execution (simulator)',
+    'CSL 31B scale-target compiler/runtime receipt',
     'bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json');
 
   // ── Doppler-equivalent WebGPU cross-runtime parity ───────────────
   // Real WebGPU execution (Dawn-based via the webgpu npm package
   // Doppler uses). Two bindings: per-layer isolated parity covering
-  // all 35 E2B layers, and a gate-validated L=1 CSL-vs-WebGPU receipt.
+  // diagnostic per-layer artifacts, and a gate-validated L=1
+  // CSL-vs-WebGPU receipt. Only the L1 synthetic rollup is a
+  // claimable depth today.
   try {
     const perLayer = await fetchJson('bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json');
     const sum = perLayer.summary || {};
     const verdict = (perLayer.verdict || {}).crossRuntimeParityPassed;
     addRow('proven-rows',
-      'Doppler-equivalent WebGPU ↔ numpy per-layer parity (E2B L=35)',
-      badge(verdict ? 'pass' : 'partial', verdict ? 'passed' : 'partial'),
+      'Doppler-equivalent WebGPU ↔ numpy per-layer diagnostic (E2B)',
+      badge('partial', 'diagnostic'),
       `all ${perLayer.numLayers || 35} layers within atol=1e-3: ` +
       `<code>${sum.allLayersWithinAtol1e3}</code> · ` +
       `within atol=1e-4: <code>${sum.layersWithinAtol1e4Count}/${perLayer.numLayers}</code> · ` +

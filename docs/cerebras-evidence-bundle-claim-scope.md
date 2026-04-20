@@ -16,26 +16,28 @@ honest to say once a reviewer holds a copy.
 Each claim below is backed by an artifact inside the bundle,
 enumerated in `MANIFEST.txt` with its `claim-role` tag.
 
-1. **Gemma-4 E2B layer-block runs bit-exact under CSL simfabric.**
-   Backed by `model-runtime-receipt` + `cross-runtime-parity-verdict`
-   for E2B. All 35 layers, `maxAbsErr=0.0` per layer vs scalar-f32
-   numpy reference, 6/6 cross-runtime parity preconditions met.
+1. **Gemma-4 E2B-shaped L1 synthetic layer-block parity is evidenced.**
+   Backed by `rollup/all-lanes-summary-L1.json`, whose
+   `evidenceEligibility.claimable=true`,
+   `evidenceTier=synthetic_l1_layer_block`, and
+   `runtimeParityTolerance.rollupVerdict=all_within_tolerance`.
+   This is one layer-block with seeded tensors, not real weights and
+   not full E2B.
 
-2. **Gemma-4 31B layer-block runs bit-exact under CSL simfabric at
-   smoke shape.** Backed by 31B `model-runtime-receipt` +
-   `cross-runtime-parity-verdict`. 61 layers chained; same smoke
-   dimensions as E2B (`numHeads=8, headDim=8, kvLen=4, size=1024`).
+2. **Doe carries E2B and 31B through governed compiler/runtime
+   artifacts.** Backed by the model-runtime receipts and fixture
+   contracts. This is a lowering/artifact-chain claim, not a
+   full-model execution or manifest-shape numerical claim.
 
-3. **Doppler-equivalent WebGPU (Dawn-backed) matches CSL per-layer
-   within `atol=1e-3`.** Backed by `emulator-accuracy-verdict`.
-   Explicitly labeled *Doppler-equivalent* — a separate WGSL harness
-   matching the semantic contract, not Doppler's production inference
-   path.
+3. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+   synthetic layer-block contract within `atol=1e-3`.** Explicitly
+   labeled *Doppler-equivalent* — a separate WGSL harness matching
+   the semantic contract, not Doppler's production inference path.
 
 4. **CSL WebGPU emulator is faster than local CSL simfabric on the
-   same host.** Backed by `emulator-speed-verdict-L1` (~3740x) +
-   `emulator-speed-verdict-L35` (~7674x). Scoped explicitly to
-   "local debug ergonomics" per `compare_csl_emulator_vs_simfabric_speed.py`.
+   same host for local debug.** Backed by the L1 emulator speed
+   verdict. Scoped explicitly to "local debug ergonomics" per
+   `compare_csl_emulator_vs_simfabric_speed.py`.
 
 5. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
@@ -67,6 +69,10 @@ a bundle integrity failure.
 - **Doe executes the full Gemma-4 model end-to-end.** The bundle
   evidences the transformer layer-block only: no embedding, unembed,
   KV cache, or sampling boundary.
+
+- **L2/L4/L8/L35 are claimable E2B parity depths.** The depth matrix
+  distinguishes raw diagnostic files from evidence-eligible receipts.
+  Today only L1 synthetic is claimable.
 
 - **Real Gemma-4 weights have been used.** The
   `real-weight-parity-verdict` files for E2B and 31B both show

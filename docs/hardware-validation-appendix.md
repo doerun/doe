@@ -38,10 +38,11 @@ source of truth for any bundle in hand.
 ## Target order
 
 The first hardware validation target is Gemma 4 E2B because it is the current
-correctness lane with a simulator-backed layer-block receipt. The next scale
-target is Gemma 4 31B dense, not Gemma 4 26B/A4B MoE. Dense 31B keeps the
-execution shape uniform while Doe validates streamed weights, SdkLayout ports,
-host I/O ordering, full-grid compile behavior, and parity receipts on WSE.
+correctness lane with an L1 synthetic layer-block parity receipt. The next
+scale target is Gemma 4 31B dense, not Gemma 4 26B/A4B MoE. Dense 31B keeps
+the execution shape uniform while Doe validates streamed weights, SdkLayout
+ports, host I/O ordering, full-grid compile behavior, and parity receipts on
+WSE.
 
 Gemma 4 26B/A4B MoE remains a later efficiency lane. It needs separate
 Gemma-specific receipts for router logits, top-k expert selection,
@@ -68,7 +69,9 @@ E2B bundle:
 - layer-block CSL kernel `bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl`
   sha256 `023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4`
 - runtime receipt `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json`
-  (`executionStatus=simulator_success`, `executionBlocker=none`)
+  (compiler/runtime artifact receipt; not full-model inference)
+- unified L1 rollup `bench/out/doe-run/all-lanes-summary-L1.json`
+  (`evidenceEligibility.evidenceTier=synthetic_l1_layer_block`)
 
 31B bundle (scale-target scaffold, same shape as E2B):
 
@@ -79,41 +82,32 @@ E2B bundle:
 - runtime config sha256 `797e628043cb64d647d6d92b07acf9f85d21ecd145be0ffa1262da985a46bc1e`
 - simulator plan sha256 `903491aac2af6fedf80e6e72b104624fffbaf7b510a7f0ed6d8af11279eab4b8`
 - runtime receipt `bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json`
-  (`executionStatus=simulator_success`)
+  (scale-target scaffold; not manifest-shape 31B execution)
 
 CSL runtime fixture registry (shared) sha256 `4428f5b22e716b3f04f1269dc426cc2ac5ec11c8b31b89ec655484f52a388fa2`.
 
 ## 2. What the simfabric proof demonstrates
 
-`bench/out/streaming-executor/e2b-layer-block-smoke-trace.json`:
-`status=succeeded`, `numLayersChained=35`, 4-stage transformer layer
-block executed bit-exact per layer against the scalar-f32 numpy
-reference (`maxAbsErr=0.0`). Kernel is not a stub
-(`streamingExecutorPrimitivesEvidence.layerBlockKernelEvidence.kernelIsStub=false`).
-
-Cross-runtime parity verdict
-`bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json`:
-`promotionEligible=true`, 6 of 6 preconditions met —
-`P1_runner_trace_exists`, `P2_runner_kernel_sha_matches_live`,
-`P3_runner_ran_on_simulator_not_numpy`, `P4_runner_status_succeeded`,
-`P5_per_layer_err_all_zero_bit_exact`,
-`P6_output_digests_match_across_runtimes`.
-
-Doppler-equivalent WGSL/WebGPU (Dawn on AMD Radeon 8060S) matches CSL
-per-layer within `atol=1e-3`, all 35 E2B layers. Per-layer parity at
-`bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json`.
+The claimable local parity proof is currently L1 synthetic:
+`bench/out/doe-run/all-lanes-summary-L1.json` records the WebGPU
+reference lane, CSL simfabric lane, and CSL WebGPU emulator lane
+within the fixture tolerance. The depth matrix
+`bench/out/doe-run/depth-coverage-matrix.json` is the current source
+for which declared depths are evidence-eligible. Diagnostic files at
+deeper depths do not turn into E2B claims unless their summary carries
+`evidenceEligibility.claimable=true`.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1
 GELU. RMSNorm uses `math.sqrt` + a Newton-Raphson refinement step so
 WSE vs WebGPU sqrt approximations agree bit-exactly at f32.
 
-Scope caveats (explicit on the receipts themselves):
+Scope caveats:
 `promotionCriteria.syntheticInputsAbsent=false` and
 `syntheticWeightsAbsent=false` — inputs and weights are seeded
-deterministic tensors, not real Gemma 4 checkpoint slices. 31B runs
-use the smoke shape (`num_heads=8, head_dim=8, kv_len=4, size=1024`),
-not the manifest's production shape.
+deterministic tensors, not real Gemma 4 checkpoint slices. The
+current runner shape is the smoke layer-block shape, not full
+end-to-end Gemma inference.
 
 ## 3. What hardware validation should run
 
@@ -129,8 +123,8 @@ has the operator-facing detail for both.
 
 Minimum sufficient ask (same command either way):
 
-1. E2B layer-block smoke at `num_layers=35` against a reachable CS
-   endpoint via `--cmaddr`, or appliance via
+1. E2B L1 synthetic layer-block against a reachable CS endpoint via
+   `--cmaddr`, or appliance via
    `runtime/zig/tools/csl_appliance_driver.py`. The runner is
    `bench/runners/csl-runners/e2b_layer_block_smoke.py` and accepts
    `--cmaddr <addr>` today.
@@ -143,9 +137,10 @@ Minimum sufficient ask (same command either way):
 
 Stretch, if time permits:
 
-- E2B layer-block at `num_layers=35` with real weight slices once we
-  have them materialized (validator `bench/tools/validate_weights_dir.py`
-  guards the `--weights-dir` contract).
+- E2B layer-block at deeper chain depths after `all-lanes-summary-L{N}.json`
+  marks the depth as evidence-eligible.
+- E2B layer-block with real weight slices once we have them materialized
+  (the extractor and validator guard the `--weights-dir` contract).
 - 31B dense layer-block smoke at the same chain depth as E2B, to exercise
   streaming scale. This is a dense-model validation target, not a MoE
   efficiency claim.

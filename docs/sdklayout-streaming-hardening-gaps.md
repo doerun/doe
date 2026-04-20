@@ -4,10 +4,13 @@
 
 The current layer-block runner
 (`bench/runners/csl-runners/e2b_layer_block_smoke.py`) proves the
-4-stage transformer layer kernel executes bit-exact under simfabric.
-Scaling to **full** E2B / 31B model execution under SdkLayout streaming
-needs six concrete gaps closed. Each gap below is named, detected, and
-scoped so the implementation path is explicit.
+4-stage transformer layer kernel executes under simfabric at the
+layer-block scope. Claimable public parity is currently limited to the
+L1 synthetic layer-block receipt; deeper synthetic chains are diagnostic
+until the depth matrix marks them evidence-eligible. Scaling to
+end-to-end E2B / 31B model execution under SdkLayout streaming needs six
+concrete gaps closed. Each gap below is named, detected, and scoped so
+the implementation path is explicit.
 
 This document is scoped to in-flight CSL streaming work. Apple Metal
 runtime design lives in `docs/apple-metal-runtime-release.md`; cross-
@@ -19,7 +22,7 @@ kernel numeric-stability in `docs/numeric-stability-runtime-roadmap.md`.
 invokes `layout.compile(out_prefix=...)` which recompiles the kernel
 from source (~500 ms). Multi-invocation chains recompile per call.
 
-**Why this blocks full-model execution.** A full E2B forward pass
+**Why this blocks end-to-end execution.** A complete E2B forward pass
 dispatches ~35 transformer-block kernels, 2 norm kernels, embed /
 unembed, and sampling. Recompiling each per-dispatch multiplies
 compile time to minutes on every invocation. Release-grade streaming
@@ -54,7 +57,7 @@ Total host→PE transfer over a 35-layer chain at smoke size 1024 is
 `3 × 1024 × 4 × 35 = 430 KB/PE`. At manifest size the number grows
 linearly with shape.
 
-**Why this blocks full-model execution.** For real Gemma-4 weights
+**Why this blocks end-to-end execution.** For real Gemma-4 weights
 each layer's K/V/gate/up/proj tensors are MBs. Streaming the full
 weight set per layer per dispatch wastes host bandwidth and hides
 the underlying stream contract the plan already names (`weights`
@@ -78,7 +81,7 @@ kernel today uses `kv_len=4` as a literal constant in the smoke
 shape; per-iteration K/V are read from the `layer_weights` stream at
 fixed offsets, not from a persistent KV cache.
 
-**Why this blocks full-model execution.** Real inference writes new
+**Why this blocks end-to-end execution.** Real inference writes new
 K/V entries per token into a rolling cache, reads the full cache
 on each decode step. The kernel needs KV-write / KV-read primitives
 separate from the layer-block compute.
@@ -101,7 +104,7 @@ KV-cache model at matching token positions.
 streams still use the 1024-byte floor; the larger weights stream is
 plan-sized.
 
-**Why this blocks full-model execution.** Per-stream optimal buffer
+**Why this blocks end-to-end execution.** Per-stream optimal buffer
 sizes depend on per-layer payload bytes and producer/consumer rates.
 The plan's `layer.streams[*].payloadBytes` already differs per
 stream: rows=2, proj=23, weights=2166. A single 1024 buffer either
@@ -134,7 +137,7 @@ host-side per-stream task telemetry: issued/completed/pending
 counts, `maxQueueDepth`, `droppedSendCount`, submission failures,
 and task-wait timing.
 
-**Why this blocks full-model execution.** At manifest-shape scale
+**Why this blocks end-to-end execution.** At manifest-shape scale
 with full weight staging and KV movement, stream queue depth
 matters. Silent buffer overflow would manifest as an unexplained
 mismatch or a hang; a graceful backpressure signal is needed.
@@ -158,7 +161,7 @@ The trace records the top-line error but not where in the 4-stage
 chain the failure occurred, what CSL task was last active, or what
 the PE fabric state was.
 
-**Why this blocks full-model execution.** A full E2B / 31B forward
+**Why this blocks end-to-end execution.** A complete E2B / 31B forward
 pass has hundreds of stream events per token. Without a failure
 timeline, root-cause analysis requires rerunning under
 `sdk_debug_shell` by hand. Streaming-grade debuggability needs
@@ -176,10 +179,12 @@ stderr. Emit those as `executedRun.failure` on the trace.
 
 ## Status
 
-None of the six gaps are blocking `simulator_success` at the layer-
-block scope (that already landed for E2B L=35 and 31B L=61). All six
-are blockers for `simulator_success` at **full-model scope** (item #5
-/ #6 in the Gemma-4-on-Cerebras roadmap) and for a meaningful
+None of the six gaps are blocking local layer-block simulator
+diagnostics. The claimable public receipt remains the L1 synthetic
+layer-block path; E2B L35 and 31B L61 synthetic chains stay diagnostic
+until promoted by the evidence-eligibility rules. All six gaps are
+blockers for `simulator_success` at end-to-end model scope (item #5 /
+#6 in the Gemma-4-on-Cerebras roadmap) and for a meaningful
 `hardware_success` receipt (item #8).
 
 Prioritize in the order above: gap 1 unlocks fast iteration on the

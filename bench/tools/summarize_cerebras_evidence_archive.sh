@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Summarize a packed Cerebras evidence archive WITHOUT extracting it.
 # Operates on the tarball via `tar -xzO | jq`, prints human-readable
-# status for E2B, 31B, 26B/A4B MoE, and the bundle-level gate verdict.
+# status for E2B, 31B, 26B/A4B MoE, the bundle-level gate verdict, and
+# claimable-depth coverage.
 #
 # Usage:
 #   bench/tools/summarize_cerebras_evidence_archive.sh <archive.tar.gz>
@@ -16,7 +17,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 summarize_cerebras_evidence_archive.sh — quick status from inside an archive
 
 Prints E2B, 31B, 26B/A4B MoE status + bundle gate verdict +
-emulator verdicts, entirely from the tarball via `tar -xzO | jq`.
+claimable-depth coverage, entirely from the tarball via `tar -xzO | jq`.
 No extraction to disk.
 
 Usage:
@@ -106,12 +107,16 @@ extract_json "bench/out/cerebras-evidence-bundle/summary.json" '
 '
 echo
 
-echo "--- emulator verdicts ---"
-for f in \
-    "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json" \
-    "bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json" \
-    "bench/out/doppler-reference/csl-emulator-accuracy-verdict-L2.json"
-do
-    label="$(basename "$f" .json)"
-    extract_json "$f" "\"$label: \" + (.verdict // \"?\")" 2>/dev/null || echo "$label: not present"
-done
+echo "--- claimable depth coverage ---"
+extract_json "bench/out/doe-run/depth-coverage-matrix.json" '
+    "claimableAny:      \(.rollup.anyEligibleReceiptCount)/\(.rollup.declaredCount)",
+    "claimableFull:     \(.rollup.fullEligibleCoverageCount)/\(.rollup.declaredCount)",
+    "claimableTol:      \(.rollup.claimableWithinToleranceCount)/\(.rollup.declaredCount)",
+    "depths:            \(.rollup.depthsClaimableWithinTolerance | map("L=" + tostring) | join(", "))"
+'
+echo
+
+echo "--- emulator local-debug verdict ---"
+extract_json "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json" '
+    "csl-emulator-speed-verdict-L1: \(.verdict // "?")"
+' 2>/dev/null || echo "csl-emulator-speed-verdict-L1: not present"

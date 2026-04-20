@@ -267,11 +267,12 @@ editing code in that surface:
   - backend native Doe-vs-Dawn is front-doored on `apple-metal`,
     `amd-vulkan`, and `local-d3d12`
   - plan compare is currently front-doored on `apple-metal` only
-  - package compare is currently front-doored on `apple-metal` only, for
-    Node/Bun cold and warm package lanes
-  - AMD Vulkan Node/Bun package compares exist as explicit config-backed files,
+  - package compare is currently front-doored on `apple-metal`, `amd-vulkan`,
+    and `local-d3d12` for Node/Bun cold and warm Gemma package lanes
+  - AMD Vulkan Gemma270m package compares remain explicit config-backed files,
     not promoted `--surface package` profiles
-  - local D3D12 does not currently have a front-doored Node/Bun package compare matrix
+  - local D3D12 package profiles are promoted contracts; claim evidence still
+    requires a compatible Windows/D3D12 host
 - do not assume every `platform x surface x runtimeHost` tuple named in the
   taxonomy is promoted or evidenced; check the promoted list or an explicit
   compare config path before benchmarking

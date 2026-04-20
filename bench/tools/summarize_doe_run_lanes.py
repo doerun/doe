@@ -62,6 +62,53 @@ MODEL_RECEIPT_E2B = "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json"
 # documented in docs/claim-discipline.md.
 PARITY_FIXTURE_PATH = "config/gemma-4-e2b-real-weight-fixture.json"
 DEFAULT_ATOL = 1e-3
+SYNTHETIC_CLAIMABLE_DEPTH = 1
+
+
+def evidence_eligibility(num_layers: int) -> dict:
+    """Return the claim boundary for this all-lanes rollup.
+
+    The unified entrypoint can be used diagnostically at deeper chain
+    depths, but the current evidence bundle only promotes the L1
+    synthetic layer-block path. Real weights, full-depth E2B, and
+    hardware all require separate receipts before this function should
+    return claimable=true for those modes.
+    """
+    if num_layers == SYNTHETIC_CLAIMABLE_DEPTH:
+        return {
+            "claimable": True,
+            "evidenceTier": "synthetic_l1_layer_block",
+            "claimableLabel": "L1 synthetic layer-block",
+            "weightSource": "synthetic_seeded_rng",
+            "scope": (
+                "One Gemma-4 E2B-shaped layer-block with synthetic "
+                "seeded tensors. This is not real weights, not full "
+                "model inference, and not hardware execution."
+            ),
+            "blockers": [
+                "real_weight_extractor",
+                "l2_l4_l8_l35_claimable_receipts",
+                "full_e2b_end_to_end",
+                "cerebras_hardware_receipt",
+            ],
+        }
+    return {
+        "claimable": False,
+        "evidenceTier": "diagnostic_synthetic_chain",
+        "claimableLabel": f"L{num_layers} diagnostic only",
+        "weightSource": "synthetic_seeded_rng",
+        "scope": (
+            "Diagnostic synthetic chain artifacts may exist at this "
+            "depth, but they are not counted as claimable E2B evidence "
+            "until the depth is promoted by an explicit receipt policy."
+        ),
+        "blockers": [
+            "l1_synthetic_is_only_claimable_depth_today",
+            "real_weight_extractor",
+            "full_e2b_end_to_end",
+            "cerebras_hardware_receipt",
+        ],
+    }
 
 
 def load_declared_atol() -> tuple[float, str]:
@@ -366,6 +413,7 @@ def main() -> int:
         "schemaVersion": 1,
         "artifactKind": "doe_all_lanes_summary",
         "numLayers": args.num_layers,
+        "evidenceEligibility": evidence_eligibility(args.num_layers),
         "modelReceiptPath": rel(model_receipt_path) if model_receipt_path.is_file() else None,
         "executionStatus": executionStatus,
         "realWeightEvidence": real_weight_block,

@@ -24,14 +24,14 @@
       "summary": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
     },
     {
-      "blocker": "full_transformer_layer_block_incomplete",
+      "blocker": "full_e2b_end_to_end_receipt_absent",
       "evidencePath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
       "evidenceSha256": "622dc1d91c4b206b00401804977e07f8ea829ea1e13e5724d5f170a54e8e479b",
       "id": "csl-full-model",
-      "label": "Doe CSL full E2B model execution",
+      "label": "Doe CSL end-to-end E2B gate",
       "runtime": "csl_model",
       "status": "not_attempted",
-      "summary": "executionStatus=not_attempted"
+      "summary": "modelRuntimeExecutionStatus=not_attempted; end_to_end=not_attempted; blocker=full_e2b_end_to_end_receipt_absent"
     },
     {
       "blocker": "hardware_receipt_not_available",

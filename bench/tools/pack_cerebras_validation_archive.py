@@ -77,10 +77,8 @@ INCLUDE_FILES: tuple = (
     # Cross-runtime parity verdicts (per model).
     "bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json",
     "bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json",
-    # CSL emulator evidence (accuracy + speed).
-    "bench/out/doppler-reference/csl-emulator-accuracy-verdict-L2.json",
+    # CSL emulator evidence (claimable local-debug speed only for L1 today).
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json",
-    "bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json",
     # Real-weight parity verdicts (per model, blocked today).
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json",
@@ -134,9 +132,7 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.md": "model-runtime-receipt",
     "bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json": "cross-runtime-parity-verdict",
     "bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json": "cross-runtime-parity-verdict",
-    "bench/out/doppler-reference/csl-emulator-accuracy-verdict-L2.json": "emulator-accuracy-verdict",
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json": "emulator-speed-verdict",
-    "bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json": "emulator-speed-verdict",
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     "bench/out/26b-moe-lane/lane-status.json": "moe-lane-scope",

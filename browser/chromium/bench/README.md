@@ -48,7 +48,8 @@ This module implements a layered browser benchmark superset for Chromium Track A
 3. `scripts/webgpu-playwright-ort-bench.mjs`
    - runs a repo-only same-stack browser ORT WebGPU Dawn-vs-Doe benchmark
      against the local Chromium-vendored DistilBERT sentiment model.
-   - currently supports `--task sentiment` and `--task sentiment_longform`.
+   - currently supports `--task sentiment`, `--task sentiment_medium`, and
+     `--task sentiment_longform`.
 4. `../../bench/native-compare/compare.config.browser.ort-webgpu.json`
    - canonical `bench/` compare config for the same browser ORT tasks.
 5. `scripts/check-browser-benchmark-superset.py`

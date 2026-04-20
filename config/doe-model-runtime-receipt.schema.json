@@ -212,7 +212,7 @@
     },
     "realWeightEvidence": {
       "type": "object",
-      "description": "Optional block. When a real-weight layer-block run has been executed (not just synthetic), this pins the fixture contract the run consumed, the weights-dir audit that validated the slice files, and the parity verdict that compared outputs across runtime lanes. Populated only when executionStatus is real_weight_layer_block_success or when executionBlocker names a real-weight-specific reason.",
+      "description": "Optional block. When the external checkpoint-weight promotion artifact exists (not just synthetic data), this pins the fixture contract the run consumed, the weights-dir audit that validated the slice files, and the parity verdict that compared outputs across runtime lanes. Populated only when executionStatus is real_weight_layer_block_success or when executionBlocker names a real-weight-specific reason.",
       "properties": {
         "fixturePath": { "type": "string" },
         "fixtureSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

@@ -25,50 +25,33 @@ Evidence:
   `bench/out/e2b-full-graph/`, `bench/out/31b-full-graph/`
 - 17-kernel CSL compile coverage recorded in each model-runtime receipt
 
-### E2B layer-block simulator execution succeeds bit-exact against the scalar-f32 numpy reference
+This is a compiler/runtime artifact claim. It is not a full-model
+execution claim.
+
+### L1 synthetic E2B-shaped layer-block parity is evidenced
 
 Evidence:
 
-- `bench/out/streaming-executor/e2b-layer-block-smoke-trace.json` —
-  cs_python simfabric run, 35 layers chained, `maxAbsErr=0.0` per layer
-- `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` with
-  `executionStatus=simulator_success, executionBlocker=none`
-- Cross-runtime parity gate verdict at
-  `bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json`
-  reports `promotionEligible=true, met=6/6`
-- Regression-locked by C4/C7/C11/C12 in
-  `bench/tools/e2b_layer_block_self_check.py`
+- `bench/out/doe-run/all-lanes-summary-L1.json` carries
+  `evidenceEligibility.claimable=true`,
+  `evidenceTier=synthetic_l1_layer_block`, and
+  `runtimeParityTolerance.rollupVerdict=all_within_tolerance`.
+- The runtime-output lanes are `webgpu-wgsl`, `csl-sdklayout`, and
+  `csl-webgpu-emulator`; Metal/Vulkan rows are backend-identity
+  probes, not model-output parity lanes.
+- The fixture behind the tolerance is
+  `config/gemma-4-e2b-real-weight-fixture.json`, but the current
+  run still uses synthetic seeded tensors.
 
-### 31B layer-block simulator execution succeeds bit-exact at full manifest depth (61 layers)
+Allowed wording:
 
-Evidence:
+- "One synthetic Gemma-4 E2B-shaped layer block runs through browser
+  WebGPU, CSL simfabric, and the CSL WebGPU emulator within
+  `atol=1e-3`."
+- "This proves the local compiler/runtime shape for one layer-block
+  contract, not real weights, not full E2B, and not hardware."
 
-- `bench/out/scratch/31b-l61-probe-trace.json` and the regenerated
-  `bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json` with
-  `executionStatus=simulator_success`
-- 31B-specific cross-runtime parity at
-  `bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json`
-- Regression-locked by C9/C10/C13 in the self-check
-
-### Doe-emitted CSL and a Doppler-equivalent WGSL/WebGPU implementation match within per-layer tolerance on the E2B layer-block contract
-
-Evidence:
-
-- Real WebGPU (Dawn on AMD) execution at
-  `bench/tools/doppler_webgpu_reference_export.cjs`
-- Per-layer parity at
-  `bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json`
-  reports `verdict.crossRuntimeParityPassed=true`, all 35 E2B layers
-  within `atol=1e-3`
-- L=1 gate-validated receipt at
-  `examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json`
-  passes `csl_reference_parity_gate.py --require-tolerance-parity`
-
-The phrase is deliberately **"Doppler-equivalent"**. Same WGSL semantic
-contract via the same `webgpu` npm package Doppler uses, but a separate
-standalone compute shader — not Doppler's production inference pipeline.
-
-### The CSL kernel is the real transformer layer block, not a stub
+### The CSL kernel implements the transformer layer-block shape
 
 Evidence:
 
@@ -80,19 +63,22 @@ Evidence:
   and multi-pair ROPE, residual, post-attn RMSNorm, and gated MLP with
   `poly_c1` GELU
 
-### The CSL WebGPU emulator is faster than local CSL simfabric on the same host at matched program identity and chain depth
+This is still a layer-block kernel claim. It is not an end-to-end
+Gemma-4 inference claim.
+
+### The CSL WebGPU emulator is a local debug lane
 
 Evidence:
 
 - `bench/tools/compare_csl_emulator_vs_simfabric_speed.py` emits
   `doe_csl_emulator_speed_verdict` artifacts with matched
   `manifestSha256` and `graphSha256` on both sides
-- `bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json` and
-  `...-L1.json` record ratios with `verdict=claimable_local_debug_speedup`
-- Both sides are local correctness/debug runtimes — this ratio measures
-  debug-path ergonomics, not hardware performance. Adjacent claims (faster
-  than Cerebras hardware, faster than simfabric on other hosts) remain
-  rejected
+- `bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json`
+  records the local debug speed ratio for the evidenced L1 synthetic
+  path.
+
+This ratio measures local demo/debug ergonomics only. It is not
+Cerebras hardware performance.
 
 ## Rejected claims
 
@@ -117,6 +103,14 @@ fixtures. The model receipts honestly report
 Gate: full model execution (item #5). Current execution is the
 transformer layer-block alone. Embeddings, unembedding, KV cache
 bookkeeping, and sampling are not in the executed path.
+
+### "L35 is a claimable full E2B parity pass"
+
+Gate: `bench/out/doe-run/all-lanes-summary-L35.json` must carry
+`evidenceEligibility.claimable=true` and the depth-coverage matrix
+must count L35 under `depthsClaimableWithinTolerance`. Today the
+claimable depth is L1 synthetic only. Any L35 files on disk are
+diagnostic until promoted by this policy.
 
 ### "The 31B kernel runs at the manifest's production shape"
 
@@ -162,7 +156,8 @@ Each rejected claim has a single-command unlock path in the repo.
 | Rejected claim | Unlock command or external dep |
 | --- | --- |
 | Production Doppler pipeline parity | Doppler commits their WGSL shader into their pipeline and emits `activation_out.f32` matching the CSL runner's seeded-RNG inputs |
-| Real-weight execution | `validate_weights_dir.py` passes on a Doppler-extracted weights-dir, then `e2b_layer_block_smoke.py --weights-dir <dir>` re-runs |
+| Real-weight execution | `extract_gemma4_e2b_weight_slices.py` materializes the fixture slices, `validate_weights_dir.py` passes, then `run_e2b_real_weight_l1_parity.py` promotes past `blocked_weights_absent` |
+| L2/L4/L8/L35 claimable depth | `summarize_doe_run_lanes.py` emits `evidenceEligibility.claimable=true` for that depth and `emit_depth_coverage_matrix.py` counts it under `depthsClaimableWithinTolerance` |
 | Full E2B simulator | Extend runner to the full graph (embed + 35 transformer blocks + unembed + sample); this is structural work in Doe |
 | Manifest-shape 31B | Extend the generator/kernel to `head_dim=160, num_heads=32`; validate memory budget + streaming |
 | Hardware receipt | `e2b_layer_block_smoke.py --cmaddr <addr>` against a reachable CS endpoint, or appliance via `csl_appliance_driver.py` |

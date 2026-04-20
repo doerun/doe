@@ -43,7 +43,7 @@ cross-references inside the receipts resolve as written.
    rebuild before external circulation.
 
 3. **Read `CLAIM_SCOPE.md`.** It enumerates the 5 claims this bundle
-   backs with evidence, the 6 claims it explicitly does not back,
+   backs with evidence, the claims it explicitly does not back,
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
 
@@ -85,13 +85,13 @@ cross-references inside the receipts resolve as written.
 | `governance` | Policy + external ask + this README's source | Anyone |
 | `real-weight-fixture` | Pinned bundle contract for E2B / 31B | Reviewers of the real-weight promotion path |
 | `model-runtime-receipt` | Per-model runtime evidence (E2B, 31B) | Primary reviewers |
-| `cross-runtime-parity-verdict` | Simfabric vs scalar-numpy per-layer parity | Numerical reviewers |
-| `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator | Correctness reviewers |
+| `cross-runtime-parity-verdict` | Layer-block diagnostic parity artifacts | Numerical reviewers |
+| `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator where claimable | Correctness reviewers |
 | `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
 | `real-weight-parity-verdict` | Real-weight L1 parity (blocked today) | Gated on external checkpoint extractor |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
-| `depth-coverage-rollup` | Which declared depths (L=1,2,4,8,35) have on-disk receipts per lane — honest aspirational-vs-evidenced split | Anyone asking "is this the full model?" |
+| `depth-coverage-rollup` | Which declared depths have raw files vs evidence-eligible receipts; today only L1 synthetic is claimable | Anyone asking "is this the full model?" |
 
 ## Contact and next steps
 

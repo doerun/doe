@@ -156,9 +156,9 @@ def main() -> int:
             expect_status="real_weight_layer_block_success",
             expect_blocker="none",
         ),
-        # Real-weight tier: parity passed but hash not matched → stays simulator_success.
+        # Real-weight tier: parity flag true but hash not matched → stays simulator_success.
         case(
-            "T11 real-weight parity passed but hash not matched stays simulator_success",
+            "T11 real-weight parity flag true but hash not matched stays simulator_success",
             parity_promotion_eligible=True,
             real_weight_parity_passed=True,
             real_weight_hash_matched=False,

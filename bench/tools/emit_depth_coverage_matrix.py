@@ -17,7 +17,10 @@ that depth.
 Scope caveat: coverage is a structural check. A receiptPresent=true row
 says "this lane emitted a receipt at this depth" — it does not revalidate
 parity. That remains the job of
-`bench/tools/summarize_doe_run_lanes.py`.
+`bench/tools/summarize_doe_run_lanes.py`. The claimable rollup counts
+only evidence-eligible summaries. Today that means L=1 synthetic only;
+deeper diagnostic receipts do not become E2B claims just because files
+exist on disk.
 
 Usage:
   python3 bench/tools/emit_depth_coverage_matrix.py \\
@@ -48,6 +51,7 @@ LANES = [
     "csl-webgpu-emulator",
 ]
 RUNTIME_OUTPUT_LANES = {"webgpu-wgsl", "csl-sdklayout", "csl-webgpu-emulator"}
+CLAIMABLE_SUMMARY_TIERS = {"synthetic_l1_layer_block"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,6 +109,16 @@ def load_summary(run_dir: Path, depth: int) -> dict | None:
         return None
 
 
+def summary_is_claimable(summary: dict | None) -> bool:
+    if summary is None:
+        return False
+    eligibility = summary.get("evidenceEligibility") or {}
+    return (
+        eligibility.get("claimable") is True
+        and eligibility.get("evidenceTier") in CLAIMABLE_SUMMARY_TIERS
+    )
+
+
 def main() -> int:
     args = parse_args()
     run_dir = resolve(args.run_dir)
@@ -125,17 +139,33 @@ def main() -> int:
             rollup_verdict = summary.get("verdict")
             rpt = summary.get("runtimeParityTolerance") or {}
             tolerance_rollup = rpt.get("rollupVerdict")
+        claimable_summary = summary_is_claimable(summary)
+        eligible_cells = [
+            dict(c, evidenceEligible=bool(claimable_summary and c["receiptPresent"]))
+            for c in cells
+        ]
+        eligible_present = sum(1 for c in eligible_cells if c["evidenceEligible"])
+        all_eligible_succeeded = bool(eligible_cells) and all(
+            c["evidenceEligible"] and c["status"] == "succeeded"
+            for c in eligible_cells
+        )
 
         coverage.append({
             "depth": depth,
-            "lanes": cells,
+            "lanes": eligible_cells,
             "laneReceiptsPresent": present,
             "laneReceiptCount": len(LANES),
             "allLanesSucceeded": all_succeeded,
+            "evidenceEligibleLanesPresent": eligible_present,
+            "allEvidenceEligibleLanesSucceeded": all_eligible_succeeded,
             "summaryPath": summary_path,
             "summaryPresent": summary is not None,
             "summaryVerdict": rollup_verdict,
             "toleranceRollupVerdict": tolerance_rollup,
+            "evidenceEligibility": (
+                (summary or {}).get("evidenceEligibility")
+                or {"claimable": False, "evidenceTier": "no_summary"}
+            ),
         })
 
     depths_any_receipt = [c["depth"] for c in coverage if c["laneReceiptsPresent"] > 0]
@@ -143,6 +173,20 @@ def main() -> int:
     depths_within_tolerance = [
         c["depth"] for c in coverage
         if c["toleranceRollupVerdict"] == "all_within_tolerance"
+    ]
+    depths_any_eligible = [
+        c["depth"] for c in coverage if c["evidenceEligibleLanesPresent"] > 0
+    ]
+    depths_full_eligible = [
+        c["depth"] for c in coverage
+        if c["allEvidenceEligibleLanesSucceeded"]
+    ]
+    depths_claimable_within_tolerance = [
+        c["depth"] for c in coverage
+        if (
+            c["allEvidenceEligibleLanesSucceeded"]
+            and c["toleranceRollupVerdict"] == "all_within_tolerance"
+        )
     ]
 
     artifact = {
@@ -155,17 +199,24 @@ def main() -> int:
             "depthsWithAnyReceipt": depths_any_receipt,
             "depthsWithFullLaneCoverage": depths_full_coverage,
             "depthsAllWithinTolerance": depths_within_tolerance,
+            "depthsWithAnyEligibleReceipt": depths_any_eligible,
+            "depthsWithFullEligibleLaneCoverage": depths_full_eligible,
+            "depthsClaimableWithinTolerance": depths_claimable_within_tolerance,
             "declaredCount": len(DECLARED_DEPTHS),
             "anyReceiptCount": len(depths_any_receipt),
             "fullCoverageCount": len(depths_full_coverage),
             "withinToleranceCount": len(depths_within_tolerance),
+            "anyEligibleReceiptCount": len(depths_any_eligible),
+            "fullEligibleCoverageCount": len(depths_full_eligible),
+            "claimableWithinToleranceCount": len(depths_claimable_within_tolerance),
         },
         "claimScope": (
             "Structural coverage only: enumerates which declared depths "
-            "× lanes have on-disk receipts. Does NOT revalidate parity "
-            "or tolerance — see all-lanes-summary-L{N}.json "
-            "(runtimeParityTolerance) for the per-depth tolerance "
-            "verdict."
+            "× lanes have on-disk receipts. The claimable rollup counts "
+            "only evidenceEligibility.claimable=true summaries; diagnostic "
+            "deeper-chain files do not become E2B claims. Does NOT "
+            "revalidate parity or tolerance — see all-lanes-summary-L{N}.json "
+            "(runtimeParityTolerance) for the per-depth tolerance verdict."
         ),
     }
 
@@ -181,7 +232,8 @@ def main() -> int:
         f"declared depths: {len(DECLARED_DEPTHS)} ({DECLARED_DEPTHS}). "
         f"any-receipt: {depths_any_receipt}. "
         f"full-lane-coverage: {depths_full_coverage}. "
-        f"all-within-tolerance: {depths_within_tolerance}."
+        f"all-within-tolerance: {depths_within_tolerance}. "
+        f"claimable-within-tolerance: {depths_claimable_within_tolerance}."
     )
     return 0
 

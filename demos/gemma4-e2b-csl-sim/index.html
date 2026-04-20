@@ -28,11 +28,11 @@
       <label for="num-layers-select" style="display:inline-flex;gap:0.4rem;align-items:center;">
         <span class="label">chain depth</span>
         <select id="num-layers-select">
-          <option value="1" selected>L=1 (single layer)</option>
-          <option value="2">L=2</option>
-          <option value="4">L=4</option>
-          <option value="8">L=8</option>
-          <option value="35">L=35 (full E2B depth)</option>
+          <option value="1" selected>L=1 synthetic · claimable today</option>
+          <option value="2">L=2 diagnostic · blocked</option>
+          <option value="4">L=4 diagnostic · blocked</option>
+          <option value="8">L=8 diagnostic · blocked</option>
+          <option value="35">L=35 diagnostic · not full E2B</option>
         </select>
       </label>
       <button id="run-webgpu" type="button">Run WebGPU</button>
@@ -40,6 +40,11 @@
       <button id="run-emulator" type="button">Run CSL WebGPU Emulator</button>
       <button id="load-stored-csl" type="button">Load Stored CSL</button>
       <span id="server-status" class="status-pill pending">server: checking</span>
+    </section>
+
+    <section class="truth-strip" aria-label="Current evidence boundary">
+      <strong id="truth-headline">Current claim: L1 synthetic layer-block only</strong>
+      <span id="truth-detail">Real weights, L&gt;1 claimable depth, full E2B, and Cerebras hardware are blocked until matching receipts exist.</span>
     </section>
 
     <section class="scope-strip" aria-label="Run scope">
@@ -108,6 +113,11 @@
         <span class="badge" id="badge-realweight">real-weight: -</span>
         <span class="badge" id="badge-hardware">hardware: pending</span>
         <span class="badge" id="badge-bundle">bundle: -</span>
+      </div>
+      <div class="evidence-ladder" id="evidence-ladder" aria-label="Evidence ladder">
+        <div class="ladder-row">
+          <span>loading evidence ladder...</span>
+        </div>
       </div>
       <table class="cockpit-table lane-label-table" aria-label="Model-lane labels">
         <thead>

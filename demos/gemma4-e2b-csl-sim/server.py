@@ -18,10 +18,9 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PORT = 8001
 SCRATCH_ROOT = Path("bench/out/scratch/gemma4-e2b-csl-sim")
-# Depth selector: allowed chain depths. L=1 is the smoke baseline;
-# L=35 matches the E2B manifest's modelConfig.numLayers. The server
-# writes a depth-specific trace so prior-depth runs are not
-# overwritten and can be re-fetched without a new cs_python call.
+# Depth selector: allowed diagnostic chain depths. L=1 synthetic is the
+# only claimable depth today; L>1 traces are local debug artifacts until
+# the evidence-eligibility policy promotes them.
 ALLOWED_NUM_LAYERS = (1, 2, 4, 8, 35)
 DEFAULT_NUM_LAYERS = 1
 

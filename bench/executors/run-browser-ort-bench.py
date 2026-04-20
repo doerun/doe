@@ -118,6 +118,14 @@ def _mode_report(payload: dict[str, Any], mode: str) -> dict[str, Any]:
     raise ValueError(f"browser ORT report missing requested mode {mode!r}")
 
 
+def _nonnegative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int) and value >= 0:
+        return value
+    return None
+
+
 def _trace_meta(
     *,
     workload_id: str,
@@ -128,7 +136,7 @@ def _trace_meta(
 ) -> dict[str, Any]:
     timed_mean_ms = mode_report.get("timedMeanMs")
     timing_ms = timed_mean_ms if isinstance(timed_mean_ms, (int, float)) else mode_report.get("elapsedMs")
-    return {
+    trace_meta = {
         "traceMetaVersion": 1,
         "runtimeHost": "browser",
         "benchmarkLane": BENCHMARK_LANE,
@@ -159,6 +167,20 @@ def _trace_meta(
         "resultSummary": mode_report.get("outputSummary"),
         "browserLaunchArgs": mode_report.get("launchArgs"),
     }
+    dispatch_count = _nonnegative_int(mode_report.get("webgpuDispatchCount"))
+    if dispatch_count is not None:
+        trace_meta["executionDispatchCount"] = dispatch_count
+    for source_key, trace_key in (
+        ("webgpuDispatchWorkgroups", "browserWebgpuDispatchWorkgroups"),
+        ("webgpuDispatchWorkgroupsIndirect", "browserWebgpuDispatchWorkgroupsIndirect"),
+        ("webgpuQueueSubmitCount", "browserWebgpuQueueSubmitCount"),
+    ):
+        value = _nonnegative_int(mode_report.get(source_key))
+        if value is not None:
+            trace_meta[trace_key] = value
+    if isinstance(mode_report.get("webgpuCounterPatches"), dict):
+        trace_meta["browserWebgpuCounterPatches"] = mode_report["webgpuCounterPatches"]
+    return trace_meta
 
 
 def main(argv: list[str] | None = None) -> int:

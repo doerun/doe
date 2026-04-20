@@ -94,7 +94,7 @@ from scattered configs:
 | Apple Metal plan Doe vs Dawn direct WebGPU | promoted | `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64 --dry-run` |
 | Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run` |
 | Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run` |
-| AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
+| AMD Vulkan package Doe vs Node/Bun packages | promoted for Gemma64/Gemma1B cold/warm; older Gemma270m configs remain explicit repo-only artifacts | `python3 bench/cli.py compare --surface package --backend amd-vulkan --workload gemma64 --runtime-host node --temperature warm --dry-run` |
 | Node ORT WebGPU Doe vs `node-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/compare-report.json` |
 | Bun ORT WebGPU Doe vs `bun-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json` |
 | Bun ORT WebGPU Doe vs `bun-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
@@ -105,7 +105,7 @@ from scattered configs:
 | Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_matmul_add_relu_float32_rank2_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/matmul_add_relu --out-report bench/out/native-ort-doe-ep/matmul_add_relu.report.json --out-metadata bench/out/native-ort-doe-ep/matmul_add_relu.metadata.json --no-timestamp-output` |
 | Native ORT incumbent WebGPU vs Doe EP basic-ops compare | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json` |
 | Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
-| Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
+| Local D3D12 package Doe vs Node/Bun packages | promoted contract, Windows host required for evidence | `python3 bench/cli.py compare --surface package --backend local-d3d12 --workload gemma64 --runtime-host node --temperature warm --dry-run` |
 
 Two rules for first-time operators:
 
@@ -474,8 +474,10 @@ Representative config paths are:
 - `bench/native-compare/compare.config.local.d3d12.gemma64.node-package.ir.json`
 - matching `gemma1b`, `bun-package`, and `.warm` variants on each lane
 
-AMD Vulkan package compare configs also exist, but they are explicit
-config-backed lanes rather than promoted `--surface package` profiles:
+The promoted package catalog covers Gemma64 and Gemma1B Node/Bun cold/warm
+package profiles on Apple Metal, AMD Vulkan, and local D3D12. Older AMD Vulkan
+Gemma270m package compare configs remain explicit config-backed lanes outside
+the promoted `--surface package` profile set:
 
 - `bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json`
 - `bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json`
@@ -537,6 +539,10 @@ And the front door is:
 - `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run`
 - `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature cold --dry-run`
 - `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run`
+- `python3 bench/cli.py compare --surface package --backend amd-vulkan --workload gemma64 --runtime-host node --temperature warm --dry-run`
+- `python3 bench/cli.py compare --surface package --backend amd-vulkan --workload gemma64 --runtime-host bun --temperature warm --dry-run`
+- `python3 bench/cli.py compare --surface package --backend local-d3d12 --workload gemma64 --runtime-host node --temperature warm --dry-run`
+- `python3 bench/cli.py compare --surface package --backend local-d3d12 --workload gemma64 --runtime-host bun --temperature warm --dry-run`
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`
 - `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json --side baseline`
 
@@ -547,11 +553,13 @@ The promoted matrix is explicit in config:
 - `surface=plan`
   - promoted on Apple Metal only (`gemma64`, `gemma1b`, `gemma270m-literal`)
 - `surface=package`
-  - promoted on Apple Metal only, for `runtimeHost=node` or `runtimeHost=bun`,
-    with `temperature=cold` or `temperature=warm`
-  - AMD Vulkan package compares exist as explicit config-backed lanes, not
-    promoted surface profiles
-  - local D3D12 does not currently expose a front-doored package compare matrix
+  - promoted on Apple Metal, AMD Vulkan, and local D3D12 for
+    `runtimeHost=node` or `runtimeHost=bun`, with `temperature=cold` or
+    `temperature=warm`, on the Gemma64 and Gemma1B package workloads
+  - AMD Vulkan Gemma270m package compares remain explicit config-backed lanes,
+    not promoted surface profiles
+  - local D3D12 package profiles are front-door contracts; claim evidence still
+    requires a compatible Windows/D3D12 host
 
 The canonical axis vocabulary underneath those front doors is defined in
 `config/compare-taxonomy.json`. The generated expansion in

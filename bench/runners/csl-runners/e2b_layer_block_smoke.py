@@ -470,7 +470,9 @@ def main() -> int:
 
         # Device chain: same loop, threading received[L] -> rows for L+1.
         # Per-layer elapsed-ms is recorded so timing scales visibly when
-        # the chain depth grows (e.g. 35 layers for full E2B).
+        # the diagnostic chain depth grows (for example, the E2B manifest
+        # transformer-block count). Deeper synthetic chains are not a
+        # full-model parity claim.
         all_received = []
         rows_curr = initial_rows.copy()
         for l_idx in range(num_layers_smoke):

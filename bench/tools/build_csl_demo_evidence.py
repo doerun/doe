@@ -74,6 +74,12 @@ def main() -> int:
     csl_parity = parity["cslRun"].get("numericalParity", {})
     model_blocker = model.get("executionBlocker", "unknown")
     model_status = model.get("executionStatus", "unknown")
+    end_to_end = model.get("endToEndModelExecution") or {}
+    end_to_end_status = end_to_end.get("status", "not_attempted")
+    end_to_end_blocker = end_to_end.get(
+        "blocker", "full_e2b_end_to_end_receipt_absent"
+    )
+    model_end_to_end_passed = end_to_end_status == "succeeded"
 
     rows = [
         {
@@ -106,15 +112,17 @@ def main() -> int:
         },
         {
             "id": "csl-full-model",
-            "label": "Doe CSL full E2B model execution",
+            "label": "Doe CSL end-to-end E2B gate",
             "runtime": "csl_model",
-            "status": (
-                "pass" if model_status == "simulator_success" else "not_attempted"
+            "status": "pass" if model_end_to_end_passed else "not_attempted",
+            "summary": (
+                f"modelRuntimeExecutionStatus={model_status}; "
+                f"end_to_end={end_to_end_status}; "
+                f"blocker={end_to_end_blocker}"
             ),
-            "summary": f"executionStatus={model_status}",
             "evidencePath": rel(model_path),
             "evidenceSha256": sha256_file(model_path),
-            "blocker": model_blocker,
+            "blocker": end_to_end_blocker,
         },
         {
             "id": "csl-hardware",

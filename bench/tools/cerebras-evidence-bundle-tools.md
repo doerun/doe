@@ -41,7 +41,7 @@ bundle" for the prose workflow; this file is the tool-reference.
 ## Quick-read helpers
 
 - **`summarize_cerebras_evidence_archive.sh <archive>`** — prints
-  E2B / 31B / MoE status + bundle verdict + emulator verdicts
+  E2B / 31B / MoE status + bundle verdict + claimable-depth coverage
   entirely from inside the tarball via `tar -xzO | jq`. No unpack
   needed.
 - **`summarize_doe_run_lanes.py --num-layers 1`** — refreshes
@@ -66,7 +66,7 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │           ├── config/gemma-4-31b-real-weight-fixture.json
   │           ├── bench/out/{e2b,31b}-full-graph/gemma-4-*-runtime-receipt.{json,md}
   │           ├── bench/out/streaming-executor/*-cross-runtime-parity-check.json
-  │           ├── bench/out/doppler-reference/csl-emulator-*-verdict-*.json
+  │           ├── bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
   │           ├── bench/out/gemma-4-*-real-weight-parity-L1.json
   │           ├── bench/out/26b-moe-lane/*.json                  (7 files)
   │           ├── bench/out/doe-run/all-lanes-summary-L1.json

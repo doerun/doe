@@ -58,7 +58,7 @@ const TASKS = Object.freeze({
     modelId: "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
     dtype: "uint8",
     inputPayload: Object.freeze([
-      "Deterministic benchmark surfaces make cross-runtime comparisons easier.",
+      "I love deterministic benchmark surfaces because they make cross-runtime comparisons easier.",
       "Benchmark drift across lanes is frustrating when you cannot reproduce prior numbers.",
     ]),
     expectedLabels: Object.freeze(["POSITIVE", "NEGATIVE"]),
@@ -147,7 +147,7 @@ Options:
   --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this report under bench/out/scratch
   --headless true|false     Launch headless (default: true)
-  --task sentiment|sentiment_longform
+  --task sentiment|sentiment_medium|sentiment_longform
                             Browser ORT task to run (default: ${DEFAULT_TASK})
   --timed-iters N           Timed inference iterations per mode (default: ${DEFAULT_TIMED_ITERS})
   --warmup-iters N          Warmup iterations per mode (default: ${DEFAULT_WARMUP_ITERS})
@@ -538,6 +538,52 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           transformersModuleUrlValue,
           warmupIters,
         }) => {
+          const webgpuCounters = {
+            dispatchWorkgroups: 0,
+            dispatchWorkgroupsIndirect: 0,
+            queueSubmit: 0,
+          };
+          const patchMethod = (prototype, methodName, counterName) => {
+            if (!prototype || typeof prototype[methodName] !== "function") {
+              return false;
+            }
+            const original = prototype[methodName];
+            try {
+              Object.defineProperty(prototype, methodName, {
+                configurable: true,
+                writable: true,
+                value: function countedWebgpuMethod(...methodArgs) {
+                  webgpuCounters[counterName] += 1;
+                  return original.apply(this, methodArgs);
+                },
+              });
+              return true;
+            } catch {
+              return false;
+            }
+          };
+          const webgpuCounterPatches = {
+            dispatchWorkgroups: patchMethod(
+              globalThis.GPUComputePassEncoder?.prototype,
+              "dispatchWorkgroups",
+              "dispatchWorkgroups",
+            ),
+            dispatchWorkgroupsIndirect: patchMethod(
+              globalThis.GPUComputePassEncoder?.prototype,
+              "dispatchWorkgroupsIndirect",
+              "dispatchWorkgroupsIndirect",
+            ),
+            queueSubmit: patchMethod(
+              globalThis.GPUQueue?.prototype,
+              "submit",
+              "queueSubmit",
+            ),
+          };
+          const resetWebgpuCounters = () => {
+            webgpuCounters.dispatchWorkgroups = 0;
+            webgpuCounters.dispatchWorkgroupsIndirect = 0;
+            webgpuCounters.queueSubmit = 0;
+          };
           const withOpTimeout = async (label, promiseFactory) => {
             let timeoutId = null;
             try {
@@ -707,11 +753,14 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
 
           const timedIterationsMs = [];
           let finalOutput = null;
+          resetWebgpuCounters();
           for (let index = 0; index < timedIters; index += 1) {
             const iterationStarted = performance.now();
             finalOutput = await runTask();
             timedIterationsMs.push(performance.now() - iterationStarted);
           }
+          const webgpuDispatchCount =
+            webgpuCounters.dispatchWorkgroups + webgpuCounters.dispatchWorkgroupsIndirect;
 
           const expectedLabels = Array.isArray(taskConfig.expectedLabels)
             ? taskConfig.expectedLabels
@@ -736,6 +785,11 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             sequenceLength: Array.isArray(dims) ? dims[1] : null,
             sessionInputNames,
             timedIterationsMs,
+            webgpuCounterPatches,
+            webgpuDispatchCount,
+            webgpuDispatchWorkgroups: webgpuCounters.dispatchWorkgroups,
+            webgpuDispatchWorkgroupsIndirect: webgpuCounters.dispatchWorkgroupsIndirect,
+            webgpuQueueSubmitCount: webgpuCounters.queueSubmit,
             webgpuAvailable: typeof navigator.gpu !== "undefined",
           };
         },
@@ -775,6 +829,11 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
       timedP95Ms: percentile(result.timedIterationsMs, 0.95),
       adapterSummary: result.adapterSummary,
       outputSummary: result.outputSummary,
+      webgpuCounterPatches: result.webgpuCounterPatches,
+      webgpuDispatchCount: result.webgpuDispatchCount,
+      webgpuDispatchWorkgroups: result.webgpuDispatchWorkgroups,
+      webgpuDispatchWorkgroupsIndirect: result.webgpuDispatchWorkgroupsIndirect,
+      webgpuQueueSubmitCount: result.webgpuQueueSubmitCount,
       webgpuAvailable: result.webgpuAvailable,
     };
   } catch (error) {

@@ -173,6 +173,79 @@ MOE_GATED_RULES: list[Rule] = [
     ),
 ]
 
+FULL_E2B_GATED_RULES: list[Rule] = [
+    Rule(
+        "full E2B operational claim",
+        re.compile(
+            rb"\b(?:Gemma[- ]?4\s+)?E2B\b[^.\n]{0,80}?"
+            rb"\b(?:runs|running|executes|executing|succeeded|"
+            rb"passes|passed|validated|operational|live)\b"
+            rb"[^.\n]{0,80}?\b(?:full|end[- ]to[- ]end|forward|"
+            rb"model|inference|L=35|L35)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    Rule(
+        "L35 parity/claim claim without claimable L35 receipt",
+        re.compile(
+            rb"\b(?:L=35|L35)\b[^.\n]{0,100}?"
+            rb"\b(?:passed|passes|all[_ -]?within[_ -]?tolerance|"
+            rb"parity|claimable|full lane)\b",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
+REAL_WEIGHT_GATED_RULES: list[Rule] = [
+    Rule(
+        "real-weight operational claim",
+        re.compile(
+            rb"(?:\b(?:uses|used|loads|loaded|consumes|consumed)\s+"
+            rb"real[- ]weights?\b|\breal[- ]weights?\b[^.\n]{0,80}?"
+            rb"\b(?:loaded|consumed|executed|validated|working|live|"
+            rb"operational)\b)",
+            re.IGNORECASE,
+        ),
+    ),
+    Rule(
+        "real-weight parity passed claim",
+        re.compile(
+            rb"(?:\breal[- ]weight(?:\s+layer[- ]block)?\s+parity\b"
+            rb"[^.\n]{0,80}?\b(?:passed|passes|succeeded|validated|"
+            rb"green)\b|\b(?:passed|passes|succeeded|validated)\b"
+            rb"[^.\n]{0,80}?\breal[- ]weight(?:\s+layer[- ]block)?"
+            rb"\s+parity\b)",
+            re.IGNORECASE,
+        ),
+    ),
+    Rule(
+        "real-weight model execution claim",
+        re.compile(
+            rb"(?:\b(?:Gemma[- ]?4|E2B|31B)\b[^.\n]{0,80}?"
+            rb"\b(?:runs|running|executes|executing|validated|"
+            rb"succeeded|works|working|live)\b[^.\n]{0,80}?"
+            rb"\breal[- ]weights?\b|\breal[- ]weights?\b"
+            rb"[^.\n]{0,80}?\b(?:Gemma[- ]?4|E2B|31B)\b"
+            rb"[^.\n]{0,80}?\b(?:runs|running|executes|executing|"
+            rb"validated|succeeded|works|working|live)\b)",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
+HARDWARE_OPERATIONAL_RULES: list[Rule] = [
+    Rule(
+        "Gemma/Cerebras hardware operational claim",
+        re.compile(
+            rb"\b(?:Gemma[- ]?4|E2B|31B|CSL)\b[^.\n]{0,100}?"
+            rb"\b(?:runs|running|executes|executing|validated|"
+            rb"succeeded|works|working|live)\b[^.\n]{0,80}?"
+            rb"\b(?:Cerebras\s+hardware|WSE\s+hardware|CS/WSC|WSC)\b",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
 
 def tracked_files() -> list[str]:
     result = subprocess.run(
@@ -242,6 +315,60 @@ def find_moe_receipt() -> Path | None:
     return None
 
 
+def find_real_weight_success_receipt() -> Path | None:
+    """Return a real-weight parity artifact that actually promoted."""
+    for p in REPO_ROOT.glob("bench/out/gemma-4-*-real-weight-parity-L*.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (
+            data.get("artifactKind") == "doe_e2b_real_weight_parity"
+            and data.get("verdict") == "parity_passed"
+            and data.get("weightsDirPresent") is True
+        ):
+            return p
+    return None
+
+
+def find_full_e2b_success_receipt() -> Path | None:
+    """Return a full E2B end-to-end receipt, not a layer-block receipt."""
+    accepted_status = {
+        "full_e2b_success",
+        "full_model_success",
+        "end_to_end_success",
+    }
+    for p in REPO_ROOT.glob("bench/out/**/*e2b*receipt*.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("executionStatus") in accepted_status:
+            return p
+        if (
+            data.get("artifactKind") == "doe_full_model_receipt"
+            and "e2b" in (data.get("modelId") or "").lower()
+            and data.get("status") == "succeeded"
+        ):
+            return p
+    return None
+
+
+def find_claimable_l35_summary() -> Path | None:
+    """Return L35 only when its summary explicitly says claimable."""
+    p = REPO_ROOT / "bench/out/doe-run/all-lanes-summary-L35.json"
+    if not p.is_file():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    eligibility = data.get("evidenceEligibility") or {}
+    if eligibility.get("claimable") is True:
+        return p
+    return None
+
+
 def scan(path: str, rules: list[Rule]) -> list[tuple[str, int, str]]:
     full = REPO_ROOT / path
     try:
@@ -267,6 +394,9 @@ def main() -> int:
 
     hw_receipt = find_hardware_success_receipt()
     moe_receipt = find_moe_receipt()
+    real_weight_receipt = find_real_weight_success_receipt()
+    full_e2b_receipt = find_full_e2b_success_receipt()
+    l35_summary = find_claimable_l35_summary()
 
     # Build the active rule set. Hardware-gated rules are skipped when
     # a hardware_success receipt exists; MoE-gated rules are skipped
@@ -276,16 +406,27 @@ def main() -> int:
     active_rules: list[Rule] = []
     hw_gate_active = hw_receipt is None
     moe_gate_active = moe_receipt is None
+    real_weight_gate_active = real_weight_receipt is None
+    full_e2b_gate_active = full_e2b_receipt is None
+    l35_gate_active = l35_summary is None
     if hw_gate_active:
         active_rules.extend(HARDWARE_GATED_RULES)
+        active_rules.extend(HARDWARE_OPERATIONAL_RULES)
     if moe_gate_active:
         active_rules.extend(MOE_GATED_RULES)
+    if real_weight_gate_active:
+        active_rules.extend(REAL_WEIGHT_GATED_RULES)
+    if full_e2b_gate_active or l35_gate_active:
+        active_rules.extend(FULL_E2B_GATED_RULES)
 
     if not active_rules:
         print(
-            "PASS: claim-discipline gate INACTIVE on both fronts "
+            "PASS: claim-discipline gate INACTIVE on all fronts "
             f"(hardware_success at {hw_receipt.relative_to(REPO_ROOT)}, "
-            f"MoE receipt at {moe_receipt.relative_to(REPO_ROOT)}). "
+            f"MoE receipt at {moe_receipt.relative_to(REPO_ROOT)}, "
+            f"real-weight receipt at {real_weight_receipt.relative_to(REPO_ROOT)}, "
+            f"full E2B receipt at {full_e2b_receipt.relative_to(REPO_ROOT)}, "
+            f"L35 summary at {l35_summary.relative_to(REPO_ROOT)}). "
             "Specific claims may now cite these receipts; other "
             "disciplines still gate on their own artifacts."
         )
@@ -300,6 +441,9 @@ def main() -> int:
 
     hw_tag = "ACTIVE" if hw_gate_active else "inactive"
     moe_tag = "ACTIVE" if moe_gate_active else "inactive"
+    real_weight_tag = "ACTIVE" if real_weight_gate_active else "inactive"
+    full_e2b_tag = "ACTIVE" if full_e2b_gate_active else "inactive"
+    l35_tag = "ACTIVE" if l35_gate_active else "inactive"
     header_context = (
         f"hardware-claim gate {hw_tag}"
         + (
@@ -310,6 +454,21 @@ def main() -> int:
         + (
             f" (receipt at {moe_receipt.relative_to(REPO_ROOT)})"
             if not moe_gate_active else ""
+        )
+        + f"; real-weight gate {real_weight_tag}"
+        + (
+            f" (receipt at {real_weight_receipt.relative_to(REPO_ROOT)})"
+            if not real_weight_gate_active else ""
+        )
+        + f"; full-E2B gate {full_e2b_tag}"
+        + (
+            f" (receipt at {full_e2b_receipt.relative_to(REPO_ROOT)})"
+            if not full_e2b_gate_active else ""
+        )
+        + f"; L35-depth gate {l35_tag}"
+        + (
+            f" (summary at {l35_summary.relative_to(REPO_ROOT)})"
+            if not l35_gate_active else ""
         )
     )
 

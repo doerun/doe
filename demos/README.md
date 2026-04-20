@@ -9,10 +9,11 @@ Current demos:
     `bench/out/` JSON at view time. Static, no server required.
     Cross-links to the two Gemma-4 demos below.
 - `demos/gemma4-e2b-csl-sim/`
-  - Gemma 4 E2B layer-block side-by-side: browser WebGPU (via Dawn)
+  - Gemma 4 E2B-shaped L1 synthetic layer-block side-by-side:
+    browser WebGPU (via Dawn)
     + stored/live CSL simfabric + CSL-WebGPU-emulator, with an
     evidence cockpit (program identity, emulator-vs-simfabric
-    speed, per-layer accuracy, real-weight promotion badges).
+    speed, depth eligibility, real-weight promotion badges).
     Has `server.py` for live CSL runs + the two `/api` routes the
     SDK-GUI viewer depends on.
 - `demos/doe-sdk-gui-viewer/`

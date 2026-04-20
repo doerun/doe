@@ -52,6 +52,7 @@ let emulatorOutput = null;
 let lastCslTracePath = null;
 let lastCslNumLayers = null;
 let latestDirectComparison = { compared: false, pass: null, numLayers: null };
+let latestDepthCoverage = null;
 
 const el = (id) => document.getElementById(id);
 
@@ -70,6 +71,16 @@ function setText(id, text) {
 function setTone(id, tone = "") {
   const node = el(id);
   if (node) node.dataset.tone = tone;
+}
+
+function depthCoverageFor(numLayers) {
+  const coverage = (latestDepthCoverage && latestDepthCoverage.coverage) || [];
+  return coverage.find((row) => row.depth === numLayers) || null;
+}
+
+function selectedDepthClaimable() {
+  const row = depthCoverageFor(selectedNumLayers());
+  return Boolean(row && row.evidenceEligibility && row.evidenceEligibility.claimable);
 }
 
 function preview(array) {
@@ -501,14 +512,17 @@ function diffStats(left, right) {
 }
 
 async function loadAccuracyVerdict(numLayers) {
+  if (numLayers !== 1) {
+    throw new Error(
+      `L=${numLayers} is diagnostic only; no claimable accuracy verdict today`,
+    );
+  }
   try {
     return await fetchJson(accuracyVerdictPath(numLayers));
   } catch {
-    // Fallback for depths whose dedicated verdict has not been materialized.
-    // This repo-wide artifact is the stronger L35 per-layer isolated proof:
-    // every layer gets the same CSL/numpy rows input, so it measures kernel
-    // semantic agreement without feeding WebGPU's previous-layer drift into
-    // the next layer.
+    // L1 fallback from the repo-wide isolated per-layer artifact. Deeper
+    // depths intentionally do not use this fallback: they need their own
+    // promoted receipts before the UI may show a claimable verdict.
     const parity = await fetchJson(paths.perLayerParity);
     const atol = (parity.verdict && parity.verdict.verdictAtol) || 0.001;
     const layers = (parity.perLayer || [])
@@ -576,6 +590,9 @@ function compareOutputs() {
 
 async function refreshEvidenceStrip() {
   const numLayers = selectedNumLayers();
+  const depthRow = depthCoverageFor(numLayers);
+  const eligibility = (depthRow && depthRow.evidenceEligibility) || {};
+  const isClaimableDepth = eligibility.claimable === true;
   const speedEl = el("evidence-speedup");
   const accEl = el("evidence-accuracy");
   const idEl = el("evidence-identity");
@@ -586,9 +603,24 @@ async function refreshEvidenceStrip() {
     scopeEl.dataset.tone = "";
   }
   if (basisEl) {
-    basisEl.textContent = "per-layer semantic evidence";
-    basisEl.dataset.tone = "";
+    basisEl.textContent = isClaimableDepth
+      ? "synthetic L1 layer-block"
+      : "diagnostic depth only";
+    basisEl.dataset.tone = isClaimableDepth ? "pass" : "warn";
   }
+  setText(
+    "truth-headline",
+    isClaimableDepth
+      ? "Current claim: L1 synthetic layer-block only"
+      : `Selected L=${numLayers}: diagnostic only, not claimable E2B evidence`,
+  );
+  setTone("truth-headline", isClaimableDepth ? "pass" : "warn");
+  setText(
+    "truth-detail",
+    isClaimableDepth
+      ? "The claim is CSL simfabric and WebGPU output parity for one synthetic E2B-shaped layer-block at atol=1e-3."
+      : "Checkpoint extraction, multi-depth promotion, full E2B end-to-end, and Cerebras hardware are still blocked.",
+  );
 
   // Identity: from the speed verdict if present. Else leave as "-".
   let speedVerdict = null;
@@ -666,7 +698,11 @@ async function refreshEvidenceStrip() {
     }
   } else {
     accEl.textContent = `no accuracy verdict for L=${numLayers}`;
-    accEl.dataset.tone = "";
+    accEl.dataset.tone = isClaimableDepth ? "" : "warn";
+    if (!isClaimableDepth) {
+      setText("evidence-claim-scope", "blocked depth; diagnostic only");
+      setTone("evidence-claim-scope", "warn");
+    }
   }
 }
 
@@ -980,19 +1016,51 @@ async function refreshDepthCoverage() {
     label.textContent = `depth coverage: no matrix at ${depthCoveragePath}`;
     return;
   }
+  latestDepthCoverage = matrix;
   const r = matrix.rollup || {};
   const declared = r.declaredCount;
-  const anyCount = r.anyReceiptCount;
-  const fullCount = r.fullCoverageCount;
-  const tolCount = r.withinToleranceCount;
-  const depthsFull = (r.depthsWithFullLaneCoverage || []).map(d => `L=${d}`);
-  const depthsTol = (r.depthsAllWithinTolerance || []).map(d => `L=${d}`);
+  const anyCount = r.anyEligibleReceiptCount ?? r.anyReceiptCount;
+  const fullCount = r.fullEligibleCoverageCount ?? r.fullCoverageCount;
+  const tolCount = r.claimableWithinToleranceCount ?? r.withinToleranceCount;
+  const depthsFull = (
+    r.depthsWithFullEligibleLaneCoverage || r.depthsWithFullLaneCoverage || []
+  ).map(d => `L=${d}`);
+  const depthsTol = (
+    r.depthsClaimableWithinTolerance || r.depthsAllWithinTolerance || []
+  ).map(d => `L=${d}`);
   const fullList = depthsFull.length ? ` [${depthsFull.join(", ")}]` : "";
   const tolList = depthsTol.length ? ` [${depthsTol.join(", ")}]` : "";
   label.innerHTML =
-    `depth coverage: <strong>${anyCount}/${declared}</strong> any receipt · ` +
+    `claimable depth coverage: <strong>${anyCount}/${declared}</strong> any receipt · ` +
     `<strong>${fullCount}/${declared}</strong> full lane${fullList} · ` +
     `<strong>${tolCount}/${declared}</strong> within tolerance${tolList}`;
+  renderEvidenceLadder(matrix);
+  refreshEvidenceStrip();
+}
+
+function renderEvidenceLadder(matrix) {
+  const node = el("evidence-ladder");
+  if (!node) return;
+  const rows = matrix.coverage || [];
+  if (!rows.length) {
+    node.innerHTML = `<div class="ladder-row"><span>no depth rows</span></div>`;
+    return;
+  }
+  node.innerHTML = rows.map((row) => {
+    const eligibility = row.evidenceEligibility || {};
+    const claimable = eligibility.claimable === true;
+    const raw = row.laneReceiptsPresent || 0;
+    const eligible = row.evidenceEligibleLanesPresent || 0;
+    const status = claimable ? "claimable" : "blocked";
+    const cls = claimable ? "pass" : "warn";
+    const scope = eligibility.claimableLabel || eligibility.evidenceTier || "no summary";
+    return `<div class="ladder-row">
+      <strong>L=${row.depth}</strong>
+      <span class="badge ${cls}">${status}</span>
+      <span>${scope}</span>
+      <code>${eligible}/5 eligible · ${raw}/5 raw</code>
+    </div>`;
+  }).join("");
 }
 
 async function refreshCockpit() {
@@ -1027,13 +1095,20 @@ async function refreshCockpit() {
   }
 
   const lanes = summary.lanes || [];
-  const rollupTone = summary.verdict === "all_lanes_identity_and_parity_matched"
+  const eligibility = summary.evidenceEligibility || {};
+  const isClaimableSummary = eligibility.claimable === true;
+  const rollupTone = isClaimableSummary &&
+    summary.verdict === "all_lanes_identity_and_parity_matched"
     ? "pass"
     : "warn";
   const toleranceVerdict = (
     (summary.runtimeParityTolerance || {}).rollupVerdict || "not_evaluated"
   );
-  setText("evidence-rollup", `${summary.verdict || "unknown"} · ${toleranceVerdict}`);
+  setText(
+    "evidence-rollup",
+    `${isClaimableSummary ? "claimable" : "diagnostic"} · ` +
+    `${summary.verdict || "unknown"} · ${toleranceVerdict}`,
+  );
   setTone("evidence-rollup", rollupTone);
   if (tbody) {
     tbody.innerHTML = lanes.map((lane) => {
@@ -1118,6 +1193,7 @@ async function refreshCockpit() {
   const stateFor = (lane) => {
     const l = byLane[lane];
     if (!l || !l.receiptPresent) return { label: "absent", cls: "warn" };
+    if (!isClaimableSummary) return { label: "diagnostic", cls: "warn" };
     if (l.status === "succeeded") return { label: "ok", cls: "pass" };
     if (l.status === "blocked") return { label: "blocked", cls: "warn" };
     return { label: l.status || "unknown", cls: "fail" };
