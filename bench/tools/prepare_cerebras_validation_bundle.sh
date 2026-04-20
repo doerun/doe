@@ -19,6 +19,27 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    cat <<'EOF'
+prepare_cerebras_validation_bundle.sh — one-command Cerebras bundle prep
+
+Chains in sequence:
+  1. run_cerebras_evidence_bundle.py   (5 local gates)
+  2. pack_cerebras_validation_archive.py   (builds dated tarball)
+  3. verify_cerebras_validation_archive.py   (manifest + claim-role + claim-discipline scan)
+
+Output: bench/out/doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz
+
+Usage:
+  bench/tools/prepare_cerebras_validation_bundle.sh        run the full chain
+  bench/tools/prepare_cerebras_validation_bundle.sh --help show this message
+
+Exits 0 iff every step passes; non-zero on first failure.
+Run from any directory; the script cd's to the repo root.
+EOF
+    exit 0
+fi
+
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 step() {

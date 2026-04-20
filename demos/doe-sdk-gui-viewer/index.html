@@ -39,15 +39,40 @@
         <input type="text" id="artifact-dir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
       </label>
       <button id="load-artifact" type="button">Inspect</button>
+      <label style="display:inline-flex;gap:0.3rem;align-items:center;font-size:12px;color:var(--muted);">
+        <input type="checkbox" id="redact-toggle"> redact paths (screen-share safe)
+      </label>
       <span id="artifact-status" class="status-pill pending">awaiting path</span>
     </section>
 
-    <section class="compare-strip" aria-label="SDK visualize command">
-      <div style="grid-column: 1 / -1;">
+    <section class="compare-strip command-strip" aria-label="Evidence commands">
+      <div class="command-row">
         <span class="label">exported sdk_debug_shell command
-          <button type="button" id="sdk-command-copy" class="inline-copy" title="Copy to clipboard">copy</button>
+          <button type="button" id="sdk-command-copy" class="inline-copy" data-copy-for="sdk-command" title="Copy to clipboard">copy</button>
+          <span id="sdk-command-state" class="command-state pending">missing artifact dir</span>
         </span>
-        <code id="sdk-command">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+        <code id="sdk-command" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+      </div>
+      <div class="command-row">
+        <span class="label">evidence bundle runner
+          <button type="button" id="bundle-runner-command-copy" class="inline-copy" data-copy-for="bundle-runner-command" title="Copy to clipboard">copy</button>
+          <span id="bundle-runner-command-state" class="command-state ready">ready</span>
+        </span>
+        <code id="bundle-runner-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/run_cerebras_evidence_bundle.py</code>
+      </div>
+      <div class="command-row">
+        <span class="label">archive packer
+          <button type="button" id="archive-pack-command-copy" class="inline-copy" data-copy-for="archive-pack-command" title="Copy to clipboard">copy</button>
+          <span id="archive-pack-command-state" class="command-state ready">ready</span>
+        </span>
+        <code id="archive-pack-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/pack_cerebras_validation_archive.py</code>
+      </div>
+      <div class="command-row">
+        <span class="label">archive verifier
+          <button type="button" id="archive-verify-command-copy" class="inline-copy" data-copy-for="archive-verify-command" title="Copy to clipboard">copy</button>
+          <span id="archive-verify-command-state" class="command-state pending">server route needed</span>
+        </span>
+        <code id="archive-verify-command" class="copy-command" tabindex="0" data-copyable="false">python3 bench/tools/verify_cerebras_validation_archive.py --archive &lt;archive.tar.gz&gt;</code>
       </div>
     </section>
 

@@ -2,6 +2,25 @@ const repoRoot = "../../";
 
 const el = (id) => document.getElementById(id);
 
+function redactEnabled() {
+  return el("redact-toggle")?.checked === true;
+}
+
+function maybeRedact(value) {
+  if (!redactEnabled()) return value;
+  if (!value) return value;
+  // Keep the last path component only, replace leading dirs with '…'.
+  const str = String(value);
+  const parts = str.split("/");
+  if (parts.length <= 1) return "[redacted]";
+  return `…/${parts[parts.length - 1]}`;
+}
+
+function redactShaKeepPrefix(hex) {
+  if (!hex) return "[absent]";
+  return (hex + "").slice(0, 8) + "…";  // keep prefix even in redacted mode — it's a hash, not a path
+}
+
 function setPill(id, text, cls = "pending") {
   const node = el(id);
   if (!node) return;
@@ -16,7 +35,10 @@ function setSdkCommand(artifactDir) {
     node.textContent = "sdk_debug_shell visualize --artifact_dir <set artifact dir above>";
     return;
   }
-  node.textContent = `sdk_debug_shell visualize --artifact_dir ${artifactDir}`;
+  // The command itself is operator-runnable; hide the dir path when
+  // redacted mode is on so the screen-share only shows the shape.
+  const shown = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
+  node.textContent = `sdk_debug_shell visualize --artifact_dir ${shown}`;
 }
 
 function setArtifactSummary(artifactDir) {
@@ -26,7 +48,8 @@ function setArtifactSummary(artifactDir) {
     node.innerHTML = "<span>artifact dir: not configured</span>";
     return;
   }
-  node.innerHTML = `<span>artifact dir: <code>${artifactDir}</code></span>`;
+  const shown = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
+  node.innerHTML = `<span>artifact dir: <code>${shown}</code></span>`;
 }
 
 async function inspectArtifactDir(artifactDir) {
@@ -183,8 +206,9 @@ function renderHostIoPanelFromInfo(node, tracePath, info) {
     `bufSize=${e.ioBufferSize ?? '?'}B, payload=${e.planPayloadBytes ?? '?'}B`
   )).join("<br>");
   const counts = info.sendReceiveCounts || {};
+  const shownTrace = redactEnabled() ? maybeRedact(tracePath) : tracePath;
   node.innerHTML = (
-    `<strong>trace:</strong> ${tracePath}<br>` +
+    `<strong>trace:</strong> ${shownTrace}<br>` +
     `<strong>depth:</strong> ${info.numLayersChained ?? '?'} layers chained<br>` +
     `<strong>send/recv:</strong> ${counts.sends ?? '?'}/${counts.receives ?? '?'}<br>` +
     `<strong>kernel sha:</strong> <code>${(info.kernelSourceSha256 || '').slice(0, 16)}...</code><br>` +
@@ -251,8 +275,9 @@ async function renderEvidencePanel(artifactDir) {
     const liveKernelSha = (kernel.liveSha256 || '').slice(0, 16);
     const runnerKernelSha = (runnerTrace.kernelSourceSha256InTrace || '').slice(0, 16);
     const syntheticSha = (syntheticTrace.sha256 || '').slice(0, 16);
+    const shownArtifact = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
     node.innerHTML = (
-      `<strong>artifact dir:</strong> <code>${artifactDir}</code><br>` +
+      `<strong>artifact dir:</strong> <code>${shownArtifact}</code><br>` +
       `<strong>live kernel sha:</strong> <code>${liveKernelSha}...</code><br>` +
       `<strong>runner-recorded kernel sha:</strong> <code>${runnerKernelSha}...</code> ${driftTag}<br>` +
       `<strong>synthetic trace sha:</strong> <code>${syntheticSha}...</code><br>` +
@@ -321,6 +346,24 @@ function init() {
   el("artifact-dir-input")?.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onLoadArtifact();
   });
+  // Redact toggle: persist across refreshes, re-inspect on change so
+  // all panels redraw consistently.
+  const redactBox = el("redact-toggle");
+  if (redactBox) {
+    redactBox.checked = sessionStorage.getItem("sdk-gui-redact") === "1";
+    redactBox.addEventListener("change", () => {
+      sessionStorage.setItem(
+        "sdk-gui-redact",
+        redactBox.checked ? "1" : "0",
+      );
+      const current = el("artifact-dir-input")?.value?.trim();
+      if (current) inspectArtifactDir(current);
+      else {
+        setSdkCommand(null);
+        setArtifactSummary(null);
+      }
+    });
+  }
 
   // URL ?artifact=<rel-path> auto-populates the input and runs
   // inspection so a dashboard link can open this viewer pinned to a

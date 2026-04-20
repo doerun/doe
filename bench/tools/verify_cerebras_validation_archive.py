@@ -78,17 +78,36 @@ def scan_bytes(data: bytes, rules) -> list[tuple[str, int, str]]:
             hits.append((rule.label, line_no, snippet))
     return hits
 
-KNOWN_CLAIM_ROLES = {
-    "governance",
-    "real-weight-fixture",
-    "model-runtime-receipt",
-    "cross-runtime-parity-verdict",
-    "emulator-accuracy-verdict",
-    "emulator-speed-verdict",
-    "real-weight-parity-verdict",
-    "moe-lane-scope",
-    "rollup",
-}
+def _load_known_claim_roles() -> set[str]:
+    """Import the live CLAIM_ROLE dict from the packager and use its
+    values as the authoritative role taxonomy. Keeps the packer and
+    verifier in sync automatically: a new role landed in the packager
+    is accepted by the verifier on next invocation, without touching
+    this file. Falls back to a static set only if the import fails."""
+    packer_py = (
+        Path(__file__).resolve().parent / "pack_cerebras_validation_archive.py"
+    )
+    try:
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location("_doe_packer", str(packer_py))
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        return set(mod.CLAIM_ROLE.values())
+    except (OSError, ImportError, AttributeError):
+        return {
+            "governance",
+            "real-weight-fixture",
+            "model-runtime-receipt",
+            "cross-runtime-parity-verdict",
+            "emulator-accuracy-verdict",
+            "emulator-speed-verdict",
+            "real-weight-parity-verdict",
+            "moe-lane-scope",
+            "rollup",
+        }
+
+
+KNOWN_CLAIM_ROLES = _load_known_claim_roles()
 
 BUNDLE_META_REQUIRED = [
     "schemaVersion",

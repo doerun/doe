@@ -22,6 +22,11 @@ Current demos:
     `bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>` to inspect
     without unpacking SDK binaries. Requires the E2B demo server
     running on the same origin for its `/api` routes.
+    Has a "redact paths" toggle for screen-share-safe mode:
+    hides local filesystem path bytes, keeps hashes + verdicts
+    visible. A copy button next to the exported
+    `sdk_debug_shell visualize` command writes the full command
+    to the clipboard.
 - `demos/volume-render`
   - local package-backed volume rendering demo for manual exploration
 - `demos/service-worker-compute`

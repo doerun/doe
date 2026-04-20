@@ -682,6 +682,57 @@ def main() -> int:
             f"C14 FAIL: fixture missing at {_fixture_path.relative_to(REPO_ROOT)}"
         )
 
+    # C22: packager's INCLUDE_FILES and CLAIM_ROLE dict stay in sync.
+    # Every archive path in INCLUDE_FILES must have a CLAIM_ROLE entry
+    # (otherwise MANIFEST.txt shows 'UNLABELED'); every CLAIM_ROLE key
+    # must appear in INCLUDE_FILES (otherwise the label is dead code).
+    # Imports the packager module to read the live tuples.
+    _packer_py = REPO_ROOT / "bench/tools/pack_cerebras_validation_archive.py"
+    if _packer_py.is_file():
+        try:
+            import importlib.util as _ilu_c22
+            _pspec = _ilu_c22.spec_from_file_location(
+                "_doe_packer", str(_packer_py)
+            )
+            _pmod = _ilu_c22.module_from_spec(_pspec)
+            _pspec.loader.exec_module(_pmod)  # type: ignore[union-attr]
+            _archive_paths = set()
+            for _entry in _pmod.INCLUDE_FILES:
+                if isinstance(_entry, tuple):
+                    _archive_paths.add(_entry[1])
+                else:
+                    _archive_paths.add(_entry)
+            _role_keys = set(_pmod.CLAIM_ROLE.keys())
+            _c22_fails = []
+            _unlabeled = _archive_paths - _role_keys
+            if _unlabeled:
+                _c22_fails.append(
+                    f"INCLUDE_FILES without CLAIM_ROLE entry: "
+                    f"{sorted(_unlabeled)}"
+                )
+            _dead = _role_keys - _archive_paths
+            if _dead:
+                _c22_fails.append(
+                    f"CLAIM_ROLE entries without INCLUDE_FILES match "
+                    f"(dead code): {sorted(_dead)}"
+                )
+            if _c22_fails:
+                for _f in _c22_fails:
+                    failures.append(f"C22 FAIL: {_f}")
+            else:
+                print(
+                    f"  C22 PASS: packager INCLUDE_FILES and CLAIM_ROLE "
+                    f"in sync ({len(_archive_paths)} archive paths, "
+                    f"{len(_role_keys)} claim-role entries)"
+                )
+        except (OSError, ImportError, AttributeError) as _e22:
+            failures.append(f"C22 FAIL: cannot import packer: {_e22}")
+    else:
+        failures.append(
+            f"C22 FAIL: packer missing at "
+            f"{_packer_py.relative_to(REPO_ROOT)}"
+        )
+
     # C21: MoE TODO receipts use artifactKind=doe_moe_<component>_todo,
     # NOT ...*_receipt. If a TODO were renamed to end in _receipt, the
     # claim-discipline gate's find_moe_receipt() would false-unlock

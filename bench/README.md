@@ -2137,3 +2137,47 @@ expected to succeed.
 
 Without `cslc` and the Cerebras SDK installed, this surface should finish as
 `blocked` / diagnostic with explicit blocker reasons rather than pretending to run.
+
+## Cerebras hardware-validation evidence bundle
+
+Use this when preparing an external ask (e.g. a hardware-access request email).
+The bundle packages the software proof into one verifiable archive so the
+claims the repo records line up with the bytes a reviewer holds.
+
+One-command prep:
+
+```bash
+bench/tools/prepare_cerebras_validation_bundle.sh
+```
+
+Runs, in order: `run_cerebras_evidence_bundle.py` (5 local gates) →
+`pack_cerebras_validation_archive.py` (builds
+`bench/out/doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz`
+with a top-level `README.md` / `CLAIM_SCOPE.md` / `CEREBRAS_ASK.md` /
+`LOCAL_INSPECTION.md` / `BUNDLE_META.json` / `MANIFEST.txt` plus
+governance + receipt + rollup files) → `verify_cerebras_validation_archive.py`
+(manifest sha integrity + claim-role taxonomy + BUNDLE_META completeness +
+claim-discipline scan on archive text).
+
+Related tools:
+
+- `bench/tools/summarize_cerebras_evidence_archive.sh <archive>` — print
+  E2B/31B/MoE status + bundle verdict entirely from inside the tarball.
+- `bench/tools/verify_cerebras_validation_archive.py --archive <path>` —
+  re-run just the verifier against a received bundle.
+
+Regression surface that protects the pipeline:
+
+- `bench/tools/e2b_layer_block_self_check.py` — 22 in-loop contracts
+  including C16 (pack+verify round-trip), C17 (viewer `/api` routes),
+  C18 (demo HTML + cross-links), C19 (bundle-summary shape),
+  C20 (lane labels), C21 (MoE TODO artifactKind), C22 (packager
+  INCLUDE_FILES ↔ CLAIM_ROLE sync).
+- `bench/gates/claim_discipline_gate.py` — rejects hardware-claim and
+  26B/A4B MoE-claim prose anywhere outside rule-enumerating docs.
+
+The bundle is scoped to **evidence + hashes + commands only** — no SDK
+binaries, weight bytes, or simulator logs. See
+`docs/hardware-validation-appendix.md` for the parent ask and
+`docs/cerebras-evidence-bundle-readme.md` for the bundle's own
+reviewer workflow.

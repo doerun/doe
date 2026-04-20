@@ -161,7 +161,54 @@ class DemoHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/bundle-summary":
             self.send_json(self.inspect_bundle_summary())
             return
+        if parsed.path == "/api/evidence-commands":
+            self.send_json(self.inspect_evidence_commands())
+            return
         super().do_GET()
+
+    def inspect_evidence_commands(self) -> dict:
+        archive_dir = REPO_ROOT / "bench/out"
+        latest_archive = None
+        if archive_dir.is_dir():
+            archives = sorted(
+                archive_dir.glob("doe-cerebras-evidence-*.tar.gz"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if archives:
+                latest_archive = str(archives[0].relative_to(REPO_ROOT))
+        verify_arg = latest_archive or "<archive.tar.gz>"
+        return {
+            "ok": True,
+            "latestArchive": latest_archive,
+            "commands": {
+                "bundleRunner":
+                    "python3 bench/tools/run_cerebras_evidence_bundle.py",
+                "archivePack":
+                    "python3 bench/tools/pack_cerebras_validation_archive.py",
+                "archiveVerify": (
+                    "python3 bench/tools/verify_cerebras_validation_archive.py "
+                    f"--archive {verify_arg}"
+                ),
+            },
+            "copyable": {
+                "bundleRunner": True,
+                "archivePack": True,
+                "archiveVerify": latest_archive is not None,
+            },
+            "statuses": {
+                "bundleRunner": "ready",
+                "archivePack": "ready",
+                "archiveVerify": (
+                    "latest archive found"
+                    if latest_archive else "run archive pack first"
+                ),
+            },
+            "note": (
+                "Repo-relative commands only. The route never returns SDK "
+                "binary file bytes or absolute cluster paths."
+            ),
+        }
 
     def inspect_bundle_summary(self) -> dict:
         # Stable route for the evidence bundle summary. When the bundle
