@@ -5,7 +5,10 @@ validation on the endpoint. Tight and single-purpose. The rest of
 the bundle's documents are reviewer-facing; this one is for the
 person pressing Enter on the hardware.
 
-## What we need from Cerebras
+## Two paths — either works
+
+**Path A (preferred): temporary endpoint access.** We run the runner
+from our side against a Cerebras-provided endpoint:
 
 1. **Reachable CS/WSC endpoint.** Either a direct `--cmaddr <ip:port>`
    target or an appliance SdkLauncher endpoint.
@@ -15,6 +18,19 @@ person pressing Enter on the hardware.
 3. **Authorization to run the runner** in `bench/runners/csl-runners/`
    against the endpoint with the pinned manifest + graph + kernel
    source from this bundle.
+
+**Path B: Cerebras-assisted bundle run.** A Cerebras engineer runs the
+bundle internally on their cluster and returns the receipt:
+
+1. **Unpack this archive** and run the `What to run` commands below.
+   Kernel, manifest, and graph are all pinned inside the bundle with
+   recorded sha256; `MANIFEST.txt` has every file's digest.
+2. **Return the `doe_target_run_receipt`** with the fields listed
+   under `What to return`. No code from our side needs to run on your
+   cluster — the runner is self-contained under `bench/runners/`.
+3. **Redact what your policy requires.** Every `hardware.*` field has
+   an explicit `"redacted"` convention so we can compare receipts
+   without leaking endpoint identity.
 
 ## What to run
 
@@ -95,7 +111,13 @@ INACTIVE when such a receipt exists in `bench/out/`.
 
 ## Point of contact
 
-See `docs/hardware-validation-appendix.md` — this is the parent
-appendix. `CEREBRAS_ASK.md` is its operational distillation. If the
-two ever disagree, the appendix wins (it is the external-facing
-contract; this file is its summary).
+Questions, clarifications, or receipt-field negotiation: reply to
+the email thread this archive came from, or the sender address on
+the outreach message. The Doe team (bundle originator) is the point
+of contact — we handle the interpretation side of anything that
+comes back.
+
+`docs/hardware-validation-appendix.md` is the parent appendix;
+`CEREBRAS_ASK.md` is its operational distillation. If the two ever
+disagree, the appendix wins (it is the external-facing contract;
+this file is its summary).

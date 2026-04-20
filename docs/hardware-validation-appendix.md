@@ -5,16 +5,19 @@ is keyed to an on-disk artifact; no marketing language, no performance
 claims. Scope: E2B layer-block first; 31B layer-block is also present
 as the scale-target scaffold.
 
-## Attached bundle (updated per build)
+## Attached bundle
 
-Latest evidence archive produced by
-`bench/tools/prepare_cerebras_validation_bundle.sh`:
+Current archive filename, sha256s, size, and git commit are
+auto-refreshed by
+`bench/tools/prepare_cerebras_validation_bundle.sh` into:
 
-- archive: `bench/out/doe-cerebras-evidence-20260420-1312-fc4c0818b5bc-dirty.tar.gz`
-- archive sha256: `31b2324a5a3aee54e7cfbf66b20ef79530ffd519322c2d1a8ae0c981cc244127`
-- MANIFEST.txt sha256: `101742dd59c8a30d43c473bfc2cfa08032467398c5f71f777dac570e40577dac`
-- BUNDLE_META.json sha256: `1d7f8b4f0fa3d59cd7c44b756f133d001c93a6ab3e7accf5bb2820894bb1e570`
-- git commit: `fc4c0818b5bc` (dirty tree — rebuild from a clean tree before external send)
+- `docs/cerebras-evidence-bundle-pointer.md`
+
+That file is regenerated on each successful pack, so the appendix
+stays stable while the pointer tracks the latest build. Read it for
+the exact values you'd cite in an email body. If the pointer doesn't
+exist yet on a fresh clone, run
+`bench/tools/prepare_cerebras_validation_bundle.sh` to generate it.
 
 To verify the bytes you received:
 
@@ -29,9 +32,7 @@ Or a one-command summary without unpacking:
 bench/tools/summarize_cerebras_evidence_archive.sh <path-to-received-archive>
 ```
 
-These hashes rotate per rebuild; the current values reflect the
-last `prepare_cerebras_validation_bundle.sh` run captured in the
-repo. The archive's own `BUNDLE_META.json` is the authoritative
+The archive's own `BUNDLE_META.json` is always the authoritative
 source of truth for any bundle in hand.
 
 ## Target order
@@ -116,7 +117,17 @@ not the manifest's production shape.
 
 ## 3. What hardware validation should run
 
-Minimum sufficient ask:
+Two paths either work; CEREBRAS_ASK.md inside the evidence bundle
+has the operator-facing detail for both.
+
+- **Path A — endpoint access.** Cerebras provides a reachable CS/WSC
+  endpoint; we run the commands below from our side.
+- **Path B — Cerebras-assisted bundle run.** A Cerebras engineer runs
+  the bundle internally on their cluster and returns the receipt.
+  No code from our side needs to run on Cerebras infrastructure —
+  the runner is self-contained under `bench/runners/`.
+
+Minimum sufficient ask (same command either way):
 
 1. E2B layer-block smoke at `num_layers=35` against a reachable CS
    endpoint via `--cmaddr`, or appliance via

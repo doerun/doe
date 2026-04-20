@@ -36,7 +36,7 @@
         </select>
       </label>
       <button id="run-webgpu" type="button">Run WebGPU</button>
-      <button id="run-csl" type="button">Run CSL Simulator</button>
+      <button id="run-csl" type="button">Load / Run CSL Simulator</button>
       <button id="run-emulator" type="button">Run CSL WebGPU Emulator</button>
       <button id="load-stored-csl" type="button">Load Stored CSL</button>
       <span id="server-status" class="status-pill pending">server: checking</span>
@@ -129,9 +129,9 @@
     </section>
 
     <section class="lan-note">
-      This demo runs the browser side live. The CSL side runs live only when
-      served by <code>demos/gemma4-e2b-csl-sim/server.py</code>; otherwise it
-      can load the stored simfabric receipt.
+      This demo runs the browser side live. The CSL side loads matching-depth
+      local simfabric traces when present and can request a fresh simulator run
+      when the server process is allowed to launch <code>cs_python</code>.
     </section>
 
     <section class="lanes" aria-label="Runtime lanes">

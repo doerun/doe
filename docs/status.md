@@ -129,6 +129,12 @@ Read this file first. Use the shard files under
   the provider root alive through async completion.
 - Benchmark/package compare cleanup in early April moved more of the compare
   stack onto artifact-first, config-backed paths.
+- Cerebras-facing Gemma-4 lane is in outreach phase: evidence bundle pipeline
+  (`bench/tools/prepare_cerebras_validation_bundle.sh`) lands a verified
+  tarball; in-loop self-check at 34/34 contracts; external ask pitches both
+  endpoint access and Cerebras-assisted bundle run. Full scope is evidenced in
+  the current April shard and in `docs/hardware-validation-appendix.md`.
+  Claim discipline remains ACTIVE (no hardware receipt yet).
 
 ## Current follow-up highlights
 

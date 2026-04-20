@@ -47,6 +47,105 @@ IDENTITY_PROBE_LANES = {"doe-metal", "doe-vulkan"}
 
 MODEL_RECEIPT_E2B = "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json"
 
+# Canonical E2B layer-block parity tolerance lives in the real-weight
+# fixture's parityPolicy.atol. Kept as a constant path so the tool does
+# not silently drift from the fixture. Fallback atol is the same 1e-3
+# documented in docs/claim-discipline.md.
+PARITY_FIXTURE_PATH = "config/gemma-4-e2b-real-weight-fixture.json"
+DEFAULT_ATOL = 1e-3
+
+
+def load_declared_atol() -> tuple[float, str]:
+    """Return (atol, source) from the canonical fixture, else default."""
+    fixture = REPO_ROOT / PARITY_FIXTURE_PATH
+    if fixture.is_file():
+        try:
+            data = json.loads(fixture.read_text(encoding="utf-8"))
+            policy = data.get("parityPolicy") or {}
+            atol = policy.get("atol")
+            if isinstance(atol, (int, float)):
+                return float(atol), PARITY_FIXTURE_PATH
+        except (OSError, ValueError):
+            pass
+    return DEFAULT_ATOL, "default_1e-3"
+
+
+def read_f32(path: Path):
+    """Read a raw float32 binary file. Returns (array, error) tuple.
+
+    Kept numpy-import-guarded so the summarizer still runs (without
+    tolerance annotation) on environments that lack numpy.
+    """
+    try:
+        import numpy as np  # noqa: PLC0415
+    except ImportError:
+        return None, "numpy_unavailable"
+    if not path.is_file():
+        return None, "file_absent"
+    try:
+        arr = np.fromfile(str(path), dtype=np.float32)
+    except (OSError, ValueError) as exc:
+        return None, f"read_failed: {exc}"
+    return arr, None
+
+
+def tolerance_verdict(
+    left_path: Path, right_path: Path, atol: float,
+) -> dict:
+    """Compute max_abs diff between two f32 files under atol.
+
+    Emits machine-readable verdict fields without raising. The caller
+    merges these into the parity matrix entry.
+    """
+    import math  # noqa: PLC0415
+    left_arr, left_err = read_f32(left_path)
+    right_arr, right_err = read_f32(right_path)
+    if left_err or right_err:
+        return {
+            "toleranceVerdict": "not_comparable",
+            "toleranceReason": f"left={left_err or 'ok'} right={right_err or 'ok'}",
+            "toleranceAtol": atol,
+        }
+    if left_arr.shape != right_arr.shape:
+        return {
+            "toleranceVerdict": "shape_mismatch",
+            "toleranceReason": (
+                f"left_elems={int(left_arr.size)} "
+                f"right_elems={int(right_arr.size)}"
+            ),
+            "toleranceAtol": atol,
+        }
+    if left_arr.size == 0:
+        return {
+            "toleranceVerdict": "not_comparable",
+            "toleranceReason": "empty_arrays",
+            "toleranceAtol": atol,
+        }
+    import numpy as np  # noqa: PLC0415
+    diff = np.abs(left_arr - right_arr)
+    max_abs = float(diff.max())
+    mean_abs = float(diff.mean())
+    if math.isnan(max_abs) or math.isinf(max_abs):
+        return {
+            "toleranceVerdict": "non_finite",
+            "toleranceReason": (
+                f"max_abs={max_abs!r} — nan/inf present"
+            ),
+            "toleranceAtol": atol,
+            "maxAbsDiff": max_abs,
+            "meanAbsDiff": mean_abs,
+        }
+    within = max_abs <= atol
+    return {
+        "toleranceVerdict": (
+            "within_tolerance" if within else "exceeds_tolerance"
+        ),
+        "toleranceAtol": atol,
+        "maxAbsDiff": max_abs,
+        "meanAbsDiff": mean_abs,
+        "elemCount": int(left_arr.size),
+    }
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()

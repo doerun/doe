@@ -70,6 +70,48 @@ function formatMs(ms) {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
+// CSL runner stderr preserves ANSI escape codes (e.g. \x1b[34m[INFO]
+// from cs_python wrappers). Browsers render them as literal garbage
+// in a <pre> block, so strip them before display. Covers SGR (color)
+// and cursor-move sequences — enough for the runner output shapes
+// the demo actually sees.
+function stripAnsi(text) {
+  if (typeof text !== "string") return text;
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
+}
+
+// Runner failures from /api/run-csl come back as a JSON body with
+// status/returnCode/stderrTail fields. Naive String(err.message)
+// shows the raw JSON with \n literals inside the stderrTail string,
+// making the stderr unreadable. This helper detects the runner-
+// failure JSON shape and pretty-prints it: one header line, then
+// the unescaped stderr. For non-JSON errors it returns the input
+// unchanged.
+function formatRunnerError(text) {
+  if (typeof text !== "string") return text;
+  const trimmed = text.trim();
+  if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return text;
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return text;
+  }
+  if (!parsed || typeof parsed !== "object") return text;
+  const { status, returnCode, stderrTail, numLayersRequested } = parsed;
+  if (stderrTail === undefined && returnCode === undefined) return text;
+  const headerParts = [];
+  if (status) headerParts.push(`status=${status}`);
+  if (returnCode !== undefined) headerParts.push(`returnCode=${returnCode}`);
+  if (numLayersRequested !== undefined) {
+    headerParts.push(`L=${numLayersRequested}`);
+  }
+  const header = headerParts.join(" · ") || "runner failure";
+  const body = typeof stderrTail === "string" ? stderrTail : "";
+  return body ? `${header}\n\n${body}` : header;
+}
+
 async function fetchText(path) {
   const response = await fetch(repoRoot + path);
   if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
@@ -278,7 +320,9 @@ async function runLiveCsl() {
     elapsed: payload.elapsedMs,
     tracePath: payload.tracePath,
     status: payload.status,
-    source: "live",
+    source: payload.source === "cached_trace" ? "cached trace" : "live simfabric",
+    cacheHit: payload.cacheHit === true,
+    runnerSkipped: payload.runnerSkipped || null,
     numLayers: payload.numLayersChained || payload.numLayersRequested || numLayers,
     streamTelemetry: payload.streamTelemetry || [],
   };
@@ -371,15 +415,50 @@ function summarizeCslSemantics(semantics, tracePath) {
 
 async function runCslWebGpuEmulator() {
   const numLayers = selectedNumLayers();
-  const traceInfo = await loadCslSemanticTrace(numLayers);
-  const semantics = validateCslStreamSemantics(traceInfo.trace, numLayers);
+  // Always run the WGSL path — the emulator's correctness claim is
+  // about the shader, not the trace. Attempt the CSL contract check
+  // separately: verified when a matching-depth trace exists, marked
+  // 'unchecked' with a reason when absent. Without this split,
+  // L=2/4/8/35 would 404-fail any host that hasn't captured traces
+  // at those depths yet (every non-cs_python environment).
   const result = await executeLayerBlockWebGpu();
+  let tracePath = null;
+  let semantics = null;
+  let contractStatus = { status: "unchecked", reason: "not attempted" };
+  try {
+    const traceInfo = await loadCslSemanticTrace(numLayers);
+    tracePath = traceInfo.path;
+    semantics = validateCslStreamSemantics(traceInfo.trace, numLayers);
+    contractStatus = { status: "verified", tracePath };
+  } catch (err) {
+    const reason = (err && err.message) || String(err);
+    const missingTrace = /HTTP 404|no CSL trace/i.test(reason);
+    contractStatus = {
+      status: "unchecked",
+      kind: missingTrace ? "missing_trace" : "contract_unchecked",
+      reason,
+      note: (
+        "Emulator WGSL executed successfully; CSL semantic contract " +
+        (missingTrace
+          ? "check is waiting for a matching-depth CSL trace. "
+          : "check was skipped. ") +
+        "Output hash is still authoritative for the WGSL kernel."
+      ),
+    };
+  }
   return {
     ...result,
     source: "webgpu_csl_semantic_emulator",
-    tracePath: traceInfo.path,
+    tracePath,
     semantics,
-    semanticSummary: summarizeCslSemantics(semantics, traceInfo.path),
+    semanticSummary: semantics
+      ? summarizeCslSemantics(semantics, tracePath)
+      : `${contractStatus.kind === "missing_trace"
+          ? "CSL trace missing"
+          : "CSL contract check: unchecked"}` +
+        (contractStatus.reason ? ` — ${contractStatus.reason}` : "") +
+        (contractStatus.note ? `\n${contractStatus.note}` : ""),
+    cslContract: contractStatus,
   };
 }
 
@@ -532,20 +611,21 @@ function drawPlot() {
 
 async function onRunWebGpu() {
   const button = el("run-webgpu");
+  const n = selectedNumLayers();
   button.disabled = true;
-  setPill("webgpu-status", "running", "warn");
+  setPill("webgpu-status", `running L=${n}`, "warn");
   try {
     const result = await executeLayerBlockWebGpu();
     webgpuOutput = result.output;
-    setPill("webgpu-status", "succeeded", "pass");
+    setPill("webgpu-status", `succeeded L=${n}`, "pass");
     el("webgpu-adapter").textContent = result.adapterLabel;
     el("webgpu-elapsed").textContent = formatMs(result.elapsed);
     el("webgpu-sha").textContent = result.sha;
     el("webgpu-preview").textContent = preview(result.output);
     compareOutputs();
   } catch (err) {
-    setPill("webgpu-status", "failed", "fail");
-    el("webgpu-preview").textContent = String(err.message || err);
+    setPill("webgpu-status", `failed L=${n}`, "fail");
+    el("webgpu-preview").textContent = stripAnsi(String(err.message || err));
   } finally {
     button.disabled = false;
   }
@@ -555,30 +635,50 @@ async function setCslResult(result) {
   cslOutput = result.output;
   lastCslTracePath = result.tracePath || null;
   lastCslNumLayers = result.numLayers || selectedNumLayers();
-  setPill("csl-status", `${result.source} ${result.status}`, result.status === "succeeded" ? "pass" : "warn");
+  setPill(
+    "csl-status",
+    `${result.source} ${result.status} L=${lastCslNumLayers}`,
+    result.status === "succeeded" ? "pass" : "warn",
+  );
   el("csl-elapsed").textContent = formatMs(result.elapsed);
   el("csl-sha").textContent = result.sha || await sha256Hex(result.output);
   el("csl-trace").textContent = result.tracePath || "-";
-  el("csl-preview").textContent = preview(result.output);
+  el("csl-preview").textContent = result.runnerSkipped
+    ? `${preview(result.output)}\n\n${result.runnerSkipped}`
+    : preview(result.output);
   compareOutputs();
 }
 
 async function onRunEmulator() {
   const button = el("run-emulator");
+  const n = selectedNumLayers();
   button.disabled = true;
-  setPill("emulator-status", "running", "warn");
+  setPill("emulator-status", `running L=${n}`, "warn");
   try {
     const result = await runCslWebGpuEmulator();
     emulatorOutput = result.output;
-    setPill("emulator-status", "succeeded", "pass");
+    // Pill distinguishes full contract verification (green) from
+    // WGSL-ran-but-contract-unchecked (amber) so a reviewer doesn't
+    // mistake "emulator ran" for "emulator ran + matched CSL".
+    const contractOk = result.cslContract &&
+                       result.cslContract.status === "verified";
+    const missingTrace = result.cslContract &&
+                         result.cslContract.kind === "missing_trace";
+    setPill("emulator-status",
+            contractOk
+              ? `succeeded L=${n}`
+              : missingTrace
+                ? `wgsl ran L=${n} · CSL trace missing`
+                : `wgsl ran L=${n} · contract unchecked`,
+            contractOk ? "pass" : "warn");
     el("emulator-elapsed").textContent = formatMs(result.elapsed);
     el("emulator-sha").textContent = result.sha;
     el("emulator-semantics").textContent = result.semanticSummary;
     el("emulator-preview").textContent = preview(result.output);
     compareOutputs();
   } catch (err) {
-    setPill("emulator-status", "failed", "fail");
-    el("emulator-preview").textContent = String(err.message || err);
+    setPill("emulator-status", `failed L=${n}`, "fail");
+    el("emulator-preview").textContent = stripAnsi(String(err.message || err));
   } finally {
     button.disabled = false;
   }
@@ -603,7 +703,7 @@ async function onLoadStoredCsl() {
     await setCslResult(await loadStoredCsl());
   } catch (err) {
     setPill("csl-status", "failed", "fail");
-    el("csl-preview").textContent = String(err.message || err);
+    el("csl-preview").textContent = stripAnsi(String(err.message || err));
   } finally {
     button.disabled = false;
   }
@@ -611,13 +711,16 @@ async function onLoadStoredCsl() {
 
 async function onRunLiveCsl() {
   const button = el("run-csl");
+  const n = selectedNumLayers();
   button.disabled = true;
-  setPill("csl-status", "running simfabric", "warn");
+  setPill("csl-status", `loading CSL L=${n}`, "warn");
   try {
     await setCslResult(await runLiveCsl());
   } catch (err) {
-    setPill("csl-status", "live unavailable", "fail");
-    el("csl-preview").textContent = String(err.message || err);
+    setPill("csl-status", `live unavailable L=${n}`, "fail");
+    el("csl-preview").textContent = stripAnsi(
+      formatRunnerError(String(err.message || err))
+    );
   } finally {
     button.disabled = false;
   }

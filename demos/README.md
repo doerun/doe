@@ -16,23 +16,28 @@ Current demos:
     Has `server.py` for live CSL runs + the two `/api` routes the
     SDK-GUI viewer depends on.
 - `demos/doe-sdk-gui-viewer/`
-  - SDK-GUI-style Cerebras artifact viewer: 6 panels (fabric,
-    PE drilldown, source, host-I/O contract, trace timeline,
-    evidence overlay). Point it at a compile artifact dir under
+  - Browser facsimile of the Cerebras SDK GUI shape: work-directory
+    bar, route/color selector, scalable fabric viewport, PE drilldown,
+    instruction/source/wavelet timeline panes, debug pane, timeline
+    navigation controls, and terminal/exported commands. Point it at
+    a compile artifact dir under
     `bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>` to inspect
     metadata without unpacking SDK binaries. Requires the E2B demo
     server running on the same origin for its `/api` routes.
     Has a "redact paths" toggle for screen-share-safe mode:
     hides local filesystem path bytes, keeps hashes + verdicts
-    and the evidence-bundle step rollup visible. Copy controls
-    export the validated
-    `sdk_debug_shell visualize` command plus evidence-bundle run,
-    archive-pack, and archive-verify commands; local-path commands
-    are disabled while redaction is active.
+    and the evidence-bundle step rollup visible.
 - `demos/volume-render`
   - local package-backed volume rendering demo for manual exploration
 - `demos/service-worker-compute`
   - service-worker compute sample host
+- `demos/canvas-stress`
+  - browser-hosted 2D canvas stress test rendering 10,000+ animated
+    rounded-rectangle SDF primitives in a single instanced draw
+- `demos/gaussian-splat-viewer`
+  - browser-hosted 3D Gaussian splatting viewer; loads a `.splat`
+    binary and renders millions of 3D gaussians per frame through
+    `doe-gpu`
 
 This directory is repo-only and non-canonical:
 

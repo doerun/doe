@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Doe SDK-GUI-style artifact viewer</title>
+  <title>Doe browser SDK GUI</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -11,137 +11,184 @@
     <nav class="demo-nav" aria-label="Sibling demos">
       <a href="../doe-status-dashboard/">Status dashboard</a>
       · <a href="../gemma4-e2b-csl-sim/">E2B side-by-side</a>
-      · <strong>SDK-GUI viewer</strong>
+      · <strong>SDK GUI</strong>
     </nav>
+
     <header class="top">
       <div>
-        <p class="eyebrow">Doe — SDK-GUI-style artifact viewer (scaffold)</p>
-        <h1>Cerebras artifact directory inspector</h1>
+        <p class="eyebrow">Doe - browser SDK GUI facsimile</p>
+        <h1>Cerebras SDK artifact visualizer</h1>
       </div>
       <div class="hashes" id="artifact-summary">
         <span>artifact dir: not configured</span>
       </div>
     </header>
 
-    <section class="lan-note">
-      Methodology matches Cerebras' own <code>sdk_debug_shell visualize</code>:
-      artifact-dir selector, compile / run / core / source paths, fabric grid,
-      PE drilldown, timeline, source/code panel. Improves on it with
-      hash-bound receipts, WebGPU-vs-CSL per-op diffs, stream-role and
-      host-I/O-contract overlays, and CSL-WebGPU-emulator semantic mapping.
-      Artifact introspection stays metadata-only: SDK binary bytes never
-      leave the local host.
-    </section>
-
-    <section class="controls" aria-label="Artifact controls">
-      <label for="artifact-dir-input" style="display:inline-flex;gap:0.4rem;align-items:center;">
-        <span class="label">artifact dir</span>
-        <input type="text" id="artifact-dir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
-      </label>
-      <button id="load-artifact" type="button">Inspect</button>
-      <label style="display:inline-flex;gap:0.3rem;align-items:center;font-size:12px;color:var(--muted);">
-        <input type="checkbox" id="redact-toggle"> redact paths (screen-share safe)
-      </label>
-      <span id="artifact-status" class="status-pill pending">awaiting path</span>
-    </section>
-
-    <section class="compare-strip command-strip" aria-label="Evidence commands">
-      <div class="command-row">
-        <span class="label">exported sdk_debug_shell command
-          <button type="button" id="sdk-command-copy" class="inline-copy" data-copy-for="sdk-command" title="Copy to clipboard">copy</button>
-          <span id="sdk-command-state" class="command-state pending">missing artifact dir</span>
-        </span>
-        <code id="sdk-command-RENAMED" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+    <section class="sdk-app" aria-label="Browser Cerebras SDK GUI">
+      <div class="sdk-toolbar" aria-label="SDK GUI controls">
+        <label for="artifact-dir-input" class="path-control">
+          <span class="label">work directory</span>
+          <input type="text" id="artifact-dir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
+        </label>
+        <button id="load-artifact" type="button">Open</button>
+        <label class="toggle-control">
+          <input type="checkbox" id="redact-toggle"> redact paths
+        </label>
+        <span id="artifact-status" class="status-pill pending">awaiting path</span>
+        <div class="toolbar-spacer"></div>
+        <button type="button" class="icon-btn" id="fit-fabric" title="Fit fabric view">Fit</button>
+        <button type="button" class="icon-btn" id="toggle-terminal" title="Toggle terminal">Term</button>
       </div>
-      <div class="command-row">
-        <span class="label">evidence bundle runner
-          <button type="button" id="bundle-runner-command-copy" class="inline-copy" data-copy-for="bundle-runner-command" title="Copy to clipboard">copy</button>
-          <span id="bundle-runner-command-state" class="command-state ready">ready</span>
-        </span>
-        <code id="bundle-runner-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/run_cerebras_evidence_bundle.py</code>
+
+      <div class="sdk-shell">
+        <aside class="sdk-rail" aria-label="Pane controls">
+          <button type="button" class="rail-btn active" title="Fabric">F</button>
+          <button type="button" class="rail-btn" title="Instruction trace">I</button>
+          <button type="button" class="rail-btn" title="Source code">S</button>
+          <button type="button" class="rail-btn" title="Wavelet trace">W</button>
+          <button type="button" class="rail-btn" title="Settings">G</button>
+        </aside>
+
+        <aside class="route-panel" aria-label="Routes and colors">
+          <div class="panel-head compact">
+            <h2>Routes / colors</h2>
+            <span class="panel-sub">colors.json + stream roles</span>
+          </div>
+          <div id="color-list" class="color-list">
+            <div class="empty-state">open a compile artifact dir</div>
+          </div>
+          <div class="sdk-card">
+            <span class="label">artifact metadata</span>
+            <div class="panel-body placeholder" id="panel-fabric">
+              awaiting server-side artifact introspection
+            </div>
+          </div>
+        </aside>
+
+        <section class="fabric-workspace" aria-label="Fabric view">
+          <div class="fabric-toolbar">
+            <span class="label">fabric view</span>
+            <label for="pe-coordinate-input" class="coord-control">
+              PE
+              <input id="pe-coordinate-input" type="text" value="7,5" inputmode="numeric">
+            </label>
+            <button type="button" id="select-pe">Select</button>
+            <span id="fabric-status" class="mini-status">no artifact loaded</span>
+          </div>
+          <div class="fabric-stage">
+            <div id="fabric-grid" class="fabric-grid" aria-label="Processing element grid"></div>
+            <div class="fabric-hint">Double click PE on fabric to get data</div>
+            <div class="mini-map" aria-label="Mini map">
+              <div class="mini-map-window"></div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="debug-panel" aria-label="Debug pane">
+          <div class="panel-head compact">
+            <h2>Debug pane</h2>
+            <span class="panel-sub">selected PE + run state</span>
+          </div>
+          <div class="panel-body placeholder" id="panel-pe">
+            awaiting PE selection
+          </div>
+          <div class="sdk-card">
+            <span class="label">host I/O contract</span>
+            <div class="panel-body placeholder" id="panel-io">
+              awaiting layerBlockSmoke.hostIoLayout
+            </div>
+          </div>
+        </aside>
+
+        <section class="lower-panes" aria-label="Traces, source, and evidence">
+          <article class="pane">
+            <div class="panel-head compact">
+              <h2>Instruction trace</h2>
+              <span class="panel-sub">stream events</span>
+            </div>
+            <div class="panel-body placeholder" id="panel-trace">
+              awaiting trace/jsonl from executedRun
+            </div>
+          </article>
+          <article class="pane">
+            <div class="panel-head compact">
+              <h2>Source</h2>
+              <span class="panel-sub">CSL outputs</span>
+            </div>
+            <div class="panel-body placeholder" id="panel-source">
+              awaiting source path
+            </div>
+          </article>
+          <article class="pane timeline-pane">
+            <div class="timeline-head">
+              <div>
+                <h2>Timeline</h2>
+                <span class="panel-sub">instruction + wavelet traces</span>
+              </div>
+              <div class="timeline-modes" aria-label="Timeline trace modes">
+                <button type="button" class="active" title="Wavelet trace">Wavelet</button>
+                <button type="button" title="Instruction trace">Instr</button>
+                <button type="button" title="Combined view">Both</button>
+              </div>
+              <div class="timeline-controls" aria-label="Timeline navigation controls">
+                <button type="button" title="Zoom out">-</button>
+                <button type="button" title="Zoom in">+</button>
+                <button type="button" title="Reset zoom">Reset</button>
+                <button type="button" title="Zoom to fit">Fit</button>
+              </div>
+            </div>
+            <div class="timeline-scale">
+              <span>0</span><span>4015</span><span>8030</span><span>12116</span>
+            </div>
+            <div id="timeline-rows" class="timeline-rows">
+              <div class="empty-state">no stream telemetry loaded</div>
+            </div>
+          </article>
+          <article class="pane">
+            <div class="panel-head compact">
+              <h2>Evidence overlay</h2>
+              <span class="panel-sub">Doe receipts</span>
+            </div>
+            <div class="panel-body placeholder" id="panel-evidence">
+              awaiting cross-runtime parity artifact + bundle summary
+            </div>
+          </article>
+        </section>
       </div>
-      <div class="command-row">
-        <span class="label">archive packer
-          <button type="button" id="archive-pack-command-copy" class="inline-copy" data-copy-for="archive-pack-command" title="Copy to clipboard">copy</button>
-          <span id="archive-pack-command-state" class="command-state ready">ready</span>
-        </span>
-        <code id="archive-pack-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/pack_cerebras_validation_archive.py</code>
-      </div>
-      <div class="command-row">
-        <span class="label">archive verifier
-          <button type="button" id="archive-verify-command-copy" class="inline-copy" data-copy-for="archive-verify-command" title="Copy to clipboard">copy</button>
-          <span id="archive-verify-command-state" class="command-state pending">server route needed</span>
-        </span>
-        <code id="archive-verify-command" class="copy-command" tabindex="0" data-copyable="false">python3 bench/tools/verify_cerebras_validation_archive.py --archive &lt;archive.tar.gz&gt;</code>
-      </div>
-    </section>
 
-    <section class="panels" aria-label="SDK-GUI-style panels">
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Fabric grid</h2>
-          <span class="panel-sub">PE layout, routes, colors</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-fabric">
-          awaiting server-side artifact introspection
-          <br>
-          (dimensions from compile-prefix.map; colors from colors.json)
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <h2>PE drilldown</h2>
-          <span class="panel-sub">click a PE on the fabric to inspect</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-pe">
-          awaiting PE selection
-          <br>
-          (local memory, task state, wavelet counts)
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Source / code</h2>
-          <span class="panel-sub">CSL kernel, generator, runner</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-source">
-          awaiting source path
-          <br>
-          (transformer_layer_shape.csl, runner, generator)
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Trace timeline</h2>
-          <span class="panel-sub">wavelet / instruction stream</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-trace">
-          awaiting trace/jsonl from executedRun
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Host I/O contract</h2>
-          <span class="panel-sub">stream roles, dtypes, buffer sizes</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-io">
-          awaiting layerBlockSmoke.hostIoLayout from the CSL runner trace
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Evidence overlay</h2>
-          <span class="panel-sub">hash chain + diff vs WebGPU reference</span>
-        </div>
-        <div class="panel-body placeholder" id="panel-evidence">
-          awaiting cross-runtime parity artifact + this artifact's receipt
-        </div>
-      </article>
+      <details class="terminal-drawer" id="terminal-drawer">
+        <summary>Terminal / exported commands</summary>
+        <section class="compare-strip command-strip" aria-label="Evidence commands">
+          <div class="command-row">
+            <span class="label">sdk_debug_shell visualize
+              <button type="button" id="sdk-command-copy" class="inline-copy" data-copy-for="sdk-command" title="Copy to clipboard">copy</button>
+              <span id="sdk-command-state" class="command-state pending">missing artifact dir</span>
+            </span>
+            <code id="sdk-command" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+          </div>
+          <div class="command-row">
+            <span class="label">evidence bundle runner
+              <button type="button" id="bundle-runner-command-copy" class="inline-copy" data-copy-for="bundle-runner-command" title="Copy to clipboard">copy</button>
+              <span id="bundle-runner-command-state" class="command-state ready">ready</span>
+            </span>
+            <code id="bundle-runner-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/run_cerebras_evidence_bundle.py</code>
+          </div>
+          <div class="command-row">
+            <span class="label">archive packer
+              <button type="button" id="archive-pack-command-copy" class="inline-copy" data-copy-for="archive-pack-command" title="Copy to clipboard">copy</button>
+              <span id="archive-pack-command-state" class="command-state ready">ready</span>
+            </span>
+            <code id="archive-pack-command" class="copy-command" tabindex="0" data-copyable="true">python3 bench/tools/pack_cerebras_validation_archive.py</code>
+          </div>
+          <div class="command-row">
+            <span class="label">archive verifier
+              <button type="button" id="archive-verify-command-copy" class="inline-copy" data-copy-for="archive-verify-command" title="Copy to clipboard">copy</button>
+              <span id="archive-verify-command-state" class="command-state pending">server route needed</span>
+            </span>
+            <code id="archive-verify-command" class="copy-command" tabindex="0" data-copyable="false">python3 bench/tools/verify_cerebras_validation_archive.py --archive &lt;archive.tar.gz&gt;</code>
+          </div>
+        </section>
+      </details>
     </section>
   </main>
   <script type="module" src="./viewer.js"></script>

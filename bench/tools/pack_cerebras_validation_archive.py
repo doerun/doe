@@ -4,36 +4,21 @@
 Takes the governing evidence (hardware-validation appendix +
 claim-discipline doc + evidence-bundle summary + model runtime
 receipts + cross-runtime parity verdicts + real-weight parity
-verdict + fixture contract) and bundles it into a dated tarball
-suitable for attaching to a hardware-access ask.
+verdicts + fixture contracts + MoE lane-scope + archive-root
+governance docs) and bundles it into a dated tarball suitable
+for attaching to a hardware-access ask.
 
-What IS included (every file's sha256 recorded in MANIFEST.txt):
-
-  docs/hardware-validation-appendix.md
-  docs/claim-discipline.md
-  config/gemma-4-e2b-real-weight-fixture.json
-  bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json
-  bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md
-  bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json
-  bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.md
-  bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json
-  bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json
-  bench/out/doppler-reference/csl-emulator-accuracy-verdict-L2.json
-  bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
-  bench/out/doppler-reference/csl-emulator-speed-verdict-L35.json
-  bench/out/gemma-4-e2b-real-weight-parity-L1.json
-  bench/out/doe-run/all-lanes-summary-L1.json
-  bench/out/cerebras-evidence-bundle/summary.json
+What IS included: see the INCLUDE_FILES tuple below. Every bundled
+file's sha256 is recorded in MANIFEST.txt with a claim-role tag.
+C22 in bench/tools/e2b_layer_block_self_check.py asserts that tuple
+and the CLAIM_ROLE dict stay in sync.
 
 What is explicitly NOT included (sensitive size / provider bytes /
-anything that would require operator approval to publish):
-
-  .f32 weight or activation tensors
-  SDK binaries (*.elf, *.lst, *.map, *.symbols, *.viz)
-  simulator stdout/stderr logs
-  scratch/ directories
-  compile artifact directories
-  any *.output.f32 side-channel file
+anything that would require operator approval to publish): see the
+EXCLUDE_SUBSTRINGS tuple. Defense-in-depth: the verifier's
+FORBIDDEN_EXTENSIONS and FORBIDDEN_PATH_SUBSTRINGS re-enforce the
+same deny-list on the packed archive, and C23 / C32 lock the two
+sides in sync.
 
 Usage:
   # default: stamped filename with git sha, dirty flag if applicable
@@ -74,6 +59,11 @@ INCLUDE_FILES: tuple = (
     ("docs/cerebras-evidence-bundle-claim-scope.md", "CLAIM_SCOPE.md"),
     ("docs/cerebras-evidence-bundle-ask.md", "CEREBRAS_ASK.md"),
     ("docs/cerebras-evidence-bundle-local-inspection.md", "LOCAL_INSPECTION.md"),
+    # NOTE: docs/cerebras-evidence-bundle-pointer.md is intentionally
+    # NOT bundled. The prep script writes it AFTER pack, so bundling
+    # it would always ship stale values. BUNDLE_META.json inside the
+    # archive is authoritative; the pointer doc is a repo-side mirror
+    # for git visibility only.
     "docs/hardware-validation-appendix.md",
     "docs/claim-discipline.md",
     # Fixture contracts: one per primary model lane.

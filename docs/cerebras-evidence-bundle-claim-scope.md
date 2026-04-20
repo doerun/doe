@@ -81,7 +81,7 @@ a bundle integrity failure.
 | Real-weight layer-block parity | Doppler-provided weight extractor materializes `bench/out/gemma-4-{e2b,31b}-real-weights/` matching the fixture contract |
 | Manifest-shape execution | Kernel rewrite for `headDim=512` (E2B) or `headDim=160` (31B); in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
-| Gemma-4 runs on Cerebras hardware | Hardware receipt via `--cmaddr` or `csl_appliance_driver.py`; external endpoint access |
+| Gemma-4 runs on Cerebras hardware | Hardware receipt via either (a) endpoint access for us to run the runner with `--cmaddr` / `csl_appliance_driver.py`, or (b) Cerebras-assisted bundle run that returns the receipt |
 | Any MoE claim | 6 MoE component receipts (router, top-k, dispatch, shared-expert, combine, per-expert-batching) replacing the current TODO files |
 
 ## Bundle expiration signals
@@ -102,12 +102,15 @@ a bundle integrity failure.
 1. Read `BUNDLE_META.json` — confirm `gitDirtyTree=false` and the
    short SHA matches what you expected.
 2. Read `CLAIM_SCOPE.md` (this file) — know what the bundle backs.
-3. Read `docs/hardware-validation-appendix.md` — know what the
-   external ask is.
-4. Read `MANIFEST.txt` — see each file's `claim-role`.
-5. Re-compute any `.json` sha256 you want to spot-check against the
+3. Read `CEREBRAS_ASK.md` — operator-facing command, endpoint-access
+   ask, and receipt-field list. `docs/hardware-validation-appendix.md`
+   is the parent document with fuller context.
+4. Read `LOCAL_INSPECTION.md` if you want to browse the evidence in
+   a browser (status dashboard / E2B side-by-side / SDK-GUI viewer).
+5. Read `MANIFEST.txt` — see each file's `claim-role`.
+6. Re-compute any `.json` sha256 you want to spot-check against the
    manifest entry.
-6. Read `bench/out/cerebras-evidence-bundle/summary.json` — 5 local
+7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 5 local
    gates should all report `status=passed`.
 
-If any of 1–6 fails, reject the bundle and request a rebuild.
+If any of 1–7 fails, reject the bundle and request a rebuild.

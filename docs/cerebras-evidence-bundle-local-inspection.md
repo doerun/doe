@@ -51,21 +51,26 @@ python3 demos/gemma4-e2b-csl-sim/server.py --port 8020
 # "Run CSL Simulator" now dispatches a live cs_python invocation
 ```
 
-## SDK-GUI-style viewer (server-backed metadata)
+## SDK-GUI-style viewer (browser SDK GUI facsimile)
 
 ```bash
 python3 demos/gemma4-e2b-csl-sim/server.py --port 8030
 # then open http://localhost:8030/demos/doe-sdk-gui-viewer/
-# paste an artifact directory path into the input to see the
-# sdk_debug_shell visualize command exported for it
+# default path auto-loads compile-L1; paste another artifact dir
+# into the work-directory input to inspect that compile output
 ```
 
-The viewer inspects repo-relative artifact directories through the
-same metadata-only server routes used by the E2B side-by-side demo.
-It lists SDK artifact names and sizes, colors.json shape, host-I/O
-layout, stream telemetry, trace status, and the current parity
-overlay plus evidence-bundle verdict without returning `.elf`,
-`.map`, `.symbols`, `.viz`, or other SDK-owned file bytes.
+The viewer is shaped after the Cerebras SDK GUI reference screenshots:
+work-directory bar, route/color selector, scalable fabric viewport,
+PE coordinate selector and drilldown, instruction/source/wavelet
+timeline panes, debug pane, timeline navigation controls, and a
+terminal drawer for exported commands.
+
+It inspects repo-relative artifact directories through the same
+metadata-only server routes used by the E2B side-by-side demo. It
+maps colors.json, host-I/O streams, stream telemetry, trace status,
+and Doe evidence-bundle verdicts into the GUI without returning
+`.elf`, `.map`, `.symbols`, `.viz`, or other SDK-owned file bytes.
 
 The command strip also exposes copyable local commands for:
 

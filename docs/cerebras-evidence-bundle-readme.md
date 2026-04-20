@@ -9,9 +9,15 @@ then follow the run order below.
 - `README.md` — this file.
 - `BUNDLE_META.json` — build stamp: UTC timestamp, git commit,
   dirty-tree flag, host OS, cs_python availability on the bundler.
+- `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
 - `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
   it does not. Read before drawing any conclusions.
-- `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
+- `CEREBRAS_ASK.md` — operator-facing distillation: exact endpoint
+  access needed, exact command to run, exact receipt fields to
+  return, publication boundaries.
+- `LOCAL_INSPECTION.md` — commands for reviewers who want to browse
+  the evidence in a browser (status dashboard, E2B side-by-side,
+  SDK-GUI-style viewer) with the same tools the bundler uses.
 
 Every other file lives under its repo path (`docs/`, `bench/out/`,
 `config/`) inside the tar; the packager preserves layout so
@@ -41,18 +47,27 @@ cross-references inside the receipts resolve as written.
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
 
-4. **Read `docs/hardware-validation-appendix.md`.** The external-
-   facing ask. Lists the minimum hardware validation we'd like to
-   run, the receipt fields we'd like returned, and the disclosure
-   boundaries we've committed to.
+4. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
+   the external ask. Enumerates two paths — endpoint access (we run
+   the runner) or Cerebras-assisted bundle run (Cerebras runs the
+   bundle internally, returns the receipt) — plus the exact command,
+   receipt fields, and publication boundaries for either.
+   `docs/hardware-validation-appendix.md` is its parent document with
+   the fuller context.
 
-5. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
+5. **Read `LOCAL_INSPECTION.md`** if you want to browse the
+   evidence in a browser. Lists local-server commands for the
+   status dashboard, E2B side-by-side demo, and SDK-GUI-style
+   artifact viewer — all consuming the same bundle files without
+   unpacking SDK binaries.
+
+6. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
    per file. Open any `model-runtime-receipt` or
    `cross-runtime-parity-verdict` and confirm the assertions match
    the appendix's summary. For the paranoid: re-compute sha256 of
    any `.json` and compare against the manifest row.
 
-6. **Re-run local gates (optional).** If the unpacked archive lives
+7. **Re-run local gates (optional).** If the unpacked archive lives
    on a host with `git` + Python available:
 
    ```

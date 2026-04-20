@@ -4,16 +4,27 @@
 Extracts the tarball to a temp directory, re-reads MANIFEST.txt and
 BUNDLE_META.json, and confirms:
 
-  1. Every file listed in the manifest is present in the archive at
+  1. Required top-level files are present: BUNDLE_META.json,
+     MANIFEST.txt, CLAIM_SCOPE.md, README.md, CEREBRAS_ASK.md,
+     LOCAL_INSPECTION.md.
+  2. Every file listed in the manifest is present in the archive at
      the declared path.
-  2. Every file's sha256 matches the manifest entry's recorded hash.
-  3. BUNDLE_META.json parses, declares an expected artifactKind, and
+  3. Every file's sha256 matches the manifest entry's recorded hash.
+  4. BUNDLE_META.json parses, declares an expected artifactKind, and
      carries required fields (gitCommit, gitDirtyTree, builtUtc,
      archiveFilename, claimScopeSource).
-  4. The archive filename matches the BUNDLE_META.archiveFilename
+  5. The archive filename matches the BUNDLE_META.archiveFilename
      field (no rename between pack and verify).
-  5. Claim-role taxonomy in MANIFEST.txt uses only known roles.
-  6. CLAIM_SCOPE.md is present at archive root.
+  6. Claim-role taxonomy in MANIFEST.txt uses only known roles.
+  7. No file in the archive has a forbidden extension (SDK binaries,
+     tensor bytes, logs) — defense-in-depth over the packer's
+     allow-list, catches hand-edited tarballs.
+  8. No file in the archive has a forbidden path substring
+     (`/scratch/`, `/compile/`, `/compile-L`, `simulator.log`) —
+     mirrors the packer's non-extension deny-list.
+  9. Claim-discipline scan over every text file: hardware-gated and
+     MoE-gated rules must not match anywhere outside the skip-listed
+     rule-enumerating docs.
 
 Intended to be run on the bundler's own output before external send:
 pack → verify against the packed file → send if verify=0.
@@ -61,6 +72,15 @@ FORBIDDEN_EXTENSIONS = {
     ".f32", ".stderr", ".stdout",
 }
 
+# Path substrings that must never appear inside the archive even if
+# the file extension looks benign. Mirrors the packer's non-extension
+# EXCLUDE_SUBSTRINGS entries so a hand-edited tarball with e.g.
+# bench/out/scratch/foo.json (benign .json extension, but from a
+# scratch dir the packer would have blocked) still gets caught.
+FORBIDDEN_PATH_SUBSTRINGS = {
+    "/scratch/", "/compile/", "/compile-L", "simulator.log",
+}
+
 CLAIM_SCAN_SKIP_ARCHIVE_PATHS = {
     "CLAIM_SCOPE.md",                         # archive-root governance
     "README.md",                              # recites taxonomy + what-not-to-claim
@@ -71,6 +91,7 @@ CLAIM_SCAN_SKIP_ARCHIVE_PATHS = {
     "docs/cerebras-evidence-bundle-readme.md",
     "docs/cerebras-evidence-bundle-ask.md",
     "docs/cerebras-evidence-bundle-local-inspection.md",
+    "docs/cerebras-evidence-bundle-pointer.md",
     "docs/hardware-validation-appendix.md",   # enumerates what we will NOT publish
     "docs/numeric-stability-claim-ladder.md",
     "bench/out/26b-moe-lane/lane-status.json",
@@ -270,14 +291,30 @@ def main() -> int:
                     f"tensor bytes, and logs must never ship in the "
                     f"bundle"
                 )
+            rel_posix = p.relative_to(tmp_path).as_posix()
+            # Normalize with a leading slash so substrings like
+            # "/scratch/" match when the scratch dir is at the archive
+            # root (rel_posix would otherwise have no leading slash).
+            rel_match_target = "/" + rel_posix
+            for substr in FORBIDDEN_PATH_SUBSTRINGS:
+                if substr in rel_match_target:
+                    failures.append(
+                        f"forbidden path substring '{substr}' in "
+                        f"archive at {rel_posix} — scratch dirs, "
+                        f"compile artifacts, and simulator logs "
+                        f"must never ship in the bundle"
+                    )
+                    break
 
     # 4. Negative claim scan: re-apply the live claim-discipline
     # rules to every text file inside the archive. Catches smuggled
     # claims a repo-only gate would miss on a hand-edited tarball.
     # Scope: hardware-gated rules run unconditionally (no in-archive
     # hardware_success receipt is expected); MoE-gated rules same.
-    # When either gate is unlocked in-repo, reviewers can override
-    # with --skip-claim-scan on this verifier.
+    # Runs for every bundle by design: even after the repo gates go
+    # inactive, the bundle scope stays narrow until it's explicitly
+    # widened. No escape hatch flag; add one only when legitimate
+    # post-hardware prose starts tripping the scan.
     all_rules = list(HARDWARE_GATED_RULES) + list(MOE_GATED_RULES)
     claim_violations: list[tuple[str, str, int, str]] = []
     # Re-enter the TemporaryDirectory context manager is gone by here,

@@ -75,6 +75,8 @@ def trace_payload(num_layers: int) -> dict[str, Any]:
     parity = executed.get("numericalParity", {})
     return {
         "status": executed.get("status", "unknown"),
+        "source": "trace",
+        "cacheHit": False,
         "elapsedMs": executed.get("elapsedMs"),
         "numLayersChained": executed.get("numLayersChained"),
         "maxAbsErr": parity.get("maxAbsErr"),
@@ -87,9 +89,18 @@ def trace_payload(num_layers: int) -> dict[str, Any]:
     }
 
 
-def run_csl(num_layers: int) -> dict[str, Any]:
+def run_csl(num_layers: int, *, force: bool = False) -> dict[str, Any]:
     trace_rel = trace_path_for(num_layers)
     (REPO_ROOT / trace_rel).parent.mkdir(parents=True, exist_ok=True)
+    if not force and (REPO_ROOT / trace_rel).is_file():
+        payload = trace_payload(num_layers)
+        payload["source"] = "cached_trace"
+        payload["cacheHit"] = True
+        payload["runnerSkipped"] = (
+            "matching-depth CSL trace already exists; pass force=1 "
+            "to /api/run-csl to request a fresh simfabric run"
+        )
+        return payload
     command = [
         cs_python_path(),
         "bench/runners/csl-runners/e2b_layer_block_smoke.py",
@@ -118,6 +129,8 @@ def run_csl(num_layers: int) -> dict[str, Any]:
             "stderrTail": redact(proc.stderr[-4000:]),
         }
     payload = trace_payload(num_layers)
+    payload["source"] = "live_simfabric"
+    payload["cacheHit"] = False
     payload["returnCode"] = proc.returncode
     payload["stdoutTail"] = redact(proc.stdout[-1200:])
     payload["stderrTail"] = redact(proc.stderr[-1200:])
@@ -427,6 +440,9 @@ class DemoHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         # /api/run-csl?num_layers=N  where N in ALLOWED_NUM_LAYERS.
+        # Existing matching-depth traces are returned by default because the
+        # LAN-hosted systemd service may not be permitted to launch the SDK
+        # container. Use force=1 to request a fresh simfabric run.
         # Missing/invalid num_layers defaults to DEFAULT_NUM_LAYERS (1)
         # with an explicit echo field so the browser never silently
         # gets a depth it didn't ask for.
@@ -436,6 +452,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "unknown API route")
             return
         qs = parse_qs(parsed.query or "")
+        force = (qs.get("force") or ["0"])[0] in {"1", "true", "yes"}
         try:
             num_layers = int((qs.get("num_layers") or [str(DEFAULT_NUM_LAYERS)])[0])
         except (TypeError, ValueError):
@@ -454,7 +471,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
             )
             return
         try:
-            payload = run_csl(num_layers)
+            payload = run_csl(num_layers, force=force)
         except subprocess.TimeoutExpired:
             self.send_json(
                 {

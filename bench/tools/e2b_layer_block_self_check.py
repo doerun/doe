@@ -29,19 +29,27 @@ then asserts the contract:
           the numpy-reference output digest (was previously hand-
           maintained and went stale across kernel upgrades)
 
-Then asserts:
-  C0. (implicit) STEP 0 unit test passed — compute_layer_block bit-
-      exactness matches the captured goldens at every sentinel index
-  C1. live kernel sha equals synthetic-trace's kernelSourceSha256InTrace
-      (no drift between fixture and source)
-  C2. receipt validates against doe-model-runtime-receipt.schema.json
-  C3. receipt.streamingExecutorPrimitivesEvidence.layerBlockKernelEvidence
-      .syntheticTrace.exists == True AND .syntheticTrace.sha256
-      matches the on-disk synthetic trace
-  C4. receipt.streamingExecutorPrimitivesEvidence.layerBlockKernelEvidence
-      .crossRuntimeParityCheck.exists == True AND .promotionEligible is
-      a bool (truthy or falsy is fine — we just need the field present)
-  C5. runner regen succeeded (file exists, parses as Python)
+Then asserts a growing set of structural contracts. The current set
+spans C0..C33 (as of the last update; see below for the authoritative
+enumeration). Broadly they cover:
+
+  - Core kernel/trace/receipt integrity (C0-C15)
+  - Cerebras evidence bundle pack/verify round-trip and the packer ↔
+    verifier sync across extensions, path-substrings, and role
+    taxonomy (C16, C22, C23, C32)
+  - Demo HTML/JS/server invariants: routes, cross-links, data-copy
+    targets, emulator soft-fail, ANSI-strip and runner-error
+    formatter (C17, C18, C25, C27, C33)
+  - Bundle-doc governance: skip-lists synced across packer/gate/
+    verifier, pointer-doc stale-lag guard, prep-script ordering,
+    tools-index completeness (C28-C31)
+
+Authoritative enumeration lives in two places and stays in sync via
+C31: `bench/tools/cerebras-evidence-bundle-tools.md` has the contract
+table; this file itself emits `C<N> PASS`/`C<N> FAIL` lines at
+runtime. Prefer grepping the code over restating contracts here —
+this docstring intentionally does not enumerate individual contracts
+because the list drifts faster than prose can keep up.
 
 Exit 0 if all checks pass; exit 1 if any failed (with a per-check
 diff report). Lets the parity-contract gate (parallel-safe support
@@ -57,7 +65,6 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -115,10 +122,6 @@ def main() -> int:
     )
     synthetic_path = REPO_ROOT / (
         "bench/out/streaming-executor/e2b-layer-block-synthetic-trace.json"
-    )
-    parity_path = REPO_ROOT / (
-        "bench/out/streaming-executor/"
-        "e2b-layer-block-cross-runtime-parity-check.json"
     )
     receipt_path = REPO_ROOT / args.receipt_out
     schema_path = REPO_ROOT / "config/doe-model-runtime-receipt.schema.json"
@@ -682,6 +685,462 @@ def main() -> int:
             f"C14 FAIL: fixture missing at {_fixture_path.relative_to(REPO_ROOT)}"
         )
 
+    # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
+    # contract check when a matching-depth trace is absent — WGSL
+    # must always execute, contract check is an independent axis.
+    # Structural regression lock: isolate the function body and assert
+    # (1) a try/catch wraps loadCslSemanticTrace, (2) the catch branch
+    # sets status="unchecked", (3) the return object emits cslContract.
+    # Checking inside the function body (not the whole file) prevents
+    # false-passes from comments or variable-name coincidences.
+    _main_js = REPO_ROOT / "demos/gemma4-e2b-csl-sim/main.js"
+    if _main_js.is_file():
+        _js = _main_js.read_text(encoding="utf-8")
+        _c27_fails = []
+        _sig = "async function runCslWebGpuEmulator()"
+        _sig_idx = _js.find(_sig)
+        if _sig_idx < 0:
+            _c27_fails.append("runCslWebGpuEmulator signature missing from main.js")
+        else:
+            # Extract the function body by brace-matching from the
+            # first '{' after the signature.
+            _brace_open = _js.find("{", _sig_idx)
+            _depth = 0
+            _brace_close = -1
+            for _i in range(_brace_open, len(_js)):
+                _ch = _js[_i]
+                if _ch == "{":
+                    _depth += 1
+                elif _ch == "}":
+                    _depth -= 1
+                    if _depth == 0:
+                        _brace_close = _i
+                        break
+            if _brace_close < 0:
+                _c27_fails.append(
+                    "could not find matching closing brace for "
+                    "runCslWebGpuEmulator — parse failure"
+                )
+            else:
+                _body = _js[_brace_open : _brace_close + 1]
+                # Strip single-line and block comments so comment text
+                # can't satisfy the structural requirements.
+                import re as _re_c27
+                _body_code = _re_c27.sub(r"//[^\n]*", "", _body)
+                _body_code = _re_c27.sub(
+                    r"/\*.*?\*/", "", _body_code, flags=_re_c27.DOTALL
+                )
+                if "loadCslSemanticTrace(" not in _body_code:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator no longer calls "
+                        "loadCslSemanticTrace — contract check path removed"
+                    )
+                if "try" not in _body_code or "catch" not in _body_code:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator lost its try/catch around "
+                        "loadCslSemanticTrace — L>=2 will hard-fail "
+                        "without a trace"
+                    )
+                # Ordering invariant: executeLayerBlockWebGpu() must
+                # run BEFORE the try/catch, so WGSL executes regardless
+                # of trace availability. If someone moves it inside the
+                # try, the whole soft-fail contract breaks.
+                _exec_idx = _body_code.find("executeLayerBlockWebGpu(")
+                _try_idx = _body_code.find("try")
+                if _exec_idx < 0:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator no longer calls "
+                        "executeLayerBlockWebGpu — WGSL path removed"
+                    )
+                elif _try_idx >= 0 and _exec_idx > _try_idx:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator now calls "
+                        "executeLayerBlockWebGpu inside or after the "
+                        "try/catch — WGSL would be skipped on trace "
+                        "failure, breaking soft-fail contract"
+                    )
+                if 'status: "unchecked"' not in _body_code and \
+                   "status: 'unchecked'" not in _body_code:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator no longer sets "
+                        'status: "unchecked" in the catch branch — '
+                        "soft-fail contract removed"
+                    )
+                if "cslContract:" not in _body_code:
+                    _c27_fails.append(
+                        "runCslWebGpuEmulator return object no longer "
+                        "emits cslContract field — viewers can't "
+                        "distinguish verified from unchecked"
+                    )
+        if _c27_fails:
+            for _f in _c27_fails:
+                failures.append(f"C27 FAIL: {_f}")
+        else:
+            print(
+                "  C27 PASS: emulator lane soft-fails CSL contract "
+                "check when no matching-depth trace exists (WGSL runs "
+                "before try/catch + unchecked branch + cslContract field)"
+            )
+
+    # C28: three-way sync for bundle-doc skip lists. The packer
+    # promotes 4 repo docs to archive-root names. Both the repo
+    # claim-discipline gate (source paths) and the archive verifier
+    # (archive-root paths) must skip these — they are rule-enumerating
+    # by design and name the forbidden phrases the gate rejects. If
+    # someone adds a new bundle doc without updating both lists, the
+    # next run will either flag the doc's rule prose (false positive)
+    # or silently skip a doc that isn't actually governance-grade.
+    _packer_path = REPO_ROOT / "bench/tools/pack_cerebras_validation_archive.py"
+    _gate_path = REPO_ROOT / "bench/gates/claim_discipline_gate.py"
+    _verifier_path = REPO_ROOT / "bench/tools/verify_cerebras_validation_archive.py"
+    _c28_fails: list[str] = []
+    if not _packer_path.is_file():
+        _c28_fails.append("packer missing")
+    elif not _gate_path.is_file():
+        _c28_fails.append("claim-discipline gate missing")
+    elif not _verifier_path.is_file():
+        _c28_fails.append("verifier missing")
+    else:
+        import ast as _ast_c28
+        _packer_tree = _ast_c28.parse(_packer_path.read_text(encoding="utf-8"))
+        _include_files_tuples: list[tuple[str, str]] = []
+        for _node in _ast_c28.walk(_packer_tree):
+            _tgt_name = None
+            _val = None
+            if isinstance(_node, _ast_c28.Assign):
+                for _tgt in _node.targets:
+                    if isinstance(_tgt, _ast_c28.Name):
+                        _tgt_name = _tgt.id
+                        _val = _node.value
+                        break
+            elif isinstance(_node, _ast_c28.AnnAssign):
+                if isinstance(_node.target, _ast_c28.Name):
+                    _tgt_name = _node.target.id
+                    _val = _node.value
+            if _tgt_name == "INCLUDE_FILES" and isinstance(
+                _val, (_ast_c28.Tuple, _ast_c28.List)
+            ):
+                for _elt in _val.elts:
+                    if (isinstance(_elt, (_ast_c28.Tuple, _ast_c28.List))
+                            and len(_elt.elts) == 2
+                            and isinstance(_elt.elts[0], _ast_c28.Constant)
+                            and isinstance(_elt.elts[1], _ast_c28.Constant)):
+                        _include_files_tuples.append(
+                            (_elt.elts[0].value, _elt.elts[1].value)
+                        )
+        _bundle_doc_pairs = [
+            (src, dst) for (src, dst) in _include_files_tuples
+            if src.startswith("docs/cerebras-evidence-bundle-")
+            and src.endswith(".md")
+        ]
+        if not _bundle_doc_pairs:
+            _c28_fails.append(
+                "packer INCLUDE_FILES has no cerebras-evidence-bundle "
+                "docs — inventory lost?"
+            )
+        # Use AST to extract the actual literal values, not string
+        # slicing (which trips on parens inside comments). For the gate,
+        # SKIP_PREFIXES is annotated-assigned to a Tuple[Constant, ...];
+        # for the verifier, CLAIM_SCAN_SKIP_ARCHIVE_PATHS is assigned to
+        # a Set[Constant, ...].
+        def _extract_string_literals(path: Path, var_name: str) -> set[str]:
+            _tree = _ast_c28.parse(path.read_text(encoding="utf-8"))
+            for _n in _ast_c28.walk(_tree):
+                _tn = None
+                _tv = None
+                if isinstance(_n, _ast_c28.Assign):
+                    for _t in _n.targets:
+                        if isinstance(_t, _ast_c28.Name) and _t.id == var_name:
+                            _tn, _tv = _t.id, _n.value
+                            break
+                elif isinstance(_n, _ast_c28.AnnAssign):
+                    if (isinstance(_n.target, _ast_c28.Name)
+                            and _n.target.id == var_name):
+                        _tn, _tv = _n.target.id, _n.value
+                if _tn == var_name and isinstance(
+                    _tv, (_ast_c28.Tuple, _ast_c28.List, _ast_c28.Set)
+                ):
+                    out: set[str] = set()
+                    for _e in _tv.elts:
+                        if isinstance(_e, _ast_c28.Constant) and isinstance(
+                            _e.value, str
+                        ):
+                            out.add(_e.value)
+                    return out
+            return set()
+
+        _gate_skip_paths = _extract_string_literals(
+            _gate_path, "SKIP_PREFIXES"
+        )
+        _verifier_skip_paths = _extract_string_literals(
+            _verifier_path, "CLAIM_SCAN_SKIP_ARCHIVE_PATHS"
+        )
+        if not _gate_skip_paths:
+            _c28_fails.append(
+                "could not extract SKIP_PREFIXES literals from gate"
+            )
+        if not _verifier_skip_paths:
+            _c28_fails.append(
+                "could not extract CLAIM_SCAN_SKIP_ARCHIVE_PATHS "
+                "literals from verifier"
+            )
+        for _src, _dst in _bundle_doc_pairs:
+            if _gate_skip_paths and _src not in _gate_skip_paths:
+                _c28_fails.append(
+                    f"gate SKIP_PREFIXES missing bundle doc "
+                    f"source path: {_src}"
+                )
+            if _verifier_skip_paths and _dst not in _verifier_skip_paths:
+                _c28_fails.append(
+                    f"verifier CLAIM_SCAN_SKIP_ARCHIVE_PATHS missing "
+                    f"archive-root path: {_dst}"
+                )
+    if _c28_fails:
+        for _f in _c28_fails:
+            failures.append(f"C28 FAIL: {_f}")
+    else:
+        print(
+            f"  C28 PASS: bundle-doc skip-lists in sync across packer + "
+            f"gate + verifier ({len(_bundle_doc_pairs)} docs)"
+        )
+
+    # C29: negative contract. docs/cerebras-evidence-bundle-pointer.md
+    # must NOT appear in packer INCLUDE_FILES. The prep script writes
+    # the pointer AFTER pack, so including it would always ship a
+    # stale-lag copy with the previous build's archive hash. Comment
+    # at packer line ~77 records this intent; C29 enforces it.
+    # Walk the INCLUDE_FILES AST subtree for any Constant whose value
+    # is the pointer path — catches both bare-string entries and
+    # tuple-form (src, dst) entries without a scan of the raw text.
+    _pointer_src = "docs/cerebras-evidence-bundle-pointer.md"
+    _pointer_in_packer_literal = False
+    _packer_tree2 = _ast_c28.parse(_packer_path.read_text(encoding="utf-8"))
+    for _n in _ast_c28.walk(_packer_tree2):
+        _tv = None
+        if isinstance(_n, _ast_c28.AnnAssign) and isinstance(
+            _n.target, _ast_c28.Name
+        ) and _n.target.id == "INCLUDE_FILES":
+            _tv = _n.value
+        elif isinstance(_n, _ast_c28.Assign):
+            for _t in _n.targets:
+                if isinstance(_t, _ast_c28.Name) and _t.id == "INCLUDE_FILES":
+                    _tv = _n.value
+                    break
+        if _tv is not None:
+            for _const in _ast_c28.walk(_tv):
+                if (isinstance(_const, _ast_c28.Constant)
+                        and _const.value == _pointer_src):
+                    _pointer_in_packer_literal = True
+                    break
+    if _pointer_in_packer_literal:
+        failures.append(
+            f"C29 FAIL: {_pointer_src} is in packer INCLUDE_FILES — "
+            "bundling the pointer doc always ships stale-lag hashes "
+            "(prep script writes it AFTER pack). Remove it from "
+            "INCLUDE_FILES; BUNDLE_META.json inside the archive is "
+            "the authoritative reference."
+        )
+    else:
+        print(
+            f"  C29 PASS: {_pointer_src} is NOT in packer "
+            "INCLUDE_FILES (stale-lag guard holds)"
+        )
+
+    # C30: prep-script stage ordering is load-bearing. The shell script
+    # chains gates -> pack -> verify -> pointer-write. `set -euo
+    # pipefail` means any failing earlier stage aborts the chain, so
+    # the pointer is never written from an unverified bundle -- but
+    # only if the pointer-write block is AFTER verify in file order.
+    # If someone refactors the script and moves the pointer block up
+    # (before verify), a bundle that fails verify still mints a
+    # pointer doc that lies about what was built. Regression-lock the
+    # ordering by substring position.
+    _prep_path = REPO_ROOT / "bench/tools/prepare_cerebras_validation_bundle.sh"
+    _c30_fails: list[str] = []
+    if not _prep_path.is_file():
+        _c30_fails.append("prep script missing")
+    else:
+        _prep_src = _prep_path.read_text(encoding="utf-8")
+        _gates_idx = _prep_src.find("run_cerebras_evidence_bundle.py")
+        _pack_idx = _prep_src.find("pack_cerebras_validation_archive.py")
+        _verify_idx = _prep_src.find("verify_cerebras_validation_archive.py")
+        _pointer_write_idx = _prep_src.find('cat > "$POINTER"')
+        if _gates_idx < 0:
+            _c30_fails.append("prep script no longer invokes gates stage")
+        if _pack_idx < 0:
+            _c30_fails.append("prep script no longer invokes pack stage")
+        if _verify_idx < 0:
+            _c30_fails.append("prep script no longer invokes verify stage")
+        if _pointer_write_idx < 0:
+            _c30_fails.append(
+                'prep script no longer writes pointer '
+                '(cat > "$POINTER" missing)'
+            )
+        if not _c30_fails:
+            # Use the step-label strings ("1/3  gates:", "2/3  pack:",
+            # "3/3  verify:") as unique anchors — the script names
+            # themselves appear in docstrings and heredocs too.
+            _step_gates = _prep_src.find('"1/3  gates:')
+            _step_pack = _prep_src.find('"2/3  pack:')
+            _step_verify = _prep_src.find('"3/3  verify:')
+            if _step_gates < 0 or _step_pack < 0 or _step_verify < 0:
+                _c30_fails.append(
+                    "prep script step labels drifted; expected "
+                    '"1/3  gates:", "2/3  pack:", "3/3  verify:"'
+                )
+            elif not (_step_gates < _step_pack < _step_verify):
+                _c30_fails.append(
+                    "prep script stage order drifted from "
+                    "gates -> pack -> verify"
+                )
+            elif _pointer_write_idx < _step_verify:
+                _c30_fails.append(
+                    "prep script writes pointer doc BEFORE verify "
+                    "stage — a failing verify would still produce "
+                    "a pointer that lies about what was built"
+                )
+    if _c30_fails:
+        for _f in _c30_fails:
+            failures.append(f"C30 FAIL: {_f}")
+    else:
+        print(
+            "  C30 PASS: prep-script ordering holds "
+            "(gates -> pack -> verify -> pointer-write)"
+        )
+
+    # C31: cerebras-evidence-bundle-tools.md lists every on-disk
+    # cerebras-* tool in bench/tools/. Catches drift when a new tool
+    # is added without being documented, or when a tool is renamed
+    # without updating the index. Narrow by design: only scans
+    # bench/tools/*cerebras* (the scope the index doc claims).
+    _tools_dir = REPO_ROOT / "bench/tools"
+    _index_path = _tools_dir / "cerebras-evidence-bundle-tools.md"
+    _c31_fails: list[str] = []
+    if not _index_path.is_file():
+        _c31_fails.append("bundle tools index missing")
+    else:
+        _tool_files = sorted(
+            p.name for p in _tools_dir.iterdir()
+            if p.is_file()
+            and "cerebras" in p.name.lower()
+            and p.name != _index_path.name
+        )
+        if not _tool_files:
+            _c31_fails.append(
+                "no bench/tools/*cerebras* files found — did the "
+                "tool directory move?"
+            )
+        else:
+            _index_src = _index_path.read_text(encoding="utf-8")
+            _missing = [t for t in _tool_files if t not in _index_src]
+            if _missing:
+                _c31_fails.append(
+                    "bundle tools index does not mention "
+                    + ", ".join(_missing)
+                )
+    if _c31_fails:
+        for _f in _c31_fails:
+            failures.append(f"C31 FAIL: {_f}")
+    else:
+        print(
+            f"  C31 PASS: bundle tools index lists all {len(_tool_files)} "
+            f"cerebras-* tools in bench/tools/"
+        )
+
+    # C33: every error-to-preview path in the E2B demo must pipe
+    # through stripAnsi(). cs_python's stderr preserves ANSI escape
+    # codes that render as literal garbage in the browser; an earlier
+    # tick added stripAnsi() but a refactor could silently drop the
+    # wrapper. Structural lock: (1) stripAnsi function exists, (2)
+    # every `el("<lane>-preview").textContent = String(err...)` call
+    # is wrapped. If a new lane's error path forgets stripAnsi, C33
+    # fires.
+    _main_js_c33 = REPO_ROOT / "demos/gemma4-e2b-csl-sim/main.js"
+    _c33_fails: list[str] = []
+    if not _main_js_c33.is_file():
+        _c33_fails.append("demo main.js missing")
+    else:
+        _js_c33 = _main_js_c33.read_text(encoding="utf-8")
+        if "function stripAnsi(" not in _js_c33:
+            _c33_fails.append(
+                "stripAnsi() function missing from main.js — ANSI "
+                "codes will leak back into the error preview panes"
+            )
+        if "function formatRunnerError(" not in _js_c33:
+            _c33_fails.append(
+                "formatRunnerError() function missing from main.js — "
+                "runner-failure JSON will render as raw text with \\n "
+                "literals instead of unescaped stderr"
+            )
+        if not _c33_fails:
+            import re as _re_c33
+            # Find every `.textContent = ...err...` assignment. If the
+            # RHS doesn't contain stripAnsi, that's a bypass.
+            _leaks = []
+            for _m in _re_c33.finditer(
+                r'\.textContent\s*=\s*([^;]*err[^;]*);',
+                _js_c33,
+            ):
+                _rhs = _m.group(1)
+                if "stripAnsi" not in _rhs:
+                    _leaks.append(_rhs.strip()[:80])
+            if _leaks:
+                _c33_fails.append(
+                    "error-to-preview assignment(s) bypass "
+                    f"stripAnsi: {_leaks}"
+                )
+    if _c33_fails:
+        for _f in _c33_fails:
+            failures.append(f"C33 FAIL: {_f}")
+    else:
+        print(
+            "  C33 PASS: demo error-to-preview paths all pipe "
+            "through stripAnsi (no ANSI leak)"
+        )
+
+    # C26: summarize_cerebras_evidence_archive.sh succeeds against
+    # the most recent archive. Integration-lock: catches a format drift
+    # in BUNDLE_META / MANIFEST / lane-status that would break the jq
+    # one-liner before a reviewer tries to run it on their copy.
+    # Skips cleanly when no archive exists yet.
+    import subprocess as _subprocess_c26
+    import glob as _glob_c26
+    _archives = sorted(
+        _glob_c26.glob(str(REPO_ROOT / "bench/out/doe-cerebras-evidence-*.tar.gz")),
+        key=lambda p: Path(p).stat().st_mtime if Path(p).is_file() else 0,
+        reverse=True,
+    )
+    if not _archives:
+        print(
+            "  C26 SKIP: no doe-cerebras-evidence-*.tar.gz archive "
+            "present; run prepare_cerebras_validation_bundle.sh to "
+            "produce one"
+        )
+    else:
+        _latest = _archives[0]
+        _c26_proc = _subprocess_c26.run(
+            ["bash",
+             str(REPO_ROOT / "bench/tools/summarize_cerebras_evidence_archive.sh"),
+             _latest],
+            capture_output=True, text=True, check=False, timeout=30,
+        )
+        if _c26_proc.returncode != 0:
+            failures.append(
+                f"C26 FAIL: summarize script returned "
+                f"{_c26_proc.returncode} on {Path(_latest).name}: "
+                f"{_c26_proc.stderr.strip()[:200]}"
+            )
+        elif "BUNDLE META" not in _c26_proc.stdout:
+            failures.append(
+                "C26 FAIL: summarize output missing expected "
+                "'BUNDLE META' section header — format drift?"
+            )
+        else:
+            print(
+                f"  C26 PASS: summarize script runs cleanly on "
+                f"{Path(_latest).name} and emits expected sections"
+            )
+
     # C25: every data-copy-for attribute in the SDK-GUI viewer HTML
     # points at an element with matching id in the same file. Catches
     # the class of bug where a copy button references a source id
@@ -788,8 +1247,91 @@ def main() -> int:
                     f"verifier FORBIDDEN_EXTENSIONS in sync "
                     f"({len(_packer_exts)} extensions)"
                 )
+
+            # C32: path-substring deny-list sync. Mirrors C23 for
+            # non-extension entries: packer's EXCLUDE_SUBSTRINGS has
+            # path fragments like '/scratch/', '/compile/',
+            # 'simulator.log' that would slip past an extension-only
+            # verifier check. Sync with verifier FORBIDDEN_PATH_SUBSTRINGS.
+            _packer_path_substrs = {
+                _s for _s in _p_mod.EXCLUDE_SUBSTRINGS
+                if not (_s.startswith(".") and "/" not in _s)
+            }
+            _verifier_path_substrs = set(
+                getattr(_v_mod, "FORBIDDEN_PATH_SUBSTRINGS", set())
+            )
+            _c32_fails = []
+            _only_in_pack_substrs = _packer_path_substrs - _verifier_path_substrs
+            _only_in_ver_substrs = _verifier_path_substrs - _packer_path_substrs
+            if _only_in_pack_substrs:
+                _c32_fails.append(
+                    f"path substrings in packer deny-list but not "
+                    f"verifier FORBIDDEN_PATH_SUBSTRINGS: "
+                    f"{sorted(_only_in_pack_substrs)}"
+                )
+            if _only_in_ver_substrs:
+                _c32_fails.append(
+                    f"path substrings in verifier "
+                    f"FORBIDDEN_PATH_SUBSTRINGS but not packer "
+                    f"deny-list: {sorted(_only_in_ver_substrs)}"
+                )
+            if _c32_fails:
+                for _f in _c32_fails:
+                    failures.append(f"C32 FAIL: {_f}")
+            else:
+                print(
+                    f"  C32 PASS: packer path-substring deny-list and "
+                    f"verifier FORBIDDEN_PATH_SUBSTRINGS in sync "
+                    f"({len(_packer_path_substrs)} substrings)"
+                )
         except (OSError, ImportError, AttributeError) as _e23:
             failures.append(f"C23 FAIL: cannot import packer/verifier: {_e23}")
+
+    # C34: four governance docs name both hardware-validation paths
+    # (Path A = endpoint access, Path B = Cerebras-assisted bundle run).
+    # Matches the ask in the external email so the bundle's story
+    # doesn't drift from what we told Cerebras. Each doc is checked
+    # independently — if any one silently drops Path B, C34 fires with
+    # a distinct message pointing at the specific doc.
+    _two_path_docs = [
+        "docs/cerebras-evidence-bundle-ask.md",
+        "docs/cerebras-evidence-bundle-readme.md",
+        "docs/cerebras-evidence-bundle-claim-scope.md",
+        "docs/hardware-validation-appendix.md",
+    ]
+    _c34_fails: list[str] = []
+    for _rel in _two_path_docs:
+        _p = REPO_ROOT / _rel
+        if not _p.is_file():
+            _c34_fails.append(f"governance doc missing: {_rel}")
+            continue
+        _body = _p.read_text(encoding="utf-8").lower()
+        # Path A marker: endpoint access / --cmaddr. Path B marker:
+        # "cerebras-assisted" or "bundle run" phrasing. Both must be
+        # mentioned somewhere in the body for the doc to reflect the
+        # external ask correctly.
+        _has_path_a = ("endpoint" in _body and
+                       ("--cmaddr" in _body or "access" in _body))
+        _has_path_b = "cerebras-assisted" in _body or "bundle run" in _body
+        if not _has_path_a:
+            _c34_fails.append(
+                f"{_rel} no longer mentions Path A (endpoint access "
+                "or --cmaddr)"
+            )
+        if not _has_path_b:
+            _c34_fails.append(
+                f"{_rel} no longer mentions Path B "
+                "(Cerebras-assisted bundle run)"
+            )
+    if _c34_fails:
+        for _f in _c34_fails:
+            failures.append(f"C34 FAIL: {_f}")
+    else:
+        print(
+            f"  C34 PASS: {len(_two_path_docs)} governance docs all "
+            "name both hardware-validation paths (A endpoint / B "
+            "Cerebras-assisted)"
+        )
 
     # C22: packager's INCLUDE_FILES and CLAIM_ROLE dict stay in sync.
     # Every archive path in INCLUDE_FILES must have a CLAIM_ROLE entry
@@ -1059,6 +1601,11 @@ def main() -> int:
                 "bundle-runner-command-copy",
                 "archive-pack-command-copy",
                 "archive-verify-command-copy",
+                "color-list",
+                "fabric-grid",
+                "pe-coordinate-input",
+                "timeline-controls",
+                "timeline-rows",
                 "data-copy-for=\"sdk-command\"",
                 "data-copy-for=\"archive-verify-command\"",
             ]:
@@ -1073,7 +1620,7 @@ def main() -> int:
         print(
             "  C18 PASS: 3 demo HTML pages have balanced <main>, "
             "<script> reference, sibling cross-links, and SDK-GUI "
-            "command-copy controls"
+            "fabric/timeline/command controls"
         )
 
     # C17: SDK-GUI viewer server routes regression lock. Imports

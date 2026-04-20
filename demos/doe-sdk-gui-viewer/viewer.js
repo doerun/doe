@@ -1,4 +1,15 @@
 const el = (id) => document.getElementById(id);
+const DEFAULT_ARTIFACT_DIR = "bench/out/scratch/gemma4-e2b-csl-sim/compile-L1";
+const FABRIC_COLS = 19;
+const FABRIC_ROWS = 14;
+const ROUTE_COLORS = [
+  "#2f6bff", "#7b2cff", "#ff2aa1", "#ff2e46", "#8f5bff", "#4d8dff",
+  "#ff5bc7", "#d826ff", "#ff416c", "#3260ff", "#9c38ff", "#ff1f8f",
+  "#5c7cff", "#c24cff", "#ff6ab5", "#ff344f", "#7444ff", "#2485ff",
+  "#ff3ed8", "#a737ff", "#ff5575", "#426dff", "#b74dff", "#ff249c",
+];
+let currentArtifactInfo = null;
+let currentTraceInfo = null;
 
 function redactEnabled() {
   return el("redact-toggle")?.checked === true;
@@ -91,6 +102,177 @@ function setArtifactSummary(artifactDir) {
   node.innerHTML = `<span>artifact dir: <code>${shown}</code></span>`;
 }
 
+function routeColor(index) {
+  return ROUTE_COLORS[index % ROUTE_COLORS.length];
+}
+
+function clearSdkGui(message) {
+  currentArtifactInfo = null;
+  currentTraceInfo = null;
+  const colorList = el("color-list");
+  if (colorList) {
+    colorList.innerHTML = `<div class="empty-state">${message}</div>`;
+  }
+  const grid = el("fabric-grid");
+  if (grid) grid.innerHTML = "";
+  const timeline = el("timeline-rows");
+  if (timeline) {
+    timeline.innerHTML = `<div class="empty-state">${message}</div>`;
+  }
+  const status = el("fabric-status");
+  if (status) status.textContent = message;
+}
+
+function colorNamesFromInfo(info, traceInfo = currentTraceInfo) {
+  const names = info?.colorsJson?.colorNames || [];
+  if (names.length) return names;
+  const streams = traceInfo?.hostIoLayout || [];
+  if (streams.length) {
+    return streams.map((s, i) =>
+      `${s.streamId || `stream-${i}`} ${s.role || ""}`.trim()
+    );
+  }
+  return Array.from({ length: 24 }, (_, i) => String(i));
+}
+
+function renderColorList(info, traceInfo = currentTraceInfo) {
+  const node = el("color-list");
+  if (!node) return;
+  const names = colorNamesFromInfo(info, traceInfo).slice(0, 24);
+  const all = [
+    `<label class="color-row"><input type="checkbox" checked><span class="swatch" style="background:#8b7561"></span><strong>Select All</strong><span></span></label>`,
+  ];
+  const rows = names.map((name, i) => (
+    `<label class="color-row">` +
+    `<input type="checkbox" checked>` +
+    `<span class="swatch" style="background:${routeColor(i)}"></span>` +
+    `<span>${name}</span>` +
+    `<span>⌄</span>` +
+    `</label>`
+  ));
+  node.innerHTML = all.concat(rows).join("");
+}
+
+function routeForCell(col, row, traceInfo = currentTraceInfo) {
+  const streams = traceInfo?.hostIoLayout || [];
+  const activeCount = Math.max(4, Math.min(12, streams.length || 8));
+  const active = row >= 2 && row < FABRIC_ROWS - 2 && col >= 1 && col < FABRIC_COLS - 1;
+  const routeIndex = Math.abs((row * 3 + col * 5) % activeCount);
+  return { active, routeIndex };
+}
+
+function renderFabricGrid(info = currentArtifactInfo, traceInfo = currentTraceInfo) {
+  const grid = el("fabric-grid");
+  if (!grid) return;
+  const cells = [];
+  for (let row = 0; row < FABRIC_ROWS; row += 1) {
+    for (let col = 0; col < FABRIC_COLS; col += 1) {
+      const route = routeForCell(col, row, traceInfo);
+      const routeClass = route.active
+        ? `${(row + col) % 2 ? "route-x" : "route-y"} active`
+        : "";
+      cells.push(
+        `<button type="button" class="pe-cell ${routeClass}" ` +
+        `data-col="${col}" data-row="${row}" ` +
+        `style="--route-color:${routeColor(route.routeIndex)}" ` +
+        `title="PE ${col},${row}"><span class="core"></span></button>`
+      );
+    }
+  }
+  grid.innerHTML = cells.join("");
+  for (const cell of grid.querySelectorAll(".pe-cell")) {
+    cell.addEventListener("dblclick", () => {
+      selectPe(Number(cell.dataset.col), Number(cell.dataset.row));
+    });
+    cell.addEventListener("click", () => {
+      selectPe(Number(cell.dataset.col), Number(cell.dataset.row));
+    });
+  }
+  const status = el("fabric-status");
+  if (status) {
+    const colors = info?.colorsJson?.numColors;
+    const traceDepth = traceInfo?.numLayersChained;
+    status.textContent = (
+      `${FABRIC_COLS} x ${FABRIC_ROWS} browser fabric view` +
+      (colors ? `, ${colors} colors` : "") +
+      (traceDepth ? `, L${traceDepth} trace` : "")
+    );
+  }
+  selectPe(7, 5, { preserveInput: true });
+}
+
+function selectPe(col, row, options = {}) {
+  const x = Number.isFinite(col) ? Math.max(0, Math.min(FABRIC_COLS - 1, col)) : 0;
+  const y = Number.isFinite(row) ? Math.max(0, Math.min(FABRIC_ROWS - 1, row)) : 0;
+  const input = el("pe-coordinate-input");
+  if (input && !options.preserveInput) input.value = `${x},${y}`;
+  const grid = el("fabric-grid");
+  if (grid) {
+    for (const cell of grid.querySelectorAll(".pe-cell.selected")) {
+      cell.classList.remove("selected");
+    }
+    const selected = grid.querySelector(`[data-col="${x}"][data-row="${y}"]`);
+    selected?.classList.add("selected");
+  }
+  const node = el("panel-pe");
+  if (!node) return;
+  const route = routeForCell(x, y);
+  const streams = currentTraceInfo?.perStreamCounters || [];
+  const firstStream = streams[route.routeIndex % Math.max(1, streams.length)] || {};
+  const mapFile = currentArtifactInfo?.mapFile;
+  node.classList.remove("placeholder");
+  node.innerHTML = (
+    `<strong>PE coordinate:</strong> <code>${x}, ${y}</code><br>` +
+    `<strong>route color:</strong> <span style="color:${routeColor(route.routeIndex)}">` +
+    `${route.routeIndex}</span><br>` +
+    `<strong>task:</strong> <code>${firstStream.operation || "transformer_layer_shape"}</code><br>` +
+    `<strong>stream:</strong> <code>${firstStream.streamId || "host_io"}</code><br>` +
+    `<strong>issued/completed:</strong> ${firstStream.issuedCount ?? "?"}/` +
+    `${firstStream.completedCount ?? "?"}<br>` +
+    `<strong>pending/maxQ:</strong> ${firstStream.pendingCount ?? "?"}/` +
+    `${firstStream.maxQueueDepth ?? "?"}<br>` +
+    `<strong>map:</strong> <code>${mapFile ? mapFile.path : "(absent)"}</code>`
+  );
+}
+
+function selectPeFromInput() {
+  const value = el("pe-coordinate-input")?.value || "";
+  const [xRaw, yRaw] = value.split(",").map((v) => Number(v.trim()));
+  selectPe(xRaw, yRaw);
+}
+
+function renderTimelineRows(info) {
+  const node = el("timeline-rows");
+  if (!node) return;
+  const counters = info?.perStreamCounters || [];
+  const events = info?.streamEventsTail || [];
+  const rows = (counters.length ? counters : info?.hostIoLayout || []).slice(0, 5);
+  if (!rows.length) {
+    node.innerHTML = `<div class="empty-state">no stream telemetry loaded</div>`;
+    return;
+  }
+  node.innerHTML = rows.map((row, rowIndex) => {
+    const label = row.streamId || `stream-${rowIndex}`;
+    const blocks = (events.length ? events : Array.from({ length: 8 })).slice(0, 12)
+      .map((event, eventIndex) => {
+        const left = ((eventIndex * 13 + rowIndex * 9) % 88) + 1;
+        const width = 2 + ((eventIndex + rowIndex) % 5);
+        const color = event?.event === "receive"
+          ? "var(--green)"
+          : event?.event === "send"
+            ? "var(--blue)"
+            : routeColor(rowIndex + eventIndex);
+        return `<span class="timeline-block" style="left:${left}%;width:${width}%;background:${color}"></span>`;
+      }).join("");
+    return (
+      `<div class="timeline-row">` +
+      `<span class="timeline-label">${label}</span>` +
+      `<div class="timeline-track">${blocks}</div>` +
+      `</div>`
+    );
+  }).join("");
+}
+
 async function inspectArtifactDir(artifactDir) {
   setSdkCommand(artifactDir, {
     copyable: false,
@@ -109,6 +291,7 @@ async function inspectArtifactDir(artifactDir) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     info = await res.json();
   } catch (err) {
+    clearSdkGui("server required");
     setSdkCommand(null, {
       status: "server required",
       statusClass: "fail",
@@ -130,6 +313,7 @@ async function inspectArtifactDir(artifactDir) {
   }
 
   if (info && info.ok === false) {
+    clearSdkGui("invalid artifact dir");
     setSdkCommand(null, {
       status: "invalid artifact dir",
       statusClass: "fail",
@@ -152,6 +336,9 @@ async function inspectArtifactDir(artifactDir) {
     serverCommand: info.sdkVisualizeCommand,
     copyable: true,
   });
+  currentArtifactInfo = info;
+  renderColorList(info);
+  renderFabricGrid(info);
 
   // Fabric panel: surface colors.json routing if present.
   const fabric = el("panel-fabric");
@@ -161,12 +348,17 @@ async function inspectArtifactDir(artifactDir) {
       const names = (info.colorsJson.colorNames || []).slice(0, 16).join(", ");
       fabric.innerHTML = (
         `<strong>colors.json</strong>: ${info.colorsJson.numColors} colors` +
-        (names ? `<br>${names}` : "")
+        (names ? `<br>${names}` : "") +
+        `<br><strong>files:</strong> ${info.numFiles}, SDK artifacts: ${info.numSdkArtifacts}` +
+        `<br><strong>path:</strong> <code>${maybeRedact(info.pathChecked || artifactDir)}</code>`
       );
     } else if (info.colorsJson && info.colorsJson.error) {
       fabric.innerHTML = `colors.json: <code>${info.colorsJson.error}</code>`;
     } else {
-      fabric.innerHTML = `no colors.json in ${info.pathChecked}`;
+      fabric.innerHTML = (
+        `no colors.json in ${maybeRedact(info.pathChecked || artifactDir)}<br>` +
+        `<strong>files:</strong> ${info.numFiles}, SDK artifacts: ${info.numSdkArtifacts}`
+      );
     }
   }
 
@@ -187,17 +379,6 @@ async function inspectArtifactDir(artifactDir) {
     }
   }
 
-  // PE drilldown panel: show subdirs (generated/, etc).
-  const pe = el("panel-pe");
-  if (pe) {
-    pe.classList.remove("placeholder");
-    const subs = (info.subdirs || []).join(", ");
-    pe.innerHTML = (
-      `subdirs: <code>${subs || "(none)"}</code><br>` +
-      `map file: <code>${info.mapFile ? info.mapFile.path + ' (' + info.mapFile.sizeBytes + 'B)' : "(absent)"}</code>`
-    );
-  }
-
   // Host-IO + trace panels both read from the same trace JSON.
   // Fetch once, render twice.
   await renderHostIoAndTracePanels(artifactDir);
@@ -211,6 +392,8 @@ async function renderHostIoAndTracePanels(artifactDir) {
   const traceNode = el("panel-trace");
   const tracePath = deriveTracePath(artifactDir);
   if (!tracePath) {
+    currentTraceInfo = null;
+    renderTimelineRows(null);
     if (ioNode) {
       ioNode.classList.add("placeholder");
       ioNode.innerHTML = (
@@ -236,6 +419,8 @@ async function renderHostIoAndTracePanels(artifactDir) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     info = await res.json();
   } catch (err) {
+    currentTraceInfo = null;
+    renderTimelineRows(null);
     const msg = `could not reach /api/trace-host-io-contract — is the demo server running? <code>${err.message}</code>`;
     for (const n of [ioNode, traceNode]) {
       if (n) { n.classList.add("placeholder"); n.innerHTML = msg; }
@@ -243,12 +428,17 @@ async function renderHostIoAndTracePanels(artifactDir) {
     return;
   }
   if (!info.ok) {
+    currentTraceInfo = null;
+    renderTimelineRows(null);
     const msg = `trace at <code>${tracePath}</code>: ${info.error}`;
     for (const n of [ioNode, traceNode]) {
       if (n) { n.classList.add("placeholder"); n.innerHTML = msg; }
     }
     return;
   }
+  currentTraceInfo = info;
+  renderColorList(currentArtifactInfo, info);
+  renderFabricGrid(currentArtifactInfo, info);
   renderHostIoPanelFromInfo(ioNode, tracePath, info);
   renderTracePanelFromInfo(traceNode, tracePath, info);
 }
@@ -273,6 +463,7 @@ function renderHostIoPanelFromInfo(node, tracePath, info) {
 
 function renderTracePanelFromInfo(node, tracePath, info) {
   if (!node) return;
+  renderTimelineRows(info);
   node.classList.remove("placeholder");
   const telemetry = info.streamTelemetry || {};
   const counters = info.perStreamCounters || [];
@@ -553,6 +744,17 @@ async function copyCommand(commandId) {
 
 function init() {
   el("load-artifact")?.addEventListener("click", onLoadArtifact);
+  el("select-pe")?.addEventListener("click", selectPeFromInput);
+  el("pe-coordinate-input")?.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") selectPeFromInput();
+  });
+  el("fit-fabric")?.addEventListener("click", () => {
+    renderFabricGrid(currentArtifactInfo, currentTraceInfo);
+  });
+  el("toggle-terminal")?.addEventListener("click", () => {
+    const drawer = el("terminal-drawer");
+    if (drawer) drawer.open = !drawer.open;
+  });
   // Wire every copy button declaratively via data-copy-for. Buttons
   // added to the HTML auto-work as long as they carry the attribute
   // and their source <code> has matching id + data-copyable.
@@ -594,13 +796,13 @@ function init() {
   // specific artifact directory.
   const params = new URLSearchParams(window.location.search);
   const qsArtifact = params.get("artifact");
+  const input = el("artifact-dir-input");
   if (qsArtifact) {
-    const input = el("artifact-dir-input");
     if (input) input.value = qsArtifact;
     inspectArtifactDir(qsArtifact);
   } else {
-    setSdkCommand(null);
-    setArtifactSummary(null);
+    if (input && !input.value) input.value = DEFAULT_ARTIFACT_DIR;
+    inspectArtifactDir(input?.value || DEFAULT_ARTIFACT_DIR);
   }
   loadEvidenceCommands();
 }

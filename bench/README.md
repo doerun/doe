@@ -2168,11 +2168,24 @@ Related tools:
 
 Regression surface that protects the pipeline:
 
-- `bench/tools/e2b_layer_block_self_check.py` — 22 in-loop contracts
-  including C16 (pack+verify round-trip), C17 (viewer `/api` routes),
-  C18 (demo HTML + cross-links), C19 (bundle-summary shape),
-  C20 (lane labels), C21 (MoE TODO artifactKind), C22 (packager
-  INCLUDE_FILES ↔ CLAIM_ROLE sync).
+- `bench/tools/e2b_layer_block_self_check.py` — 34 in-loop contracts
+  including C16 (pack+verify round-trip), C17 (viewer `/api` routes
+  including bundle-summary + evidence-commands), C18 (demo HTML +
+  cross-links + command-copy controls), C19 (bundle-summary shape +
+  verdict/step consistency), C20 (lane labels), C21 (MoE TODO
+  artifactKind), C22 (packager INCLUDE_FILES ↔ CLAIM_ROLE sync), C23
+  (packer ↔ verifier extension deny-list sync), C24 (bash -n on bundle
+  shell scripts), C25 (data-copy-for ↔ element id consistency), C26
+  (summarize script integration), C27 (emulator lane soft-fails CSL
+  contract check structurally: WGSL-before-try + unchecked branch +
+  cslContract field), C28 (bundle-doc skip-lists sync across packer ↔
+  gate ↔ verifier, AST-based), C29 (pointer doc not in INCLUDE_FILES,
+  stale-lag guard), C30 (prep-script stage ordering: gates → pack →
+  verify → pointer-write), C31 (cerebras-evidence-bundle-tools.md
+  lists every on-disk cerebras-* tool), C32 (packer path-substring
+  deny-list ↔ verifier FORBIDDEN_PATH_SUBSTRINGS sync — catches a
+  hand-edited archive with e.g. `bench/out/scratch/*.json`). See
+  `bench/tools/cerebras-evidence-bundle-tools.md` for the full index.
 - `bench/gates/claim_discipline_gate.py` — rejects hardware-claim and
   26B/A4B MoE-claim prose anywhere outside rule-enumerating docs.
 
