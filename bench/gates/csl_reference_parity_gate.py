@@ -23,6 +23,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--require-trace-success", action="store_true")
     parser.add_argument("--require-output-parity", action="store_true")
+    parser.add_argument(
+        "--require-tolerance-parity",
+        action="store_true",
+        help="Compare referenceRun.output and cslRun.output element-"
+             "wise with atol from comparison.atol instead of sha256 "
+             "equality. Needed when the reference producer is non-bit-"
+             "exact to scalar f32 (e.g. Doppler WebGPU: driver FMA, "
+             "vectorized reductions, platform sqrt round differently). "
+             "Mutually exclusive with --require-output-parity.",
+    )
     parser.add_argument("--require-promotion-ready", action="store_true")
     return parser.parse_args()
 
@@ -157,6 +167,12 @@ def main() -> int:
     if not comparison.get("sameGraphHash", False):
         failures.append("comparison.sameGraphHash=false")
 
+    if args.require_output_parity and args.require_tolerance_parity:
+        failures.append(
+            "--require-output-parity and --require-tolerance-parity "
+            "are mutually exclusive; pick one"
+        )
+
     if args.require_output_parity:
         ref_output = receipt.get("referenceRun", {}).get("output", {})
         csl_output = csl_run.get("output", {})
@@ -179,6 +195,60 @@ def main() -> int:
             )
         if comparison.get("outputHashMatch") is not True:
             failures.append("comparison.outputHashMatch is not true")
+
+    if args.require_tolerance_parity:
+        ref_output = receipt.get("referenceRun", {}).get("output", {})
+        csl_output = csl_run.get("output", {})
+        atol = comparison.get("atol")
+        if atol is None:
+            failures.append(
+                "--require-tolerance-parity needs comparison.atol "
+                "to be set in the receipt"
+            )
+        if comparison.get("status") != "passed":
+            failures.append(
+                f"comparison.status={comparison.get('status')!r}, "
+                "expected 'passed'"
+            )
+        ref_path_text = ref_output.get("path", "")
+        csl_path_text = csl_output.get("path", "")
+        if not ref_path_text or not csl_path_text:
+            failures.append(
+                "referenceRun.output.path and cslRun.output.path "
+                "are required for tolerance parity"
+            )
+        else:
+            import numpy as _np  # local to avoid top-level dep
+            ref_path = resolve(ref_path_text)
+            csl_path = resolve(csl_path_text)
+            if not ref_path.is_file():
+                failures.append(
+                    f"referenceRun.output.path missing: {ref_path_text}"
+                )
+            if not csl_path.is_file():
+                failures.append(f"cslRun.output.path missing: {csl_path_text}")
+            if ref_path.is_file() and csl_path.is_file():
+                ref_f32 = _np.fromfile(ref_path, dtype=_np.float32)
+                csl_f32 = _np.fromfile(csl_path, dtype=_np.float32)
+                if ref_f32.shape != csl_f32.shape:
+                    failures.append(
+                        "referenceRun.output and cslRun.output shapes "
+                        f"differ: {ref_f32.shape} vs {csl_f32.shape}"
+                    )
+                else:
+                    max_abs = float(_np.max(_np.abs(ref_f32 - csl_f32)))
+                    recorded = comparison.get("maxAbsErr")
+                    if recorded is not None:
+                        if abs(float(recorded) - max_abs) > 1e-12:
+                            failures.append(
+                                f"comparison.maxAbsErr={recorded!r} "
+                                f"but recomputed={max_abs:.6e}"
+                            )
+                    if atol is not None and max_abs > float(atol):
+                        failures.append(
+                            f"tolerance parity: max_abs={max_abs:.6e} "
+                            f"exceeds atol={atol}"
+                        )
 
     if args.require_promotion_ready:
         criteria = receipt.get("promotionCriteria", {})

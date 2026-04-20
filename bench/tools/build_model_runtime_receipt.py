@@ -50,22 +50,26 @@ def compute_execution_status(
     """Pure flip logic for executionStatus / executionBlocker.
 
     Returns ("simulator_success", "none") iff all structural gates
-    pass (streaming_required, not missing_kernels, fits), the cross-
-    runtime parity check verdict is promotionEligible, and the
-    receipt's model is the E2B lane the current parity-check
-    artifact describes. Otherwise returns ("not_attempted", blocker)
-    where blocker is the caller-supplied structural reason.
+    pass (streaming_required, not missing_kernels, fits), the
+    model is E2B or 31B, and the cross-runtime parity check verdict
+    for that model's own artifact is promotionEligible. Otherwise
+    returns ("not_attempted", blocker) where blocker is the caller-
+    supplied structural reason.
 
-    Extracted as a pure function so test_execution_status_flip.py
-    can exercise both branches without file I/O or mocks against
-    real artifacts.
+    Since tick 11, each model reads its OWN parity artifact, so the
+    parity_promotion_eligible input is already model-scoped. The
+    model_id check here only rejects other models whose parity
+    machinery doesn't exist yet. Extracted as a pure function so
+    test_execution_status_flip.py can exercise both branches without
+    file I/O or mocks against real artifacts.
     """
-    parity_applies = "e2b" in (model_id or "").lower()
+    mid = (model_id or "").lower()
+    model_has_parity_lane = ("e2b" in mid) or ("31b" in mid)
     if (streaming_required
             and not missing_kernels
             and fits
             and parity_promotion_eligible
-            and parity_applies):
+            and model_has_parity_lane):
         return ("simulator_success", "none")
     return ("not_attempted", default_blocker)
 
@@ -393,10 +397,19 @@ def main() -> int:
     # runner has been re-run and all P1..P6 preconditions are met.
     # Without this wire, the receipt would remain not_attempted even
     # after cs_python delivers a bit-exact simulator run.
-    parity_check_artifact = resolve(
-        "bench/out/streaming-executor/"
-        "e2b-layer-block-cross-runtime-parity-check.json"
-    )
+    # Model-aware: E2B and 31B each have their own parity artifact
+    # so the flip only fires against the model's own evidence.
+    _model_id_early_lc = (receipt.get("modelId", "") or "").lower()
+    if "31b" in _model_id_early_lc:
+        parity_check_artifact = resolve(
+            "bench/out/streaming-executor/"
+            "gemma-4-31b-layer-block-cross-runtime-parity-check.json"
+        )
+    else:
+        parity_check_artifact = resolve(
+            "bench/out/streaming-executor/"
+            "e2b-layer-block-cross-runtime-parity-check.json"
+        )
     parity_promotion_eligible = False
     parity_runner_stale = False
     # Absent parity check is equivalent to stale for blocker-naming
@@ -539,9 +552,20 @@ def main() -> int:
     # parity-contract gate bind to a real-shaped trace artifact while
     # cs_python is unavailable; downstream consumers can compare its
     # kernelSourceSha256 to the live CSL file to detect drift.
-    synthetic_trace_path = (
-        "bench/out/streaming-executor/e2b-layer-block-synthetic-trace.json"
-    )
+    # Model-aware path: each model lane binds its own synthetic trace
+    # so 31B doesn't inherit E2B's 35-layer reference bytes (which
+    # would fail the cross-runtime output-digest precondition).
+    _model_id_lc = (receipt.get("modelId", "") or "").lower()
+    if "31b" in _model_id_lc:
+        synthetic_trace_path = (
+            "bench/out/streaming-executor/"
+            "gemma-4-31b-layer-block-synthetic-trace.json"
+        )
+    else:
+        synthetic_trace_path = (
+            "bench/out/streaming-executor/"
+            "e2b-layer-block-synthetic-trace.json"
+        )
     synthetic_trace_evidence: dict[str, Any] = {
         "syntheticTrace": {
             "path": synthetic_trace_path,
@@ -562,10 +586,16 @@ def main() -> int:
     # verdict (promotionEligible bool + preconditionsMet/Missing
     # lists) so a downstream consumer reading just the receipt knows
     # whether the model is currently eligible to promote.
-    parity_check_path = (
-        "bench/out/streaming-executor/"
-        "e2b-layer-block-cross-runtime-parity-check.json"
-    )
+    if "31b" in _model_id_lc:
+        parity_check_path = (
+            "bench/out/streaming-executor/"
+            "gemma-4-31b-layer-block-cross-runtime-parity-check.json"
+        )
+    else:
+        parity_check_path = (
+            "bench/out/streaming-executor/"
+            "e2b-layer-block-cross-runtime-parity-check.json"
+        )
     parity_check_evidence: dict[str, Any] = {
         "crossRuntimeParityCheck": {
             "path": parity_check_path,
@@ -580,13 +610,13 @@ def main() -> int:
             ),
         },
     }
-    # The parity-check and synthetic-trace artifacts above are E2B-
-    # layer-block-specific (1024-element streams, 35-layer chain,
-    # matches E2B manifest shape). For 31B those bindings would be
-    # evidence coupling against a different-shape run, so only bind
-    # them when the receipt's model is the E2B lane they measure.
+    # Each model has its OWN synthetic trace + parity artifact
+    # (selected above by modelId). Bind them only when the receipt's
+    # model has a parity lane (E2B or 31B today; other models stay
+    # nil until their own lanes land).
+    _model_id_applies = (receipt.get("modelId", "") or "").lower()
     layer_block_evidence_applies = (
-        "e2b" in (receipt.get("modelId", "") or "").lower()
+        ("e2b" in _model_id_applies) or ("31b" in _model_id_applies)
     )
 
     parity_abs = resolve(parity_check_path)

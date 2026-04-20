@@ -82,11 +82,21 @@ def main() -> int:
             expect_status="simulator_success",
             expect_blocker="none",
         ),
-        # 31B must not inherit E2B parity verdict.
+        # 31B with its OWN parity verdict TRUE flips to simulator_success.
+        # Tick 11 added per-model parity artifacts; parity_promotion_eligible
+        # is now model-scoped (receipt builder reads each model's own file).
         case(
-            "T4 31b, promotionEligible=True, parity does not apply",
+            "T4 31b with own parity=True flips simulator_success",
             parity_promotion_eligible=True,
             model_id=B31_ID,
+            expect_status="simulator_success",
+            expect_blocker="none",
+        ),
+        # Unknown model (no parity lane) still blocks the flip.
+        case(
+            "T4b unknown model with parity=True does NOT flip",
+            parity_promotion_eligible=True,
+            model_id="gemma-2-2b-it-text-q4k-ehf16-af32",
             expect_status="not_attempted",
             expect_blocker=BLOCKER,
         ),

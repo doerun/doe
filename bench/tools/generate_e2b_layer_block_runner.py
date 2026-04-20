@@ -70,6 +70,19 @@ def parse_args() -> argparse.Namespace:
         "--runner-out",
         default="bench/runners/csl-runners/e2b_layer_block_smoke.py",
     )
+    p.add_argument(
+        "--manifest",
+        default="runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+        help="execution-v1 manifest to read modelConfig from. Switch "
+             "to the 31B manifest + 31B plan + 31B receipt to emit a "
+             "31B runner (Build-order step 7 scaffold).",
+    )
+    p.add_argument(
+        "--source-model-receipt",
+        default="bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+        help="Path embedded into the emitted trace as "
+             "sourceModelReceiptPath. Must match the target model.",
+    )
     return p.parse_args()
 
 
@@ -603,7 +616,7 @@ def main() -> int:
                 "runLogs": [],
                 "coreFile": None,
             }},
-            "sourceModelReceiptPath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+            "sourceModelReceiptPath": "{source_model_receipt_rel}",
             "perKernelShapes": {per_kernel_shapes_literal},
         }},
         "notes": (
@@ -1263,9 +1276,10 @@ def main() -> int:
     layer = layers[args.layer_index]
 
     # Read the manifest that produced this plan so per-kernel shapes can be
-    # grounded in modelConfig dims, not hand-typed numbers.
-    manifest_rel = "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
-    manifest_path = REPO_ROOT / manifest_rel
+    # grounded in modelConfig dims, not hand-typed numbers. Parametric via
+    # --manifest so the same generator emits E2B or 31B runners.
+    manifest_rel = args.manifest
+    manifest_path = resolve(manifest_rel)
     manifest = json.loads(manifest_path.read_text())
     per_kernel_shapes = derive_per_kernel_shapes(plan, manifest, args.smoke_size)
     # Default chain depth comes from the manifest's modelConfig.numLayers
@@ -1297,6 +1311,7 @@ def main() -> int:
     per_kernel_shapes_literal = json.dumps(per_kernel_shapes, indent=4) \
         .replace("true", "True").replace("false", "False").replace("null", "None")
 
+    source_model_receipt_rel = args.source_model_receipt
     runner_text = TEMPLATE.format(
         plan_path_rel=plan_path_rel,
         plan_sha256=plan_sha256,
@@ -1309,6 +1324,7 @@ def main() -> int:
         model_id=plan.get("modelId", ""),
         stream_contract_comment=stream_contract_comment,
         per_kernel_shapes_literal=per_kernel_shapes_literal,
+        source_model_receipt_rel=source_model_receipt_rel,
     )
 
     runner_out = resolve(args.runner_out)

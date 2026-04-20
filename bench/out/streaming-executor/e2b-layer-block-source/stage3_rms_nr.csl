@@ -12,11 +12,6 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
-fn sqrt_nr(x: f32) f32 {
-    const y0: f32 = math.sqrt(x);
-    return 0.5 * (y0 + x / y0);
-}
-
 fn rope_cos_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return  1.0;          }
@@ -115,7 +110,7 @@ task done() void {
     var sum_sq: f32 = 0.0;
     for (@range(u16, size)) |i| { sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]); }
     const mean_sq: f32 = sum_sq / @as(f32, size);
-    const rms: f32     = sqrt_nr(mean_sq + rmsnorm_eps);
+    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
     for (@range(u16, size)) |i| {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
@@ -214,6 +209,19 @@ task done() void {
     for (@range(u16, size)) |i| {
         const k_idx: u16 = i - ((i / attn_flat_len) * attn_flat_len);
         buf_out[i] = attn_vals[k_idx] + buf_rows[i];
+    }
+
+    // Stage 3: post-attn RMSNorm
+    var sum_sq2: f32 = 0.0;
+    for (@range(u16, size)) |i| { sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]); }
+    const mean_sq2: f32 = sum_sq2 / @as(f32, size);
+    const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
+    const inv_rms2: f32 = 1.0 / rms2;
+    for (@range(u16, size)) |i| {
+        const x_in: f32 = sum_sq2 / @as(f32, size) + rmsnorm_eps;
+        const y0: f32 = math.sqrt(x_in);
+        const y1: f32 = 0.5 * (y0 + x_in / y0);  // one Newton-Raphson step
+        buf_out[i] = y1;
     }
 
     @mov32(output, mem_out);

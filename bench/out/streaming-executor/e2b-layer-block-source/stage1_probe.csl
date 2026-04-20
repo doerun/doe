@@ -11,6 +11,11 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
+fn sqrt_nr(x: f32) f32 {
+    const y0: f32 = math.sqrt(x);
+    return 0.5 * (y0 + x / y0);
+}
+
 const in_q_0 = @get_input_queue(0);
 const in_q_1 = @get_input_queue(1);
 const in_q_2 = @get_input_queue(2);
@@ -59,7 +64,7 @@ task done() void {
         sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
     }
     const mean_sq: f32 = sum_sq / @as(f32, size);
-    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
+    const rms: f32     = sqrt_nr(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
     for (@range(u16, size)) |i| {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];

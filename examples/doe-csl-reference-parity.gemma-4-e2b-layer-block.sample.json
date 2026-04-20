@@ -21,36 +21,44 @@
         1024
       ],
       "path": "bench/out/streaming-executor/e2b-layer-block-synthetic-trace.output.f32",
-      "sha256": "1f83875a622b0019e41d1b3ce813045e04751d9a5a049ad62a19880b05d3aef7"
+      "sha256": "ef36a4fb48b6d9fa554c9ae31265b139c4d8c4b90a514e2676fd93b8e6071f6b"
     }
   },
   "cslRun": {
     "tracePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
-    "traceSha256": "4332404b45697855744c1d337739216908498fd90cafd79bb7ea0866c33533ab",
+    "traceSha256": "4a156daf3831e382cbb9b672c6e145c08d53e00c9dbb88e55d1821817c18478a",
     "status": "succeeded",
-    "kernelStage": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm+gated_mlp_relu_gelu_stub",
+    "kernelStage": "pre_attn_rmsnorm+mha_8head_hd8_kv4_multi_pair_rope_real_poly_c1_softmax+residual+post_attn_rmsnorm+gated_mlp_poly_c1_gelu+multi_layer_chain",
     "kernelIsStub": false,
     "numericalParity": {
       "maxAbsErr": 0.0,
       "atol": 0,
       "passed": true
+    },
+    "output": {
+      "dtype": "float32",
+      "shape": [
+        1024
+      ],
+      "path": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.output.f32",
+      "sha256": "ef36a4fb48b6d9fa554c9ae31265b139c4d8c4b90a514e2676fd93b8e6071f6b"
     }
   },
   "comparison": {
-    "status": "metadata_bound",
+    "status": "passed",
     "sameManifestHash": true,
     "sameGraphHash": true,
-    "outputHashMatch": false,
-    "blocker": "smoke-trace kernelSourceSha256 (c825be59dc322dc8) drifted from live kernel (39ad78d7405a12f8) \u2014 rerun bench/runners/csl-runners/e2b_layer_block_smoke.py on a cs_python-equipped host to refresh; cslRun.output digest not bound (runner trace predates the output-digest emission); external Doppler/browser output vector not bound yet (pass --external-reference-output to bind one)"
+    "outputHashMatch": true,
+    "blocker": "external Doppler/browser output vector not bound yet (pass --external-reference-output to bind one)"
   },
   "promotionCriteria": {
-    "fullModelDepthExecuted": false,
+    "fullModelDepthExecuted": true,
     "manifestHashMatched": true,
     "graphHashMatched": true,
     "weightHashMatched": false,
     "externalReferenceOutputBound": false,
-    "cslOutputHashBound": false,
-    "outputParityPassed": false,
+    "cslOutputHashBound": true,
+    "outputParityPassed": true,
     "stubStagesAbsent": true,
     "syntheticInputsAbsent": false,
     "syntheticWeightsAbsent": false,

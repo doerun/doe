@@ -121,6 +121,16 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
+fn sqrt_nr(x: f32) f32 {
+    // Start from math.sqrt (hardware approximation, within 1 ULP for
+    // most inputs) and apply ONE Newton-Raphson refinement step. The
+    // hardware sqrt alone produced a 1-ULP divergence vs IEEE-round
+    // at L2 inputs (mean_sq2 ~1229). With a near-correct seed, one
+    // NR step converges to IEEE-correctly-rounded f32 sqrt.
+    const y0: f32 = math.sqrt(x);
+    return 0.5 * (y0 + x / y0);
+}
+
 // Rope positional encoding table. head_dim=8 means 4 rope pairs
 // per head (pair d covers dims 2d, 2d+1). Each pair has its own
 // frequency theta_d = base^(-2d/head_dim); base=10000 matches the
@@ -254,7 +264,7 @@ task done() void {
         sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
     }
     const mean_sq: f32 = sum_sq / @as(f32, size);
-    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
+    const rms: f32     = sqrt_nr(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
     // Stage 1b: normalize + gamma, stored in buf_out as rmsnorm_out.
     for (@range(u16, size)) |i| {
@@ -394,7 +404,7 @@ task done() void {
         sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]);
     }
     const mean_sq2: f32 = sum_sq2 / @as(f32, size);
-    const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
+    const rms2: f32     = sqrt_nr(mean_sq2 + rmsnorm_eps);
     const inv_rms2: f32 = 1.0 / rms2;
     // Stage 3b: normalize + gamma2 broadcast 4x over the token.
     for (@range(u16, size)) |i| {

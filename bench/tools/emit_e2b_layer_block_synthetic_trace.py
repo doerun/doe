@@ -73,6 +73,12 @@ def parse_args() -> argparse.Namespace:
         "--execution-plan",
         default="bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
     )
+    p.add_argument(
+        "--manifest",
+        default="runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+        help="execution-v1 manifest. Parametric so the same emitter "
+             "can produce an E2B or 31B synthetic trace.",
+    )
     p.add_argument("--size", type=int, default=1024,
                    help="Per-stream f32 count (matches runner default).")
     p.add_argument(
@@ -114,12 +120,20 @@ def main() -> int:
     per_layer_seeds: list = []
     for l_idx in range(args.num_layers):
         seed_l = args.per_layer_base + l_idx
-        rng_l = np.random.default_rng(seed=seed_l)
+        # Mirror the runner's load_layer_data semantics: each call gets
+        # its own default_rng(seed_l), so proj_l and wts_l draw from
+        # independent state starting at the same seed and are therefore
+        # IDENTICAL arrays. Without this symmetry the synthetic trace's
+        # output digest diverges from the runner's (cross-runtime P6).
         per_layer_proj.append(
-            rng_l.standard_normal(size=args.size, dtype=np.float32)
+            np.random.default_rng(seed=seed_l).standard_normal(
+                size=args.size, dtype=np.float32
+            )
         )
         per_layer_wts.append(
-            rng_l.standard_normal(size=args.size, dtype=np.float32)
+            np.random.default_rng(seed=seed_l).standard_normal(
+                size=args.size, dtype=np.float32
+            )
         )
         per_layer_seeds.append(seed_l)
 
@@ -167,9 +181,7 @@ def main() -> int:
 
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     # Per-kernel shapes from the same derivation the generator uses.
-    manifest_path = (
-        REPO_ROOT / "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
-    )
+    manifest_path = resolve(args.manifest)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     per_kernel_shapes = derive_per_kernel_shapes(plan, manifest, args.size)
     trace = {

@@ -95,6 +95,12 @@ def act_poly_c1(x):
     return np.float32(np.float32(0.25) * sq)
 
 
+def sqrt_nr(x):
+    x = np.float32(x)
+    y0 = np.float32(np.sqrt(x))
+    return np.float32(np.float32(0.5) * np.float32(y0 + np.float32(x / y0)))
+
+
 def compute_layer_block(rows, proj, wts, size):
     """One layer-block of compute. Bit-exact mirror of the CSL kernel.
 
@@ -110,7 +116,7 @@ def compute_layer_block(rows, proj, wts, size):
     for v in rows:
         sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
     mean_sq = np.float32(sum_sq / np.float32(size))
-    rms = np.float32(np.sqrt(np.float32(mean_sq + rmsnorm_eps)))
+    rms = sqrt_nr(np.float32(mean_sq + rmsnorm_eps))
     inv_rms = np.float32(np.float32(1.0) / rms)
     rmsnorm_out = np.empty(size, dtype=np.float32)
     for i in range(size):
@@ -242,7 +248,7 @@ def compute_layer_block(rows, proj, wts, size):
     for v in attn_out:
         sum_sq2 = np.float32(sum_sq2 + np.float32(v) * np.float32(v))
     mean_sq2 = np.float32(sum_sq2 / np.float32(size))
-    rms2 = np.float32(np.sqrt(np.float32(mean_sq2 + rmsnorm_eps)))
+    rms2 = sqrt_nr(np.float32(mean_sq2 + rmsnorm_eps))
     inv_rms2 = np.float32(np.float32(1.0) / rms2)
     post_norm = np.empty(size, dtype=np.float32)
     for i in range(size):

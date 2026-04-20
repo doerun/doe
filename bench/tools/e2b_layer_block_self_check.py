@@ -429,6 +429,126 @@ def main() -> int:
             f"C9 FAIL: 31B receipt missing at {b31_receipt}"
         )
 
+    # C12: repo-wide audit — no CSL kernel outside diagnostic probes
+    # uses raw `math.sqrt` without wrapping it in the sqrt_nr NR-
+    # refined form. The WSE hardware sqrt is 1-ULP off from IEEE-
+    # correct-rounded at some input magnitudes (that was the L2
+    # drift unlocking simulator_success); future kernels adopting
+    # sqrt must use the sqrt_nr pattern. Diagnostic probe files in
+    # e2b-layer-block-source/ (stage*_probe.csl, stage3_*_only.csl,
+    # stage3_rms_*.csl) are scratch and exempted.
+    production_probe_suffixes = (
+        "_probe.csl", "_only.csl", "_f64.csl", "_nr.csl",
+    )
+    audit_fails = []
+    for _csl in REPO_ROOT.rglob("*.csl"):
+        if _csl.name.endswith(production_probe_suffixes):
+            continue
+        try:
+            _text = _csl.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if "math.sqrt(" in _text and "fn sqrt_nr(" not in _text:
+            audit_fails.append(str(_csl.relative_to(REPO_ROOT)))
+    if not audit_fails:
+        print(
+            "  C12 PASS: no CSL production kernel uses raw math.sqrt "
+            "outside the sqrt_nr NR-refined wrapper "
+            f"(scanned {sum(1 for _ in REPO_ROOT.rglob('*.csl'))} "
+            "CSL files)"
+        )
+    else:
+        failures.append(
+            "C12 FAIL: CSL kernels using raw math.sqrt without "
+            "sqrt_nr NR-refined wrapper:\n"
+            + "\n".join("    " + p for p in audit_fails)
+            + "\n    Apply the `math.sqrt(x) + 0.5*(y + x/y)` "
+            "pattern (see transformer_layer_shape.csl sqrt_nr)."
+        )
+
+    # C11: sqrt_nr function in the canonical E2B kernel uses the
+    # math.sqrt(x) + one-Newton-Raphson-step form that unlocked
+    # simulator_success. The prior body — a 16-iteration NR loop
+    # starting from y=1.0/y=x — converged to a value 1 ULP off from
+    # IEEE-correctly-rounded at L2 magnitudes (mean_sq2 ~ 1229),
+    # which drifted inv_rms2 by 1 ULP and cascaded through stage 4
+    # to a 4.959e-05 L2 output error. Reject that form if it
+    # reappears (silent revert).
+    kernel_src = kernel_path.read_text(encoding="utf-8")
+    import re as _re
+    m = _re.search(
+        r"fn sqrt_nr\(x: f32\) f32 \{(.*?)\n\}",
+        kernel_src,
+        flags=_re.DOTALL,
+    )
+    if m is None:
+        failures.append("C11 FAIL: sqrt_nr function not found in kernel")
+    else:
+        body = m.group(1)
+        has_math_sqrt_seed = "math.sqrt(x)" in body
+        has_nr_step = (
+            "0.5 * (y0 + x / y0)" in body
+            or "0.5 * (y + x / y)" in body
+        )
+        looks_like_old_loop = (
+            "@range(u16, 16)" in body
+            or "for (@range(u16, 16))" in body
+        )
+        if has_math_sqrt_seed and has_nr_step and not looks_like_old_loop:
+            print(
+                "  C11 PASS: sqrt_nr uses math.sqrt + 1 NR step "
+                "(IEEE-correctly-rounded f32 sqrt form)"
+            )
+        else:
+            failures.append(
+                "C11 FAIL: sqrt_nr body regression. Expected "
+                "`math.sqrt(x)` seed + `0.5 * (y0 + x / y0)` NR step; "
+                "reject the 16-iteration loop.\n"
+                f"    has_math_sqrt_seed: {has_math_sqrt_seed}\n"
+                f"    has_nr_step:        {has_nr_step}\n"
+                f"    looks_like_old_loop: {looks_like_old_loop}\n"
+                f"    body (first 300 chars):\n{body[:300]}"
+            )
+
+    # C13: 31B receipt's crossRuntimeParityCheck.promotionEligible
+    # is True AND links to the 31B-specific parity artifact.
+    # Symmetric with C4 for E2B. Locks tick-11 per-model parity
+    # lane so 31B can't silently revert to binding the E2B artifact
+    # or losing its parity evidence.
+    if b31_receipt.is_file():
+        try:
+            _b31 = json.loads(b31_receipt.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            failures.append(
+                f"C13 FAIL: 31B receipt JSON parse: {e}"
+            )
+        else:
+            _b31_pc = (
+                _b31.get("streamingExecutorPrimitivesEvidence", {})
+                .get("layerBlockKernelEvidence", {})
+                .get("crossRuntimeParityCheck", {})
+            )
+            _expected_path_fragment = "gemma-4-31b-layer-block"
+            _pc_path = _b31_pc.get("path") or ""
+            if (
+                _b31_pc.get("exists") is True
+                and _b31_pc.get("promotionEligible") is True
+                and _expected_path_fragment in _pc_path
+            ):
+                print(
+                    "  C13 PASS: 31B receipt binds its own parity "
+                    f"artifact, promotionEligible=True "
+                    f"({_pc_path[-60:]})"
+                )
+            else:
+                failures.append(
+                    "C13 FAIL: 31B receipt's parity binding off:\n"
+                    f"    exists: {_b31_pc.get('exists')}\n"
+                    f"    promotionEligible: {_b31_pc.get('promotionEligible')}\n"
+                    f"    path: {_pc_path!r}\n"
+                    f"    expected path contains: {_expected_path_fragment!r}"
+                )
+
     # C10: 31B receipt validates against the model-runtime-receipt
     # schema, symmetric with C2 for E2B. Locks T16/T17 improvements
     # so the 31B receipt can't silently drift out of schema shape.

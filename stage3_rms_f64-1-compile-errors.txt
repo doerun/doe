@@ -1,0 +1,5 @@
+csl compile cmd: /cb/toolchains/cslang/rel-sdk-1.4.0/202505212226-1442-a23e251d/bin/cslc-driver /home/x/deco/doe/bench/out/streaming-executor/e2b-layer-block-source/stage3_rms_f64.csl --single-pe --max-inlined-iterations=1000000 --arch=wse3 -o ./stage3_rms_f64-1 --import-path=/cbcore/src/ucode/kernels --import-path=/cbcore/src/ucode/kernels_ws --import-path=/cbcore/src/ucode/kernels_ws/decompress --import-path=/cbcore/src/ucode/kernels_ws/roce --colors=rx_layer_weights:23 --colors=rx_ple_projection:21 --colors=rx_ple_rows:22 --params=size:1024 --colors=tx_activation:20 2>&1
+----------
+/home/x/deco/doe/bench/out/streaming-executor/e2b-layer-block-source/stage3_rms_f64.csl:221:45: error: use of undeclared identifier
+        buf_out[i] = @as(f32, math.sqrt(@as(f64, sum_sq2 / @as(f32, size) + rmsnorm_eps)));  // sqrt via f64
+                                            ^

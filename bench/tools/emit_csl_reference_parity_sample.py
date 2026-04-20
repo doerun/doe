@@ -99,6 +99,23 @@ def parse_args() -> argparse.Namespace:
         help="Producer enum for the external reference. Ignored "
              "unless --external-reference-output is set.",
     )
+    p.add_argument(
+        "--atol",
+        type=float,
+        default=None,
+        help="Absolute-tolerance threshold for tolerance-based "
+             "cross-runtime parity. When set, the generated receipt "
+             "populates comparison.atol and comparison.maxAbsErr is "
+             "computed element-wise between referenceRun.output and "
+             "cslRun.output. comparison.status flips to 'passed' iff "
+             "maxAbsErr <= atol. Use this when the reference is non-"
+             "bit-exact to scalar f32 (Doppler WebGPU: driver FMA, "
+             "vectorized reductions, platform sqrt). Validate the "
+             "resulting receipt with "
+             "`csl_reference_parity_gate.py --require-tolerance-"
+             "parity`. Leave unset for bit-exact sha256 parity "
+             "(validated via --require-output-parity).",
+    )
     return p.parse_args()
 
 
@@ -214,20 +231,49 @@ def main() -> int:
         and smoke_num_layers == manifest_num_layers
         and smoke_status == "succeeded"
     )
-    # outputParityPassed is true iff both sides have bound output
-    # digests AND their sha256s are equal. Any of {CSL missing,
-    # reference missing, shas differ} leaves it false. This flips
-    # automatically when cs_python re-runs the runner and its
-    # output.sha256 lands equal to the bound reference.
+    # Parity computation: two modes.
+    #   - Bit-exact (default): both outputs present AND sha256 equal.
+    #   - Tolerance (--atol): both outputs present AND element-wise
+    #     max-abs-diff <= atol. Needed when the reference producer is
+    #     non-bit-exact to scalar f32 (e.g. Doppler WebGPU driver FMA,
+    #     vectorized reductions, platform sqrt). Paired with the gate's
+    #     --require-tolerance-parity mode.
     ref_output_sha = (
         reference_run.get("output", {}) or {}
     ).get("sha256", "") or ""
     csl_output_sha = (smoke_output or {}).get("sha256", "") or ""
-    output_parity_passed = bool(
-        ref_output_sha
-        and csl_output_sha
-        and ref_output_sha == csl_output_sha
-    )
+    ref_output_path = (
+        reference_run.get("output", {}) or {}
+    ).get("path", "") or ""
+    csl_output_path = (smoke_output or {}).get("path", "") or ""
+
+    tolerance_atol = args.atol  # None in bit-exact mode
+    tolerance_max_abs_err = None
+    if tolerance_atol is not None:
+        import numpy as _np
+        if not ref_output_path or not csl_output_path:
+            print(
+                "ERROR: --atol requires both referenceRun.output.path "
+                "and cslRun.output.path to be present. Run the CSL "
+                "runner first so the smoke-trace emits an output digest."
+            )
+            return 2
+        ref_f32 = _np.fromfile(resolve(ref_output_path), dtype=_np.float32)
+        csl_f32 = _np.fromfile(resolve(csl_output_path), dtype=_np.float32)
+        if ref_f32.shape != csl_f32.shape:
+            print(
+                f"ERROR: reference shape {ref_f32.shape} != "
+                f"CSL shape {csl_f32.shape}"
+            )
+            return 2
+        tolerance_max_abs_err = float(_np.max(_np.abs(ref_f32 - csl_f32)))
+        output_parity_passed = tolerance_max_abs_err <= tolerance_atol
+    else:
+        output_parity_passed = bool(
+            ref_output_sha
+            and csl_output_sha
+            and ref_output_sha == csl_output_sha
+        )
     blocker_parts: list[str] = []
     if runner_is_stale:
         blocker_parts.append(
@@ -269,13 +315,17 @@ def main() -> int:
         },
         "referenceRun": reference_run,
         "cslRun": csl_run,
-        "comparison": {
+        "comparison": ({
             "status": comparison_status,
             "sameManifestHash": True,
             "sameGraphHash": True,
-            "outputHashMatch": output_parity_passed,
+            "outputHashMatch": output_parity_passed if tolerance_atol is None else False,
             "blocker": blocker,
-        },
+        } | (
+            {"atol": tolerance_atol, "maxAbsErr": tolerance_max_abs_err}
+            if tolerance_atol is not None
+            else {}
+        )),
         "promotionCriteria": {
             "fullModelDepthExecuted": full_model_depth_executed,
             "manifestHashMatched": True,

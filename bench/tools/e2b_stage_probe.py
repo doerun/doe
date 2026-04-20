@@ -23,6 +23,7 @@ from _e2b_layer_block_compute import (  # noqa: E402
     compute_layer_block,
     rope_cos_at,
     rope_sin_at,
+    sqrt_nr,
 )
 
 from cerebras.sdk.runtime.sdkruntimepybind import (  # noqa: E402
@@ -72,7 +73,7 @@ def numpy_stage1(rows: np.ndarray, proj: np.ndarray, size: int) -> np.ndarray:
     for v in rows:
         sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
     mean_sq = np.float32(sum_sq / np.float32(size))
-    rms = np.float32(np.sqrt(np.float32(mean_sq + eps)))
+    rms = sqrt_nr(np.float32(mean_sq + eps))
     inv_rms = np.float32(np.float32(1.0) / rms)
     out = np.empty(size, dtype=np.float32)
     for i in range(size):
@@ -205,7 +206,7 @@ def numpy_stage3(rows: np.ndarray, proj: np.ndarray, wts: np.ndarray, size: int)
     for v in attn_out:
         sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
     mean_sq = np.float32(sum_sq / np.float32(size))
-    rms = np.float32(np.sqrt(np.float32(mean_sq + eps)))
+    rms = sqrt_nr(np.float32(mean_sq + eps))
     inv_rms = np.float32(np.float32(1.0) / rms)
     out = np.empty(size, dtype=np.float32)
     for i in range(size):
