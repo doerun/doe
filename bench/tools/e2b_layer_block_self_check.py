@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One-shot pipeline smoke for the E2B layer-block in-loop work.
 
-Runs six steps in order (early-exits on STEP 0 or STEP 5 drift),
+Runs seven steps in order (early-exits on STEP 0 or STEP 5 drift),
 then asserts the contract:
 
   0. test_e2b_layer_block_compute.py
@@ -22,6 +22,12 @@ then asserts the contract:
           gate: a stale link means the receipt now disagrees with
           the file system, downstream contract assertions can't
           trust the receipt content)
+  6. emit_csl_reference_parity_sample.py
+       -> regen the schema sample at
+          examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json
+          from current artifacts so it auto-surfaces sha drift and
+          the numpy-reference output digest (was previously hand-
+          maintained and went stale across kernel upgrades)
 
 Then asserts:
   C0. (implicit) STEP 0 unit test passed — compute_layer_block bit-
@@ -193,6 +199,15 @@ def main() -> int:
         return 1
 
     print()
+    print("STEP 6: regen CSL reference parity sample from current artifacts")
+    ok, msg = run_step("parity-sample", [
+        "python3", "bench/tools/emit_csl_reference_parity_sample.py",
+    ])
+    if not ok:
+        print(f"  FAILED: {msg}")
+        return 1
+
+    print()
     print("CONTRACT ASSERTIONS")
     failures: list[str] = []
 
@@ -284,6 +299,159 @@ def main() -> int:
     else:
         failures.append(f"C5 FAIL: runner missing at {runner_path}")
 
+    # C6: receipt.kernelStage matches the synthetic trace's kernelStage.
+    # The kernelStage string is hardcoded in three places (runner source,
+    # synthetic emitter, receipt builder). If any one drifts relative to
+    # the others the evidence chain silently misrepresents the kernel.
+    # This assertion catches receipt-vs-synthetic drift; the runner source
+    # is caught transitively when its smoke trace is eventually re-run
+    # and compared via the cross-runtime parity check (P2).
+    receipt_stage = lbk.get("kernelStage")
+    syn_stage = (
+        syn.get("layerBlockSmoke", {}).get("kernelStage")
+        if synthetic_path.is_file() else None
+    )
+    if receipt_stage and syn_stage and receipt_stage == syn_stage:
+        print(
+            "  C6 PASS: receipt.kernelStage matches synthetic trace "
+            f"kernelStage ({receipt_stage[:48]}...)"
+        )
+    else:
+        failures.append(
+            "C6 FAIL: receipt.kernelStage vs synthetic kernelStage drift:\n"
+            f"    receipt:   {receipt_stage!r}\n"
+            f"    synthetic: {syn_stage!r}"
+        )
+
+    # C7: executionStatus reflects the parity verdict correctly.
+    # Locks the flip wire in build_model_runtime_receipt.py — if the
+    # wire is accidentally reverted to a hardcoded 'not_attempted' or
+    # a false 'simulator_success' sneaks in without matching parity
+    # evidence, C7 flips red. The flip requires: promotionEligible=true
+    # AND structural gates pass AND modelId is E2B.
+    pc_block_c7 = lbk.get("crossRuntimeParityCheck", {})
+    pc_eligible = pc_block_c7.get("promotionEligible") is True
+    model_id = receipt.get("modelId", "") or ""
+    parity_applies = "e2b" in model_id.lower()
+    structural_ok = (
+        receipt.get("laneStatus") == "structural_full_coverage"
+    )
+    expected_status = (
+        "simulator_success"
+        if (pc_eligible and parity_applies and structural_ok)
+        else "not_attempted"
+    )
+    expected_blocker = (
+        "none"
+        if (pc_eligible and parity_applies and structural_ok)
+        else None
+    )
+    actual_status = receipt.get("executionStatus")
+    actual_blocker = receipt.get("executionBlocker")
+    status_ok = actual_status == expected_status
+    blocker_ok = (expected_blocker is None) or (actual_blocker == expected_blocker)
+    if status_ok and blocker_ok:
+        print(
+            "  C7 PASS: executionStatus reflects parity verdict "
+            f"(promotionEligible={pc_eligible}, "
+            f"status={actual_status!r}, blocker={actual_blocker!r})"
+        )
+    else:
+        failures.append(
+            "C7 FAIL: executionStatus flip wire inconsistent with "
+            "parity verdict:\n"
+            f"    promotionEligible: {pc_eligible}\n"
+            f"    parityApplies:     {parity_applies}\n"
+            f"    structuralOk:      {structural_ok}\n"
+            f"    expected status:   {expected_status!r}\n"
+            f"    actual status:     {actual_status!r}\n"
+            f"    expected blocker:  {expected_blocker!r}\n"
+            f"    actual blocker:    {actual_blocker!r}"
+        )
+
+    # C8: the auto-regenerated CSL reference parity sample passes
+    # its own gate. Schema validation + internal consistency checks
+    # (cslRun.traceSha256 matches on-disk, cslRun.kernelStage matches
+    # the trace, manifest/graph path+sha match). Catches structural
+    # regressions in emit_csl_reference_parity_sample.py that schema-
+    # only validation (C2) wouldn't catch.
+    sample_path = (
+        "examples/"
+        "doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json"
+    )
+    sample_gate = subprocess.run(
+        ["python3", "bench/gates/csl_reference_parity_gate.py",
+         "--receipt", sample_path],
+        cwd=str(REPO_ROOT), capture_output=True, text=True,
+    )
+    if sample_gate.returncode == 0:
+        print(
+            "  C8 PASS: CSL reference parity sample passes its gate"
+        )
+    else:
+        failures.append(
+            "C8 FAIL: CSL reference parity gate rejected the sample:\n"
+            f"    stdout: {sample_gate.stdout.strip()[:400]}\n"
+            f"    stderr: {sample_gate.stderr.strip()[:200]}"
+        )
+
+    # C9: 31B receipt link integrity. Catches drift between the 31B
+    # receipt and its underlying host-plan / memory-plan / runtime-
+    # config / simulator-plan on disk. E2B gets its own link-integrity
+    # via STEP 5 after the E2B regen in STEP 4; 31B is not regen'd in
+    # this pipeline (Build-order step 7 material), but its receipt
+    # must still link cleanly to match the plan's "receipts link
+    # cleanly" mechanical-defensibility criterion.
+    b31_receipt = (
+        REPO_ROOT / "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json"
+    )
+    if b31_receipt.is_file():
+        b31_link_gate = subprocess.run(
+            ["python3", "bench/tools/validate_e2b_receipt_links.py",
+             "--receipt", str(b31_receipt.relative_to(REPO_ROOT))],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+        )
+        if b31_link_gate.returncode == 0:
+            last = [
+                ln for ln in b31_link_gate.stdout.strip().splitlines()
+                if ln.strip().startswith("PASS")
+            ]
+            summary = last[-1].strip() if last else "PASS"
+            print(f"  C9 PASS: 31B receipt link integrity ({summary})")
+        else:
+            failures.append(
+                "C9 FAIL: 31B receipt link-integrity gate rejected:\n"
+                f"    stdout: {b31_link_gate.stdout.strip()[:400]}\n"
+                f"    stderr: {b31_link_gate.stderr.strip()[:200]}"
+            )
+    else:
+        failures.append(
+            f"C9 FAIL: 31B receipt missing at {b31_receipt}"
+        )
+
+    # C10: 31B receipt validates against the model-runtime-receipt
+    # schema, symmetric with C2 for E2B. Locks T16/T17 improvements
+    # so the 31B receipt can't silently drift out of schema shape.
+    if b31_receipt.is_file():
+        try:
+            import jsonschema as _js
+            b31_json = json.loads(b31_receipt.read_text(encoding="utf-8"))
+            _schema = json.loads(schema_path.read_text(encoding="utf-8"))
+            _js.validate(b31_json, _schema)
+            print("  C10 PASS: 31B receipt validates against schema")
+        except ImportError:
+            print("  C10 SKIP: jsonschema not importable")
+        except _js.ValidationError as e:
+            failures.append(
+                "C10 FAIL: 31B receipt schema violation at "
+                f"{list(e.absolute_path)}: {e.message[:200]}"
+            )
+        except Exception as e:
+            failures.append(
+                f"C10 FAIL: 31B receipt validation error: "
+                f"{type(e).__name__}: {str(e)[:200]}"
+            )
+
     print()
     if failures:
         print(f"SELF-CHECK FAILED ({len(failures)} contract violation(s)):")
@@ -296,9 +464,33 @@ def main() -> int:
     print(
         "  parity-check verdict: promotionEligible="
         + str(pc.get("promotionEligible"))
-        + f"  met={len(pc.get('preconditionsMet', []))}/5"
+        + f"  met={len(pc.get('preconditionsMet', []))}/6"
         + f"  missing={pc.get('preconditionsMissing', [])}"
     )
+    # When the parity verdict is not yet eligible and the runner
+    # trace is stale, print the one command that unblocks the
+    # whole chain. cs_python-equipped hosts can copy-paste this
+    # directly. The flip wire (compute_execution_status + the
+    # parity-check regen in STEP 3) auto-propagates the result to
+    # executionStatus on the next self-check run.
+    if pc.get("promotionEligible") is not True:
+        missing = pc.get("preconditionsMissing", []) or []
+        if any(
+            token in m
+            for m in missing
+            for token in ("P2", "P3", "P5", "P6")
+        ):
+            print()
+            print(
+                "  to unblock: run the following on a cs_python-equipped "
+                "host, then rerun this self-check:"
+            )
+            print("    python3 bench/runners/csl-runners/e2b_layer_block_smoke.py")
+            print(
+                "  that command compiles + runs the 35-layer chain, "
+                "emits the smoke-trace with output digest, and the "
+                "flip wire promotes executionStatus to simulator_success."
+            )
     return 0
 
 

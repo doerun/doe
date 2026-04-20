@@ -66,6 +66,32 @@ def parse_args() -> argparse.Namespace:
              "Default = manifest.modelConfig.numLayers (35).",
     )
     p.add_argument(
+        "--start-layer-index", type=int, default=0,
+        help="Global layer index used for per-layer seed/weight lookup. "
+             "Default 0. Probe runs can set 1 to execute layer 1 as a "
+             "single invocation.",
+    )
+    p.add_argument(
+        "--initial-rows-file", default="",
+        help="Optional f32 file for the first ple_rows payload. When empty, "
+             "uses the deterministic initial rows seed.",
+    )
+    p.add_argument(
+        "--freeze-layer-index", type=int, default=-1,
+        help="Probe-only override. When >= 0, every invocation uses this "
+             "global layer index for projection/weight seed lookup.",
+    )
+    p.add_argument(
+        "--reset-rows-each-layer", action="store_true",
+        help="Probe-only override. Send the initial rows payload on every "
+             "invocation instead of feeding activation_out forward.",
+    )
+    p.add_argument(
+        "--reset-runtime-each-layer", action="store_true",
+        help="Probe-only override. Recreate/load/run/stop SdkRuntime around "
+             "each invocation while reusing the same compile artifacts.",
+    )
+    p.add_argument(
         "--weights-dir", default="",
         help="Directory containing per-layer weight slice files named "
              "<weight_key>.f32. When a slice exists for a layer it loads the "
@@ -137,7 +163,7 @@ def main() -> int:
     compile_elapsed_ms = (time.time() - compile_start) * 1000.0
 
     run_start = time.time()
-    runtime = SdkRuntime(compile_artifacts, platform, memcpy_required=False)
+    runtime = None
     num_layers_smoke = args.num_layers
     max_abs_err = -1.0
     per_layer_max_abs_err = [-1.0] * num_layers_smoke
@@ -157,9 +183,6 @@ def main() -> int:
     # layers via the streaming-runtime send/receive primitives — no
     # recompile per layer.
     try:
-        runtime.load()
-        runtime.run()
-
         # Real-weight-loader bridge with per-layer-index seed fallback.
         # Each layer's projection/weights load from a manifest-derived
         # tensor slice if present in --weights-dir, else fall back to
@@ -191,21 +214,45 @@ def main() -> int:
                 "synthetic_seed:" + str(fallback_seed),
             )
 
-        rng_init = np.random.default_rng(seed=INITIAL_ROWS_SEED)
-        initial_rows = rng_init.standard_normal(size=args.size, dtype=np.float32)
+        initial_rows_path = (
+            (REPO_ROOT / args.initial_rows_file)
+            if args.initial_rows_file else None
+        )
+        if initial_rows_path is not None:
+            initial_rows = np.fromfile(
+                initial_rows_path, dtype=np.float32, count=args.size
+            )
+            if initial_rows.shape[0] != args.size:
+                raise ValueError(
+                    "--initial-rows-file did not contain --size f32 values"
+                )
+            initial_rows_source = "file:" + str(
+                initial_rows_path.relative_to(REPO_ROOT)
+            )
+        else:
+            rng_init = np.random.default_rng(seed=INITIAL_ROWS_SEED)
+            initial_rows = rng_init.standard_normal(
+                size=args.size, dtype=np.float32
+            )
+            initial_rows_source = "synthetic_seed:" + str(INITIAL_ROWS_SEED)
         per_layer_proj: list = []
         per_layer_wts:  list = []
         per_layer_seeds: list = []
         per_layer_proj_source: list = []
         per_layer_wts_source:  list = []
         for l_idx in range(num_layers_smoke):
-            seed_l = PER_LAYER_BASE + l_idx
+            if args.freeze_layer_index >= 0:
+                global_l_idx = args.freeze_layer_index
+            else:
+                global_l_idx = args.start_layer_index + l_idx
+            seed_l = PER_LAYER_BASE + global_l_idx
             proj_l, proj_src = load_layer_data(
-                "per_layer_inputs.perLayerModelProjection.layer" + str(l_idx),
+                "per_layer_inputs.perLayerModelProjection.layer"
+                + str(global_l_idx),
                 seed_l, args.size, "projection",
             )
             wts_l, wts_src = load_layer_data(
-                "layer." + str(l_idx) + ".smoke_layer_block_wts",
+                "layer." + str(global_l_idx) + ".smoke_layer_block_wts",
                 seed_l, args.size, "weights",
             )
             per_layer_proj.append(proj_l)
@@ -229,29 +276,69 @@ def main() -> int:
         all_expected = []
         rows_ref = initial_rows.copy()
         for l_idx in range(num_layers_smoke):
+            rows_for_layer = (
+                initial_rows if args.reset_rows_each_layer else rows_ref
+            )
             expected_l = compute_layer_block(
-                rows_ref, per_layer_proj[l_idx], per_layer_wts[l_idx], args.size
+                rows_for_layer,
+                per_layer_proj[l_idx],
+                per_layer_wts[l_idx],
+                args.size,
             )
             all_expected.append(expected_l)
-            rows_ref = expected_l
+            if not args.reset_rows_each_layer:
+                rows_ref = expected_l
 
         # Device chain: same loop, threading received[L] -> rows for L+1.
         # Per-layer elapsed-ms is recorded so timing scales visibly when
         # the chain depth grows (e.g. 35 layers for full E2B).
         all_received = []
         rows_curr = initial_rows.copy()
+        if not args.reset_runtime_each_layer:
+            runtime = SdkRuntime(
+                compile_artifacts, platform, memcpy_required=False
+            )
+            runtime.load()
+            runtime.run()
         for l_idx in range(num_layers_smoke):
+            if args.reset_runtime_each_layer:
+                runtime = SdkRuntime(
+                    compile_artifacts, platform, memcpy_required=False
+                )
+                runtime.load()
+                runtime.run()
             layer_start = time.time()
             received = np.empty(args.size, dtype=np.float32)
-            runtime.send(rows_stream, rows_curr, nonblock=True)
-            runtime.send(proj_stream, per_layer_proj[l_idx], nonblock=True)
-            runtime.send(wts_stream,  per_layer_wts[l_idx],  nonblock=True)
-            runtime.receive(act_stream, received, args.size, nonblock=True)
+            rows_for_layer = (
+                initial_rows if args.reset_rows_each_layer else rows_curr
+            )
+            task_rows = runtime.send(rows_stream, rows_for_layer, nonblock=True)
+            task_proj = runtime.send(
+                proj_stream, per_layer_proj[l_idx], nonblock=True
+            )
+            task_wts = runtime.send(
+                wts_stream, per_layer_wts[l_idx], nonblock=True
+            )
+            task_act = runtime.receive(
+                act_stream, received, args.size, nonblock=True
+            )
+            # The next layer consumes activation_out as ple_rows. Wait for
+            # all per-layer direct-link tasks before copying or feeding it.
+            runtime.task_wait(task_rows)
+            runtime.task_wait(task_proj)
+            runtime.task_wait(task_wts)
+            runtime.task_wait(task_act)
             per_layer_elapsed_ms[l_idx] = (time.time() - layer_start) * 1000.0
             all_received.append(received.copy())
-            rows_curr = received
+            if not args.reset_rows_each_layer:
+                rows_curr = received
+            if args.reset_runtime_each_layer:
+                runtime.stop()
+                runtime = None
 
-        runtime.stop()
+        if runtime is not None:
+            runtime.stop()
+            runtime = None
 
         # Per-layer parity. Pass requires every layer to be bit-exact.
         layer_passed = []
@@ -291,6 +378,11 @@ def main() -> int:
             ],
         }
     except Exception as exc:  # pylint: disable=broad-except
+        if runtime is not None:
+            try:
+                runtime.stop()
+            except Exception:  # pylint: disable=broad-except
+                pass
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]
         output_digest = None
     run_elapsed_ms = (time.time() - run_start) * 1000.0
@@ -329,6 +421,14 @@ def main() -> int:
             "dataSource": {
                 "kind": data_source_kind,
                 "initialRowsSeed": INITIAL_ROWS_SEED,
+                "initialRowsSource": initial_rows_source,
+                "startLayerIndex": args.start_layer_index,
+                "freezeLayerIndex": (
+                    args.freeze_layer_index
+                    if args.freeze_layer_index >= 0 else None
+                ),
+                "resetRowsEachLayer": args.reset_rows_each_layer,
+                "resetRuntimeEachLayer": args.reset_runtime_each_layer,
                 "perLayerBase": PER_LAYER_BASE,
                 "perLayerSeeds": per_layer_seeds,
                 "weightsDir": str(weights_dir_abs.relative_to(REPO_ROOT))
@@ -368,7 +468,7 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "39ad78d7405a12f8377954b05a1071c8dda6e7c823ef4cd38a2915eaaaac4cb3",
+            "kernelSourceSha256": "d37b3615351c17b6371d080af3251d57cc6921cf41e32fc3160e6fe3033d6350",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "

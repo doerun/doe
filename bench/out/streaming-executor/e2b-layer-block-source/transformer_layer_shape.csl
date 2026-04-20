@@ -439,6 +439,7 @@ task done() void {
         buf_out[i] = (gate * act) + buf_out[i];
     }
     @mov32(output, mem_out);
+    @activate(main_id);
 }
 
 comptime {

@@ -27,6 +27,11 @@ Promotion preconditions (all required):
       manifest_weights_only}  (NOT numpy_only_no_simulator)
   P4. runner executedRun.status == "succeeded"
   P5. runner perLayerMaxAbsErr exists AND all entries == 0  (bit-exact)
+  P6. runner executedRun.output.sha256 == synthetic executedRun.output.sha256
+      (cross-runtime final-layer output digest equality; redundant with P5
+      when both sides use the same compute module, but surfaces the
+      byte-equal contract the Doppler/browser external reference will
+      later plug into cslRun.output vs referenceRun.output)
 
 The synthetic trace is informational only — a successful synthetic_numpy_only
 trace doesn't satisfy P3, so it cannot promote on its own. But its
@@ -134,6 +139,11 @@ def summarize_trace(
         summary["allPerLayerErrZero"] = all(e == 0 for e in per_err)
     else:
         summary["allPerLayerErrZero"] = None
+
+    output = er.get("output") or {}
+    summary["outputSha256"] = output.get("sha256")
+    summary["outputPath"] = output.get("path")
+    summary["outputShape"] = output.get("shape")
     return summary
 
 
@@ -188,6 +198,15 @@ def main() -> int:
     else:
         missing.append("P5_per_layer_err_all_zero_bit_exact")
 
+    runner_out_sha = runner_summary.get("outputSha256")
+    synthetic_out_sha = synthetic_summary.get("outputSha256")
+    if (runner_out_sha
+            and synthetic_out_sha
+            and runner_out_sha == synthetic_out_sha):
+        met.append("P6_output_digests_match_across_runtimes")
+    else:
+        missing.append("P6_output_digests_match_across_runtimes")
+
     promotion_eligible = len(missing) == 0
 
     verdict_notes: list[str] = []
@@ -224,6 +243,30 @@ def main() -> int:
             "regenerate via "
             "`python3 bench/tools/emit_e2b_layer_block_synthetic_trace.py`."
         )
+    if runner_out_sha is None:
+        verdict_notes.append(
+            "Runner trace has no executedRun.output.sha256 — the output "
+            "digest was added after the current smoke trace was written. "
+            "Regenerate via the runner so P6 can verify cross-runtime "
+            "output equality."
+        )
+    elif synthetic_out_sha is None:
+        verdict_notes.append(
+            "Synthetic trace has no executedRun.output.sha256 — "
+            "regenerate via "
+            "`python3 bench/tools/emit_e2b_layer_block_synthetic_trace.py`."
+        )
+    elif runner_out_sha != synthetic_out_sha:
+        verdict_notes.append(
+            "Runner and synthetic output.sha256 differ ({runner} vs "
+            "{synthetic}) — the CSL simulator's final activation_out "
+            "bytes do not match the numpy reference bytes. This is the "
+            "cross-runtime parity failure the gate guards against."
+            .format(
+                runner=(runner_out_sha or "")[:16],
+                synthetic=(synthetic_out_sha or "")[:16],
+            )
+        )
 
     out = {
         "schemaVersion": 1,
@@ -248,7 +291,7 @@ def main() -> int:
     print(
         "wrote " + rel_repo(out_path)
         + f"  promotionEligible={promotion_eligible}"
-        + f"  met={len(met)}/5  missing={missing}"
+        + f"  met={len(met)}/6  missing={missing}"
     )
     return 0
 

@@ -14,7 +14,15 @@
     "producer": "numpy_reference",
     "status": "metadata_bound",
     "inputsSynthetic": true,
-    "weightsSynthetic": true
+    "weightsSynthetic": true,
+    "output": {
+      "dtype": "float32",
+      "shape": [
+        1024
+      ],
+      "path": "bench/out/streaming-executor/e2b-layer-block-synthetic-trace.output.f32",
+      "sha256": "1f83875a622b0019e41d1b3ce813045e04751d9a5a049ad62a19880b05d3aef7"
+    }
   },
   "cslRun": {
     "tracePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
@@ -23,7 +31,7 @@
     "kernelStage": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm+gated_mlp_relu_gelu_stub",
     "kernelIsStub": false,
     "numericalParity": {
-      "maxAbsErr": 0,
+      "maxAbsErr": 0.0,
       "atol": 0,
       "passed": true
     }
@@ -32,7 +40,8 @@
     "status": "metadata_bound",
     "sameManifestHash": true,
     "sameGraphHash": true,
-    "blocker": "external Doppler/browser output vector and CSL output hash not bound yet"
+    "outputHashMatch": false,
+    "blocker": "smoke-trace kernelSourceSha256 (c825be59dc322dc8) drifted from live kernel (39ad78d7405a12f8) \u2014 rerun bench/runners/csl-runners/e2b_layer_block_smoke.py on a cs_python-equipped host to refresh; cslRun.output digest not bound (runner trace predates the output-digest emission); external Doppler/browser output vector not bound yet (pass --external-reference-output to bind one)"
   },
   "promotionCriteria": {
     "fullModelDepthExecuted": false,

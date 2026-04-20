@@ -1,0 +1,84 @@
+// Stage-1-only diagnostic copy of transformer_layer_shape.csl.
+// Outputs buf_out = rmsnorm_out after stage 1 (pre-attn RMSNorm),
+// skipping stages 2-4. Used to isolate which stage drifts on L2.
+
+param size: u16;
+param rx_ple_rows:       color;
+param rx_ple_projection: color;
+param rx_layer_weights:  color;
+param tx_activation:     color;
+
+const math = @import_module("<math>");
+const rmsnorm_eps: f32 = 1.0e-6;
+
+const in_q_0 = @get_input_queue(0);
+const in_q_1 = @get_input_queue(1);
+const in_q_2 = @get_input_queue(2);
+const out_q  = @get_output_queue(0);
+
+const input_rows = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_ple_rows,
+                                           .input_queue = in_q_0 });
+const input_proj = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_ple_projection,
+                                           .input_queue = in_q_1 });
+const input_wts  = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_layer_weights,
+                                           .input_queue = in_q_2 });
+const output     = @get_dsd(fabout_dsd, .{ .extent = size,
+                                           .fabric_color = tx_activation,
+                                           .output_queue = out_q });
+
+var buf_rows: [size]f32;
+var buf_proj: [size]f32;
+var buf_wts:  [size]f32;
+var buf_out:  [size]f32;
+
+const mem_rows = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_rows[i] });
+const mem_proj = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_proj[i] });
+const mem_wts  = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_wts[i] });
+const mem_out  = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_out[i] });
+
+const main_id    = @get_local_task_id(8);
+const got_proj_id = @get_local_task_id(9);
+const got_wts_id  = @get_local_task_id(10);
+const done_id    = @get_local_task_id(11);
+
+task main() void {
+    @mov32(mem_rows, input_rows, .{ .async = true, .activate = got_proj_id });
+}
+task got_proj() void {
+    @mov32(mem_proj, input_proj, .{ .async = true, .activate = got_wts_id });
+}
+task got_wts() void {
+    @mov32(mem_wts, input_wts, .{ .async = true, .activate = done_id });
+}
+task done() void {
+    var sum_sq: f32 = 0.0;
+    for (@range(u16, size)) |i| {
+        sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
+    }
+    const mean_sq: f32 = sum_sq / @as(f32, size);
+    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
+    const inv_rms: f32 = 1.0 / rms;
+    for (@range(u16, size)) |i| {
+        buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
+    }
+    @mov32(output, mem_out);
+    @activate(main_id);
+}
+
+comptime {
+    @bind_local_task(main,      main_id);
+    @bind_local_task(got_proj,  got_proj_id);
+    @bind_local_task(got_wts,   got_wts_id);
+    @bind_local_task(done,      done_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q_0, .{ .color = rx_ple_rows });
+    @initialize_queue(in_q_1, .{ .color = rx_ple_projection });
+    @initialize_queue(in_q_2, .{ .color = rx_layer_weights });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx_activation });
+    }
+}

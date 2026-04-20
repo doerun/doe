@@ -19,6 +19,7 @@ Link locations walked:
       kernelSourcePath          + kernelSourceSha256
       referenceDoc.path         + referenceDoc.sha256
       syntheticTrace.path       + syntheticTrace.sha256
+      syntheticTrace.outputPath + syntheticTrace.outputSha256
       crossRuntimeParityCheck.path + ...sha256
       tracePath                 + traceSha256              (if present)
 """
@@ -96,6 +97,18 @@ def collect_links(receipt: dict[str, Any]) -> list[tuple[str, str, str]]:
         if path and sha:
             links.append(
                 (f"layerBlockKernelEvidence.{sub_key}", path, sha)
+            )
+        # Output tensor digest on the sub-block (e.g. syntheticTrace's
+        # outputPath + outputSha256 point at the final-layer f32 bytes
+        # that P6 uses as the bit-exact parity target). Walked under
+        # the non-standard field-name pair so the canonical parity
+        # target is always link-integrity-verified.
+        out_path = sub.get("outputPath")
+        out_sha = sub.get("outputSha256")
+        if out_path and out_sha:
+            links.append(
+                (f"layerBlockKernelEvidence.{sub_key}.output",
+                 out_path, out_sha)
             )
 
     return links

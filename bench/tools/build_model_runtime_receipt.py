@@ -38,6 +38,38 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def compute_execution_status(
+    *,
+    streaming_required: bool,
+    missing_kernels: bool,
+    fits: bool,
+    parity_promotion_eligible: bool,
+    model_id: str,
+    default_blocker: str,
+) -> tuple[str, str]:
+    """Pure flip logic for executionStatus / executionBlocker.
+
+    Returns ("simulator_success", "none") iff all structural gates
+    pass (streaming_required, not missing_kernels, fits), the cross-
+    runtime parity check verdict is promotionEligible, and the
+    receipt's model is the E2B lane the current parity-check
+    artifact describes. Otherwise returns ("not_attempted", blocker)
+    where blocker is the caller-supplied structural reason.
+
+    Extracted as a pure function so test_execution_status_flip.py
+    can exercise both branches without file I/O or mocks against
+    real artifacts.
+    """
+    parity_applies = "e2b" in (model_id or "").lower()
+    if (streaming_required
+            and not missing_kernels
+            and fits
+            and parity_promotion_eligible
+            and parity_applies):
+        return ("simulator_success", "none")
+    return ("not_attempted", default_blocker)
+
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -356,6 +388,34 @@ def main() -> int:
     # per-axis test passes. The PE-COUNT overflow only affects 1D-flattened
     # layouts, which is the elementwise emitter's current shape.
 
+    # Read the cross-runtime parity verdict so executionStatus can
+    # honestly flip from not_attempted to simulator_success when the
+    # runner has been re-run and all P1..P6 preconditions are met.
+    # Without this wire, the receipt would remain not_attempted even
+    # after cs_python delivers a bit-exact simulator run.
+    parity_check_artifact = resolve(
+        "bench/out/streaming-executor/"
+        "e2b-layer-block-cross-runtime-parity-check.json"
+    )
+    parity_promotion_eligible = False
+    parity_runner_stale = False
+    # Absent parity check is equivalent to stale for blocker-naming
+    # purposes: both mean no fresh cs_python run against the current
+    # kernel has landed, so the blocker is environmental, not kernel-
+    # incompleteness.
+    parity_artifact_missing = not parity_check_artifact.is_file()
+    if parity_check_artifact.is_file():
+        try:
+            pc_early = load_json(parity_check_artifact)
+            parity_promotion_eligible = bool(
+                pc_early.get("verdict", {}).get("promotionEligible")
+            )
+            parity_runner_stale = bool(
+                (pc_early.get("runnerTrace") or {}).get("shaDrift")
+            )
+        except json.JSONDecodeError:
+            parity_promotion_eligible = False
+
     if missing_kernels:
         receipt["laneStatus"] = "structural_partial_coverage_kernel_gap"
         execution_blocker = "partial_kernel_coverage"
@@ -365,26 +425,39 @@ def main() -> int:
     else:
         receipt["laneStatus"] = "structural_full_coverage"
         if streaming_required:
-            # Streaming executor primitives run on simfabric, and the
-            # generated E2B layer-block runner now executes real
-            # pre-attn RMSNorm + 2-head MHA with PER-HEAD K/V slices
-            # (poly_c1 softmax per head, kv_len_per_head=2 for
-            # non-degenerate softmax) + per-head residual + post-
-            # attn RMSNorm + gated MLP with poly_c1 activation.
-            # Every input stream of the 3-stream SdkLayout contract
-            # flows through compute. The model receipt still cannot
-            # claim simulator_success: longer KV, vector Q/K per
-            # head, and rope are not yet wired in, and cs_python is
-            # not on PATH in this build environment so the
-            # simfabric driver cannot actually run the kernel.
-            execution_blocker = "full_transformer_layer_block_incomplete"
+            # The kernel is the full transformer layer block (pre-attn
+            # RMSNorm + 8-head MHA with per-head vector Q/K/V and multi-
+            # pair rope + residual + post-attn RMSNorm + gated MLP with
+            # poly_c1 GELU) — layerBlockKernelEvidence.kernelIsStub is
+            # false. When the runner trace is stale against that kernel
+            # (shaDrift) OR when the parity-check artifact itself is
+            # absent (pre-self-check state), the honest blocker is
+            # cs_python_not_available_in_build_environment: nobody has
+            # re-run the runner. full_transformer_layer_block_incomplete
+            # only applies if the kernel were still a stub.
+            if parity_runner_stale or parity_artifact_missing:
+                execution_blocker = (
+                    "cs_python_not_available_in_build_environment"
+                )
+            else:
+                execution_blocker = "full_transformer_layer_block_incomplete"
         elif not grid_fits_single_memcpy:
             execution_blocker = "full_grid_compile_unattempted"
         else:
             execution_blocker = "full_grid_compile_unattempted"
 
-    receipt["executionStatus"] = "not_attempted"
-    receipt["executionBlocker"] = execution_blocker
+    # Flip logic lives in compute_execution_status() so the truth
+    # table can be unit-tested (see test_execution_status_flip.py).
+    status, blocker = compute_execution_status(
+        streaming_required=streaming_required,
+        missing_kernels=missing_kernels,
+        fits=fits,
+        parity_promotion_eligible=parity_promotion_eligible,
+        model_id=receipt.get("modelId", "") or "",
+        default_blocker=execution_blocker,
+    )
+    receipt["executionStatus"] = status
+    receipt["executionBlocker"] = blocker
     receipt["fullGridCompileProbeEvidence"] = {
         "description": "Pointer to the cslc grid-probe aggregate. Documents which grid sizes cslc accepts for this target.",
         "reportPath": "bench/out/cslc-grid-probe/grid-probe-aggregate.json",
@@ -507,8 +580,17 @@ def main() -> int:
             ),
         },
     }
+    # The parity-check and synthetic-trace artifacts above are E2B-
+    # layer-block-specific (1024-element streams, 35-layer chain,
+    # matches E2B manifest shape). For 31B those bindings would be
+    # evidence coupling against a different-shape run, so only bind
+    # them when the receipt's model is the E2B lane they measure.
+    layer_block_evidence_applies = (
+        "e2b" in (receipt.get("modelId", "") or "").lower()
+    )
+
     parity_abs = resolve(parity_check_path)
-    if parity_abs.is_file():
+    if layer_block_evidence_applies and parity_abs.is_file():
         try:
             pc = load_json(parity_abs)
             verdict = pc.get("verdict", {})
@@ -525,13 +607,22 @@ def main() -> int:
             parity_check_evidence["crossRuntimeParityCheck"]["traceStatus"] = (
                 "invalid_json"
             )
+    elif not layer_block_evidence_applies:
+        parity_check_evidence["crossRuntimeParityCheck"].update({
+            "path": None,
+            "evidenceScope": (
+                "e2b_layer_block_only — 31B has no runner or parity "
+                "check yet; scaling to 31B is Build-order step 7."
+            ),
+        })
 
     synthetic_abs = resolve(synthetic_trace_path)
-    if synthetic_abs.is_file():
+    if layer_block_evidence_applies and synthetic_abs.is_file():
         try:
             syn = load_json(synthetic_abs)
             syn_run = syn.get("executedRun", {})
             syn_par = syn_run.get("numericalParity", {})
+            syn_output = syn_run.get("output") or {}
             synthetic_trace_evidence["syntheticTrace"].update({
                 "exists": True,
                 "sha256": sha256_file(synthetic_abs),
@@ -543,11 +634,34 @@ def main() -> int:
                 "kernelSourceSha256InTrace": (
                     syn.get("layerBlockSmoke", {}).get("kernelSourceSha256")
                 ),
+                "outputPath": syn_output.get("path"),
+                "outputShape": syn_output.get("shape"),
+                "outputSha256": syn_output.get("sha256"),
+                "outputParityTargetNote": (
+                    "outputSha256 is the canonical bit-exact parity "
+                    "target for the final-layer activation_out bytes. "
+                    "When the cs_python-equipped runner re-runs, its "
+                    "executedRun.output.sha256 must equal this value "
+                    "for cross-runtime parity precondition P6 to "
+                    "flip met. Both sides import the same "
+                    "_e2b_layer_block_compute module, so any drift "
+                    "here indicates the CSL kernel has diverged from "
+                    "the numpy reference on one or more f32 ops."
+                ),
             })
         except json.JSONDecodeError:
             synthetic_trace_evidence["syntheticTrace"]["traceStatus"] = (
                 "invalid_json"
             )
+    elif not layer_block_evidence_applies:
+        synthetic_trace_evidence["syntheticTrace"].update({
+            "path": None,
+            "evidenceScope": (
+                "e2b_layer_block_only — the numpy reference runs the "
+                "E2B 35-layer chain at 1024 f32 elements per stream; "
+                "it is not a valid reference for 31B shapes."
+            ),
+        })
     receipt["streamingExecutorPrimitivesEvidence"] = {
         "description": (
             "SdkLayout streaming executor primitives that have been "
@@ -591,27 +705,32 @@ def main() -> int:
             "description": (
                 "The generated E2B layer-block runner's CSL kernel "
                 "now executes pre-attn RMSNorm + multi-head "
-                "attention with PER-HEAD K/V slices (num_heads=2, "
-                "kv_len_per_head=2; each head has its own K_h and "
-                "V_h carved from layer_weights, max-centered "
-                "poly_c1 softmax per head, attn_val broadcast into "
-                "the residual via i mod num_heads) + post-attn "
-                "RMSNorm + gated MLP with shrunken gate_w/up_w and "
-                "poly_c1 activation. Every input stream of the "
-                "3-stream SdkLayout contract is an operand in the "
-                "final write; rx_layer_weights is reshaped as "
+                "attention with PER-HEAD VECTOR Q/K/V AND MULTI-"
+                "PAIR ROPE (num_heads=8 matching manifest."
+                "modelConfig.numHeads, head_dim=8 with 4 rope "
+                "pairs, kv_len_per_head=4; Q_h is rope-rotated at "
+                "position kv_len_per_head, K_h[j] at position j "
+                "in [0, 4), V_h is not rotated; logits_h[j] = "
+                "sum_d Q_r[d]*K_r[j][d]; max-centered poly_c1 "
+                "softmax per head; attn_val flattened back into "
+                "the residual via i mod (num_heads*head_dim)) + "
+                "post-attn RMSNorm + gated MLP with poly_c1 "
+                "activation. Every input stream of the 3-stream "
+                "SdkLayout contract is an operand in the final "
+                "write; rx_layer_weights is reshaped as "
                 "[gamma2(qs), per_head_KV(2*qs), gate_w(qs/2), "
-                "up_w(qs/2)] — the per_head_KV region grew to 2*qs "
-                "to hold distinct K_h/V_h, and gate_w/up_w shrank "
-                "to qs/2 to keep the total wts footprint at size. "
-                "The same poly_c1 family drives both the stage-2 "
-                "per-head softmax weighting and the stage-4 "
-                "activation — only +, -, *, /, and comparison, so "
-                "CSL and numpy compute the identical f32 op "
-                "sequence (no tanh / exp / erf divergence). "
-                "Remaining upgrades (longer KV, vector Q/K per "
-                "head, rope positional encoding) land in follow-"
-                "up ticks."
+                "up_w(qs/2)] — the per_head_KV region holds 8 "
+                "contiguous per-head K/V slices of length "
+                "per_head_stride=2*head_dim*kv_len_per_head=64, "
+                "and gate_w/up_w are qs/2 each to keep the total "
+                "wts footprint at size. The same poly_c1 family "
+                "drives both the stage-2 per-head softmax "
+                "weighting and the stage-4 activation — only +, "
+                "-, *, /, and comparison, so CSL and numpy "
+                "compute the identical f32 op sequence (no tanh "
+                "/ exp / erf divergence). Remaining structural "
+                "gaps are real manifest-derived weight loading "
+                "and head_dim toward the manifest's 512."
             ),
             "kernelSourcePath": layer_block_kernel_path,
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
@@ -625,22 +744,37 @@ def main() -> int:
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) "
                 "* ple_projection[i]; "
-                "num_heads = 2; kv_len_per_head = 2; "
-                "stride = 2 * kv_len_per_head; mlp_len = qs/2; "
+                "num_heads = 8; head_dim = 8; kv_len_per_head = 4; "
+                "num_pairs = head_dim/2; "
+                "per_head_K_len = head_dim * kv_len_per_head; "
+                "stride = 2*per_head_K_len; "
+                "flat_len = num_heads*head_dim; mlp_len = qs/2; "
+                "rope_table[p,d]: pair d=0 at theta_0=1 -> "
+                "(1,0),(0.540302277,0.841470957),(-0.416146845,0.909297407); "
+                "pair d=1 at theta_1=0.1 -> "
+                "(1,0),(0.995004177,0.0998334140),(0.980066597,0.198669329); "
+                "rope_rot(x0,x1,p,d) = (cos[p,d]*x0 - sin[p,d]*x1, "
+                "sin[p,d]*x0 + cos[p,d]*x1); "
                 "for h in [0, num_heads): "
-                "Q_h = rmsnorm[h]; base_h = qs + h * stride; "
-                "K_h[j] = layer_weights[base_h + j]; "
-                "V_h[j] = layer_weights[base_h + kv_len_per_head + j]; "
-                "logits_h[j] = Q_h * K_h[j]; "
+                "Q_h[d] = rmsnorm[h*head_dim + d]; "
+                "for d in [0, num_pairs): "
+                "(Q_r[2d], Q_r[2d+1]) = rope_rot(Q_h[2d], Q_h[2d+1], "
+                "kv_len_per_head, d); "
+                "base_h = qs + h*stride; "
+                "K_h[j][d] = layer_weights[base_h + j*head_dim + d]; "
+                "(K_r[j][2d], K_r[j][2d+1]) = rope_rot(K_h[j][2d], "
+                "K_h[j][2d+1], j, d); "
+                "V_h[j][d] = layer_weights[base_h + per_head_K_len + j*head_dim + d]; "
+                "logits_h[j] = sum_d Q_r[d] * K_r[j][d]; "
                 "m_h = max_j logits_h[j]; "
                 "w_h[j] = poly_c1(logits_h[j] - m_h); "
-                "attn_val[h] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j]; "
-                "attn_out[i] = attn_val[i mod num_heads] + ple_rows[i]; "
+                "attn_val[h][d] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j][d]; "
+                "attn_out[i] = attn_val_flat[i mod flat_len] + ple_rows[i]; "
                 "post_norm[i] = (attn_out[i] / sqrt(mean(attn_out^2) + 1e-6)) "
                 "* layer_weights[i mod qs]; "
                 "gate = sum_k layer_weights[3*qs + k] * post_norm[k]     "
                 "(k in [0, mlp_len)); "
-                "up = sum_k layer_weights[3*qs + mlp_len + k] * post_norm[mlp_len + k]; "
+                "up   = sum_k layer_weights[3*qs + mlp_len + k] * post_norm[mlp_len + k]; "
                 "poly_c1(x) = 0 if x<=-1, x if x>=1, 0.25*(x+1)^2 otherwise; "
                 "activation_out[i] = gate * poly_c1(up * post_norm[i]) + post_norm[i]"
             ),
@@ -658,13 +792,14 @@ def main() -> int:
             "layerWeightsReshape": (
                 "layer_weights carries [gamma2(qs), per_head_KV(2*qs), "
                 "gate_w(qs/2), up_w(qs/2)] back-to-back (qs = size/4). "
-                "The per_head_KV region splits into num_heads = 2 "
+                "The per_head_KV region splits into num_heads = 8 "
                 "contiguous slices of length per_head_stride = 2 * "
-                "head_dim * kv_len_per_head = 8: head h occupies "
-                "wts[qs + h*8 .. qs + (h+1)*8) as K_h(head_dim * "
-                "kv_len_per_head) followed by V_h(same). At the "
-                "default smoke_size=32 (qs=8) this gives gate_w and "
-                "up_w = qs/2 = 4 elements each, back to full mlp_len."
+                "head_dim * kv_len_per_head = 64: head h occupies "
+                "wts[qs + h*64 .. qs + (h+1)*64) as K_h(head_dim * "
+                "kv_len_per_head = 32) followed by V_h(same). At the "
+                "default smoke size=1024 (qs=256) the 8 per_head_KV "
+                "slices consume 8*64 = 512 = 2*qs f32 elements, with "
+                "gate_w and up_w = qs/2 = 128 elements each."
             ),
             "sharedPolynomialC1": (
                 "poly_c1(x) = 0 for x<=-1, x for x>=1, 0.25*(x+1)^2 "
