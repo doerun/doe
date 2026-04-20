@@ -44,7 +44,7 @@ PER_LAYER_BASE = 2000
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("--stage", type=int, choices=(1, 2), default=2)
+    p.add_argument("--stage", type=int, choices=(1, 2, 3), default=2)
     p.add_argument("--size", type=int, default=1024)
     p.add_argument("--num-layers", type=int, default=2)
     p.add_argument(
@@ -195,11 +195,36 @@ def numpy_stage2(rows: np.ndarray, proj: np.ndarray, wts: np.ndarray, size: int)
     return out
 
 
+def numpy_stage3(rows: np.ndarray, proj: np.ndarray, wts: np.ndarray, size: int) -> np.ndarray:
+    """Numpy mirror of CSL through post-attn RMSNorm."""
+    assert size % 4 == 0
+    qs = size // 4
+    eps = np.float32(1.0e-6)
+    attn_out = numpy_stage2(rows, proj, wts, size)
+    sum_sq = np.float32(0.0)
+    for v in attn_out:
+        sum_sq = np.float32(sum_sq + np.float32(v) * np.float32(v))
+    mean_sq = np.float32(sum_sq / np.float32(size))
+    rms = np.float32(np.sqrt(np.float32(mean_sq + eps)))
+    inv_rms = np.float32(np.float32(1.0) / rms)
+    out = np.empty(size, dtype=np.float32)
+    for i in range(size):
+        g_idx = i
+        while g_idx >= qs:
+            g_idx -= qs
+        out[i] = np.float32(
+            np.float32(attn_out[i] * inv_rms) * np.float32(wts[g_idx])
+        )
+    return out
+
+
 def expected_stage(stage: int, rows: np.ndarray, proj: np.ndarray, wts: np.ndarray, size: int) -> np.ndarray:
     if stage == 1:
         return numpy_stage1(rows, proj, size)
     if stage == 2:
         return numpy_stage2(rows, proj, wts, size)
+    if stage == 3:
+        return numpy_stage3(rows, proj, wts, size)
     raise AssertionError(stage)
 
 
@@ -311,6 +336,13 @@ def main() -> int:
             f"max_abs={float(diff.max()):.6e} "
             f"nonzero={nonzero}/{args.size} match={match}"
         )
+        if not match:
+            argmax = int(diff.argmax())
+            print(
+                "  argmax="
+                f"{argmax} got={float(received[argmax]):.9g} "
+                f"expected={float(stage_expected[l_idx][argmax]):.9g}"
+            )
     return 0 if all_match else 1
 
 

@@ -87,11 +87,6 @@ def parse_args() -> argparse.Namespace:
              "invocation instead of feeding activation_out forward.",
     )
     p.add_argument(
-        "--reset-runtime-each-layer", action="store_true",
-        help="Probe-only override. Recreate/load/run/stop SdkRuntime around "
-             "each invocation while reusing the same compile artifacts.",
-    )
-    p.add_argument(
         "--weights-dir", default="",
         help="Directory containing per-layer weight slice files named "
              "<weight_key>.f32. When a slice exists for a layer it loads the "
@@ -163,7 +158,7 @@ def main() -> int:
     compile_elapsed_ms = (time.time() - compile_start) * 1000.0
 
     run_start = time.time()
-    runtime = None
+    runtime = SdkRuntime(compile_artifacts, platform, memcpy_required=False)
     num_layers_smoke = args.num_layers
     max_abs_err = -1.0
     per_layer_max_abs_err = [-1.0] * num_layers_smoke
@@ -183,6 +178,9 @@ def main() -> int:
     # layers via the streaming-runtime send/receive primitives — no
     # recompile per layer.
     try:
+        runtime.load()
+        runtime.run()
+
         # Real-weight-loader bridge with per-layer-index seed fallback.
         # Each layer's projection/weights load from a manifest-derived
         # tensor slice if present in --weights-dir, else fall back to
@@ -294,19 +292,7 @@ def main() -> int:
         # the chain depth grows (e.g. 35 layers for full E2B).
         all_received = []
         rows_curr = initial_rows.copy()
-        if not args.reset_runtime_each_layer:
-            runtime = SdkRuntime(
-                compile_artifacts, platform, memcpy_required=False
-            )
-            runtime.load()
-            runtime.run()
         for l_idx in range(num_layers_smoke):
-            if args.reset_runtime_each_layer:
-                runtime = SdkRuntime(
-                    compile_artifacts, platform, memcpy_required=False
-                )
-                runtime.load()
-                runtime.run()
             layer_start = time.time()
             received = np.empty(args.size, dtype=np.float32)
             rows_for_layer = (
@@ -332,13 +318,8 @@ def main() -> int:
             all_received.append(received.copy())
             if not args.reset_rows_each_layer:
                 rows_curr = received
-            if args.reset_runtime_each_layer:
-                runtime.stop()
-                runtime = None
 
-        if runtime is not None:
-            runtime.stop()
-            runtime = None
+        runtime.stop()
 
         # Per-layer parity. Pass requires every layer to be bit-exact.
         layer_passed = []
@@ -378,11 +359,6 @@ def main() -> int:
             ],
         }
     except Exception as exc:  # pylint: disable=broad-except
-        if runtime is not None:
-            try:
-                runtime.stop()
-            except Exception:  # pylint: disable=broad-except
-                pass
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]
         output_digest = None
     run_elapsed_ms = (time.time() - run_start) * 1000.0
@@ -428,7 +404,6 @@ def main() -> int:
                     if args.freeze_layer_index >= 0 else None
                 ),
                 "resetRowsEachLayer": args.reset_rows_each_layer,
-                "resetRuntimeEachLayer": args.reset_runtime_each_layer,
                 "perLayerBase": PER_LAYER_BASE,
                 "perLayerSeeds": per_layer_seeds,
                 "weightsDir": str(weights_dir_abs.relative_to(REPO_ROOT))

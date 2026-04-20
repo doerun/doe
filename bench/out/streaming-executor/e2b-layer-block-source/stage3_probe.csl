@@ -1,7 +1,116 @@
-// Stage-2 diagnostic: outputs buf_out after MHA + residual (stage 2).
-// Same stage-1 prelude, then the full per-head vector/rope attention
-// pass, then residual add (attn_out = attn_flat[i mod 64] + rows[i]).
-// Skips stages 3-4.
+// Stage-3 diagnostic copy of the E2B layer-block executor:
+//   stage 1 = pre-attn RMSNorm (gamma = ple_projection)
+//   stage 2 = multi-head attention with PER-HEAD VECTOR Q/K/V AND
+//             ROPE positional encoding (num_heads = 2, head_dim = 2,
+//             kv_len_per_head = 2). Q_h is rotated at position
+//             p_q = kv_len_per_head; K_h[j] is rotated at position
+//             p_k = j. The (cos, sin) table is a dyadic-rational
+//             synthetic rope that parses exactly to the same f32 bit
+//             pattern under IEEE round-to-nearest, preserving the
+//             bit-exact parity gate without platform math.cos/sin
+//             divergence. logits_h[j] = sum_d Q_rot[d]*K_rot_j[d];
+//             poly_c1 softmax; attn_val[h][d] = sum_j sm[j]*V_h[j][d].
+//             attn_val flattens to length num_heads*head_dim and
+//             broadcasts over the full token via (i mod flat_len).
+//   stage 3 = post-attn RMSNorm (gamma2 broadcast 4x over the
+//             full token)
+//   stage 4 = gated MLP with a shared piecewise-polynomial GELU
+//             approximation (no transcendentals — bit-exact
+//             reproducible in both CSL and numpy)
+//
+// The E2B stream-execution-plan names a code region
+// `transformer_layer_shape` and feeds it three input streams
+// (ple_rows, ple_projection, layer_weights) per layer. This kernel
+// exercises all three streams through real compute. size bumped to
+// 32 (qs = 8) so per-head vector Q/K/V fit without degenerating
+// the softmax. layer_weights reshape:
+//   [gamma2(qs), per_head_KV(2*qs), gate_w(qs/2), up_w(qs/2)].
+// The per_head_KV region carries num_heads * 2 * head_dim *
+// kv_len_per_head = 2*2*2*2 = 16 = 2*qs elements. gate_w and up_w
+// grow back to qs/2 = 4 now that qs itself is larger. The SdkLayout
+// stream contract stays stable (still 3 input streams + 1 output).
+//
+// Stage semantics for this file:
+//   rows                 = pre-norm hidden activation (x) AND residual
+//   proj                 = pre-attn RMSNorm gamma (per-element scale)
+//   wts[0..qs)           = post-attn RMSNorm gamma2 (broadcast 4x)
+//   wts[qs..3*qs)        = per-head VECTOR KV region. Per-head slice
+//                          of length per_head_stride = 2*head_dim*
+//                          kv_len_per_head = 8. Head h occupies
+//                          wts[qs + h*per_head_stride ..
+//                          qs + (h+1)*per_head_stride): first
+//                          head_dim*kv_len_per_head values are K_h
+//                          (laid out as K_h[j][d]), next are V_h.
+//   wts[3*qs..3*qs+qs/2) = MLP gate weights (inner-product with
+//                          post_norm[0..qs/2) forms the gate scalar)
+//   wts[3*qs+qs/2..4*qs) = MLP up weights (inner-product with
+//                          post_norm[qs/2..qs) forms the up scalar)
+//
+// Combine rule:
+//     rms1             = sqrt(mean(rows[i]^2) + eps)
+//     rmsnorm[i]       = (rows[i] / rms1) * proj[i]
+//     per_head_K_len   = head_dim * kv_len_per_head
+//     per_head_stride  = 2 * per_head_K_len
+//     rope_rot(x0, x1, p) = (cos[p]*x0 - sin[p]*x1,
+//                             sin[p]*x0 + cos[p]*x1)
+//     for head h in [0, num_heads):
+//       Q_h[d]         = rmsnorm[h*head_dim + d]    (d in [0, head_dim))
+//       (Q_r[0], Q_r[1]) = rope_rot(Q_h[0], Q_h[1], kv_len_per_head)
+//       base_h         = qs + h * per_head_stride
+//       K_h[j][d]      = wts[base_h + j*head_dim + d]
+//       (K_r[j][0], K_r[j][1]) = rope_rot(K_h[j][0], K_h[j][1], j)
+//       V_h[j][d]      = wts[base_h + per_head_K_len + j*head_dim + d]
+//       logits_h[j]    = sum_d Q_r[d] * K_r[j][d]
+//       m_h            = max_j logits_h[j]
+//       w_h[j]         = poly_c1(logits_h[j] - m_h)
+//       attn_val[h][d] = sum_j (w_h[j]/sum_j w_h[j]) * V_h[j][d]
+//     attn_flat        = flatten attn_val to length num_heads*head_dim
+//     attn_out[i]      = attn_flat[i mod (num_heads*head_dim)] + rows[i]
+//
+// Rope table (actual cos/sin, bit-exact in f32 via 9-decimal-digit
+// literals that round-trip under IEEE-754 correct rounding):
+//     p=0 -> (cos=1.0,          sin=0.0)
+//     p=1 -> (cos=0.540302277,  sin=0.841470957)
+//     p=2 -> (cos=-0.416146845, sin=0.909297407)
+//     rms2             = sqrt(mean(attn_out[i]^2) + eps)
+//     post_norm[i]     = (attn_out[i] / rms2) * gamma2_bcast(i)
+//     gate             = sum_k wts[2*qs+k] * post_norm[k]    (k in [0,qs))
+//     up               = sum_k wts[3*qs+k] * post_norm[qs+k] (k in [0,qs))
+//     poly_c1(x)       = 0                  if x <= -1
+//                        x                  if x >=  1
+//                        0.25 * (x+1)^2     otherwise
+//     activation_out[i]= gate * poly_c1(up * post_norm[i]) + post_norm[i]
+//
+// Both the softmax weighting in stage 2 and the MLP activation in
+// stage 4 use the same poly_c1 kernel. max-centered softmax
+// guarantees poly_c1(0) = 0.25 is always in the sum, so each head's
+// division by sum_w is safe (sum_w >= 0.25).
+//
+// Per-head vector KV layout: num_heads = 8 (matches manifest.
+// modelConfig.numHeads), head_dim = 8, kv_len_per_head = 4. The
+// attn output space (num_heads * head_dim = 64) broadcasts
+// size/(num_heads*head_dim) = 16 times over the full token (size =
+// 1024 default). size must be a multiple of (num_heads * head_dim);
+// qs must satisfy 2*qs >= num_heads * 2 * head_dim * kv_len_per_head
+// = 512. Default smoke_size = 1024 gives qs = 256. head_dim=8 means
+// FOUR rope pairs per head at theta_d = base^(-2d/head_dim) for d
+// in [0, 4); rope table now carries 4 pairs * 5 positions = 20
+// (cos, sin) entries.
+//
+// The act() function is a C^1-continuous piecewise quadratic
+// approximation of GELU whose only operations are +, -, *, /, and
+// comparison. That keeps the lowering bit-exact between CSL and
+// numpy — the platform math.tanh / exp / erf paths diverge at f32
+// precision and would break np.array_equal as the pass gate.
+//
+// Reduction lowerings (sum-of-squares, inner-products) mirror the
+// translator-emitted CSL at bench/out/dual-compile-evidence/
+// reduce-sum-workgroup/csl/pe_program.csl (single-PE: each PE
+// processes one full token in-order).
+//
+// Numerical parity target: bit-exact vs the host numpy reference
+// that accumulates every reduction and every act() call in the
+// same scalar f32 op sequence as the device.
 
 param size: u16;
 param rx_ple_rows:       color;
@@ -12,61 +121,78 @@ param tx_activation:     color;
 const math = @import_module("<math>");
 const rmsnorm_eps: f32 = 1.0e-6;
 
+// Rope positional encoding table. head_dim=8 means 4 rope pairs
+// per head (pair d covers dims 2d, 2d+1). Each pair has its own
+// frequency theta_d = base^(-2d/head_dim); base=10000 matches the
+// manifest's rope base, so:
+//   theta_0 = 1.0
+//   theta_1 = 10000^(-0.25) = 0.1
+//   theta_2 = 10000^(-0.5)  = 0.01
+//   theta_3 = 10000^(-0.75) = 0.001
+// Positions 0..3 are the four KV entries; position 4 is the Q
+// rotation (= kv_len_per_head). Twenty 9-decimal-digit literals
+// (4 pairs * 5 positions) round-trip exactly to identical f32 bit
+// patterns in both CSL and numpy under IEEE-754. Pairs 2 and 3
+// rotate by very small angles so cos ≈ 1 and sin ≈ p*theta — the
+// rope effectively encodes position via tiny perturbations on
+// those high-frequency dims.
 fn rope_cos_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return  1.0;          }
-        if (p == 1) { return  0.540302277;  }
-        if (p == 2) { return -0.416146845;  }
-        if (p == 3) { return -0.989992499;  }
-        return -0.653643608;
+        if (p == 1) { return  0.540302277;  }  // cos(1)
+        if (p == 2) { return -0.416146845;  }  // cos(2)
+        if (p == 3) { return -0.989992499;  }  // cos(3)
+        return -0.653643608;                   // cos(4)
     }
     if (d == 1) {
         if (p == 0) { return 1.0;          }
-        if (p == 1) { return 0.995004177;  }
-        if (p == 2) { return 0.980066597;  }
-        if (p == 3) { return 0.955336511;  }
-        return 0.921060979;
+        if (p == 1) { return 0.995004177;  }   // cos(0.1)
+        if (p == 2) { return 0.980066597;  }   // cos(0.2)
+        if (p == 3) { return 0.955336511;  }   // cos(0.3)
+        return 0.921060979;                    // cos(0.4)
     }
     if (d == 2) {
         if (p == 0) { return 1.0;          }
-        if (p == 1) { return 0.999949992;  }
-        if (p == 2) { return 0.999800026;  }
-        if (p == 3) { return 0.999550045;  }
-        return 0.999200106;
+        if (p == 1) { return 0.999949992;  }   // cos(0.01)
+        if (p == 2) { return 0.999800026;  }   // cos(0.02)
+        if (p == 3) { return 0.999550045;  }   // cos(0.03)
+        return 0.999200106;                    // cos(0.04)
     }
+    // d == 3, theta = 0.001
     if (p == 0) { return 1.0;          }
-    if (p == 1) { return 0.999999523;  }
-    if (p == 2) { return 0.999997973;  }
-    if (p == 3) { return 0.999995530;  }
-    return 0.999992013;
+    if (p == 1) { return 0.999999523;  }       // cos(0.001)
+    if (p == 2) { return 0.999997973;  }       // cos(0.002)
+    if (p == 3) { return 0.999995530;  }       // cos(0.003)
+    return 0.999992013;                        // cos(0.004)
 }
 fn rope_sin_at(p: u16, d: u16) f32 {
     if (d == 0) {
         if (p == 0) { return 0.0;          }
-        if (p == 1) { return 0.841470957;  }
-        if (p == 2) { return 0.909297407;  }
-        if (p == 3) { return 0.141120002;  }
-        return -0.756802499;
+        if (p == 1) { return 0.841470957;  }   // sin(1)
+        if (p == 2) { return 0.909297407;  }   // sin(2)
+        if (p == 3) { return 0.141120002;  }   // sin(3)
+        return -0.756802499;                   // sin(4)
     }
     if (d == 1) {
         if (p == 0) { return 0.0;           }
-        if (p == 1) { return 0.0998334140;  }
-        if (p == 2) { return 0.198669329;   }
-        if (p == 3) { return 0.295520216;   }
-        return 0.389418334;
+        if (p == 1) { return 0.0998334140;  }  // sin(0.1)
+        if (p == 2) { return 0.198669329;   }  // sin(0.2)
+        if (p == 3) { return 0.295520216;   }  // sin(0.3)
+        return 0.389418334;                    // sin(0.4)
     }
     if (d == 2) {
         if (p == 0) { return 0.0;           }
-        if (p == 1) { return 0.00999983307; }
-        if (p == 2) { return 0.0199986659;  }
-        if (p == 3) { return 0.029995501;   }
-        return 0.0399893336;
+        if (p == 1) { return 0.00999983307; }  // sin(0.01)
+        if (p == 2) { return 0.0199986659;  }  // sin(0.02)
+        if (p == 3) { return 0.029995501;   }  // sin(0.03)
+        return 0.0399893336;                   // sin(0.04)
     }
+    // d == 3, theta = 0.001
     if (p == 0) { return 0.0;             }
-    if (p == 1) { return 0.000999999815;  }
-    if (p == 2) { return 0.00199999870;   }
-    if (p == 3) { return 0.00299999560;   }
-    return 0.00399998948;
+    if (p == 1) { return 0.000999999815;  }    // sin(0.001)
+    if (p == 2) { return 0.00199999870;   }    // sin(0.002)
+    if (p == 3) { return 0.00299999560;   }    // sin(0.003)
+    return 0.00399998948;                      // sin(0.004)
 }
 
 const in_q_0 = @get_input_queue(0);
@@ -74,10 +200,18 @@ const in_q_1 = @get_input_queue(1);
 const in_q_2 = @get_input_queue(2);
 const out_q  = @get_output_queue(0);
 
-const input_rows = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_ple_rows,       .input_queue = in_q_0 });
-const input_proj = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_ple_projection, .input_queue = in_q_1 });
-const input_wts  = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_layer_weights,  .input_queue = in_q_2 });
-const output     = @get_dsd(fabout_dsd, .{ .extent = size, .fabric_color = tx_activation,     .output_queue = out_q });
+const input_rows = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_ple_rows,
+                                           .input_queue = in_q_0 });
+const input_proj = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_ple_projection,
+                                           .input_queue = in_q_1 });
+const input_wts  = @get_dsd(fabin_dsd,  .{ .extent = size,
+                                           .fabric_color = rx_layer_weights,
+                                           .input_queue = in_q_2 });
+const output     = @get_dsd(fabout_dsd, .{ .extent = size,
+                                           .fabric_color = tx_activation,
+                                           .output_queue = out_q });
 
 var buf_rows: [size]f32;
 var buf_proj: [size]f32;
@@ -97,26 +231,44 @@ const done_id    = @get_local_task_id(11);
 task main() void {
     @mov32(mem_rows, input_rows, .{ .async = true, .activate = got_proj_id });
 }
+
 task got_proj() void {
     @mov32(mem_proj, input_proj, .{ .async = true, .activate = got_wts_id });
 }
+
 task got_wts() void {
     @mov32(mem_wts, input_wts, .{ .async = true, .activate = done_id });
 }
+
 task done() void {
+    // Quarter-size constant. layer_weights is reshaped as four
+    // back-to-back quarters [gamma2, attn_scale, gate_w, up_w];
+    // post_norm slices are gate_k = post_norm[0..qs), up_k =
+    // post_norm[qs..2*qs). size must be a multiple of 4 (default
+    // 16; 35/61-layer scaling keeps this multiple of 4).
     const qs: u16 = size / 4;
 
-    // Stage 1: RMSNorm into buf_out
+    // Stage 1a: pre-attn RMSNorm sum-of-squares (scalar order).
     var sum_sq: f32 = 0.0;
-    for (@range(u16, size)) |i| { sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]); }
+    for (@range(u16, size)) |i| {
+        sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]);
+    }
     const mean_sq: f32 = sum_sq / @as(f32, size);
     const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
     const inv_rms: f32 = 1.0 / rms;
+    // Stage 1b: normalize + gamma, stored in buf_out as rmsnorm_out.
     for (@range(u16, size)) |i| {
         buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
     }
 
-    // Stage 2: MHA
+    // Stage 2: multi-head attention with PER-HEAD VECTOR Q/K/V.
+    //   num_heads = 2, head_dim = 2, kv_len_per_head = 2
+    //   per_head_K_len = head_dim * kv_len_per_head = 4
+    //   per_head_stride = 2 * per_head_K_len = 8
+    //   head h owns wts[qs + h*stride .. qs + (h+1)*stride):
+    //     first per_head_K_len entries = K_h (laid out as K_h[j][d]),
+    //     next per_head_K_len = V_h.
+    //   Q_h[d] = buf_out[h*head_dim + d]
     const num_heads: u16 = 8;
     const head_dim: u16 = 8;
     const kv_len_per_head: u16 = 4;
@@ -124,12 +276,20 @@ task done() void {
     const per_head_K_len: u16 = head_dim * kv_len_per_head;
     const per_head_stride: u16 = 2 * per_head_K_len;
     const attn_flat_len: u16 = num_heads * head_dim;
+
+    // Flattened per-head/per-d attention output.
     var attn_vals: [attn_flat_len]f32;
 
     for (@range(u16, num_heads)) |h| {
         const base_h: u16 = qs + h * per_head_stride;
         const q_base: u16 = h * head_dim;
 
+        // Rope-rotate Q_h once per head at position kv_len_per_head.
+        // For head_dim=4 there are two rope pairs:
+        //   pair d=0 covers dims (0, 1) at theta_0
+        //   pair d=1 covers dims (2, 3) at theta_1
+        // q_rot stored back into a local buffer so the dot product
+        // below can iterate over all head_dim dims uniformly.
         var q_rot: [head_dim]f32;
         for (@range(u16, num_pairs)) |d| {
             const a: u16 = 2 * d;
@@ -141,6 +301,12 @@ task done() void {
             q_rot[a + 1] = (qs_ * q0) + (qc * q1);
         }
 
+        // Pass 1: max logit. logits[j] = sum_d Q_rot[d] * K_rot_j[d].
+        // K_rot_j is K_h[j] with each pair rotated by its own theta
+        // at position j. We seed lmax from the j=0 logit so the
+        // matching numpy pass has the same 0.0-init + per-d
+        // accumulation pattern — the in-order f32 +/* sequence is
+        // what matters for np.array_equal.
         var k_rot: [head_dim]f32;
         var lmax: f32 = 0.0;
         {
@@ -154,7 +320,9 @@ task done() void {
                 k_rot[a + 1] = (ks * k0) + (kc * k1);
             }
             var l_seed: f32 = 0.0;
-            for (@range(u16, head_dim)) |dd| { l_seed = l_seed + (q_rot[dd] * k_rot[dd]); }
+            for (@range(u16, head_dim)) |dd| {
+                l_seed = l_seed + (q_rot[dd] * k_rot[dd]);
+            }
             lmax = l_seed;
         }
         for (@range(u16, kv_len_per_head)) |j| {
@@ -168,10 +336,14 @@ task done() void {
                 k_rot[a + 1] = (ks * k0) + (kc * k1);
             }
             var l: f32 = 0.0;
-            for (@range(u16, head_dim)) |dd| { l = l + (q_rot[dd] * k_rot[dd]); }
+            for (@range(u16, head_dim)) |dd| {
+                l = l + (q_rot[dd] * k_rot[dd]);
+            }
             if (l > lmax) { lmax = l; }
         }
 
+        // Pass 2: poly_c1 softmax weights + per-d weighted-V. V_h[j]
+        // is NOT rope-rotated (standard rope spec applies only to Q, K).
         var sum_w: f32 = 0.0;
         var weighted_v: [head_dim]f32;
         for (@range(u16, head_dim)) |d2| { weighted_v[d2] = 0.0; }
@@ -186,7 +358,9 @@ task done() void {
                 k_rot[a + 1] = (ks * k0) + (kc * k1);
             }
             var l: f32 = 0.0;
-            for (@range(u16, head_dim)) |dd| { l = l + (q_rot[dd] * k_rot[dd]); }
+            for (@range(u16, head_dim)) |dd| {
+                l = l + (q_rot[dd] * k_rot[dd]);
+            }
             const x: f32 = l - lmax;
             var wj: f32 = 0.0;
             if (x > -1.0) {
@@ -200,28 +374,34 @@ task done() void {
                 weighted_v[dd] = weighted_v[dd] + (wj * v_hjd);
             }
         }
+        // sum_w >= 0.25, safe division per d.
         for (@range(u16, head_dim)) |dd| {
             attn_vals[q_base + dd] = weighted_v[dd] / sum_w;
         }
     }
 
-    // Stage 2c: residual add
+    // Stage 2c: residual add. Flattened attn_vals broadcasts via
+    // (i mod attn_flat_len) — each (h, d) cell lands at indices
+    // {h*head_dim+d, h*head_dim+d + flat, + 2*flat, ...}.
     for (@range(u16, size)) |i| {
         const k_idx: u16 = i - ((i / attn_flat_len) * attn_flat_len);
         buf_out[i] = attn_vals[k_idx] + buf_rows[i];
     }
 
-    // Stage 3: post-attn RMSNorm
+    // Stage 3a: post-attn RMSNorm sum-of-squares over attn_out.
     var sum_sq2: f32 = 0.0;
-    for (@range(u16, size)) |i| { sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]); }
+    for (@range(u16, size)) |i| {
+        sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]);
+    }
     const mean_sq2: f32 = sum_sq2 / @as(f32, size);
     const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
     const inv_rms2: f32 = 1.0 / rms2;
+    // Stage 3b: normalize + gamma2 broadcast 4x over the token.
     for (@range(u16, size)) |i| {
         var g_idx: u16 = i;
-        if (g_idx >= qs) { g_idx = g_idx - qs; }
-        if (g_idx >= qs) { g_idx = g_idx - qs; }
-        if (g_idx >= qs) { g_idx = g_idx - qs; }
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
+        if (g_idx >= qs)     { g_idx = g_idx - qs; }
         buf_out[i] = (buf_out[i] * inv_rms2) * buf_wts[g_idx];
     }
 

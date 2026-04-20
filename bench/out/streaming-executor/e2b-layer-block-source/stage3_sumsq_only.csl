@@ -1,0 +1,241 @@
+// Stage-2 diagnostic: outputs buf_out after MHA + residual (stage 2).
+// Same stage-1 prelude, then the full per-head vector/rope attention
+// pass, then residual add (attn_out = attn_flat[i mod 64] + rows[i]).
+// Skips stages 3-4.
+
+param size: u16;
+param rx_ple_rows:       color;
+param rx_ple_projection: color;
+param rx_layer_weights:  color;
+param tx_activation:     color;
+
+const math = @import_module("<math>");
+const rmsnorm_eps: f32 = 1.0e-6;
+
+fn rope_cos_at(p: u16, d: u16) f32 {
+    if (d == 0) {
+        if (p == 0) { return  1.0;          }
+        if (p == 1) { return  0.540302277;  }
+        if (p == 2) { return -0.416146845;  }
+        if (p == 3) { return -0.989992499;  }
+        return -0.653643608;
+    }
+    if (d == 1) {
+        if (p == 0) { return 1.0;          }
+        if (p == 1) { return 0.995004177;  }
+        if (p == 2) { return 0.980066597;  }
+        if (p == 3) { return 0.955336511;  }
+        return 0.921060979;
+    }
+    if (d == 2) {
+        if (p == 0) { return 1.0;          }
+        if (p == 1) { return 0.999949992;  }
+        if (p == 2) { return 0.999800026;  }
+        if (p == 3) { return 0.999550045;  }
+        return 0.999200106;
+    }
+    if (p == 0) { return 1.0;          }
+    if (p == 1) { return 0.999999523;  }
+    if (p == 2) { return 0.999997973;  }
+    if (p == 3) { return 0.999995530;  }
+    return 0.999992013;
+}
+fn rope_sin_at(p: u16, d: u16) f32 {
+    if (d == 0) {
+        if (p == 0) { return 0.0;          }
+        if (p == 1) { return 0.841470957;  }
+        if (p == 2) { return 0.909297407;  }
+        if (p == 3) { return 0.141120002;  }
+        return -0.756802499;
+    }
+    if (d == 1) {
+        if (p == 0) { return 0.0;           }
+        if (p == 1) { return 0.0998334140;  }
+        if (p == 2) { return 0.198669329;   }
+        if (p == 3) { return 0.295520216;   }
+        return 0.389418334;
+    }
+    if (d == 2) {
+        if (p == 0) { return 0.0;           }
+        if (p == 1) { return 0.00999983307; }
+        if (p == 2) { return 0.0199986659;  }
+        if (p == 3) { return 0.029995501;   }
+        return 0.0399893336;
+    }
+    if (p == 0) { return 0.0;             }
+    if (p == 1) { return 0.000999999815;  }
+    if (p == 2) { return 0.00199999870;   }
+    if (p == 3) { return 0.00299999560;   }
+    return 0.00399998948;
+}
+
+const in_q_0 = @get_input_queue(0);
+const in_q_1 = @get_input_queue(1);
+const in_q_2 = @get_input_queue(2);
+const out_q  = @get_output_queue(0);
+
+const input_rows = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_ple_rows,       .input_queue = in_q_0 });
+const input_proj = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_ple_projection, .input_queue = in_q_1 });
+const input_wts  = @get_dsd(fabin_dsd,  .{ .extent = size, .fabric_color = rx_layer_weights,  .input_queue = in_q_2 });
+const output     = @get_dsd(fabout_dsd, .{ .extent = size, .fabric_color = tx_activation,     .output_queue = out_q });
+
+var buf_rows: [size]f32;
+var buf_proj: [size]f32;
+var buf_wts:  [size]f32;
+var buf_out:  [size]f32;
+
+const mem_rows = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_rows[i] });
+const mem_proj = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_proj[i] });
+const mem_wts  = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_wts[i] });
+const mem_out  = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{size} -> buf_out[i] });
+
+const main_id    = @get_local_task_id(8);
+const got_proj_id = @get_local_task_id(9);
+const got_wts_id  = @get_local_task_id(10);
+const done_id    = @get_local_task_id(11);
+
+task main() void {
+    @mov32(mem_rows, input_rows, .{ .async = true, .activate = got_proj_id });
+}
+task got_proj() void {
+    @mov32(mem_proj, input_proj, .{ .async = true, .activate = got_wts_id });
+}
+task got_wts() void {
+    @mov32(mem_wts, input_wts, .{ .async = true, .activate = done_id });
+}
+task done() void {
+    const qs: u16 = size / 4;
+
+    // Stage 1: RMSNorm into buf_out
+    var sum_sq: f32 = 0.0;
+    for (@range(u16, size)) |i| { sum_sq = sum_sq + (buf_rows[i] * buf_rows[i]); }
+    const mean_sq: f32 = sum_sq / @as(f32, size);
+    const rms: f32     = math.sqrt(mean_sq + rmsnorm_eps);
+    const inv_rms: f32 = 1.0 / rms;
+    for (@range(u16, size)) |i| {
+        buf_out[i] = (buf_rows[i] * inv_rms) * buf_proj[i];
+    }
+
+    // Stage 2: MHA
+    const num_heads: u16 = 8;
+    const head_dim: u16 = 8;
+    const kv_len_per_head: u16 = 4;
+    const num_pairs: u16 = head_dim / 2;
+    const per_head_K_len: u16 = head_dim * kv_len_per_head;
+    const per_head_stride: u16 = 2 * per_head_K_len;
+    const attn_flat_len: u16 = num_heads * head_dim;
+    var attn_vals: [attn_flat_len]f32;
+
+    for (@range(u16, num_heads)) |h| {
+        const base_h: u16 = qs + h * per_head_stride;
+        const q_base: u16 = h * head_dim;
+
+        var q_rot: [head_dim]f32;
+        for (@range(u16, num_pairs)) |d| {
+            const a: u16 = 2 * d;
+            const q0: f32 = buf_out[q_base + a + 0];
+            const q1: f32 = buf_out[q_base + a + 1];
+            const qc: f32 = rope_cos_at(kv_len_per_head, d);
+            const qs_: f32 = rope_sin_at(kv_len_per_head, d);
+            q_rot[a + 0] = (qc * q0) - (qs_ * q1);
+            q_rot[a + 1] = (qs_ * q0) + (qc * q1);
+        }
+
+        var k_rot: [head_dim]f32;
+        var lmax: f32 = 0.0;
+        {
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + a + 0];
+                const k1: f32 = buf_wts[base_h + a + 1];
+                const kc: f32 = rope_cos_at(0, d);
+                const ks: f32 = rope_sin_at(0, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
+            var l_seed: f32 = 0.0;
+            for (@range(u16, head_dim)) |dd| { l_seed = l_seed + (q_rot[dd] * k_rot[dd]); }
+            lmax = l_seed;
+        }
+        for (@range(u16, kv_len_per_head)) |j| {
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + j*head_dim + a + 0];
+                const k1: f32 = buf_wts[base_h + j*head_dim + a + 1];
+                const kc: f32 = rope_cos_at(j, d);
+                const ks: f32 = rope_sin_at(j, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
+            var l: f32 = 0.0;
+            for (@range(u16, head_dim)) |dd| { l = l + (q_rot[dd] * k_rot[dd]); }
+            if (l > lmax) { lmax = l; }
+        }
+
+        var sum_w: f32 = 0.0;
+        var weighted_v: [head_dim]f32;
+        for (@range(u16, head_dim)) |d2| { weighted_v[d2] = 0.0; }
+        for (@range(u16, kv_len_per_head)) |j| {
+            for (@range(u16, num_pairs)) |d| {
+                const a: u16 = 2 * d;
+                const k0: f32 = buf_wts[base_h + j*head_dim + a + 0];
+                const k1: f32 = buf_wts[base_h + j*head_dim + a + 1];
+                const kc: f32 = rope_cos_at(j, d);
+                const ks: f32 = rope_sin_at(j, d);
+                k_rot[a + 0] = (kc * k0) - (ks * k1);
+                k_rot[a + 1] = (ks * k0) + (kc * k1);
+            }
+            var l: f32 = 0.0;
+            for (@range(u16, head_dim)) |dd| { l = l + (q_rot[dd] * k_rot[dd]); }
+            const x: f32 = l - lmax;
+            var wj: f32 = 0.0;
+            if (x > -1.0) {
+                const xp1: f32 = x + 1.0;
+                const sq: f32  = xp1 * xp1;
+                wj = 0.25 * sq;
+            }
+            sum_w = sum_w + wj;
+            for (@range(u16, head_dim)) |dd| {
+                const v_hjd: f32 = buf_wts[base_h + per_head_K_len + j*head_dim + dd];
+                weighted_v[dd] = weighted_v[dd] + (wj * v_hjd);
+            }
+        }
+        for (@range(u16, head_dim)) |dd| {
+            attn_vals[q_base + dd] = weighted_v[dd] / sum_w;
+        }
+    }
+
+    // Stage 2c: residual add
+    for (@range(u16, size)) |i| {
+        const k_idx: u16 = i - ((i / attn_flat_len) * attn_flat_len);
+        buf_out[i] = attn_vals[k_idx] + buf_rows[i];
+    }
+
+    // Stage 3: post-attn RMSNorm
+    var sum_sq2: f32 = 0.0;
+    for (@range(u16, size)) |i| { sum_sq2 = sum_sq2 + (buf_out[i] * buf_out[i]); }
+    const mean_sq2: f32 = sum_sq2 / @as(f32, size);
+    const rms2: f32     = math.sqrt(mean_sq2 + rmsnorm_eps);
+    const inv_rms2: f32 = 1.0 / rms2;
+    for (@range(u16, size)) |i| {
+        buf_out[i] = sum_sq2;  // emit sum_sq2 to see CSL's accumulation result
+    }
+
+    @mov32(output, mem_out);
+    @activate(main_id);
+}
+
+comptime {
+    @bind_local_task(main,      main_id);
+    @bind_local_task(got_proj,  got_proj_id);
+    @bind_local_task(got_wts,   got_wts_id);
+    @bind_local_task(done,      done_id);
+    @activate(main_id);
+
+    @initialize_queue(in_q_0, .{ .color = rx_ple_rows });
+    @initialize_queue(in_q_1, .{ .color = rx_ple_projection });
+    @initialize_queue(in_q_2, .{ .color = rx_layer_weights });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_q, .{ .color = tx_activation });
+    }
+}
