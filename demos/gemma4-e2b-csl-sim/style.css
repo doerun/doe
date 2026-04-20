@@ -263,6 +263,33 @@ strong[data-tone="fail"] {
   line-height: 1.35;
 }
 
+.proof-scope {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin: 14px 0 0;
+}
+
+.proof-scope > div {
+  background: var(--panel);
+  padding: 14px;
+}
+
+.proof-scope strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.proof-scope p {
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
 .lanes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -354,6 +381,7 @@ canvas {
     grid-template-columns: 1fr 1fr;
   }
 
+  .proof-scope,
   .scope-strip,
   .primary-readout {
     grid-template-columns: 1fr;

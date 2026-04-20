@@ -96,7 +96,7 @@ node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
 
 The current canonical compare artifact is:
 
-- `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
+- `bench/out/browser-ort-webgpu-compare/20260420T203851Z/browser.compare.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.

@@ -641,18 +641,19 @@ def main() -> int:
                 for _m in _c14_misses:
                     failures.append(f"C14 FAIL: {_m}")
 
-    # C15: parity harness skeleton exits 0 today with
-    # verdict=blocked_weights_absent AND bundleIdentityMatched=true.
-    # This catches: (a) harness regression, (b) fixture drift that
-    # would flip bundle identity to failed, (c) accidental promotion
-    # of the verdict before real weights materialize.
+            # C15: parity harness state is coherent with the local
+            # real-weight materialization state. Fresh clones still pass
+            # with blocked_weights_absent; hosts with materialized weights
+            # must at least pass the weights audit, and promoted hosts must
+            # show parity_passed with tolerance evidence. parity_failed is
+            # always a regression.
             import subprocess as _subprocess_c15
             _c15_out = REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity-L1.json"
             _c15_out.parent.mkdir(parents=True, exist_ok=True)
             _c15 = _subprocess_c15.run(
                 ["python3", "bench/tools/run_e2b_real_weight_l1_parity.py",
                  "--out-json", str(_c15_out.relative_to(REPO_ROOT))],
-                cwd=REPO_ROOT, capture_output=True, text=True, timeout=60,
+                cwd=REPO_ROOT, capture_output=True, text=True, timeout=1800,
             )
             if _c15.returncode != 0:
                 failures.append(
@@ -665,18 +666,63 @@ def main() -> int:
                 _v = json.loads(_c15_out.read_text(encoding="utf-8"))
                 _verdict = _v.get("verdict")
                 _bundle_ok = _v.get("bundleIdentityMatched")
+                _weights_present = _v.get("weightsDirPresent")
+                _audit_ok = _v.get("weightsAuditPassed")
+                _expected_weight_sha = (
+                    (_fix.get("weightsDir") or {})
+                    .get("expectedWeightSetSha256")
+                )
+                _actual_weight_sha = _v.get("weightSetSha256")
+                _weight_sha_ok = (
+                    _expected_weight_sha is None
+                    or _actual_weight_sha == _expected_weight_sha
+                )
+                _parity = _v.get("parity") or {}
+                _tolerance_ok = bool(
+                    _parity.get("outputDigestMatch")
+                    or _parity.get("tolerancePassed")
+                )
                 if _verdict == "blocked_weights_absent" and _bundle_ok is True:
                     print(
                         "  C15 PASS: parity harness skeleton exits "
                         "blocked_weights_absent with bundleIdentityMatched=true"
                     )
+                elif (
+                    _verdict == "lane_incomplete"
+                    and _bundle_ok is True
+                    and _weights_present is True
+                    and _audit_ok is True
+                    and _weight_sha_ok
+                ):
+                    print(
+                        "  C15 PASS: real-weight harness audited weights "
+                        "but a runtime lane is incomplete on this host "
+                        f"(weightSetSha256={str(_actual_weight_sha)[:16]}...)"
+                    )
+                elif (
+                    _verdict == "parity_passed"
+                    and _bundle_ok is True
+                    and _weights_present is True
+                    and _audit_ok is True
+                    and _weight_sha_ok
+                    and _tolerance_ok
+                ):
+                    print(
+                        "  C15 PASS: real-weight L1 parity passed with "
+                        "bundle identity + weights audit + tolerance evidence "
+                        f"(weightSetSha256={str(_actual_weight_sha)[:16]}...)"
+                    )
                 else:
                     failures.append(
                         f"C15 FAIL: parity harness verdict={_verdict!r} "
-                        f"bundleIdentityMatched={_bundle_ok!r}; expected "
-                        "blocked_weights_absent + bundleIdentityMatched=true "
-                        "(did real weights land without updating the fixture, "
-                        "or did the harness regress?)"
+                        f"bundleIdentityMatched={_bundle_ok!r}, "
+                        f"weightsDirPresent={_weights_present!r}, "
+                        f"weightsAuditPassed={_audit_ok!r}, "
+                        f"weightShaOk={_weight_sha_ok!r}, "
+                        f"toleranceOk={_tolerance_ok!r}; expected either "
+                        "blocked_weights_absent for fresh clones, "
+                        "lane_incomplete with audited weights, or "
+                        "parity_passed with audited weights + tolerance."
                     )
         except (OSError, ValueError, json.JSONDecodeError) as _e:
             failures.append(f"C14/C15 FAIL: fixture evaluation error: {_e}")

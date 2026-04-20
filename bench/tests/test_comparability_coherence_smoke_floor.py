@@ -9,6 +9,7 @@ it is never claim-eligible.
 
 from __future__ import annotations
 
+import copy
 import sys
 import unittest
 from pathlib import Path
@@ -155,6 +156,33 @@ class SmokeFloorCoherenceTests(unittest.TestCase):
             min_timed_samples=7,
             smoke_min_timed_samples=3,
         )
+        self.assertEqual(result["status"], "pass", result["reasons"])
+
+    def test_inapplicable_phase_obligation_does_not_require_phase_samples(self) -> None:
+        workload = _workload(
+            claim_eligible=False,
+            baseline_count=3,
+            comparison_count=3,
+        )
+        workload = copy.deepcopy(workload)
+        for obligation in workload["comparability"]["obligations"]:
+            if obligation["id"] == "baseline_comparison_timing_phase_match":
+                obligation["applicable"] = False
+                obligation["details"] = {
+                    "phaseSampleCounts": {
+                        "encode": {"baseline": 0, "comparison": 0},
+                        "setup": {"baseline": 0, "comparison": 0},
+                        "submitWait": {"baseline": 0, "comparison": 0},
+                    }
+                }
+                break
+
+        result = comparability_coherence.assess_workload(
+            workload,
+            min_timed_samples=7,
+            smoke_min_timed_samples=3,
+        )
+
         self.assertEqual(result["status"], "pass", result["reasons"])
 
     def test_asymmetric_counts_only_failing_side_is_reported(self) -> None:

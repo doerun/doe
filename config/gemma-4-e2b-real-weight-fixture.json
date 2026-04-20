@@ -44,14 +44,15 @@
 
   "weightsDir": {
     "pathPlaceholder": "bench/out/gemma-4-e2b-real-weights/",
-    "status": "absent",
+    "status": "materialized_smoke_contract_bf16_safetensors",
     "contract": "Two files per layer in [0, numLayers): per_layer_inputs.perLayerModelProjection.layer{l}.f32 and layer.{l}.smoke_layer_block_wts.f32. At smoke shape each file is size * 4 = 4096 bytes. At manifest shape (headDim=512) per-file bytes scale with num_heads * head_dim * 4. Validator cross-checks file sizes against modelShape; see bench/tools/validate_weights_dir.py.",
-    "expectedWeightSetSha256": null,
-    "expectedWeightSetSha256Note": "Populated once an extractor lands. Null today; validate_weights_dir.py prints the computed hash when a candidate dir is presented, and the fixture is updated to pin that hash as canonical."
+    "expectedWeightSetSha256": "8afcb97998f6a562fcdb9402310c2012598b2ec7db9fa86327801ca4b4114fbc",
+    "expectedWeightSetSha256Note": "Pinned from bench/tools/extract_gemma4_e2b_weight_slices.py materializing the current smoke-contract slices from the BF16 SafeTensors source discoverable through Doppler's local int4ple origin metadata."
   },
 
   "parityPolicy": {
     "atol": 1e-3,
+    "rtol": 1e-6,
     "perLayerGranularity": true,
     "crossRuntimeLanes": [
       "doppler-webgpu",
@@ -60,7 +61,7 @@
     ],
     "outputShape": [1024],
     "outputDtype": "float32",
-    "note": "Per docs/claim-discipline.md cross-runtime threshold. Chain-final comparison compounds drift; per-layer-isolated evaluation is the authoritative parity granularity."
+    "note": "Per docs/claim-discipline.md cross-runtime threshold. Real-weight smoke outputs can be large because the contract slices raw checkpoint tensors into the reduced layer-block kernel, so the parity harness records both atol and rtol using abs(a-b) <= atol + rtol * max(abs(a), abs(b)). Chain-final comparison compounds drift; per-layer-isolated evaluation is the authoritative parity granularity."
   },
 
   "fixtureChain": [
@@ -101,7 +102,7 @@
   ],
 
   "claimScope": {
-    "claimable": "Same bundle-identity run across three lanes with real weights, bit-exact or within-atol output parity at the stated chain depth.",
+    "claimable": "Same bundle-identity run across three lanes with real weights, bit-exact or within-tolerance output parity at the stated chain depth.",
     "notClaimable": [
       "Gemma-4 manifest-shape execution (until headDim-512 kernel lands)",
       "Full end-to-end Gemma-4 inference (layer-block only, no embed/unembed/sample)",

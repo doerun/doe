@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Gemma-4 E2B real-weight L1 parity harness skeleton.
+"""Gemma-4 E2B real-weight L1 parity harness.
 
 Reads the canonical fixture at
 `config/gemma-4-e2b-real-weight-fixture.json`, checks the weightsDir
 against the validator contract, invokes two runtime lanes at L=1
 (WebGPU reference + CSL simfabric) on the same manifest/graph/input
-and the same --weights-dir, and diffs the per-layer outputs at the
-fixture's atol. Emits a `doe_e2b_real_weight_parity` verdict.
+and the same --weights-dir, and diffs the per-layer outputs under the
+fixture's tolerance policy. Emits a `doe_e2b_real_weight_parity`
+verdict.
 
-Today, weightsDir is absent by design (an external checkpoint
-extractor is the prerequisite). The harness exits cleanly with
+If weightsDir is absent, the harness exits cleanly with
 `verdict=blocked_weights_absent` and records exactly which weightsDir
-path the fixture expects. The moment real weights are materialized,
-re-running this tool emits a concrete pass/fail verdict with the real
-lanes executed.
+path the fixture expects. Once real weights are materialized, re-running
+this tool emits a concrete pass/fail verdict with the real lanes
+executed.
 
 Scope caveat: L=1 single-layer parity only. L>1 and manifest-shape
 (headDim=512) runs are explicit follow-ups per the fixture's
@@ -243,8 +243,8 @@ def main() -> int:
     # Lanes: WebGPU reference + CSL simfabric, same fixture, same
     # --weights-dir. The WebGPU lane runs Dawn via Node; the CSL lane
     # runs through cs_python. Each emits its own receipt; this harness
-    # then diffs their output digests and records per-layer maxAbsErr
-    # against the fixture's atol policy.
+    # then diffs their output digests and records per-layer error
+    # against the fixture's tolerance policy.
     lane_out_dir = REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity" / f"L{args.num_layers}"
     webgpu_out = lane_out_dir / "webgpu"
     csl_out = lane_out_dir / "csl-sdklayout"
@@ -252,7 +252,9 @@ def main() -> int:
     csl_out.mkdir(parents=True, exist_ok=True)
 
     lanes: dict = {}
-    atol = float((fixture.get("parityPolicy") or {}).get("atol", 1e-3))
+    parity_policy = fixture.get("parityPolicy") or {}
+    atol = float(parity_policy.get("atol", 1e-3))
+    rtol = float(parity_policy.get("rtol", 0.0))
 
     # Prep numpy-PRNG input fixtures the CJS tool reads as the
     # initial rows. The canonical input fixture is already pinned by
@@ -339,10 +341,11 @@ def main() -> int:
 
     # Parity: output digest + per-layer tolerance diff when both
     # lanes succeeded. Digest-match is the strict contract; tolerance
-    # diff is the soft contract (CSL scalar-f32 vs WebGPU driver may
-    # differ by ULPs under FMA/vectorization even with identical bundle
-    # + weights). Verdict is parity_passed when digests match OR every
-    # layer is within the fixture's atol.
+    # diff is the numerical contract (CSL scalar-f32 vs WebGPU driver
+    # may differ by ULPs under FMA/vectorization even with identical
+    # bundle + weights). Verdict is parity_passed when digests match
+    # OR every layer is within the fixture's tolerance formula:
+    # abs(a-b) <= atol + rtol * max(abs(a), abs(b)).
     parity = None
     webgpu_ok = lanes.get("doppler-webgpu", {}).get("status") == "succeeded"
     csl_ok = lanes.get("csl-sdklayout", {}).get("status") == "succeeded"
@@ -363,6 +366,8 @@ def main() -> int:
 
         per_layer_records: list[dict] = []
         max_abs_across = 0.0
+        max_rel_across = 0.0
+        max_allowed_across = atol
         mean_abs_across = 0.0
         first_fail_layer = None
         layers_compared = 0
@@ -395,24 +400,56 @@ def main() -> int:
                 })
                 continue
             diff = np.abs(c_f32 - w_f32)
+            scale = np.maximum(np.abs(c_f32), np.abs(w_f32))
+            allowed = atol + rtol * scale
+            finite = bool(
+                np.isfinite(c_f32).all()
+                and np.isfinite(w_f32).all()
+                and np.isfinite(diff).all()
+                and np.isfinite(allowed).all()
+            )
             m = float(diff.max())
             mean = float(diff.mean())
-            within = m <= atol
+            max_allowed = float(allowed.max())
+            rel_err = np.zeros_like(diff)
+            np.divide(diff, scale, out=rel_err, where=scale > 0.0)
+            zero_scale_nonzero = (scale == 0.0) & (diff > 0.0)
+            if bool(zero_scale_nonzero.any()):
+                rel_err[zero_scale_nonzero] = np.inf
+            max_rel = float(rel_err.max())
+            violations = int(np.count_nonzero(diff > allowed))
+            within = finite and violations == 0
             per_layer_records.append({
                 "layer": l,
                 "status": "compared",
                 "cslPath": entry.get("path"),
                 "webgpuPath": rel(w_p),
                 "maxAbsErr": m,
+                "maxRelErr": max_rel,
                 "meanAbsErr": mean,
-                "withinAtol": within,
+                "maxAllowedErr": max_allowed,
+                "violationCount": violations,
+                "finite": finite,
+                "withinAtol": m <= atol,
+                "withinTolerance": within,
             })
             layers_compared += 1
             if m > max_abs_across:
                 max_abs_across = m
+            if max_rel > max_rel_across:
+                max_rel_across = max_rel
+            if max_allowed > max_allowed_across:
+                max_allowed_across = max_allowed
             mean_abs_across += mean
             if not within and first_fail_layer is None:
-                first_fail_layer = {"layer": l, "maxAbsErr": m}
+                first_fail_layer = {
+                    "layer": l,
+                    "maxAbsErr": m,
+                    "maxRelErr": max_rel,
+                    "maxAllowedErr": max_allowed,
+                    "violationCount": violations,
+                    "finite": finite,
+                }
         if layers_compared:
             mean_abs_across /= layers_compared
 
@@ -424,9 +461,16 @@ def main() -> int:
             "webgpuOutputSha256": w_sha,
             "cslOutputSha256": c_sha,
             "atol": atol,
+            "rtol": rtol,
+            "toleranceFormula": (
+                "abs(csl-webgpu) <= atol + rtol * "
+                "max(abs(csl), abs(webgpu))"
+            ),
             "perLayer": per_layer_records,
             "layersCompared": layers_compared,
             "maxAbsErrAcrossLayers": max_abs_across,
+            "maxRelErrAcrossLayers": max_rel_across,
+            "maxAllowedErrAcrossLayers": max_allowed_across,
             "meanAbsErrAcrossLayers": mean_abs_across,
             "tolerancePassed": tolerance_passed,
             "firstFailureLayer": first_fail_layer,
@@ -465,8 +509,8 @@ def main() -> int:
         "claimScope": (
             "Bundle identity + weights audit + lane dispatch all complete. "
             "Digest-level parity is authoritative for bit-exact "
-            "bundle+weight identity; a future tick wires per-layer "
-            "tolerance diff using both lanes' per-layer .f32 files."
+            "bundle+weight identity; tolerance parity is evaluated from "
+            "both lanes' per-layer .f32 files using the fixture policy."
         ),
     }
     write_verdict(args, verdict)

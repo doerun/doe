@@ -190,7 +190,7 @@ def assess_workload(
             )
 
         timing_phase = obligations.get("baseline_comparison_timing_phase_match")
-        if timing_phase is not None:
+        if timing_phase is not None and timing_phase.get("applicable") is True:
             reasons.extend(
                 _phase_counts_match_samples(
                     timing_phase,

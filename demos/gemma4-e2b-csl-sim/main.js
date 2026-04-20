@@ -2,6 +2,7 @@ const repoRoot = "../../";
 const size = 1024;
 const bytes = size * 4;
 const tolerance = 1e-3;
+const defaultNumLayers = 1;
 
 const paths = {
   manifest: "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
@@ -42,8 +43,8 @@ function perLayerInputPath(layerIndex) {
 
 function selectedNumLayers() {
   const v = el("num-layers-select")?.value;
-  const n = parseInt(v || "1", 10);
-  return Number.isFinite(n) && n > 0 ? n : 1;
+  const n = parseInt(v || String(defaultNumLayers), 10);
+  return Number.isFinite(n) && n > 0 ? n : defaultNumLayers;
 }
 
 let webgpuOutput = null;
@@ -885,6 +886,14 @@ function updateCslCommand() {
   if (shape) shape.textContent = `L${n} · ${size} f32`;
 }
 
+function setInitialDepth() {
+  const select = el("num-layers-select");
+  if (!select) return;
+  const requested = new URLSearchParams(window.location.search).get("layers");
+  const allowed = Array.from(select.options).map((option) => option.value);
+  select.value = allowed.includes(requested) ? requested : String(defaultNumLayers);
+}
+
 function onDepthChange() {
   // Changing chain depth invalidates any current outputs because
   // both lanes must compare at the same depth. Clear both caches so
@@ -927,6 +936,7 @@ function onDepthChange() {
 }
 
 function init() {
+  setInitialDepth();
   el("run-webgpu").addEventListener("click", onRunWebGpu);
   el("run-csl").addEventListener("click", onRunLiveCsl);
   el("run-emulator").addEventListener("click", onRunEmulator);

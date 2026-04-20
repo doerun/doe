@@ -47,6 +47,27 @@
       <span id="truth-detail">Real weights, L&gt;1 claimable depth, full E2B, and Cerebras hardware are blocked until matching receipts exist.</span>
     </section>
 
+    <section class="proof-scope" aria-label="Proof scope">
+      <div>
+        <span class="label">what this proves</span>
+        <strong>L1 E2B-shaped layer-block parity</strong>
+        <p>
+          The pinned synthetic layer-block contract is visible across browser
+          WebGPU, Doe CSL simfabric, and the CSL semantic WebGPU emulator with
+          receipt-backed identity and parity governance.
+        </p>
+      </div>
+      <div>
+        <span class="label">what this does not prove</span>
+        <strong>No full E2B or hardware claim yet</strong>
+        <p>
+          The emulator is a semantic/debug lane, not CSL running on WebGPU.
+          L35 runs are diagnostic, real Gemma weights are blocked on checkpoint
+          slices, and Cerebras WSE/WSC hardware receipts are still pending.
+        </p>
+      </div>
+    </section>
+
     <section class="scope-strip" aria-label="Run scope">
       <div>
         <span class="label">live run</span>

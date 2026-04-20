@@ -37,6 +37,11 @@ Read this file first. Use the shard files under
   `bench/out/scratch/bun-null-backend-20260415.meta.json` and
   `bench/out/scratch/gemma64.bun-package.warm.ir.compare.postinstall.json`.
   These remain narrow Apple Metal package lanes, not a blanket Metal claim.
+- The promoted package compare front door now covers Apple Metal, AMD Vulkan,
+  and local D3D12 for Node/Bun cold and warm Gemma64/Gemma1B package profiles.
+  D3D12 remains a promoted contract pending Windows/D3D12 host evidence; older
+  AMD Vulkan Gemma270M package compares remain explicit config-backed local
+  claim surfaces outside the promoted package profile set.
 - A repo-only same-stack Bun ORT WebGPU provider-compare lane now exists at
   `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`.
   The current local Bun host artifacts at
@@ -62,11 +67,12 @@ Read this file first. Use the shard files under
   `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`, and it now also
   has a repo-only strict comparable `bench/` surface at
   `bench/native-compare/compare.config.browser.ort-webgpu.json`. The browser
-  harness supports the vendored DistilBERT `sentiment` and
+  harness supports the vendored DistilBERT `sentiment`, `sentiment_medium`, and
   `sentiment_longform` workloads on this Linux host. The current canonical
   browser compare artifact at
-  `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
-  is strict/comparable and slightly positive overall on this host.
+  `bench/out/browser-ort-webgpu-compare/20260420T203851Z/browser.compare.json`
+  is strict/comparable across all three workloads with report-level
+  comparability coherence passing on this host.
 - A broader five-shape repo-only Node ORT WebGPU package matrix now also exists
   at `bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json`.
   Its current AMD RADV host artifact at
