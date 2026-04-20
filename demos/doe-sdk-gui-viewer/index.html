@@ -29,8 +29,8 @@
       PE drilldown, timeline, source/code panel. Improves on it with
       hash-bound receipts, WebGPU-vs-CSL per-op diffs, stream-role and
       host-I/O-contract overlays, and CSL-WebGPU-emulator semantic mapping.
-      This scaffold lays out the shape; artifact introspection wires in
-      the next tick.
+      Artifact introspection stays metadata-only: SDK binary bytes never
+      leave the local host.
     </section>
 
     <section class="controls" aria-label="Artifact controls">
@@ -51,7 +51,7 @@
           <button type="button" id="sdk-command-copy" class="inline-copy" data-copy-for="sdk-command" title="Copy to clipboard">copy</button>
           <span id="sdk-command-state" class="command-state pending">missing artifact dir</span>
         </span>
-        <code id="sdk-command" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+        <code id="sdk-command-RENAMED" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
       </div>
       <div class="command-row">
         <span class="label">evidence bundle runner

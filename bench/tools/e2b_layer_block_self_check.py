@@ -682,6 +682,115 @@ def main() -> int:
             f"C14 FAIL: fixture missing at {_fixture_path.relative_to(REPO_ROOT)}"
         )
 
+    # C25: every data-copy-for attribute in the SDK-GUI viewer HTML
+    # points at an element with matching id in the same file. Catches
+    # the class of bug where a copy button references a source id
+    # that was renamed or removed — the button would silently do
+    # nothing at runtime.
+    _viewer_html = REPO_ROOT / "demos/doe-sdk-gui-viewer/index.html"
+    if _viewer_html.is_file():
+        import re as _re_c25
+        _html = _viewer_html.read_text(encoding="utf-8")
+        _copy_for_ids = _re_c25.findall(r'data-copy-for="([^"]+)"', _html)
+        _element_ids = set(_re_c25.findall(r'\bid="([^"]+)"', _html))
+        _missing_targets = [
+            tid for tid in _copy_for_ids if tid not in _element_ids
+        ]
+        if _missing_targets:
+            for _m in _missing_targets:
+                failures.append(
+                    f"C25 FAIL: data-copy-for={_m!r} has no matching id in "
+                    f"demos/doe-sdk-gui-viewer/index.html — copy button "
+                    f"would silently no-op"
+                )
+        else:
+            print(
+                f"  C25 PASS: all {len(_copy_for_ids)} data-copy-for "
+                f"targets in SDK-GUI viewer resolve to real element ids"
+            )
+
+    # C24: bash -n syntax check on the bundle shell scripts. Catches
+    # shell syntax errors (unclosed if, missing fi, stray backticks,
+    # malformed heredocs) without executing the pipeline. Fast — it
+    # parses only, does not invoke bash subshells.
+    _shell_scripts = [
+        "bench/tools/prepare_cerebras_validation_bundle.sh",
+        "bench/tools/summarize_cerebras_evidence_archive.sh",
+    ]
+    _c24_fails = []
+    for _rel in _shell_scripts:
+        _p = REPO_ROOT / _rel
+        if not _p.is_file():
+            _c24_fails.append(f"{_rel}: missing")
+            continue
+        import subprocess as _subprocess_c24
+        _c24_proc = _subprocess_c24.run(
+            ["bash", "-n", str(_p)],
+            capture_output=True, text=True, check=False, timeout=15,
+        )
+        if _c24_proc.returncode != 0:
+            _c24_fails.append(
+                f"{_rel}: bash -n failed (rc={_c24_proc.returncode}): "
+                f"{_c24_proc.stderr.strip()[:200]}"
+            )
+    if _c24_fails:
+        for _f in _c24_fails:
+            failures.append(f"C24 FAIL: {_f}")
+    else:
+        print(
+            f"  C24 PASS: {len(_shell_scripts)} bundle shell scripts "
+            "parse with bash -n"
+        )
+
+    # C23: packer's extension deny-list matches verifier's
+    # FORBIDDEN_EXTENSIONS. Both protect against SDK binaries, tensor
+    # bytes, and log content. They're maintained in separate files
+    # and drift between them is a real risk — e.g. the packer blocks
+    # `.f32` but if the verifier didn't, a hand-edited archive could
+    # slip those in. Lock the intersection here.
+    _packer_py_c23 = REPO_ROOT / "bench/tools/pack_cerebras_validation_archive.py"
+    _verifier_py_c23 = REPO_ROOT / "bench/tools/verify_cerebras_validation_archive.py"
+    if _packer_py_c23.is_file() and _verifier_py_c23.is_file():
+        try:
+            import importlib.util as _ilu_c23
+            _p_spec = _ilu_c23.spec_from_file_location("_p_c23", str(_packer_py_c23))
+            _p_mod = _ilu_c23.module_from_spec(_p_spec)
+            _p_spec.loader.exec_module(_p_mod)  # type: ignore[union-attr]
+            _v_spec = _ilu_c23.spec_from_file_location("_v_c23", str(_verifier_py_c23))
+            _v_mod = _ilu_c23.module_from_spec(_v_spec)
+            _v_spec.loader.exec_module(_v_mod)  # type: ignore[union-attr]
+            # Packer stores path-fragment denials; extract the subset
+            # that are extensions (start with '.' and have no '/').
+            _packer_exts = {
+                _s for _s in _p_mod.EXCLUDE_SUBSTRINGS
+                if _s.startswith(".") and "/" not in _s
+            }
+            _verifier_exts = set(_v_mod.FORBIDDEN_EXTENSIONS)
+            _c23_fails = []
+            _only_in_packer = _packer_exts - _verifier_exts
+            _only_in_verifier = _verifier_exts - _packer_exts
+            if _only_in_packer:
+                _c23_fails.append(
+                    f"extensions in packer deny-list but not verifier's "
+                    f"FORBIDDEN_EXTENSIONS: {sorted(_only_in_packer)}"
+                )
+            if _only_in_verifier:
+                _c23_fails.append(
+                    f"extensions in verifier FORBIDDEN_EXTENSIONS but not "
+                    f"packer deny-list: {sorted(_only_in_verifier)}"
+                )
+            if _c23_fails:
+                for _f in _c23_fails:
+                    failures.append(f"C23 FAIL: {_f}")
+            else:
+                print(
+                    f"  C23 PASS: packer deny-list extensions and "
+                    f"verifier FORBIDDEN_EXTENSIONS in sync "
+                    f"({len(_packer_exts)} extensions)"
+                )
+        except (OSError, ImportError, AttributeError) as _e23:
+            failures.append(f"C23 FAIL: cannot import packer/verifier: {_e23}")
+
     # C22: packager's INCLUDE_FILES and CLAIM_ROLE dict stay in sync.
     # Every archive path in INCLUDE_FILES must have a CLAIM_ROLE entry
     # (otherwise MANIFEST.txt shows 'UNLABELED'); every CLAIM_ROLE key
@@ -944,13 +1053,27 @@ def main() -> int:
         for _link in _expected_links:
             if _link not in _html:
                 _c18_fails.append(f"{_rel}: missing cross-link to {_link}")
+        if _rel == "demos/doe-sdk-gui-viewer/index.html":
+            for _needle in [
+                "sdk-command-copy",
+                "bundle-runner-command-copy",
+                "archive-pack-command-copy",
+                "archive-verify-command-copy",
+                "data-copy-for=\"sdk-command\"",
+                "data-copy-for=\"archive-verify-command\"",
+            ]:
+                if _needle not in _html:
+                    _c18_fails.append(
+                        f"{_rel}: missing command control {_needle}"
+                    )
     if _c18_fails:
         for _f in _c18_fails:
             failures.append(f"C18 FAIL: {_f}")
     else:
         print(
             "  C18 PASS: 3 demo HTML pages have balanced <main>, "
-            "<script> reference, and sibling cross-links"
+            "<script> reference, sibling cross-links, and SDK-GUI "
+            "command-copy controls"
         )
 
     # C17: SDK-GUI viewer server routes regression lock. Imports
@@ -973,6 +1096,7 @@ def main() -> int:
             _inspect_dir = _mod.DemoHandler.inspect_artifact_dir
             _inspect_trace = _mod.DemoHandler.inspect_trace_host_io
             _inspect_bundle = _mod.DemoHandler.inspect_bundle_summary
+            _inspect_commands = _mod.DemoHandler.inspect_evidence_commands
 
             _positive_dir = _inspect_dir(
                 None, "bench/out/scratch/gemma4-e2b-csl-sim/compile-L1"
@@ -980,6 +1104,7 @@ def main() -> int:
             _positive_trace = _inspect_trace(
                 None, "bench/out/scratch/gemma4-e2b-csl-sim/csl-L1-live-trace.json"
             )
+            _positive_commands = _inspect_commands(None)
             _neg_traversal = _inspect_dir(None, "../../etc")
             _neg_absolute = _inspect_trace(None, "/tmp")
             _neg_missing = _inspect_trace(None, "bench/out/nonexistent-trace.json")
@@ -999,6 +1124,26 @@ def main() -> int:
             if not (_positive_trace.get("ok") and _positive_trace.get("hostIoLayout")):
                 _c17_problems.append(
                     f"positive trace path did not return hostIoLayout"
+                )
+            _commands = _positive_commands.get("commands") or {}
+            _copyable = _positive_commands.get("copyable") or {}
+            for _cmd_key, _substring in [
+                ("bundleRunner", "run_cerebras_evidence_bundle.py"),
+                ("archivePack", "pack_cerebras_validation_archive.py"),
+                ("archiveVerify", "verify_cerebras_validation_archive.py"),
+            ]:
+                if _substring not in (_commands.get(_cmd_key) or ""):
+                    _c17_problems.append(
+                        f"evidence-commands missing {_substring} "
+                        f"in {_cmd_key}: {_positive_commands}"
+                    )
+            if _copyable.get("bundleRunner") is not True:
+                _c17_problems.append(
+                    "evidence-commands bundleRunner must be copyable"
+                )
+            if _copyable.get("archivePack") is not True:
+                _c17_problems.append(
+                    "evidence-commands archivePack must be copyable"
                 )
             # bundle-summary: either ok=true with verdict+totalSteps,
             # OR ok=false with a hint string — both are valid fail-
@@ -1038,7 +1183,8 @@ def main() -> int:
             else:
                 print(
                     "  C17 PASS: SDK-GUI viewer /api routes respond "
-                    "correctly on positive + negative paths"
+                    "correctly on positive + negative paths, including "
+                    "evidence command metadata"
                 )
         except (OSError, ImportError, AttributeError) as _e17:
             failures.append(f"C17 FAIL: cannot import server inspection functions: {_e17}")

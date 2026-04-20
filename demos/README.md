@@ -20,13 +20,15 @@ Current demos:
     PE drilldown, source, host-I/O contract, trace timeline,
     evidence overlay). Point it at a compile artifact dir under
     `bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>` to inspect
-    without unpacking SDK binaries. Requires the E2B demo server
-    running on the same origin for its `/api` routes.
+    metadata without unpacking SDK binaries. Requires the E2B demo
+    server running on the same origin for its `/api` routes.
     Has a "redact paths" toggle for screen-share-safe mode:
     hides local filesystem path bytes, keeps hashes + verdicts
-    visible. A copy button next to the exported
-    `sdk_debug_shell visualize` command writes the full command
-    to the clipboard.
+    and the evidence-bundle step rollup visible. Copy controls
+    export the validated
+    `sdk_debug_shell visualize` command plus evidence-bundle run,
+    archive-pack, and archive-verify commands; local-path commands
+    are disabled while redaction is active.
 - `demos/volume-render`
   - local package-backed volume rendering demo for manual exploration
 - `demos/service-worker-compute`

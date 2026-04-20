@@ -51,19 +51,34 @@ python3 demos/gemma4-e2b-csl-sim/server.py --port 8020
 # "Run CSL Simulator" now dispatches a live cs_python invocation
 ```
 
-## SDK-GUI-style viewer (static scaffold)
+## SDK-GUI-style viewer (server-backed metadata)
 
 ```bash
-python3 -m http.server 8030
+python3 demos/gemma4-e2b-csl-sim/server.py --port 8030
 # then open http://localhost:8030/demos/doe-sdk-gui-viewer/
 # paste an artifact directory path into the input to see the
 # sdk_debug_shell visualize command exported for it
 ```
 
-Today: scaffold only. Panels (fabric grid, PE drilldown, trace
-timeline, host I/O contract, evidence overlay) are placeholders
-awaiting server-side artifact introspection — wired in a future
-tick.
+The viewer inspects repo-relative artifact directories through the
+same metadata-only server routes used by the E2B side-by-side demo.
+It lists SDK artifact names and sizes, colors.json shape, host-I/O
+layout, stream telemetry, trace status, and the current parity
+overlay plus evidence-bundle verdict without returning `.elf`,
+`.map`, `.symbols`, `.viz`, or other SDK-owned file bytes.
+
+The command strip also exposes copyable local commands for:
+
+- `sdk_debug_shell visualize --artifact_dir ...` once the artifact
+  directory is validated
+- `python3 bench/tools/run_cerebras_evidence_bundle.py`
+- `python3 bench/tools/pack_cerebras_validation_archive.py`
+- `python3 bench/tools/verify_cerebras_validation_archive.py --archive ...`
+
+On LAN HTTP origins where `navigator.clipboard` is blocked, the
+viewer falls back to the browser's user-gesture copy path. When
+path redaction is enabled, local-path commands are shown but not
+copyable.
 
 ## `sdk_debug_shell visualize` command
 

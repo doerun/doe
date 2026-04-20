@@ -296,6 +296,34 @@ function renderTracePanelFromInfo(node, tracePath, info) {
   );
 }
 
+async function loadBundleSummarySnippet() {
+  try {
+    const res = await fetch("/api/bundle-summary", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const info = await res.json();
+    if (!info.ok) {
+      return (
+        `<span style="color:var(--amber)">not produced</span> ` +
+        `<span style="color:var(--muted)">${info.hint || info.error || ""}</span>`
+      );
+    }
+    const statusColor = info.verdict === "passed" ? "var(--green)" : "var(--red)";
+    const stepRows = (info.stepStatuses || []).map((s) =>
+      `${s.step}:${s.status}`
+    ).join(", ");
+    return (
+      `<span style="color:${statusColor}">${info.verdict}</span> ` +
+      `(${info.passedSteps ?? "?"}/${info.totalSteps ?? "?"} passed)` +
+      (stepRows ? `<br><span style="color:var(--muted)">${stepRows}</span>` : "")
+    );
+  } catch (err) {
+    return (
+      `<span style="color:var(--amber)">server route unavailable</span> ` +
+      `<span style="color:var(--muted)">${err.message}</span>`
+    );
+  }
+}
+
 async function renderEvidencePanel(artifactDir) {
   const node = el("panel-evidence");
   if (!node) return;
@@ -325,6 +353,7 @@ async function renderEvidencePanel(artifactDir) {
     const eligibleTag = eligible
       ? `<span style="color:var(--green)">promotionEligible=true</span>`
       : `<span style="color:var(--amber)">promotionEligible=false</span>`;
+    const bundleSummary = await loadBundleSummarySnippet();
 
     node.classList.remove("placeholder");
     const liveKernelSha = (kernel.liveSha256 || '').slice(0, 16);
@@ -338,6 +367,7 @@ async function renderEvidencePanel(artifactDir) {
       `<strong>synthetic trace sha:</strong> <code>${syntheticSha}...</code><br>` +
       `<strong>preconditions:</strong> ${met}/${total} met (${missing} missing)<br>` +
       `<strong>verdict:</strong> ${eligibleTag}<br>` +
+      `<strong>evidence bundle:</strong> ${bundleSummary}<br>` +
       `<span style="color:var(--muted);font-size:11px">` +
       `parity verdict loaded from <code>${parityPath}</code> — ` +
       `scope is the layer-block kernel, not the whole compile dir.` +
@@ -369,42 +399,155 @@ async function onLoadArtifact() {
   const input = el("artifact-dir-input");
   const raw = (input?.value || "").trim();
   if (!raw) {
+    setSdkCommand(null, {
+      status: "path required",
+      statusClass: "fail",
+    });
     setPill("artifact-status", "path required", "fail");
     return;
   }
   await inspectArtifactDir(raw);
 }
 
-async function onCopyCommand(ev) {
-  // Generic copy handler driven by the button's data-copy-for
-  // attribute naming the source element id. Refuses to copy when
-  // the source code block is marked data-copyable="false" so
-  // commands that still need an artifact dir or archive path don't
-  // get copied half-finished.
-  const btn = ev.currentTarget;
-  if (!btn) return;
-  const targetId = btn.getAttribute("data-copy-for");
-  const node = targetId ? el(targetId) : null;
-  if (!node) return;
-  if (node.getAttribute("data-copyable") === "false" || node.dataset.copyable === "false") {
-    const orig = btn.textContent;
-    btn.textContent = "not ready";
-    setTimeout(() => { btn.textContent = orig || "copy"; }, 1200);
+async function loadEvidenceCommands() {
+  const verifyPlaceholder =
+    "python3 bench/tools/verify_cerebras_validation_archive.py --archive <archive.tar.gz>";
+  try {
+    const res = await fetch("/api/evidence-commands", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const info = await res.json();
+    const commands = info.commands || {};
+    const copyable = info.copyable || {};
+    const statuses = info.statuses || {};
+    setCommand(
+      "bundle-runner-command",
+      commands.bundleRunner ||
+        "python3 bench/tools/run_cerebras_evidence_bundle.py",
+      {
+        copyable: copyable.bundleRunner !== false,
+        status: statuses.bundleRunner || "ready",
+        statusClass: "ready",
+      },
+    );
+    setCommand(
+      "archive-pack-command",
+      commands.archivePack ||
+        "python3 bench/tools/pack_cerebras_validation_archive.py",
+      {
+        copyable: copyable.archivePack !== false,
+        status: statuses.archivePack || "ready",
+        statusClass: "ready",
+      },
+    );
+    const archiveVerifyReady = copyable.archiveVerify === true;
+    setCommand(
+      "archive-verify-command",
+      commands.archiveVerify || verifyPlaceholder,
+      {
+        copyable: archiveVerifyReady,
+        status: statuses.archiveVerify ||
+          (archiveVerifyReady ? "ready" : "run archive pack first"),
+        statusClass: archiveVerifyReady ? "ready" : "pending",
+      },
+    );
+  } catch (err) {
+    setCommand(
+      "bundle-runner-command",
+      "python3 bench/tools/run_cerebras_evidence_bundle.py",
+      { copyable: true, status: "ready", statusClass: "ready" },
+    );
+    setCommand(
+      "archive-pack-command",
+      "python3 bench/tools/pack_cerebras_validation_archive.py",
+      { copyable: true, status: "ready", statusClass: "ready" },
+    );
+    setCommand(
+      "archive-verify-command",
+      verifyPlaceholder,
+      {
+        copyable: false,
+        status: "server route needed",
+        statusClass: "pending",
+      },
+    );
+  }
+}
+
+function fallbackCopy(text) {
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.left = "-9999px";
+  area.style.top = "0";
+  document.body.appendChild(area);
+  area.focus();
+  area.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(area);
+  }
+  if (!copied) throw new Error("fallback clipboard copy failed");
+}
+
+async function writeClipboardText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (err) {
+      // LAN HTTP often blocks navigator.clipboard; fall through to
+      // the user-gesture textarea path.
+    }
+  }
+  fallbackCopy(text);
+}
+
+function flashCommandState(commandId, text, cls, ms = 1500) {
+  const state = el(`${commandId}-state`);
+  if (!state) return;
+  const originalText = state.textContent;
+  const originalClass = state.className;
+  state.textContent = text;
+  state.className = `command-state ${cls}`;
+  setTimeout(() => {
+    state.textContent = originalText;
+    state.className = originalClass;
+  }, ms);
+}
+
+async function copyCommand(commandId) {
+  const node = el(commandId);
+  const btn = el(`${commandId}-copy`);
+  if (!node || !btn) return;
+  if (node.dataset.copyable !== "true") {
+    flashCommandState(commandId, "not copyable", "fail");
     return;
   }
   const text = (node.dataset.copyText || node.textContent || "").trim();
+  if (!text || text.includes("<")) {
+    flashCommandState(commandId, "placeholder", "fail");
+    return;
+  }
+  const original = btn.textContent;
   try {
-    await navigator.clipboard.writeText(text);
-    const original = btn.textContent;
+    await writeClipboardText(text);
     btn.textContent = "copied";
     btn.disabled = true;
+    flashCommandState(commandId, "copied", "ready");
     setTimeout(() => {
       btn.textContent = original || "copy";
-      btn.disabled = false;
-    }, 1500);
+      btn.disabled = node.dataset.copyable !== "true";
+    }, 1200);
   } catch (err) {
     btn.textContent = "copy failed";
-    setTimeout(() => { btn.textContent = "copy"; }, 1500);
+    flashCommandState(commandId, "copy failed", "fail");
+    setTimeout(() => {
+      btn.textContent = original || "copy";
+      btn.disabled = node.dataset.copyable !== "true";
+    }, 1500);
   }
 }
 
@@ -414,7 +557,15 @@ function init() {
   // added to the HTML auto-work as long as they carry the attribute
   // and their source <code> has matching id + data-copyable.
   for (const btn of document.querySelectorAll(".inline-copy[data-copy-for]")) {
-    btn.addEventListener("click", onCopyCommand);
+    btn.addEventListener("click", () => copyCommand(btn.dataset.copyFor));
+  }
+  for (const node of document.querySelectorAll(".copy-command")) {
+    node.addEventListener("keydown", (ev) => {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "c") {
+        ev.preventDefault();
+        copyCommand(node.id);
+      }
+    });
   }
   el("artifact-dir-input")?.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onLoadArtifact();
@@ -451,6 +602,7 @@ function init() {
     setSdkCommand(null);
     setArtifactSummary(null);
   }
+  loadEvidenceCommands();
 }
 
 init();

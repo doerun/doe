@@ -138,12 +138,14 @@ button:hover { background: var(--code); }
   text-transform: uppercase;
 }
 
-#sdk-command {
+.copy-command {
+  display: block;
   font-family: ui-monospace, monospace;
   font-size: 13px;
   color: var(--blue);
   word-break: break-all;
   white-space: pre-wrap;
+  outline-offset: 3px;
 }
 
 .panels {
@@ -241,7 +243,32 @@ button:hover { background: var(--code); }
 }
 
 .inline-copy:disabled {
-  color: var(--green);
-  border-color: var(--green);
+  color: var(--muted);
+  border-color: var(--line);
   cursor: default;
+  opacity: 0.7;
+}
+
+.command-state {
+  margin-left: 8px;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: none;
+}
+
+.command-state.ready {
+  color: var(--green);
+}
+
+.command-state.pending {
+  color: var(--amber);
+}
+
+.command-state.warn {
+  color: var(--amber);
+}
+
+.command-state.fail {
+  color: var(--red);
 }

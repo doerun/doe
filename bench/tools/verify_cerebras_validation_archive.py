@@ -53,6 +53,14 @@ TEXT_SUFFIXES = {".md", ".txt", ".json"}
 # document must be able to name the rule). They are skipped by the
 # claim-discipline scan on the archive for the same reason the repo
 # gate skips docs/claim-discipline.md itself.
+# Extensions that must never appear inside the archive, independent of
+# what the packer's allow-list said. Catches the case where a hand-edited
+# tarball gets SDK binary bytes or tensor bytes smuggled in.
+FORBIDDEN_EXTENSIONS = {
+    ".elf", ".lst", ".map", ".symbols", ".viz",
+    ".f32", ".stderr", ".stdout",
+}
+
 CLAIM_SCAN_SKIP_ARCHIVE_PATHS = {
     "CLAIM_SCOPE.md",                         # archive-root governance
     "README.md",                              # recites taxonomy + what-not-to-claim
@@ -244,6 +252,24 @@ def main() -> int:
                     f"actual={actual}"
                 )
             files_checked += 1
+
+        # 3b. Defense-in-depth: scan the whole extracted tree for
+        # forbidden extensions (SDK binaries, tensor bytes, logs).
+        # The packer's deny-list blocks them at pack time; this
+        # check catches a hand-edited tarball that bypasses the
+        # packer. Applies to every file in the archive, not just
+        # those listed in MANIFEST, so a smuggled file without a
+        # manifest entry still gets caught.
+        for p in tmp_path.rglob("*"):
+            if not p.is_file():
+                continue
+            if p.suffix.lower() in FORBIDDEN_EXTENSIONS:
+                failures.append(
+                    f"forbidden extension {p.suffix} in archive at "
+                    f"{p.relative_to(tmp_path)} — SDK binaries, "
+                    f"tensor bytes, and logs must never ship in the "
+                    f"bundle"
+                )
 
     # 4. Negative claim scan: re-apply the live claim-discipline
     # rules to every text file inside the archive. Catches smuggled
