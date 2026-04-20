@@ -143,6 +143,7 @@ def main() -> int:
     per_layer_max_abs_err = [-1.0] * num_layers_smoke
     per_layer_elapsed_ms = [-1.0] * num_layers_smoke
     passed = False
+    output_digest = None
 
     # Bit-exact numpy reference is the canonical compute_layer_block
     # imported at module top from _e2b_layer_block_compute.py (which
@@ -263,8 +264,35 @@ def main() -> int:
         max_abs_err = max(per_layer_max_abs_err) if per_layer_max_abs_err else -1.0
         passed = bool(all(layer_passed))
         run_status = "succeeded" if passed else "mismatch"
+
+        # Output tensor digest: write the final-layer activation_out as
+        # f32 bytes and capture {dtype, shape, path, sha256, preview}.
+        # doe_csl_reference_parity gate's cslRun.output field consumes
+        # this — once a Doppler/browser reference output is bound,
+        # --require-output-parity flips the gate to passed.
+        import hashlib as _hashlib  # local to avoid module-top noise
+        _final = all_received[-1] if all_received else np.empty(0, dtype=np.float32)
+        _trace_path = resolve(args.trace_out)
+        _output_path = _trace_path.with_suffix(".output.f32")
+        _output_path.parent.mkdir(parents=True, exist_ok=True)
+        _final.astype(np.float32).tofile(_output_path)
+        _h = _hashlib.sha256()
+        with _output_path.open("rb") as _fh:
+            for _ck in iter(lambda: _fh.read(1 << 20), b""):
+                _h.update(_ck)
+        output_digest = {
+            "dtype": "float32",
+            "shape": [int(_final.shape[0])],
+            "path": str(_output_path.relative_to(REPO_ROOT)),
+            "sha256": _h.hexdigest(),
+            "preview": [
+                float(_final[_i])
+                for _i in range(min(8, int(_final.shape[0])))
+            ],
+        }
     except Exception as exc:  # pylint: disable=broad-except
         run_status = f"failed:" + type(exc).__name__ + ":" + str(exc)[:160]
+        output_digest = None
     run_elapsed_ms = (time.time() - run_start) * 1000.0
 
     trace = {
@@ -326,6 +354,7 @@ def main() -> int:
                 "atol": 0,
                 "passed": passed,
             },
+            "output": output_digest,
         },
         "streams": [
             {"role": "input",  "color": "rx_ple_rows",        "size": args.size, "dtype": "float32"},

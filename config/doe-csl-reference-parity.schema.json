@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-reference-parity.schema.json",
+  "title": "Doe CSL reference parity receipt",
+  "description": "Binds one Doppler-authored program graph to an external reference output and one Doe-emitted CSL run. This is the contract that lets the Gemma 4 demo move from runner-local numpy checks to same-program browser/Doppler vs CSL parity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "sourceProgram",
+    "referenceRun",
+    "cslRun",
+    "comparison",
+    "promotionCriteria"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_reference_parity" },
+    "modelId": { "type": "string" },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoringSurface", "manifestPath", "manifestSha256", "graphPath", "graphSha256"],
+      "properties": {
+        "authoringSurface": { "type": "string", "enum": ["doppler_execution_v1"] },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "graphPath": { "type": "string" },
+        "graphSha256": { "type": "string" },
+        "weightSetId": { "type": "string" },
+        "weightSha256": { "type": "string" }
+      }
+    },
+    "referenceRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer", "status", "inputsSynthetic", "weightsSynthetic"],
+      "properties": {
+        "producer": {
+          "type": "string",
+          "enum": ["numpy_reference", "doppler_browser_webgpu", "doppler_node_webgpu", "doppler_exported_fixture"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["not_available", "metadata_bound", "output_ready"]
+        },
+        "inputsSynthetic": { "type": "boolean" },
+        "weightsSynthetic": { "type": "boolean" },
+        "inputSetSha256": { "type": "string" },
+        "output": { "$ref": "#/$defs/tensorDigest" }
+      }
+    },
+    "cslRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tracePath", "traceSha256", "status", "kernelStage", "kernelIsStub"],
+      "properties": {
+        "tracePath": { "type": "string" },
+        "traceSha256": { "type": "string" },
+        "status": { "type": "string" },
+        "kernelStage": { "type": "string" },
+        "kernelIsStub": { "type": "boolean" },
+        "numericalParity": { "$ref": "#/$defs/numericalParity" },
+        "output": { "$ref": "#/$defs/tensorDigest" }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "sameManifestHash", "sameGraphHash"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["metadata_bound", "pending_reference_output", "pending_csl_output_hash", "passed", "failed"]
+        },
+        "sameManifestHash": { "type": "boolean" },
+        "sameGraphHash": { "type": "boolean" },
+        "outputHashMatch": { "type": "boolean" },
+        "maxAbsErr": { "type": "number" },
+        "atol": { "type": "number", "minimum": 0 },
+        "blocker": { "type": "string" }
+      }
+    },
+    "promotionCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fullModelDepthExecuted",
+        "manifestHashMatched",
+        "graphHashMatched",
+        "weightHashMatched",
+        "externalReferenceOutputBound",
+        "cslOutputHashBound",
+        "outputParityPassed",
+        "stubStagesAbsent",
+        "syntheticInputsAbsent",
+        "syntheticWeightsAbsent"
+      ],
+      "properties": {
+        "fullModelDepthExecuted": { "type": "boolean" },
+        "manifestHashMatched": { "type": "boolean" },
+        "graphHashMatched": { "type": "boolean" },
+        "weightHashMatched": { "type": "boolean" },
+        "externalReferenceOutputBound": { "type": "boolean" },
+        "cslOutputHashBound": { "type": "boolean" },
+        "outputParityPassed": { "type": "boolean" },
+        "stubStagesAbsent": { "type": "boolean" },
+        "syntheticInputsAbsent": { "type": "boolean" },
+        "syntheticWeightsAbsent": { "type": "boolean" },
+        "hardwareReceiptRequiredForHardwareClaim": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "tensorDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "dtype": { "type": "string" },
+        "shape": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "preview": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "numericalParity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxAbsErr": { "type": "number" },
+        "atol": { "type": "number", "minimum": 0 },
+        "rtol": { "type": "number", "minimum": 0 },
+        "passed": { "type": "boolean" }
+      }
+    }
+  }
+}

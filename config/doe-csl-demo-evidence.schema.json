@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-demo-evidence.schema.json",
+  "title": "Doe CSL demo evidence adapter",
+  "description": "Small, dashboard-friendly summary of the Doppler/browser reference, Doe CSL simfabric receipt, model-level execution blocker, and hardware state for the same source program.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "modelId", "sourceProgram", "rows"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_demo_evidence" },
+    "modelId": { "type": "string" },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestPath", "manifestSha256", "graphPath", "graphSha256"],
+      "properties": {
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "graphPath": { "type": "string" },
+        "graphSha256": { "type": "string" }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "runtime", "status", "evidencePath"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "runtime": {
+            "type": "string",
+            "enum": ["browser_webgpu", "csl_simfabric", "csl_model", "csl_hardware"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "blocked", "pending", "metadata_bound", "not_attempted"]
+          },
+          "summary": { "type": "string" },
+          "evidencePath": { "type": "string" },
+          "evidenceSha256": { "type": "string" },
+          "blocker": { "type": "string" },
+          "maxAbsErr": { "type": "number" },
+          "parityPassed": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

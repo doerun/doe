@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-appliance-driver-receipt.schema.json",
+  "title": "Doe CSL appliance driver receipt",
+  "description": "Receipt emitted by the WSC appliance wrapper around SdkCompiler and SdkLauncher.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "mode",
+    "compile",
+    "run",
+    "downloads"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_appliance_driver_receipt" },
+    "mode": {
+      "type": "string",
+      "enum": ["wsc_appliance_simulator", "wsc_appliance_system"]
+    },
+    "compile": { "$ref": "#/$defs/compileResult" },
+    "run": { "$ref": "#/$defs/runResult" },
+    "downloads": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/download" }
+    },
+    "elapsedSeconds": { "type": "number", "minimum": 0 }
+  },
+  "$defs": {
+    "compileResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_attempted", "succeeded", "failed"]
+        },
+        "artifactPath": { "type": "string" },
+        "codeDir": { "type": "string" },
+        "layout": { "type": "string" },
+        "compilerArgs": { "type": "string" },
+        "compileOutput": { "type": "string" },
+        "error": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    "runResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_attempted", "succeeded", "failed"]
+        },
+        "command": { "type": "string" },
+        "response": { "type": "string" },
+        "error": { "type": "string" },
+        "message": { "type": "string" }
+      }
+    },
+    "download": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["src", "dst"],
+      "properties": {
+        "src": { "type": "string" },
+        "dst": { "type": "string" }
+      }
+    }
+  }
+}

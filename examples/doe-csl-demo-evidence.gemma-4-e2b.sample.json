@@ -1,0 +1,54 @@
+{
+  "artifactKind": "doe_csl_demo_evidence",
+  "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
+  "rows": [
+    {
+      "blocker": "external Doppler/browser output vector and CSL output hash not bound yet",
+      "evidencePath": "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json",
+      "evidenceSha256": "9d2b5ef9c50fd4e187fd784262cb48da06d04610f6a5939933bb3729a19b73bd",
+      "id": "doppler-browser-reference",
+      "label": "Doppler browser/WebGPU reference",
+      "runtime": "browser_webgpu",
+      "status": "metadata_bound",
+      "summary": "Same manifest and graph are bound; external browser output vector is still pending."
+    },
+    {
+      "evidencePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
+      "evidenceSha256": "4332404b45697855744c1d337739216908498fd90cafd79bb7ea0866c33533ab",
+      "id": "csl-simfabric-layer-block",
+      "label": "Doe CSL simfabric layer-block proof",
+      "maxAbsErr": 0.0,
+      "parityPassed": true,
+      "runtime": "csl_simfabric",
+      "status": "pass",
+      "summary": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
+    },
+    {
+      "blocker": "full_transformer_layer_block_incomplete",
+      "evidencePath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+      "evidenceSha256": "622dc1d91c4b206b00401804977e07f8ea829ea1e13e5724d5f170a54e8e479b",
+      "id": "csl-full-model",
+      "label": "Doe CSL full E2B model execution",
+      "runtime": "csl_model",
+      "status": "not_attempted",
+      "summary": "executionStatus=not_attempted"
+    },
+    {
+      "blocker": "hardware_receipt_not_available",
+      "evidencePath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+      "evidenceSha256": "622dc1d91c4b206b00401804977e07f8ea829ea1e13e5724d5f170a54e8e479b",
+      "id": "csl-hardware",
+      "label": "Doe CSL WSC hardware receipt",
+      "runtime": "csl_hardware",
+      "status": "pending",
+      "summary": "Hardware row is pending a WSC appliance receipt for the same manifest and graph."
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceProgram": {
+    "graphPath": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
+    "graphSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
+    "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+    "manifestSha256": "67e13946350e69ee62c75f06e80b94d44e15a18ba5858a8e9011636cfa6c9c26"
+  }
+}

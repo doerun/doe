@@ -1,0 +1,25 @@
+{
+  "artifactKind": "doe_csl_appliance_driver_receipt",
+  "compile": {
+    "artifactPath": "$WSC_ARTIFACT_PATH",
+    "codeDir": "runtime/zig/examples/simulator/elementwise-double-runtime/compile",
+    "compileOutput": ".",
+    "compilerArgs": "--fabric-dims=8,3 --fabric-offsets=4,1 --memcpy --channels=1 -o out",
+    "layout": "layout.csl",
+    "status": "succeeded"
+  },
+  "downloads": [
+    {
+      "dst": "bench/out/csl-hardware/trace.redacted.json",
+      "src": "trace.json"
+    }
+  ],
+  "elapsedSeconds": 0.0,
+  "mode": "wsc_appliance_system",
+  "run": {
+    "command": "cs_python run.py --name out --cmaddr $DOE_CSL_CMADDR",
+    "response": "SUCCESS",
+    "status": "succeeded"
+  },
+  "schemaVersion": 1
+}

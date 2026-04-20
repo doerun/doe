@@ -170,6 +170,18 @@
       "data": "config/csl-runtime-fixtures.json"
     },
     {
+      "schema": "config/doe-csl-reference-parity.schema.json",
+      "data": "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json"
+    },
+    {
+      "schema": "config/doe-csl-demo-evidence.schema.json",
+      "data": "examples/doe-csl-demo-evidence.gemma-4-e2b.sample.json"
+    },
+    {
+      "schema": "config/doe-csl-appliance-driver-receipt.schema.json",
+      "data": "examples/doe-csl-appliance-driver-receipt.sample.json"
+    },
+    {
       "schema": "config/wgsl-backend-matrix-report.schema.json",
       "data": "examples/wgsl-backend-matrix-report.sample.json"
     },
