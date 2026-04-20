@@ -74,7 +74,7 @@ cross-references inside the receipts resolve as written.
    python3 bench/tools/run_cerebras_evidence_bundle.py
    ```
 
-   Runs the same 6 gates captured in the bundle's
+   Runs the same 7 gates captured in the bundle's
    `rollup/cerebras-evidence-bundle/summary.json`. Re-running should
    yield the same `verdict: passed` unless the repo has drifted.
 
@@ -90,7 +90,10 @@ cross-references inside the receipts resolve as written.
 | `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator where claimable | Correctness reviewers |
 | `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
 | `real-weight-parity-verdict` | Real-weight L1 smoke-contract parity | Reviewers of the checkpoint-derived layer-block path |
-| `doppler-rdrr-probe` | Manifest/shard/tensor-span probe for the Doppler int4ple artifact | Reviewers of RDRR ingestion; not dequant parity |
+| `doppler-rdrr-probe` | Manifest/shard/tensor-span probe for the Doppler int4ple artifact | Reviewers of structural RDRR ingestion |
+| `doppler-rdrr-q4k-extraction` | Q4_K_M RDRR-to-smoke-slice materialization verdict | Reviewers of the RDRR dequant path |
+| `doppler-rdrr-q4k-audit` | Shape/hash audit for RDRR-derived smoke-contract slices | Reviewers of the RDRR dequant path |
+| `doppler-rdrr-q4k-parity` | RDRR-derived L1 smoke-contract WebGPU-vs-CSL parity verdicts | Numerical reviewers; not Doppler production inference parity |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
 | `depth-coverage-rollup` | Which declared depths have raw files vs evidence-eligible receipts; today only L1 synthetic is claimable | Anyone asking "is this the full model?" |

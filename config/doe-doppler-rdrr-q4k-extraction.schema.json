@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Doppler RDRR Q4K extraction verdict",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "verdict",
+    "fixturePath",
+    "artifactRoot",
+    "outDir",
+    "q4kDequantStatus",
+    "claimScope",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_doppler_rdrr_q4k_extraction"
+    },
+    "status": { "type": "string", "enum": ["succeeded", "failed", "blocked"] },
+    "verdict": { "type": "string", "minLength": 1 },
+    "blocker": { "type": "string", "minLength": 1 },
+    "fixturePath": { "type": "string", "minLength": 1 },
+    "artifactRoot": { "type": "string", "minLength": 1 },
+    "modelId": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "manifest": { "$ref": "#/$defs/ExtensibleObject" },
+    "outDir": { "type": "string", "minLength": 1 },
+    "numLayers": { "type": "integer", "minimum": 1 },
+    "sizePerSliceF32": { "type": "integer", "minimum": 1 },
+    "filesExpected": { "type": "integer", "minimum": 1 },
+    "filesWritten": { "type": "integer", "minimum": 0 },
+    "weightSetSha256": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "q4kDequantStatus": { "$ref": "#/$defs/ExtensibleObject" },
+    "materialization": { "$ref": "#/$defs/ExtensibleObject" },
+    "comparisonToReferenceWeights": { "$ref": "#/$defs/ExtensibleObject" },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable"],
+      "properties": {
+        "claimable": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "ExtensibleObject": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

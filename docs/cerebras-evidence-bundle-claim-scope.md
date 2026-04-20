@@ -35,25 +35,34 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    RDRR artifact.** Backed by the Doppler RDRR fixture and probe
    verdict. This validates manifest/origin hashes, declared shard
    sizes, selected shard hash, target tensor spans, Q4_K_M packed-size
-   formulas, and int4 PLE metadata. It is not Q4_K_M dequant parity
-   and not Doppler production inference output parity.
+   formulas, and int4 PLE metadata. The structural probe itself is not
+   the Q4_K_M parity verdict and not Doppler production inference
+   output parity.
 
-4. **Doe carries E2B and 31B through governed compiler/runtime
+4. **Doppler RDRR Q4_K_M L1 smoke-contract parity is evidenced.**
+   Backed by the RDRR Q4_K_M extraction artifact, RDRR weights audit,
+   wrapper parity verdict, and inner WebGPU-vs-CSL simfabric parity
+   verdict. This dequantizes the local RDRR Q4_K_M spans into Doe's
+   existing E2B L1 smoke-contract slice format. It is not Doppler
+   production inference output parity, not manifest-shape execution,
+   and not full E2B.
+
+5. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
    full-model execution or manifest-shape numerical claim.
 
-5. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+6. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-6. **CSL WebGPU emulator is faster than local CSL simfabric on the
+7. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-7. **Unified Doe entrypoint routes to 5 real backend targets.**
+8. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
    doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
    csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
@@ -98,15 +107,16 @@ a bundle integrity failure.
   manifest shape, full 35-layer depth, embed/unembed, KV/cache, or
   sampling.
 
-- **Q4_K_M dequant parity from the Doppler RDRR artifact has been
-  proven.** The RDRR probe validates storage structure and metadata
-  only; dequant and output parity remain separate unlocks.
+- **Doppler production inference output parity from the RDRR artifact
+  has been proven.** The RDRR Q4_K_M verdict proves only Doe's L1
+  smoke-contract parity harness with RDRR-derived slices. It does not
+  execute Doppler's production browser/model pipeline.
 
 ## What must land externally to unlock additional claims
 
 | Unlock | External dependency |
 | --- | --- |
-| Doppler RDRR Q4_K_M output parity | Q4_K_M dequant reader plus parity verdict against the BF16-derived smoke contract |
+| Doppler production RDRR output parity | Doppler-owned production export or committed inference path that emits comparable activations from the same prompt/input contract |
 | 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
 | Manifest-shape execution | Kernel rewrite for `headDim=512` (E2B) or `headDim=160` (31B); in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
@@ -139,7 +149,7 @@ a bundle integrity failure.
 5. Read `MANIFEST.txt` — see each file's `claim-role`.
 6. Re-compute any `.json` sha256 you want to spot-check against the
    manifest entry.
-7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 6 local
+7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 7 local
    gates should all report `status=passed`.
 
 If any of 1–7 fails, reject the bundle and request a rebuild.

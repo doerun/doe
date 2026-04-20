@@ -64,6 +64,38 @@ def parse_args() -> argparse.Namespace:
         "--out-json", default="",
         help="Optional path for the machine-readable verdict artifact.",
     )
+    p.add_argument(
+        "--weight-set-pin-mode",
+        choices=["strict", "record-only"],
+        default="strict",
+        help=(
+            "strict rejects weights whose aggregate sha does not match the "
+            "fixture pin. record-only audits shape and records the aggregate "
+            "sha without treating the fixture's BF16 pin as authoritative."
+        ),
+    )
+    p.add_argument(
+        "--weights-source-label",
+        default="bf16_safetensors",
+        help="Human-readable source label recorded in the verdict artifact.",
+    )
+    p.add_argument(
+        "--weights-audit-out",
+        default="",
+        help=(
+            "Optional weights audit path. Defaults to the canonical BF16 "
+            "audit path for strict mode and a source-labeled path for "
+            "record-only mode."
+        ),
+    )
+    p.add_argument(
+        "--lane-out-dir",
+        default="",
+        help=(
+            "Optional output root for per-lane receipts. Defaults to the "
+            "canonical real-weight parity directory."
+        ),
+    )
     return p.parse_args()
 
 
@@ -157,6 +189,8 @@ def main() -> int:
             "numLayers": args.num_layers,
             "weightsDir": weights_dir_str,
             "weightsDirPresent": False,
+            "weightsSourceLabel": args.weights_source_label,
+            "weightSetPinMode": args.weight_set_pin_mode,
             "weightsAudit": None,
             "lanes": {
                 "doppler-webgpu": {"status": "not_attempted"},
@@ -193,6 +227,8 @@ def main() -> int:
             "numLayers": args.num_layers,
             "weightsDir": weights_dir_str,
             "weightsDirPresent": True,
+            "weightsSourceLabel": args.weights_source_label,
+            "weightSetPinMode": args.weight_set_pin_mode,
             "verdict": "bundle_identity_failed",
             "blocker": "fixture_or_on_disk_drift",
         }
@@ -203,17 +239,34 @@ def main() -> int:
     # Run the weights validator against the candidate dir with the
     # fixture pin so any hash drift is rejected before we spend cycles
     # on lane execution.
-    weights_audit_path = REPO_ROOT / "bench/out/weights-audit/gemma-4-e2b-weights-audit.json"
+    if args.weights_audit_out:
+        weights_audit_path = resolve(args.weights_audit_out)
+    elif args.weight_set_pin_mode == "strict":
+        weights_audit_path = (
+            REPO_ROOT
+            / "bench/out/weights-audit/gemma-4-e2b-weights-audit.json"
+        )
+    else:
+        safe_label = "".join(
+            ch if ch.isalnum() or ch in ("-", "_") else "-"
+            for ch in args.weights_source_label
+        ).strip("-") or "record-only"
+        weights_audit_path = (
+            REPO_ROOT
+            / f"bench/out/weights-audit/gemma-4-e2b-{safe_label}-weights-audit.json"
+        )
     weights_audit_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_argv = [
+        "python3", "bench/tools/validate_weights_dir.py",
+        "--weights-dir", str(weights_dir_path),
+        "--manifest", manifest_rel,
+        "--shape", "smoke",
+        "--out", rel(weights_audit_path),
+    ]
+    if args.weight_set_pin_mode == "strict":
+        audit_argv.extend(["--fixture", args.fixture])
     audit_proc = subprocess.run(
-        [
-            "python3", "bench/tools/validate_weights_dir.py",
-            "--weights-dir", str(weights_dir_path),
-            "--manifest", manifest_rel,
-            "--shape", "smoke",
-            "--fixture", args.fixture,
-            "--out", str(weights_audit_path.relative_to(REPO_ROOT)),
-        ],
+        audit_argv,
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=120, check=False,
     )
     if weights_audit_path.is_file():
@@ -229,6 +282,8 @@ def main() -> int:
             "numLayers": args.num_layers,
             "weightsDir": weights_dir_str,
             "weightsDirPresent": True,
+            "weightsSourceLabel": args.weights_source_label,
+            "weightSetPinMode": args.weight_set_pin_mode,
             "weightsAuditPath": rel(weights_audit_path),
             "weightsAuditPassed": False,
             "weightsAuditFailures": (weights_audit or {}).get("failures", [])[:10],
@@ -245,7 +300,14 @@ def main() -> int:
     # runs through cs_python. Each emits its own receipt; this harness
     # then diffs their output digests and records per-layer error
     # against the fixture's tolerance policy.
-    lane_out_dir = REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity" / f"L{args.num_layers}"
+    if args.lane_out_dir:
+        lane_out_dir = resolve(args.lane_out_dir)
+    else:
+        lane_out_dir = (
+            REPO_ROOT
+            / "bench/out/gemma-4-e2b-real-weight-parity"
+            / f"L{args.num_layers}"
+        )
     webgpu_out = lane_out_dir / "webgpu"
     csl_out = lane_out_dir / "csl-sdklayout"
     webgpu_out.mkdir(parents=True, exist_ok=True)
@@ -500,9 +562,12 @@ def main() -> int:
         "numLayers": args.num_layers,
         "weightsDir": weights_dir_str,
         "weightsDirPresent": True,
+        "weightsSourceLabel": args.weights_source_label,
+        "weightSetPinMode": args.weight_set_pin_mode,
         "weightsAuditPath": rel(weights_audit_path),
         "weightsAuditPassed": True,
         "weightSetSha256": (weights_audit or {}).get("weightSetSha256"),
+        "laneOutputDir": rel(lane_out_dir),
         "lanes": lanes,
         "parity": parity,
         "verdict": verdict_tag,

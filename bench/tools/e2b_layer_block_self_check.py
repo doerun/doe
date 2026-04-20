@@ -30,7 +30,7 @@ then asserts the contract:
           maintained and went stale across kernel upgrades)
 
 Then asserts a growing set of structural contracts. The current set
-spans C0..C36 (as of the last update; see below for the authoritative
+spans C0..C37 (as of the last update; see below for the authoritative
 enumeration). Broadly they cover:
 
   - Core kernel/trace/receipt integrity (C0-C15)
@@ -864,6 +864,85 @@ def main() -> int:
             )
     for _err in _c36_errors:
         failures.append(f"C36 FAIL: {_err}")
+
+    # C37: Optional Doppler RDRR Q4_K_M L1 parity verdict, when
+    # generated, must preserve the narrow smoke-contract claim
+    # boundary. The evidence-bundle runner is responsible for
+    # generating it; fresh clones or hosts without the local Doppler
+    # artifact may be absent/blocked here.
+    _q4k_parity = (
+        REPO_ROOT
+        / "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json"
+    )
+    if _q4k_parity.is_file():
+        try:
+            _q4k = json.loads(_q4k_parity.read_text(encoding="utf-8"))
+            _status = _q4k.get("status")
+            _verdict = _q4k.get("verdict")
+            if _verdict == "blocked_artifact_absent":
+                print(
+                    "  C37 SKIP: Doppler RDRR Q4_K_M parity blocked "
+                    "because the local artifact is absent"
+                )
+            else:
+                _criteria = _q4k.get("promotionCriteriaMet") or {}
+                _parity = _q4k.get("paritySummary") or {}
+                _claim_scope = _q4k.get("claimScope") or {}
+                _not_claimable = _claim_scope.get("notClaimable") or []
+                _blocks_full = any(
+                    "Full Gemma-4 E2B execution" in str(item)
+                    for item in _not_claimable
+                )
+                _blocks_hardware = any(
+                    "Cerebras hardware" in str(item)
+                    for item in _not_claimable
+                )
+                if (
+                    _status == "succeeded"
+                    and _verdict == "rdrr_q4k_l1_parity_passed"
+                    and _criteria.get("structuralProbePassed") is True
+                    and _criteria.get("q4kSmokeSlicesExtracted") is True
+                    and _criteria.get("weightsAuditPassed") is True
+                    and _criteria.get("crossRuntimeParityPassed") is True
+                    and _criteria.get("fullModelDepthExecuted") is False
+                    and _criteria.get("hardwareExecuted") is False
+                    and _parity.get("tolerancePassed") is True
+                    and int(_parity.get("layersCompared", 0)) == 1
+                    and _blocks_full
+                    and _blocks_hardware
+                ):
+                    print(
+                        "  C37 PASS: Doppler RDRR Q4_K_M L1 "
+                        "smoke-contract parity passed while full-model "
+                        "and hardware claims remain blocked"
+                    )
+                elif (
+                    _status == "blocked"
+                    and _verdict == "rdrr_q4k_l1_parity_lane_incomplete"
+                    and _criteria.get("q4kSmokeSlicesExtracted") is True
+                    and _criteria.get("weightsAuditPassed") is True
+                ):
+                    print(
+                        "  C37 PASS: Doppler RDRR Q4_K_M slices were "
+                        "extracted and audited, but a runtime lane is "
+                        "incomplete on this host"
+                    )
+                else:
+                    failures.append(
+                        "C37 FAIL: unexpected RDRR Q4_K_M parity state: "
+                        f"status={_status!r}, verdict={_verdict!r}, "
+                        f"criteria={_criteria!r}, parity={_parity!r}"
+                    )
+        except (OSError, ValueError, json.JSONDecodeError) as _e:
+            failures.append(
+                "C37 FAIL: q4k parity verdict unreadable: "
+                f"{type(_e).__name__}: {_e}"
+            )
+    else:
+        print(
+            "  C37 SKIP: Doppler RDRR Q4_K_M parity verdict not yet "
+            "generated"
+        )
 
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
     # contract check when a matching-depth trace is absent — WGSL

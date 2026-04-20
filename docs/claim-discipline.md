@@ -99,9 +99,36 @@ Allowed wording:
 - "Doe can structurally read the local Doppler Gemma-4 E2B int4ple RDRR
   artifact: manifest, declared shards, selected target shard hash,
   target tensor spans, Q4_K_M packed-size formulas, and int4 PLE metadata."
-- "This is a production-artifact readability proof. It is not Q4_K_M
-  dequant parity, not Doppler production inference output parity, and
-  not full E2B execution from the RDRR artifact."
+- "This is a production-artifact readability proof. The structural probe
+  itself is not the Q4_K_M parity verdict, not Doppler production
+  inference output parity, and not full E2B execution from the RDRR
+  artifact."
+
+### Doppler RDRR Q4_K_M L1 smoke-contract parity is evidenced
+
+Evidence:
+
+- `bench/tools/extract_gemma4_e2b_rdrr_weight_slices.py` reads Q4_K_M
+  tensor spans from the local Doppler RDRR artifact and materializes
+  Doe's existing Gemma-4 E2B smoke-contract `.f32` slice files under
+  `bench/out/gemma-4-e2b-rdrr-int4ple-weights/`.
+- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-extraction.json`
+  records the RDRR-derived slice materialization, the RDRR weight-set
+  hash, and diagnostic drift against the BF16-derived smoke slices.
+- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json`
+  reports the wrapper verdict, and
+  `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l1-parity.json`
+  records the WebGPU-vs-CSL simfabric parity harness verdict using the
+  RDRR-derived weights with `weightSetPinMode=record-only`.
+
+Allowed wording:
+
+- "Doe can dequantize the local Doppler Gemma-4 E2B int4ple RDRR
+  Q4_K_M spans into the L1 smoke-contract slice format and run the
+  WebGPU-vs-CSL simfabric parity harness within the declared tolerance."
+- "This proves RDRR-derived L1 smoke-contract parity only. It is not
+  Doppler production inference output parity, not manifest-shape
+  execution, not full E2B, not 31B, not MoE, and not hardware."
 
 ### The CSL kernel implements the transformer layer-block shape
 

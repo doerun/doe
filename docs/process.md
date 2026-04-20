@@ -56,7 +56,7 @@
 - prepare the Cerebras hardware-validation ask bundle (one command
   chains gates → pack → verify before external circulation):
   `bench/tools/prepare_cerebras_validation_bundle.sh`
-  This runs `run_cerebras_evidence_bundle.py` (6 local gates),
+  This runs `run_cerebras_evidence_bundle.py` (7 local gates),
   `pack_cerebras_validation_archive.py` (produces
   `doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz`
   with top-level README/CLAIM_SCOPE/CEREBRAS_ASK/LOCAL_INSPECTION

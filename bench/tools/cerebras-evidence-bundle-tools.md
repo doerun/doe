@@ -1,6 +1,6 @@
 # Cerebras evidence-bundle tools
 
-Narrow index of the six tools that together prepare, verify, and
+Narrow index of the tools that together prepare, verify, and
 summarize a Cerebras hardware-validation evidence bundle. Not
 exhaustive of `bench/tools/` — this file only covers the bundle
 pipeline so a contributor or reviewer can find the right tool
@@ -18,10 +18,11 @@ bundle" for the prose workflow; this file is the tool-reference.
 
 ## Underlying tools (called by the prep script, usable standalone)
 
-- **`run_cerebras_evidence_bundle.py`** — runs 6 local gates in
+- **`run_cerebras_evidence_bundle.py`** — runs 7 local gates in
   order (truth-table test, self-check, Doppler RDRR/int4ple
-  structural probe, claim-discipline, SdkLayout streaming hardening,
-  receipt link integrity) and writes
+  structural probe, Doppler RDRR Q4_K_M L1 smoke-contract parity,
+  claim-discipline, SdkLayout streaming hardening, receipt link
+  integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
   plus an aggregate verdict.
@@ -71,6 +72,8 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │           ├── bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
   │           ├── bench/out/gemma-4-*-real-weight-parity-L1.json
   │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json
+  │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-*.json
+  │           ├── bench/out/weights-audit/gemma-4-e2b-rdrr-int4ple-weights-audit.json
   │           ├── bench/out/26b-moe-lane/*.json                  (7 files)
   │           ├── bench/out/doe-run/all-lanes-summary-L1.json
   │           └── bench/out/cerebras-evidence-bundle/summary.json
@@ -106,6 +109,7 @@ locks most of this pipeline via numbered contracts:
 | C34 | four governance docs (ASK, README, CLAIM_SCOPE, appendix) all name both hardware-validation paths (A endpoint access / B Cerebras-assisted bundle run) |
 | C35 | declared depth list stays synchronized between the depth matrix generator and E2B cockpit |
 | C36 | Doppler RDRR/int4ple structural probe validates manifest, selected shard hash, target spans, and keeps Q4 dequant explicitly blocked |
+| C37 | Doppler RDRR Q4_K_M L1 smoke parity verdict stays scoped to smoke-contract parity and blocks full-model / hardware claims |
 
 ## What this pipeline does NOT do
 
@@ -114,6 +118,6 @@ locks most of this pipeline via numbered contracts:
   `bench/runners/run_csl_governed_lane.py` for those.
 - Produce a Cerebras hardware receipt — that requires a reachable
   CS / WSC endpoint; see `docs/hardware-validation-appendix.md`.
-- Replace real-weight parity — that's the external checkpoint
-  extractor's job; the bundle only ships the fixture contracts +
-  blocked parity verdicts today.
+- Replace full real-weight parity — the bundle now includes E2B L1
+  BF16-derived and RDRR-derived smoke-contract parity, but not
+  manifest-shape, full-depth, 31B, MoE, or hardware receipts.

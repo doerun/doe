@@ -78,7 +78,11 @@ E2B bundle:
 - Doppler RDRR/int4ple fixture
   `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` and probe
   verdict `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json`
-  (manifest/shard/tensor-span readability, not Q4_K_M dequant parity)
+  (manifest/shard/tensor-span readability)
+- Doppler RDRR Q4_K_M L1 smoke-contract parity verdict
+  `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json`
+  plus extraction and weights-audit artifacts under the same RDRR
+  evidence directory (not Doppler production inference output parity)
 
 31B bundle (scale-target scaffold, same shape as E2B):
 
@@ -105,12 +109,15 @@ source for which declared depths are evidence-eligible. Diagnostic files at
 deeper depths do not turn into E2B claims unless their summary carries
 `evidenceEligibility.claimable=true`.
 
-The Doppler RDRR/int4ple proof is structural only:
-`bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json` validates the
-local Doppler production artifact's manifest, declared shard sizes, selected
-shard hash, target tensor spans, Q4_K_M packed-size formulas, and int4
-per-layer embedding metadata. It does not prove Q4_K_M dequantization or
-Doppler production inference output parity.
+The Doppler RDRR/int4ple proof now has two separate rungs. The structural
+probe `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json` validates
+the local Doppler production artifact's manifest, declared shard sizes,
+selected shard hash, target tensor spans, Q4_K_M packed-size formulas, and
+int4 per-layer embedding metadata. The Q4_K_M wrapper verdict
+`bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json` dequantizes the
+RDRR spans into Doe's existing L1 smoke-contract slice format and checks
+WebGPU-vs-CSL simfabric parity. Neither rung proves Doppler production
+inference output parity or full E2B execution from the RDRR artifact.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1

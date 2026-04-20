@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Doppler RDRR Q4K parity verdict",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "verdict",
+    "fixturePath",
+    "probePath",
+    "extractionPath",
+    "parityVerdictPath",
+    "weightsDir",
+    "weightsAuditPath",
+    "laneOutputDir",
+    "steps",
+    "claimScope"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_doppler_rdrr_q4k_parity"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "failed", "blocked"]
+    },
+    "verdict": { "type": "string", "minLength": 1 },
+    "blocker": { "type": "string", "minLength": 1 },
+    "fixturePath": { "type": "string", "minLength": 1 },
+    "artifactRootOverride": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "modelId": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "probePath": { "type": "string", "minLength": 1 },
+    "extractionPath": { "type": "string", "minLength": 1 },
+    "parityVerdictPath": { "type": "string", "minLength": 1 },
+    "weightsDir": { "type": "string", "minLength": 1 },
+    "weightsAuditPath": { "type": "string", "minLength": 1 },
+    "laneOutputDir": { "type": "string", "minLength": 1 },
+    "steps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Step" }
+    },
+    "structuralProbeVerdict": { "type": "string", "minLength": 1 },
+    "extractionVerdict": { "type": "string", "minLength": 1 },
+    "weightSetSha256": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "parityHarnessVerdict": { "type": "string", "minLength": 1 },
+    "paritySummary": { "$ref": "#/$defs/ExtensibleObject" },
+    "comparisonToReferenceWeights": { "$ref": "#/$defs/ExtensibleObject" },
+    "promotionCriteriaMet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "structuralProbePassed",
+        "q4kSmokeSlicesExtracted",
+        "weightsAuditPassed",
+        "crossRuntimeParityPassed",
+        "fullModelDepthExecuted",
+        "productionInferencePathExecuted",
+        "hardwareExecuted"
+      ],
+      "properties": {
+        "structuralProbePassed": { "type": "boolean" },
+        "q4kSmokeSlicesExtracted": { "type": "boolean" },
+        "weightsAuditPassed": { "type": "boolean" },
+        "crossRuntimeParityPassed": { "type": "boolean" },
+        "fullModelDepthExecuted": { "type": "boolean" },
+        "productionInferencePathExecuted": { "type": "boolean" },
+        "hardwareExecuted": { "type": "boolean" }
+      }
+    },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable"],
+      "properties": {
+        "claimable": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "command",
+        "status",
+        "returnCode",
+        "stdoutTail",
+        "stderrTail",
+        "elapsedMs"
+      ],
+      "properties": {
+        "step": { "type": "string", "minLength": 1 },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "status": { "type": "string", "enum": ["passed", "failed"] },
+        "returnCode": { "type": "integer" },
+        "stdoutTail": { "type": "string" },
+        "stderrTail": { "type": "string" },
+        "elapsedMs": { "type": "number", "minimum": 0 }
+      }
+    },
+    "ExtensibleObject": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

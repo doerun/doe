@@ -5,7 +5,7 @@
   "artifactRoot": "../doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
   "manifest": {
     "path": "manifest.json",
-    "sha256": "d1af4688b54bc978d06e4a3f407f3ee63056d9f0a4dc0100c8e52a136494ec23"
+    "sha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264"
   },
   "origin": {
     "path": "origin.json",

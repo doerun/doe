@@ -198,6 +198,14 @@
       "data": "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json"
     },
     {
+      "schema": "config/doe-doppler-rdrr-q4k-extraction.schema.json",
+      "data": "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-extraction.json"
+    },
+    {
+      "schema": "config/doe-doppler-rdrr-q4k-parity.schema.json",
+      "data": "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json"
+    },
+    {
       "schema": "config/doe-stream-graph.schema.json",
       "data": "bench/out/31b-full-graph/gemma-4-31b-stream-graph.json"
     },

@@ -116,8 +116,8 @@ their own compile artifact dir, then visualize it locally.
 bench/tools/summarize_cerebras_evidence_archive.sh <archive>
 ```
 
-Prints E2B/31B/MoE status, bundle gate verdict, and emulator
-verdicts — entirely from inside the tarball via `tar -xzO | jq`,
+Prints E2B/31B/MoE status, bundle gate verdict, RDRR Q4_K_M parity,
+and emulator verdicts — entirely from inside the tarball via `tar -xzO | jq`,
 no unpack needed.
 
 ## Evidence-bundle regen (on the bundler's tree)
@@ -126,7 +126,7 @@ no unpack needed.
 python3 bench/tools/run_cerebras_evidence_bundle.py
 ```
 
-Runs the 6 gates the bundle's `rollup/cerebras-evidence-bundle/summary.json`
+Runs the 7 gates the bundle's `rollup/cerebras-evidence-bundle/summary.json`
 captures. Useful if a reviewer wants to confirm the same `verdict=passed`
 the archive records still holds on the current repo state.
 
