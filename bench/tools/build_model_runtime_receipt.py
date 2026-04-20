@@ -400,16 +400,61 @@ def main() -> int:
     layer_block_trace_path = (
         "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json"
     )
+    # Compute live kernel sha so the trace-binding logic below can
+    # detect a runner trace that was emitted against an older kernel
+    # (sha drift). Without this, a stale trace from a prior commit
+    # would surface its old kernelStage/status as if current.
+    live_kernel_abs = resolve(layer_block_kernel_path)
+    live_kernel_sha = (
+        sha256_file(live_kernel_abs) if live_kernel_abs.is_file() else None
+    )
+
     layer_block_trace_evidence: dict[str, Any] = {}
     trace_abs = resolve(layer_block_trace_path)
     if trace_abs.is_file():
         try:
             trace = load_json(trace_abs)
-            layer_block_trace_evidence = {
-                "tracePath": layer_block_trace_path,
-                "traceSha256": sha256_file(trace_abs),
-                "executedRun": trace.get("executedRun", {}),
-            }
+            trace_kernel_sha = (
+                trace.get("layerBlockSmoke", {}).get("kernelSourceSha256")
+            )
+            if (
+                live_kernel_sha
+                and trace_kernel_sha
+                and trace_kernel_sha != live_kernel_sha
+            ):
+                # Trace exists but its kernelSourceSha256 doesn't match
+                # the live CSL kernel. The trace's kernelStage / status
+                # / numericalParity describe an OLDER kernel; surfacing
+                # them as current would mislead a reader. Replace the
+                # evidence body with a stale marker that names both
+                # shas so the divergence is explicit, then point the
+                # reader at the regen path.
+                layer_block_trace_evidence = {
+                    "tracePath": layer_block_trace_path,
+                    "traceSha256": sha256_file(trace_abs),
+                    "traceStatus": "stale_kernel_sha_drift",
+                    "traceKernelSourceSha256": trace_kernel_sha,
+                    "liveKernelSourceSha256": live_kernel_sha,
+                    "staleNote": (
+                        "The runner trace at tracePath was emitted "
+                        "against an older kernel (kernelSourceSha256 "
+                        "in trace differs from live). Its recorded "
+                        "executedRun fields describe that older "
+                        "kernel and MUST NOT be read as current. "
+                        "Regenerate by running "
+                        "`python3 bench/runners/csl-runners/"
+                        "e2b_layer_block_smoke.py` on a host with "
+                        "cs_python on PATH; without cs_python, the "
+                        "synthetic trace below is the live numpy "
+                        "reference."
+                    ),
+                }
+            else:
+                layer_block_trace_evidence = {
+                    "tracePath": layer_block_trace_path,
+                    "traceSha256": sha256_file(trace_abs),
+                    "executedRun": trace.get("executedRun", {}),
+                }
         except json.JSONDecodeError:
             layer_block_trace_evidence = {
                 "tracePath": layer_block_trace_path,
