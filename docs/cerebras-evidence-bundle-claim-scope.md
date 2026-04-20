@@ -24,22 +24,36 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    This is one layer-block with seeded tensors, not real weights and
    not full E2B.
 
-2. **Doe carries E2B and 31B through governed compiler/runtime
+2. **Gemma-4 E2B L1 real-weight smoke-contract parity is evidenced.**
+   Backed by the E2B real-weight parity verdict and model-runtime
+   receipt. The weights are BF16-derived smoke-contract slices
+   materialized from the raw SafeTensors source discoverable through
+   Doppler's local int4ple origin metadata. This is still one L1 smoke
+   layer-block contract, not manifest-shape execution and not full E2B.
+
+3. **Doe can structurally read the local Doppler Gemma-4 E2B int4ple
+   RDRR artifact.** Backed by the Doppler RDRR fixture and probe
+   verdict. This validates manifest/origin hashes, declared shard
+   sizes, selected shard hash, target tensor spans, Q4_K_M packed-size
+   formulas, and int4 PLE metadata. It is not Q4_K_M dequant parity
+   and not Doppler production inference output parity.
+
+4. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
    full-model execution or manifest-shape numerical claim.
 
-3. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+5. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-4. **CSL WebGPU emulator is faster than local CSL simfabric on the
+6. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-5. **Unified Doe entrypoint routes to 5 real backend targets.**
+7. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
    doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
    csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
@@ -72,19 +86,28 @@ a bundle integrity failure.
 
 - **L2/L4/L8/L35 are claimable E2B parity depths.** The depth matrix
   distinguishes raw diagnostic files from evidence-eligible receipts.
-  Today only L1 synthetic is claimable.
+  Today only L1 synthetic and E2B L1 real-weight smoke-contract
+  evidence are claimable.
 
-- **Real Gemma-4 weights have been used.** The
-  `real-weight-parity-verdict` files for E2B and 31B both show
-  `verdict=blocked_weights_absent` — the external checkpoint
-  extractor is the blocker for every promotion criterion in
-  `realWeightEvidence.promotionCriteriaMet`.
+- **31B real Gemma-4 weights have been used.** The 31B
+  real-weight parity verdict remains blocked until its own extractor
+  and parity receipt land.
+
+- **Full E2B real-weight execution has been proven.** The E2B
+  real-weight evidence is L1 smoke-contract only. It does not cover
+  manifest shape, full 35-layer depth, embed/unembed, KV/cache, or
+  sampling.
+
+- **Q4_K_M dequant parity from the Doppler RDRR artifact has been
+  proven.** The RDRR probe validates storage structure and metadata
+  only; dequant and output parity remain separate unlocks.
 
 ## What must land externally to unlock additional claims
 
 | Unlock | External dependency |
 | --- | --- |
-| Real-weight layer-block parity | Doppler-provided weight extractor materializes `bench/out/gemma-4-{e2b,31b}-real-weights/` matching the fixture contract |
+| Doppler RDRR Q4_K_M output parity | Q4_K_M dequant reader plus parity verdict against the BF16-derived smoke contract |
+| 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
 | Manifest-shape execution | Kernel rewrite for `headDim=512` (E2B) or `headDim=160` (31B); in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
 | Gemma-4 runs on Cerebras hardware | Hardware receipt via either (a) endpoint access for us to run the runner with `--cmaddr` / `csl_appliance_driver.py`, or (b) Cerebras-assisted bundle run that returns the receipt |
@@ -116,7 +139,7 @@ a bundle integrity failure.
 5. Read `MANIFEST.txt` — see each file's `claim-role`.
 6. Re-compute any `.json` sha256 you want to spot-check against the
    manifest entry.
-7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 5 local
+7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 6 local
    gates should all report `status=passed`.
 
 If any of 1–7 fails, reject the bundle and request a rebuild.

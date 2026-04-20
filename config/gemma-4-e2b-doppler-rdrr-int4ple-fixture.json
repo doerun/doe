@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_doppler_rdrr_fixture_contract",
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "artifactRoot": "../doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "manifest": {
+    "path": "manifest.json",
+    "sha256": "d1af4688b54bc978d06e4a3f407f3ee63056d9f0a4dc0100c8e52a136494ec23"
+  },
+  "origin": {
+    "path": "origin.json",
+    "sha256": "0e92838e703f983bf299fa50bceb2f533e5ea67aa9ac4cae2fb3eee6e9692dab"
+  },
+  "expected": {
+    "declaredShardCount": 60,
+    "localShardCount": 64,
+    "extraLocalShards": [
+      "shard_00060.bin",
+      "shard_00061.bin",
+      "shard_00062.bin",
+      "shard_00063.bin"
+    ],
+    "targetShardIndices": [38],
+    "totalSize": 3995739078,
+    "quantization": "Q4_K_M",
+    "perLayerEmbeddings": "int4_per_row",
+    "q4kBlockSizeElements": 256,
+    "q4kBlockSizeBytes": 144,
+    "q4kDequantStatus": "blocked_not_implemented",
+    "int4PleStatus": "metadata_validated_no_runtime_dequant"
+  },
+  "probe": {
+    "hashMode": "target_shards",
+    "maxTensorSpanHashBytes": 16000000,
+    "outputPath": "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json"
+  },
+  "targetTensors": [
+    {
+      "name": "model.language_model.embed_tokens_per_layer.weight",
+      "required": true,
+      "dtype": "F16",
+      "shape": [262144, 8960],
+      "expectedRole": "embedding",
+      "expectedLayout": "row",
+      "expectedSourceTransformKind": "litert_axis_dequant",
+      "expectedSourceDtype": "INT4"
+    },
+    {
+      "name": "model.language_model.layers.0.input_layernorm.weight",
+      "required": true,
+      "dtype": "F16",
+      "shape": [1536],
+      "expectedRole": "norm",
+      "expectedLayout": null
+    },
+    {
+      "name": "model.language_model.layers.0.self_attn.q_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [2048, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.self_attn.k_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [256, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.self_attn.v_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [256, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.self_attn.o_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [1536, 2048],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.post_attention_layernorm.weight",
+      "required": true,
+      "dtype": "F16",
+      "shape": [1536],
+      "expectedRole": "norm",
+      "expectedLayout": null
+    },
+    {
+      "name": "model.language_model.layers.0.mlp.gate_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [6144, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.mlp.up_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [6144, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.mlp.down_proj.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [1536, 6144],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.per_layer_input_gate.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [256, 1536],
+      "expectedRole": "other",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.per_layer_projection.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [1536, 256],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    },
+    {
+      "name": "model.language_model.layers.0.post_per_layer_input_norm.weight",
+      "required": true,
+      "dtype": "F16",
+      "shape": [1536],
+      "expectedRole": "norm",
+      "expectedLayout": null
+    },
+    {
+      "name": "model.language_model.per_layer_model_projection.weight",
+      "required": true,
+      "dtype": "Q4_K_M",
+      "shape": [8960, 1536],
+      "expectedRole": "matmul",
+      "expectedLayout": "row"
+    }
+  ],
+  "claimScope": {
+    "claimable": "Doe can read the Doppler RDRR manifest, declared shard table, Gemma-4 int4 PLE transform metadata, and target layer-0 tensor byte spans for the local int4ple artifact.",
+    "notClaimable": [
+      "Q4_K_M dequantization parity",
+      "Doppler production inference output parity",
+      "Full Gemma-4 E2B execution from the RDRR artifact",
+      "Cerebras hardware execution"
+    ]
+  }
+}

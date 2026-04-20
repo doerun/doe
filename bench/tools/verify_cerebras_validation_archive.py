@@ -126,11 +126,13 @@ def _load_known_claim_roles() -> set[str]:
         return {
             "governance",
             "real-weight-fixture",
+            "doppler-rdrr-fixture",
             "model-runtime-receipt",
             "cross-runtime-parity-verdict",
             "emulator-accuracy-verdict",
             "emulator-speed-verdict",
             "real-weight-parity-verdict",
+            "doppler-rdrr-probe",
             "moe-lane-scope",
             "rollup",
             "depth-coverage-rollup",

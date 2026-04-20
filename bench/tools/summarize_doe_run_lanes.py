@@ -374,6 +374,37 @@ def main() -> int:
             real_weight_block = _r.get("realWeightEvidence")
         except (OSError, ValueError):
             pass
+    eligibility = evidence_eligibility(args.num_layers)
+    if (
+        args.num_layers == SYNTHETIC_CLAIMABLE_DEPTH
+        and isinstance(real_weight_block, dict)
+        and (real_weight_block.get("promotionCriteriaMet") or {}).get(
+            "outputParityPassed"
+        ) is True
+    ):
+        eligibility["claimableLabel"] = (
+            "L1 synthetic + real-weight smoke layer-block"
+        )
+        eligibility["weightSource"] = (
+            "synthetic_seeded_rng_and_bf16_derived_smoke_slices"
+        )
+        eligibility["scope"] = (
+            "One Gemma-4 E2B-shaped synthetic L1 layer-block plus one "
+            "BF16-derived real-weight L1 smoke layer-block. This is not "
+            "full model inference and not hardware execution."
+        )
+        eligibility["realWeightClaimable"] = True
+        eligibility["realWeightScope"] = (
+            "BF16-derived Gemma-4 E2B weight slices are evidenced for "
+            "the L1 smoke layer-block contract only."
+        )
+        eligibility["blockers"] = [
+            "l2_l4_l8_l35_claimable_receipts",
+            "full_e2b_end_to_end",
+            "cerebras_hardware_receipt",
+        ]
+    else:
+        eligibility["realWeightClaimable"] = False
 
     # Tolerance rollup across runtime-producing lane pairs. A pair is
     # "tolerance-informative" if it has a toleranceVerdict in
@@ -413,7 +444,7 @@ def main() -> int:
         "schemaVersion": 1,
         "artifactKind": "doe_all_lanes_summary",
         "numLayers": args.num_layers,
-        "evidenceEligibility": evidence_eligibility(args.num_layers),
+        "evidenceEligibility": eligibility,
         "modelReceiptPath": rel(model_receipt_path) if model_receipt_path.is_file() else None,
         "executionStatus": executionStatus,
         "realWeightEvidence": real_weight_block,

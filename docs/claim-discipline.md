@@ -51,6 +51,58 @@ Allowed wording:
 - "This proves the local compiler/runtime shape for one layer-block
   contract, not real weights, not full E2B, and not hardware."
 
+### L1 real-weight E2B smoke-contract parity is evidenced
+
+Evidence:
+
+- `bench/tools/extract_gemma4_e2b_weight_slices.py` materializes the
+  current smoke-contract `.f32` slices from the BF16 SafeTensors source
+  discoverable through Doppler's local int4ple origin metadata.
+- `bench/out/weights-audit/gemma-4-e2b-weights-audit.json` passes and
+  matches the fixture-pinned `weightSetSha256` in
+  `config/gemma-4-e2b-real-weight-fixture.json`.
+- `bench/out/gemma-4-e2b-real-weight-parity-L1.json` reports
+  `verdict=parity_passed` for Doppler-equivalent WebGPU vs CSL
+  simfabric at L1. The output digests differ, but the per-layer
+  tolerance check passes under the fixture formula
+  `abs(a-b) <= atol + rtol * max(abs(a), abs(b))`.
+- `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` reports
+  `executionStatus=real_weight_layer_block_success` and carries the
+  real-weight parity summary.
+
+Allowed wording:
+
+- "The E2B L1 layer-block smoke contract now runs with BF16-derived
+  Gemma-4 weight slices in WebGPU and CSL simfabric, with output within
+  the declared tolerance policy."
+- "This is real checkpoint-derived weight evidence for the L1 smoke
+  layer-block contract. It is not manifest-shape execution, not full
+  E2B inference, not 31B, not MoE, and not hardware."
+
+### Doppler RDRR/int4ple artifact structure is readable by Doe
+
+Evidence:
+
+- `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` pins the
+  local Doppler int4ple RDRR artifact root, manifest/origin hashes,
+  declared shard table, target shard index, Q4_K_M block constants, and
+  Gemma-4 layer-0 tensor list.
+- `bench/tools/probe_doppler_rdrr_artifact.py` validates the manifest,
+  declared shard sizes, selected shard hash, Gemma-4 int4 per-layer
+  embedding transform metadata, and target tensor byte spans.
+- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json` reports
+  the structural verdict and explicitly keeps `dequantStatus.q4k` at
+  `blocked_not_implemented`.
+
+Allowed wording:
+
+- "Doe can structurally read the local Doppler Gemma-4 E2B int4ple RDRR
+  artifact: manifest, declared shards, selected target shard hash,
+  target tensor spans, Q4_K_M packed-size formulas, and int4 PLE metadata."
+- "This is a production-artifact readability proof. It is not Q4_K_M
+  dequant parity, not Doppler production inference output parity, and
+  not full E2B execution from the RDRR artifact."
+
 ### The CSL kernel implements the transformer layer-block shape
 
 Evidence:
@@ -91,12 +143,13 @@ Gate: Doppler-owned reference export (item #1 in the roadmap). The
 Doppler-equivalent Dawn shader here is a SEPARATE harness that matches
 the semantic contract but is not Doppler's browser inference path.
 
-### "Doe executes the real Gemma-4 E2B/31B model with real weights"
+### "Doe executes the full real Gemma-4 E2B/31B model with real weights"
 
-Gate: real-weight extractor (item #3). Current inputs are seeded-RNG
-fixtures. The model receipts honestly report
-`promotionCriteria.syntheticInputsAbsent=false` and
-`syntheticWeightsAbsent=false`.
+Gate: full graph and manifest-shape real-weight receipts. E2B L1
+smoke-contract real-weight parity is now evidenced, but it is not a
+full-model claim. E2B still needs embed, full 35-layer manifest-shape
+execution, unembed, KV/cache bookkeeping, and sampling. 31B still
+needs its own real-weight receipt.
 
 ### "Doe executes the full Gemma-4 model end-to-end"
 
@@ -156,7 +209,7 @@ Each rejected claim has a single-command unlock path in the repo.
 | Rejected claim | Unlock command or external dep |
 | --- | --- |
 | Production Doppler pipeline parity | Doppler commits their WGSL shader into their pipeline and emits `activation_out.f32` matching the CSL runner's seeded-RNG inputs |
-| Real-weight execution | `extract_gemma4_e2b_weight_slices.py` materializes the fixture slices, `validate_weights_dir.py` passes, then `run_e2b_real_weight_l1_parity.py` promotes past `blocked_weights_absent` |
+| Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt to manifest-shape/full-depth receipts; 31B needs its own real-weight parity verdict |
 | L2/L4/L8/L35 claimable depth | `summarize_doe_run_lanes.py` emits `evidenceEligibility.claimable=true` for that depth and `emit_depth_coverage_matrix.py` counts it under `depthsClaimableWithinTolerance` |
 | Full E2B simulator | Extend runner to the full graph (embed + 35 transformer blocks + unembed + sample); this is structural work in Doe |
 | Manifest-shape 31B | Extend the generator/kernel to `head_dim=160, num_heads=32`; validate memory budget + streaming |

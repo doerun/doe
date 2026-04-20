@@ -220,6 +220,21 @@
         "weightsAuditPath": { "type": "string" },
         "weightSetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "parityVerdictPath": { "type": "string" },
+        "paritySummary": {
+          "type": "object",
+          "description": "Tolerance summary copied from the real-weight parity verdict so the model receipt is self-contained for claim checks.",
+          "properties": {
+            "outputDigestMatch": { "type": "boolean" },
+            "tolerancePassed": { "type": "boolean" },
+            "atol": { "type": "number", "minimum": 0 },
+            "rtol": { "type": "number", "minimum": 0 },
+            "layersCompared": { "type": "integer", "minimum": 0 },
+            "maxAbsErrAcrossLayers": { "type": "number", "minimum": 0 },
+            "maxRelErrAcrossLayers": { "type": "number", "minimum": 0 },
+            "maxAllowedErrAcrossLayers": { "type": "number", "minimum": 0 },
+            "meanAbsErrAcrossLayers": { "type": "number", "minimum": 0 }
+          }
+        },
         "promotionCriteriaMet": {
           "type": "object",
           "description": "Mirror of the parity verdict's 5 real-weight promotion criteria on the model-runtime receipt so downstream consumers see the honest status without cross-loading the parity file.",

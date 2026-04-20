@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Doppler RDRR artifact probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "verdict",
+    "fixturePath",
+    "artifactRoot",
+    "modelId",
+    "dequantStatus",
+    "claimScope",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_doppler_rdrr_artifact_probe"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "failed", "blocked_artifact_absent"]
+    },
+    "verdict": { "type": "string", "minLength": 1 },
+    "fixturePath": { "type": "string", "minLength": 1 },
+    "artifactRoot": { "type": "string", "minLength": 1 },
+    "modelId": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "manifest": { "$ref": "#/$defs/ExtensibleObject" },
+    "origin": { "$ref": "#/$defs/ExtensibleObject" },
+    "artifactSummary": { "$ref": "#/$defs/ExtensibleObject" },
+    "shardAudit": { "$ref": "#/$defs/ExtensibleObject" },
+    "tensorAudit": { "$ref": "#/$defs/ExtensibleObject" },
+    "dequantStatus": { "$ref": "#/$defs/ExtensibleObject" },
+    "claimScope": { "$ref": "#/$defs/ExtensibleObject" },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "ExtensibleObject": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

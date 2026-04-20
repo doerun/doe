@@ -18,9 +18,10 @@ bundle" for the prose workflow; this file is the tool-reference.
 
 ## Underlying tools (called by the prep script, usable standalone)
 
-- **`run_cerebras_evidence_bundle.py`** — runs 5 local gates in
-  order (truth-table test, self-check, claim-discipline, SdkLayout
-  streaming hardening, receipt link integrity) and writes
+- **`run_cerebras_evidence_bundle.py`** — runs 6 local gates in
+  order (truth-table test, self-check, Doppler RDRR/int4ple
+  structural probe, claim-discipline, SdkLayout streaming hardening,
+  receipt link integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
   plus an aggregate verdict.
@@ -64,10 +65,12 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │           ├── docs/claim-discipline.md
   │           ├── config/gemma-4-e2b-real-weight-fixture.json
   │           ├── config/gemma-4-31b-real-weight-fixture.json
+  │           ├── config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json
   │           ├── bench/out/{e2b,31b}-full-graph/gemma-4-*-runtime-receipt.{json,md}
   │           ├── bench/out/streaming-executor/*-cross-runtime-parity-check.json
   │           ├── bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
   │           ├── bench/out/gemma-4-*-real-weight-parity-L1.json
+  │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json
   │           ├── bench/out/26b-moe-lane/*.json                  (7 files)
   │           ├── bench/out/doe-run/all-lanes-summary-L1.json
   │           └── bench/out/cerebras-evidence-bundle/summary.json
@@ -101,6 +104,8 @@ locks most of this pipeline via numbered contracts:
 | C32 | packer path-substring deny-list ↔ verifier `FORBIDDEN_PATH_SUBSTRINGS` in sync (non-extension deny-list defense-in-depth) |
 | C33 | E2B demo error-to-preview paths all pipe through `stripAnsi()` (no ANSI leak into browser preview panes) |
 | C34 | four governance docs (ASK, README, CLAIM_SCOPE, appendix) all name both hardware-validation paths (A endpoint access / B Cerebras-assisted bundle run) |
+| C35 | declared depth list stays synchronized between the depth matrix generator and E2B cockpit |
+| C36 | Doppler RDRR/int4ple structural probe validates manifest, selected shard hash, target spans, and keeps Q4 dequant explicitly blocked |
 
 ## What this pipeline does NOT do
 

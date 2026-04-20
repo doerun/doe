@@ -38,11 +38,11 @@ source of truth for any bundle in hand.
 ## Target order
 
 The first hardware validation target is Gemma 4 E2B because it is the current
-correctness lane with an L1 synthetic layer-block parity receipt. The next
-scale target is Gemma 4 31B dense, not Gemma 4 26B/A4B MoE. Dense 31B keeps
-the execution shape uniform while Doe validates streamed weights, SdkLayout
-ports, host I/O ordering, full-grid compile behavior, and parity receipts on
-WSE.
+correctness lane with L1 synthetic and BF16-derived real-weight smoke-contract
+parity receipts. The next scale target is Gemma 4 31B dense, not Gemma 4
+26B/A4B MoE. Dense 31B keeps the execution shape uniform while Doe validates
+streamed weights, SdkLayout ports, host I/O ordering, full-grid compile
+behavior, and parity receipts on WSE.
 
 Gemma 4 26B/A4B MoE remains a later efficiency lane. It needs separate
 Gemma-specific receipts for router logits, top-k expert selection,
@@ -72,6 +72,13 @@ E2B bundle:
   (compiler/runtime artifact receipt; not full-model inference)
 - unified L1 rollup `bench/out/doe-run/all-lanes-summary-L1.json`
   (`evidenceEligibility.evidenceTier=synthetic_l1_layer_block`)
+- E2B real-weight fixture `config/gemma-4-e2b-real-weight-fixture.json`
+  and parity verdict `bench/out/gemma-4-e2b-real-weight-parity-L1.json`
+  (BF16-derived smoke-contract slices, not manifest-shape execution)
+- Doppler RDRR/int4ple fixture
+  `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` and probe
+  verdict `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json`
+  (manifest/shard/tensor-span readability, not Q4_K_M dequant parity)
 
 31B bundle (scale-target scaffold, same shape as E2B):
 
@@ -88,25 +95,31 @@ CSL runtime fixture registry (shared) sha256 `4428f5b22e716b3f04f1269dc426cc2ac5
 
 ## 2. What the simfabric proof demonstrates
 
-The claimable local parity proof is currently L1 synthetic:
-`bench/out/doe-run/all-lanes-summary-L1.json` records the WebGPU
-reference lane, CSL simfabric lane, and CSL WebGPU emulator lane
-within the fixture tolerance. The depth matrix
-`bench/out/doe-run/depth-coverage-matrix.json` is the current source
-for which declared depths are evidence-eligible. Diagnostic files at
+The claimable local parity proof has two L1 lanes today:
+`bench/out/doe-run/all-lanes-summary-L1.json` records the synthetic WebGPU,
+CSL simfabric, and CSL WebGPU emulator lanes within fixture tolerance, and
+`bench/out/gemma-4-e2b-real-weight-parity-L1.json` records BF16-derived
+real-weight smoke-contract parity for the same L1 layer-block shape.
+The depth matrix `bench/out/doe-run/depth-coverage-matrix.json` is the current
+source for which declared depths are evidence-eligible. Diagnostic files at
 deeper depths do not turn into E2B claims unless their summary carries
 `evidenceEligibility.claimable=true`.
+
+The Doppler RDRR/int4ple proof is structural only:
+`bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json` validates the
+local Doppler production artifact's manifest, declared shard sizes, selected
+shard hash, target tensor spans, Q4_K_M packed-size formulas, and int4
+per-layer embedding metadata. It does not prove Q4_K_M dequantization or
+Doppler production inference output parity.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1
 GELU. RMSNorm uses `math.sqrt` + a Newton-Raphson refinement step so
 WSE vs WebGPU sqrt approximations agree bit-exactly at f32.
 
-Scope caveats:
-`promotionCriteria.syntheticInputsAbsent=false` and
-`syntheticWeightsAbsent=false` — inputs and weights are seeded
-deterministic tensors, not real Gemma 4 checkpoint slices. The
-current runner shape is the smoke layer-block shape, not full
+Scope caveats: the synthetic L1 rollup still uses seeded tensors, while the
+real-weight L1 verdict uses BF16-derived smoke-contract slices. Both remain
+the smoke layer-block shape, not manifest-shape execution and not full
 end-to-end Gemma inference.
 
 ## 3. What hardware validation should run
@@ -123,14 +136,16 @@ has the operator-facing detail for both.
 
 Minimum sufficient ask (same command either way):
 
-1. E2B L1 synthetic layer-block against a reachable CS endpoint via
+1. E2B L1 synthetic or BF16-derived real-weight smoke layer-block
+   against a reachable CS endpoint via
    `--cmaddr`, or appliance via
    `runtime/zig/tools/csl_appliance_driver.py`. The runner is
    `bench/runners/csl-runners/e2b_layer_block_smoke.py` and accepts
-   `--cmaddr <addr>` today.
+   `--cmaddr <addr>` and `--weights-dir <dir>` today.
 2. Output parity check: compare `activation_out.f32` against the
    simfabric trace's recorded output at the matching chain depth.
-   Tolerance: `atol=1e-3` per `docs/claim-discipline.md`.
+   Tolerance: the fixture policy in
+   `config/gemma-4-e2b-real-weight-fixture.json`.
 3. Graph-identity pin: hardware receipt records the same
    `manifestSha256`, stream-plan `planSha256`, and
    `kernelSourceSha256` listed above.
@@ -139,8 +154,8 @@ Stretch, if time permits:
 
 - E2B layer-block at deeper chain depths after `all-lanes-summary-L{N}.json`
   marks the depth as evidence-eligible.
-- E2B layer-block with real weight slices once we have them materialized
-  (the extractor and validator guard the `--weights-dir` contract).
+- E2B real-weight layer-block at deeper chain depths after the L1
+  smoke-contract receipt is extended to L2/L4/L8/L35.
 - 31B dense layer-block smoke at the same chain depth as E2B, to exercise
   streaming scale. This is a dense-model validation target, not a MoE
   efficiency claim.

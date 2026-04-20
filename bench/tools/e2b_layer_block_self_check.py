@@ -30,7 +30,7 @@ then asserts the contract:
           maintained and went stale across kernel upgrades)
 
 Then asserts a growing set of structural contracts. The current set
-spans C0..C33 (as of the last update; see below for the authoritative
+spans C0..C36 (as of the last update; see below for the authoritative
 enumeration). Broadly they cover:
 
   - Core kernel/trace/receipt integrity (C0-C15)
@@ -358,11 +358,20 @@ def main() -> int:
     structural_ok = (
         receipt.get("laneStatus") == "structural_full_coverage"
     )
-    expected_status = (
-        "simulator_success"
-        if (pc_eligible and parity_applies and structural_ok)
-        else "not_attempted"
+    _rw_criteria = (
+        (receipt.get("realWeightEvidence") or {})
+        .get("promotionCriteriaMet") or {}
     )
+    _rw_promoted = (
+        _rw_criteria.get("weightHashMatched") is True
+        and _rw_criteria.get("outputParityPassed") is True
+    )
+    if pc_eligible and parity_applies and structural_ok and _rw_promoted:
+        expected_status = "real_weight_layer_block_success"
+    elif pc_eligible and parity_applies and structural_ok:
+        expected_status = "simulator_success"
+    else:
+        expected_status = "not_attempted"
     expected_blocker = (
         "none"
         if (pc_eligible and parity_applies and structural_ok)
@@ -385,6 +394,7 @@ def main() -> int:
             f"    promotionEligible: {pc_eligible}\n"
             f"    parityApplies:     {parity_applies}\n"
             f"    structuralOk:      {structural_ok}\n"
+            f"    realWeightPromoted: {_rw_promoted}\n"
             f"    expected status:   {expected_status!r}\n"
             f"    actual status:     {actual_status!r}\n"
             f"    expected blocker:  {expected_blocker!r}\n"
@@ -648,14 +658,28 @@ def main() -> int:
             # show parity_passed with tolerance evidence. parity_failed is
             # always a regression.
             import subprocess as _subprocess_c15
-            _c15_out = REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity-L1.json"
-            _c15_out.parent.mkdir(parents=True, exist_ok=True)
-            _c15 = _subprocess_c15.run(
-                ["python3", "bench/tools/run_e2b_real_weight_l1_parity.py",
-                 "--out-json", str(_c15_out.relative_to(REPO_ROOT))],
-                cwd=REPO_ROOT, capture_output=True, text=True, timeout=1800,
+            _c15_canonical = (
+                REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity-L1.json"
             )
-            if _c15.returncode != 0:
+            _weights_rel = (
+                (_fix.get("weightsDir") or {}).get("pathPlaceholder") or ""
+            )
+            _weights_abs = REPO_ROOT / _weights_rel
+            if _weights_abs.is_dir() and _c15_canonical.is_file():
+                _c15_out = _c15_canonical
+                _c15 = None
+            else:
+                _c15_out = (
+                    REPO_ROOT
+                    / "bench/out/scratch/gemma-4-e2b-real-weight-parity-C15.json"
+                )
+                _c15_out.parent.mkdir(parents=True, exist_ok=True)
+                _c15 = _subprocess_c15.run(
+                    ["python3", "bench/tools/run_e2b_real_weight_l1_parity.py",
+                     "--out-json", str(_c15_out.relative_to(REPO_ROOT))],
+                    cwd=REPO_ROOT, capture_output=True, text=True, timeout=1800,
+                )
+            if _c15 is not None and _c15.returncode != 0:
                 failures.append(
                     f"C15 FAIL: parity harness returned {_c15.returncode}: "
                     f"{_c15.stderr[-200:]}"
@@ -730,6 +754,116 @@ def main() -> int:
         failures.append(
             f"C14 FAIL: fixture missing at {_fixture_path.relative_to(REPO_ROOT)}"
         )
+
+    # C36: Doe can structurally consume the local Doppler RDRR/int4ple
+    # artifact without pretending Q4_K_M dequant or production-output
+    # parity is complete. Fresh clones may skip as blocked_artifact_absent;
+    # hosts with ../doppler/models/local/... must validate the manifest,
+    # selected shard hash, tensor spans, and int4 PLE metadata.
+    _rdrr_fixture = (
+        REPO_ROOT
+        / "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json"
+    )
+    _rdrr_probe_script = REPO_ROOT / "bench/tools/probe_doppler_rdrr_artifact.py"
+    _c36_errors: list[str] = []
+    if not _rdrr_fixture.is_file():
+        _c36_errors.append(
+            f"fixture missing at {_rdrr_fixture.relative_to(REPO_ROOT)}"
+        )
+    elif not _rdrr_probe_script.is_file():
+        _c36_errors.append(
+            f"probe missing at {_rdrr_probe_script.relative_to(REPO_ROOT)}"
+        )
+    else:
+        try:
+            _rdrr_fix = json.loads(_rdrr_fixture.read_text(encoding="utf-8"))
+            _probe_rel = (
+                (_rdrr_fix.get("probe") or {}).get("outputPath")
+                or "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json"
+            )
+            _probe_out = REPO_ROOT / _probe_rel
+            _c36 = subprocess.run(
+                [
+                    "python3",
+                    "bench/tools/probe_doppler_rdrr_artifact.py",
+                    "--fixture",
+                    str(_rdrr_fixture.relative_to(REPO_ROOT)),
+                    "--out-json",
+                    str(_probe_out.relative_to(REPO_ROOT)),
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+            if _c36.returncode != 0:
+                _c36_errors.append(
+                    f"probe returned {_c36.returncode}: {_c36.stderr[-300:]}"
+                )
+            elif not _probe_out.is_file():
+                _c36_errors.append("probe did not write its output artifact")
+            else:
+                _probe = json.loads(_probe_out.read_text(encoding="utf-8"))
+                _status = _probe.get("status")
+                if _status == "blocked_artifact_absent":
+                    print(
+                        "  C36 SKIP: Doppler RDRR/int4ple artifact absent; "
+                        "probe emitted blocked_artifact_absent"
+                    )
+                else:
+                    _shard_ok = (
+                        ((_probe.get("shardAudit") or {})
+                         .get("selectedShardHashAudit") or {})
+                        .get("status") == "passed"
+                    )
+                    _tensor_ok = (
+                        ((_probe.get("tensorAudit") or {}).get("status"))
+                        == "passed"
+                    )
+                    _dequant = _probe.get("dequantStatus") or {}
+                    _q4_blocked = (
+                        _dequant.get("q4k") == "blocked_not_implemented"
+                    )
+                    _ple_meta = (
+                        _dequant.get("int4Ple")
+                        == "metadata_validated_no_runtime_dequant"
+                    )
+                    _summary = _probe.get("artifactSummary") or {}
+                    _expected_extra = (
+                        (_rdrr_fix.get("expected") or {})
+                        .get("extraLocalShards") or []
+                    )
+                    _extra_ok = (
+                        _summary.get("extraLocalShards")
+                        == _expected_extra
+                    )
+                    if (
+                        _status == "succeeded"
+                        and _shard_ok
+                        and _tensor_ok
+                        and _q4_blocked
+                        and _ple_meta
+                        and _extra_ok
+                    ):
+                        print(
+                            "  C36 PASS: Doppler RDRR/int4ple artifact "
+                            "structural probe passed (manifest+target "
+                            "shard+tensor spans; Q4 dequant still blocked)"
+                        )
+                    else:
+                        _c36_errors.append(
+                            "unexpected probe state: "
+                            f"status={_status!r}, shardOk={_shard_ok!r}, "
+                            f"tensorOk={_tensor_ok!r}, "
+                            f"q4Blocked={_q4_blocked!r}, "
+                            f"pleMeta={_ple_meta!r}, extraOk={_extra_ok!r}"
+                        )
+        except (OSError, ValueError, json.JSONDecodeError) as _e:
+            _c36_errors.append(
+                f"fixture/probe evaluation error: {type(_e).__name__}: {_e}"
+            )
+    for _err in _c36_errors:
+        failures.append(f"C36 FAIL: {_err}")
 
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
     # contract check when a matching-depth trace is absent — WGSL

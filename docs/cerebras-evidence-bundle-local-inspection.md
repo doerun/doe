@@ -126,7 +126,7 @@ no unpack needed.
 python3 bench/tools/run_cerebras_evidence_bundle.py
 ```
 
-Runs the 5 gates the bundle's `rollup/cerebras-evidence-bundle/summary.json`
+Runs the 6 gates the bundle's `rollup/cerebras-evidence-bundle/summary.json`
 captures. Useful if a reviewer wants to confirm the same `verdict=passed`
 the archive records still holds on the current repo state.
 

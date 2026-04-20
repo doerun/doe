@@ -515,6 +515,33 @@ def main() -> int:
                 real_weight_evidence_block = {
                     k: v for k, v in _rw_raw.items() if v is not None
                 }
+                _rw_parity = _rw.get("parity") or {}
+                if isinstance(_rw_parity, dict) and _rw_parity:
+                    real_weight_evidence_block["paritySummary"] = {
+                        "outputDigestMatch": bool(
+                            _rw_parity.get("outputDigestMatch")
+                        ),
+                        "tolerancePassed": bool(
+                            _rw_parity.get("tolerancePassed")
+                        ),
+                        "atol": float(_rw_parity.get("atol", 0.0)),
+                        "rtol": float(_rw_parity.get("rtol", 0.0)),
+                        "layersCompared": int(
+                            _rw_parity.get("layersCompared", 0)
+                        ),
+                        "maxAbsErrAcrossLayers": float(
+                            _rw_parity.get("maxAbsErrAcrossLayers", 0.0)
+                        ),
+                        "maxRelErrAcrossLayers": float(
+                            _rw_parity.get("maxRelErrAcrossLayers", 0.0)
+                        ),
+                        "maxAllowedErrAcrossLayers": float(
+                            _rw_parity.get("maxAllowedErrAcrossLayers", 0.0)
+                        ),
+                        "meanAbsErrAcrossLayers": float(
+                            _rw_parity.get("meanAbsErrAcrossLayers", 0.0)
+                        ),
+                    }
                 real_weight_evidence_block["promotionCriteriaMet"] = {
                     "syntheticInputsAbsent": bool(_rw.get("weightsDirPresent")),
                     "syntheticWeightsAbsent": bool(_rw.get("weightsDirPresent")),

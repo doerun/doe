@@ -135,13 +135,15 @@ Read this file first. Use the shard files under
   the provider root alive through async completion.
 - Benchmark/package compare cleanup in early April moved more of the compare
   stack onto artifact-first, config-backed paths.
-- Cerebras-facing Gemma-4 lane is in outreach phase: the current claimable
-  side-by-side evidence is L1 synthetic layer-block parity only. The evidence
-  bundle pipeline (`bench/tools/prepare_cerebras_validation_bundle.sh`) lands
-  a verified tarball; the external ask pitches both endpoint access and a
-  Cerebras-assisted bundle run. L2/L4/L8/L35, real weights, full E2B, 31B
-  manifest shape, MoE, and hardware remain gated in the current April shard
-  and in `docs/hardware-validation-appendix.md`.
+- Cerebras-facing Gemma-4 lane is in outreach phase: the current local
+  side-by-side evidence includes L1 synthetic layer-block parity, E2B L1
+  BF16-derived real-weight smoke-contract parity, and a structural
+  Doppler RDRR/int4ple artifact-readability probe. The model receipt now
+  reports `executionStatus=real_weight_layer_block_success` for that narrow
+  L1 layer-block contract. Q4_K_M RDRR dequant parity, L2/L4/L8/L35
+  promoted-depth receipts, full E2B, 31B manifest-shape and real-weight
+  receipts, MoE, and hardware remain gated in the current April shard and in
+  `docs/hardware-validation-appendix.md`.
 
 ## Current follow-up highlights
 

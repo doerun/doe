@@ -24,7 +24,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 prepare_cerebras_validation_bundle.sh — one-command Cerebras bundle prep
 
 Chains in sequence:
-  1. run_cerebras_evidence_bundle.py   (5 local gates)
+  1. run_cerebras_evidence_bundle.py   (6 local gates)
   2. pack_cerebras_validation_archive.py   (builds dated tarball)
   3. verify_cerebras_validation_archive.py   (manifest + claim-role + claim-discipline scan)
 

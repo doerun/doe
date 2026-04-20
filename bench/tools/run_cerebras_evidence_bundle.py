@@ -11,10 +11,11 @@ Steps (in order):
   1. truth-table test for compute_execution_status (14 cases)
   2. e2b_layer_block_self_check (regens E2B receipt + rollup +
      validates 15 contract assertions)
-  3. claim-discipline gate (hardware + MoE fronts)
-  4. SdkLayout streaming hardening gate (against any available live
+  3. Doppler RDRR/int4ple structural probe
+  4. claim-discipline gate (hardware + MoE fronts)
+  5. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
-  5. schema validation of 31B receipt and receipt-link integrity for
+  6. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -144,13 +145,26 @@ def main() -> int:
         timeout=900,
     ))
 
-    # 3. claim-discipline gate (hardware + MoE fronts).
+    # 3. Doppler RDRR/int4ple structural probe.
+    steps.append(run(
+        "doppler-rdrr-int4ple-probe",
+        [
+            "python3",
+            "bench/tools/probe_doppler_rdrr_artifact.py",
+            "--fixture",
+            "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json",
+            "--out-json",
+            "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json",
+        ],
+    ))
+
+    # 4. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 4. SdkLayout streaming hardening gate against the freshest live
+    # 5. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -174,7 +188,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 5. receipt link integrity (already invoked by self-check STEP 5,
+    # 6. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

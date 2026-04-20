@@ -4,9 +4,9 @@
 Takes the governing evidence (hardware-validation appendix +
 claim-discipline doc + evidence-bundle summary + model runtime
 receipts + cross-runtime parity verdicts + real-weight parity
-verdicts + fixture contracts + MoE lane-scope + archive-root
-governance docs) and bundles it into a dated tarball suitable
-for attaching to a hardware-access ask.
+verdicts + Doppler RDRR probe + fixture contracts + MoE lane-scope +
+archive-root governance docs) and bundles it into a dated tarball
+suitable for attaching to a hardware-access ask.
 
 What IS included: see the INCLUDE_FILES tuple below. Every bundled
 file's sha256 is recorded in MANIFEST.txt with a claim-role tag.
@@ -69,6 +69,7 @@ INCLUDE_FILES: tuple = (
     # Fixture contracts: one per primary model lane.
     "config/gemma-4-e2b-real-weight-fixture.json",
     "config/gemma-4-31b-real-weight-fixture.json",
+    "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json",
     # Model runtime receipts (json + md for each model).
     "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
     "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md",
@@ -82,6 +83,8 @@ INCLUDE_FILES: tuple = (
     # Real-weight parity verdicts (per model, blocked today).
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json",
+    # Doppler production-artifact structural probe.
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json",
     # 26B/A4B MoE lane scope (explicitly blocked, 6 TODO receipts).
     "bench/out/26b-moe-lane/lane-status.json",
     "bench/out/26b-moe-lane/router-todo.json",
@@ -126,6 +129,7 @@ CLAIM_ROLE: dict[str, str] = {
     "docs/claim-discipline.md": "governance",
     "config/gemma-4-e2b-real-weight-fixture.json": "real-weight-fixture",
     "config/gemma-4-31b-real-weight-fixture.json": "real-weight-fixture",
+    "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json": "doppler-rdrr-fixture",
     "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json": "model-runtime-receipt",
     "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md": "model-runtime-receipt",
     "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json": "model-runtime-receipt",
@@ -135,6 +139,7 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json": "emulator-speed-verdict",
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json": "real-weight-parity-verdict",
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json": "doppler-rdrr-probe",
     "bench/out/26b-moe-lane/lane-status.json": "moe-lane-scope",
     "bench/out/26b-moe-lane/router-todo.json": "moe-lane-scope",
     "bench/out/26b-moe-lane/topk-selection-todo.json": "moe-lane-scope",

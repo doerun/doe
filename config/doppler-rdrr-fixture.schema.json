@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doppler RDRR fixture contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "artifactRoot",
+    "manifest",
+    "origin",
+    "expected",
+    "probe",
+    "targetTensors",
+    "claimScope"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_doppler_rdrr_fixture_contract"
+    },
+    "modelId": { "type": "string", "minLength": 1 },
+    "artifactRoot": { "type": "string", "minLength": 1 },
+    "manifest": { "$ref": "#/$defs/HashedPath" },
+    "origin": { "$ref": "#/$defs/HashedPath" },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declaredShardCount",
+        "localShardCount",
+        "extraLocalShards",
+        "targetShardIndices",
+        "totalSize",
+        "quantization",
+        "perLayerEmbeddings",
+        "q4kBlockSizeElements",
+        "q4kBlockSizeBytes",
+        "q4kDequantStatus",
+        "int4PleStatus"
+      ],
+      "properties": {
+        "declaredShardCount": { "type": "integer", "minimum": 1 },
+        "localShardCount": { "type": "integer", "minimum": 1 },
+        "extraLocalShards": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "targetShardIndices": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "totalSize": { "type": "integer", "minimum": 1 },
+        "quantization": { "type": "string", "minLength": 1 },
+        "perLayerEmbeddings": { "type": "string", "minLength": 1 },
+        "q4kBlockSizeElements": { "type": "integer", "minimum": 1 },
+        "q4kBlockSizeBytes": { "type": "integer", "minimum": 1 },
+        "q4kDequantStatus": { "type": "string", "minLength": 1 },
+        "int4PleStatus": { "type": "string", "minLength": 1 }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashMode", "maxTensorSpanHashBytes", "outputPath"],
+      "properties": {
+        "hashMode": {
+          "type": "string",
+          "enum": ["target_shards", "all_declared", "none"]
+        },
+        "maxTensorSpanHashBytes": { "type": "integer", "minimum": 1 },
+        "outputPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "targetTensors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/TargetTensor" }
+    },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable"],
+      "properties": {
+        "claimable": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "HashedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "TargetTensor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "required", "dtype", "shape"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean" },
+        "dtype": { "type": "string", "minLength": 1 },
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "expectedRole": { "type": "string", "minLength": 1 },
+        "expectedLayout": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "expectedSourceTransformKind": { "type": "string", "minLength": 1 },
+        "expectedSourceDtype": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
