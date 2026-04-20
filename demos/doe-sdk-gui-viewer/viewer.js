@@ -1,5 +1,3 @@
-const repoRoot = "../../";
-
 const el = (id) => document.getElementById(id);
 
 function redactEnabled() {
@@ -28,17 +26,58 @@ function setPill(id, text, cls = "pending") {
   node.className = `status-pill ${cls}`;
 }
 
-function setSdkCommand(artifactDir) {
-  const node = el("sdk-command");
+function setCommand(id, text, options = {}) {
+  const node = el(id);
   if (!node) return;
+  const copyable = options.copyable === true;
+  const status = options.status || (copyable ? "ready" : "not ready");
+  const statusClass = options.statusClass || (copyable ? "ready" : "pending");
+  node.textContent = text;
+  node.dataset.copyable = copyable ? "true" : "false";
+  node.dataset.copyText = options.copyText || text;
+
+  const btn = el(`${id}-copy`);
+  if (btn) {
+    btn.disabled = !copyable;
+    btn.textContent = "copy";
+  }
+  const state = el(`${id}-state`);
+  if (state) {
+    state.textContent = status;
+    state.className = `command-state ${statusClass}`;
+  }
+}
+
+function sdkCommandText(artifactDir, serverCommand = null) {
+  const raw = serverCommand || `sdk_debug_shell visualize --artifact_dir ${artifactDir}`;
+  if (!redactEnabled()) return raw;
+  return raw.replace(artifactDir, maybeRedact(artifactDir));
+}
+
+function setSdkCommand(artifactDir, options = {}) {
+  const placeholder =
+    "sdk_debug_shell visualize --artifact_dir <set artifact dir above>";
   if (!artifactDir) {
-    node.textContent = "sdk_debug_shell visualize --artifact_dir <set artifact dir above>";
+    setCommand("sdk-command", placeholder, {
+      copyable: false,
+      status: options.status || "missing artifact dir",
+      statusClass: options.statusClass || "pending",
+    });
     return;
   }
-  // The command itself is operator-runnable; hide the dir path when
-  // redacted mode is on so the screen-share only shows the shape.
-  const shown = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
-  node.textContent = `sdk_debug_shell visualize --artifact_dir ${shown}`;
+  const redacted = redactEnabled();
+  const displayText = sdkCommandText(artifactDir, options.serverCommand);
+  const status = redacted
+    ? "redacted"
+    : (options.status || "ready");
+  const statusClass = redacted
+    ? "pending"
+    : (options.statusClass || "ready");
+  setCommand("sdk-command", displayText, {
+    copyable: !redacted && options.copyable === true,
+    status,
+    statusClass,
+  });
 }
 
 function setArtifactSummary(artifactDir) {
@@ -53,7 +92,11 @@ function setArtifactSummary(artifactDir) {
 }
 
 async function inspectArtifactDir(artifactDir) {
-  setSdkCommand(artifactDir);
+  setSdkCommand(artifactDir, {
+    copyable: false,
+    status: "validating",
+    statusClass: "warn",
+  });
   setArtifactSummary(artifactDir);
   setPill("artifact-status", "inspecting", "warn");
 
@@ -66,6 +109,10 @@ async function inspectArtifactDir(artifactDir) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     info = await res.json();
   } catch (err) {
+    setSdkCommand(null, {
+      status: "server required",
+      statusClass: "fail",
+    });
     setPill("artifact-status", "server required", "fail");
     for (const id of ["panel-fabric", "panel-pe", "panel-source",
                        "panel-trace", "panel-io", "panel-evidence"]) {
@@ -83,6 +130,10 @@ async function inspectArtifactDir(artifactDir) {
   }
 
   if (info && info.ok === false) {
+    setSdkCommand(null, {
+      status: "invalid artifact dir",
+      statusClass: "fail",
+    });
     setPill("artifact-status", "invalid path", "fail");
     for (const id of ["panel-fabric", "panel-pe", "panel-source",
                        "panel-trace", "panel-io", "panel-evidence"]) {
@@ -97,6 +148,10 @@ async function inspectArtifactDir(artifactDir) {
   setPill("artifact-status",
           `${info.numFiles} files, ${info.numSdkArtifacts} SDK artifacts`,
           "pass");
+  setSdkCommand(artifactDir, {
+    serverCommand: info.sdkVisualizeCommand,
+    copyable: true,
+  });
 
   // Fabric panel: surface colors.json routing if present.
   const fabric = el("panel-fabric");

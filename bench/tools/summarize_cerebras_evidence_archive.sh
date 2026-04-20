@@ -11,8 +11,26 @@
 
 set -euo pipefail
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    cat <<'EOF'
+summarize_cerebras_evidence_archive.sh — quick status from inside an archive
+
+Prints E2B, 31B, 26B/A4B MoE status + bundle gate verdict +
+emulator verdicts, entirely from the tarball via `tar -xzO | jq`.
+No extraction to disk.
+
+Usage:
+  bench/tools/summarize_cerebras_evidence_archive.sh <archive.tar.gz>
+
+Exits 0 on clean summary; 1 if the archive is unreadable or
+missing a required file (likely a malformed bundle).
+EOF
+    exit 0
+fi
+
 if [[ $# -lt 1 ]]; then
     echo "usage: $0 <doe-cerebras-evidence-*.tar.gz>" >&2
+    echo "run with --help for details" >&2
     exit 2
 fi
 
