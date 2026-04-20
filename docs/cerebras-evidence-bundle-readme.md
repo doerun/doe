@@ -91,6 +91,7 @@ cross-references inside the receipts resolve as written.
 | `real-weight-parity-verdict` | Real-weight L1 parity (blocked today) | Gated on external checkpoint extractor |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
+| `depth-coverage-rollup` | Which declared depths (L=1,2,4,8,35) have on-disk receipts per lane — honest aspirational-vs-evidenced split | Anyone asking "is this the full model?" |
 
 ## Contact and next steps
 

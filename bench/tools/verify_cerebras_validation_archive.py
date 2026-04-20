@@ -133,6 +133,7 @@ def _load_known_claim_roles() -> set[str]:
             "real-weight-parity-verdict",
             "moe-lane-scope",
             "rollup",
+            "depth-coverage-rollup",
         }
 
 

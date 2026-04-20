@@ -169,7 +169,35 @@ def run_csl_sdklayout(bundle: dict, num_layers: int, out_dir: Path) -> dict:
             "error": f"cs_python not found at {cs_python}",
             "blocker": "cs_python_not_available",
         }
-    trace_path = out_dir / "trace.json"
+    cached_trace = (
+        REPO_ROOT
+        / f"bench/out/scratch/gemma4-e2b-csl-sim/csl-L{num_layers}-live-trace.json"
+    )
+    trace_path = out_dir / (
+        "trace.json" if num_layers == 1 else f"trace-L{num_layers}.json"
+    )
+    if cached_trace.is_file():
+        trace = json.loads(cached_trace.read_text(encoding="utf-8"))
+        er = trace.get("executedRun", {}) or {}
+        out = er.get("output") or {}
+        return {
+            "status": er.get("status", "unknown"),
+            "elapsedMs": er.get("elapsedMs"),
+            "outputPath": out.get("path"),
+            "outputSha256": out.get("sha256"),
+            "tracePath": str(cached_trace.relative_to(REPO_ROOT)),
+            "runtimeMetadata": {
+                "source": "cached_trace",
+                "kernelSourceSha256": (
+                    trace.get("layerBlockSmoke") or {}
+                ).get("kernelSourceSha256"),
+                "note": (
+                    "Loaded a matching-depth local simfabric trace instead "
+                    "of launching cs_python. Use the demo server force=1 "
+                    "path or remove the cached trace to request a fresh run."
+                ),
+            },
+        }
     compile_out = out_dir / "compile"
     compile_out.mkdir(parents=True, exist_ok=True)
     command = [
@@ -222,7 +250,9 @@ def run_webgpu_wgsl(bundle: dict, num_layers: int, out_dir: Path) -> dict:
     )
     if prep.returncode != 0:
         return {"status": "failed", "error": f"input-fixture prep failed: {prep.stderr[-400:]}"}
-    webgpu_out = out_dir / "webgpu"
+    webgpu_out = out_dir / (
+        "webgpu" if num_layers == 1 else f"webgpu-L{num_layers}"
+    )
     webgpu_out.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(
         [node, "bench/tools/doppler_webgpu_reference_export.cjs",
@@ -265,7 +295,12 @@ DOE_NATIVE_PROBE_PLAN = "bench/plans/generated/inference_gemma3_270m_decode_1tok
 DOE_NATIVE_PROBE_WORKLOAD = "inference_gemma3_270m_decode_1tok"
 
 
-def run_doe_native_probe(target: str, bundle: dict, out_dir: Path) -> dict:
+def run_doe_native_probe(
+    target: str,
+    bundle: dict,
+    num_layers: int,
+    out_dir: Path,
+) -> dict:
     # Backend-identity probe against Doe's own WebGPU runtime. Dispatches
     # a representative Doe plan in dry-run through doe-plan-executor with
     # a backend-lane override, to emit compile-success + backendId +
@@ -291,8 +326,14 @@ def run_doe_native_probe(target: str, bundle: dict, out_dir: Path) -> dict:
         "doe-vulkan": ("vulkan_doe_release", "amd",   "vulkan", "dry_run_vulkan_probe"),
     }[target]
     backend_lane, vendor, api, family_label = lane_profile
-    trace_meta = out_dir / "trace-meta.json"
-    trace_jsonl = out_dir / "trace.jsonl"
+    trace_meta = out_dir / (
+        "trace-meta.json" if num_layers == 1
+        else f"trace-meta-L{num_layers}.json"
+    )
+    trace_jsonl = out_dir / (
+        "trace.jsonl" if num_layers == 1
+        else f"trace-L{num_layers}.jsonl"
+    )
     proc = subprocess.run(
         [
             str(doe_bin),
@@ -435,7 +476,9 @@ def main() -> int:
         elif target == "csl-webgpu-emulator":
             receipt.update(run_csl_webgpu_emulator(bundle, args.num_layers, out_dir))
         elif target in ("doe-metal", "doe-vulkan"):
-            receipt.update(run_doe_native_probe(target, bundle, out_dir))
+            receipt.update(
+                run_doe_native_probe(target, bundle, args.num_layers, out_dir)
+            )
         else:
             receipt.update(run_stub(target, bundle, args.num_layers, out_dir))
         rec_path = out_dir / f"L{args.num_layers}-receipt.json"

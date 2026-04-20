@@ -42,22 +42,37 @@
       <span id="server-status" class="status-pill pending">server: checking</span>
     </section>
 
-    <section class="compare-strip" aria-label="Comparison summary">
+    <section class="scope-strip" aria-label="Run scope">
       <div>
-        <span class="label">verdict</span>
+        <span class="label">live run</span>
+        <strong id="live-scope">browser final-chain pending</strong>
+      </div>
+      <div>
+        <span class="label">evidence basis</span>
+        <strong id="evidence-basis">loading</strong>
+      </div>
+      <div>
+        <span class="label">selected depth</span>
+        <strong id="runtime-shape">L1 · 1024 f32</strong>
+      </div>
+    </section>
+
+    <section class="compare-strip primary-readout" aria-label="Comparison summary">
+      <div>
+        <span class="label">live final-chain</span>
         <strong id="verdict">waiting</strong>
       </div>
       <div>
-        <span class="label">max abs diff</span>
+        <span class="label">final-chain diff</span>
         <strong id="max-diff">-</strong>
       </div>
       <div>
-        <span class="label">tolerance</span>
+        <span class="label">final-chain tolerance</span>
         <strong>1e-3</strong>
       </div>
       <div>
-        <span class="label">runtime shape</span>
-        <strong id="runtime-shape">L1 · 1024 f32</strong>
+        <span class="label">claim boundary</span>
+        <strong id="evidence-claim-scope">local debug path only</strong>
       </div>
     </section>
 
@@ -75,8 +90,8 @@
         <strong id="evidence-accuracy">-</strong>
       </div>
       <div>
-        <span class="label">claim scope</span>
-        <strong id="evidence-claim-scope">local debug path only</strong>
+        <span class="label">rollup verdict</span>
+        <strong id="evidence-rollup">-</strong>
       </div>
     </section>
 
@@ -84,6 +99,7 @@
       <div class="cockpit-head">
         <h2>Unified target matrix</h2>
         <span id="cockpit-source">loading rollup...</span>
+        <span id="depth-coverage-label" aria-label="Depth coverage across declared chain depths">depth coverage: -</span>
       </div>
       <div class="claim-badges">
         <span class="badge" id="badge-reference">reference: -</span>
@@ -117,6 +133,24 @@
         </thead>
         <tbody id="cockpit-body">
           <tr><td colspan="5" class="cockpit-empty">rollup not loaded</td></tr>
+        </tbody>
+      </table>
+      <div class="cockpit-head">
+        <h3 style="margin:0;font-size:0.9rem;">Runtime-lane output parity (tolerance-aware)</h3>
+        <span id="parity-rollup">rollup: -</span>
+      </div>
+      <table class="cockpit-table" aria-label="Runtime-lane parity matrix with tolerance">
+        <thead>
+          <tr>
+            <th>pair</th>
+            <th>digest</th>
+            <th>tolerance</th>
+            <th>maxAbsDiff</th>
+            <th>atol</th>
+          </tr>
+        </thead>
+        <tbody id="parity-matrix-body">
+          <tr><td colspan="5" class="cockpit-empty">parity matrix not loaded</td></tr>
         </tbody>
       </table>
     </section>
@@ -162,6 +196,7 @@
         </div>
         <dl>
           <div><dt>runner</dt><dd><code id="csl-command">e2b_layer_block_smoke.py --num-layers 1</code></dd></div>
+          <div><dt>source mode</dt><dd id="csl-source-mode">-</dd></div>
           <div><dt>elapsed</dt><dd id="csl-elapsed">-</dd></div>
           <div><dt>output sha256</dt><dd id="csl-sha">-</dd></div>
           <div><dt>trace</dt><dd id="csl-trace">-</dd></div>

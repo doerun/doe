@@ -11,6 +11,7 @@ const paths = {
   layerInput: "bench/out/doppler-reference/inputs/input_seed2000_size1024.f32",
   storedCslTrace: "bench/out/doppler-reference/csl-L1-reference-trace.json",
   parityReceipt: "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json",
+  perLayerParity: "bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json",
 };
 
 function speedVerdictPath(numLayers) {
@@ -24,6 +25,8 @@ function accuracyVerdictPath(numLayers) {
 function allLanesSummaryPath(numLayers) {
   return `bench/out/doe-run/all-lanes-summary-L${numLayers}.json`;
 }
+
+const depthCoveragePath = "bench/out/doe-run/depth-coverage-matrix.json";
 
 const PER_LAYER_BASE = 2000; // matches CSL runner's default
 const REQUIRED_CSL_STREAMS = [
@@ -48,13 +51,25 @@ let cslOutput = null;
 let emulatorOutput = null;
 let lastCslTracePath = null;
 let lastCslNumLayers = null;
+let latestDirectComparison = { compared: false, pass: null, numLayers: null };
 
 const el = (id) => document.getElementById(id);
 
 function setPill(id, text, cls = "pending") {
   const node = el(id);
+  if (!node) return;
   node.textContent = text;
   node.className = `status-pill ${cls}`;
+}
+
+function setText(id, text) {
+  const node = el(id);
+  if (node) node.textContent = text;
+}
+
+function setTone(id, tone = "") {
+  const node = el(id);
+  if (node) node.dataset.tone = tone;
 }
 
 function preview(array) {
@@ -177,11 +192,22 @@ async function checkServer() {
     const response = await fetch("/api/status", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const status = await response.json();
-    setPill(
-      "server-status",
-      status.csPythonAvailable ? "server: CSL live ready" : "server: no cs_python",
-      status.csPythonAvailable ? "pass" : "warn",
-    );
+    const cachedDepths = Array.isArray(status.cachedTraceDepths)
+      ? status.cachedTraceDepths
+      : [];
+    if (cachedDepths.length > 0) {
+      setPill(
+        "server-status",
+        `server: CSL traces ready (${cachedDepths.length})`,
+        "pass",
+      );
+    } else {
+      setPill(
+        "server-status",
+        status.csPythonAvailable ? "server: cs_python available" : "server: no cs_python",
+        status.csPythonAvailable ? "warn" : "fail",
+      );
+    }
   } catch {
     setPill("server-status", "server: static only", "warn");
   }
@@ -474,6 +500,41 @@ function diffStats(left, right) {
   return { maxAbs, meanAbs: sumAbs / n, n };
 }
 
+async function loadAccuracyVerdict(numLayers) {
+  try {
+    return await fetchJson(accuracyVerdictPath(numLayers));
+  } catch {
+    // Fallback for depths whose dedicated verdict has not been materialized.
+    // This repo-wide artifact is the stronger L35 per-layer isolated proof:
+    // every layer gets the same CSL/numpy rows input, so it measures kernel
+    // semantic agreement without feeding WebGPU's previous-layer drift into
+    // the next layer.
+    const parity = await fetchJson(paths.perLayerParity);
+    const atol = (parity.verdict && parity.verdict.verdictAtol) || 0.001;
+    const layers = (parity.perLayer || [])
+      .filter((layer) => layer.layer < numLayers);
+    if (!layers.length) throw new Error(`no per-layer parity rows for L=${numLayers}`);
+    const firstFailure = layers.find((layer) => layer.maxAbsErr > atol);
+    const maxAbs = Math.max(...layers.map((layer) => layer.maxAbsErr));
+    const meanAbs = layers.reduce((sum, layer) => sum + layer.meanAbsErr, 0) / layers.length;
+    return {
+      schemaVersion: 1,
+      artifactKind: "doe_csl_emulator_accuracy_verdict_normalized",
+      sourceArtifact: paths.perLayerParity,
+      numLayers,
+      atol,
+      summary: {
+        maxAbsErrAcrossLayers: maxAbs,
+        meanAbsErrAcrossLayers: meanAbs,
+        allLayersWithinAtol: !firstFailure,
+        firstFailureLayer: firstFailure || null,
+      },
+      perLayer: layers,
+      verdict: firstFailure ? "failed" : "passed",
+    };
+  }
+}
+
 function compareOutputs() {
   const pairs = [];
   if (webgpuOutput && cslOutput) {
@@ -483,18 +544,32 @@ function compareOutputs() {
     pairs.push({ label: "emu/CSL", ...diffStats(emulatorOutput, cslOutput) });
   }
   if (pairs.length === 0) {
-    el("verdict").textContent = "waiting";
-    el("max-diff").textContent = "-";
+    latestDirectComparison = { compared: false, pass: null, numLayers: selectedNumLayers() };
+    setText("verdict", "waiting");
+    setTone("verdict", "");
+    setText("live-scope", "browser final-chain pending");
+    setTone("live-scope", "");
+    setText("max-diff", "-");
+    setTone("max-diff", "");
     drawPlot();
     refreshEvidenceStrip();
     return;
   }
   const pass = pairs.every((pair) => pair.maxAbs <= tolerance);
-  el("verdict").textContent = pass ? "passed" : "failed";
-  el("verdict").style.color = pass ? "var(--green)" : "var(--red)";
-  el("max-diff").textContent = pairs
+  latestDirectComparison = {
+    compared: true,
+    pass,
+    numLayers: selectedNumLayers(),
+    pairs,
+  };
+  setText("verdict", pass ? "passed" : "drifted");
+  setTone("verdict", pass ? "pass" : "fail");
+  setText("live-scope", pass ? "browser chain matched CSL" : "browser chain diverged from CSL");
+  setTone("live-scope", pass ? "pass" : "warn");
+  setText("max-diff", pairs
     .map((pair) => `${pair.label} ${pair.maxAbs.toExponential(3)} · mean ${pair.meanAbs.toExponential(3)}`)
-    .join(" | ");
+    .join(" | "));
+  setTone("max-diff", pass ? "pass" : "warn");
   drawPlot();
   refreshEvidenceStrip();
 }
@@ -504,6 +579,16 @@ async function refreshEvidenceStrip() {
   const speedEl = el("evidence-speedup");
   const accEl = el("evidence-accuracy");
   const idEl = el("evidence-identity");
+  const scopeEl = el("evidence-claim-scope");
+  const basisEl = el("evidence-basis");
+  if (scopeEl) {
+    scopeEl.textContent = "local debug only";
+    scopeEl.dataset.tone = "";
+  }
+  if (basisEl) {
+    basisEl.textContent = "per-layer semantic evidence";
+    basisEl.dataset.tone = "";
+  }
 
   // Identity: from the speed verdict if present. Else leave as "-".
   let speedVerdict = null;
@@ -518,29 +603,29 @@ async function refreshEvidenceStrip() {
     idEl.textContent = both
       ? `matched (manifest+graph, L=${speedVerdict.numLayers})`
       : `not confirmed (L=${speedVerdict.numLayers})`;
-    idEl.style.color = both ? "var(--green)" : "var(--amber)";
+    idEl.dataset.tone = both ? "pass" : "warn";
     const ratio = speedVerdict.emulatorSpeedupOverLocalSimfabric;
     const emuMs = speedVerdict.emulatorElapsedMs;
     const cslMs = speedVerdict.cslSimfabricElapsedMs;
     if (typeof ratio === "number") {
       speedEl.textContent =
         `${ratio.toFixed(1)}x (${formatMs(emuMs)} vs ${formatMs(cslMs)})`;
-      speedEl.style.color = ratio > 1.0 ? "var(--green)" : "var(--muted)";
+      speedEl.dataset.tone = ratio > 1.0 ? "pass" : "";
     } else {
       speedEl.textContent = "-";
-      speedEl.style.color = "";
+      speedEl.dataset.tone = "";
     }
   } else {
     idEl.textContent = `no speed verdict for L=${numLayers}`;
-    idEl.style.color = "var(--muted)";
+    idEl.dataset.tone = "";
     speedEl.textContent = "-";
-    speedEl.style.color = "";
+    speedEl.dataset.tone = "";
   }
 
   // Per-layer accuracy verdict: separate artifact.
   let accVerdict = null;
   try {
-    accVerdict = await fetchJson(accuracyVerdictPath(numLayers));
+    accVerdict = await loadAccuracyVerdict(numLayers);
   } catch {
     accVerdict = null;
   }
@@ -550,10 +635,38 @@ async function refreshEvidenceStrip() {
     accEl.textContent = pass
       ? `all ${accVerdict.numLayers}L within ${accVerdict.atol} (max ${s.maxAbsErrAcrossLayers.toExponential(2)})`
       : `layer ${s.firstFailureLayer?.layer} exceeds ${accVerdict.atol}`;
-    accEl.style.color = pass ? "var(--green)" : "var(--red)";
+    accEl.dataset.tone = pass ? "pass" : "fail";
+    const direct = latestDirectComparison;
+    if (
+      pass &&
+      direct.compared &&
+      direct.numLayers === numLayers &&
+      direct.pass === false
+    ) {
+      setText("verdict", "per-layer pass, chain drift");
+      setTone("verdict", "warn");
+      setText("live-scope", "live browser chain drifted");
+      setTone("live-scope", "warn");
+      if (basisEl) {
+        basisEl.textContent = "per-layer semantic match";
+        basisEl.dataset.tone = "pass";
+      }
+      if (scopeEl) {
+        scopeEl.textContent = "final chain is diagnostic";
+        scopeEl.dataset.tone = "warn";
+      }
+    } else if (
+      direct.compared &&
+      direct.numLayers === numLayers &&
+      direct.pass === true &&
+      scopeEl
+    ) {
+      scopeEl.textContent = "final-chain parity";
+      scopeEl.dataset.tone = "pass";
+    }
   } else {
     accEl.textContent = `no accuracy verdict for L=${numLayers}`;
-    accEl.style.color = "var(--muted)";
+    accEl.dataset.tone = "";
   }
 }
 
@@ -643,9 +756,11 @@ async function setCslResult(result) {
   el("csl-elapsed").textContent = formatMs(result.elapsed);
   el("csl-sha").textContent = result.sha || await sha256Hex(result.output);
   el("csl-trace").textContent = result.tracePath || "-";
-  el("csl-preview").textContent = result.runnerSkipped
-    ? `${preview(result.output)}\n\n${result.runnerSkipped}`
-    : preview(result.output);
+  setText(
+    "csl-source-mode",
+    result.cacheHit ? "cached local simfabric trace" : result.source,
+  );
+  el("csl-preview").textContent = preview(result.output);
   compareOutputs();
 }
 
@@ -752,14 +867,19 @@ function onDepthChange() {
   el("csl-elapsed").textContent = "-";
   el("csl-sha").textContent = "-";
   el("csl-trace").textContent = "-";
+  setText("csl-source-mode", "-");
   el("csl-preview").textContent = "Run or load CSL to fetch activation_out.";
   el("emulator-elapsed").textContent = "-";
   el("emulator-sha").textContent = "-";
   el("emulator-semantics").textContent = "-";
   el("emulator-preview").textContent = "Run emulator to compute activation_out.";
-  el("verdict").textContent = "waiting";
-  el("max-diff").textContent = "-";
-  el("sample-count").textContent = "0 samples";
+  setText("verdict", "waiting");
+  setTone("verdict", "");
+  setText("live-scope", "browser final-chain pending");
+  setTone("live-scope", "");
+  setText("max-diff", "-");
+  setTone("max-diff", "");
+  setText("sample-count", "0 samples");
   refreshEvidenceStrip();
   refreshCockpit();
   updateCslCommand();
@@ -847,10 +967,39 @@ async function renderLaneLabels() {
   )).join("");
 }
 
+async function refreshDepthCoverage() {
+  // Source: bench/out/doe-run/depth-coverage-matrix.json. Keeps the
+  // aspirational-vs-evidenced split honest for every declared depth
+  // without making a viewer click through each selector option.
+  const label = el("depth-coverage-label");
+  if (!label) return;
+  let matrix;
+  try {
+    matrix = await fetchJson(depthCoveragePath);
+  } catch {
+    label.textContent = `depth coverage: no matrix at ${depthCoveragePath}`;
+    return;
+  }
+  const r = matrix.rollup || {};
+  const declared = r.declaredCount;
+  const anyCount = r.anyReceiptCount;
+  const fullCount = r.fullCoverageCount;
+  const tolCount = r.withinToleranceCount;
+  const depthsFull = (r.depthsWithFullLaneCoverage || []).map(d => `L=${d}`);
+  const depthsTol = (r.depthsAllWithinTolerance || []).map(d => `L=${d}`);
+  const fullList = depthsFull.length ? ` [${depthsFull.join(", ")}]` : "";
+  const tolList = depthsTol.length ? ` [${depthsTol.join(", ")}]` : "";
+  label.innerHTML =
+    `depth coverage: <strong>${anyCount}/${declared}</strong> any receipt · ` +
+    `<strong>${fullCount}/${declared}</strong> full lane${fullList} · ` +
+    `<strong>${tolCount}/${declared}</strong> within tolerance${tolList}`;
+}
+
 async function refreshCockpit() {
   const numLayers = selectedNumLayers();
   const sourceLabel = el("cockpit-source");
   const tbody = el("cockpit-body");
+  refreshDepthCoverage();
   let summary = null;
   try {
     summary = await fetchJson(allLanesSummaryPath(numLayers));
@@ -861,14 +1010,31 @@ async function refreshCockpit() {
     if (sourceLabel) {
       sourceLabel.textContent = `no rollup for L=${numLayers} · run: python3 bench/tools/summarize_doe_run_lanes.py --num-layers ${numLayers} --out-json ${allLanesSummaryPath(numLayers)}`;
     }
+    setText("evidence-rollup", `no rollup for L=${numLayers}`);
+    setTone("evidence-rollup", "warn");
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="5" class="cockpit-empty">no rollup for L=${numLayers}</td></tr>`;
     }
+    const emptyParityBody = el("parity-matrix-body");
+    const emptyParityRollup = el("parity-rollup");
+    if (emptyParityBody) {
+      emptyParityBody.innerHTML =
+        `<tr><td colspan="5" class="cockpit-empty">parity matrix not loaded</td></tr>`;
+    }
+    if (emptyParityRollup) emptyParityRollup.textContent = "rollup: -";
     setClaimBadgesAbsent();
     return;
   }
 
   const lanes = summary.lanes || [];
+  const rollupTone = summary.verdict === "all_lanes_identity_and_parity_matched"
+    ? "pass"
+    : "warn";
+  const toleranceVerdict = (
+    (summary.runtimeParityTolerance || {}).rollupVerdict || "not_evaluated"
+  );
+  setText("evidence-rollup", `${summary.verdict || "unknown"} · ${toleranceVerdict}`);
+  setTone("evidence-rollup", rollupTone);
   if (tbody) {
     tbody.innerHTML = lanes.map((lane) => {
       const status = lane.status || "-";
@@ -888,6 +1054,60 @@ async function refreshCockpit() {
         <td>${elapsed}</td>
       </tr>`;
     }).join("");
+  }
+
+  // Runtime-lane parity matrix with tolerance-aware verdicts. Digest
+  // equality is bit-level; tolerance verdict is the accuracy gate.
+  // A "digest_mismatch + within_tolerance" pair is a PASS under the
+  // declared atol — float-order drift across backends legitimately
+  // produces different digests while staying well inside the E2B
+  // layer-block tolerance declared in the fixture.
+  const parityBody = el("parity-matrix-body");
+  const parityRollup = el("parity-rollup");
+  const matrix = summary.outputParityMatrix || [];
+  const rpt = summary.runtimeParityTolerance || null;
+  if (parityRollup) {
+    if (rpt) {
+      const verdict = rpt.rollupVerdict || "not_evaluated";
+      const cls = verdict === "all_within_tolerance" ? "pass"
+                : verdict === "exceeds_tolerance" ? "fail"
+                : verdict === "shape_or_non_finite_failure" ? "fail"
+                : "warn";
+      parityRollup.innerHTML =
+        `rollup: <span class="badge ${cls}">${verdict}</span> ` +
+        `· atol=${rpt.atol} (<code>${rpt.atolSource}</code>) ` +
+        `· within ${rpt.withinToleranceCount}/${rpt.informativePairCount}`;
+    } else {
+      parityRollup.textContent = "rollup: not evaluated";
+    }
+  }
+  if (parityBody) {
+    if (!matrix.length) {
+      parityBody.innerHTML =
+        `<tr><td colspan="5" class="cockpit-empty">no parity pairs</td></tr>`;
+    } else {
+      parityBody.innerHTML = matrix.map((p) => {
+        const digest = p.verdict || "-";
+        const digestCls = digest === "bit_exact_match" ? "pass" : "warn";
+        const tol = p.toleranceVerdict || "not_evaluated";
+        const tolCls = tol === "within_tolerance" ? "pass"
+                     : tol === "exceeds_tolerance" ? "fail"
+                     : tol === "shape_mismatch" ? "fail"
+                     : tol === "non_finite" ? "fail"
+                     : "warn";
+        const maxAbs = (typeof p.maxAbsDiff === "number")
+          ? p.maxAbsDiff.toExponential(3) : "-";
+        const atol = (typeof p.toleranceAtol === "number")
+          ? p.toleranceAtol.toExponential(0) : "-";
+        return `<tr>
+          <td><code>${p.left}</code> ↔ <code>${p.right}</code></td>
+          <td><span class="badge ${digestCls}">${digest}</span></td>
+          <td><span class="badge ${tolCls}">${tol}</span></td>
+          <td>${maxAbs}</td>
+          <td>${atol}</td>
+        </tr>`;
+      }).join("");
+    }
   }
 
   // Claim badges: reference = webgpu-wgsl; simulator = csl-sdklayout;

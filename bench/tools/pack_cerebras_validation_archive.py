@@ -94,6 +94,7 @@ INCLUDE_FILES: tuple = (
     "bench/out/26b-moe-lane/per-expert-batching-todo.json",
     # Rollups that summarize the lane matrix and gate runs.
     "bench/out/doe-run/all-lanes-summary-L1.json",
+    "bench/out/doe-run/depth-coverage-matrix.json",
     "bench/out/cerebras-evidence-bundle/summary.json",
 )
 
@@ -146,6 +147,7 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/26b-moe-lane/output-combine-todo.json": "moe-lane-scope",
     "bench/out/26b-moe-lane/per-expert-batching-todo.json": "moe-lane-scope",
     "bench/out/doe-run/all-lanes-summary-L1.json": "rollup",
+    "bench/out/doe-run/depth-coverage-matrix.json": "depth-coverage-rollup",
     "bench/out/cerebras-evidence-bundle/summary.json": "rollup",
 }
 

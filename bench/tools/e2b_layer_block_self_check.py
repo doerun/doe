@@ -1333,6 +1333,74 @@ def main() -> int:
             "Cerebras-assisted)"
         )
 
+    # C35: emit_depth_coverage_matrix.DECLARED_DEPTHS must match the
+    # cockpit HTML's num-layers-select options. Drift here lies to the
+    # viewer: either the tool enumerates depths the UI doesn't offer,
+    # or the UI offers depths the tool never evaluates. The honest
+    # labeling depends on one source of truth; the check locks them.
+    _c35_fails: list[str] = []
+    _c35_tool = REPO_ROOT / "bench/tools/emit_depth_coverage_matrix.py"
+    _c35_html = REPO_ROOT / "demos/gemma4-e2b-csl-sim/index.html"
+    if not _c35_tool.is_file():
+        _c35_fails.append(
+            "emit_depth_coverage_matrix.py missing — required for C35"
+        )
+    if not _c35_html.is_file():
+        _c35_fails.append(
+            "demos/gemma4-e2b-csl-sim/index.html missing — required for C35"
+        )
+    if not _c35_fails:
+        try:
+            import importlib.util as _ilu_c35
+            _spec35 = _ilu_c35.spec_from_file_location(
+                "_doe_depth_tool", str(_c35_tool)
+            )
+            _mod35 = _ilu_c35.module_from_spec(_spec35)
+            _spec35.loader.exec_module(_mod35)  # type: ignore[union-attr]
+            _tool_depths = tuple(_mod35.DECLARED_DEPTHS)
+        except (OSError, AttributeError, ImportError) as _e35:
+            _tool_depths = None
+            _c35_fails.append(
+                "could not import DECLARED_DEPTHS from "
+                f"emit_depth_coverage_matrix.py: {_e35}"
+            )
+        if _tool_depths is not None:
+            _html = _c35_html.read_text(encoding="utf-8")
+            # Narrow scan to the num-layers-select <select>...</select>
+            # block so other unrelated <option> tags on the page cannot
+            # accidentally satisfy the contract.
+            _sel_start = _html.find('id="num-layers-select"')
+            _sel_end = _html.find("</select>", _sel_start) if _sel_start >= 0 else -1
+            if _sel_start < 0 or _sel_end < 0:
+                _c35_fails.append(
+                    "num-layers-select <select> block not found in "
+                    "cockpit index.html"
+                )
+            else:
+                _block = _html[_sel_start:_sel_end]
+                import re as _re_c35
+                _html_depths = tuple(
+                    int(_m) for _m in _re_c35.findall(
+                        r'value="(\d+)"', _block
+                    )
+                )
+                if _tool_depths != _html_depths:
+                    _c35_fails.append(
+                        f"depth drift: tool={list(_tool_depths)} "
+                        f"cockpit={list(_html_depths)} "
+                        "(order and membership both matter — the cockpit "
+                        "selector order is user-visible)"
+                    )
+    if _c35_fails:
+        for _f in _c35_fails:
+            failures.append(f"C35 FAIL: {_f}")
+    else:
+        print(
+            "  C35 PASS: DECLARED_DEPTHS in emit_depth_coverage_matrix.py "
+            "matches cockpit num-layers-select options (order + "
+            f"membership) — {list(_tool_depths)}"
+        )
+
     # C22: packager's INCLUDE_FILES and CLAIM_ROLE dict stay in sync.
     # Every archive path in INCLUDE_FILES must have a CLAIM_ROLE entry
     # (otherwise MANIFEST.txt shows 'UNLABELED'); every CLAIM_ROLE key
