@@ -38,6 +38,13 @@ def timeout_seconds_for(num_layers: int) -> int:
     return max(180, num_layers * 15)
 
 
+def cached_trace_depths() -> list[int]:
+    return [
+        n for n in ALLOWED_NUM_LAYERS
+        if (REPO_ROOT / trace_path_for(n)).is_file()
+    ]
+
+
 def redact(text: str) -> str:
     sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", "/home/x/cerebras-sdk")
     return text.replace(sdk_root, "$DOE_CSL_SDK_ROOT")
@@ -155,10 +162,13 @@ class DemoHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/status":
             cs_py = cs_python_path()
+            cached_depths = cached_trace_depths()
             self.send_json({
                 "repoRoot": str(REPO_ROOT),
                 "csPython": redact(cs_py),
                 "csPythonAvailable": Path(cs_py).exists() or cs_py == "cs_python",
+                "cachedTraceDepths": cached_depths,
+                "runMode": "cached_trace_preferred_force_live",
             })
             return
         if parsed.path == "/api/artifact-dir-info":

@@ -9,11 +9,20 @@ and emits one `doe_all_lanes_summary` JSON:
     manifestSha256, graphSha256, interpretation
   - bundleIdentity: manifest/graph sha consistency across lanes
   - outputParityMatrix: output-sha agreement across runtime-producing
-    lanes (webgpu-wgsl, csl-webgpu-emulator, csl-sdklayout)
+    lanes (webgpu-wgsl, csl-webgpu-emulator, csl-sdklayout), now
+    annotated with tolerance verdicts (maxAbsDiff, toleranceVerdict
+    ∈ {within_tolerance, exceeds_tolerance, shape_mismatch,
+    non_finite, not_comparable}) when float32 outputs are readable
+  - runtimeParityTolerance: rollup of the tolerance column with the
+    declared atol (sourced from config/gemma-4-e2b-real-weight-fixture
+    parityPolicy.atol when present, else 1e-3)
   - laneTaxonomy: which lanes produce output vs probe backend identity
 
 Scope: identity + parity matrix. Not a performance claim. See
 `docs/claim-discipline.md` for allowed/rejected claim boundaries.
+Tolerance is the accuracy gate — digest mismatch is not the same as
+"exceeds tolerance"; float-order differences across backends can
+produce different digests while staying well within atol.
 
 Usage:
   python3 bench/tools/summarize_doe_run_lanes.py --num-layers 1 \\
@@ -236,6 +245,7 @@ def main() -> int:
     # Output parity matrix across runtime-producing lanes only. Only
     # compare lanes that report status=succeeded and a non-null
     # outputSha256; otherwise mark the pair 'not_comparable'.
+    atol, atol_source = load_declared_atol()
     parity_entries = []
     runtime_lane_entries = [
         e for e in per_lane
@@ -255,7 +265,7 @@ def main() -> int:
                 ),
             })
             continue
-        parity_entries.append({
+        entry = {
             "left": left["lane"],
             "right": right["lane"],
             "leftOutputSha256": left["outputSha256"],
@@ -265,7 +275,14 @@ def main() -> int:
                 if left["outputSha256"] == right["outputSha256"]
                 else "digest_mismatch"
             ),
-        })
+        }
+        left_out = left.get("outputPath")
+        right_out = right.get("outputPath")
+        if left_out and right_out:
+            entry.update(tolerance_verdict(
+                resolve(left_out), resolve(right_out), atol,
+            ))
+        parity_entries.append(entry)
 
     # Overall verdict: all lanes with receipts succeeded or probed
     # successfully, bundle identity held, and runtime lanes all agree
@@ -311,6 +328,40 @@ def main() -> int:
         except (OSError, ValueError):
             pass
 
+    # Tolerance rollup across runtime-producing lane pairs. A pair is
+    # "tolerance-informative" if it has a toleranceVerdict in
+    # {within_tolerance, exceeds_tolerance, shape_mismatch, non_finite}.
+    # Pairs with toleranceVerdict=not_comparable (numpy unavailable or
+    # file absent) are excluded from the informative count so the
+    # rollup does not conflate tooling gaps with real parity findings.
+    informative = [
+        p for p in parity_entries
+        if p.get("toleranceVerdict") in (
+            "within_tolerance", "exceeds_tolerance",
+            "shape_mismatch", "non_finite",
+        )
+    ]
+    within_count = sum(
+        1 for p in informative
+        if p.get("toleranceVerdict") == "within_tolerance"
+    )
+    exceeds_count = sum(
+        1 for p in informative
+        if p.get("toleranceVerdict") == "exceeds_tolerance"
+    )
+    hard_fail_count = sum(
+        1 for p in informative
+        if p.get("toleranceVerdict") in ("shape_mismatch", "non_finite")
+    )
+    if not informative:
+        tolerance_rollup_verdict = "not_evaluated"
+    elif hard_fail_count > 0:
+        tolerance_rollup_verdict = "shape_or_non_finite_failure"
+    elif exceeds_count > 0:
+        tolerance_rollup_verdict = "exceeds_tolerance"
+    else:
+        tolerance_rollup_verdict = "all_within_tolerance"
+
     summary = {
         "schemaVersion": 1,
         "artifactKind": "doe_all_lanes_summary",
@@ -326,6 +377,15 @@ def main() -> int:
             "graphConsistent": graph_consistent,
         },
         "outputParityMatrix": parity_entries,
+        "runtimeParityTolerance": {
+            "atol": atol,
+            "atolSource": atol_source,
+            "informativePairCount": len(informative),
+            "withinToleranceCount": within_count,
+            "exceedsToleranceCount": exceeds_count,
+            "hardFailCount": hard_fail_count,
+            "rollupVerdict": tolerance_rollup_verdict,
+        },
         "laneTaxonomy": {
             "runtimeOutputLanes": sorted(RUNTIME_OUTPUT_LANES),
             "backendIdentityProbeLanes": sorted(IDENTITY_PROBE_LANES),
@@ -355,6 +415,8 @@ def main() -> int:
         f"lanes: {sum(1 for e in per_lane if e.get('receiptPresent'))}/{len(LANES)} present, "
         f"bundleIdentity manifest={manifest_consistent} graph={graph_consistent}, "
         f"runtime-output parity {runtime_matches} match / {runtime_mismatches} mismatch. "
+        f"tolerance(atol={atol:g}): within={within_count} exceeds={exceeds_count} "
+        f"hard_fail={hard_fail_count} rollup={tolerance_rollup_verdict}. "
         f"verdict={overall}"
     )
     return 0 if overall == "all_lanes_identity_and_parity_matched" else 0
