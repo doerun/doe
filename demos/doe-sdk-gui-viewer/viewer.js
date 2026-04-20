@@ -375,11 +375,24 @@ async function onLoadArtifact() {
   await inspectArtifactDir(raw);
 }
 
-async function onCopySdkCommand() {
-  const node = el("sdk-command");
-  const btn = el("sdk-command-copy");
-  if (!node || !btn) return;
-  const text = (node.textContent || "").trim();
+async function onCopyCommand(ev) {
+  // Generic copy handler driven by the button's data-copy-for
+  // attribute naming the source element id. Refuses to copy when
+  // the source code block is marked data-copyable="false" so
+  // commands that still need an artifact dir or archive path don't
+  // get copied half-finished.
+  const btn = ev.currentTarget;
+  if (!btn) return;
+  const targetId = btn.getAttribute("data-copy-for");
+  const node = targetId ? el(targetId) : null;
+  if (!node) return;
+  if (node.getAttribute("data-copyable") === "false" || node.dataset.copyable === "false") {
+    const orig = btn.textContent;
+    btn.textContent = "not ready";
+    setTimeout(() => { btn.textContent = orig || "copy"; }, 1200);
+    return;
+  }
+  const text = (node.dataset.copyText || node.textContent || "").trim();
   try {
     await navigator.clipboard.writeText(text);
     const original = btn.textContent;
@@ -397,7 +410,12 @@ async function onCopySdkCommand() {
 
 function init() {
   el("load-artifact")?.addEventListener("click", onLoadArtifact);
-  el("sdk-command-copy")?.addEventListener("click", onCopySdkCommand);
+  // Wire every copy button declaratively via data-copy-for. Buttons
+  // added to the HTML auto-work as long as they carry the attribute
+  // and their source <code> has matching id + data-copyable.
+  for (const btn of document.querySelectorAll(".inline-copy[data-copy-for]")) {
+    btn.addEventListener("click", onCopyCommand);
+  }
   el("artifact-dir-input")?.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") onLoadArtifact();
   });
