@@ -26,6 +26,25 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--int4ple-reference-export",
+        default=(
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-production-final-logits/"
+            "doppler_int4ple_reference_export.json"
+        ),
+    )
+    parser.add_argument(
+        "--int4ple-parity",
+        default=(
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json"
+        ),
+    )
+    parser.add_argument(
+        "--lane-rollup",
+        default="bench/out/doe-run/all-lanes-summary-L1.json",
+    )
+    parser.add_argument(
         "--out-json",
         default="bench/out/csl-demo-evidence/gemma-4-e2b-demo-evidence.json",
     )
@@ -56,17 +75,59 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_optional_json(path: Path) -> Any | None:
+    return load_json(path) if path.is_file() else None
+
+
 def evidence_sha(path_text: str) -> str:
     path = resolve(path_text)
     return sha256_file(path) if path.is_file() else ""
+
+
+def source_program_from_parity(parity: dict[str, Any]) -> dict[str, str]:
+    source = parity.get("sourceProgram", {})
+    return {
+        "manifestPath": source.get("manifestPath", ""),
+        "manifestSha256": source.get("manifestSha256", ""),
+        "graphPath": source.get("graphPath", ""),
+        "graphSha256": source.get("graphSha256", ""),
+        "weightSetId": source.get("weightSetId", ""),
+        "weightSha256": source.get("weightSha256", ""),
+    }
+
+
+def source_program_from_export(export: dict[str, Any]) -> dict[str, str]:
+    graph = export.get("executionGraph", {})
+    return {
+        "manifestPath": export.get("manifestPath", ""),
+        "manifestSha256": export.get("manifestSha256", ""),
+        "graphPath": graph.get("path", ""),
+        "graphSha256": export.get("executionGraphSha256", ""),
+        "weightSetId": export.get("weightSetId", ""),
+        "weightSha256": export.get("weightSetSha256", ""),
+    }
+
+
+def failed_criteria(criteria: dict[str, Any]) -> list[str]:
+    return [
+        f"{key}=false"
+        for key, value in sorted(criteria.items())
+        if key != "hardwareReceiptRequiredForHardwareClaim" and value is not True
+    ]
 
 
 def main() -> int:
     args = parse_args()
     model_path = resolve(args.model_receipt)
     parity_path = resolve(args.reference_parity)
+    int4_export_path = resolve(args.int4ple_reference_export)
+    int4_parity_path = resolve(args.int4ple_parity)
+    lane_rollup_path = resolve(args.lane_rollup)
     model = load_json(model_path)
     parity = load_json(parity_path)
+    int4_export = load_optional_json(int4_export_path)
+    int4_parity = load_optional_json(int4_parity_path)
+    lane_rollup = load_optional_json(lane_rollup_path)
 
     source = parity["sourceProgram"]
     ref_status = parity["referenceRun"]["status"]
@@ -138,6 +199,96 @@ def main() -> int:
             "blocker": "hardware_receipt_not_available",
         },
     ]
+
+    if int4_export is not None:
+        tensor = int4_export.get("tensorDigest", {})
+        transcript = int4_export.get("decodeTranscript", {})
+        transcript_ready = transcript.get("status") == "output_ready"
+        reference_ready = (
+            int4_export.get("exportStatus") == "output_ready"
+            and tensor.get("status") == "output_ready"
+        )
+        transcript_summary = (
+            f"; transcriptSteps={transcript.get('decodeStepsProduced')}"
+            if transcript
+            else "; transcript=not_bound"
+        )
+        rows.append({
+            "id": "doppler-int4ple-reference",
+            "label": "Doppler production INT4 PLE reference",
+            "runtime": int4_export.get("producer", {}).get(
+                "runtime", "doppler_node_webgpu"
+            ),
+            "status": "pass" if reference_ready else "blocked",
+            "summary": (
+                f"referenceKind={int4_export.get('referenceKind', 'final_logits')}; "
+                f"final_logits={tensor.get('sha256', 'missing')}"
+                f"{transcript_summary}; reference only until Doe CSL parity binds"
+            ),
+            "evidencePath": rel(int4_export_path),
+            "evidenceSha256": sha256_file(int4_export_path),
+            "blocker": "" if transcript_ready else "bounded_decode_transcript_pending",
+            "sourceProgram": source_program_from_export(int4_export),
+        })
+
+    if int4_parity is not None:
+        comparison = int4_parity.get("comparison", {})
+        criteria = int4_parity.get("promotionCriteria", {})
+        missing = failed_criteria(criteria)
+        promoted = not missing and comparison.get("status") == "passed"
+        rows.append({
+            "id": "doe-csl-int4ple-transcript-parity",
+            "label": "Doe CSL INT4 PLE transcript parity",
+            "runtime": "csl_simfabric",
+            "status": "pass" if promoted else "blocked",
+            "summary": (
+                f"comparison={comparison.get('status', 'unknown')}; "
+                "promotion requires same hashes, real KV/cache, token IDs, "
+                "per-step logits, no stubs, no synthetic inputs/weights"
+            ),
+            "evidencePath": rel(int4_parity_path),
+            "evidenceSha256": sha256_file(int4_parity_path),
+            "blocker": comparison.get("blocker", "; ".join(missing)),
+            "sourceProgram": source_program_from_parity(int4_parity),
+        })
+
+    if lane_rollup is not None:
+        runtime_map = {
+            "webgpu-wgsl": "webgpu_wgsl",
+            "csl-webgpu-emulator": "csl_webgpu_emulator",
+            "csl-sdklayout": "csl_simfabric",
+        }
+        label_map = {
+            "webgpu-wgsl": "WebGPU WGSL L1 side-by-side lane",
+            "csl-webgpu-emulator": "CSL semantic WebGPU emulator L1 lane",
+            "csl-sdklayout": "CSL simfabric SdkLayout L1 lane",
+        }
+        for lane in lane_rollup.get("lanes", []):
+            lane_id = lane.get("lane")
+            if lane_id not in runtime_map:
+                continue
+            receipt_path = lane.get("receiptPath") or (
+                f"bench/out/doe-run/{lane_id}/L"
+                f"{lane_rollup.get('numLayers', 1)}-receipt.json"
+            )
+            rows.append({
+                "id": f"doe-run-{lane_id}-l{lane_rollup.get('numLayers', 1)}",
+                "label": label_map[lane_id],
+                "runtime": runtime_map[lane_id],
+                "status": "pass" if lane.get("status") == "succeeded" else "blocked",
+                "summary": (
+                    f"outputSha256={lane.get('outputSha256', 'none')}; "
+                    f"rollup={lane_rollup.get('verdict', 'unknown')}; "
+                    "layer-block lane only"
+                ),
+                "evidencePath": receipt_path,
+                "evidenceSha256": evidence_sha(receipt_path),
+                "blocker": (
+                    ""
+                    if lane.get("status") == "succeeded"
+                    else f"lane_status={lane.get('status', 'missing')}"
+                ),
+            })
 
     out = {
         "schemaVersion": 1,

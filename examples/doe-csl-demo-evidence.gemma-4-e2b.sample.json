@@ -3,9 +3,9 @@
   "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
   "rows": [
     {
-      "blocker": "external Doppler/browser output vector and CSL output hash not bound yet",
+      "blocker": "external Doppler/browser output vector not bound yet (pass --external-reference-output to bind one)",
       "evidencePath": "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json",
-      "evidenceSha256": "9d2b5ef9c50fd4e187fd784262cb48da06d04610f6a5939933bb3729a19b73bd",
+      "evidenceSha256": "ebbc70735c5978971ddcccf1814d2600adb8560ddde3f037304b264b7414ecb7",
       "id": "doppler-browser-reference",
       "label": "Doppler browser/WebGPU reference",
       "runtime": "browser_webgpu",
@@ -14,34 +14,100 @@
     },
     {
       "evidencePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
-      "evidenceSha256": "4332404b45697855744c1d337739216908498fd90cafd79bb7ea0866c33533ab",
+      "evidenceSha256": "c93c6590e18d081bf266337ac23ff3417b897233f445b6a4ba5178f2a553714d",
       "id": "csl-simfabric-layer-block",
       "label": "Doe CSL simfabric layer-block proof",
       "maxAbsErr": 0.0,
       "parityPassed": true,
       "runtime": "csl_simfabric",
       "status": "pass",
-      "summary": "pre_attn_rmsnorm+attn_inner_product+residual+post_attn_rmsnorm+gated_mlp_relu_gelu_stub"
+      "summary": "pre_attn_rmsnorm+mha_8head_hd8_kv4_multi_pair_rope_real_poly_c1_softmax+residual+post_attn_rmsnorm+gated_mlp_poly_c1_gelu+multi_layer_chain"
     },
     {
       "blocker": "full_e2b_end_to_end_receipt_absent",
       "evidencePath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
-      "evidenceSha256": "622dc1d91c4b206b00401804977e07f8ea829ea1e13e5724d5f170a54e8e479b",
+      "evidenceSha256": "f48a7833d7030ec5e966cc3fb405ec29d040530ffaa51003642eff7a4c416928",
       "id": "csl-full-model",
       "label": "Doe CSL end-to-end E2B gate",
       "runtime": "csl_model",
       "status": "not_attempted",
-      "summary": "modelRuntimeExecutionStatus=not_attempted; end_to_end=not_attempted; blocker=full_e2b_end_to_end_receipt_absent"
+      "summary": "modelRuntimeExecutionStatus=real_weight_layer_block_success; end_to_end=not_attempted; blocker=full_e2b_end_to_end_receipt_absent"
     },
     {
       "blocker": "hardware_receipt_not_available",
       "evidencePath": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
-      "evidenceSha256": "622dc1d91c4b206b00401804977e07f8ea829ea1e13e5724d5f170a54e8e479b",
+      "evidenceSha256": "f48a7833d7030ec5e966cc3fb405ec29d040530ffaa51003642eff7a4c416928",
       "id": "csl-hardware",
       "label": "Doe CSL WSC hardware receipt",
       "runtime": "csl_hardware",
       "status": "pending",
       "summary": "Hardware row is pending a WSC appliance receipt for the same manifest and graph."
+    },
+    {
+      "blocker": "",
+      "evidencePath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+      "evidenceSha256": "d53d346adf35fd0a7981d8e2647da77ed0d2f8f2d2d13068b43bd0258c8db2bd",
+      "id": "doppler-int4ple-reference",
+      "label": "Doppler production INT4 PLE reference",
+      "runtime": "doppler_node_webgpu",
+      "sourceProgram": {
+        "graphPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json",
+        "graphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
+        "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+        "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+        "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+        "weightSha256": "b5d9977ff3e211ed28dff3625474421ffab828b3a324ae8f052eab341fe9e4d4"
+      },
+      "status": "pass",
+      "summary": "referenceKind=prefill_decode_transcript; final_logits=ed1dc2aff60951916d2ee997ce69459998468d2cf4465345067d6f65a86633c3; transcriptSteps=3; reference only until Doe CSL parity binds"
+    },
+    {
+      "blocker": "Doe CSL simfabric bounded prefill+decode transcript has not been produced for the production Doppler INT4 PLE source program.",
+      "evidencePath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
+      "evidenceSha256": "ef3fbcc2bb84597c6c46fba45fcb206a0f30f624eff87a9832cc218129bb8eb7",
+      "id": "doe-csl-int4ple-transcript-parity",
+      "label": "Doe CSL INT4 PLE transcript parity",
+      "runtime": "csl_simfabric",
+      "sourceProgram": {
+        "graphPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json",
+        "graphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
+        "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+        "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+        "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+        "weightSha256": "b5d9977ff3e211ed28dff3625474421ffab828b3a324ae8f052eab341fe9e4d4"
+      },
+      "status": "blocked",
+      "summary": "comparison=pending_csl_output_hash; promotion requires same hashes, real KV/cache, token IDs, per-step logits, no stubs, no synthetic inputs/weights"
+    },
+    {
+      "blocker": "",
+      "evidencePath": "bench/out/doe-run/webgpu-wgsl/L1-receipt.json",
+      "evidenceSha256": "4f2ee6383aec5a36f3b23a7158b22ae5db7aa624d510e9ca16a8b0bbaaa5ec00",
+      "id": "doe-run-webgpu-wgsl-l1",
+      "label": "WebGPU WGSL L1 side-by-side lane",
+      "runtime": "webgpu_wgsl",
+      "status": "pass",
+      "summary": "outputSha256=123681d6b54a92c1098867f077d1b011656160728fb2954d5ff4cdfec36e3b3d; rollup=partial_or_inconsistent; layer-block lane only"
+    },
+    {
+      "blocker": "",
+      "evidencePath": "bench/out/doe-run/csl-sdklayout/L1-receipt.json",
+      "evidenceSha256": "cc9d98b36212f3eada2c07ffb672431792d97a291fa6d5dbf61032ac47c797bf",
+      "id": "doe-run-csl-sdklayout-l1",
+      "label": "CSL simfabric SdkLayout L1 lane",
+      "runtime": "csl_simfabric",
+      "status": "pass",
+      "summary": "outputSha256=123681d6b54a92c1098867f077d1b011656160728fb2954d5ff4cdfec36e3b3d; rollup=partial_or_inconsistent; layer-block lane only"
+    },
+    {
+      "blocker": "",
+      "evidencePath": "bench/out/doe-run/csl-webgpu-emulator/L1-receipt.json",
+      "evidenceSha256": "7ef12130f786f37244d4f62881adbbbcf895d0c469a452bf5e8f4e481765b855",
+      "id": "doe-run-csl-webgpu-emulator-l1",
+      "label": "CSL semantic WebGPU emulator L1 lane",
+      "runtime": "csl_webgpu_emulator",
+      "status": "pass",
+      "summary": "outputSha256=123681d6b54a92c1098867f077d1b011656160728fb2954d5ff4cdfec36e3b3d; rollup=partial_or_inconsistent; layer-block lane only"
     }
   ],
   "schemaVersion": 1,
@@ -49,6 +115,6 @@
     "graphPath": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
     "graphSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
     "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
-    "manifestSha256": "67e13946350e69ee62c75f06e80b94d44e15a18ba5858a8e9011636cfa6c9c26"
+    "manifestSha256": "71181791b2dcab1e4c8d24ab36b16c7900231c3bf294773d5ebed4001fa69a0c"
   }
 }

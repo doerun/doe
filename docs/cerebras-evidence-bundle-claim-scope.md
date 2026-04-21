@@ -47,13 +47,25 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    production inference output parity, not manifest-shape execution,
    and not full E2B.
 
-5. **E2B declared-depth smoke-chain diagnostics are bundled.** Backed
+5. **The production Doppler INT4 PLE lane has an output-ready
+   reference export when the `doppler-int4ple-reference-export`
+   artifact is present.** This is source-reference evidence only. The
+   final-logits tensor is an intermediate checkpoint; the promotion
+   target is a bounded deterministic prefill+decode transcript with
+   per-step logits and token IDs. The
+   `doe-csl-int4ple-blocked-transcript` artifact records the Doe CSL
+   transcript receipt shape, graph-derived lowering blockers, and the
+   current missing simfabric producer.
+   It is not Doe CSL parity, not hardware evidence, and not a performance
+   claim.
+
+6. **E2B declared-depth smoke-chain diagnostics are bundled.** Backed
    by the BF16-derived and RDRR Q4_K_M diagnostic parity verdicts for
    the declared smoke depths beyond L1. These artifacts show depth
    progress for the same smoke contract; they are not promoted release
    evidence, manifest-shape execution, full E2B, or hardware evidence.
 
-6. **The raw BF16 Gemma-4 E2B text checkpoint executes at manifest
+7. **The raw BF16 Gemma-4 E2B text checkpoint executes at manifest
    shape in a CPU/Numpy oracle.** Backed by the
    `manifest-shape-execution-oracle` artifact. This covers one
    text-only token through embed, PLE, all E2B decoder layers, final
@@ -61,7 +73,7 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    dimensions. It is not Doe/CSL runtime evidence, not hardware
    evidence, and not a performance claim.
 
-7. **Doe/CSL executes the E2B manifest-shape attention-core diagnostic
+8. **Doe/CSL executes the E2B manifest-shape attention-core diagnostic
    for local/global head dimensions.** Backed by the
    `manifest-shape-attention-core` artifact. This covers SdkLayout
    simfabric execution for `headDim=256`, `globalHeadDim=512`, and
@@ -69,26 +81,28 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    attention, not decoder-stack execution, not logits parity, not
    hardware, and not a performance claim.
 
-8. **Doe carries E2B and 31B through governed compiler/runtime
+9. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
    Doe/CSL full-model execution claim.
 
-9. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+10. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-10. **CSL WebGPU emulator is faster than local CSL simfabric on the
+11. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-11. **Unified Doe entrypoint routes to 5 real backend targets.**
-   Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
-   doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
-   csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
-   probes — not Gemma-4 output parity on Doe's native backend.
+12. **Unified Doe entrypoint routes to 5 backend targets, with
+   runtime-output receipts for 3 L1 side-by-side lanes.** Backed by
+   `rollup/all-lanes-summary-L1.json` plus `target-run-receipt`
+   artifacts for `webgpu-wgsl`, `csl-sdklayout`, and
+   `csl-webgpu-emulator`. `doe-metal`/`doe-vulkan` are
+   backend-identity probes — not Gemma-4 output parity on Doe's
+   native backend.
 
 ## What this bundle does NOT claim
 
@@ -132,16 +146,19 @@ a bundle integrity failure.
   manifest-shape full text-forward oracle is CPU/Numpy and does not
   promote the Doe runtime receipt.
 
-- **Doppler production inference output parity from the RDRR artifact
-  has been proven.** The RDRR Q4_K_M verdicts prove only Doe's
-  smoke-contract parity harness with RDRR-derived slices. They do not
-  execute Doppler's production browser/model pipeline.
+- **Doppler production INT4 PLE parity against Doe CSL has been
+  proven.** The production Doppler reference export is only the
+  source side. The parity receipt remains blocked until Doe CSL
+  simfabric emits the same bounded prefill+decode transcript with
+  matching manifest, graph, weights, input set, real KV/cache behavior,
+  per-step logits, token IDs, no stubs, and no synthetic inputs or
+  weights.
 
 ## What must land externally to unlock additional claims
 
 | Unlock | External dependency |
 | --- | --- |
-| Doppler production RDRR output parity | Doppler-owned production export or committed inference path that emits comparable activations from the same prompt/input contract |
+| Doppler production INT4 PLE transcript parity | Doppler-owned production prefill+decode transcript export plus Doe CSL simfabric transcript for the same prompt/input contract, manifest, graph, weights, real KV/cache behavior, per-step logits, and token IDs |
 | 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
 | Manifest-shape execution | Embed/unembed, decoder-stack stream binding, full attention semantics, and logits parity for E2B local `headDim=256`, `globalHeadDim=512`, `numKeyValueHeads=1`, or 31B `headDim=160`; in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |

@@ -44,7 +44,7 @@ cross-references inside the receipts resolve as written.
    was built from an uncommitted working tree — prefer a clean
    rebuild before external circulation.
 
-3. **Read `CLAIM_SCOPE.md`.** It enumerates the 5 claims this bundle
+3. **Read `CLAIM_SCOPE.md`.** It enumerates the claims this bundle
    backs with evidence, the claims it explicitly does not back,
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
@@ -106,6 +106,14 @@ cross-references inside the receipts resolve as written.
 | `doppler-rdrr-q4k-extraction` | Q4_K_M RDRR-to-smoke-slice materialization verdict | Reviewers of the RDRR dequant path |
 | `doppler-rdrr-q4k-audit` | Shape/hash audit for RDRR-derived smoke-contract slices | Reviewers of the RDRR dequant path |
 | `doppler-rdrr-q4k-parity` | RDRR-derived smoke-contract WebGPU-vs-CSL parity verdicts, including bundled diagnostic smoke depths | Numerical reviewers; not Doppler production inference parity |
+| `doppler-int4ple-reference-export` | Production Doppler INT4 PLE reference export; final logits plus bounded decode transcript when present | Reviewers of the source reference lane; not Doe CSL parity by itself |
+| `doppler-int4ple-execution-graph` | Hash-linked execution graph used by the production Doppler INT4 PLE reference | Reviewers checking source identity |
+| `doppler-int4ple-reference-input` | Prompt and tokenized prompt bound into the reference input-set hash | Reviewers checking deterministic input identity |
+| `doppler-int4ple-reference-output-tokens` | Generated token IDs from the bounded greedy transcript | Reviewers checking transcript token parity |
+| `doppler-int4ple-reference-transcript` | Per-step logits and token IDs for the bounded Doppler reference transcript, without raw logits tensors | Numerical reviewers checking the transcript contract |
+| `doe-csl-int4ple-blocked-transcript` | Doe CSL transcript receipt shape and graph-derived lowering plan for the production INT4 PLE lane, currently blocked before simfabric output | Reviewers checking the missing proof producer and blocker taxonomy |
+| `doppler-int4ple-pending-parity` | Doe parity receipt binding the production Doppler INT4 PLE reference and documenting the missing CSL transcript | Numerical reviewers; blocked until CSL emits the matching transcript |
+| `target-run-receipt` | Per-target L1 receipt for WebGPU WGSL, CSL WebGPU emulator, or CSL simfabric | Reviewers of the side-by-side layer-block demo |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
 | `depth-coverage-rollup` | Which declared depths have raw files vs evidence-eligible receipts; today only L1 synthetic is claimable | Anyone asking "is this the full model?" |

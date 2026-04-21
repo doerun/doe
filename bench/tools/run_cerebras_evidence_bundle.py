@@ -16,17 +16,20 @@ Steps (in order):
   6. Doppler RDRR Q4_K_M L1 smoke-contract parity
   7. BF16-derived E2B smoke-chain diagnostic parity depths
   8. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
-  9. e2b_layer_block_self_check (regens E2B receipt + rollup +
+  9. Gemma-4 E2B manifest-shape attention-core SdkLayout diagnostic
+ 10. e2b_layer_block_self_check (regens E2B receipt + rollup +
      validates the numbered contract assertions after depth refresh)
- 10. E2B model receipt refresh after depth diagnostics
- 11. Gemma-4 E2B manifest-shape attention-core SdkLayout diagnostic
+ 11. E2B model receipt refresh after depth diagnostics
  12. Doppler capture graph to CSL attention-core lowering receipt
  13. E2B model receipt refresh after attention-core/lowering restamp
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
- 15. claim-discipline gate (hardware + MoE fronts)
- 16. SdkLayout streaming hardening gate (against any available live
+ 15. Doppler INT4 PLE bounded reference export and gate
+ 16. Doe CSL INT4 PLE blocked transcript receipt, gate, parity bind,
+     and metadata parity gate
+ 17. claim-discipline gate (hardware + MoE fronts)
+ 18. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 17. schema validation of 31B receipt and receipt-link integrity for
+ 19. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -247,7 +250,23 @@ def main() -> int:
             timeout=2600,
         ))
 
-    # 9. self-check after the depth diagnostics it validates. This
+    # 9. Manifest-shape attention-core diagnostic. The self-check binds
+    # capture-to-CSL lowering against this receipt, so refresh it before
+    # self-check to avoid stale blocked receipts.
+    steps.append(run(
+        "gemma4-e2b-manifest-shape-attention-core",
+        [
+            "python3",
+            "bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py",
+            "--out-json",
+            "bench/out/manifest-shape/"
+            "gemma-4-e2b-manifest-shape-attention-core.json",
+        ],
+        timeout=3900,
+    ))
+
+    # 10. self-check after the depth diagnostics and attention-core
+    # receipt it validates. This
     # regens the E2B receipt, capture graph, capture-lowering receipt,
     # rollup, and numbered contract assertions.
     steps.append(run(
@@ -256,11 +275,11 @@ def main() -> int:
         timeout=900,
     ))
 
-    # 10. Refresh the E2B model receipt after the depth diagnostics.
-    # Those diagnostics rewrite final-depth parity/trace artifacts, and the
-    # receipt now hash-links them through sdkLayoutDepthDiagnosticEvidence.
-    # Rebuild here so the final standalone link-integrity gate validates
-    # the current bytes, not the pre-depth self-check bytes.
+    # 11. Refresh the E2B model receipt after the depth diagnostics.
+    # Those diagnostics rewrite final-depth parity/trace artifacts, and
+    # self-check restamps the capture-lowering receipt. Rebuild here so
+    # the final standalone link-integrity gate validates the current
+    # bytes, not the pre-depth self-check bytes.
     steps.append(run(
         "e2b-model-receipt-refresh-after-depth-diagnostics",
         [
@@ -281,21 +300,6 @@ def main() -> int:
             "--out-md",
             "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md",
         ],
-    ))
-
-    # 11. Manifest-shape attention-core diagnostic. This is the first
-    # SdkLayout runtime rung for local/global headDim plus grouped KV;
-    # it remains non-claimable for the full model path.
-    steps.append(run(
-        "gemma4-e2b-manifest-shape-attention-core",
-        [
-            "python3",
-            "bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py",
-            "--out-json",
-            "bench/out/manifest-shape/"
-            "gemma-4-e2b-manifest-shape-attention-core.json",
-        ],
-        timeout=3900,
     ))
 
     # 12. Bind the captured WebGPU graph to the first attention-core
@@ -354,13 +358,88 @@ def main() -> int:
         ],
     ))
 
-    # 15. claim-discipline gate (hardware + MoE fronts).
+    # 15. Production Doppler INT4 PLE reference export. This is the
+    # source-side bounded transcript, not Doe CSL parity by itself.
+    steps.append(run(
+        "doppler-int4ple-reference-export",
+        ["node", "bench/tools/export_doppler_int4ple_reference.mjs"],
+        timeout=300,
+    ))
+
+    steps.append(run(
+        "doppler-int4ple-reference-gate",
+        [
+            "python3",
+            "bench/gates/doppler_int4ple_reference_export_gate.py",
+            "--receipt",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-production-final-logits/"
+            "doppler_int4ple_reference_export.json",
+            "--require-output-ready",
+            "--require-decode-transcript",
+        ],
+    ))
+
+    # 16. Doe CSL INT4 PLE transcript receipt. Today this is an
+    # explicit blocked receipt; the metadata gate should pass, while
+    # strict promotion remains blocked until simfabric emits the real
+    # transcript.
+    steps.append(run(
+        "doe-csl-int4ple-blocked-transcript",
+        ["python3", "bench/tools/run_doe_csl_int4ple_transcript.py"],
+    ))
+
+    steps.append(run(
+        "doe-csl-int4ple-blocked-transcript-gate",
+        [
+            "python3",
+            "bench/gates/doe_csl_int4ple_transcript_gate.py",
+            "--receipt",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
+            "--reference-export",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-production-final-logits/"
+            "doppler_int4ple_reference_export.json",
+        ],
+    ))
+
+    steps.append(run(
+        "doe-csl-int4ple-parity-bind",
+        [
+            "python3",
+            "bench/tools/bind_doppler_int4ple_reference_to_csl_parity.py",
+            "--reference-export",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-production-final-logits/"
+            "doppler_int4ple_reference_export.json",
+            "--csl-transcript-receipt",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
+            "--out",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
+        ],
+    ))
+
+    steps.append(run(
+        "doe-csl-int4ple-parity-gate",
+        [
+            "python3",
+            "bench/gates/csl_reference_parity_gate.py",
+            "--receipt",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
+        ],
+    ))
+
+    # 17. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 16. SdkLayout streaming hardening gate against the freshest live
+    # 18. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -384,7 +463,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 17. receipt link integrity (already invoked by self-check STEP 5,
+    # 19. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

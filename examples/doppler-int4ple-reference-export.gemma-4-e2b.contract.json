@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doppler_int4ple_reference_export",
+  "referenceKind": "prefill_decode_transcript",
+  "exportStatus": "contract_bound",
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+  "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+  "executionGraphSha256": "pending",
+  "executionGraph": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json",
+    "sha256": "pending",
+    "source": "manifest.inference.execution"
+  },
+  "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+  "weightSetSha256": "pending",
+  "shardIdentities": [
+    {
+      "index": 38,
+      "filename": "shard_00038.bin",
+      "sha256": "6a0e8ecfb1190554392143f79434839b629ee9284a3fd643d84cb62522a0cdcd",
+      "sizeBytes": 67108864,
+      "offsetBytes": 2550136832,
+      "identitySource": "manifest_declared"
+    }
+  ],
+  "inputSetSha256": "pending",
+  "inputSetComponents": {
+    "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+    "promptSha256": "pending",
+    "runtimeProfile": "profiles/production",
+    "decodeSteps": 8,
+    "samplingSha256": "pending",
+    "tokenCount": 0,
+    "tokenizedPromptSha256": "pending",
+    "useChatTemplate": true
+  },
+  "prompt": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/prompt.txt",
+    "sha256": "pending",
+    "source": "fixed_text_prompt"
+  },
+  "tokenizedPrompt": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/tokenized_prompt.u32",
+    "sha256": "pending",
+    "dtype": "uint32",
+    "tokenCount": 0,
+    "preview": []
+  },
+  "tensorDigest": {
+    "name": "final_logits",
+    "status": "pending",
+    "dtype": "float32",
+    "shape": [
+      262144
+    ],
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/final_logits.f32",
+    "sha256": "pending",
+    "byteLength": 1048576,
+    "preview": []
+  },
+  "decodeTranscript": {
+    "status": "pending",
+    "transcript": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
+      "sha256": "pending",
+      "source": "prefill_decode_logit_steps"
+    },
+    "requestedDecodeSteps": 8,
+    "actualDecodeSteps": 0,
+    "decodeStepsRequested": 8,
+    "decodeStepsProduced": 0,
+    "stopReason": "pending",
+    "sampling": {
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1,
+      "repetitionPenalty": 1,
+      "padTokenId": null,
+      "seed": null
+    },
+    "generatedTokenIds": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32",
+      "sha256": "pending",
+      "dtype": "uint32",
+      "tokenCount": 0,
+      "preview": []
+    },
+    "logitsDigests": []
+  },
+  "producer": {
+    "runtime": "doppler_node_webgpu",
+    "toolPath": "bench/tools/export_doppler_int4ple_reference.mjs",
+    "dopplerRoot": "/home/x/deco/doppler",
+    "runtimeProfile": "profiles/production",
+    "webgpuProvider": "node-webgpu"
+  },
+  "inputsSynthetic": false,
+  "weightsSynthetic": false,
+  "tolerancePolicy": {
+    "comparison": "max_abs",
+    "atol": 0.001,
+    "rtol": 0,
+    "notes": "Exact sha256 identity is preferred when Doe CSL reproduces Doppler bit-for-bit; max_abs is the promotion tolerance when platform f32 reduction order differs."
+  },
+  "claimBoundary": {
+    "claimable": false,
+    "scope": "Contract sample only. The production export is not evidence until exportStatus=output_ready and the referenced final logits, bounded decode transcript, prompt, tokenized prompt, manifest, graph, and shard identities pass the Doppler INT4 PLE export gate.",
+    "blockedUntil": [
+      "Production Doppler INT4 PLE WebGPU prefill+decode transcript receipt exists",
+      "Doe CSL simfabric transcript exists for the same source program",
+      "Doe CSL reference parity receipt passes promotion criteria"
+    ]
+  }
+}

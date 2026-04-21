@@ -50,6 +50,16 @@ token-to-expert dispatch, shared expert execution, expert output combine, and
 per-expert batching. It should not borrow the E2B or dense-31B receipts, and it
 is not part of the first hardware-access ask.
 
+The preferred next hardware lane is the production Doppler INT4 PLE RDRR
+reference receipt for Gemma 4 E2B. That lane starts from the local Doppler
+artifact under
+`/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/`,
+exports a bounded Doppler WebGPU prefill+decode transcript, binds the same
+manifest, execution graph, weights, and input set into Doe CSL simfabric
+transcript parity, and only then asks Cerebras hardware to run the same source
+program. Until those receipts exist and pass gates, this is only the preferred
+path to evidence.
+
 ## 1. Current artifact paths and hashes
 
 E2B bundle:
@@ -105,6 +115,21 @@ E2B bundle:
 - Doppler RDRR Q4_K_M diagnostic verdicts
   `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L{2,4,8,35}.json`
   (same smoke contract at diagnostic depths, not promoted full-model evidence)
+- Doppler production INT4 PLE reference export contract
+  `config/doppler-int4ple-reference-export.schema.json`, sample
+  `examples/doppler-int4ple-reference-export.gemma-4-e2b.contract.json`,
+  exporter `bench/tools/export_doppler_int4ple_reference.mjs`, and gate
+  `bench/gates/doppler_int4ple_reference_export_gate.py`. The output-ready
+  receipt path is
+  `bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json`
+  after the exporter runs. The Doe CSL transcript receipt contract is
+  `config/doe-csl-int4ple-transcript.schema.json`; the current blocked
+  receipt is emitted by `bench/tools/run_doe_csl_int4ple_transcript.py` at
+  `bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json`
+  and validated by `bench/gates/doe_csl_int4ple_transcript_gate.py`.
+  This is the preferred Cerebras reference lane, but it is not evidence until
+  the Doppler transcript and a Doe CSL simfabric transcript for the same
+  source identity pass the parity gate.
 
 31B bundle (scale-target scaffold, same shape as E2B):
 
@@ -180,6 +205,18 @@ lowering receipt now consumes that graph for the first attention-core
 SdkLayout/CSL simulator slice. Full captured-graph HostPlan lowering and
 production Doppler inference parity remain blocked.
 
+The INT4 PLE reference export rung is separate from the capture and
+Doe-side Doppler-equivalent harnesses. Its receipt must be produced by the
+production Doppler WebGPU inference path and carry `inputsSynthetic=false`
+and `weightsSynthetic=false`. The `final_logits` digest is only an
+intermediate bring-up checkpoint. The promotion target is a bounded
+deterministic prefill+decode transcript with per-step logits and token IDs
+for the fixed tokenized prompt. Doe promotion starts only after the same
+receipt is bound into `config/doe-csl-reference-parity.schema.json` with
+matching manifest, graph, weight, and input hashes, real KV/cache behavior,
+token-ID parity, per-step logits parity, no stubs, and no synthetic inputs
+or weights.
+
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1
 GELU. RMSNorm uses `math.sqrt` + a Newton-Raphson refinement step so
@@ -206,17 +243,26 @@ Hugging Face cache environment, and first-demo claim boundary.
 
 Minimum sufficient ask (same command either way):
 
-1. E2B L1 synthetic or BF16-derived real-weight smoke layer-block
-   against a reachable CS endpoint via
+1. Preferred lane: production Doppler INT4 PLE RDRR bounded
+   prefill+decode reference receipt, then Doe CSL simfabric transcript
+   parity, then Cerebras hardware receipt. The same artifact, input set,
+   `manifestSha256`, `executionGraphSha256`, weight identity, tokenized
+   prompt hash, generated token IDs, and per-step logits hashes must be
+   recorded across all three receipts. Promotion requires the Doe parity gate
+   to show same manifest hash, same graph hash, matched weight hash, real
+   KV/cache behavior, token-ID parity, per-step logits parity, no stub stages,
+   no synthetic inputs or weights, and output parity passed.
+2. Current fallback lane: E2B L1 synthetic or BF16-derived real-weight smoke
+   layer-block against a reachable CS endpoint via
    `--cmaddr`, or appliance via
    `runtime/zig/tools/csl_appliance_driver.py`. The runner is
    `bench/runners/csl-runners/e2b_layer_block_smoke.py` and accepts
    `--cmaddr <addr>` and `--weights-dir <dir>` today.
-2. Output parity check: compare `activation_out.f32` against the
+3. Output parity check: compare `activation_out.f32` against the
    simfabric trace's recorded output at the matching chain depth.
    Tolerance: the fixture policy in
    `config/gemma-4-e2b-real-weight-fixture.json`.
-3. Graph-identity pin: hardware receipt records the same
+4. Graph-identity pin: hardware receipt records the same
    `manifestSha256`, stream-plan `planSha256`, and
    `kernelSourceSha256` listed above.
 

@@ -177,6 +177,42 @@ Allowed wording:
   Doppler production inference output parity, not manifest-shape
   execution, not full E2B, not 31B, not MoE, and not hardware."
 
+### Doppler production INT4 PLE reference is source-side only
+
+Evidence:
+
+- `bench/tools/export_doppler_int4ple_reference.mjs` runs the production
+  Doppler INT4 PLE RDRR WebGPU path and emits
+  `bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json`.
+- `config/doppler-int4ple-reference-export.schema.json` requires manifest,
+  graph, weight, prompt, tokenized input, producer, synthetic-state, and
+  tolerance-policy fields. The current promotion target is
+  `referenceKind=prefill_decode_transcript`: final logits plus bounded
+  greedy transcript metadata with generated token IDs and per-step logits
+  digests.
+- `bench/gates/doppler_int4ple_reference_export_gate.py` validates that the
+  source-side reference is complete when run with
+  `--require-output-ready --require-decode-transcript`.
+- `config/doe-csl-int4ple-transcript.schema.json` and
+  `bench/gates/doe_csl_int4ple_transcript_gate.py` define the Doe CSL
+  transcript side of the same contract. Blocked receipts are allowed for
+  traceability, but strict success requires a simfabric transcript, matching
+  token IDs and early-stop reason, per-step logits, real KV/cache counters and
+  coverage, and a non-stub kernel.
+- `bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json`
+  binds the Doppler reference into the Doe CSL parity contract, but remains
+  pending until CSL emits the matching transcript.
+
+Allowed wording:
+
+- "Doppler can emit a production INT4 PLE RDRR reference transcript for the
+  fixed prompt/input contract."
+- "This is source-reference evidence only. It is not Doe CSL parity, not
+  Cerebras hardware execution, and not a performance claim."
+- "Promotion requires Doe CSL simfabric to emit the same bounded transcript
+  with matching hashes, real KV/cache behavior, token IDs, per-step logits,
+  no stubs, and no synthetic inputs or weights."
+
 ### Declared real-weight smoke diagnostics are local, not promoted
 
 Evidence:
@@ -369,7 +405,7 @@ Each rejected claim has a single-command unlock path in the repo.
 | Production Doppler pipeline parity | Doppler commits their WGSL shader into their pipeline and emits `activation_out.f32` matching the CSL runner's seeded-RNG inputs |
 | Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt and CPU/Numpy manifest-shape oracle to Doe/CSL manifest-shape/full-depth receipts; 31B needs its own real-weight parity verdict |
 | L2/L4/L8/L35 claimable depth | `summarize_doe_run_lanes.py` emits `evidenceEligibility.claimable=true` for that depth and `emit_depth_coverage_matrix.py` counts it under `depthsClaimableWithinTolerance` |
-| Full E2B simulator | Extend the Doe runner to the full graph (embed + manifest-shape transformer blocks + unembed + sample); this is structural work in Doe |
+| Full E2B simulator | Make `bench/tools/run_doe_csl_int4ple_transcript.py` lower the production INT4 PLE graph with production-bound CSL kernels, then pass `bench/gates/doe_csl_int4ple_transcript_gate.py --require-simulator-success` |
 | Manifest-shape 31B | Extend the generator/kernel to `head_dim=160, num_heads=32`; validate memory budget + streaming |
 | Hardware receipt | `e2b_layer_block_smoke.py --cmaddr <addr>` against a reachable CS endpoint, or appliance via `csl_appliance_driver.py` |
 | Performance claim | Hardware receipt + governed benchmark at fixed workload |

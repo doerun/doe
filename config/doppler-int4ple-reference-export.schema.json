@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doppler-int4ple-reference-export.schema.json",
+  "title": "Doppler INT4 PLE reference export",
+  "description": "Schema-backed contract for production Doppler INT4 PLE RDRR reference exports. The final-logits tensor is an intermediate bring-up checkpoint; the promotion lane is a bounded deterministic prefill+decode transcript with per-step logits and token IDs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "exportStatus",
+    "modelId",
+    "manifestPath",
+    "manifestSha256",
+    "executionGraphSha256",
+    "weightSetId",
+    "weightSetSha256",
+    "shardIdentities",
+    "inputSetSha256",
+    "inputSetComponents",
+    "prompt",
+    "tokenizedPrompt",
+    "tensorDigest",
+    "producer",
+    "inputsSynthetic",
+    "weightsSynthetic",
+    "tolerancePolicy",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doppler_int4ple_reference_export" },
+    "referenceKind": {
+      "type": "string",
+      "enum": ["final_logits", "prefill_decode_transcript"]
+    },
+    "exportStatus": {
+      "type": "string",
+      "enum": ["contract_bound", "output_ready"]
+    },
+    "modelId": { "type": "string" },
+    "manifestPath": { "type": "string" },
+    "manifestSha256": { "type": "string" },
+    "executionGraphSha256": { "type": "string" },
+    "captureGraphSha256": { "type": "string" },
+    "executionGraph": { "$ref": "#/$defs/hashLinkedPath" },
+    "weightSetId": { "type": "string" },
+    "weightSetSha256": { "type": "string" },
+    "shardIdentities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/shardIdentity" }
+    },
+    "inputSetSha256": { "type": "string" },
+    "inputSetComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelId",
+        "promptSha256",
+        "runtimeProfile",
+        "decodeSteps",
+        "samplingSha256",
+        "tokenCount",
+        "tokenizedPromptSha256",
+        "useChatTemplate"
+      ],
+      "properties": {
+        "modelId": { "type": "string" },
+        "promptSha256": { "type": "string" },
+        "runtimeProfile": { "type": "string" },
+        "decodeSteps": { "type": "integer", "minimum": 0 },
+        "samplingSha256": { "type": "string" },
+        "tokenCount": { "type": "integer", "minimum": 0 },
+        "tokenizedPromptSha256": { "type": "string" },
+        "useChatTemplate": { "type": "boolean" }
+      }
+    },
+    "prompt": { "$ref": "#/$defs/hashLinkedPath" },
+    "tokenizedPrompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "dtype", "tokenCount"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "dtype": { "const": "uint32" },
+        "tokenCount": { "type": "integer", "minimum": 0 },
+        "preview": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "tensorDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "status",
+        "dtype",
+        "shape",
+        "path",
+        "sha256",
+        "byteLength"
+      ],
+      "properties": {
+        "name": { "const": "final_logits" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "output_ready"]
+        },
+        "dtype": { "const": "float32" },
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "preview": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    },
+    "decodeTranscript": { "$ref": "#/$defs/decodeTranscript" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "toolPath",
+        "dopplerRoot",
+        "runtimeProfile",
+        "webgpuProvider"
+      ],
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "enum": ["doppler_browser_webgpu", "doppler_node_webgpu"]
+        },
+        "toolPath": { "type": "string" },
+        "dopplerRoot": { "type": "string" },
+        "runtimeProfile": { "type": "string" },
+        "webgpuProvider": { "type": "string" },
+        "kernelPathId": { "type": ["string", "null"] },
+        "kernelPathSource": { "type": ["string", "null"] },
+        "nodeVersion": { "type": "string" },
+        "emittedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "inputsSynthetic": { "const": false },
+    "weightsSynthetic": { "const": false },
+    "tolerancePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comparison", "atol", "rtol"],
+      "properties": {
+        "comparison": {
+          "type": "string",
+          "enum": ["sha256_exact", "max_abs"]
+        },
+        "atol": { "type": "number", "minimum": 0 },
+        "rtol": { "type": "number", "minimum": 0 },
+        "notes": { "type": "string" }
+      }
+    },
+    "claimBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "scope", "blockedUntil"],
+      "properties": {
+        "claimable": { "type": "boolean" },
+        "scope": { "type": "string" },
+        "blockedUntil": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "exportStatus": { "const": "output_ready" } }
+      },
+      "then": {
+        "properties": {
+          "tensorDigest": {
+            "properties": {
+              "status": { "const": "output_ready" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["referenceKind"],
+        "properties": {
+          "referenceKind": { "const": "prefill_decode_transcript" }
+        }
+      },
+      "then": {
+        "required": ["decodeTranscript"]
+      }
+    }
+  ],
+  "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "decodeTranscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "transcript",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "decodeStepsRequested",
+        "decodeStepsProduced",
+        "stopReason",
+        "sampling",
+        "generatedTokenIds",
+        "logitsDigests"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "output_ready"]
+        },
+        "transcript": { "$ref": "#/$defs/hashLinkedPath" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "decodeStepsRequested": { "type": "integer", "minimum": 0 },
+        "decodeStepsProduced": { "type": "integer", "minimum": 0 },
+        "stopReason": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "decode_steps_exhausted",
+            "eos_token",
+            "stop_token",
+            "decode_error"
+          ]
+        },
+        "sampling": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["temperature", "topK", "topP", "repetitionPenalty"],
+          "properties": {
+            "temperature": { "const": 0 },
+            "topK": { "const": 1 },
+            "topP": { "const": 1 },
+            "repetitionPenalty": { "type": "number", "minimum": 0 },
+            "padTokenId": { "type": ["integer", "null"], "minimum": 0 },
+            "seed": { "type": ["integer", "null"] }
+          }
+        },
+        "generatedTokenIds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "dtype", "tokenCount"],
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string" },
+            "dtype": { "const": "uint32" },
+            "tokenCount": { "type": "integer", "minimum": 0 },
+            "preview": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "logitsDigests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/decodeLogitsDigest" }
+        }
+      }
+    },
+    "decodeLogitsDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stepIndex",
+        "phase",
+        "contextTokenCount",
+        "selectedTokenId",
+        "dtype",
+        "shape",
+        "path",
+        "sha256",
+        "byteLength"
+      ],
+      "properties": {
+        "stepIndex": { "type": "integer", "minimum": 0 },
+        "phase": {
+          "type": "string",
+          "enum": ["prefill", "decode"]
+        },
+        "contextTokenCount": { "type": "integer", "minimum": 0 },
+        "selectedTokenId": { "type": "integer", "minimum": 0 },
+        "selectedText": { "type": "string" },
+        "dtype": { "const": "float32" },
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "preview": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    },
+    "shardIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "filename",
+        "sha256",
+        "sizeBytes",
+        "identitySource"
+      ],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "filename": { "type": "string" },
+        "sha256": { "type": "string" },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "offsetBytes": { "type": "integer", "minimum": 0 },
+        "identitySource": {
+          "type": "string",
+          "enum": ["manifest_declared", "file_rehashed"]
+        }
+      }
+    }
+  }
+}

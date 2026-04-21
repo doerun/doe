@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.doe.deco/doe-csl-demo-evidence.schema.json",
   "title": "Doe CSL demo evidence adapter",
-  "description": "Small, dashboard-friendly summary of the Doppler/browser reference, Doe CSL simfabric receipt, model-level execution blocker, and hardware state for the same source program.",
+  "description": "Small, dashboard-friendly summary of the Doppler/browser reference, production Doppler INT4 PLE reference, Doe CSL simfabric/emulator receipts, model-level execution blocker, and hardware state.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "artifactKind", "modelId", "sourceProgram", "rows"],
@@ -33,7 +33,16 @@
           "label": { "type": "string" },
           "runtime": {
             "type": "string",
-            "enum": ["browser_webgpu", "csl_simfabric", "csl_model", "csl_hardware"]
+            "enum": [
+              "browser_webgpu",
+              "doppler_node_webgpu",
+              "doppler_browser_webgpu",
+              "webgpu_wgsl",
+              "csl_simfabric",
+              "csl_webgpu_emulator",
+              "csl_model",
+              "csl_hardware"
+            ]
           },
           "status": {
             "type": "string",
@@ -44,7 +53,25 @@
           "evidenceSha256": { "type": "string" },
           "blocker": { "type": "string" },
           "maxAbsErr": { "type": "number" },
-          "parityPassed": { "type": "boolean" }
+          "parityPassed": { "type": "boolean" },
+          "sourceProgram": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "manifestPath",
+              "manifestSha256",
+              "graphPath",
+              "graphSha256"
+            ],
+            "properties": {
+              "manifestPath": { "type": "string" },
+              "manifestSha256": { "type": "string" },
+              "graphPath": { "type": "string" },
+              "graphSha256": { "type": "string" },
+              "weightSetId": { "type": "string" },
+              "weightSha256": { "type": "string" }
+            }
+          }
         }
       }
     }

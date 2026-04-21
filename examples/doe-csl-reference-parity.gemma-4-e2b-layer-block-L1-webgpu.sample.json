@@ -5,7 +5,7 @@
   "sourceProgram": {
     "authoringSurface": "doppler_execution_v1",
     "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
-    "manifestSha256": "67e13946350e69ee62c75f06e80b94d44e15a18ba5858a8e9011636cfa6c9c26",
+    "manifestSha256": "71181791b2dcab1e4c8d24ab36b16c7900231c3bf294773d5ebed4001fa69a0c",
     "graphPath": "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json",
     "graphSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
     "weightSetId": "synthetic-layer-block-smoke"

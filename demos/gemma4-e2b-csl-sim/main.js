@@ -16,6 +16,10 @@ const paths = {
   modelRuntimeReceipt: "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
   realWeightParity: "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
   manifestShapeExecution: "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
+  int4PleReferenceExport:
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+  int4PleParityPending:
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
   vendorBenchmarkDigest: "config/generated/doppler-vs-tjs-20260421-digest.json",
   hostPlan: "runtime/zig/examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json",
   thirtyOneBReceipt: "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
@@ -1014,6 +1018,15 @@ function vendorDigestSummary(digest) {
   return { qwen, gemma };
 }
 
+function failedPromotionCriteria(criteria) {
+  if (!criteria || typeof criteria !== "object") return [];
+  return Object.entries(criteria)
+    .filter(([key, value]) => (
+      key !== "hardwareReceiptRequiredForHardwareClaim" && value !== true
+    ))
+    .map(([key]) => `${key}=false`);
+}
+
 function renderEvidenceReceiptRows(rows) {
   const body = el("evidence-receipts-body");
   if (!body) return;
@@ -1134,6 +1147,67 @@ async function refreshEvidenceReceiptMatrix() {
       path: paths.manifestShapeExecution,
       linkLabel: "manifest-shape oracle",
       blockers: [err.message || "unreadable receipt"],
+    });
+  }
+
+  try {
+    const ref = await fetchJson(paths.int4PleReferenceExport);
+    const tensor = ref.tensorDigest || {};
+    const transcript = ref.decodeTranscript || {};
+    const referenceReady = (
+      ref.exportStatus === "output_ready" && tensor.status === "output_ready"
+    );
+    const transcriptReady = transcript.status === "output_ready";
+    rows.push({
+      label: "Doppler INT4 PLE production reference",
+      status: referenceReady ? "reference ready" : ref.exportStatus || "missing",
+      cls: referenceReady ? "pass" : "warn",
+      path: paths.int4PleReferenceExport,
+      linkLabel: "INT4 PLE reference",
+      blockers: [
+        `referenceKind=${ref.referenceKind || "final_logits"}`,
+        `final_logits=${tensor.sha256 || "missing"}`,
+        transcriptReady
+          ? `decode transcript ${transcript.decodeStepsProduced || 0} steps`
+          : "bounded decode transcript pending",
+        "reference only until Doe CSL simfabric transcript parity binds",
+      ],
+    });
+  } catch (err) {
+    rows.push({
+      label: "Doppler INT4 PLE production reference",
+      status: "missing",
+      cls: "warn",
+      path: paths.int4PleReferenceExport,
+      linkLabel: "INT4 PLE reference",
+      blockers: [err.message || "reference export not generated"],
+    });
+  }
+
+  try {
+    const parity = await fetchJson(paths.int4PleParityPending);
+    const comparison = parity.comparison || {};
+    const criteria = failedPromotionCriteria(parity.promotionCriteria);
+    const promoted = comparison.status === "passed" && criteria.length === 0;
+    rows.push({
+      label: "Doe CSL INT4 PLE transcript parity",
+      status: promoted ? "promotion ready" : comparison.status || "blocked",
+      cls: promoted ? "pass" : "warn",
+      path: paths.int4PleParityPending,
+      linkLabel: "INT4 PLE parity",
+      blockers: promoted ? [] : [
+        comparison.blocker || "CSL transcript parity not promoted",
+        ...criteria,
+      ],
+    });
+  } catch (err) {
+    rows.push({
+      label: "Doe CSL INT4 PLE transcript parity",
+      status: "missing",
+      cls: "warn",
+      path: paths.int4PleParityPending,
+      linkLabel: "INT4 PLE parity",
+      blockers: [err.message || "pending parity receipt not generated"],
     });
   }
 
@@ -1393,6 +1467,8 @@ async function refreshCockpit() {
   if (tbody) {
     tbody.innerHTML = lanes.map((lane) => {
       const status = lane.status || "-";
+      const receiptPath = lane.receiptPath ||
+        `bench/out/doe-run/${lane.lane}/L${numLayers}-receipt.json`;
       const sha = lane.outputSha256
         ? `<code class="sha">${lane.outputSha256.slice(0, 16)}...</code>`
         : "-";
@@ -1402,7 +1478,7 @@ async function refreshCockpit() {
       const elapsed = lane.elapsedMs !== undefined && lane.elapsedMs !== null
         ? formatMs(lane.elapsedMs) : "-";
       return `<tr>
-        <td><code>${lane.lane}</code></td>
+        <td>${artifactLink(receiptPath, lane.lane)}</td>
         <td>${status}</td>
         <td>${backend}</td>
         <td>${sha}</td>

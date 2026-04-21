@@ -3,7 +3,8 @@
 # Operates on the tarball via `tar -xzO | jq`, prints human-readable
 # status for E2B, 31B, 26B/A4B MoE, the bundle-level gate verdict,
 # manifest-shape contract, manifest-shape CPU execution oracle,
-# RDRR Q4_K_M smoke parity, and claimable-depth coverage.
+# RDRR Q4_K_M smoke parity, Doppler INT4 PLE transcript status, and
+# claimable-depth coverage.
 #
 # Usage:
 #   bench/tools/summarize_cerebras_evidence_archive.sh <archive.tar.gz>
@@ -19,8 +20,8 @@ summarize_cerebras_evidence_archive.sh — quick status from inside an archive
 
 Prints E2B, 31B, 26B/A4B MoE status + bundle gate verdict +
 manifest-shape contract + manifest-shape CPU execution oracle +
-RDRR Q4_K_M parity + claimable-depth coverage, entirely from the tarball
-via `tar -xzO | jq`.
+RDRR Q4_K_M parity + Doppler INT4 PLE transcript status +
+claimable-depth coverage, entirely from the tarball via `tar -xzO | jq`.
 No extraction to disk.
 
 Usage:
@@ -137,6 +138,25 @@ extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json" '
     "status:            \(.status // "?")",
     "weightSetSha256:   \((.weightSetSha256 // "")[0:16])..."
 ' 2>/dev/null || echo "rdrr-q4k-parity: not present"
+echo
+
+echo "--- Doppler INT4 PLE transcript lane ---"
+extract_json "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json" '
+    "referenceStatus:  \(.exportStatus // "?")",
+    "referenceKind:    \(.referenceKind // "?")",
+    "producer:         \(.producer.runtime // "?")",
+    "decode:           requested=\(.decodeTranscript.requestedDecodeSteps // "?"), actual=\(.decodeTranscript.actualDecodeSteps // "?"), stop=\(.decodeTranscript.stopReason // "?")",
+    "tokens:           \((.decodeTranscript.generatedTokenIds.preview // []) | map(tostring) | join(","))"
+' 2>/dev/null || echo "doppler-int4ple-reference-export: not present"
+extract_json "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json" '
+    "cslTranscript:    status=\(.status // "?"), output=\(.cslTranscript.status // "?"), realKvCache=\(.kvCacheEvidence.realKvCache | tostring)",
+    "cslExpectedStop:  requested=\(.decodeRequest.requestedDecodeSteps // "?"), actual=\(.decodeRequest.expectedActualDecodeSteps // "?"), stop=\(.decodeRequest.expectedStopReason // "?")"
+' 2>/dev/null || echo "doe-csl-int4ple-transcript: not present"
+extract_json "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json" '
+    "parityStatus:     \(.comparison.status // "?")",
+    "parityBlocker:    \(.comparison.blocker // "none")",
+    "promotion:        transcript=\(.promotionCriteria.decodeTranscriptBound), tokens=\(.promotionCriteria.tokenIdsMatched), logits=\(.promotionCriteria.perStepLogitsParityPassed), kv=\(.promotionCriteria.realKvCacheUsed)"
+' 2>/dev/null || echo "doppler-int4ple-pending-parity: not present"
 echo
 
 echo "--- E2B diagnostic smoke-depth parity ---"

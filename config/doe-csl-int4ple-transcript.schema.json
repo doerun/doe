@@ -1,0 +1,369 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-int4ple-transcript.schema.json",
+  "title": "Doe CSL INT4 PLE transcript receipt",
+  "description": "Receipt for the Doe CSL simfabric side of the production Doppler INT4 PLE bounded prefill+decode transcript contract. Blocked receipts are allowed for traceability; promotion requires simulator_success, transcript output, token/logits parity, real KV/cache evidence, and non-stub kernels.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "modelId",
+    "sourceProgram",
+    "decodeRequest",
+    "referenceTranscript",
+    "loweringPlan",
+    "cslTranscript",
+    "kvCacheEvidence",
+    "simulatorRun",
+    "inputsSynthetic",
+    "weightsSynthetic",
+    "blocker"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_int4ple_transcript" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "blocked_missing_csl_lowering",
+        "simulator_success",
+        "simulator_failed"
+      ]
+    },
+    "modelId": { "type": "string" },
+    "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
+    "decodeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestedDecodeSteps",
+        "expectedActualDecodeSteps",
+        "expectedStopReason",
+        "samplingSha256",
+        "inputSetSha256"
+      ],
+      "properties": {
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "expectedActualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "expectedStopReason": { "$ref": "#/$defs/stopReason" },
+        "samplingSha256": { "type": "string" },
+        "inputSetSha256": { "type": "string" }
+      }
+    },
+    "referenceTranscript": { "$ref": "#/$defs/transcriptDigest" },
+    "loweringPlan": { "$ref": "#/$defs/loweringPlan" },
+    "cslTranscript": { "$ref": "#/$defs/transcript" },
+    "kvCacheEvidence": { "$ref": "#/$defs/kvCacheEvidence" },
+    "simulatorRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runner", "status", "kernelStage", "kernelIsStub"],
+      "properties": {
+        "runner": { "type": "string" },
+        "status": { "type": "string" },
+        "tracePath": { "type": "string" },
+        "traceSha256": { "type": "string" },
+        "kernelStage": { "type": "string" },
+        "kernelIsStub": { "type": "boolean" },
+        "elapsedMs": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "inputsSynthetic": { "const": false },
+    "weightsSynthetic": { "const": false },
+    "blocker": { "type": "string" }
+  },
+  "$defs": {
+    "stopReason": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "not_run",
+        "decode_steps_exhausted",
+        "eos_token",
+        "stop_token",
+        "decode_error"
+      ]
+    },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authoringSurface",
+        "manifestPath",
+        "manifestSha256",
+        "graphPath",
+        "graphSha256",
+        "weightSetId",
+        "weightSha256",
+        "inputSetSha256"
+      ],
+      "properties": {
+        "authoringSurface": { "const": "doppler_execution_v1" },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "graphPath": { "type": "string" },
+        "graphSha256": { "type": "string" },
+        "weightSetId": { "type": "string" },
+        "weightSha256": { "type": "string" },
+        "inputSetSha256": { "type": "string" },
+        "executionDepth": {
+          "type": "string",
+          "enum": ["full_model", "not_executed"]
+        }
+      }
+    },
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "loweringPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sourceGraphSha256",
+        "operationCount",
+        "supportedOperationCount",
+        "missingOperationCount",
+        "stages",
+        "unsupportedKernels"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "blocked_missing_production_kernels",
+            "ready_for_simfabric"
+          ]
+        },
+        "sourceGraphSha256": { "type": "string" },
+        "operationCount": { "type": "integer", "minimum": 0 },
+        "supportedOperationCount": { "type": "integer", "minimum": 0 },
+        "missingOperationCount": { "type": "integer", "minimum": 0 },
+        "availableFixtureIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/loweringStage" }
+        },
+        "unsupportedKernels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/unsupportedKernel" }
+        }
+      }
+    },
+    "loweringStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "operation",
+        "kernelId",
+        "status"
+      ],
+      "properties": {
+        "stage": { "type": "string" },
+        "operation": { "type": "string" },
+        "kernelId": { "type": "string" },
+        "kernelFile": { "type": "string" },
+        "entry": { "type": "string" },
+        "fixtureId": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "production_csl_kernel_available",
+            "fixture_available_not_production_bound",
+            "missing_production_csl_kernel"
+          ]
+        },
+        "blocker": { "type": "string" }
+      }
+    },
+    "unsupportedKernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "operation",
+        "kernelId",
+        "reason"
+      ],
+      "properties": {
+        "stage": { "type": "string" },
+        "operation": { "type": "string" },
+        "kernelId": { "type": "string" },
+        "kernelFile": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "transcriptDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "generatedTokenIdsSha256",
+        "logitsDigestSha256"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "$ref": "#/$defs/stopReason" },
+        "generatedTokenIdsSha256": { "type": "string" },
+        "logitsDigestSha256": { "type": "string" }
+      }
+    },
+    "transcript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "transcript",
+        "generatedTokenIds",
+        "logitsDigests"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_produced", "output_ready"]
+        },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "$ref": "#/$defs/stopReason" },
+        "transcript": { "$ref": "#/$defs/hashLinkedPath" },
+        "generatedTokenIds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "dtype", "tokenCount"],
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string" },
+            "dtype": { "const": "uint32" },
+            "tokenCount": { "type": "integer", "minimum": 0 },
+            "preview": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "logitsDigests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/logitsDigest" }
+        }
+      }
+    },
+    "logitsDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stepIndex",
+        "phase",
+        "contextTokenCount",
+        "selectedTokenId",
+        "dtype",
+        "shape",
+        "path",
+        "sha256",
+        "byteLength"
+      ],
+      "properties": {
+        "stepIndex": { "type": "integer", "minimum": 0 },
+        "phase": {
+          "type": "string",
+          "enum": ["prefill", "decode"]
+        },
+        "contextTokenCount": { "type": "integer", "minimum": 0 },
+        "selectedTokenId": { "type": "integer", "minimum": 0 },
+        "dtype": { "const": "float32" },
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "byteLength": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "kvCacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "realKvCache",
+        "evidenceSource",
+        "cacheWriteCount",
+        "cacheReadCount",
+        "layerSpanCoverage",
+        "stepStateDigests"
+      ],
+      "properties": {
+        "realKvCache": { "type": "boolean" },
+        "evidenceSource": { "type": "string" },
+        "cacheWriteCount": { "type": "integer", "minimum": 0 },
+        "cacheReadCount": { "type": "integer", "minimum": 0 },
+        "blocker": { "type": "string" },
+        "layerSpanCoverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "layerCount",
+            "coveredLayerCount",
+            "spans"
+          ],
+          "properties": {
+            "layerCount": { "type": "integer", "minimum": 0 },
+            "coveredLayerCount": { "type": "integer", "minimum": 0 },
+            "spans": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startLayer", "endLayerExclusive"],
+                "properties": {
+                  "startLayer": { "type": "integer", "minimum": 0 },
+                  "endLayerExclusive": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          }
+        },
+        "stepStateDigests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "stepIndex",
+              "cacheStateSha256",
+              "cacheWriteCount",
+              "cacheReadCount"
+            ],
+            "properties": {
+              "stepIndex": { "type": "integer", "minimum": 0 },
+              "cacheStateSha256": { "type": "string" },
+              "cacheWriteCount": { "type": "integer", "minimum": 0 },
+              "cacheReadCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

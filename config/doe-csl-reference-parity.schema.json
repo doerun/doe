@@ -49,7 +49,8 @@
         "inputsSynthetic": { "type": "boolean" },
         "weightsSynthetic": { "type": "boolean" },
         "inputSetSha256": { "type": "string" },
-        "output": { "$ref": "#/$defs/tensorDigest" }
+        "output": { "$ref": "#/$defs/tensorDigest" },
+        "decodeTranscript": { "$ref": "#/$defs/transcriptDigest" }
       }
     },
     "cslRun": {
@@ -63,7 +64,8 @@
         "kernelStage": { "type": "string" },
         "kernelIsStub": { "type": "boolean" },
         "numericalParity": { "$ref": "#/$defs/numericalParity" },
-        "output": { "$ref": "#/$defs/tensorDigest" }
+        "output": { "$ref": "#/$defs/tensorDigest" },
+        "decodeTranscript": { "$ref": "#/$defs/transcriptDigest" }
       }
     },
     "comparison": {
@@ -78,6 +80,9 @@
         "sameManifestHash": { "type": "boolean" },
         "sameGraphHash": { "type": "boolean" },
         "outputHashMatch": { "type": "boolean" },
+        "tokenIdsMatch": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": "boolean" },
+        "realKvCacheUsed": { "type": "boolean" },
         "maxAbsErr": { "type": "number" },
         "atol": { "type": "number", "minimum": 0 },
         "blocker": { "type": "string" }
@@ -106,6 +111,10 @@
         "externalReferenceOutputBound": { "type": "boolean" },
         "cslOutputHashBound": { "type": "boolean" },
         "outputParityPassed": { "type": "boolean" },
+        "decodeTranscriptBound": { "type": "boolean" },
+        "tokenIdsMatched": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": "boolean" },
+        "realKvCacheUsed": { "type": "boolean" },
         "stubStagesAbsent": { "type": "boolean" },
         "syntheticInputsAbsent": { "type": "boolean" },
         "syntheticWeightsAbsent": { "type": "boolean" },
@@ -123,6 +132,20 @@
         "path": { "type": "string" },
         "sha256": { "type": "string" },
         "preview": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "transcriptDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "type": "string" },
+        "decodeStepsProduced": { "type": "integer", "minimum": 0 },
+        "generatedTokenIdsSha256": { "type": "string" },
+        "logitsDigestSha256": { "type": "string" }
       }
     },
     "numericalParity": {

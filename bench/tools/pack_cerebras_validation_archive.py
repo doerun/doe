@@ -123,6 +123,17 @@ INCLUDE_FILES: tuple = (
     # Rollups that summarize the lane matrix and gate runs.
     "bench/out/doe-run/all-lanes-summary-L1.json",
     "bench/out/doe-run/depth-coverage-matrix.json",
+    "bench/out/doe-run/webgpu-wgsl/L1-receipt.json",
+    "bench/out/doe-run/csl-webgpu-emulator/L1-receipt.json",
+    "bench/out/doe-run/csl-sdklayout/L1-receipt.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/prompt.txt",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/tokenized_prompt.u32",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
     "bench/out/cerebras-evidence-bundle/summary.json",
 )
 
@@ -207,6 +218,17 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/26b-moe-lane/per-expert-batching-todo.json": "moe-lane-scope",
     "bench/out/doe-run/all-lanes-summary-L1.json": "rollup",
     "bench/out/doe-run/depth-coverage-matrix.json": "depth-coverage-rollup",
+    "bench/out/doe-run/webgpu-wgsl/L1-receipt.json": "target-run-receipt",
+    "bench/out/doe-run/csl-webgpu-emulator/L1-receipt.json": "target-run-receipt",
+    "bench/out/doe-run/csl-sdklayout/L1-receipt.json": "target-run-receipt",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json": "doppler-int4ple-execution-graph",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/prompt.txt": "doppler-int4ple-reference-input",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/tokenized_prompt.u32": "doppler-int4ple-reference-input",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32": "doppler-int4ple-reference-output-tokens",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json": "doppler-int4ple-reference-transcript",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json": "doppler-int4ple-reference-export",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json": "doe-csl-int4ple-blocked-transcript",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json": "doppler-int4ple-pending-parity",
     "bench/out/cerebras-evidence-bundle/summary.json": "rollup",
 }
 

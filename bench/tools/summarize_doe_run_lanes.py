@@ -244,10 +244,13 @@ def main() -> int:
 
     per_lane = []
     for lane in LANES:
+        receipt_path = run_dir / lane / f"L{args.num_layers}-receipt.json"
+        receipt_rel = rel(receipt_path)
         receipt = load_receipt(run_dir, lane, args.num_layers)
         if receipt is None:
             per_lane.append({
                 "lane": lane,
+                "receiptPath": receipt_rel,
                 "receiptPresent": False,
                 "status": "missing",
             })
@@ -256,6 +259,7 @@ def main() -> int:
         rt = receipt.get("runtimeMetadata") or {}
         per_lane.append({
             "lane": lane,
+            "receiptPath": receipt_rel,
             "receiptPresent": True,
             "status": receipt.get("status"),
             "elapsedMs": receipt.get("elapsedMs"),

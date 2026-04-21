@@ -1,0 +1,782 @@
+{
+  "artifactKind": "doe_csl_int4ple_transcript",
+  "blocker": "Doe CSL simfabric bounded prefill+decode transcript is blocked: 41 graph stage(s) lack production-bound CSL lowering (embed, rmsnorm, tiled, rope, attn_head256, residual, gelu, attn_head512, +6 more).",
+  "cslTranscript": {
+    "actualDecodeSteps": 0,
+    "generatedTokenIds": {
+      "dtype": "uint32",
+      "path": "pending",
+      "preview": [],
+      "sha256": "pending",
+      "tokenCount": 0
+    },
+    "logitsDigests": [],
+    "requestedDecodeSteps": 8,
+    "status": "not_produced",
+    "stopReason": "not_run",
+    "transcript": {
+      "path": "pending",
+      "sha256": "pending",
+      "source": "pending_full_int4ple_csl_transcript_lowering"
+    }
+  },
+  "decodeRequest": {
+    "expectedActualDecodeSteps": 3,
+    "expectedStopReason": "eos_token",
+    "inputSetSha256": "352c293b4e41d1eeb7b9cddee3a96a36f31b4c488de21d0af0399dacc64bb39c",
+    "requestedDecodeSteps": 8,
+    "samplingSha256": "f18f44830e4e453ef563fd55680fcc2893a6cca52991bc21444f5c75b8fad4e9"
+  },
+  "inputsSynthetic": false,
+  "kvCacheEvidence": {
+    "blocker": "full production INT4 PLE CSL prefill/decode lowering is not implemented",
+    "cacheReadCount": 0,
+    "cacheWriteCount": 0,
+    "evidenceSource": "not_available",
+    "layerSpanCoverage": {
+      "coveredLayerCount": 0,
+      "layerCount": 35,
+      "spans": []
+    },
+    "realKvCache": false,
+    "stepStateDigests": []
+  },
+  "loweringPlan": {
+    "availableFixtureIds": [
+      "attention-decode",
+      "attention-tiled",
+      "fused-gemv-dequant",
+      "gather",
+      "gelu",
+      "rope",
+      "sample",
+      "tiled-matmul"
+    ],
+    "missingOperationCount": 41,
+    "operationCount": 41,
+    "sourceGraphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
+    "stages": [
+      {
+        "blocker": "CSL fixture 'gather' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "gather",
+        "kernelFile": "gather.wgsl",
+        "kernelId": "embed",
+        "operation": "embed",
+        "stage": "preLayer",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "q_proj",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "k_proj",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "v_proj",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'attention-tiled' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "attention-tiled",
+        "kernelFile": "attention_head256_f16kv.wgsl",
+        "kernelId": "attn_head256",
+        "operation": "attention",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "o_proj",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'gelu' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "gelu",
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "stage": "prefill.local_attention_layers.0-33",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "q_proj",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "k_proj",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "v_proj",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'attention-tiled' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "attention-tiled",
+        "kernelFile": "attention_head512_f16kv.wgsl",
+        "kernelId": "attn_head512",
+        "operation": "attention",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "o_proj",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'gelu' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "gelu",
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "stage": "prefill.global_attention_layers.4-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "stage": "decode.layers.0-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'fused-gemv-dequant' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main_vec4",
+        "fixtureId": "fused-gemv-dequant",
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "q_proj",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'fused-gemv-dequant' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main_vec4",
+        "fixtureId": "fused-gemv-dequant",
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "k_proj",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'fused-gemv-dequant' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main_vec4",
+        "fixtureId": "fused-gemv-dequant",
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "v_proj",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'rope' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "rope",
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'attention-decode' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "attention-decode",
+        "kernelFile": "attention_decode_online_f16kv.wgsl",
+        "kernelId": "attn_decode",
+        "operation": "attention",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'fused-gemv-dequant' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main_vec4",
+        "fixtureId": "fused-gemv-dequant",
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "o_proj",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "stage": "decode.layers.0-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "stage": "decode.layers.0-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'gelu' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "gelu",
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "stage": "decode.layers.0-34",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "stage": "decode.layers.0-34",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "No production CSL lowering is registered for this Doppler execution-v1 kernel in the INT4 PLE transcript lane.",
+        "entry": "main",
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "final_norm_stable",
+        "operation": "final_norm",
+        "stage": "postLayer",
+        "status": "missing_production_csl_kernel"
+      },
+      {
+        "blocker": "CSL fixture 'fused-gemv-dequant' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main_multicol",
+        "fixtureId": "fused-gemv-dequant",
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "lm_head_gemv_stable",
+        "operation": "lm_head",
+        "stage": "postLayer",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'tiled-matmul' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "main",
+        "fixtureId": "tiled-matmul",
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "lm_head_prefill_stable",
+        "operation": "lm_head_prefill",
+        "stage": "postLayer",
+        "status": "fixture_available_not_production_bound"
+      },
+      {
+        "blocker": "CSL fixture 'sample' exists, but no production Doppler INT4 PLE graph binding emits this full-model transcript stage.",
+        "entry": "sample_single_pass",
+        "fixtureId": "sample",
+        "kernelFile": "sample.wgsl",
+        "kernelId": "sample",
+        "operation": "sample",
+        "stage": "postLayer",
+        "status": "fixture_available_not_production_bound"
+      }
+    ],
+    "status": "blocked_missing_production_kernels",
+    "supportedOperationCount": 0,
+    "unsupportedKernels": [
+      {
+        "kernelFile": "gather.wgsl",
+        "kernelId": "embed",
+        "operation": "embed",
+        "reason": "fixture 'gather' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "preLayer"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "q_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "k_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "v_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "attention_head256_f16kv.wgsl",
+        "kernelId": "attn_head256",
+        "operation": "attention",
+        "reason": "fixture 'attention-tiled' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "o_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "reason": "fixture 'gelu' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.local_attention_layers.0-33"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "q_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "k_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "v_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "attention_head512_f16kv.wgsl",
+        "kernelId": "attn_head512",
+        "operation": "attention",
+        "reason": "fixture 'attention-tiled' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "tiled",
+        "operation": "o_proj",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "reason": "fixture 'gelu' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "prefill.global_attention_layers.4-34"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "input_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "q_proj",
+        "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "k_proj",
+        "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "v_proj",
+        "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_q",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "rope.wgsl",
+        "kernelId": "rope",
+        "operation": "rope_k",
+        "reason": "fixture 'rope' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "attention_decode_online_f16kv.wgsl",
+        "kernelId": "attn_decode",
+        "operation": "attention",
+        "reason": "fixture 'attention-decode' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "gemv",
+        "operation": "o_proj",
+        "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "attn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "rmsnorm",
+        "operation": "post_attn_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "gelu.wgsl",
+        "kernelId": "gelu",
+        "operation": "ffn",
+        "reason": "fixture 'gelu' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "residual.wgsl",
+        "kernelId": "residual",
+        "operation": "ffn_residual",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "decode.layers.0-34"
+      },
+      {
+        "kernelFile": "rmsnorm.wgsl",
+        "kernelId": "final_norm_stable",
+        "operation": "final_norm",
+        "reason": "no production CSL lowering registered for this kernel",
+        "stage": "postLayer"
+      },
+      {
+        "kernelFile": "matmul_gemv_subgroup.wgsl",
+        "kernelId": "lm_head_gemv_stable",
+        "operation": "lm_head",
+        "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "postLayer"
+      },
+      {
+        "kernelFile": "matmul_f16w_f32a.wgsl",
+        "kernelId": "lm_head_prefill_stable",
+        "operation": "lm_head_prefill",
+        "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "postLayer"
+      },
+      {
+        "kernelFile": "sample.wgsl",
+        "kernelId": "sample",
+        "operation": "sample",
+        "reason": "fixture 'sample' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
+        "stage": "postLayer"
+      }
+    ]
+  },
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "referenceTranscript": {
+    "actualDecodeSteps": 3,
+    "generatedTokenIdsSha256": "a2851d992b13c04c870279440dae23391b749b5e21b5d5b6ea1ff00497f201d1",
+    "logitsDigestSha256": "bca145320ad380345ab85db06231cbff5e755c4d152388827783f6610b24430f",
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
+    "requestedDecodeSteps": 8,
+    "sha256": "52cc51c92eca3b7e9bc416f45d1f742d85d61dcf7ec3268429b580968b54b739",
+    "stopReason": "eos_token"
+  },
+  "schemaVersion": 1,
+  "simulatorRun": {
+    "elapsedMs": null,
+    "kernelIsStub": true,
+    "kernelStage": "pending_full_int4ple_csl_transcript_lowering",
+    "runner": "bench/tools/run_doe_csl_int4ple_transcript.py",
+    "status": "not_run",
+    "tracePath": "pending",
+    "traceSha256": "pending"
+  },
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "executionDepth": "not_executed",
+    "graphPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/execution_graph.json",
+    "graphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
+    "inputSetSha256": "352c293b4e41d1eeb7b9cddee3a96a36f31b4c488de21d0af0399dacc64bb39c",
+    "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+    "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+    "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+    "weightSha256": "b5d9977ff3e211ed28dff3625474421ffab828b3a324ae8f052eab341fe9e4d4"
+  },
+  "status": "blocked_missing_csl_lowering",
+  "weightsSynthetic": false
+}

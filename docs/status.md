@@ -177,6 +177,19 @@ Read this file first. Use the shard files under
   lowering receipt with CPU-oracle parity. That capture-lowering rung is
   still non-claimable for full Doppler production inference, full graph
   lowering, logits parity, hardware, or performance.
+  A separate production INT4 PLE reference export contract, exporter, gate,
+  and parity binder now exist. The current Doppler export emits final logits
+  plus a bounded greedy prefill+decode transcript; this is source-reference
+  evidence only. A Doe CSL transcript receipt schema, blocked producer, and
+  gate now make the missing proof explicit, but Doe CSL transcript parity and
+  hardware receipts are still required before the lane becomes Cerebras
+  evidence. The blocked CSL receipt includes a graph-derived `loweringPlan`
+  that classifies each production Doppler execution stage against existing CSL
+  fixtures and missing production-bound kernels. The promotion gate now
+  requires CSL trace source identity,
+  full-model depth evidence, real KV/cache behavior, token-ID parity,
+  per-step logits parity, no stubs, and no synthetic inputs or weights before
+  the INT4 PLE lane can pass strict promotion.
 
 ## Current follow-up highlights
 

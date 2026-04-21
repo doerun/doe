@@ -12,6 +12,7 @@ from typing import Any
 import jsonschema
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+PENDING_VALUES = {"", "pending", "<pending>"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -59,7 +60,13 @@ def check_path_hash(
     path_text: str,
     expected: str,
     failures: list[str],
+    *,
+    required: bool = True,
 ) -> None:
+    if path_text in PENDING_VALUES or expected in PENDING_VALUES:
+        if required:
+            failures.append(f"{label}.path/hash pending")
+        return
     path = resolve(path_text)
     if not path.is_file():
         failures.append(f"{label}.path missing: {path_text}")
@@ -78,6 +85,53 @@ def check_tensor_digest(
     expected = digest.get("sha256", "")
     if path_text:
         check_path_hash(label, path_text, expected, failures)
+
+
+def check_trace_source_identity(
+    trace: dict[str, Any],
+    receipt: dict[str, Any],
+    failures: list[str],
+) -> None:
+    trace_source = trace.get("sourceProgram", {})
+    if not isinstance(trace_source, dict) or not trace_source:
+        failures.append("trace.sourceProgram missing for promotion-ready receipt")
+        return
+
+    source = receipt.get("sourceProgram", {})
+    reference = receipt.get("referenceRun", {})
+    expected = {
+        "manifestSha256": source.get("manifestSha256"),
+        "graphSha256": source.get("graphSha256"),
+        "weightSha256": source.get("weightSha256"),
+        "inputSetSha256": reference.get("inputSetSha256"),
+    }
+    for key, expected_value in expected.items():
+        if not expected_value:
+            failures.append(f"receipt {key} missing for trace source identity")
+            continue
+        actual = trace_source.get(key)
+        if actual != expected_value:
+            failures.append(
+                f"trace.sourceProgram.{key}={actual!r}, "
+                f"expected {expected_value!r}"
+            )
+
+    executed = trace.get("executedRun", {})
+    if not isinstance(executed, dict):
+        executed = {}
+    model_execution = trace.get("modelExecution", {})
+    if not isinstance(model_execution, dict):
+        model_execution = {}
+    full_depth = (
+        trace_source.get("executionDepth") == "full_model"
+        or executed.get("fullModelDepthExecuted") is True
+        or model_execution.get("fullModelDepthExecuted") is True
+    )
+    if not full_depth:
+        failures.append(
+            "trace does not prove full-model depth execution "
+            "(sourceProgram.executionDepth or executedRun.fullModelDepthExecuted)"
+        )
 
 
 def main() -> int:
@@ -113,15 +167,24 @@ def main() -> int:
 
     csl_run = receipt.get("cslRun", {})
     trace_path_text = csl_run.get("tracePath", "")
+    trace_required = args.require_trace_success or csl_run.get("status") in {
+        "simulator_success",
+        "succeeded",
+    }
     check_path_hash(
         "cslRun.trace",
         trace_path_text,
         csl_run.get("traceSha256", ""),
         failures,
+        required=trace_required,
     )
 
     trace: dict[str, Any] = {}
-    trace_path = resolve(trace_path_text) if trace_path_text else None
+    trace_path = (
+        resolve(trace_path_text)
+        if trace_path_text not in PENDING_VALUES
+        else None
+    )
     if trace_path and trace_path.is_file():
         try:
             trace = load_json(trace_path)
@@ -129,37 +192,72 @@ def main() -> int:
             failures.append(f"cslRun.trace invalid JSON: {exc}")
 
     if trace:
-        executed = trace.get("executedRun", {})
-        layer = trace.get("layerBlockSmoke", {})
-        if csl_run.get("status") != executed.get("status"):
-            failures.append(
-                f"cslRun.status={csl_run.get('status')!r}, "
-                f"trace status={executed.get('status')!r}"
-            )
-        if csl_run.get("kernelStage") != layer.get("kernelStage"):
-            failures.append(
-                "cslRun.kernelStage does not match "
-                "trace layerBlockSmoke.kernelStage"
-            )
-        if csl_run.get("kernelIsStub") != layer.get("kernelIsStub"):
-            failures.append(
-                "cslRun.kernelIsStub does not match "
-                "trace layerBlockSmoke.kernelIsStub"
-            )
-        if args.require_trace_success:
-            parity = executed.get("numericalParity", {})
-            if executed.get("status") != "succeeded":
+        if trace.get("artifactKind") == "doe_csl_int4ple_transcript":
+            simulator = trace.get("simulatorRun", {})
+            if not isinstance(simulator, dict):
+                simulator = {}
+            if csl_run.get("status") != trace.get("status"):
                 failures.append(
-                    "trace executedRun.status="
-                    f"{executed.get('status')!r}, expected 'succeeded'"
+                    f"cslRun.status={csl_run.get('status')!r}, "
+                    f"trace status={trace.get('status')!r}"
                 )
-            if not parity.get("passed", False):
+            if csl_run.get("kernelStage") != simulator.get("kernelStage"):
                 failures.append(
-                    "trace numericalParity.passed="
-                    f"{parity.get('passed')!r}, expected true"
+                    "cslRun.kernelStage does not match "
+                    "trace simulatorRun.kernelStage"
                 )
-            if layer.get("kernelIsStub", True):
-                failures.append("trace layerBlockSmoke.kernelIsStub=true")
+            if csl_run.get("kernelIsStub") != simulator.get("kernelIsStub"):
+                failures.append(
+                    "cslRun.kernelIsStub does not match "
+                    "trace simulatorRun.kernelIsStub"
+                )
+            if args.require_trace_success:
+                if trace.get("status") != "simulator_success":
+                    failures.append(
+                        f"trace status={trace.get('status')!r}, "
+                        "expected 'simulator_success'"
+                    )
+                if simulator.get("status") != "succeeded":
+                    failures.append(
+                        "trace simulatorRun.status="
+                        f"{simulator.get('status')!r}, expected 'succeeded'"
+                    )
+                if simulator.get("kernelIsStub", True):
+                    failures.append("trace simulatorRun.kernelIsStub=true")
+        else:
+            executed = trace.get("executedRun", {})
+            layer = trace.get("layerBlockSmoke", {})
+            if csl_run.get("status") != executed.get("status"):
+                failures.append(
+                    f"cslRun.status={csl_run.get('status')!r}, "
+                    f"trace status={executed.get('status')!r}"
+                )
+            if csl_run.get("kernelStage") != layer.get("kernelStage"):
+                failures.append(
+                    "cslRun.kernelStage does not match "
+                    "trace layerBlockSmoke.kernelStage"
+                )
+            if csl_run.get("kernelIsStub") != layer.get("kernelIsStub"):
+                failures.append(
+                    "cslRun.kernelIsStub does not match "
+                    "trace layerBlockSmoke.kernelIsStub"
+                )
+            if args.require_trace_success:
+                parity = executed.get("numericalParity", {})
+                if executed.get("status") != "succeeded":
+                    failures.append(
+                        "trace executedRun.status="
+                        f"{executed.get('status')!r}, expected 'succeeded'"
+                    )
+                if parity and not parity.get("passed", False):
+                    failures.append(
+                        "trace numericalParity.passed="
+                        f"{parity.get('passed')!r}, expected true"
+                    )
+                if layer.get("kernelIsStub", True):
+                    failures.append("trace layerBlockSmoke.kernelIsStub=true")
+        if args.require_promotion_ready:
+            check_trace_source_identity(trace, receipt, failures)
 
     comparison = receipt.get("comparison", {})
     if not comparison.get("sameManifestHash", False):
@@ -252,9 +350,24 @@ def main() -> int:
 
     if args.require_promotion_ready:
         criteria = receipt.get("promotionCriteria", {})
-        for key, value in sorted(criteria.items()):
-            if key == "hardwareReceiptRequiredForHardwareClaim":
-                continue
+        required_keys = [
+            "fullModelDepthExecuted",
+            "manifestHashMatched",
+            "graphHashMatched",
+            "weightHashMatched",
+            "externalReferenceOutputBound",
+            "cslOutputHashBound",
+            "outputParityPassed",
+            "decodeTranscriptBound",
+            "tokenIdsMatched",
+            "perStepLogitsParityPassed",
+            "realKvCacheUsed",
+            "stubStagesAbsent",
+            "syntheticInputsAbsent",
+            "syntheticWeightsAbsent",
+        ]
+        for key in required_keys:
+            value = criteria.get(key)
             if value is not True:
                 failures.append(f"promotionCriteria.{key}={value!r}, expected true")
 
