@@ -446,8 +446,13 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     if (isUniformGlobalBase(module, function, m.base)) {
                         try write(buf, pos, m.field_name);
                     } else if (try emitBuiltinMemberShim(
-                        buf, pos, function, m.base, m.field_name,
-                        cfg.lane_mode, cfg.runtime_array_size,
+                        buf,
+                        pos,
+                        function,
+                        m.base,
+                        m.field_name,
+                        cfg.lane_mode,
+                        cfg.runtime_array_size,
                     )) {
                         // Handled by the shim path — lid.x / wid.x /
                         // num_workgroups.x are not real identifiers in
@@ -472,8 +477,8 @@ pub fn Emit(comptime cfg: WalkConfig) type {
         pub fn inlineBuiltin(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function, name: []const u8, args: ir.Range, call_expr_id: ir.ExprId) EmitError!void {
             _ = call_expr_id;
             const a = function.expr_args.items;
-            // CSL v1.4 has no `math.min(T, a, b)` / `math.max(T, a, b)` form.
-            // SDK 1.4 canonical examples (gemv-checkerboard, conjugate-gradient,
+            // Current CSL has no `math.min(T, a, b)` / `math.max(T, a, b)` form.
+            // Canonical examples (gemv-checkerboard, conjugate-gradient,
             // wide-multiplication) use either user-defined `fn min(a, b)` helpers
             // or inline conditional expressions. Inline ternaries generalize to
             // any element type without requiring an external utility module,
@@ -577,12 +582,12 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     try writeType(buf, pos, module, vec.elem);
                 },
                 .array => |arr| {
-                    // SDK v1.4 rejects `[N][M]T` (double-bracket) array-of-vector
+                    // Current SDKs reject `[N][M]T` (double-bracket) array-of-vector
                     // types. Canonical shape across all in-tree SDK examples
                     // (gemv-01, gemv-05, checkerboard benchmark) is flat
                     // `[N * M]scalar` with row-major indexing. Our IR walker
                     // already emits 1D computed-index accesses, so flattening
-                    // here preserves access semantics while satisfying v1.4.
+                    // here preserves access semantics while satisfying CSL.
                     switch (module.types.get(arr.elem)) {
                         .vector => |vec| {
                             try write(buf, pos, "[");
@@ -619,7 +624,7 @@ pub fn Emit(comptime cfg: WalkConfig) type {
             switch (module.types.get(ty)) {
                 .array => |arr| {
                     // Mirror the flattening in writeType: `@zeros([N * M]T)`
-                    // for v1.4 compatibility, matching the declaration type.
+                    // for CSL compatibility, matching the declaration type.
                     try write(buf, pos, "@zeros(");
                     try writeType(buf, pos, module, ty);
                     try write(buf, pos, ")");

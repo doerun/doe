@@ -26,7 +26,7 @@ pub fn emit(
     try W.write(buf, pos, "// PE program: fused SiLU-gated FFN (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// output = silu(gate(x)) * up(x), distributed across PEs.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param reduce_color: color;\n\n");
@@ -43,8 +43,10 @@ pub fn emit(
     try W.write(buf, pos, "var up_partial: [out_dim]f32 = @zeros([out_dim]f32);\n\n");
 
     // Fabric DSDs
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .fabric_color = reduce_color });\n\n");
+    try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
+    try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n");
     try W.write(buf, pos, "var reduce_dim: i16 = 0;\n\n");
 
@@ -96,6 +98,10 @@ pub fn emit(
 
     try W.write(buf, pos, "comptime {\n");
     try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
+    try W.write(buf, pos, "    if (@is_arch(\"wse3\")) {\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_out_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_in_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
     try emitStorageExports(buf, pos, module);
     try W.write(buf, pos, "    @export_symbol(compute);\n");

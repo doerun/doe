@@ -1,7 +1,7 @@
 // PE program: governed-lane compile smoke for the Gemma 3 270M manifest.
 //
-// SDK v1.4 contract surface:
-//   - `param memcpy_params: comptime_struct;` + `<memcpy/memcpy>` import
+// SDK 2.10 contract surface:
+//   - `param memcpy_params;` + `<memcpy/memcpy>` import
 //     is the standard single-PE memcpy plumbing.
 //   - `param pe_id` / `param num_pes` are supplied by layout.csl's
 //     `@set_tile_code` invocation; values flow in automatically and do
@@ -25,7 +25,7 @@
 // this once the WGSL-to-CSL bundle-emitter chain is wired through to
 // the governed-lane compile step.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 

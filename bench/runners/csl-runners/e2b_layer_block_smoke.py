@@ -193,6 +193,11 @@ def main() -> int:
     output_digest = None
     per_layer_output_records = []
     failure_context = None
+    runtime_stop = {
+        "reached": False,
+        "elapsedMs": None,
+        "error": None,
+    }
     current_stage = "runtime_constructed"
     current_dispatch_index = None
     current_stream_id = None
@@ -528,7 +533,14 @@ def main() -> int:
             if not args.reset_rows_each_layer:
                 rows_curr = received
 
+        current_stage = "runtime_stop"
+        stop_start = time.time()
         runtime.stop()
+        runtime_stop = {
+            "reached": True,
+            "elapsedMs": (time.time() - stop_start) * 1000.0,
+            "error": None,
+        }
 
         # Per-layer parity. Pass requires every layer to be bit-exact.
         layer_passed = []
@@ -663,6 +675,7 @@ def main() -> int:
                 "streamEventsTailCount": len(stream_events[-64:]),
             },
             "streamEventsTail": stream_events[-64:],
+            "runtimeStop": runtime_stop,
             "failure": failure_context,
             "dataSource": {
                 "kind": data_source_kind,

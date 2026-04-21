@@ -118,6 +118,8 @@ pub fn validatePattern(csl: []const u8, pattern: PatternKind) ValidationResult {
         addError(&result, base_err.message);
         return result;
     }
+    validateSdk210Compatibility(csl, &result);
+    if (!result.valid) return result;
 
     switch (pattern) {
         .element_wise => validateElementWise(csl, &result),
@@ -340,6 +342,47 @@ fn validateFusedFfn(csl: []const u8, result: *ValidationResult) void {
     }
 }
 
+fn validateSdk210Compatibility(csl: []const u8, result: *ValidationResult) void {
+    if (std.mem.indexOf(u8, csl, "comptime_struct") != null) {
+        addError(result, "CSL SDK 2.10 removed comptime_struct; emit untyped params or named structs");
+    }
+    if (std.mem.indexOf(u8, csl, "@concat_struct") != null) {
+        addError(result, "CSL SDK 2.10 removed @concat_struct/@concat_structs; emit named struct composition");
+    }
+
+    var cursor: usize = 0;
+    while (std.mem.indexOfPos(u8, csl, cursor, "@get_dsd(fabout_dsd")) |start| {
+        const tail = csl[start..];
+        const end_rel = std.mem.indexOf(u8, tail, ");") orelse tail.len;
+        const call = tail[0..end_rel];
+        if (std.mem.indexOf(u8, call, ".fabric_color") != null) {
+            addError(result, "CSL SDK 2.10 fabric DSDs use queue-color binding, not fabric_color");
+            return;
+        }
+        if (std.mem.indexOf(u8, call, ".output_queue") == null) {
+            addError(result, "CSL SDK 2.10 requires explicit output_queue for fabout_dsd");
+            return;
+        }
+        cursor = start + end_rel + 1;
+    }
+
+    cursor = 0;
+    while (std.mem.indexOfPos(u8, csl, cursor, "@get_dsd(fabin_dsd")) |start| {
+        const tail = csl[start..];
+        const end_rel = std.mem.indexOf(u8, tail, ");") orelse tail.len;
+        const call = tail[0..end_rel];
+        if (std.mem.indexOf(u8, call, ".fabric_color") != null) {
+            addError(result, "CSL SDK 2.10 fabric DSDs use queue-color binding, not fabric_color");
+            return;
+        }
+        if (std.mem.indexOf(u8, call, ".input_queue") == null) {
+            addError(result, "CSL SDK 2.10 requires explicit input_queue for fabin_dsd");
+            return;
+        }
+        cursor = start + end_rel + 1;
+    }
+}
+
 fn requireContains(csl: []const u8, result: *ValidationResult, needle: []const u8, msg: []const u8) void {
     if (std.mem.indexOf(u8, csl, needle) == null) {
         addError(result, msg);
@@ -425,7 +468,8 @@ test "element_wise pattern catches fabric DSD" {
         \\@set_rectangle(16, 1)
         \\//--- pe_program.csl ---
         \\const sys = @import_module("<memcpy/memcpy>", .{});
-        \\var fab = @get_dsd(fabin_dsd, .{});
+        \\const in_q = @get_input_queue(2);
+        \\var fab = @get_dsd(fabin_dsd, .{ .input_queue = in_q });
         \\fn compute() void { for (@range(u32, 64)) |i| { buf[i] += 1; } sys.unblock_cmd_stream(); }
         \\comptime { @export_symbol(compute); }
     ;
@@ -454,13 +498,82 @@ test "reduction pattern accepts distributed-fabric shape" {
         \\@set_rectangle(16, 1)
         \\//--- pe_program.csl ---
         \\const sys = @import_module("<memcpy/memcpy>", .{});
-        \\const reduce_out_dsd = @get_dsd(fabout_dsd, .{});
-        \\const reduce_in_dsd  = @get_dsd(fabin_dsd, .{});
+        \\const in_q = @get_input_queue(2);
+        \\const out_q = @get_output_queue(2);
+        \\const reduce_out_dsd = @get_dsd(fabout_dsd, .{ .output_queue = out_q });
+        \\const reduce_in_dsd  = @get_dsd(fabin_dsd, .{ .input_queue = in_q });
         \\fn compute() void { sys.unblock_cmd_stream(); }
         \\comptime { @export_symbol(compute); }
     ;
     const result = validatePattern(csl_dist, .reduction);
     try std.testing.expect(result.valid);
+}
+
+test "sdk 2.10 validation rejects removed comptime_struct" {
+    const csl =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\param memcpy_params: comptime_struct;
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\fn compute() void { sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl, .element_wise);
+    try std.testing.expect(!result.valid);
+    try std.testing.expect(std.mem.indexOf(u8, result.firstError().?, "comptime_struct") != null);
+}
+
+test "sdk 2.10 validation rejects removed concat struct builtin" {
+    const csl =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\const params = @concat_structs(.{}, .{ .bar = 42 });
+        \\fn compute() void { _ = params; sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl, .element_wise);
+    try std.testing.expect(!result.valid);
+    try std.testing.expect(std.mem.indexOf(u8, result.firstError().?, "@concat_struct") != null);
+}
+
+test "sdk 2.10 validation rejects fabin_dsd without input_queue" {
+    const csl =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\const out_q = @get_output_queue(2);
+        \\const reduce_out_dsd = @get_dsd(fabout_dsd, .{ .output_queue = out_q });
+        \\const reduce_in_dsd = @get_dsd(fabin_dsd, .{ .extent = 1 });
+        \\fn compute() void { sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl, .reduction);
+    try std.testing.expect(!result.valid);
+    try std.testing.expect(std.mem.indexOf(u8, result.firstError().?, "input_queue") != null);
+}
+
+test "sdk 2.10 validation rejects fabric_color on fabric DSDs" {
+    const csl =
+        \\//--- layout.csl ---
+        \\@set_rectangle(16, 1)
+        \\//--- pe_program.csl ---
+        \\const sys = @import_module("<memcpy/memcpy>", .{});
+        \\const in_q = @get_input_queue(2);
+        \\const reduce_in_dsd = @get_dsd(fabin_dsd, .{
+        \\  .extent = 1,
+        \\  .fabric_color = reduce_color,
+        \\  .input_queue = in_q,
+        \\});
+        \\fn compute() void { sys.unblock_cmd_stream(); }
+        \\comptime { @export_symbol(compute); }
+    ;
+    const result = validatePattern(csl, .reduction);
+    try std.testing.expect(!result.valid);
+    try std.testing.expect(std.mem.indexOf(u8, result.firstError().?, "fabric_color") != null);
 }
 
 test "reduction pattern accepts workgroup-local PE-local shape" {

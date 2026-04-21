@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Verify csl_sdk_driver.classify_cslc_failure maps known cslc v1.4 stderr
+"""Verify csl_sdk_driver.classify_cslc_failure maps known cslc stderr
 patterns to the right taxonomy codes.
 
 Each test case is a real stderr fragment we have first-party evidence for
-(either observed while bringing up the 270M lane on SDK v1.4 or stated
-verbatim in the SDK 1.4 release notes / canonical examples). Unknown
+(either observed while bringing up the 270M lane or stated
+verbatim in SDK release notes / canonical examples). Unknown
 patterns are expected to fall through to `csl_compile_unclassified` so
 the stderr log stays the evidence of record.
 """

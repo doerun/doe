@@ -53,22 +53,30 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    progress for the same smoke contract; they are not promoted release
    evidence, manifest-shape execution, full E2B, or hardware evidence.
 
-6. **Doe carries E2B and 31B through governed compiler/runtime
+6. **The raw BF16 Gemma-4 E2B text checkpoint executes at manifest
+   shape in a CPU/Numpy oracle.** Backed by the
+   `manifest-shape-execution-oracle` artifact. This covers one
+   text-only token through embed, PLE, all E2B decoder layers, final
+   norm, and tied lm-head top-k at upstream local/global head
+   dimensions. It is not Doe/CSL runtime evidence, not hardware
+   evidence, and not a performance claim.
+
+7. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
-   full-model execution or manifest-shape numerical claim.
+   Doe/CSL full-model execution claim.
 
-7. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+8. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-8. **CSL WebGPU emulator is faster than local CSL simfabric on the
+9. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-9. **Unified Doe entrypoint routes to 5 real backend targets.**
+10. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
    doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
    csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
@@ -95,9 +103,11 @@ a bundle integrity failure.
   `lane-status.json` with `laneStatus=blocked`. Claim-discipline's
   MoE gate rejects "26B/A4B is running/working/operational" language.
 
-- **Doe executes the full Gemma-4 model end-to-end.** The bundle
-  evidences the transformer layer-block only: no embedding, unembed,
-  KV cache, or sampling boundary.
+- **Doe executes the full Gemma-4 model end-to-end.** The bundle's
+  manifest-shape full text-forward artifact is a CPU/Numpy oracle.
+  Doe/CSL runtime evidence remains scoped to the layer-block smoke
+  contract and does not yet cover a manifest-shape end-to-end runtime
+  receipt.
 
 - **L2/L4/L8/L35 are claimable E2B parity depths.** The depth matrix
   distinguishes raw diagnostic files from evidence-eligible receipts.
@@ -109,10 +119,10 @@ a bundle integrity failure.
   real-weight parity verdict remains blocked until its own extractor
   and parity receipt land.
 
-- **Full E2B real-weight execution has been proven.** The E2B
-  real-weight evidence is L1 smoke-contract only. It does not cover
-  manifest shape, full 35-layer depth, embed/unembed, KV/cache, or
-  sampling.
+- **Full E2B real-weight execution has been proven on Doe/CSL.** The
+  E2B real-weight Doe/CSL evidence is L1 smoke-contract only. The
+  manifest-shape full text-forward oracle is CPU/Numpy and does not
+  promote the Doe runtime receipt.
 
 - **Doppler production inference output parity from the RDRR artifact
   has been proven.** The RDRR Q4_K_M verdicts prove only Doe's

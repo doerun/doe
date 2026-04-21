@@ -69,12 +69,19 @@ Evidence:
 - `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` reports
   `executionStatus=real_weight_layer_block_success` and carries the
   real-weight parity summary.
+- The same model receipt carries `sdkLayoutModelExecutionEvidence`, which
+  promotes the generated E2B SdkLayout layer-block smoke into the model-level
+  receipt path with source hashes, stream execution plan hash, region/port/
+  stream graph, host I/O layout, send/receive counts, simulator artifact
+  links, `kernelIsStub=false`, `rt.stop()` completion, and parity status.
 
 Allowed wording:
 
 - "The E2B L1 layer-block smoke contract now runs with BF16-derived
   Gemma-4 weight slices in WebGPU and CSL simfabric, with output within
   the declared tolerance policy."
+- "The generated E2B SdkLayout layer-block smoke is now promoted into the
+  E2B model runtime receipt for the L1 smoke contract."
 - "This is real checkpoint-derived weight evidence for the L1 smoke
   layer-block contract. It is not manifest-shape execution, not full
   E2B inference, not 31B, not MoE, and not hardware."
@@ -144,11 +151,21 @@ Evidence:
 - C38 in `bench/tools/e2b_layer_block_self_check.py` treats these as
   optional diagnostics and rejects any state that promotes them to
   full-model or hardware evidence.
+- `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` now
+  carries `sdkLayoutDepthDiagnosticEvidence` for the BF16-derived and
+  RDRR-derived L35 smoke-chain diagnostics. The block is explicitly
+  `claimable=false` and records the remaining manifest-shape runtime,
+  Doppler production parity, and hardware blockers.
+- C43 in `bench/tools/e2b_layer_block_self_check.py` requires the model
+  receipt to keep the full-depth smoke diagnostics non-claimable while
+  still hash-linking their parity and trace artifacts.
 
 Allowed wording:
 
 - "Doe has local E2B smoke-chain diagnostics across declared depths for
   both BF16-derived and RDRR-derived weight slices."
+- "The E2B model receipt now exposes the BF16 and RDRR L35 smoke-chain
+  diagnostics as non-claimable SdkLayout depth evidence."
 - "These diagnostics extend the depth of the smoke contract only. They
   are not manifest-shape execution, not full E2B inference, not
   promoted release evidence, not 31B, not MoE, and not hardware."
@@ -174,6 +191,30 @@ Allowed wording:
   `numKeyValueHeads=1` to the source checkpoint metadata."
 - "This is not manifest-shape execution; it is the config/tensor
   contract needed before that execution path can be implemented."
+
+### E2B manifest-shape CPU execution oracle is recorded
+
+Evidence:
+
+- `bench/tools/run_gemma4_e2b_manifest_shape_execution.py` reads the
+  local raw Gemma-4 E2B BF16 SafeTensors checkpoint and executes a
+  text-only CPU/Numpy oracle.
+- `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`
+  records the manifest-shape text-forward result, including embed, PLE,
+  all text decoder layers, final norm, tied lm-head top-k, finite-output
+  checks, and explicit blockers for Doe/CSL runtime and hardware.
+- C40 in `bench/tools/e2b_layer_block_self_check.py` requires this
+  artifact to stay scoped as `runtimeLane=cpu_numpy_oracle` with
+  `doeRuntimeExecuted=false`, `cslRuntimeExecuted=false`, and
+  `hardwareExecuted=false`.
+
+Allowed wording:
+
+- "The raw BF16 Gemma-4 E2B text checkpoint has a schema-backed
+  CPU/Numpy manifest-shape execution oracle."
+- "This is a full text-forward oracle at upstream tensor dimensions,
+  not a Doe/CSL runtime receipt, not hardware evidence, and not a
+  performance claim."
 
 ### The CSL kernel implements the transformer layer-block shape
 
@@ -218,24 +259,29 @@ the semantic contract but is not Doppler's browser inference path.
 ### "Doe executes the full real Gemma-4 E2B/31B model with real weights"
 
 Gate: full graph and manifest-shape real-weight receipts. E2B L1
-smoke-contract real-weight parity is now evidenced, but it is not a
-full-model claim. E2B still needs embed, full 35-layer manifest-shape
-execution, unembed, KV/cache bookkeeping, and sampling. 31B still
-needs its own real-weight receipt.
+smoke-contract real-weight parity and the generated SdkLayout layer-block
+promotion are now evidenced, but they are not a full-model Doe/CSL claim.
+E2B now has a CPU/Numpy manifest-shape oracle, but the Doe runtime still
+needs embed, manifest-shape decoder blocks, unembed, KV/cache bookkeeping,
+and sampling. 31B still needs its own real-weight receipt.
 
 ### "Doe executes the full Gemma-4 model end-to-end"
 
 Gate: full model execution (item #5). Current execution is the
-transformer layer-block alone. Embeddings, unembedding, KV cache
-bookkeeping, and sampling are not in the executed path.
+Doe/CSL transformer layer-block smoke path plus a separate CPU/Numpy
+manifest-shape oracle. A full Doe runtime receipt still needs embed,
+manifest-shape decoder blocks, unembed, KV cache bookkeeping, and
+sampling in the Doe execution path.
 
 ### "L35 is a claimable full E2B parity pass"
 
 Gate: `bench/out/doe-run/all-lanes-summary-L35.json` must carry
-`evidenceEligibility.claimable=true` and the depth-coverage matrix
-must count L35 under `depthsClaimableWithinTolerance`. Today the
-claimable depth is L1 synthetic only. Any L35 files on disk are
-diagnostic until promoted by this policy.
+`evidenceEligibility.claimable=true`, the depth-coverage matrix
+must count L35 under `depthsClaimableWithinTolerance`, and the model
+receipt's `sdkLayoutDepthDiagnosticEvidence` must no longer be scoped
+as non-claimable smoke evidence. Today the claimable depth is L1
+synthetic only. Any L35 files on disk, including the model-receipt
+diagnostic block, are diagnostic until promoted by this policy.
 
 ### "The 31B kernel runs at the manifest's production shape"
 
@@ -281,9 +327,9 @@ Each rejected claim has a single-command unlock path in the repo.
 | Rejected claim | Unlock command or external dep |
 | --- | --- |
 | Production Doppler pipeline parity | Doppler commits their WGSL shader into their pipeline and emits `activation_out.f32` matching the CSL runner's seeded-RNG inputs |
-| Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt to manifest-shape/full-depth receipts; E2B manifest-shape first needs local `headDim=256`, `globalHeadDim=512`, and `numKeyValueHeads=1` support; 31B needs its own real-weight parity verdict |
+| Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt and CPU/Numpy manifest-shape oracle to Doe/CSL manifest-shape/full-depth receipts; 31B needs its own real-weight parity verdict |
 | L2/L4/L8/L35 claimable depth | `summarize_doe_run_lanes.py` emits `evidenceEligibility.claimable=true` for that depth and `emit_depth_coverage_matrix.py` counts it under `depthsClaimableWithinTolerance` |
-| Full E2B simulator | Extend runner to the full graph (embed + 35 transformer blocks + unembed + sample); this is structural work in Doe |
+| Full E2B simulator | Extend the Doe runner to the full graph (embed + manifest-shape transformer blocks + unembed + sample); this is structural work in Doe |
 | Manifest-shape 31B | Extend the generator/kernel to `head_dim=160, num_heads=32`; validate memory budget + streaming |
 | Hardware receipt | `e2b_layer_block_smoke.py --cmaddr <addr>` against a reachable CS endpoint, or appliance via `csl_appliance_driver.py` |
 | Performance claim | Hardware receipt + governed benchmark at fixed workload |

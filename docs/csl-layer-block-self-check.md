@@ -7,12 +7,16 @@ doc is the single place to look when something diverges.
 
 ## Goal
 
-Flip `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json`'s
-`executionStatus` from `not_attempted` to `simulator_success`, honestly. The
-self-check below is the in-repo half of that contract: it proves the kernel /
-runner / numpy-reference triangle is bit-exact and self-consistent. The other
-half (an actual `cs_python` simfabric run with real Gemma-4 weights) gates the
-final flip and lives outside this loop.
+Keep `bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` honest as
+the E2B layer-block evidence strengthens. The self-check below proves the
+kernel / runner / numpy-reference triangle is self-consistent and, when the
+BF16-derived weight slices and parity verdict are present, promotes the narrow
+L1 tier to `executionStatus=real_weight_layer_block_success`.
+
+That tier is intentionally narrower than full E2B execution. It proves one
+real-weight layer-block smoke contract plus the synthetic governed lane; it
+does not prove full manifest-shape Doe/CSL runtime execution or Cerebras
+hardware execution.
 
 ## Artifact graph
 
@@ -55,7 +59,11 @@ final flip and lives outside this loop.
 asserts the contract below. `bench/tools/test_e2b_layer_block_compute.py` is
 the golden-value unit test that gates STEP 0.
 
-## Contract: `C0..C5`
+## Core contract: `C0..C5`
+
+The self-check script also carries later guardrails for evidence bundles, demo
+surfaces, SDK 2.10 syntax, manifest-shape oracle presence, and claim
+discipline. The table below is the core layer-block loop.
 
 | ID | Where | What it asserts | Failure means |
 |----|-------|-----------------|---------------|
@@ -113,34 +121,31 @@ artifact's `verdict.preconditionsMet` / `preconditionsMissing` lists.
   every entry == 0 (bit-exact)
 
 `P1, P2, P4, P5` are produced by an actual `cs_python` simfabric run.
-`P3` upgrades from `synthetic_seeded_rng` to `manifest_weights_*` once a
-real-weight loader populates `--weights-dir` with per-layer slice files.
+`P3` keeps the synthetic simfabric path separate from numpy-only diagnostics.
+The stronger real-weight promotion is governed by the receipt's
+`realWeightEvidence` block: fixture hash, weights audit, weight-set hash, and
+the WebGPU-vs-CSL parity verdict for the BF16-derived L1 smoke slice.
 
-## What's gating the actual flip
+## What is still blocked
 
-The self-check passing locally does NOT flip `executionStatus`. Two
-prerequisites live outside this loop:
+The current promoted tier is `real_weight_layer_block_success`, not full
+`simulator_success` for E2B. The remaining blockers are:
 
-1. **`cs_python` on PATH.** The generated runner imports
+1. **`cs_python` on PATH for fresh simulator regeneration.** The generated runner imports
    `cerebras.sdk.runtime.sdkruntimepybind` at module top, so it cannot
-   execute without the Cerebras SDK Python interpreter. The receipt's
-   `executionBlocker` field reflects this honestly:
-   `cs_python_not_available_in_build_environment` /
-   `full_transformer_layer_block_incomplete`.
+   regenerate live traces without the Cerebras SDK Python interpreter. Hosts
+   without the SDK must stay in the explicit blocked diagnostic path.
 
-2. **Real per-layer weight slices.** The runner's loader at
-   `bench/runners/csl-runners/_e2b_layer_block_compute.py` does not currently
-   accept real weights — it falls back to a per-layer-index seeded RNG when
-   `--weights-dir/<weight_key>.f32` is missing. The synthetic-seed path
-   exercises every other piece of the pipeline and produces a `succeeded`
-   trace under `cs_python`; promoting to a publishable `simulator_success`
-   requires real weights so the output matches a Doppler/numpy reference at
-   the model level, not just the layer level.
+2. **Full manifest-shape runtime execution.** The CPU/Numpy oracle now executes
+   the raw BF16 E2B text stack at upstream tensor dimensions, but Doe CSL has
+   not yet executed that full manifest-shape graph.
 
-Once `cs_python` runs the generated runner against weights from a Doppler
-exporter, all five P_n preconditions can be met simultaneously, the parity-
-check verdict flips to `promotionEligible: True`, and the model receipt's
-`executionStatus` can flip to `simulator_success` honestly.
+3. **Hardware receipt.** WSE/WSC execution remains pending until a
+   `hardware_success` receipt exists.
+
+Once Doe CSL executes the full manifest-shape graph and the hardware lane has
+matching receipts, the model receipt can move beyond the narrow L1
+real-weight smoke tier.
 
 ## How to run
 

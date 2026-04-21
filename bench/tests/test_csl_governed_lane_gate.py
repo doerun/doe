@@ -42,7 +42,7 @@ def _minimal_report(
         "orchestrationMode": "memcpy",
         "operationCount": 3,
         "exportedSymbolCount": 2,
-        "sdkVersionFloor": "1.4.0",
+        "sdkVersionFloor": "2.10.0",
     }
     if kernel_pattern_count is not None:
         op_graph["kernelPatternCount"] = kernel_pattern_count

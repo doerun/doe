@@ -26,7 +26,7 @@ pub fn emit(
     try W.write(buf, pos, "// PE program: Q4K dequantization (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// Each PE dequantizes its assigned super-blocks locally.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param num_blocks: i16;\n\n");

@@ -110,6 +110,394 @@ def _reference_doc_block() -> dict[str, Any]:
     return block
 
 
+def _file_link(rel_path: str) -> dict[str, Any]:
+    block: dict[str, Any] = {"path": rel_path, "exists": False}
+    if not rel_path:
+        return block
+    abs_path = resolve(rel_path)
+    if abs_path.is_file():
+        block["exists"] = True
+        block["sha256"] = sha256_file(abs_path)
+    return block
+
+
+def _dir_link(rel_path: str) -> dict[str, Any]:
+    block: dict[str, Any] = {"path": rel_path, "exists": False}
+    if not rel_path:
+        return block
+    abs_path = resolve(rel_path)
+    if abs_path.is_dir():
+        block["exists"] = True
+        block["fileCount"] = sum(1 for p in abs_path.rglob("*") if p.is_file())
+    return block
+
+
+def _stream_layout_summary(layer: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "targetMode": layer.get("targetMode"),
+        "regionName": layer.get("regionName"),
+        "connectionGraph": layer.get("connectionGraph") or {},
+        "hostIoLayout": layer.get("hostIoLayout") or [],
+        "ioBufferSizes": layer.get("ioBufferSizes") or {},
+        "sendReceiveCounts": layer.get("sendReceiveCounts") or {},
+    }
+
+
+def _build_sdklayout_model_execution_evidence(
+    receipt: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Promote generated SdkLayout layer-block smoke to receipt evidence.
+
+    This block is deliberately scoped to the E2B layer-block smoke path. It
+    proves a generated SdkLayout program compiled and ran through simfabric
+    with direct-link host streams; it does not claim full manifest-shape model
+    execution or hardware.
+    """
+    model_id = (receipt.get("modelId") or "").lower()
+    if "e2b" not in model_id:
+        return None
+
+    trace_rel = "bench/out/gemma-4-e2b-real-weight-parity/L1/csl-sdklayout/trace.json"
+    parity_rel = "bench/out/gemma-4-e2b-real-weight-parity-L1.json"
+    trace_path = resolve(trace_rel)
+    parity_path = resolve(parity_rel)
+    if not trace_path.is_file():
+        return {
+            "promotionStatus": "blocked",
+            "claimScope": (
+                "E2B SdkLayout layer-block model execution evidence is "
+                "blocked because the canonical L1 SdkLayout trace is absent."
+            ),
+            "blockers": ["sdklayout_layer_block_trace_absent"],
+            "trace": _file_link(trace_rel),
+        }
+
+    try:
+        trace = load_json(trace_path)
+    except json.JSONDecodeError:
+        return {
+            "promotionStatus": "blocked",
+            "claimScope": "E2B SdkLayout trace exists but is invalid JSON.",
+            "blockers": ["sdklayout_layer_block_trace_invalid_json"],
+            "trace": _file_link(trace_rel),
+        }
+
+    layer = trace.get("layerBlockSmoke") or {}
+    run = trace.get("executedRun") or {}
+    compile_info = trace.get("executedCompile") or {}
+    output = run.get("output") or {}
+    runtime_stop = run.get("runtimeStop") or {}
+    simulator_paths = layer.get("simulatorArtifactPaths") or {}
+
+    parity = None
+    parity_summary: dict[str, Any] = {
+        "verdictPath": parity_rel,
+        "verdict": "missing",
+        "promotionEligible": False,
+        "tolerancePassed": False,
+    }
+    if parity_path.is_file():
+        try:
+            parity = load_json(parity_path)
+        except json.JSONDecodeError:
+            parity = None
+        if isinstance(parity, dict):
+            p = parity.get("parity") or {}
+            parity_summary = {
+                "verdictPath": parity_rel,
+                "verdictSha256": sha256_file(parity_path),
+                "verdict": parity.get("verdict"),
+                "promotionEligible": parity.get("verdict") == "parity_passed",
+                "outputDigestMatch": bool(p.get("outputDigestMatch")),
+                "tolerancePassed": bool(p.get("tolerancePassed")),
+                "layersCompared": int(p.get("layersCompared", 0)),
+                "maxAbsErrAcrossLayers": float(
+                    p.get("maxAbsErrAcrossLayers", 0.0)
+                ),
+                "maxAllowedErrAcrossLayers": float(
+                    p.get("maxAllowedErrAcrossLayers", 0.0)
+                ),
+            }
+
+    host_io_layout = layer.get("hostIoLayout") or []
+    send_receive_counts = layer.get("sendReceiveCounts") or {}
+    stream_entries = run.get("streams") or []
+    compile_dir = simulator_paths.get("compileDir") or layer.get("compileArtifactDir") or ""
+    output_rel = output.get("path") or ""
+
+    blockers: list[str] = []
+    if layer.get("kernelIsStub") is not False:
+        blockers.append("kernel_is_stub")
+    if run.get("status") != "succeeded":
+        blockers.append("sdklayout_run_not_succeeded")
+    if compile_info.get("status") != "succeeded":
+        blockers.append("sdklayout_compile_not_succeeded")
+    if runtime_stop.get("reached") is not True:
+        blockers.append("runtime_stop_not_reached")
+    if len(host_io_layout) < 4:
+        blockers.append("host_io_layout_incomplete")
+    if send_receive_counts.get("sends") != 3:
+        blockers.append("send_count_mismatch")
+    if send_receive_counts.get("receives") != 1:
+        blockers.append("receive_count_mismatch")
+    if len(stream_entries) < 4:
+        blockers.append("host_sdk_stream_telemetry_missing")
+    if not parity_summary.get("promotionEligible"):
+        blockers.append("parity_not_promoted")
+    if not _dir_link(compile_dir).get("exists"):
+        blockers.append("compile_artifacts_missing")
+    if not _file_link(output_rel).get("exists"):
+        blockers.append("output_artifact_missing")
+
+    status = (
+        "sdk_layout_layer_block_smoke_promoted"
+        if not blockers else "blocked"
+    )
+    return {
+        "promotionStatus": status,
+        "claimScope": (
+            "Generated E2B SdkLayout layer-block smoke evidence only: "
+            "one BF16-derived L1 smoke slice compiled and ran on local "
+            "simfabric through direct-link SdkRuntime send/receive. This "
+            "does not prove full manifest-shape E2B execution or hardware."
+        ),
+        "modelId": receipt.get("modelId"),
+        "executionStatusBinding": receipt.get("executionStatus"),
+        "streamExecutionPlan": {
+            "path": layer.get("planPath"),
+            "sha256": layer.get("planSha256"),
+        },
+        "kernelSource": {
+            "path": layer.get("kernelSourcePath"),
+            "sha256": layer.get("kernelSourceSha256"),
+            "kernelIsStub": bool(layer.get("kernelIsStub")),
+            "kernelStage": layer.get("kernelStage"),
+        },
+        "regionPortStreamGraph": _stream_layout_summary(layer),
+        "hostIoLayout": host_io_layout,
+        "sendReceiveCounts": send_receive_counts,
+        "hostSdkTelemetry": {
+            "measurementSource": (
+                (run.get("streamTelemetry") or {}).get("measurementSource")
+            ),
+            "streams": stream_entries,
+            "streamEventsTailCount": len(run.get("streamEventsTail") or []),
+        },
+        "simulatorArtifacts": {
+            "compileDir": _dir_link(compile_dir),
+            "trace": _file_link(trace_rel),
+            "output": _file_link(output_rel),
+            "runLogs": simulator_paths.get("runLogs") or [],
+            "coreFile": simulator_paths.get("coreFile"),
+        },
+        "executedCompile": compile_info,
+        "executedRun": {
+            "status": run.get("status"),
+            "numLayersChained": run.get("numLayersChained"),
+            "elapsedMs": run.get("elapsedMs"),
+            "dataSourceKind": (run.get("dataSource") or {}).get("kind"),
+            "outputSha256": output.get("sha256"),
+            "numericalParity": run.get("numericalParity") or {},
+        },
+        "runtimeStop": {
+            "reached": bool(runtime_stop.get("reached")),
+            "elapsedMs": runtime_stop.get("elapsedMs"),
+            "error": runtime_stop.get("error"),
+        },
+        "parity": parity_summary,
+        "blockers": blockers,
+        "remainingClaimBlockers": [
+            "full_manifest_shape_doe_csl_runtime_execution",
+            "cerebras_hardware_receipt",
+        ],
+    }
+
+
+def _depth_diagnostic_entry(
+    *,
+    source_label: str,
+    parity_rel: str,
+    trace_rel: str,
+) -> dict[str, Any]:
+    parity_link = _file_link(parity_rel)
+    trace_link = _file_link(trace_rel)
+    entry: dict[str, Any] = {
+        "sourceLabel": source_label,
+        "numLayers": 35,
+        "claimable": False,
+        "parity": {
+            "path": parity_rel,
+            "exists": parity_link.get("exists", False),
+        },
+        "trace": trace_link,
+        "blockers": [],
+    }
+
+    parity: dict[str, Any] | None = None
+    if parity_link.get("exists"):
+        entry["parity"]["sha256"] = parity_link.get("sha256")
+        try:
+            loaded = load_json(resolve(parity_rel))
+            if isinstance(loaded, dict):
+                parity = loaded
+        except json.JSONDecodeError:
+            entry["blockers"].append("parity_receipt_invalid_json")
+    else:
+        entry["blockers"].append("parity_receipt_missing")
+
+    if parity is not None:
+        p = parity.get("parity") or {}
+        entry["parity"].update({
+            "verdict": parity.get("verdict"),
+            "weightsSourceLabel": parity.get("weightsSourceLabel"),
+            "weightSetPinMode": parity.get("weightSetPinMode"),
+            "weightsAudit": _file_link(parity.get("weightsAuditPath", "")),
+            "weightsDir": parity.get("weightsDir"),
+            "layersCompared": int(p.get("layersCompared", 0)),
+            "tolerancePassed": bool(p.get("tolerancePassed")),
+            "maxAbsErrAcrossLayers": float(
+                p.get("maxAbsErrAcrossLayers", 0.0)
+            ),
+            "maxAllowedErrAcrossLayers": float(
+                p.get("maxAllowedErrAcrossLayers", 0.0)
+            ),
+            "meanAbsErrAcrossLayers": float(
+                p.get("meanAbsErrAcrossLayers", 0.0)
+            ),
+        })
+        if parity.get("verdict") != "parity_passed":
+            entry["blockers"].append("parity_not_passed")
+        if int(parity.get("numLayers", 0)) != 35:
+            entry["blockers"].append("not_full_declared_depth")
+        if not bool(p.get("tolerancePassed")):
+            entry["blockers"].append("tolerance_not_passed")
+
+    if trace_link.get("exists"):
+        try:
+            trace = load_json(resolve(trace_rel))
+        except json.JSONDecodeError:
+            trace = {}
+            entry["blockers"].append("trace_invalid_json")
+        layer = trace.get("layerBlockSmoke") or {}
+        run = trace.get("executedRun") or {}
+        runtime_stop = run.get("runtimeStop") or {}
+        output = run.get("output") or {}
+        entry["trace"].update({
+            "numLayersChained": run.get("numLayersChained"),
+            "status": run.get("status"),
+            "elapsedMs": run.get("elapsedMs"),
+            "runtimeStopReached": bool(runtime_stop.get("reached")),
+            "kernelIsStub": bool(layer.get("kernelIsStub")),
+            "kernelStage": layer.get("kernelStage"),
+            "streamExecutionPlan": {
+                "path": layer.get("planPath"),
+                "sha256": layer.get("planSha256"),
+            },
+            "sendReceiveCounts": layer.get("sendReceiveCounts") or {},
+            "hostIoLayout": layer.get("hostIoLayout") or [],
+            "hostSdkTelemetry": {
+                "measurementSource": (
+                    (run.get("streamTelemetry") or {}).get("measurementSource")
+                ),
+                "streamCount": len(run.get("streams") or []),
+                "streamEventsTailCount": len(run.get("streamEventsTail") or []),
+            },
+            "output": _file_link(output.get("path", "")),
+        })
+        if run.get("status") != "succeeded":
+            entry["blockers"].append("trace_run_not_succeeded")
+        if run.get("numLayersChained") != 35:
+            entry["blockers"].append("trace_depth_mismatch")
+        if runtime_stop.get("reached") is not True:
+            entry["blockers"].append("runtime_stop_not_reached")
+        if layer.get("kernelIsStub") is not False:
+            entry["blockers"].append("kernel_is_stub")
+        counts = layer.get("sendReceiveCounts") or {}
+        if counts.get("sends") != 3 or counts.get("receives") != 1:
+            entry["blockers"].append("send_receive_count_mismatch")
+    else:
+        entry["blockers"].append("trace_missing")
+
+    return entry
+
+
+def _build_sdklayout_depth_diagnostic_evidence(
+    receipt: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Bind full-depth smoke diagnostics without promoting them to claims."""
+    model_id = (receipt.get("modelId") or "").lower()
+    if "e2b" not in model_id:
+        return None
+
+    diagnostic_depth = 35
+    depth_tag = f"L{diagnostic_depth}"
+    depth_slug = depth_tag.lower()
+    entries = [
+        _depth_diagnostic_entry(
+            source_label="bf16_safetensors",
+            parity_rel=(
+                "bench/out/gemma-4-e2b-real-weight-parity-"
+                f"{depth_tag}.json"
+            ),
+            trace_rel=(
+                "bench/out/gemma-4-e2b-real-weight-parity/"
+                f"{depth_tag}/csl-sdklayout/trace.json"
+            ),
+        ),
+        _depth_diagnostic_entry(
+            source_label="doppler_rdrr_q4k_int4ple",
+            parity_rel=(
+                "bench/out/doppler-rdrr/"
+                f"gemma-4-e2b-int4ple-rdrr-{depth_slug}-"
+                "parity.json"
+            ),
+            trace_rel=(
+                "bench/out/doppler-rdrr/"
+                f"gemma-4-e2b-int4ple-rdrr-{depth_slug}-"
+                "parity-work/"
+                "csl-sdklayout/trace.json"
+            ),
+        ),
+    ]
+    entry_blockers = [
+        f"{e['sourceLabel']}:{b}"
+        for e in entries
+        for b in e.get("blockers", [])
+    ]
+    passed_entries = [
+        e for e in entries
+        if not e.get("blockers")
+        and ((e.get("parity") or {}).get("verdict") == "parity_passed")
+        and ((e.get("parity") or {}).get("tolerancePassed") is True)
+    ]
+    status = (
+        "full_depth_smoke_diagnostic_passed"
+        if len(passed_entries) == len(entries)
+        else "blocked"
+    )
+    return {
+        "status": status,
+        "claimable": False,
+        "claimScope": (
+            "Full declared-depth E2B smoke-chain diagnostic only. The "
+            "same generated SdkLayout layer-block contract is chained "
+            "for 35 layers with BF16-derived and RDRR/Q4_K_M-derived "
+            "smoke slices. This is not upstream manifest-shape Doe/CSL "
+            "runtime execution, not Doppler production inference parity, "
+            "and not hardware evidence."
+        ),
+        "declaredModelDepth": 35,
+        "manifestShapeRuntimeExecuted": False,
+        "diagnostics": entries,
+        "blockers": entry_blockers,
+        "remainingClaimBlockers": [
+            "full_manifest_shape_doe_csl_runtime_execution",
+            "doppler_production_inference_parity",
+            "cerebras_hardware_receipt",
+        ],
+    }
+
+
 def resolve(p: str) -> Path:
     path = Path(p)
     return path if path.is_absolute() else (REPO_ROOT / path).resolve()
@@ -568,6 +956,20 @@ def main() -> int:
     receipt["executionBlocker"] = blocker
     if real_weight_evidence_block:
         receipt["realWeightEvidence"] = real_weight_evidence_block
+    sdklayout_execution_evidence = _build_sdklayout_model_execution_evidence(
+        receipt
+    )
+    if sdklayout_execution_evidence is not None:
+        receipt["sdkLayoutModelExecutionEvidence"] = (
+            sdklayout_execution_evidence
+        )
+    sdklayout_depth_evidence = _build_sdklayout_depth_diagnostic_evidence(
+        receipt
+    )
+    if sdklayout_depth_evidence is not None:
+        receipt["sdkLayoutDepthDiagnosticEvidence"] = (
+            sdklayout_depth_evidence
+        )
     receipt["fullGridCompileProbeEvidence"] = {
         "description": "Pointer to the cslc grid-probe aggregate. Documents which grid sizes cslc accepts for this target.",
         "reportPath": "bench/out/cslc-grid-probe/grid-probe-aggregate.json",

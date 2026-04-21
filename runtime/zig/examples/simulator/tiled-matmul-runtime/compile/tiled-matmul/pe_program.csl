@@ -2,8 +2,8 @@
 // P×P PE grid, collectives_2d for row/column broadcasts.
 // C[M,N] = A[M,K] * B^T[N,K]
 
-param c2d_params: comptime_struct;
-param memcpy_params: comptime_struct;
+param c2d_params;
+param memcpy_params;
 param Mt: i16;
 param Kt: i16;
 param Nt: i16;

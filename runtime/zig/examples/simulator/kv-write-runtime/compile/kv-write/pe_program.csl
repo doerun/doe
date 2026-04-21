@@ -10,7 +10,7 @@
 // variant declares fixed-size local buffers so the governed-lane driver
 // can memcpy them directly.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 param head_dim: i16;

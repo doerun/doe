@@ -82,13 +82,13 @@ The top-level discriminator is `orchestrationMode`:
 
 - `memcpy`: direct `cslc` compile plus `SdkRuntime` `memcpy_h2d`,
   `memcpy_d2h`, and `launch` operations. This covers the Gemma 4 E2B ladder
-  and SDK patterns such as single-PE GEMV, replicated multi-PE GEMV, streaming
-  memcpy, and checkerboard GEMV. Streaming H2D/D2H is still `memcpy` mode when
+  and SDK patterns such as single-PE GEMV, replicated multi-PE GEMV, and
+  checkerboard GEMV. Streaming H2D/D2H is still `memcpy` mode when
   the host operation is `SdkRuntime.memcpy_*` with `streaming=true`.
 - `sdklayout`: Python `SdkLayout` code regions, ports, connections, streams,
-  and async `SdkRuntime.send` / `receive` operations. This is the expected
-  31B weight-streaming path once the resident E2B path has compile and trace
-  receipts.
+  and async direct-link `SdkRuntime.send` / `receive` operations. This is now
+  the active streaming-executor contract for generated layer-block execution,
+  including E2B, 31B, and later streamed-weight model lanes.
 
 The schema carries typed CSL compile params, the `cslc` fabric/arch/memcpy
 command shape, exported device symbols, and an ordered operation list. The
@@ -142,12 +142,15 @@ Reference SDK patterns for this contract:
 - GEMV 5 multiple PEs: canonical multi-PE ROI and row-major distribution shape.
 - GEMV 9 memcpy streaming and GEMV checkerboard: canonical
   streaming-memcpy-driven shape with memcpy colors and fabric/buffer flags.
-- SDK 1.4 release notes: `SdkLayout` beta and direct-link `send` / `receive`
-  API boundary.
+- SDK 2.10 release notes: CSL parameter, queue, and WSE-3 compiler/runtime
+  boundary.
 - SdkLayout 5 GEMV: code regions, ports, connections, streams, and async
   `send` / `receive` ordering.
 - Host Runtime and Tensor Streaming: `SdkRuntime` lifecycle, copy mode,
   streaming mode, ROI semantics, and `load` / `run` / `stop`.
+- SdkLayout API: compile-time `libs`, `cslc_prefix`, `f16_type`, and optional
+  port-map emission are part of the host contract when the generated runner
+  depends on SDK libraries or non-default float formats.
 
 ## Why CSL is different
 
@@ -209,22 +212,79 @@ not claim full model-runtime execution on its own.
 
 ## SDK version compatibility
 
-The CSL lane targets Cerebras SDK v1.4 as its compile/runtime floor. Two v1.4
-breaking changes are relevant to emitted CSL code and already satisfied by the
-emitters in-tree:
+The CSL lane targets Cerebras SDK v2.10.0 as its compile/runtime floor. The
+SDK 1.4 receipts in existing artifacts are historical evidence only; new CSL
+bring-up work should use SDK 2.10 syntax and regenerate receipts on that
+toolchain.
+
+The active emitter constraints are:
 
 - *Tasks must be activated, not called.* All task invocations emitted by
   `runtime/zig/src/doe_wgsl/emit_csl_*.zig` use `@activate(task_id)` form.
 - *Config-space pointer access is illegal; `@get_config` / `@set_config` are
   required.* The emitters do not construct pointers into config space.
+- *`comptime_struct` and `@concat_struct` / `@concat_structs` are removed.*
+  Generated memcpy and collectives params use the SDK 2.10 form
+  `param memcpy_params;` / `param c2d_params;`. New structured params must be
+  named struct types.
+- *Fabric DSDs bind colors through queues.* Generated `fabin_dsd` and
+  `fabout_dsd` declarations use explicit input/output queues and omit
+  deprecated `fabric_color` DSD metadata; the queues are initialized with their
+  colors in the comptime block on WSE-3.
 
-WSE-1 is no longer supported by SDK v1.4. The HostPlan fabric/arch constraints
+WSE-1 is no longer supported by the governed CSL lane. The HostPlan fabric/arch constraints
 should not assume WSE-1 as a deployment target.
 
-`cslc` in SDK v1.4 is shipped as a Singularity/Apptainer SIF runner, not a
-static native binary. Host preflight for the CSL lane therefore has to verify
-that `singularity` (or `apptainer`) is on `PATH` in addition to the usual
-`DOE_CSLC_EXECUTABLE` resolution.
+Host preflight for the CSL lane still has to validate the configured `cslc`
+entrypoint and preserve the compiler stderr path. When the SDK installation
+uses a Singularity/Apptainer SIF runner, the runner dependency is part of the
+toolchain preflight rather than an implicit fallback.
+
+## SdkLayout runtime contract
+
+The SDK 2.10 `SdkLayout` API changes the execution plan for model-scale
+streaming. `SdkLayout` is not just a future cleanup for the CSL path; it is the
+host-side contract for code regions, ports, automatic routing, direct-link
+streams, and asynchronous host I/O. The generated stream graph should lower to
+these API concepts directly:
+
+- each compute or adaptor placement becomes a named code region
+- host-visible tensors bind to input or output ports on those regions
+- inter-region edges become explicit `connect` calls with route metadata
+- host I/O becomes declared input/output streams, then ordered
+  `SdkRuntime.send` / `SdkRuntime.receive` tasks
+- runner receipts record stream names, byte counts, task handles, ordering,
+  nonblocking/blocking mode, and whether `rt.stop()` was reached
+
+The `memcpy` HostPlan lane remains valid for per-kernel governed receipts,
+RPC launch fixtures, and checkerboard-style memcpy examples. The full
+streaming model lane should not invent a parallel host-I/O abstraction on top
+of memcpy when the SDK already exposes ports and streams through `SdkLayout`.
+
+When compiling through `SdkLayout.compile`, Doe receipts should preserve the
+effective compiler options that change generated artifacts: target arch, extra
+compiler prefix, additional library search paths, selected 16-bit float type,
+and any saved port map. These knobs are runtime-visible and belong in schemas
+or receipts before they can be used for a claimable model run.
+
+## WSC appliance contract
+
+Direct `cmaddr` remains the lowest-friction hardware path for a host that can
+reach a CS system directly. WSC appliance access is a distinct wrapper around
+the same host runner, not a different runtime target:
+
+- compile with `cerebras.sdk.client.SdkCompiler`
+- stage files and launch the existing `cs_python` host script with
+  `cerebras.sdk.client.SdkLauncher`
+- pass `%CMADDR%` in the launcher command so the appliance resolves the system
+  endpoint at run time
+- download only the redacted receipt/log/trace artifacts that the operator is
+  allowed to return
+
+The deprecated appliance `SdkRuntime` binding is not a Doe integration target.
+Doe's appliance receipt records the compiler artifact path, launcher response,
+staged files, requested simulator/system mode, downloads, elapsed time, and
+redacted command shape. It must not persist credentials or raw endpoints.
 
 ## Receipt discipline: three outcomes, no fourth path
 
@@ -251,7 +311,7 @@ result that has not cleared the governed-lane gate.
 The near-term execution target is Gemma 4 E2B, whose host-plan / memory-plan /
 runtime-config / simulator-plan fixtures already exist under
 `examples/doe-wgsl-*.gemma-4-e2b-smoke.json`. Gemma 3 270M is the smaller
-graduation target used to debug the SDK v1.4 driver seam before repointing the
+graduation target used to debug the SDK driver seam before repointing the
 governed lane at E2B fixtures.
 
 The first scale-up hardware target after E2B is Gemma 4 31B dense. Dense 31B
@@ -269,22 +329,21 @@ that does not remove the need for WSE-specific receipts. In particular, a GPU
 MoE advantage that depends on touching fewer HBM-resident weights must be
 remeasured on the Doe CSL path rather than assumed.
 
-Gemma 4 31B does not fit resident in WSE memory. The SDK v1.4 primitive that
-maps cleanly to streamed weights is `SdkRuntime.send` / `receive` for program
-input/output ports, introduced in v1.4 alongside memcpy-based data transfer.
-The 31B memory-plan schema migration is therefore expected to add a
+Gemma 4 31B does not fit resident in WSE memory. The SDK runtime primitive that
+maps cleanly to streamed weights is `SdkRuntime.send` / `receive` over
+`SdkLayout` program input/output streams. The 31B memory-plan schema migration
+is therefore expected to add a
 `csl_weight_streaming_policy` contract so receipts can distinguish resident
 weights from streamed weights and bind port IDs / wavelet counts / chunks /
 trace paths into the governed artifact.
 
-`SdkLayout` (v1.4 beta: rectangular code regions, color routing, auto-routing
-between regions) is the second-generation layout backend, not the first
-integration seam. Its current beta restrictions — `memcpy` API not supported
-for data transfers or remote launches, CSL libraries with internal color
-routing not supported — conflict with Doe's existing memcpy-based driver. The
-CSL emitters stay on the current HostPlan path until the governed lane has
-working compile + trace receipts on E2B; `SdkLayout` adoption is a later
-refactor gated on beta restrictions clearing or a parallel driver shape.
+`SdkLayout` (rectangular code regions, color routing, auto-routing between
+regions, ports, and host streams) is now the streaming-executor integration
+seam. The existing HostPlan and memcpy driver contracts stay in place for
+per-kernel receipts and small resident smoke paths, but generated E2B
+layer-block execution and 31B-style streaming should advance on the SdkLayout
+lane. Any new SdkLayout field that changes runtime behavior still has to land
+in the host/runtime schemas and receipts in the same change.
 
 For 31B-style streaming, `SdkLayout` is still the likely long-term contract
 shape. Multi-PE input/output streams imply fields that the current resident

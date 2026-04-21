@@ -280,6 +280,311 @@
         }
       }
     },
+    "sdkLayoutModelExecutionEvidence": {
+      "type": "object",
+      "description": "First-class model-level promotion block for the generated E2B SdkLayout layer-block smoke. This is narrower than full manifest-shape execution: it proves the generated SdkLayout program compiled and ran through local simfabric with direct-link send/receive telemetry, non-stub kernel identity, rt.stop completion, and parity evidence.",
+      "required": [
+        "promotionStatus",
+        "claimScope",
+        "streamExecutionPlan",
+        "kernelSource",
+        "regionPortStreamGraph",
+        "hostIoLayout",
+        "sendReceiveCounts",
+        "hostSdkTelemetry",
+        "simulatorArtifacts",
+        "runtimeStop",
+        "parity",
+        "blockers",
+        "remainingClaimBlockers"
+      ],
+      "properties": {
+        "promotionStatus": {
+          "type": "string",
+          "enum": ["sdk_layout_layer_block_smoke_promoted", "blocked"]
+        },
+        "claimScope": { "type": "string", "minLength": 1 },
+        "modelId": { "type": "string" },
+        "executionStatusBinding": { "type": "string" },
+        "streamExecutionPlan": {
+          "type": "object",
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
+        "kernelSource": {
+          "type": "object",
+          "required": ["path", "sha256", "kernelIsStub", "kernelStage"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "kernelIsStub": { "const": false },
+            "kernelStage": { "type": "string", "minLength": 1 }
+          }
+        },
+        "regionPortStreamGraph": {
+          "type": "object",
+          "required": [
+            "targetMode",
+            "regionName",
+            "connectionGraph",
+            "hostIoLayout",
+            "ioBufferSizes",
+            "sendReceiveCounts"
+          ],
+          "properties": {
+            "targetMode": { "type": "string", "minLength": 1 },
+            "regionName": { "type": "string", "minLength": 1 },
+            "connectionGraph": { "type": "object" },
+            "hostIoLayout": {
+              "type": "array",
+              "minItems": 4,
+              "items": { "type": "object" }
+            },
+            "ioBufferSizes": { "type": "object" },
+            "sendReceiveCounts": { "type": "object" }
+          }
+        },
+        "hostIoLayout": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "type": "object" }
+        },
+        "sendReceiveCounts": {
+          "type": "object",
+          "required": ["sends", "receives"],
+          "properties": {
+            "sends": { "const": 3 },
+            "receives": { "const": 1 }
+          }
+        },
+        "hostSdkTelemetry": {
+          "type": "object",
+          "required": ["measurementSource", "streams", "streamEventsTailCount"],
+          "properties": {
+            "measurementSource": { "const": "host_sdk_task_handles" },
+            "streams": {
+              "type": "array",
+              "minItems": 4,
+              "items": { "type": "object" }
+            },
+            "streamEventsTailCount": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "simulatorArtifacts": {
+          "type": "object",
+          "required": ["compileDir", "trace", "output"],
+          "properties": {
+            "compileDir": {
+              "type": "object",
+              "required": ["path", "exists"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "exists": { "const": true },
+                "fileCount": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "trace": {
+              "type": "object",
+              "required": ["path", "exists", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "exists": { "const": true },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "output": {
+              "type": "object",
+              "required": ["path", "exists", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "exists": { "const": true },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "runLogs": { "type": "array" },
+            "coreFile": { "type": ["string", "null"] }
+          }
+        },
+        "executedCompile": { "type": "object" },
+        "executedRun": { "type": "object" },
+        "runtimeStop": {
+          "type": "object",
+          "required": ["reached"],
+          "properties": {
+            "reached": { "const": true },
+            "elapsedMs": { "type": ["number", "null"], "minimum": 0 },
+            "error": { "type": ["string", "null"] }
+          }
+        },
+        "parity": {
+          "type": "object",
+          "required": [
+            "verdictPath",
+            "verdictSha256",
+            "verdict",
+            "promotionEligible",
+            "tolerancePassed"
+          ],
+          "properties": {
+            "verdictPath": { "type": "string", "minLength": 1 },
+            "verdictSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "verdict": { "type": "string", "minLength": 1 },
+            "promotionEligible": { "const": true },
+            "outputDigestMatch": { "type": "boolean" },
+            "tolerancePassed": { "const": true },
+            "layersCompared": { "type": "integer", "minimum": 1 },
+            "maxAbsErrAcrossLayers": { "type": "number", "minimum": 0 },
+            "maxAllowedErrAcrossLayers": { "type": "number", "minimum": 0 }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "remainingClaimBlockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "sdkLayoutDepthDiagnosticEvidence": {
+      "type": "object",
+      "description": "Model-level diagnostic block for full declared-depth E2B smoke-chain runs. This remains non-claimable until manifest-shape Doe/CSL runtime execution and hardware receipts land.",
+      "required": [
+        "status",
+        "claimable",
+        "claimScope",
+        "declaredModelDepth",
+        "manifestShapeRuntimeExecuted",
+        "diagnostics",
+        "blockers",
+        "remainingClaimBlockers"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["full_depth_smoke_diagnostic_passed", "blocked"]
+        },
+        "claimable": { "const": false },
+        "claimScope": { "type": "string", "minLength": 1 },
+        "declaredModelDepth": { "const": 35 },
+        "manifestShapeRuntimeExecuted": { "const": false },
+        "diagnostics": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": [
+              "sourceLabel",
+              "numLayers",
+              "claimable",
+              "parity",
+              "trace",
+              "blockers"
+            ],
+            "properties": {
+              "sourceLabel": {
+                "type": "string",
+                "enum": ["bf16_safetensors", "doppler_rdrr_q4k_int4ple"]
+              },
+              "numLayers": { "const": 35 },
+              "claimable": { "const": false },
+              "parity": {
+                "type": "object",
+                "required": ["path", "exists"],
+                "properties": {
+                  "path": { "type": "string", "minLength": 1 },
+                  "exists": { "type": "boolean" },
+                  "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "verdict": { "type": "string" },
+                  "weightsSourceLabel": { "type": "string" },
+                  "weightSetPinMode": { "type": "string" },
+                  "weightsAudit": {
+                    "type": "object",
+                    "properties": {
+                      "path": { "type": "string" },
+                      "exists": { "type": "boolean" },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  },
+                  "weightsDir": { "type": "string" },
+                  "layersCompared": { "type": "integer", "minimum": 0 },
+                  "tolerancePassed": { "type": "boolean" },
+                  "maxAbsErrAcrossLayers": { "type": "number", "minimum": 0 },
+                  "maxAllowedErrAcrossLayers": { "type": "number", "minimum": 0 },
+                  "meanAbsErrAcrossLayers": { "type": "number", "minimum": 0 }
+                }
+              },
+              "trace": {
+                "type": "object",
+                "required": ["path", "exists"],
+                "properties": {
+                  "path": { "type": "string", "minLength": 1 },
+                  "exists": { "type": "boolean" },
+                  "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "numLayersChained": { "type": "integer", "minimum": 0 },
+                  "status": { "type": "string" },
+                  "elapsedMs": { "type": "number", "minimum": 0 },
+                  "runtimeStopReached": { "type": "boolean" },
+                  "kernelIsStub": { "type": "boolean" },
+                  "kernelStage": { "type": "string" },
+                  "streamExecutionPlan": {
+                    "type": "object",
+                    "properties": {
+                      "path": { "type": "string" },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  },
+                  "sendReceiveCounts": {
+                    "type": "object",
+                    "properties": {
+                      "sends": { "type": "integer" },
+                      "receives": { "type": "integer" }
+                    }
+                  },
+                  "hostIoLayout": {
+                    "type": "array",
+                    "items": { "type": "object" }
+                  },
+                  "hostSdkTelemetry": {
+                    "type": "object",
+                    "properties": {
+                      "measurementSource": { "type": "string" },
+                      "streamCount": { "type": "integer", "minimum": 0 },
+                      "streamEventsTailCount": { "type": "integer", "minimum": 0 }
+                    }
+                  },
+                  "output": {
+                    "type": "object",
+                    "properties": {
+                      "path": { "type": "string" },
+                      "exists": { "type": "boolean" },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  }
+                }
+              },
+              "blockers": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remainingClaimBlockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "fullGridCompileProbeEvidence": {
       "type": "object",
       "description": "Optional pointer to the cslc grid-probe aggregate documenting which PE counts cslc accepts for this arch. Captured once per repo; referenced by every model receipt so downstream consumers can correlate 'this model wants NN PEs' against 'cslc has been proven to handle up to MM PEs'.",
@@ -328,5 +633,27 @@
         "chainCoverageTotal": { "type": "integer", "minimum": 0 }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "modelId": { "pattern": "e2b" },
+          "executionStatus": {
+            "enum": [
+              "simulator_success",
+              "real_weight_layer_block_success",
+              "hardware_success"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "sdkLayoutModelExecutionEvidence",
+          "sdkLayoutDepthDiagnosticEvidence"
+        ]
+      }
+    }
+  ]
 }

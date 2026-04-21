@@ -1,7 +1,7 @@
 // PE program: rotary position embeddings (auto-generated from WGSL)
 // Each PE applies RoPE rotations to its local Q/K chunk.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 param head_dim: i16;

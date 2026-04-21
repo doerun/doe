@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CSL Operation Graph",
-  "description": "CSL host/device operation graph contract. Canonical memcpy references: GEMV-01 RPC launch, GEMV-05 multi-PE ROI, GEMV-09 streaming memcpy, GEMV checkerboard. Canonical SdkLayout references: SDK 1.4 release notes direct send/receive API, SdkLayout-05 GEMV, and Host Runtime and Tensor Streaming.",
+  "description": "CSL host/device operation graph contract. Canonical memcpy references: GEMV-01 RPC launch, GEMV-05 multi-PE ROI, GEMV-09 streaming memcpy, GEMV checkerboard, and SDK 2.10 pipeline FIFO/queue examples. Canonical SdkLayout references: SDK 2.10 release notes direct send/receive API, SdkLayout-05 GEMV, and Host Runtime and Tensor Streaming.",
   "type": "object",
   "additionalProperties": false,
   "required": [

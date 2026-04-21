@@ -29,6 +29,7 @@ SIM_PLAN_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-plan.schema.json"
 DRIVER_RESULT_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-driver-result.schema.json"
 RUNTIME_CONFIG_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-runtime-config.schema.json"
 OPERATION_GRAPH_SCHEMA = REPO_ROOT / "config" / "csl-operation-graph.schema.json"
+CSL_SDK_VERSION_FLOOR = "2.10.0"
 
 # Matches `@export_name("<symbol>", <type>[, <bool>]);`.
 # The type pattern uses non-greedy `.+?` anchored on the closing `);` so it
@@ -142,14 +143,14 @@ def run_command(command: list[str], stdout_path: Path, stderr_path: Path) -> tup
 
 
 # Ordered list of (pattern, failure_code) pairs used to classify cslc stderr
-# into v1.4-specific failure taxonomy codes. First match wins. The order is
+# into SDK-specific failure taxonomy codes. First match wins. The order is
 # load-bearing — broader regex (e.g. `error: expected`) is listed AFTER the
-# more specific patterns so a v1.4 type-mismatch lands on
+# more specific patterns so a type-mismatch lands on
 # `csl_compile_type_mismatch` instead of the generic parse-error bucket.
 #
 # This taxonomy is intentionally narrow: only codes we have first-party
-# evidence for (either from running our own CSL through v1.4 cslc or from
-# SDK 1.4 release notes) are included. Anything else falls through to
+# evidence for (either from running our own CSL through cslc or from
+# SDK release notes) are included. Anything else falls through to
 # `csl_compile_unclassified` and the raw stderr path is the evidence —
 # never silently relabeled as `compile_failed` without a known pattern.
 _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -197,7 +198,7 @@ _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 
 
 def classify_cslc_failure(stderr_path: Path | str) -> str:
-    """Scan cslc stderr for a known v1.4 failure signature.
+    """Scan cslc stderr for a known SDK failure signature.
 
     Returns a specific `csl_compile_*` code when one of the patterns in
     `_CSLC_FAILURE_PATTERNS` matches, otherwise `csl_compile_unclassified`.
@@ -287,7 +288,7 @@ def compile_targets(
     width = int(runtime["peGrid"]["width"])
     height = int(runtime["peGrid"]["height"])
     arch = str(plan.get("target", "wse3"))
-    # SDK v1.4 requires n_channels > 0 (the deprecated CSELFRunner path with
+    # Current SDKs require n_channels > 0 (the deprecated CSELFRunner path with
     # n_channels=0 was removed; cslc now raises RuntimeError("n_channels=0
     # corresponds to the deprecated runtime CSELFRunner. Please use
     # n_channels>0 with SdkRuntime") when the legacy shape is invoked).
@@ -297,9 +298,9 @@ def compile_targets(
     channels = int(runtime.get("channels", 1))
     use_memcpy = bool(runtime.get("memcpy", True))
 
-    # SDK v1.4 memcpy-mode compiles require an explicit --fabric-offsets and a
+    # SDK memcpy-mode compiles require an explicit --fabric-offsets and a
     # --fabric-dims that accounts for memcpy's reserved margin around the PE
-    # rectangle. cslc v1.4 raises:
+    # rectangle. cslc raises:
     #     RuntimeError: The core must have --fabric-offsets=4+width_west_buf,1
     # when these are missing. The canonical offsets are (4 + west_buf, 1) and
     # the fabric is sized as
@@ -382,7 +383,7 @@ def compile_targets(
             f"--fabric-dims={fabric_width},{fabric_height}",
             f"--fabric-offsets={fabric_offset_x},{fabric_offset_y}",
             f"--channels={channels}",
-            # SDK v1.4 requires top-level `param width` / `param height` in
+            # SDKs require top-level `param width` / `param height` in
             # emitted layout.csl to be supplied via the explicit --params
             # flag; the deprecated semantics that let them sit uninitialized
             # now errors with "only 'var' and 'extern const' variables may
@@ -702,7 +703,7 @@ def dtype_for_elem_type(elem_type: str) -> str:
     """Map a CSL scalar element type to a memcpy dataType enum value.
 
     The operation graph schema only defines MEMCPY_16BIT and MEMCPY_32BIT today
-    — the canonical SDK v1.4 memcpy datatypes. 64-bit loads are not part of
+    — the canonical SDK memcpy datatypes. 64-bit loads are not part of
     the contract. Unknown types default to MEMCPY_32BIT (the SDK-default for
     f32/u32/i32) and a follow-up should extend the enum when Doe starts
     emitting f16/u16/i16 storage.
@@ -817,7 +818,7 @@ def synthesize_operation_graph(
     function export — the genuine "no receipt surface" case.
     """
     # Prefer a successful target when one exists — its declared ABI is known
-    # to be v1.4-valid. Fall back to any target with a parseable layout so
+    # to be SDK-valid. Fall back to any target with a parseable layout so
     # blocked / failed compiles still emit a receipt.
     ordered = sorted(
         compile_targets_payload,
@@ -1034,7 +1035,7 @@ def synthesize_operation_graph(
         "graphId": graph_id,
         "orchestrationMode": "memcpy",
         "executionPattern": "rpc_launch",
-        "sdkVersionFloor": "1.4.0",
+        "sdkVersionFloor": CSL_SDK_VERSION_FLOOR,
         "compile": compile_section,
         "exportedSymbols": exports,
         "operations": operations,

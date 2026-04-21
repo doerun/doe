@@ -2,8 +2,8 @@
 # Summarize a packed Cerebras evidence archive WITHOUT extracting it.
 # Operates on the tarball via `tar -xzO | jq`, prints human-readable
 # status for E2B, 31B, 26B/A4B MoE, the bundle-level gate verdict,
-# manifest-shape contract, RDRR Q4_K_M smoke parity, and claimable-depth
-# coverage.
+# manifest-shape contract, manifest-shape CPU execution oracle,
+# RDRR Q4_K_M smoke parity, and claimable-depth coverage.
 #
 # Usage:
 #   bench/tools/summarize_cerebras_evidence_archive.sh <archive.tar.gz>
@@ -18,8 +18,9 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 summarize_cerebras_evidence_archive.sh — quick status from inside an archive
 
 Prints E2B, 31B, 26B/A4B MoE status + bundle gate verdict +
-manifest-shape contract + RDRR Q4_K_M parity + claimable-depth coverage, entirely from the
-tarball via `tar -xzO | jq`.
+manifest-shape contract + manifest-shape CPU execution oracle +
+RDRR Q4_K_M parity + claimable-depth coverage, entirely from the tarball
+via `tar -xzO | jq`.
 No extraction to disk.
 
 Usage:
@@ -116,6 +117,18 @@ extract_json "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json" '
     "upstream heads:    local=\(.upstreamConfig.headDim // "?"), global=\(.upstreamConfig.globalHeadDim // "?"), kv=\(.upstreamConfig.numKeyValueHeads // "?")",
     "blockers:          \((.blockers // []) | length)"
 ' 2>/dev/null || echo "manifest-shape-probe: not present"
+echo
+
+echo "--- manifest-shape CPU execution oracle ---"
+extract_json "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json" '
+    "verdict:           \(.verdict // "?")",
+    "status:            \(.status // "?")",
+    "runtimeLane:       \(.runtimeLane // "?")",
+    "layersExecuted:    \(.executionSummary.layersExecuted // "?")",
+    "headDims:          local=\(.executionSummary.localHeadDim // "?"), global=\(.executionSummary.globalHeadDim // "?")",
+    "lmHeadTopK:        \(.output.lmHeadSummary.finite // "?")",
+    "doeRuntime:        \(.promotionCriteriaMet.doeRuntimeExecuted)"
+' 2>/dev/null || echo "manifest-shape-execution: not present"
 echo
 
 echo "--- Doppler RDRR Q4_K_M smoke parity ---"

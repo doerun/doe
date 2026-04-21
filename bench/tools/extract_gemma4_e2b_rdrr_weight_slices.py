@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import struct
 import sys
 from pathlib import Path
@@ -38,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fixture", default=DEFAULT_FIXTURE)
     parser.add_argument(
         "--artifact-root",
-        default="",
+        default=os.environ.get("DOE_GEMMA4_E2B_RDRR_ROOT", ""),
         help="Override artifactRoot from the RDRR fixture.",
     )
     parser.add_argument("--out-dir", default=DEFAULT_OUT_DIR)

@@ -5,7 +5,7 @@
 // post-barrier runs once with the local index folded to 0, matching
 // the `thread 0` aggregation guard in the source.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 param reduce_color: color;

@@ -43,11 +43,11 @@ pub fn emit(
     // Params from layout. c2d_params is stitched per-PE by the layout
     // (emit_csl_layout::emitMatmulLayout calls c2d.get_params(Px, Py, ...)
     // with explicit x_colors / x_entrypoints / y_colors / y_entrypoints);
-    // the PE receives it as a comptime_struct and unpacks x/y halves for
+    // the PE receives it as an untyped compile-time param and unpacks x/y halves for
     // the two mpi_* dim-bound modules. Canonical wse3 reference:
     // csl-extras .../benchmarks/gemm-collectives_2d/pe.csl.
-    try write(buf, pos, "param c2d_params: comptime_struct;\n");
-    try write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try write(buf, pos, "param c2d_params;\n");
+    try write(buf, pos, "param memcpy_params;\n");
     try write(buf, pos, "param Mt: i16;\n");
     try write(buf, pos, "param Kt: i16;\n");
     try write(buf, pos, "param Nt: i16;\n");

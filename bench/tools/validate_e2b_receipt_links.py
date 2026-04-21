@@ -22,6 +22,17 @@ Link locations walked:
       syntheticTrace.outputPath + syntheticTrace.outputSha256
       crossRuntimeParityCheck.path + ...sha256
       tracePath                 + traceSha256              (if present)
+  sdkLayoutModelExecutionEvidence:
+      streamExecutionPlan.path  + streamExecutionPlan.sha256
+      kernelSource.path         + kernelSource.sha256
+      simulatorArtifacts.trace.path + ...sha256
+      simulatorArtifacts.output.path + ...sha256
+      parity.verdictPath        + parity.verdictSha256
+  sdkLayoutDepthDiagnosticEvidence.diagnostics[]:
+      parity.path               + parity.sha256
+      parity.weightsAudit.path  + parity.weightsAudit.sha256
+      trace.path                + trace.sha256
+      trace.output.path         + trace.output.sha256
 """
 
 from __future__ import annotations
@@ -110,6 +121,73 @@ def collect_links(receipt: dict[str, Any]) -> list[tuple[str, str, str]]:
                 (f"layerBlockKernelEvidence.{sub_key}.output",
                  out_path, out_sha)
             )
+
+    sdk = receipt.get("sdkLayoutModelExecutionEvidence") or {}
+    plan = sdk.get("streamExecutionPlan") or {}
+    if plan.get("path") and plan.get("sha256"):
+        links.append((
+            "sdkLayoutModelExecutionEvidence.streamExecutionPlan",
+            plan["path"],
+            plan["sha256"],
+        ))
+    kernel = sdk.get("kernelSource") or {}
+    if kernel.get("path") and kernel.get("sha256"):
+        links.append((
+            "sdkLayoutModelExecutionEvidence.kernelSource",
+            kernel["path"],
+            kernel["sha256"],
+        ))
+    artifacts = sdk.get("simulatorArtifacts") or {}
+    for sub_key in ("trace", "output"):
+        sub = artifacts.get(sub_key) or {}
+        if sub.get("path") and sub.get("sha256"):
+            links.append((
+                f"sdkLayoutModelExecutionEvidence.simulatorArtifacts.{sub_key}",
+                sub["path"],
+                sub["sha256"],
+            ))
+    parity = sdk.get("parity") or {}
+    if parity.get("verdictPath") and parity.get("verdictSha256"):
+        links.append((
+            "sdkLayoutModelExecutionEvidence.parity",
+            parity["verdictPath"],
+            parity["verdictSha256"],
+        ))
+
+    depth = receipt.get("sdkLayoutDepthDiagnosticEvidence") or {}
+    for idx, diagnostic in enumerate(depth.get("diagnostics") or []):
+        label_prefix = (
+            "sdkLayoutDepthDiagnosticEvidence."
+            f"diagnostics[{idx}]"
+        )
+        parity = diagnostic.get("parity") or {}
+        if parity.get("path") and parity.get("sha256"):
+            links.append((
+                f"{label_prefix}.parity",
+                parity["path"],
+                parity["sha256"],
+            ))
+        audit = parity.get("weightsAudit") or {}
+        if audit.get("path") and audit.get("sha256"):
+            links.append((
+                f"{label_prefix}.parity.weightsAudit",
+                audit["path"],
+                audit["sha256"],
+            ))
+        trace = diagnostic.get("trace") or {}
+        if trace.get("path") and trace.get("sha256"):
+            links.append((
+                f"{label_prefix}.trace",
+                trace["path"],
+                trace["sha256"],
+            ))
+        output = trace.get("output") or {}
+        if output.get("path") and output.get("sha256"):
+            links.append((
+                f"{label_prefix}.trace.output",
+                output["path"],
+                output["sha256"],
+            ))
 
     return links
 

@@ -41,8 +41,10 @@ runtime artifact.
 
 ### 2. Per-kernel CSL runtime parity
 
-Each runtime-ready fixture compiles and runs against the SDK 1.4
-simulator and verifies bit-exact or bit-close output vs numpy.
+Current emitter compatibility targets Cerebras SDK 2.10. Existing SDK 1.4
+simulator receipts remain historical evidence until the fixture lane is
+regenerated on SDK 2.10; new runtime-ready receipts must compile and run on
+the SDK 2.10 simulator and verify bit-exact or bit-close output vs numpy.
 
 - Governed-lane receipts: `bench/out/dual-compile-evidence/governed-lane-sdk-handoff/sim-success-*/`.
 - Each fixture declares its `reduceStrategy` in the registry (enum:

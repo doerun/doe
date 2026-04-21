@@ -43,7 +43,7 @@
       "orchestrationMode": "memcpy",
       "operationCount": 7,
       "exportedSymbolCount": 4,
-      "sdkVersionFloor": "1.4.0"
+      "sdkVersionFloor": "2.10.0"
     }
   }
 }

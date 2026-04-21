@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import struct
@@ -34,7 +35,9 @@ DEFAULT_DOPPLER_ORIGIN_PATHS = [
     "../doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/origin.json",
     "../doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32/origin.json",
 ]
+_ENV_SOURCE_DIR = os.environ.get("DOE_GEMMA4_E2B_SAFETENSORS_DIR")
 DEFAULT_SOURCE_DIR_CANDIDATES = [
+    *([_ENV_SOURCE_DIR] if _ENV_SOURCE_DIR else []),
     "/home/x/model-downloads/gemma4-e2b-it",
 ]
 LANG_PREFIX = "model.language_model.layers"

@@ -1,7 +1,7 @@
 // PE program: tiled Flash Attention for prefill (auto-generated)
 // KV tiles broadcast via collectives, online softmax accumulation.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param head_dim: i16;
 param block_size: i16 = 32;
 param kv_len: i16;

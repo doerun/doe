@@ -71,6 +71,7 @@ SKIP_PREFIXES: tuple[str, ...] = (
     # the repo level for their source paths.
     "docs/cerebras-evidence-bundle-claim-scope.md",
     "docs/cerebras-evidence-bundle-readme.md",
+    "docs/cerebras-evidence-bundle-model-access.md",
     "docs/cerebras-evidence-bundle-ask.md",
     "docs/cerebras-evidence-bundle-local-inspection.md",
     "docs/hardware-validation-appendix.md",

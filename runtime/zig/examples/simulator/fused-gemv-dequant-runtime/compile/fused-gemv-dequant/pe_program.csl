@@ -7,7 +7,7 @@
 // requires adopting the full canonical collectives_2d allreduce module —
 // deferred). Kernel correctness for dequant + per-PE GEMV is preserved.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 

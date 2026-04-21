@@ -12,14 +12,15 @@ Steps (in order):
   2. e2b_layer_block_self_check (regens E2B receipt + rollup +
      validates the numbered contract assertions)
   3. Gemma-4 E2B manifest-shape probe
-  4. Doppler RDRR/int4ple structural probe
-  5. Doppler RDRR Q4_K_M L1 smoke-contract parity
-  6. BF16-derived E2B smoke-chain diagnostic parity depths
-  7. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
-  8. claim-discipline gate (hardware + MoE fronts)
-  9. SdkLayout streaming hardening gate (against any available live
+  4. Gemma-4 E2B manifest-shape CPU execution oracle
+  5. Doppler RDRR/int4ple structural probe
+  6. Doppler RDRR Q4_K_M L1 smoke-contract parity
+  7. BF16-derived E2B smoke-chain diagnostic parity depths
+  8. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
+  9. claim-discipline gate (hardware + MoE fronts)
+ 10. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 10. schema validation of 31B receipt and receipt-link integrity for
+ 11. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -163,7 +164,20 @@ def main() -> int:
         ],
     ))
 
-    # 4. Doppler RDRR/int4ple structural probe.
+    # 4. Gemma-4 E2B manifest-shape CPU execution oracle.
+    steps.append(run(
+        "gemma4-e2b-manifest-shape-execution",
+        [
+            "python3",
+            "bench/tools/run_gemma4_e2b_manifest_shape_execution.py",
+            "--out-json",
+            "bench/out/manifest-shape/"
+            "gemma-4-e2b-manifest-shape-execution.json",
+        ],
+        timeout=600,
+    ))
+
+    # 5. Doppler RDRR/int4ple structural probe.
     steps.append(run(
         "doppler-rdrr-int4ple-probe",
         [
@@ -176,7 +190,7 @@ def main() -> int:
         ],
     ))
 
-    # 5. Doppler RDRR Q4_K_M smoke-contract parity.
+    # 6. Doppler RDRR Q4_K_M smoke-contract parity.
     steps.append(run(
         "doppler-rdrr-q4k-l1-parity",
         [
@@ -188,7 +202,7 @@ def main() -> int:
         timeout=2600,
     ))
 
-    # 6-7. Diagnostic smoke-chain depths. These are bundle-visible so
+    # 7-8. Diagnostic smoke-chain depths. These are bundle-visible so
     # reviewers can inspect depth progress, but they do not promote any
     # depth to full-model or hardware evidence.
     for depth in DIAGNOSTIC_DEPTHS:
@@ -221,13 +235,13 @@ def main() -> int:
             timeout=2600,
         ))
 
-    # 8. claim-discipline gate (hardware + MoE fronts).
+    # 9. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 9. SdkLayout streaming hardening gate against the freshest live
+    # 10. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -251,7 +265,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 10. receipt link integrity (already invoked by self-check STEP 5,
+    # 11. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

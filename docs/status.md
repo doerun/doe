@@ -20,6 +20,17 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- The CSL emitter floor has moved to Cerebras SDK 2.10. Generated PE programs
+  now use the SDK 2.10 untyped parameter form for `memcpy_params` /
+  `c2d_params`, fabric DSDs bind colors through explicit queues instead of
+  `fabric_color`, and the E2B self-check has a source hygiene lock for removed
+  SDK-1.4-only constructs.
+  Existing SDK 1.4 simulator receipts remain historical until regenerated.
+- Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
+  `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
+  It executes the raw BF16 text checkpoint at upstream tensor dimensions and
+  keeps Doe/CSL runtime, hardware, Doppler production parity, and performance
+  claims blocked. See the current April shard for the scope boundary.
 - Apple Metal native Doe-vs-Dawn compare defaults are now fair-cold: default Metal executor ids pass `--no-pipeline-cache`, cache-enabled runs require explicit opt-in executor ids, report-level comparability coherence is default-on in `run_blocking_gates.py`, and the committed Metal archive is documented as a benchmark fixture rather than a product runtime contract. See `bench/docs/metal-pipeline-cache-policy.md` and the current April shard.
 - A fresh Mac fair-cold compare at `bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.{json,claim.json}` recovers four of the seven previously cache-asymmetric compute workloads as strict claimable on `mac.lan` with Doe faster: `compute_workgroup_atomic_1024` (+9.6%), `compute_workgroup_non_atomic_1024` (+10.9%), `compute_zero_initialize_workgroup_memory_256` (+69.1%), `compute_concurrent_execution_single` (+4.3%). Both sides carry `pipelineCache.state="disabled" reason="cli-flag"`, confirming the end-to-end schema round-trip on Mac. Three matvec workloads still need a fair-cold Mac rerun.
 - Pipeline-cache direction differs by backend: Metal has Doe-ahead (Doe opens `MTLBinaryArchive`, Dawn delegate does not), Vulkan has Dawn-ahead (Dawn uses `PipelineCacheVk`, Doe passes `VK_NULL_U64`), D3D12 has Dawn-ahead (Dawn populates `CachedPSO.pCachedBlob`, Doe zero-initializes). The three-backend audit is at `bench/docs/pipeline-cache-backend-audit.md`. Existing AMD Vulkan claimable evidence is unchanged -- current Doe wins are runtime-engineering wins despite the Vulkan cache gap -- and the path to "Doe faster across all boards" splits into two programs: Metal Dawn-cache shim (Push 4 design) and Doe-side Vulkan + D3D12 cache implementation.
@@ -143,9 +154,12 @@ Read this file first. Use the shard files under
   and an E2B manifest-shape tensor-contract probe for the upstream local/global
   head-dim plus grouped-KV contract. The model receipt now
   reports `executionStatus=real_weight_layer_block_success` for that narrow
-  L1 layer-block contract. Promoted deeper receipts, full E2B, Doppler
-  production inference parity, 31B manifest-shape and real-weight receipts,
-  MoE, and hardware remain gated in the current April shard and in
+  L1 layer-block contract and includes `sdkLayoutModelExecutionEvidence` for
+  the generated SdkLayout smoke promotion plus
+  `sdkLayoutDepthDiagnosticEvidence` for non-claimable L35 BF16/RDRR smoke
+  diagnostics. Promoted deeper receipts, full E2B, Doppler production
+  inference parity, 31B manifest-shape and real-weight receipts, MoE, and
+  hardware remain gated in the current April shard and in
   `docs/hardware-validation-appendix.md`.
 
 ## Current follow-up highlights

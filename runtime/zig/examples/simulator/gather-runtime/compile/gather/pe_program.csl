@@ -1,7 +1,7 @@
 // PE program: embedding gather (auto-generated from WGSL)
 // Each PE holds a chunk of the embedding table.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 param hidden_size: i16;

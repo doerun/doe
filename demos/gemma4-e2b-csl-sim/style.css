@@ -501,6 +501,20 @@ canvas {
   font-size: 12px;
 }
 
+.cockpit-table a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.cockpit-table a:hover {
+  text-decoration: underline;
+}
+
+.evidence-receipt-table td:nth-child(4) {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .cockpit-empty {
   color: var(--muted);
   text-align: center;

@@ -1,4 +1,4 @@
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param matrix_rows: i16;
 param matrix_cols: i16;
 

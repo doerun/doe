@@ -27,7 +27,7 @@ pub fn emit(
     try W.write(buf, pos, "// Phase 2: fabric reduce for global argmax.\n");
     try W.write(buf, pos, "// Phase 3: last PE outputs sampled token.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param chunk_size: i16;\n");
@@ -52,7 +52,7 @@ pub fn emit(
     try W.write(buf, pos, "var global_max_val: f32 = -3.4028235e+38;\n");
     try W.write(buf, pos, "var global_max_idx: u32 = 0;\n\n");
 
-    // wse3 DSD-to-DSD async fabric pattern (SDK 1.4 canonical).
+    // wse3 DSD-to-DSD async fabric pattern.
     // Reference: csl-extras .../row-col-broadcast/src/sync/pe.csl.
     // The wse2-era `@fmovs(f32_var, fabin_dsd)` synchronous form is
     // rejected on wse3. The canonical replacement stages values through
@@ -66,8 +66,8 @@ pub fn emit(
     // the wse3 router remap conflict (see emit_csl_fused for details).
     try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
     try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .fabric_color = reduce_color, .output_queue = reduce_out_q });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .fabric_color = reduce_color, .input_queue = reduce_in_q });\n\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n\n");
 
     // Phase 1: local argmax. Then seed-vs-non-seed split:
@@ -131,6 +131,10 @@ pub fn emit(
     // already how the non-task receive path in emit_csl_reduce_dist.zig
     // currently reads from reduce_in.
     try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
+    try W.write(buf, pos, "    if (@is_arch(\"wse3\")) {\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_out_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_in_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "    }\n");
     try emitExport(buf, pos, logits);
     try W.write(buf, pos, "    @export_symbol(");
     try W.write(buf, pos, tokens);

@@ -1,7 +1,7 @@
 // PE program: linear attention (auto-generated from WGSL)
 // Scaled dot-product without softmax. Each PE = one (query, head).
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 

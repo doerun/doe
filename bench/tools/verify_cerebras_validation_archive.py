@@ -83,12 +83,14 @@ FORBIDDEN_PATH_SUBSTRINGS = {
 
 CLAIM_SCAN_SKIP_ARCHIVE_PATHS = {
     "CLAIM_SCOPE.md",                         # archive-root governance
+    "MODEL_ACCESS.md",                        # recites artifact/cache claim scope
     "README.md",                              # recites taxonomy + what-not-to-claim
     "CEREBRAS_ASK.md",                        # enumerates what we will NOT publish
     "LOCAL_INSPECTION.md",                    # references deny-listed artifact types
     "docs/claim-discipline.md",
     "docs/cerebras-evidence-bundle-claim-scope.md",
     "docs/cerebras-evidence-bundle-readme.md",
+    "docs/cerebras-evidence-bundle-model-access.md",
     "docs/cerebras-evidence-bundle-ask.md",
     "docs/cerebras-evidence-bundle-local-inspection.md",
     "docs/cerebras-evidence-bundle-pointer.md",
@@ -132,6 +134,7 @@ def _load_known_claim_roles() -> set[str]:
             "emulator-accuracy-verdict",
             "emulator-speed-verdict",
             "manifest-shape-probe",
+            "manifest-shape-execution-oracle",
             "real-weight-parity-verdict",
             "doppler-rdrr-probe",
             "doppler-rdrr-q4k-extraction",

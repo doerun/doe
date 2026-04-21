@@ -30,7 +30,7 @@ then asserts the contract:
           maintained and went stale across kernel upgrades)
 
 Then asserts a growing set of structural contracts. The current set
-spans C0..C39 (as of the last update; see below for the authoritative
+spans C0..C41 (as of the last update; see below for the authoritative
 enumeration). Broadly they cover:
 
   - Core kernel/trace/receipt integrity (C0-C15)
@@ -472,22 +472,29 @@ def main() -> int:
     production_probe_suffixes = (
         "_probe.csl", "_only.csl", "_f64.csl", "_nr.csl",
     )
+    csl_audit_skip_prefixes = (
+        "bench/out/scratch/csl-sdk-tmp/",
+    )
     audit_fails = []
+    audit_scanned = 0
     for _csl in REPO_ROOT.rglob("*.csl"):
+        _rel = _csl.relative_to(REPO_ROOT).as_posix()
+        if any(_rel.startswith(prefix) for prefix in csl_audit_skip_prefixes):
+            continue
         if _csl.name.endswith(production_probe_suffixes):
             continue
+        audit_scanned += 1
         try:
             _text = _csl.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         if "math.sqrt(" in _text and "fn sqrt_nr(" not in _text:
-            audit_fails.append(str(_csl.relative_to(REPO_ROOT)))
+            audit_fails.append(_rel)
     if not audit_fails:
         print(
             "  C12 PASS: no CSL production kernel uses raw math.sqrt "
             "outside the sqrt_nr NR-refined wrapper "
-            f"(scanned {sum(1 for _ in REPO_ROOT.rglob('*.csl'))} "
-            "CSL files)"
+            f"(scanned {audit_scanned} CSL files)"
         )
     else:
         failures.append(
@@ -1182,6 +1189,357 @@ def main() -> int:
                 "C39 FAIL: manifest-shape probe evaluation error: "
                 f"{type(_e).__name__}: {_e}"
             )
+
+    # C40: The raw BF16 E2B checkpoint can execute as a text-only
+    # CPU/Numpy manifest-shape oracle through all 35 decoder layers,
+    # final norm, and tied lm-head top-k. This is deliberately NOT a
+    # Doe/CSL runtime promotion; the artifact must keep those blockers
+    # explicit while proving the upstream tensor dimensions are
+    # executable with finite outputs.
+    _shape_exec_script = (
+        REPO_ROOT / "bench/tools/run_gemma4_e2b_manifest_shape_execution.py"
+    )
+    _shape_exec_out = (
+        REPO_ROOT
+        / "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json"
+    )
+    if not _shape_exec_script.is_file():
+        failures.append("C40 FAIL: manifest-shape execution script missing")
+    else:
+        try:
+            _c40 = subprocess.run(
+                [
+                    "python3",
+                    str(_shape_exec_script.relative_to(REPO_ROOT)),
+                    "--out-json",
+                    str(_shape_exec_out.relative_to(REPO_ROOT)),
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            if _c40.returncode != 0:
+                failures.append(
+                    "C40 FAIL: manifest-shape execution returned "
+                    f"{_c40.returncode}: {_c40.stderr[-300:]}"
+                )
+            elif not _shape_exec_out.is_file():
+                failures.append(
+                    "C40 FAIL: manifest-shape execution wrote no output"
+                )
+            else:
+                _exec = json.loads(
+                    _shape_exec_out.read_text(encoding="utf-8")
+                )
+                _verdict = _exec.get("verdict")
+                _status = _exec.get("status")
+                if _verdict == "manifest_shape_execution_blocked_source_absent":
+                    print(
+                        "  C40 SKIP: manifest-shape execution source "
+                        "checkpoint absent; probe recorded blocker"
+                    )
+                else:
+                    _summary = _exec.get("executionSummary") or {}
+                    _criteria = _exec.get("promotionCriteriaMet") or {}
+                    _output = _exec.get("output") or {}
+                    _blockers = set(_exec.get("blockers") or [])
+                    _layers = _exec.get("layerRecords") or []
+                    _all_layers_finite = all(
+                        bool(row.get("hiddenFinite")) for row in _layers
+                    )
+                    _global_layers = _summary.get("globalAttentionLayerIndices")
+                    _local_head_ok = _summary.get("localHeadDim") == 256
+                    _global_head_ok = _summary.get("globalHeadDim") == 512
+                    _depth_ok = (
+                        _summary.get("numLayers") == 35
+                        and _summary.get("layersExecuted") == 35
+                        and len(_layers) == 35
+                    )
+                    _lm_ok = (
+                        (_output.get("lmHeadSummary") or {}).get("finite")
+                        is True
+                        and len(_output.get("lmHeadTopK") or []) >= 1
+                    )
+                    _runtime_blocked = (
+                        _criteria.get("doeRuntimeExecuted") is False
+                        and _criteria.get("cslRuntimeExecuted") is False
+                        and _criteria.get("hardwareExecuted") is False
+                        and "doe_csl_manifest_shape_runtime_not_executed"
+                        in _blockers
+                    )
+                    if (
+                        _status == "succeeded"
+                        and _verdict
+                        == "manifest_shape_cpu_full_text_forward_passed"
+                        and _criteria.get("manifestShapeExecuted") is True
+                        and _criteria.get("fullLayerDepthExecuted") is True
+                        and _criteria.get("lmHeadTopKComputed") is True
+                        and _runtime_blocked
+                        and _depth_ok
+                        and _local_head_ok
+                        and _global_head_ok
+                        and _global_layers == [4, 9, 14, 19, 24, 29, 34]
+                        and _summary.get("allLayerOutputsFinite") is True
+                        and _output.get("finalHiddenFinite") is True
+                        and _all_layers_finite
+                        and _lm_ok
+                    ):
+                        print(
+                            "  C40 PASS: manifest-shape CPU oracle "
+                            "executes E2B text stack through 35 layers "
+                            "and lm-head top-k while Doe/CSL runtime "
+                            "claims remain blocked"
+                        )
+                    else:
+                        failures.append(
+                            "C40 FAIL: unexpected manifest-shape "
+                            "execution state:\n"
+                            f"    status={_status!r}, verdict={_verdict!r}\n"
+                            f"    summary={_summary!r}\n"
+                            f"    criteria={_criteria!r}\n"
+                            f"    outputKeys={list(_output.keys())!r}\n"
+                            f"    blockers={sorted(_blockers)!r}"
+                        )
+        except (OSError, ValueError, json.JSONDecodeError) as _e:
+            failures.append(
+                "C40 FAIL: manifest-shape execution evaluation error: "
+                f"{type(_e).__name__}: {_e}"
+            )
+
+    # C41: Cerebras SDK 2.10 source compatibility. The active CSL
+    # emitter surface must not reintroduce removed SDK-1.4-only
+    # constructs, and fabric DSD declarations need explicit queues so
+    # simulator/hardware receipts bind colors through queues instead
+    # of removed/ deprecated SDK-1.4-era behavior.
+    try:
+        _c41_paths = list((REPO_ROOT / "runtime/zig/src/doe_wgsl").glob("emit_csl*.zig"))
+        _c41_paths += list((REPO_ROOT / "runtime/zig/src/doe_wgsl").glob("csl_spec.zig"))
+        _c41_paths += list(
+            (REPO_ROOT / "runtime/zig/examples/simulator").glob(
+                "*/compile/*/pe_program.csl"
+            )
+        )
+        _c41_paths += list((REPO_ROOT / "examples/csl").glob("*/pe_program.csl"))
+        _c41_bad = []
+        for _path in sorted(set(_c41_paths)):
+            if _path.name == "emit_csl_validate.zig":
+                continue
+            _rel = _path.relative_to(REPO_ROOT)
+            _text = _path.read_text(encoding="utf-8")
+            for _token in ("comptime_struct", "@concat_struct"):
+                if _token in _text:
+                    _c41_bad.append(f"{_rel}: removed SDK 2.10 token {_token}")
+            _lines = _text.splitlines()
+            for _idx, _line in enumerate(_lines):
+                _window = "\n".join(_lines[_idx : _idx + 8])
+                if "@get_dsd(fabin_dsd" in _line:
+                    if ".input_queue" not in _window:
+                        _c41_bad.append(
+                            f"{_rel}:{_idx + 1}: fabin_dsd missing input_queue"
+                        )
+                    if ".fabric_color" in _window:
+                        _c41_bad.append(
+                            f"{_rel}:{_idx + 1}: fabin_dsd still uses fabric_color"
+                        )
+                if "@get_dsd(fabout_dsd" in _line:
+                    if ".output_queue" not in _window:
+                        _c41_bad.append(
+                            f"{_rel}:{_idx + 1}: fabout_dsd missing output_queue"
+                        )
+                    if ".fabric_color" in _window:
+                        _c41_bad.append(
+                            f"{_rel}:{_idx + 1}: fabout_dsd still uses fabric_color"
+                        )
+        _spec_text = (
+            REPO_ROOT / "runtime/zig/src/doe_wgsl/csl_spec.zig"
+        ).read_text(encoding="utf-8")
+        if 'CSLC_SDK_MIN_VERSION: []const u8 = "2.10.0"' not in _spec_text:
+            _c41_bad.append("csl_spec.zig does not declare SDK 2.10.0 floor")
+        if _c41_bad:
+            failures.extend(f"C41 FAIL: {_bad}" for _bad in _c41_bad)
+        else:
+            print(
+                "  C41 PASS: CSL emitters target SDK 2.10 params and "
+                "queue-bound fabric DSDs"
+            )
+    except OSError as _e41:
+        failures.append(f"C41 FAIL: SDK 2.10 source scan error: {_e41}")
+
+    # C42: model-level SdkLayout layer-block execution promotion block.
+    # The generated runner's successful simfabric run must be visible as
+    # first-class model receipt evidence, not only nested primitive text.
+    _sdk = receipt.get("sdkLayoutModelExecutionEvidence") or {}
+    _c42_bad = []
+    if not _sdk:
+        _c42_bad.append("sdkLayoutModelExecutionEvidence missing")
+    else:
+        if _sdk.get("promotionStatus") != "sdk_layout_layer_block_smoke_promoted":
+            _c42_bad.append(
+                "promotionStatus="
+                f"{_sdk.get('promotionStatus')!r}, expected promoted"
+            )
+        if _sdk.get("blockers") != []:
+            _c42_bad.append(f"blockers not empty: {_sdk.get('blockers')!r}")
+        _kernel = _sdk.get("kernelSource") or {}
+        if _kernel.get("kernelIsStub") is not False:
+            _c42_bad.append("kernelSource.kernelIsStub is not false")
+        _plan = _sdk.get("streamExecutionPlan") or {}
+        if not _plan.get("sha256"):
+            _c42_bad.append("streamExecutionPlan.sha256 missing")
+        _counts = _sdk.get("sendReceiveCounts") or {}
+        if _counts.get("sends") != 3 or _counts.get("receives") != 1:
+            _c42_bad.append(f"sendReceiveCounts mismatch: {_counts!r}")
+        _stop = _sdk.get("runtimeStop") or {}
+        if _stop.get("reached") is not True:
+            _c42_bad.append("runtimeStop.reached is not true")
+        _parity = _sdk.get("parity") or {}
+        if _parity.get("promotionEligible") is not True:
+            _c42_bad.append("parity.promotionEligible is not true")
+        if _parity.get("tolerancePassed") is not True:
+            _c42_bad.append("parity.tolerancePassed is not true")
+        _telemetry = _sdk.get("hostSdkTelemetry") or {}
+        if _telemetry.get("measurementSource") != "host_sdk_task_handles":
+            _c42_bad.append("hostSdkTelemetry.measurementSource mismatch")
+        _streams = _telemetry.get("streams") or []
+        _stream_ids = {
+            s.get("streamId") for s in _streams if isinstance(s, dict)
+        }
+        _expected_stream_ids = {
+            "ple_rows_stream",
+            "ple_projection_stream",
+            "layer_weights_stream",
+            "activation_out_stream",
+        }
+        if _stream_ids != _expected_stream_ids:
+            _c42_bad.append(f"stream telemetry ids mismatch: {_stream_ids!r}")
+        _host_io = _sdk.get("hostIoLayout") or []
+        _host_io_ids = {
+            s.get("streamId") for s in _host_io if isinstance(s, dict)
+        }
+        if _host_io_ids != _expected_stream_ids:
+            _c42_bad.append(f"hostIoLayout ids mismatch: {_host_io_ids!r}")
+        _artifacts = _sdk.get("simulatorArtifacts") or {}
+        for _name in ("trace", "output"):
+            _link = _artifacts.get(_name) or {}
+            _path = _link.get("path")
+            if not (_path and (REPO_ROOT / _path).is_file()):
+                _c42_bad.append(f"simulatorArtifacts.{_name}.path missing")
+            if not _link.get("sha256"):
+                _c42_bad.append(f"simulatorArtifacts.{_name}.sha256 missing")
+        _compile_dir = (_artifacts.get("compileDir") or {}).get("path")
+        if not (_compile_dir and (REPO_ROOT / _compile_dir).is_dir()):
+            _c42_bad.append("simulatorArtifacts.compileDir missing")
+    if _c42_bad:
+        failures.extend(f"C42 FAIL: {_bad}" for _bad in _c42_bad)
+    else:
+        print(
+            "  C42 PASS: model receipt promotes generated E2B SdkLayout "
+            "layer-block smoke with stream graph, telemetry, rt.stop, "
+            "and parity evidence"
+        )
+
+    # C43: full-depth smoke diagnostics are model-receipt-visible but
+    # still non-claimable. This locks the next rung toward full E2B
+    # without allowing L35 smoke-chain files to masquerade as manifest-
+    # shape or hardware evidence.
+    _depth_diag = receipt.get("sdkLayoutDepthDiagnosticEvidence") or {}
+    _c43_bad = []
+    if not _depth_diag:
+        _c43_bad.append("sdkLayoutDepthDiagnosticEvidence missing")
+    else:
+        if _depth_diag.get("status") != "full_depth_smoke_diagnostic_passed":
+            _c43_bad.append(
+                "status="
+                f"{_depth_diag.get('status')!r}, expected diagnostic_passed"
+            )
+        if _depth_diag.get("claimable") is not False:
+            _c43_bad.append("claimable is not false")
+        if _depth_diag.get("manifestShapeRuntimeExecuted") is not False:
+            _c43_bad.append("manifestShapeRuntimeExecuted is not false")
+        if _depth_diag.get("declaredModelDepth") != 35:
+            _c43_bad.append("declaredModelDepth is not 35")
+        _remaining = set(_depth_diag.get("remainingClaimBlockers") or [])
+        for _expected in (
+            "full_manifest_shape_doe_csl_runtime_execution",
+            "doppler_production_inference_parity",
+            "cerebras_hardware_receipt",
+        ):
+            if _expected not in _remaining:
+                _c43_bad.append(
+                    f"remainingClaimBlockers missing {_expected}"
+                )
+        _diagnostics = _depth_diag.get("diagnostics") or []
+        _sources = {
+            d.get("sourceLabel") for d in _diagnostics
+            if isinstance(d, dict)
+        }
+        _expected_sources = {
+            "bf16_safetensors",
+            "doppler_rdrr_q4k_int4ple",
+        }
+        if _sources != _expected_sources:
+            _c43_bad.append(f"diagnostic sources mismatch: {_sources!r}")
+        for _diag in _diagnostics:
+            if not isinstance(_diag, dict):
+                _c43_bad.append("diagnostic entry is not an object")
+                continue
+            _source = _diag.get("sourceLabel")
+            if _diag.get("numLayers") != 35:
+                _c43_bad.append(f"{_source}: numLayers is not 35")
+            if _diag.get("claimable") is not False:
+                _c43_bad.append(f"{_source}: claimable is not false")
+            if _diag.get("blockers") != []:
+                _c43_bad.append(
+                    f"{_source}: diagnostic blockers not empty: "
+                    f"{_diag.get('blockers')!r}"
+                )
+            _parity = _diag.get("parity") or {}
+            if _parity.get("verdict") != "parity_passed":
+                _c43_bad.append(f"{_source}: parity verdict not passed")
+            if _parity.get("tolerancePassed") is not True:
+                _c43_bad.append(f"{_source}: tolerance not passed")
+            if _parity.get("layersCompared") != 35:
+                _c43_bad.append(f"{_source}: layersCompared is not 35")
+            for _label, _link in (
+                ("parity", _parity),
+                ("weightsAudit", _parity.get("weightsAudit") or {}),
+                ("trace", _diag.get("trace") or {}),
+                ("output", ((_diag.get("trace") or {}).get("output") or {})),
+            ):
+                _path = _link.get("path")
+                if not (_path and (REPO_ROOT / _path).is_file()):
+                    _c43_bad.append(f"{_source}: {_label} path missing")
+                if not _link.get("sha256"):
+                    _c43_bad.append(f"{_source}: {_label} sha256 missing")
+            _trace = _diag.get("trace") or {}
+            if _trace.get("status") != "succeeded":
+                _c43_bad.append(f"{_source}: trace status not succeeded")
+            if _trace.get("numLayersChained") != 35:
+                _c43_bad.append(
+                    f"{_source}: trace numLayersChained is not 35"
+                )
+            if _trace.get("runtimeStopReached") is not True:
+                _c43_bad.append(f"{_source}: runtimeStop not reached")
+            if _trace.get("kernelIsStub") is not False:
+                _c43_bad.append(f"{_source}: kernelIsStub is not false")
+            _counts = _trace.get("sendReceiveCounts") or {}
+            if _counts.get("sends") != 3 or _counts.get("receives") != 1:
+                _c43_bad.append(
+                    f"{_source}: sendReceiveCounts mismatch: {_counts!r}"
+                )
+            _telemetry = _trace.get("hostSdkTelemetry") or {}
+            if _telemetry.get("measurementSource") != "host_sdk_task_handles":
+                _c43_bad.append(f"{_source}: telemetry source mismatch")
+            if _telemetry.get("streamCount") != 4:
+                _c43_bad.append(f"{_source}: streamCount is not 4")
+    if _c43_bad:
+        failures.extend(f"C43 FAIL: {_bad}" for _bad in _c43_bad)
+    else:
+        print(
+            "  C43 PASS: model receipt binds full-depth E2B SdkLayout "
+            "smoke diagnostics as non-claimable BF16 + RDRR evidence"
+        )
 
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
     # contract check when a matching-depth trace is absent — WGSL

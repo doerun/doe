@@ -149,7 +149,9 @@ end-to-end Gemma inference.
 ## 3. What hardware validation should run
 
 Two paths either work; CEREBRAS_ASK.md inside the evidence bundle
-has the operator-facing detail for both.
+has the operator-facing detail for both. MODEL_ACCESS.md inside the same
+bundle pins the raw BF16 checkpoint path, Doppler RDRR/Q4_K_M artifact,
+Hugging Face cache environment, and first-demo claim boundary.
 
 - **Path A — endpoint access.** Cerebras provides a reachable CS/WSC
   endpoint; we run the commands below from our side.

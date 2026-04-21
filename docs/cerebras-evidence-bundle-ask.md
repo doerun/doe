@@ -5,6 +5,11 @@ validation on the endpoint. Tight and single-purpose. The rest of
 the bundle's documents are reviewer-facing; this one is for the
 person pressing Enter on the hardware.
 
+Before running, read `MODEL_ACCESS.md` in the bundle. It pins the
+raw BF16 Hugging Face snapshot, the local Doppler RDRR/Q4_K_M
+artifact, writable Hugging Face cache env vars, and the first-demo
+claim boundary.
+
 ## Two paths — either works
 
 **Path A (preferred): temporary endpoint access.** We run the runner
@@ -13,8 +18,9 @@ from our side against a Cerebras-provided endpoint:
 1. **Reachable CS/WSC endpoint.** Either a direct `--cmaddr <ip:port>`
    target or an appliance SdkLauncher endpoint.
 2. **SDK Python environment** matching the `csPython` on the
-   bundler's host. Any Cerebras SDK release that can execute the
-   existing simfabric runner should suffice.
+   bundler's host. SDK 2.10 is the active Doe CSL floor; older
+   receipts are historical and should not be used for new hardware
+   claims.
 3. **Authorization to run the runner** in `bench/runners/csl-runners/`
    against the endpoint with the pinned manifest + graph + kernel
    source from this bundle.
@@ -44,9 +50,38 @@ cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py \
   --cmaddr <operator-supplied>
 ```
 
+**WSC appliance equivalent:**
+
+```bash
+python3 runtime/zig/tools/csl_appliance_driver.py \
+  --code-dir bench/out/streaming-executor/e2b-layer-block-source \
+  --layout layout.csl \
+  --compiler-args "<operator-supplied cslc args>" \
+  --compile-output bench/out/hardware-run/compile \
+  --runner-command "cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py --num-layers 35 --compile-out bench/out/hardware-run/compile --trace-out bench/out/hardware-run/trace.json --cmaddr %CMADDR%" \
+  --download "bench/out/hardware-run/trace.json:bench/out/hardware-run/trace.json" \
+  --receipt-out bench/out/hardware-run/appliance-receipt.json \
+  --system
+```
+
+The appliance form intentionally uses `%CMADDR%` inside the launcher command.
+The returned receipt redacts that to `$DOE_CSL_CMADDR`; do not paste raw
+endpoint addresses into checked-in artifacts. The deprecated appliance
+`SdkRuntime` binding is not part of this ask.
+
 Run with the bundle's pinned kernel at
 `bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl`
 (sha256 `023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4`).
+
+For BF16-derived real-weight smoke runs, first materialize and validate the
+weights described in `MODEL_ACCESS.md`, then add:
+
+```bash
+--weights-dir bench/out/gemma-4-e2b-real-weights
+```
+
+to either command above. Without `--weights-dir`, the hardware run remains a
+synthetic/smoke tensor run and must not be described as real-weight evidence.
 
 **Parity check after the run:**
 

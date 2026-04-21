@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--artifact-root",
-        default="",
+        default=os.environ.get("DOE_GEMMA4_E2B_RDRR_ROOT", ""),
         help="Override the artifact root declared by the fixture.",
     )
     parser.add_argument(

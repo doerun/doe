@@ -12,6 +12,8 @@ then follow the run order below.
 - `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
 - `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
   it does not. Read before drawing any conclusions.
+- `MODEL_ACCESS.md` — cache roots, canonical Gemma 4 E2B artifact
+  identities, download commands, validation commands, and demo scope.
 - `CEREBRAS_ASK.md` — operator-facing distillation: exact endpoint
   access needed, exact command to run, exact receipt fields to
   return, publication boundaries.
@@ -47,7 +49,13 @@ cross-references inside the receipts resolve as written.
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
 
-4. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
+4. **Read `MODEL_ACCESS.md`.** It pins the raw BF16 Hugging Face
+   snapshot, the local Doppler RDRR/Q4_K_M artifact, the writable
+   Hugging Face cache env vars, and the first-demo scope. Run
+   `python3 bench/tools/prepare_gemma4_e2b_access.py --print-shell`
+   in the repo when preparing a fresh host.
+
+5. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
    the external ask. Enumerates two paths — endpoint access (we run
    the runner) or Cerebras-assisted bundle run (Cerebras runs the
    bundle internally, returns the receipt) — plus the exact command,
@@ -55,19 +63,19 @@ cross-references inside the receipts resolve as written.
    `docs/hardware-validation-appendix.md` is its parent document with
    the fuller context.
 
-5. **Read `LOCAL_INSPECTION.md`** if you want to browse the
+6. **Read `LOCAL_INSPECTION.md`** if you want to browse the
    evidence in a browser. Lists local-server commands for the
    status dashboard, E2B side-by-side demo, and SDK-GUI-style
    artifact viewer — all consuming the same bundle files without
    unpacking SDK binaries.
 
-6. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
+7. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
    per file. Open any `model-runtime-receipt` or
    `cross-runtime-parity-verdict` and confirm the assertions match
    the appendix's summary. For the paranoid: re-compute sha256 of
    any `.json` and compare against the manifest row.
 
-7. **Re-run local gates (optional).** If the unpacked archive lives
+8. **Re-run local gates (optional).** If the unpacked archive lives
    on a host with `git` + Python available:
 
    ```
@@ -90,6 +98,7 @@ cross-references inside the receipts resolve as written.
 | `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator where claimable | Correctness reviewers |
 | `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
 | `manifest-shape-probe` | Upstream E2B tensor-shape contract probe | Reviewers of the manifest-shape rewrite |
+| `manifest-shape-execution-oracle` | CPU/Numpy raw-BF16 E2B text-forward oracle at upstream tensor dimensions | Reviewers of the manifest-shape rewrite; not Doe/CSL runtime evidence |
 | `real-weight-parity-verdict` | Real-weight smoke-contract parity, including bundled diagnostic smoke depths | Reviewers of the checkpoint-derived layer-block path |
 | `doppler-rdrr-probe` | Manifest/shard/tensor-span probe for the Doppler int4ple artifact | Reviewers of structural RDRR ingestion |
 | `doppler-rdrr-q4k-extraction` | Q4_K_M RDRR-to-smoke-slice materialization verdict | Reviewers of the RDRR dequant path |

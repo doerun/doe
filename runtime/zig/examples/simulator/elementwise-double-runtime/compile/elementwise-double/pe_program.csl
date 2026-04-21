@@ -1,7 +1,7 @@
 // PE program: element-wise kernel (auto-generated from WGSL)
 // Each PE processes chunk_size elements with no fabric routing.
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: u16;
 param num_pes: u16;
 

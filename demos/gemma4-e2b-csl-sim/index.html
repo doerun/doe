@@ -16,7 +16,7 @@
     <header class="top">
       <div>
         <p class="eyebrow">Gemma 4 E2B layer-block proof</p>
-        <h1>Same graph, WebGPU, CSL simfabric, and CSL WebGPU emulation</h1>
+        <h1>Gemma 4 E2B evidence cockpit for Doe, CSL, and WebGPU</h1>
       </div>
       <div class="hashes" id="source-hashes">
         <span>manifest: loading</span>
@@ -28,7 +28,7 @@
       <label for="num-layers-select" style="display:inline-flex;gap:0.4rem;align-items:center;">
         <span class="label">chain depth</span>
         <select id="num-layers-select">
-          <option value="1" selected>L=1 synthetic · claimable today</option>
+          <option value="1" selected>L=1 synthetic + real-weight smoke · claimable</option>
           <option value="2">L=2 diagnostic · blocked</option>
           <option value="4">L=4 diagnostic · blocked</option>
           <option value="8">L=8 diagnostic · blocked</option>
@@ -43,27 +43,29 @@
     </section>
 
     <section class="truth-strip" aria-label="Current evidence boundary">
-      <strong id="truth-headline">Current claim: L1 synthetic layer-block only</strong>
-      <span id="truth-detail">Real weights, L&gt;1 claimable depth, full E2B, and Cerebras hardware are blocked until matching receipts exist.</span>
+      <strong id="truth-headline">Current claim: L1 synthetic + real-weight smoke layer-block</strong>
+      <span id="truth-detail">Full E2B runtime execution and Cerebras hardware remain blocked until matching receipts exist.</span>
     </section>
 
     <section class="proof-scope" aria-label="Proof scope">
       <div>
         <span class="label">what this proves</span>
-        <strong>L1 E2B-shaped layer-block parity</strong>
+        <strong>L1 parity plus manifest-shape oracle</strong>
         <p>
-          The pinned synthetic layer-block contract is visible across browser
-          WebGPU, Doe CSL simfabric, and the CSL semantic WebGPU emulator with
-          receipt-backed identity and parity governance.
+          Browser WebGPU, Doe CSL simfabric, and the CSL semantic WebGPU
+          emulator share receipt-backed identity and parity. The L1 smoke path
+          also carries BF16-derived Gemma weight evidence, and the CPU oracle
+          executes the upstream 35-layer manifest shape.
         </p>
       </div>
       <div>
         <span class="label">what this does not prove</span>
-        <strong>No full E2B or hardware claim yet</strong>
+        <strong>No full runtime or hardware claim yet</strong>
         <p>
           The emulator is a semantic/debug lane, not CSL running on WebGPU.
-          L35 runs are diagnostic, real Gemma weights are blocked on checkpoint
-          slices, and Cerebras WSE/WSC hardware receipts are still pending.
+          L35 chain artifacts and the manifest-shape oracle are diagnostic
+          until Doe CSL runtime and Cerebras WSE/WSC receipts execute the full
+          graph.
         </p>
       </div>
     </section>
@@ -132,9 +134,26 @@
         <span class="badge" id="badge-simulator">simulator: -</span>
         <span class="badge" id="badge-emulator">emulator: -</span>
         <span class="badge" id="badge-realweight">real-weight: -</span>
+        <span class="badge" id="badge-sdk">SDK floor: -</span>
+        <span class="badge" id="badge-runtime-receipt">model receipt: -</span>
+        <span class="badge" id="badge-sdklayout-model">SdkLayout model: -</span>
+        <span class="badge" id="badge-manifest-shape">manifest-shape: -</span>
         <span class="badge" id="badge-hardware">hardware: pending</span>
         <span class="badge" id="badge-bundle">bundle: -</span>
       </div>
+      <table class="cockpit-table evidence-receipt-table" aria-label="Receipt-backed evidence matrix">
+        <thead>
+          <tr>
+            <th>evidence row</th>
+            <th>status</th>
+            <th>receipt</th>
+            <th>blockers</th>
+          </tr>
+        </thead>
+        <tbody id="evidence-receipts-body">
+          <tr><td colspan="4" class="cockpit-empty">loading receipts...</td></tr>
+        </tbody>
+      </table>
       <div class="evidence-ladder" id="evidence-ladder" aria-label="Evidence ladder">
         <div class="ladder-row">
           <span>loading evidence ladder...</span>

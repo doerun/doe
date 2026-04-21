@@ -27,7 +27,7 @@ pub fn emitWrite(
     try W.write(buf, pos, "// PE program: KV cache write (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// Appends projected K/V to cache at current position.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
@@ -74,7 +74,7 @@ pub fn emitRead(
     try W.write(buf, pos, "// PE program: KV cache read (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// Reads a slice of cached K/V for the requested position range.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");

@@ -1,9 +1,9 @@
 # Gemma 4 E2B WebGPU / CSL simulator demo
 
 This is the interactive demo for the Doppler -> Doe -> CSL proof path.
-The claimable default is L1 synthetic layer-block parity. Deeper
-selector depths are diagnostic until the depth-coverage matrix marks
-them evidence-eligible.
+The claimable default is the L1 synthetic layer-block plus the
+BF16-derived real-weight smoke receipt. Deeper selector depths are
+diagnostic until the depth-coverage matrix marks them evidence-eligible.
 
 It runs the Gemma 4 E2B layer-block WGSL kernel in the browser through
 WebGPU, runs or loads the matching Doe-emitted CSL simfabric result, and
@@ -35,10 +35,15 @@ The CSL button invokes diagnostic local runs:
 and writes scratch artifacts under
 `bench/out/scratch/gemma4-e2b-csl-sim/`.
 
-Use `bench/out/doe-run/depth-coverage-matrix.json` and
-`bench/out/doe-run/all-lanes-summary-L1.json` as the claim boundary.
-Today that boundary is L1 synthetic only: no real weights, no full E2B
-end-to-end, and no Cerebras hardware receipt.
+Use `bench/out/doe-run/depth-coverage-matrix.json`,
+`bench/out/doe-run/all-lanes-summary-L1.json`, and
+`bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json` as the claim
+boundary. Today that boundary is L1 synthetic parity plus a real-weight
+smoke layer-block only. The model receipt also exposes BF16 and RDRR L35
+smoke-chain diagnostics in `sdkLayoutDepthDiagnosticEvidence`, but that
+block is explicitly non-claimable: no manifest-shape Doe/CSL runtime
+execution, no full E2B runtime execution, and no Cerebras hardware
+receipt.
 
 LAN note: browser WebGPU requires a secure context. Loading this page
 from `http://192.168.x.x:8001` may show the page but block the live

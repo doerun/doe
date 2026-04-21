@@ -1,6 +1,6 @@
 // csl_spec.zig — Cerebras CSL target constants, limits, and enums.
 //
-// Reference: https://sdk.cerebras.net/csl/language_index (SDK 1.4.0)
+// Reference: https://sdk.cerebras.net/csl/language_index (SDK 2.10.0)
 // This file is the single source of truth for CSL target constraints
 // used by the emit_csl_* backend modules.
 
@@ -25,7 +25,7 @@ pub const Arch = enum {
 // ---------------------------------------------------------------------------
 
 /// Maximum routable colors on WSE-2. WSE-3 may allow more but 24 is the
-/// documented safe ceiling for SDK 1.4.0.
+/// conservative ceiling used by the current CSL lane.
 pub const MAX_COLORS: u8 = 24;
 
 /// Colors reserved by the memcpy framework for host↔device transfers.
@@ -67,7 +67,7 @@ pub const HOST_PLAN_TARGET: []const u8 = "wse3";
 pub const HOST_PLAN_CONTRACT: []const u8 = "explicit_host_plan";
 pub const HOST_PLAN_DISCOVERY_EXPLICIT_CONFIG: []const u8 = "explicit_config";
 pub const HOST_PLAN_DISCOVERY_IMPLICIT_PATH_LOOKUP: []const u8 = "implicit_path_lookup";
-pub const CSLC_SDK_MIN_VERSION: []const u8 = "1.4.0";
+pub const CSLC_SDK_MIN_VERSION: []const u8 = "2.10.0";
 pub const CSLC_VERSION_ARG: []const u8 = "--version";
 pub const SIMULATOR_PLAN_SCHEMA_VERSION: u32 = 2;
 pub const SIMULATOR_PLAN_ARTIFACT_KIND: []const u8 = "csl_simulator_plan";

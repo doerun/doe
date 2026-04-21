@@ -65,7 +65,7 @@ class GovernedLaneReceiptMarkdownTests(unittest.TestCase):
                 "operationCount": 3,
                 "exportedSymbolCount": 2,
                 "kernelPatternCount": 10,
-                "sdkVersionFloor": "1.4.0",
+                "sdkVersionFloor": "2.10.0",
             }
         )
         with tempfile.TemporaryDirectory() as td:
@@ -87,7 +87,7 @@ class GovernedLaneReceiptMarkdownTests(unittest.TestCase):
                 "orchestrationMode": "memcpy",
                 "operationCount": 3,
                 "exportedSymbolCount": 2,
-                "sdkVersionFloor": "1.4.0",
+                "sdkVersionFloor": "2.10.0",
             }
         )
         with tempfile.TemporaryDirectory() as td:
@@ -132,7 +132,7 @@ class GovernedLaneReceiptSchemaTests(unittest.TestCase):
                 "operationCount": 3,
                 "exportedSymbolCount": 2,
                 "kernelPatternCount": 10,
-                "sdkVersionFloor": "1.4.0",
+                "sdkVersionFloor": "2.10.0",
             }
         )
         self.validator.validate(report)
@@ -149,7 +149,7 @@ class GovernedLaneReceiptSchemaTests(unittest.TestCase):
                 "orchestrationMode": "memcpy",
                 "operationCount": 1,
                 "exportedSymbolCount": 1,
-                "sdkVersionFloor": "1.4.0",
+                "sdkVersionFloor": "2.10.0",
             }
         )
         self.validator.validate(report)
@@ -164,7 +164,7 @@ class GovernedLaneReceiptSchemaTests(unittest.TestCase):
                 "operationCount": 1,
                 "exportedSymbolCount": 1,
                 "kernelPatternCount": -1,
-                "sdkVersionFloor": "1.4.0",
+                "sdkVersionFloor": "2.10.0",
             }
         )
         with self.assertRaises(self.jsonschema.ValidationError):

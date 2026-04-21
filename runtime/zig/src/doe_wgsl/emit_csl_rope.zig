@@ -26,7 +26,7 @@ pub fn emit(
     try W.write(buf, pos, "// PE program: rotary position embeddings (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// Each PE applies RoPE rotations to its local Q/K chunk.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");

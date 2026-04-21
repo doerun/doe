@@ -58,6 +58,7 @@ DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
 INCLUDE_FILES: tuple = (
     ("docs/cerebras-evidence-bundle-readme.md", "README.md"),
     ("docs/cerebras-evidence-bundle-claim-scope.md", "CLAIM_SCOPE.md"),
+    ("docs/cerebras-evidence-bundle-model-access.md", "MODEL_ACCESS.md"),
     ("docs/cerebras-evidence-bundle-ask.md", "CEREBRAS_ASK.md"),
     ("docs/cerebras-evidence-bundle-local-inspection.md", "LOCAL_INSPECTION.md"),
     # NOTE: docs/cerebras-evidence-bundle-pointer.md is intentionally
@@ -83,6 +84,7 @@ INCLUDE_FILES: tuple = (
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json",
     # Manifest-shape blocker: upstream tensor metadata vs Doe manifest fields.
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
     # Real-weight parity verdicts and depth diagnostics.
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
     *(
@@ -144,6 +146,7 @@ EXCLUDE_SUBSTRINGS: tuple[str, ...] = (
 CLAIM_ROLE: dict[str, str] = {
     "README.md": "governance",
     "CLAIM_SCOPE.md": "governance",
+    "MODEL_ACCESS.md": "governance",
     "CEREBRAS_ASK.md": "governance",
     "LOCAL_INSPECTION.md": "governance",
     "docs/hardware-validation-appendix.md": "governance",
@@ -159,6 +162,7 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json": "cross-runtime-parity-verdict",
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json": "emulator-speed-verdict",
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json": "manifest-shape-probe",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json": "manifest-shape-execution-oracle",
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     **{
         (

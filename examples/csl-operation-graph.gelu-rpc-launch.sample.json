@@ -4,7 +4,7 @@
   "graphId": "gelu-rpc-launch",
   "orchestrationMode": "memcpy",
   "executionPattern": "rpc_launch",
-  "sdkVersionFloor": "1.4.0",
+  "sdkVersionFloor": "2.10.0",
   "compile": {
     "arch": "wse3",
     "fabricDims": [8, 3],

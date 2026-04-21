@@ -3,7 +3,7 @@
 //
 // Exported symbols use [*]f32 to match the device-side variable types
 // declared in pe_program.csl. Earlier revisions of this fixture declared
-// [*]u32 here while pe_program.csl bound [*]f32 pointers, which SDK v1.4's
+// [*]u32 here while pe_program.csl bound [*]f32 pointers, which cslc's
 // @export_symbol semantic check rejects as a type mismatch (the SDK 1.3
 // compiler tolerated the mismatch because the memcpy infrastructure only
 // observed the pointer at byte granularity).

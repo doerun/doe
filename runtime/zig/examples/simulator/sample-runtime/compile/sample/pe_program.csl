@@ -6,7 +6,7 @@
 // the hand-rolled fabric-reduce chain whose async-send teardown stalls
 // (same issue documented for fused_gemv_dequant iter-35/36).
 
-param memcpy_params: comptime_struct;
+param memcpy_params;
 param pe_id: i16;
 param num_pes: i16;
 param chunk_size: i16;

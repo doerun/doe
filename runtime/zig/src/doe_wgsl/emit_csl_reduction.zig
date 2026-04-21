@@ -40,7 +40,7 @@ pub fn emit(
     try W.write(buf, pos, "// post-barrier runs once with the local index folded to 0, matching\n");
     try W.write(buf, pos, "// the `thread 0` aggregation guard in the source.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param reduce_color: color;\n\n");

@@ -99,7 +99,7 @@
     "discovery": "implicit_path_lookup",
     "validation": {
       "command": ["cslc", "--version"],
-      "minimumVersion": "1.4.0"
+      "minimumVersion": "2.10.0"
     }
   }
 }

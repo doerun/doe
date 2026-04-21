@@ -12,5 +12,5 @@
   "compileTargets": [
     {"name": "reduce-sum-workgroup", "layout": "reduce-sum-workgroup/layout.csl", "peProgram": "reduce-sum-workgroup/pe_program.csl"}
   ],
-  "cslc": {"executable": "cslc", "discovery": "implicit_path_lookup", "validation": {"command": ["cslc", "--version"], "minimumVersion": "1.4.0"}}
+  "cslc": {"executable": "cslc", "discovery": "implicit_path_lookup", "validation": {"command": ["cslc", "--version"], "minimumVersion": "2.10.0"}}
 }

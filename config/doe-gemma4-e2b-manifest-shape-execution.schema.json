@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Gemma-4 E2B manifest-shape execution probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "verdict",
+    "modelId",
+    "runtimeLane",
+    "source",
+    "input",
+    "executionSummary",
+    "layerRecords",
+    "output",
+    "promotionCriteriaMet",
+    "claimScope",
+    "blockers",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_gemma4_e2b_manifest_shape_execution"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "blocked", "failed"]
+    },
+    "verdict": { "type": "string", "minLength": 1 },
+    "modelId": { "type": "string", "minLength": 1 },
+    "runtimeLane": {
+      "type": "string",
+      "enum": ["cpu_numpy_oracle"]
+    },
+    "source": { "$ref": "#/$defs/Source" },
+    "input": { "$ref": "#/$defs/Input" },
+    "executionSummary": { "$ref": "#/$defs/ExecutionSummary" },
+    "layerRecords": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/LayerRecord" }
+    },
+    "output": { "$ref": "#/$defs/Output" },
+    "promotionCriteriaMet": { "$ref": "#/$defs/PromotionCriteria" },
+    "claimScope": { "$ref": "#/$defs/ClaimScope" },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceDir", "configPath", "safetensorsPath"],
+      "properties": {
+        "sourceDir": { "type": "string", "minLength": 1 },
+        "configPath": { "type": "string", "minLength": 1 },
+        "configSha256": { "$ref": "#/$defs/Sha256" },
+        "safetensorsPath": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "safetensorsSizeBytes": { "type": "integer", "minimum": 0 },
+        "safetensorsHeaderSha256": { "$ref": "#/$defs/Sha256" },
+        "safetensorsFullSha256": {
+          "anyOf": [
+            { "$ref": "#/$defs/Sha256" },
+            { "type": "null" }
+          ]
+        },
+        "safetensorsFullSha256Computed": { "type": "boolean" },
+        "tensorsInHeader": { "type": "integer", "minimum": 0 },
+        "tensorsRead": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokenId", "sequenceLength"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "sequenceLength": { "type": "integer", "minimum": 1 },
+        "textModalityOnly": { "type": "boolean" }
+      }
+    },
+    "ExecutionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hiddenSize": { "type": "integer", "minimum": 1 },
+        "numLayers": { "type": "integer", "minimum": 1 },
+        "layersExecuted": { "type": "integer", "minimum": 0 },
+        "localHeadDim": { "type": "integer", "minimum": 1 },
+        "globalHeadDim": { "type": "integer", "minimum": 1 },
+        "numAttentionHeads": { "type": "integer", "minimum": 1 },
+        "numKeyValueHeads": { "type": "integer", "minimum": 1 },
+        "numKvSharedLayers": { "type": "integer", "minimum": 0 },
+        "localAttentionLayerIndices": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "globalAttentionLayerIndices": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "pleWidth": { "type": "integer", "minimum": 1 },
+        "pleVocabSize": { "type": "integer", "minimum": 1 },
+        "elapsedMs": { "type": "number", "minimum": 0 },
+        "allLayerOutputsFinite": { "type": "boolean" }
+      }
+    },
+    "LayerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layer",
+        "layerType",
+        "attention",
+        "mlpIntermediate",
+        "hiddenShape",
+        "hiddenFinite",
+        "hiddenMaxAbs",
+        "elapsedMs"
+      ],
+      "properties": {
+        "layer": { "type": "integer", "minimum": 0 },
+        "layerType": {
+          "type": "string",
+          "enum": ["sliding_attention", "full_attention"]
+        },
+        "attention": { "$ref": "#/$defs/AttentionRecord" },
+        "mlpIntermediate": { "type": "integer", "minimum": 1 },
+        "hiddenShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "hiddenFinite": { "type": "boolean" },
+        "hiddenMaxAbs": { "type": "number", "minimum": 0 },
+        "elapsedMs": { "type": "number", "minimum": 0 }
+      }
+    },
+    "AttentionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "qShape",
+        "kvShape",
+        "headDim",
+        "qDim",
+        "kvDim",
+        "usesSharedKv",
+        "kvSourceLayer",
+        "qFinite",
+        "kvFinite"
+      ],
+      "properties": {
+        "qShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "kvShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "headDim": { "type": "integer", "minimum": 1 },
+        "qDim": { "type": "integer", "minimum": 1 },
+        "kvDim": { "type": "integer", "minimum": 1 },
+        "usesSharedKv": { "type": "boolean" },
+        "kvSourceLayer": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "qFinite": { "type": "boolean" },
+        "kvFinite": { "type": "boolean" }
+      }
+    },
+    "Output": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "finalHiddenPath": { "type": "string", "minLength": 1 },
+        "finalHiddenSha256": { "$ref": "#/$defs/Sha256" },
+        "finalHiddenShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "finalHiddenFinite": { "type": "boolean" },
+        "finalHiddenMaxAbs": { "type": "number", "minimum": 0 },
+        "lmHeadTopK": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LogitRecord" }
+        },
+        "lmHeadSummary": { "$ref": "#/$defs/LmHeadSummary" }
+      }
+    },
+    "LogitRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokenId", "logit"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "logit": { "type": "number" }
+      }
+    },
+    "LmHeadSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vocabSize",
+        "topK",
+        "chunkSize",
+        "chunks",
+        "finalLogitSoftcapping",
+        "finite"
+      ],
+      "properties": {
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "topK": { "type": "integer", "minimum": 1 },
+        "chunkSize": { "type": "integer", "minimum": 1 },
+        "chunks": { "type": "integer", "minimum": 1 },
+        "finalLogitSoftcapping": {
+          "anyOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "finite": { "type": "boolean" }
+      }
+    },
+    "PromotionCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifestShapeExecuted",
+        "fullLayerDepthExecuted",
+        "lmHeadTopKComputed",
+        "doeRuntimeExecuted",
+        "cslRuntimeExecuted",
+        "hardwareExecuted"
+      ],
+      "properties": {
+        "manifestShapeExecuted": { "type": "boolean" },
+        "fullLayerDepthExecuted": { "type": "boolean" },
+        "lmHeadTopKComputed": { "type": "boolean" },
+        "doeRuntimeExecuted": { "type": "boolean" },
+        "cslRuntimeExecuted": { "type": "boolean" },
+        "hardwareExecuted": { "type": "boolean" }
+      }
+    },
+    "ClaimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable"],
+      "properties": {
+        "claimable": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -78,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--artifact-root",
-        default="",
+        default=os.environ.get("DOE_GEMMA4_E2B_RDRR_ROOT", ""),
         help="Override artifactRoot from the RDRR fixture.",
     )
     parser.add_argument("--weights-dir", default=DEFAULT_WEIGHTS_DIR)

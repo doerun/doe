@@ -13,6 +13,11 @@ const paths = {
   storedCslTrace: "bench/out/doppler-reference/csl-L1-reference-trace.json",
   parityReceipt: "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block-L1-webgpu.sample.json",
   perLayerParity: "bench/out/doppler-reference/webgpu-vs-numpy-per-layer-parity.json",
+  modelRuntimeReceipt: "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+  realWeightParity: "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
+  manifestShapeExecution: "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
+  hostPlan: "runtime/zig/examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json",
+  thirtyOneBReceipt: "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
 };
 
 function speedVerdictPath(numLayers) {
@@ -594,6 +599,7 @@ async function refreshEvidenceStrip() {
   const depthRow = depthCoverageFor(numLayers);
   const eligibility = (depthRow && depthRow.evidenceEligibility) || {};
   const isClaimableDepth = eligibility.claimable === true;
+  const hasRealWeightSmoke = eligibility.realWeightClaimable === true;
   const speedEl = el("evidence-speedup");
   const accEl = el("evidence-accuracy");
   const idEl = el("evidence-identity");
@@ -605,22 +611,28 @@ async function refreshEvidenceStrip() {
   }
   if (basisEl) {
     basisEl.textContent = isClaimableDepth
-      ? "synthetic L1 layer-block"
+      ? (hasRealWeightSmoke
+          ? "synthetic + real-weight L1 smoke"
+          : "synthetic L1 layer-block")
       : "diagnostic depth only";
     basisEl.dataset.tone = isClaimableDepth ? "pass" : "warn";
   }
   setText(
     "truth-headline",
     isClaimableDepth
-      ? "Current claim: L1 synthetic layer-block only"
+      ? (hasRealWeightSmoke
+          ? "Current claim: L1 synthetic + real-weight smoke layer-block"
+          : "Current claim: L1 synthetic layer-block only")
       : `Selected L=${numLayers}: diagnostic only, not claimable E2B evidence`,
   );
   setTone("truth-headline", isClaimableDepth ? "pass" : "warn");
   setText(
     "truth-detail",
     isClaimableDepth
-      ? "The claim is CSL simfabric and WebGPU output parity for one synthetic E2B-shaped layer-block at atol=1e-3."
-      : "Checkpoint extraction, multi-depth promotion, full E2B end-to-end, and Cerebras hardware are still blocked.",
+      ? (hasRealWeightSmoke
+          ? "The promoted boundary is L1: synthetic lane parity plus BF16-derived real-weight smoke parity at atol=1e-3. Full E2B runtime and hardware are still blocked."
+          : "The claim is CSL simfabric and WebGPU output parity for one synthetic E2B-shaped layer-block at atol=1e-3.")
+      : "Multi-depth promotion, full E2B runtime execution, and Cerebras hardware are still blocked.",
   );
 
   // Identity: from the speed verdict if present. Else leave as "-".
@@ -961,6 +973,192 @@ function badgeSet(id, label, state) {
   node.className = `badge ${state.cls}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function artifactLink(path, label) {
+  const safePath = escapeHtml(path);
+  const safeLabel = escapeHtml(label || path);
+  return `<a href="${repoRoot}${safePath}" target="_blank" rel="noreferrer">${safeLabel}</a>`;
+}
+
+function statusBadge(label, cls) {
+  return `<span class="badge ${cls}">${escapeHtml(label)}</span>`;
+}
+
+function blockerText(blockers) {
+  const list = Array.isArray(blockers) ? blockers.filter(Boolean) : [];
+  return list.length ? list.map(escapeHtml).join("<br>") : "none";
+}
+
+function renderEvidenceReceiptRows(rows) {
+  const body = el("evidence-receipts-body");
+  if (!body) return;
+  body.innerHTML = rows.map((row) => (
+    `<tr>
+      <td>${escapeHtml(row.label)}</td>
+      <td>${statusBadge(row.status, row.cls)}</td>
+      <td>${row.path ? artifactLink(row.path, row.linkLabel || row.path) : escapeHtml(row.receipt || "-")}</td>
+      <td>${blockerText(row.blockers)}</td>
+    </tr>`
+  )).join("");
+}
+
+async function refreshEvidenceReceiptMatrix() {
+  const rows = [];
+  let sdkModelBadge = { label: "missing", cls: "warn" };
+
+  try {
+    const receipt = await fetchJson(paths.modelRuntimeReceipt);
+    const sdk = receipt.sdkLayoutModelExecutionEvidence || {};
+    const promoted = (
+      receipt.executionStatus === "real_weight_layer_block_success"
+      && sdk.promotionStatus === "sdk_layout_layer_block_smoke_promoted"
+      && sdk.runtimeStop
+      && sdk.runtimeStop.reached === true
+      && sdk.kernelSource
+      && sdk.kernelSource.kernelIsStub === false
+      && Array.isArray(sdk.blockers)
+      && sdk.blockers.length === 0
+    );
+    sdkModelBadge = promoted
+      ? { label: "promoted L1", cls: "pass" }
+      : { label: sdk.promotionStatus || receipt.executionStatus || "diagnostic", cls: "warn" };
+    rows.push({
+      label: "E2B SdkLayout layer-block",
+      status: sdkModelBadge.label,
+      cls: sdkModelBadge.cls,
+      path: paths.modelRuntimeReceipt,
+      linkLabel: "model receipt",
+      blockers: [
+        ...(sdk.blockers || []),
+        ...((sdk.remainingClaimBlockers || []).map((b) => `remaining: ${b}`)),
+      ],
+    });
+    const depth = receipt.sdkLayoutDepthDiagnosticEvidence || {};
+    const depthStatus = depth.status || "missing";
+    const depthPassed = (
+      depthStatus === "full_depth_smoke_diagnostic_passed"
+      && depth.claimable === false
+      && depth.manifestShapeRuntimeExecuted === false
+    );
+    rows.push({
+      label: "E2B L35 smoke-chain diagnostic",
+      status: depthPassed ? "diagnostic passed" : depthStatus,
+      cls: depthPassed ? "warn" : "fail",
+      path: paths.modelRuntimeReceipt,
+      linkLabel: "model receipt",
+      blockers: [
+        ...((depth.blockers || []).map((b) => `diagnostic: ${b}`)),
+        ...((depth.remainingClaimBlockers || []).map((b) => `remaining: ${b}`)),
+      ],
+    });
+  } catch (err) {
+    rows.push({
+      label: "E2B SdkLayout layer-block",
+      status: "missing",
+      cls: "warn",
+      path: paths.modelRuntimeReceipt,
+      linkLabel: "model receipt",
+      blockers: [err.message || "unreadable receipt"],
+    });
+  }
+
+  try {
+    const parity = await fetchJson(paths.realWeightParity);
+    const pass = parity.verdict === "parity_passed";
+    rows.push({
+      label: "E2B BF16 real-weight L1 parity",
+      status: pass ? "parity_passed" : parity.verdict || "not passed",
+      cls: pass ? "pass" : "warn",
+      path: paths.realWeightParity,
+      linkLabel: "real-weight parity",
+      blockers: pass ? [] : ["tolerance parity not promoted"],
+    });
+  } catch (err) {
+    rows.push({
+      label: "E2B BF16 real-weight L1 parity",
+      status: "missing",
+      cls: "warn",
+      path: paths.realWeightParity,
+      linkLabel: "real-weight parity",
+      blockers: [err.message || "unreadable receipt"],
+    });
+  }
+
+  try {
+    const oracle = await fetchJson(paths.manifestShapeExecution);
+    const pass = (
+      oracle.status === "succeeded"
+      && oracle.verdict === "manifest_shape_cpu_full_text_forward_passed"
+    );
+    rows.push({
+      label: "E2B manifest-shape CPU oracle",
+      status: pass ? "CPU oracle passed" : oracle.verdict || "not passed",
+      cls: pass ? "pass" : "warn",
+      path: paths.manifestShapeExecution,
+      linkLabel: "manifest-shape oracle",
+      blockers: oracle.blockers || [
+        "full Doe/CSL manifest-shape runtime receipt still required",
+        "hardware receipt still required",
+      ],
+    });
+  } catch (err) {
+    rows.push({
+      label: "E2B manifest-shape CPU oracle",
+      status: "missing",
+      cls: "warn",
+      path: paths.manifestShapeExecution,
+      linkLabel: "manifest-shape oracle",
+      blockers: [err.message || "unreadable receipt"],
+    });
+  }
+
+  try {
+    const receipt31 = await fetchJson(paths.thirtyOneBReceipt);
+    rows.push({
+      label: "31B dense smoke-shape CSL",
+      status: "diagnostic",
+      cls: "warn",
+      path: paths.thirtyOneBReceipt,
+      linkLabel: "31B receipt",
+      blockers: [
+        `current receipt: ${receipt31.executionStatus || "unknown"}`,
+        "31B manifest-shape streaming receipt still required",
+        "31B real-weight parity receipt still required",
+      ],
+    });
+  } catch (err) {
+    rows.push({
+      label: "31B dense smoke-shape CSL",
+      status: "blocked",
+      cls: "warn",
+      path: paths.thirtyOneBReceipt,
+      linkLabel: "31B receipt",
+      blockers: [err.message || "31B receipt missing"],
+    });
+  }
+
+  rows.push({
+    label: "Cerebras hardware",
+    status: "pending",
+    cls: "warn",
+    receipt: "operator receipt not present",
+    blockers: [
+      "direct cmaddr or WSC appliance execution required",
+      "redacted hardware receipt required",
+    ],
+  });
+
+  badgeSet("badge-sdklayout-model", "SdkLayout model", sdkModelBadge);
+  renderEvidenceReceiptRows(rows);
+}
+
 async function renderLaneLabels() {
   const tbody = el("lane-label-body");
   if (!tbody) return;
@@ -1077,7 +1275,7 @@ async function refreshCockpit() {
   const numLayers = selectedNumLayers();
   const sourceLabel = el("cockpit-source");
   const tbody = el("cockpit-body");
-  refreshDepthCoverage();
+  await refreshDepthCoverage();
   let summary = null;
   try {
     summary = await fetchJson(allLanesSummaryPath(numLayers));
@@ -1229,6 +1427,9 @@ async function refreshCockpit() {
   }
   badgeSet("badge-realweight", "real-weight", rwBadge);
 
+  await refreshEvidenceArtifactBadges(summary);
+  await refreshEvidenceReceiptMatrix();
+
   badgeSet("badge-hardware", "hardware", { label: "pending", cls: "warn" });
 
   // Bundle badge from /api/bundle-summary (stable route for the
@@ -1254,15 +1455,99 @@ async function refreshCockpit() {
   }
 }
 
+async function refreshEvidenceArtifactBadges(summary) {
+  try {
+    const hostPlan = await fetchJson(paths.hostPlan);
+    const minimumVersion = (
+      ((hostPlan.cslc || {}).validation || {}).minimumVersion
+    );
+    badgeSet(
+      "badge-sdk",
+      "SDK floor",
+      minimumVersion === "2.10.0"
+        ? { label: "2.10.0", cls: "pass" }
+        : { label: minimumVersion || "unknown", cls: "warn" },
+    );
+  } catch {
+    badgeSet("badge-sdk", "SDK floor", { label: "missing", cls: "warn" });
+  }
+
+  let executionStatus = summary && summary.executionStatus;
+  if (!executionStatus) {
+    try {
+      const receipt = await fetchJson(paths.modelRuntimeReceipt);
+      executionStatus = receipt.executionStatus;
+    } catch {
+      executionStatus = null;
+    }
+  }
+  if (executionStatus === "real_weight_layer_block_success") {
+    badgeSet(
+      "badge-runtime-receipt",
+      "model receipt",
+      { label: "real-weight L1", cls: "pass" },
+    );
+  } else if (executionStatus) {
+    badgeSet(
+      "badge-runtime-receipt",
+      "model receipt",
+      { label: executionStatus, cls: "warn" },
+    );
+  } else {
+    badgeSet(
+      "badge-runtime-receipt",
+      "model receipt",
+      { label: "absent", cls: "warn" },
+    );
+  }
+
+  try {
+    const oracle = await fetchJson(paths.manifestShapeExecution);
+    const exec = oracle.executionSummary || {};
+    const layers = exec.layersExecuted;
+    const total = exec.numLayers;
+    const pass = (
+      oracle.status === "succeeded"
+      && oracle.verdict === "manifest_shape_cpu_full_text_forward_passed"
+      && exec.allLayerOutputsFinite === true
+      && layers === total
+    );
+    badgeSet(
+      "badge-manifest-shape",
+      "manifest-shape",
+      pass
+        ? { label: `CPU oracle ${layers}/${total}L`, cls: "pass" }
+        : { label: oracle.verdict || "not passed", cls: "warn" },
+    );
+  } catch {
+    badgeSet(
+      "badge-manifest-shape",
+      "manifest-shape",
+      { label: "missing", cls: "warn" },
+    );
+  }
+}
+
 function setClaimBadgesAbsent() {
   for (const [id, label] of [
     ["badge-reference", "reference (WebGPU)"],
     ["badge-simulator", "simulator (CSL)"],
     ["badge-emulator", "emulator (WebGPU)"],
     ["badge-realweight", "real-weight"],
+    ["badge-sdk", "SDK floor"],
+    ["badge-runtime-receipt", "model receipt"],
+    ["badge-sdklayout-model", "SdkLayout model"],
+    ["badge-manifest-shape", "manifest-shape"],
   ]) {
     badgeSet(id, label, { label: "absent", cls: "warn" });
   }
+  renderEvidenceReceiptRows([{
+    label: "receipt matrix",
+    status: "absent",
+    cls: "warn",
+    receipt: "no rollup",
+    blockers: ["summary rollup not loaded"],
+  }]);
   badgeSet("badge-hardware", "hardware", { label: "pending", cls: "warn" });
   badgeSet("badge-bundle", "bundle", { label: "no rollup", cls: "warn" });
 }

@@ -27,7 +27,7 @@ pub fn emit(
     try W.write(buf, pos, "// Each PE dequants its weight slice and computes partial dot products.\n");
     try W.write(buf, pos, "// Fabric allreduce accumulates the final output vector.\n\n");
 
-    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param reduce_color: color;\n\n");
@@ -81,15 +81,15 @@ pub fn emit(
     try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim} -> scratch_in[i] });\n");
     try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim} -> scratch_out[i] });\n");
     // Queues 0-1 are typically reserved by the memcpy runtime for its
-    // h2d/d2h handlers. Canonical SDK 1.4 examples start user fabric
+    // h2d/d2h handlers. Canonical SDK examples start user fabric
     // queues at id 2+ (gemv-checkerboard uses 2, 3, 4). Using id=1
     // here triggered a wse3 sim "Attempt to remap input queue 1, from
     // C22 to C4" — the router saw the memcpy color still bound to
     // queue 1 when our reduce_color tried to take it.
     try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
     try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = out_dim, .fabric_color = reduce_color, .output_queue = reduce_out_q });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = out_dim, .fabric_color = reduce_color, .input_queue = reduce_in_q });\n\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = out_dim, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = out_dim, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n");
     // send_done_id is bound to a task that's @block'd at comptime; the
     // @mov32 send below uses `.unblock = send_done_id` so the task only
@@ -186,6 +186,10 @@ pub fn emit(
     try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
     try W.write(buf, pos, "    @bind_local_task(send_done_task, send_done_id);\n");
     try W.write(buf, pos, "    @block(send_done_id);\n");
+    try W.write(buf, pos, "    if (@is_arch(\"wse3\")) {\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_out_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "        @initialize_queue(reduce_in_q, .{ .color = reduce_color });\n");
+    try W.write(buf, pos, "    }\n");
     try emitExport(buf, pos, act);
     try emitExportTyped(buf, pos, wgt);
     try emitExport(buf, pos, out);

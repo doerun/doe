@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import struct
 import sys
 from pathlib import Path
@@ -20,7 +21,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EXECUTION_MANIFEST = (
     "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
 )
-DEFAULT_SOURCE_DIR = "/home/x/model-downloads/gemma4-e2b-it"
+DEFAULT_SOURCE_DIR = os.environ.get(
+    "DOE_GEMMA4_E2B_SAFETENSORS_DIR",
+    "/home/x/model-downloads/gemma4-e2b-it",
+)
 DEFAULT_OUT = "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json"
 LANG_PREFIX = "model.language_model"
 
