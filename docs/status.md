@@ -162,9 +162,10 @@ Read this file first. Use the shard files under
   hardware remain gated in the current April shard and in
   `docs/hardware-validation-appendix.md`.
   The E2B receipt also now binds a Doppler WebGPU capture graph as the
-  shared JS/WGSL input surface for the future HostPlan/SdkLayout/CSL
-  lowering step; that capture is non-claimable until lowered and
-  parity-checked.
+  shared JS/WGSL input surface, plus a first capture-to-CSL attention-core
+  lowering receipt with CPU-oracle parity. That capture-lowering rung is
+  still non-claimable for full Doppler production inference, full graph
+  lowering, logits parity, hardware, or performance.
 
 ## Current follow-up highlights
 

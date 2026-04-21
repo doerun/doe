@@ -138,6 +138,7 @@ def _load_known_claim_roles() -> set[str]:
             "manifest-shape-attention-core",
             "manifest-shape-runtime-path",
             "doppler-webgpu-capture-graph",
+            "doppler-webgpu-capture-lowering",
             "real-weight-parity-verdict",
             "doppler-rdrr-probe",
             "doppler-rdrr-q4k-extraction",

@@ -1471,6 +1471,13 @@ def main() -> int:
         receipt["dopplerWebgpuCaptureEvidence"] = (
             doppler_capture_evidence
         )
+    doppler_capture_lowering_evidence = (
+        _build_doppler_webgpu_capture_lowering_evidence(receipt)
+    )
+    if doppler_capture_lowering_evidence is not None:
+        receipt["dopplerWebgpuCaptureLoweringEvidence"] = (
+            doppler_capture_lowering_evidence
+        )
     receipt["fullGridCompileProbeEvidence"] = {
         "description": "Pointer to the cslc grid-probe aggregate. Documents which grid sizes cslc accepts for this target.",
         "reportPath": "bench/out/cslc-grid-probe/grid-probe-aggregate.json",

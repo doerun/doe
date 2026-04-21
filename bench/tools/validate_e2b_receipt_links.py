@@ -40,6 +40,10 @@ Link locations walked:
   dopplerWebgpuCaptureEvidence:
       captureGraph.path         + captureGraph.sha256
       model.manifestPath        + model.manifestSha256
+  dopplerWebgpuCaptureLoweringEvidence:
+      loweringReceipt.path      + loweringReceipt.sha256
+      source.captureGraph.path  + source.captureGraph.sha256
+      loweredArtifacts.*.path   + loweredArtifacts.*.sha256
 """
 
 from __future__ import annotations
@@ -196,6 +200,33 @@ def collect_links(receipt: dict[str, Any]) -> list[tuple[str, str, str]]:
             capture_model["manifestPath"],
             capture_model["manifestSha256"],
         ))
+
+    lowering = receipt.get("dopplerWebgpuCaptureLoweringEvidence") or {}
+    lowering_receipt = lowering.get("loweringReceipt") or {}
+    if lowering_receipt.get("path") and lowering_receipt.get("sha256"):
+        links.append((
+            "dopplerWebgpuCaptureLoweringEvidence.loweringReceipt",
+            lowering_receipt["path"],
+            lowering_receipt["sha256"],
+        ))
+    lowering_source = lowering.get("source") or {}
+    lowering_capture = lowering_source.get("captureGraph") or {}
+    if lowering_capture.get("path") and lowering_capture.get("sha256"):
+        links.append((
+            "dopplerWebgpuCaptureLoweringEvidence.source.captureGraph",
+            lowering_capture["path"],
+            lowering_capture["sha256"],
+        ))
+    lowered_artifacts = lowering.get("loweredArtifacts") or {}
+    for key in ("pythonSdkLayoutRunner", "cslKernel", "attentionCoreReceipt"):
+        artifact = lowered_artifacts.get(key) or {}
+        if artifact.get("path") and artifact.get("sha256"):
+            links.append((
+                f"dopplerWebgpuCaptureLoweringEvidence."
+                f"loweredArtifacts.{key}",
+                artifact["path"],
+                artifact["sha256"],
+            ))
 
     depth = receipt.get("sdkLayoutDepthDiagnosticEvidence") or {}
     for idx, diagnostic in enumerate(depth.get("diagnostics") or []):

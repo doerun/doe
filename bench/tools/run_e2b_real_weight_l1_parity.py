@@ -42,6 +42,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CSL_TMPDIR = REPO_ROOT / "bench/out/scratch/csl-sdk-tmp"
+SDK_210_ROOT = Path("/home/x/cerebras-sdk-2.10.0")
+LEGACY_SDK_ROOT = Path("/home/x/cerebras-sdk")
 
 
 def parse_args() -> argparse.Namespace:
@@ -134,6 +136,12 @@ def csl_subprocess_env() -> tuple[dict[str, str], str]:
     env.setdefault("APPTAINER_TMPDIR", tmpdir)
     env.setdefault("SINGULARITY_TMPDIR", tmpdir)
     return env, tmpdir
+
+
+def default_csl_sdk_root() -> Path:
+    if (SDK_210_ROOT / "cs_python").is_file():
+        return SDK_210_ROOT
+    return LEGACY_SDK_ROOT
 
 
 def write_verdict(args: argparse.Namespace, verdict: dict) -> None:
@@ -376,12 +384,13 @@ def main() -> int:
 
     # CSL simfabric lane via cs_python. This is the slow path and
     # only runs if cs_python is available; otherwise report blocked.
-    sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", "/home/x/cerebras-sdk")
+    sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", str(default_csl_sdk_root()))
     cs_python = os.environ.get("DOE_CSL_CS_PYTHON", f"{sdk_root}/cs_python")
     if not Path(cs_python).is_file() and cs_python != "cs_python":
         lanes["csl-sdklayout"] = {
             "status": "blocked",
             "blocker": f"cs_python not found at {cs_python}",
+            "sdkRoot": sdk_root,
         }
     else:
         csl_trace = csl_out / "trace.json"
@@ -406,12 +415,14 @@ def main() -> int:
                 "returnCode": csl_proc.returncode,
                 "stderrTail": csl_proc.stderr[-400:],
                 "tmpDir": csl_tmpdir,
+                "sdkRoot": sdk_root,
             }
         else:
             ct = json.loads(csl_trace.read_text(encoding="utf-8"))
             er = ct.get("executedRun", {}) or {}
             lanes["csl-sdklayout"] = {
                 "status": er.get("status", "unknown"),
+                "sdkRoot": sdk_root,
                 "elapsedMs": er.get("elapsedMs"),
                 "outputSha256": (er.get("output") or {}).get("sha256"),
                 "outputPath": (er.get("output") or {}).get("path"),
