@@ -13,10 +13,12 @@ Steps (in order):
      validates the numbered contract assertions)
   3. Doppler RDRR/int4ple structural probe
   4. Doppler RDRR Q4_K_M L1 smoke-contract parity
-  5. claim-discipline gate (hardware + MoE fronts)
-  6. SdkLayout streaming hardening gate (against any available live
+  5. BF16-derived E2B L2 smoke-chain diagnostic parity
+  6. Doppler RDRR Q4_K_M L2 smoke-chain diagnostic parity
+  7. claim-discipline gate (hardware + MoE fronts)
+  8. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
-  7. schema validation of 31B receipt and receipt-link integrity for
+  9. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -171,13 +173,47 @@ def main() -> int:
         timeout=2600,
     ))
 
-    # 5. claim-discipline gate (hardware + MoE fronts).
+    # 5. BF16-derived E2B L2 smoke-chain diagnostic parity. This is
+    # bundle-visible so reviewers can inspect depth progress, but it
+    # does not promote L2 to full-model or hardware evidence.
+    steps.append(run(
+        "e2b-real-weight-l2-diagnostic-parity",
+        [
+            "python3",
+            "bench/tools/run_e2b_real_weight_l1_parity.py",
+            "--fixture",
+            "config/gemma-4-e2b-real-weight-fixture.json",
+            "--weights-dir",
+            "bench/out/gemma-4-e2b-real-weights",
+            "--num-layers",
+            "2",
+            "--out-json",
+            "bench/out/gemma-4-e2b-real-weight-parity-L2.json",
+            "--lane-out-dir",
+            "bench/out/gemma-4-e2b-real-weight-parity/L2",
+        ],
+        timeout=2400,
+    ))
+
+    # 6. Doppler RDRR Q4_K_M L2 smoke-chain diagnostic parity.
+    steps.append(run(
+        "doppler-rdrr-q4k-l2-diagnostic-parity",
+        [
+            "python3",
+            "bench/tools/run_doppler_rdrr_q4k_parity.py",
+            "--num-layers",
+            "2",
+        ],
+        timeout=2600,
+    ))
+
+    # 7. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 6. SdkLayout streaming hardening gate against the freshest live
+    # 8. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -201,7 +237,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 7. receipt link integrity (already invoked by self-check STEP 5,
+    # 9. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

@@ -316,8 +316,14 @@ def find_moe_receipt() -> Path | None:
 
 
 def find_real_weight_success_receipt() -> Path | None:
-    """Return a real-weight parity artifact that actually promoted."""
-    for p in REPO_ROOT.glob("bench/out/gemma-4-*-real-weight-parity-L*.json"):
+    """Return the canonical real-weight parity artifact that promoted.
+
+    L2+ artifacts are diagnostic depth rungs today; they must not unlock
+    broad real-weight wording in tracked prose.
+    """
+    for p in sorted(
+        REPO_ROOT.glob("bench/out/gemma-4-*-real-weight-parity-L*.json")
+    ):
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -326,6 +332,7 @@ def find_real_weight_success_receipt() -> Path | None:
             data.get("artifactKind") == "doe_e2b_real_weight_parity"
             and data.get("verdict") == "parity_passed"
             and data.get("weightsDirPresent") is True
+            and data.get("numLayers") == 1
         ):
             return p
     return None

@@ -30,7 +30,7 @@ then asserts the contract:
           maintained and went stale across kernel upgrades)
 
 Then asserts a growing set of structural contracts. The current set
-spans C0..C37 (as of the last update; see below for the authoritative
+spans C0..C38 (as of the last update; see below for the authoritative
 enumeration). Broadly they cover:
 
   - Core kernel/trace/receipt integrity (C0-C15)
@@ -943,6 +943,115 @@ def main() -> int:
             "  C37 SKIP: Doppler RDRR Q4_K_M parity verdict not yet "
             "generated"
         )
+
+    # C38: Optional depth-2 real-weight diagnostics, when generated,
+    # must pass exactly two layers while preserving the non-full-model
+    # boundary. These artifacts are the next CSL strategy rung after L1;
+    # they are not archive-required and fresh clones may omit them.
+    _c38_seen = False
+    _c38_errors = []
+    _bf16_l2 = REPO_ROOT / "bench/out/gemma-4-e2b-real-weight-parity-L2.json"
+    if _bf16_l2.is_file():
+        _c38_seen = True
+        try:
+            _bf16 = json.loads(_bf16_l2.read_text(encoding="utf-8"))
+            _bf16_parity = _bf16.get("parity") or {}
+            if _bf16.get("verdict") == "blocked_weights_absent":
+                print(
+                    "  C38 SKIP: BF16-derived E2B L2 parity blocked "
+                    "because the local weight slices are absent"
+                )
+            elif (
+                _bf16.get("verdict") == "parity_passed"
+                and int(_bf16.get("numLayers", 0)) == 2
+                and _bf16.get("weightsAuditPassed") is True
+                and _bf16_parity.get("tolerancePassed") is True
+                and int(_bf16_parity.get("layersCompared", 0)) == 2
+            ):
+                print(
+                    "  C38 PASS: BF16-derived E2B L2 real-weight "
+                    "diagnostic parity passed with exactly two compared "
+                    "layers"
+                )
+            else:
+                _c38_errors.append(
+                    "BF16 L2 unexpected state: "
+                    f"verdict={_bf16.get('verdict')!r}, "
+                    f"numLayers={_bf16.get('numLayers')!r}, "
+                    f"weightsAuditPassed={_bf16.get('weightsAuditPassed')!r}, "
+                    f"parity={_bf16_parity!r}"
+                )
+        except (OSError, ValueError, json.JSONDecodeError) as _e:
+            _c38_errors.append(
+                "BF16 L2 verdict unreadable: "
+                f"{type(_e).__name__}: {_e}"
+            )
+
+    _rdrr_l2 = (
+        REPO_ROOT
+        / "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json"
+    )
+    if _rdrr_l2.is_file():
+        _c38_seen = True
+        try:
+            _rdrr = json.loads(_rdrr_l2.read_text(encoding="utf-8"))
+            _criteria = _rdrr.get("promotionCriteriaMet") or {}
+            _parity = _rdrr.get("paritySummary") or {}
+            _claim_scope = _rdrr.get("claimScope") or {}
+            _not_claimable = _claim_scope.get("notClaimable") or []
+            _blocks_full = any(
+                "Full Gemma-4 E2B execution" in str(item)
+                for item in _not_claimable
+            )
+            _blocks_hardware = any(
+                "Cerebras hardware" in str(item)
+                for item in _not_claimable
+            )
+            if _rdrr.get("verdict") == "blocked_artifact_absent":
+                print(
+                    "  C38 SKIP: Doppler RDRR Q4_K_M L2 parity blocked "
+                    "because the local artifact is absent"
+                )
+            elif (
+                _rdrr.get("status") == "succeeded"
+                and _rdrr.get("verdict") == "rdrr_q4k_l2_parity_passed"
+                and int(_rdrr.get("numLayers", 0)) == 2
+                and _criteria.get("structuralProbePassed") is True
+                and _criteria.get("q4kSmokeSlicesExtracted") is True
+                and _criteria.get("weightsAuditPassed") is True
+                and _criteria.get("crossRuntimeParityPassed") is True
+                and _criteria.get("fullModelDepthExecuted") is False
+                and _criteria.get("hardwareExecuted") is False
+                and _parity.get("tolerancePassed") is True
+                and int(_parity.get("layersCompared", 0)) == 2
+                and _blocks_full
+                and _blocks_hardware
+            ):
+                print(
+                    "  C38 PASS: Doppler RDRR Q4_K_M L2 diagnostic "
+                    "parity passed while full-model and hardware claims "
+                    "remain blocked"
+                )
+            else:
+                _c38_errors.append(
+                    "RDRR L2 unexpected state: "
+                    f"status={_rdrr.get('status')!r}, "
+                    f"verdict={_rdrr.get('verdict')!r}, "
+                    f"numLayers={_rdrr.get('numLayers')!r}, "
+                    f"criteria={_criteria!r}, parity={_parity!r}"
+                )
+        except (OSError, ValueError, json.JSONDecodeError) as _e:
+            _c38_errors.append(
+                "RDRR L2 verdict unreadable: "
+                f"{type(_e).__name__}: {_e}"
+            )
+    if not _c38_seen:
+        print(
+            "  C38 SKIP: E2B L2 real-weight diagnostic verdicts not yet "
+            "generated"
+        )
+    for _err in _c38_errors:
+        failures.append(f"C38 FAIL: {_err}")
 
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
     # contract check when a matching-depth trace is absent — WGSL

@@ -47,22 +47,28 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    production inference output parity, not manifest-shape execution,
    and not full E2B.
 
-5. **Doe carries E2B and 31B through governed compiler/runtime
+5. **E2B L2 smoke-chain diagnostics are bundled.** Backed by the
+   BF16-derived and RDRR Q4_K_M L2 diagnostic parity verdicts. These
+   artifacts show depth progress for the same smoke contract; they are
+   not promoted L2 release evidence, manifest-shape execution, full
+   E2B, or hardware evidence.
+
+6. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
    full-model execution or manifest-shape numerical claim.
 
-6. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+7. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-7. **CSL WebGPU emulator is faster than local CSL simfabric on the
+8. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-8. **Unified Doe entrypoint routes to 5 real backend targets.**
+9. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
    doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
    csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
@@ -95,6 +101,7 @@ a bundle integrity failure.
 
 - **L2/L4/L8/L35 are claimable E2B parity depths.** The depth matrix
   distinguishes raw diagnostic files from evidence-eligible receipts.
+  Bundled L2 BF16/RDRR smoke diagnostics are not promoted receipts.
   Today only L1 synthetic and E2B L1 real-weight smoke-contract
   evidence are claimable.
 
@@ -108,8 +115,8 @@ a bundle integrity failure.
   sampling.
 
 - **Doppler production inference output parity from the RDRR artifact
-  has been proven.** The RDRR Q4_K_M verdict proves only Doe's L1
-  smoke-contract parity harness with RDRR-derived slices. It does not
+  has been proven.** The RDRR Q4_K_M verdicts prove only Doe's
+  smoke-contract parity harness with RDRR-derived slices. They do not
   execute Doppler's production browser/model pipeline.
 
 ## What must land externally to unlock additional claims
@@ -149,7 +156,8 @@ a bundle integrity failure.
 5. Read `MANIFEST.txt` — see each file's `claim-role`.
 6. Re-compute any `.json` sha256 you want to spot-check against the
    manifest entry.
-7. Read `bench/out/cerebras-evidence-bundle/summary.json` — 7 local
-   gates should all report `status=passed`.
+7. Read `bench/out/cerebras-evidence-bundle/summary.json` — local
+   gates should report `status=passed`, except documented skipped
+   optional gates.
 
 If any of 1–7 fails, reject the bundle and request a rebuild.

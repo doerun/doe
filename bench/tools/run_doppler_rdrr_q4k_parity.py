@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Doppler RDRR Q4_K_M extraction plus L1 smoke parity."""
+"""Run Doppler RDRR Q4_K_M extraction plus smoke-depth parity."""
 
 from __future__ import annotations
 
@@ -36,9 +36,46 @@ DEFAULT_LANE_OUT_DIR = (
 )
 
 
+def default_out_json(num_layers: int) -> str:
+    if num_layers == 1:
+        return DEFAULT_OUT
+    return (
+        "bench/out/doppler-rdrr/"
+        f"gemma-4-e2b-int4ple-q4k-parity-L{num_layers}.json"
+    )
+
+
+def default_parity_out(num_layers: int) -> str:
+    if num_layers == 1:
+        return DEFAULT_PARITY_OUT
+    return (
+        "bench/out/doppler-rdrr/"
+        f"gemma-4-e2b-int4ple-rdrr-l{num_layers}-parity.json"
+    )
+
+
+def default_lane_out_dir(num_layers: int) -> str:
+    if num_layers == 1:
+        return DEFAULT_LANE_OUT_DIR
+    return (
+        "bench/out/doppler-rdrr/"
+        f"gemma-4-e2b-int4ple-rdrr-l{num_layers}-parity-work"
+    )
+
+
+def l_verdict(num_layers: int, suffix: str) -> str:
+    return f"rdrr_q4k_l{num_layers}_{suffix}"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture", default=DEFAULT_FIXTURE)
+    parser.add_argument(
+        "--num-layers",
+        type=int,
+        default=1,
+        help="Smoke-contract chain depth. L1 remains the default bundle lane.",
+    )
     parser.add_argument(
         "--artifact-root",
         default="",
@@ -47,11 +84,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weights-dir", default=DEFAULT_WEIGHTS_DIR)
     parser.add_argument("--probe-out", default=DEFAULT_PROBE_OUT)
     parser.add_argument("--extraction-out", default=DEFAULT_EXTRACTION_OUT)
-    parser.add_argument("--parity-out", default=DEFAULT_PARITY_OUT)
+    parser.add_argument("--parity-out", default="")
     parser.add_argument("--weights-audit-out", default=DEFAULT_WEIGHTS_AUDIT)
-    parser.add_argument("--lane-out-dir", default=DEFAULT_LANE_OUT_DIR)
-    parser.add_argument("--out-json", default=DEFAULT_OUT)
-    return parser.parse_args()
+    parser.add_argument("--lane-out-dir", default="")
+    parser.add_argument("--out-json", default="")
+    args = parser.parse_args()
+    if args.num_layers < 1:
+        parser.error("--num-layers must be >= 1")
+    if not args.parity_out:
+        args.parity_out = default_parity_out(args.num_layers)
+    if not args.lane_out_dir:
+        args.lane_out_dir = default_lane_out_dir(args.num_layers)
+    if not args.out_json:
+        args.out_json = default_out_json(args.num_layers)
+    return args
 
 
 def resolve(raw: str | Path) -> Path:
@@ -106,6 +152,7 @@ def base_payload(args: argparse.Namespace, steps: list[dict[str, Any]]) -> dict[
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_doppler_rdrr_q4k_parity",
+        "numLayers": args.num_layers,
         "fixturePath": args.fixture,
         "artifactRootOverride": args.artifact_root or None,
         "probePath": args.probe_out,
@@ -118,7 +165,8 @@ def base_payload(args: argparse.Namespace, steps: list[dict[str, Any]]) -> dict[
         "claimScope": {
             "claimable": (
                 "Doppler RDRR Q4_K_M dequantized slices feed Doe's "
-                "existing Gemma-4 E2B L1 smoke-contract WebGPU-vs-CSL "
+                f"existing Gemma-4 E2B L{args.num_layers} "
+                "smoke-contract WebGPU-vs-CSL "
                 "parity harness."
             ),
             "notClaimable": [
@@ -161,7 +209,7 @@ def finalize_from_artifacts(
     if any(step["status"] == "failed" for step in steps):
         payload.update({
             "status": "failed",
-            "verdict": "rdrr_q4k_l1_parity_failed",
+            "verdict": l_verdict(args.num_layers, "parity_failed"),
             "blocker": "step_failed",
         })
         return payload, 1
@@ -175,20 +223,20 @@ def finalize_from_artifacts(
     if parity_verdict == "parity_passed":
         payload.update({
             "status": "succeeded",
-            "verdict": "rdrr_q4k_l1_parity_passed",
+            "verdict": l_verdict(args.num_layers, "parity_passed"),
         })
         exit_code = 0
     elif parity_verdict == "lane_incomplete":
         payload.update({
             "status": "blocked",
-            "verdict": "rdrr_q4k_l1_parity_lane_incomplete",
+            "verdict": l_verdict(args.num_layers, "parity_lane_incomplete"),
             "blocker": "runtime_lane_incomplete",
         })
         exit_code = 0
     else:
         payload.update({
             "status": "failed",
-            "verdict": "rdrr_q4k_l1_parity_failed",
+            "verdict": l_verdict(args.num_layers, "parity_failed"),
             "blocker": parity_verdict or "parity_verdict_absent",
         })
         exit_code = 1
@@ -273,7 +321,7 @@ def main() -> int:
         "--weights-dir",
         args.weights_dir,
         "--num-layers",
-        "1",
+        str(args.num_layers),
         "--weight-set-pin-mode",
         "record-only",
         "--weights-source-label",
@@ -285,7 +333,13 @@ def main() -> int:
         "--out-json",
         args.parity_out,
     ]
-    steps.append(run_step("doppler-rdrr-q4k-l1-parity", parity_cmd, 2400))
+    steps.append(
+        run_step(
+            f"doppler-rdrr-q4k-l{args.num_layers}-parity",
+            parity_cmd,
+            2400,
+        )
+    )
     payload, exit_code = finalize_from_artifacts(args, steps)
     write_json(resolve(args.out_json), payload)
     print(f"rdrr q4k parity: verdict={payload.get('verdict')}")

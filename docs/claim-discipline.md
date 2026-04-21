@@ -130,6 +130,28 @@ Allowed wording:
   Doppler production inference output parity, not manifest-shape
   execution, not full E2B, not 31B, not MoE, and not hardware."
 
+### L2 real-weight smoke diagnostics are local, not promoted
+
+Evidence:
+
+- `bench/out/gemma-4-e2b-real-weight-parity-L2.json` records the
+  BF16-derived WebGPU-vs-CSL simfabric diagnostic verdict for the
+  two-layer smoke chain. See the artifact for current tolerance metrics.
+- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json`
+  records the parallel RDRR Q4_K_M diagnostic wrapper verdict. See the
+  artifact for current tolerance metrics.
+- C38 in `bench/tools/e2b_layer_block_self_check.py` treats these as
+  optional diagnostics and rejects any state that promotes them to
+  full-model or hardware evidence.
+
+Allowed wording:
+
+- "Doe has local E2B two-layer smoke-chain diagnostics for both
+  BF16-derived and RDRR-derived weight slices."
+- "These diagnostics extend the depth of the smoke contract only. They
+  are not manifest-shape execution, not full E2B inference, not promoted
+  L2 release evidence, not 31B, not MoE, and not hardware."
+
 ### The CSL kernel implements the transformer layer-block shape
 
 Evidence:

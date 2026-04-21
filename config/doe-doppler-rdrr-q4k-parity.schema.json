@@ -6,6 +6,7 @@
   "required": [
     "schemaVersion",
     "artifactKind",
+    "numLayers",
     "status",
     "verdict",
     "fixturePath",
@@ -24,6 +25,7 @@
       "type": "string",
       "const": "doe_doppler_rdrr_q4k_parity"
     },
+    "numLayers": { "type": "integer", "minimum": 1 },
     "status": {
       "type": "string",
       "enum": ["succeeded", "failed", "blocked"]

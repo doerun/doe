@@ -116,6 +116,19 @@ extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json" '
 ' 2>/dev/null || echo "rdrr-q4k-parity: not present"
 echo
 
+echo "--- E2B L2 diagnostic parity ---"
+extract_json "bench/out/gemma-4-e2b-real-weight-parity-L2.json" '
+    "bf16 verdict:      \(.verdict // "?")",
+    "bf16 layers:       \(.parity.layersCompared // "?")",
+    "bf16 tolerance:    \(.parity.tolerancePassed // "?")"
+' 2>/dev/null || echo "bf16-l2-parity: not present"
+extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json" '
+    "rdrr verdict:      \(.verdict // "?")",
+    "rdrr layers:       \(.paritySummary.layersCompared // "?")",
+    "rdrr tolerance:    \(.paritySummary.tolerancePassed // "?")"
+' 2>/dev/null || echo "rdrr-q4k-l2-parity: not present"
+echo
+
 echo "--- claimable depth coverage ---"
 extract_json "bench/out/doe-run/depth-coverage-matrix.json" '
     "claimableAny:      \(.rollup.anyEligibleReceiptCount)/\(.rollup.declaredCount)",

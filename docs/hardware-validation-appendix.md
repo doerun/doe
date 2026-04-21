@@ -75,6 +75,9 @@ E2B bundle:
 - E2B real-weight fixture `config/gemma-4-e2b-real-weight-fixture.json`
   and parity verdict `bench/out/gemma-4-e2b-real-weight-parity-L1.json`
   (BF16-derived smoke-contract slices, not manifest-shape execution)
+- E2B L2 BF16 diagnostic verdict
+  `bench/out/gemma-4-e2b-real-weight-parity-L2.json`
+  (depth progress only, not promoted full-model evidence)
 - Doppler RDRR/int4ple fixture
   `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` and probe
   verdict `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json`
@@ -83,6 +86,9 @@ E2B bundle:
   `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json`
   plus extraction and weights-audit artifacts under the same RDRR
   evidence directory (not Doppler production inference output parity)
+- Doppler RDRR Q4_K_M L2 diagnostic verdict
+  `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json`
+  (same smoke contract at diagnostic depth, not promoted full-model evidence)
 
 31B bundle (scale-target scaffold, same shape as E2B):
 
@@ -116,8 +122,10 @@ selected shard hash, target tensor spans, Q4_K_M packed-size formulas, and
 int4 per-layer embedding metadata. The Q4_K_M wrapper verdict
 `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json` dequantizes the
 RDRR spans into Doe's existing L1 smoke-contract slice format and checks
-WebGPU-vs-CSL simfabric parity. Neither rung proves Doppler production
-inference output parity or full E2B execution from the RDRR artifact.
+WebGPU-vs-CSL simfabric parity. The L2 diagnostic wrapper under the same
+directory extends the smoke-chain depth only. None of these rungs prove
+Doppler production inference output parity or full E2B execution from the
+RDRR artifact.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1

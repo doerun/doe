@@ -18,11 +18,11 @@ bundle" for the prose workflow; this file is the tool-reference.
 
 ## Underlying tools (called by the prep script, usable standalone)
 
-- **`run_cerebras_evidence_bundle.py`** — runs 7 local gates in
-  order (truth-table test, self-check, Doppler RDRR/int4ple
+- **`run_cerebras_evidence_bundle.py`** — runs the local gate sequence
+  in order (truth-table test, self-check, Doppler RDRR/int4ple
   structural probe, Doppler RDRR Q4_K_M L1 smoke-contract parity,
-  claim-discipline, SdkLayout streaming hardening, receipt link
-  integrity) and writes
+  BF16/RDRR L2 diagnostic parity, claim-discipline, SdkLayout
+  streaming hardening, receipt link integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
   plus an aggregate verdict.
@@ -110,6 +110,7 @@ locks most of this pipeline via numbered contracts:
 | C35 | declared depth list stays synchronized between the depth matrix generator and E2B cockpit |
 | C36 | Doppler RDRR/int4ple structural probe validates manifest, selected shard hash, target spans, and keeps Q4 dequant explicitly blocked |
 | C37 | Doppler RDRR Q4_K_M L1 smoke parity verdict stays scoped to smoke-contract parity and blocks full-model / hardware claims |
+| C38 | optional E2B L2 BF16/RDRR diagnostic parity verdicts pass exactly two layers and remain non-full-model / non-hardware evidence |
 
 ## What this pipeline does NOT do
 
@@ -119,5 +120,6 @@ locks most of this pipeline via numbered contracts:
 - Produce a Cerebras hardware receipt — that requires a reachable
   CS / WSC endpoint; see `docs/hardware-validation-appendix.md`.
 - Replace full real-weight parity — the bundle now includes E2B L1
-  BF16-derived and RDRR-derived smoke-contract parity, but not
-  manifest-shape, full-depth, 31B, MoE, or hardware receipts.
+  BF16-derived and RDRR-derived smoke-contract parity. Optional L2
+  diagnostics can exist locally, but they are not manifest-shape,
+  full-depth, 31B, MoE, or hardware receipts.

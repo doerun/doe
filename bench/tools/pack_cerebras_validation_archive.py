@@ -80,8 +80,9 @@ INCLUDE_FILES: tuple = (
     "bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json",
     # CSL emulator evidence (claimable local-debug speed only for L1 today).
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json",
-    # Real-weight parity verdicts (per model, blocked today).
+    # Real-weight parity verdicts and depth diagnostics.
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
+    "bench/out/gemma-4-e2b-real-weight-parity-L2.json",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json",
     # Doppler production-artifact structural probe and Q4_K_M smoke parity.
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json",
@@ -89,6 +90,8 @@ INCLUDE_FILES: tuple = (
     "bench/out/weights-audit/gemma-4-e2b-rdrr-int4ple-weights-audit.json",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l1-parity.json",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json",
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l2-parity.json",
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json",
     # 26B/A4B MoE lane scope (explicitly blocked, 6 TODO receipts).
     "bench/out/26b-moe-lane/lane-status.json",
     "bench/out/26b-moe-lane/router-todo.json",
@@ -142,12 +145,15 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/streaming-executor/gemma-4-31b-layer-block-cross-runtime-parity-check.json": "cross-runtime-parity-verdict",
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json": "emulator-speed-verdict",
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json": "real-weight-parity-verdict",
+    "bench/out/gemma-4-e2b-real-weight-parity-L2.json": "real-weight-parity-verdict",
     "bench/out/gemma-4-31b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json": "doppler-rdrr-probe",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-extraction.json": "doppler-rdrr-q4k-extraction",
     "bench/out/weights-audit/gemma-4-e2b-rdrr-int4ple-weights-audit.json": "doppler-rdrr-q4k-audit",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l1-parity.json": "doppler-rdrr-q4k-parity",
     "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json": "doppler-rdrr-q4k-parity",
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l2-parity.json": "doppler-rdrr-q4k-parity",
+    "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json": "doppler-rdrr-q4k-parity",
     "bench/out/26b-moe-lane/lane-status.json": "moe-lane-scope",
     "bench/out/26b-moe-lane/router-todo.json": "moe-lane-scope",
     "bench/out/26b-moe-lane/topk-selection-todo.json": "moe-lane-scope",
