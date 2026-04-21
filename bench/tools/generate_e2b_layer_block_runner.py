@@ -235,10 +235,10 @@ def main() -> int:
     send = RoutingPosition().set_input([Route.RAMP])
 
     region.set_param_all("size", args.size)
-    region.set_param_all("rx_ple_rows", rx_ple_rows)
-    region.set_param_all("rx_ple_projection", rx_ple_projection)
-    region.set_param_all("rx_layer_weights", rx_layer_weights)
-    region.set_param_all("tx_activation", tx_activation)
+    region.set_param_all(rx_ple_rows)
+    region.set_param_all(rx_ple_projection)
+    region.set_param_all(rx_layer_weights)
+    region.set_param_all(tx_activation)
 
     rows_port = region.create_input_port(rx_ple_rows, Edge.LEFT, [recv], args.size)
     proj_port = region.create_input_port(rx_ple_projection, Edge.TOP, [recv], args.size)

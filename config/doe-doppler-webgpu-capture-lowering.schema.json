@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-doppler-webgpu-capture-lowering.schema.json",
+  "title": "Doe Doppler WebGPU capture lowering",
+  "description": "Receipt proving that a recorded Doppler WebGPU/WGSL capture graph was consumed by the first Doe HostPlan/SdkLayout/CSL attention-core lowering slice. This is partial, non-claimable evidence and not a full inference lowering claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "claimable",
+    "source",
+    "capturedHostPlanView",
+    "loweredArtifacts",
+    "simulatorEvidence",
+    "claimScope",
+    "blockers",
+    "remainingClaimBlockers",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_doppler_webgpu_capture_to_csl_attention_core_lowering"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "attention_core_capture_slice_lowered_and_simulated",
+        "blocked"
+      ]
+    },
+    "claimable": { "const": false },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captureGraph",
+        "captureScope",
+        "model",
+        "shaderModules",
+        "sourcePath",
+        "sourceRepo"
+      ],
+      "properties": {
+        "captureGraph": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "exists", "sha256", "graphSha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "exists": { "const": true },
+            "sha256": { "$ref": "#/$defs/Sha256" },
+            "graphSha256": { "$ref": "#/$defs/Sha256" }
+          }
+        },
+        "captureScope": { "type": "string", "minLength": 1 },
+        "sourceRepo": { "const": "../doppler" },
+        "sourcePath": { "const": "../doppler/src/tooling/node-webgpu.js" },
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "architecture",
+            "manifestPath",
+            "manifestSha256",
+            "modelId"
+          ],
+          "properties": {
+            "modelId": { "const": "gemma-4-e2b-it-q4k-ehf16-af32" },
+            "manifestPath": { "type": "string", "minLength": 1 },
+            "manifestSha256": { "$ref": "#/$defs/Sha256" },
+            "architecture": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "globalHeadDim",
+                "headDim",
+                "hiddenSize",
+                "numAttentionHeads",
+                "numKeyValueHeads",
+                "numLayers"
+              ],
+              "properties": {
+                "globalHeadDim": { "const": 512 },
+                "headDim": { "const": 256 },
+                "hiddenSize": { "const": 1536 },
+                "numAttentionHeads": { "const": 8 },
+                "numKeyValueHeads": { "const": 1 },
+                "numLayers": { "const": 35 }
+              }
+            }
+          }
+        },
+        "shaderModules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label", "wgslSha256"],
+            "properties": {
+              "id": { "type": "integer", "minimum": 1 },
+              "label": { "type": ["string", "null"] },
+              "wgslSha256": { "$ref": "#/$defs/Sha256" }
+            }
+          }
+        }
+      }
+    },
+    "capturedHostPlanView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bindings",
+        "bufferRoles",
+        "dispatches",
+        "graphSha256",
+        "kind",
+        "readbackCheckpoints",
+        "workgroupDispatchCount",
+        "workgroupSize",
+        "workload"
+      ],
+      "properties": {
+        "kind": { "const": "webgpu_capture_host_plan_view" },
+        "graphSha256": { "$ref": "#/$defs/Sha256" },
+        "workload": {
+          "const": "gemma4_e2b_manifest_shape_grouped_kv_capture_smoke"
+        },
+        "dispatches": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["bindGroups", "pipeline", "workgroups"],
+            "properties": {
+              "pipeline": { "type": "integer", "minimum": 1 },
+              "workgroups": {
+                "type": "array",
+                "prefixItems": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "integer", "minimum": 1 }
+                ],
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "bindGroups": { "type": "array" }
+            }
+          }
+        },
+        "bindings": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "$ref": "#/$defs/Binding" }
+        },
+        "bufferRoles": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/Binding" },
+              {
+                "type": "object",
+                "required": ["role"],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "hidden_state_input",
+                      "grouped_kv_projection_input",
+                      "attention_core_output",
+                      "manifest_shape_params",
+                      "unclassified"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "workgroupSize": {
+          "type": "array",
+          "prefixItems": [{ "type": "integer", "const": 64 }],
+          "minItems": 1
+        },
+        "workgroupDispatchCount": { "type": "integer", "minimum": 1 },
+        "readbackCheckpoints": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "loweredArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attentionCoreReceipt",
+        "cslKernel",
+        "pythonSdkLayoutRunner",
+        "sdkVersionFloor",
+        "targetBackend",
+        "targetRuntime"
+      ],
+      "properties": {
+        "sdkVersionFloor": { "const": "2.10.0" },
+        "targetBackend": { "const": "csl" },
+        "targetRuntime": { "const": "sdk_layout_streaming" },
+        "pythonSdkLayoutRunner": { "$ref": "#/$defs/FileLink" },
+        "cslKernel": { "$ref": "#/$defs/FileLink" },
+        "attentionCoreReceipt": { "$ref": "#/$defs/FileLink" }
+      }
+    },
+    "simulatorEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attentionCoreReceiptStatus",
+        "hardwareExecuted",
+        "semanticParity",
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["succeeded", "blocked"]
+        },
+        "attentionCoreReceiptStatus": { "type": "string", "minLength": 1 },
+        "hardwareExecuted": { "const": false },
+        "semanticParity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "againstDopplerProductionInference",
+            "passed",
+            "scope",
+            "shapeRuns"
+          ],
+          "properties": {
+            "passed": { "type": "boolean" },
+            "scope": { "const": "attention_core_cpu_oracle_bit_exact" },
+            "againstDopplerProductionInference": { "const": false },
+            "shapeRuns": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": [
+                  "attentionKind",
+                  "headDim",
+                  "numericalParity",
+                  "runtimeStopReached",
+                  "status"
+                ],
+                "properties": {
+                  "attentionKind": {
+                    "type": "string",
+                    "enum": ["local", "global"]
+                  },
+                  "headDim": { "type": "integer", "enum": [256, 512] },
+                  "status": { "type": "string", "minLength": 1 },
+                  "runtimeStopReached": { "type": "boolean" },
+                  "numericalParity": {
+                    "type": "object",
+                    "required": ["passed", "maxAbsErr"],
+                    "properties": {
+                      "passed": { "type": "boolean" },
+                      "maxAbsErr": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable", "summary"],
+      "properties": {
+        "claimable": { "const": false },
+        "summary": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "maxItems": 0,
+      "items": { "type": "string" }
+    },
+    "remainingClaimBlockers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "contains": { "const": "full_captured_webgpu_graph_to_hostplan_lowering" }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "FileLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "exists", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "exists": { "const": true },
+        "sha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "Binding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "binding",
+        "bufferId",
+        "bufferLabel",
+        "bufferSize",
+        "bufferType",
+        "visibility"
+      ],
+      "properties": {
+        "binding": { "type": "integer", "minimum": 0 },
+        "bufferId": { "type": "integer", "minimum": 1 },
+        "bufferLabel": { "type": ["string", "null"] },
+        "bufferSize": { "type": "integer", "minimum": 0 },
+        "bufferType": { "type": "string", "minLength": 1 },
+        "visibility": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -99,6 +99,8 @@ cross-references inside the receipts resolve as written.
 | `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
 | `manifest-shape-probe` | Upstream E2B tensor-shape contract probe | Reviewers of the manifest-shape rewrite |
 | `manifest-shape-execution-oracle` | CPU/Numpy raw-BF16 E2B text-forward oracle at upstream tensor dimensions | Reviewers of the manifest-shape rewrite; not Doe/CSL runtime evidence |
+| `manifest-shape-attention-core` | SdkLayout diagnostic for E2B local/global headDim 256/512 plus grouped-KV stream reuse | Reviewers of the attention rewrite; not full attention/logits/model evidence |
+| `doppler-webgpu-capture-graph` | Doppler Node WebGPU bootstrap plus Gemma-4 E2B WGSL/command capture through `doe-gpu/capture` | Reviewers of the shared JS/WGSL input surface; not HostPlan/SdkLayout/CSL execution |
 | `real-weight-parity-verdict` | Real-weight smoke-contract parity, including bundled diagnostic smoke depths | Reviewers of the checkpoint-derived layer-block path |
 | `doppler-rdrr-probe` | Manifest/shard/tensor-span probe for the Doppler int4ple artifact | Reviewers of structural RDRR ingestion |
 | `doppler-rdrr-q4k-extraction` | Q4_K_M RDRR-to-smoke-slice materialization verdict | Reviewers of the RDRR dequant path |

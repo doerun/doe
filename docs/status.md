@@ -161,6 +161,10 @@ Read this file first. Use the shard files under
   inference parity, 31B manifest-shape and real-weight receipts, MoE, and
   hardware remain gated in the current April shard and in
   `docs/hardware-validation-appendix.md`.
+  The E2B receipt also now binds a Doppler WebGPU capture graph as the
+  shared JS/WGSL input surface for the future HostPlan/SdkLayout/CSL
+  lowering step; that capture is non-claimable until lowered and
+  parity-checked.
 
 ## Current follow-up highlights
 

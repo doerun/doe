@@ -26,7 +26,7 @@
   },
   "cslRun": {
     "tracePath": "bench/out/streaming-executor/e2b-layer-block-smoke-trace.json",
-    "traceSha256": "4a156daf3831e382cbb9b672c6e145c08d53e00c9dbb88e55d1821817c18478a",
+    "traceSha256": "c93c6590e18d081bf266337ac23ff3417b897233f445b6a4ba5178f2a553714d",
     "status": "succeeded",
     "kernelStage": "pre_attn_rmsnorm+mha_8head_hd8_kv4_multi_pair_rope_real_poly_c1_softmax+residual+post_attn_rmsnorm+gated_mlp_poly_c1_gelu+multi_layer_chain",
     "kernelIsStub": false,

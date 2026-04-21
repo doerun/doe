@@ -136,10 +136,10 @@ def main() -> int:
     send = RoutingPosition().set_input([Route.RAMP])
 
     region.set_param_all("size", args.size)
-    region.set_param_all("rx_ple_rows", rx_ple_rows)
-    region.set_param_all("rx_ple_projection", rx_ple_projection)
-    region.set_param_all("rx_layer_weights", rx_layer_weights)
-    region.set_param_all("tx_activation", tx_activation)
+    region.set_param_all(rx_ple_rows)
+    region.set_param_all(rx_ple_projection)
+    region.set_param_all(rx_layer_weights)
+    region.set_param_all(tx_activation)
 
     rows_port = region.create_input_port(rx_ple_rows, Edge.LEFT, [recv], args.size)
     proj_port = region.create_input_port(rx_ple_projection, Edge.TOP, [recv], args.size)
@@ -180,7 +180,7 @@ def main() -> int:
     # the region.
     import hashlib as _hashlib_cache  # local to avoid module-top noise
     compile_cache_key = _hashlib_cache.sha256(
-        ("023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4|7cbaeaebbf48a53a41f0667cec91bd4618faff9e6befca5a3294ca21aa04b86a|wse3|size=" + str(args.size)).encode("utf-8")
+        ("24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab|7cbaeaebbf48a53a41f0667cec91bd4618faff9e6befca5a3294ca21aa04b86a|wse3|size=" + str(args.size)).encode("utf-8")
     ).hexdigest()
 
     run_start = time.time()
@@ -193,6 +193,11 @@ def main() -> int:
     output_digest = None
     per_layer_output_records = []
     failure_context = None
+    runtime_stop = {
+        "reached": False,
+        "elapsedMs": None,
+        "error": None,
+    }
     current_stage = "runtime_constructed"
     current_dispatch_index = None
     current_stream_id = None
@@ -470,7 +475,9 @@ def main() -> int:
 
         # Device chain: same loop, threading received[L] -> rows for L+1.
         # Per-layer elapsed-ms is recorded so timing scales visibly when
-        # the chain depth grows (e.g. 35 layers for full E2B).
+        # the diagnostic chain depth grows (for example, the E2B manifest
+        # transformer-block count). Deeper synthetic chains are not a
+        # full-model parity claim.
         all_received = []
         rows_curr = initial_rows.copy()
         for l_idx in range(num_layers_smoke):
@@ -526,7 +533,14 @@ def main() -> int:
             if not args.reset_rows_each_layer:
                 rows_curr = received
 
+        current_stage = "runtime_stop"
+        stop_start = time.time()
         runtime.stop()
+        runtime_stop = {
+            "reached": True,
+            "elapsedMs": (time.time() - stop_start) * 1000.0,
+            "error": None,
+        }
 
         # Per-layer parity. Pass requires every layer to be bit-exact.
         layer_passed = []
@@ -629,7 +643,7 @@ def main() -> int:
             "status": "succeeded",
             "cacheKey": compile_cache_key,
             "cacheKeyComponents": {
-                "kernelSourceSha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4",
+                "kernelSourceSha256": "24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab",
                 "planSha256": "7cbaeaebbf48a53a41f0667cec91bd4618faff9e6befca5a3294ca21aa04b86a",
                 "target": "wse3",
                 "size": args.size,
@@ -661,6 +675,7 @@ def main() -> int:
                 "streamEventsTailCount": len(stream_events[-64:]),
             },
             "streamEventsTail": stream_events[-64:],
+            "runtimeStop": runtime_stop,
             "failure": failure_context,
             "dataSource": {
                 "kind": data_source_kind,
@@ -711,7 +726,7 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4",
+            "kernelSourceSha256": "24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "
@@ -862,10 +877,10 @@ def main() -> int:
                     "P": 2,
                     "Mt": 512,
                     "Kt": 2560,
-                    "Nt": 2560
+                    "Nt": 80
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:2560,Nt:2560",
-                "weightMatrixShape": "M=1024 K=5120 N=5120"
+                "cslcParamsString": "P:2,Mt:512,Kt:2560,Nt:80",
+                "weightMatrixShape": "M=1024 K=5120 N=160"
             },
             {
                 "stepName": "v_proj",
@@ -873,10 +888,10 @@ def main() -> int:
                     "P": 2,
                     "Mt": 512,
                     "Kt": 2560,
-                    "Nt": 2560
+                    "Nt": 80
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:2560,Nt:2560",
-                "weightMatrixShape": "M=1024 K=5120 N=5120"
+                "cslcParamsString": "P:2,Mt:512,Kt:2560,Nt:80",
+                "weightMatrixShape": "M=1024 K=5120 N=160"
             },
             {
                 "stepName": "o_proj",
@@ -923,7 +938,7 @@ def main() -> int:
                 "weightMatrixShape": "M=1024 K=20480 N=5120"
             }
         ],
-        "derivationSource": "P = 2 for smoke (even SUMMA partition; real deployment picks P from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight matrix M/K/N derived from manifest.modelConfig: M = num_tokens (--size), K/N chosen per step \u2014 hiddenDim for projection inputs and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor for FFN gate/up N-dim and down K-dim, qkv_out_dim = numHeads * headDim for QKV N-dim. This per-invocation shape emission is the pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/fused_ffn) will also use.",
+        "derivationSource": "P = 2 for smoke (even SUMMA partition; real deployment picks P from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight matrix M/K/N derived from manifest.modelConfig: M = num_tokens (--size), K/N chosen per step \u2014 hiddenDim for projection inputs and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor for FFN gate/up N-dim and down K-dim, q_out_dim = numHeads * headDim for q/o and kv_out_dim = numKeyValueHeads * headDim for k/v. globalHeadDim is recorded for the manifest-shape attention rewrite (current value absent). This per-invocation shape emission is the pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/fused_ffn) will also use.",
         "manifestSteps": [
             "q_proj",
             "k_proj",
@@ -1072,23 +1087,23 @@ def main() -> int:
                 "stepName": "k_proj",
                 "paramsShape": {
                     "width": 1024,
-                    "out_dim": 5120,
+                    "out_dim": 160,
                     "in_dim_per_pe": 5,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:5120,in_dim_per_pe:5,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=5120 N=5120 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:160,in_dim_per_pe:5,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=5120 N=160 (decode row-vector)"
             },
             {
                 "stepName": "v_proj",
                 "paramsShape": {
                     "width": 1024,
-                    "out_dim": 5120,
+                    "out_dim": 160,
                     "in_dim_per_pe": 5,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:5120,in_dim_per_pe:5,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=5120 N=5120 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:160,in_dim_per_pe:5,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=5120 N=160 (decode row-vector)"
             },
             {
                 "stepName": "o_proj",
@@ -1135,7 +1150,7 @@ def main() -> int:
                 "weightMatrixShape": "M=1 K=20480 N=5120 (decode row-vector)"
             }
         ],
-        "derivationSource": "width = --size smoke arg (deployment picks per-weight-matrix width from memory-plan budgets; the audit flags this pattern as needs2DFor31B=likely pending step-1 generator output). out_dim per step from manifest.modelConfig: hiddenDim, qkv_out_dim = numHeads*headDim, or intermediate = hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block).",
+        "derivationSource": "width = --size smoke arg (deployment picks per-weight-matrix width from memory-plan budgets; the audit flags this pattern as needs2DFor31B=likely pending step-1 generator output). out_dim per step from manifest.modelConfig: hiddenDim, q_out_dim = numHeads*headDim, kv_out_dim = numKeyValueHeads*headDim, or intermediate = hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block).",
         "manifestSteps": [
             "q_proj",
             "k_proj",

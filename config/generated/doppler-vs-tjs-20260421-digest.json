@@ -1,0 +1,217 @@
+{
+  "artifactKind": "doe_doppler_vendor_benchmark_digest",
+  "digestId": "doppler-vs-tjs-20260421",
+  "rollup": {
+    "claimableQwenComparisons": 2,
+    "gemmaE2bBlockerCode": "transformersjs_ort_webgpu_external_data_load_failed",
+    "gemmaE2bTransformersjsBlocked": 2,
+    "performanceClaimBoundary": "Qwen rows with exact-match correctness and comparable Doppler/TJS WebGPU metrics are claimable. Gemma 4 E2B rows are blocked because Transformers.js/ORT WebGPU did not load the ONNX external-data artifact on this host."
+  },
+  "rows": [
+    {
+      "artifact": {
+        "path": "../doppler/benchmarks/vendors/results/compare_20260421T132112.json",
+        "sha256": "28b5b7867860a509658b92f0f1cb178a462b78e2931f0abd4806e370f79f4d9a",
+        "timestamp": "2026-04-21T13:19:49.527Z"
+      },
+      "benchmarkLaneId": "compare_20260421T132112",
+      "claimStatus": "claimable_doppler_faster",
+      "compareLane": {
+        "allowNonComparableLane": false,
+        "declared": "performance_comparable",
+        "reason": null
+      },
+      "correctness": {
+        "exactMatch": true,
+        "normalizedMatch": true,
+        "status": "match"
+      },
+      "dopplerArtifactIdentity": {
+        "artifactCompleteness": "complete",
+        "manifestVariantId": "qwen-3-5-0-8b-q4k-ehaf16-mv-exec-v1",
+        "shardSetHash": null,
+        "sourceCheckpointId": "Qwen/Qwen3.5-0.8B",
+        "weightPackId": "qwen-3-5-0-8b-q4k-ehaf16-wp-catalog-v1"
+      },
+      "dopplerModelId": "qwen-3-5-0-8b-q4k-ehaf16",
+      "loadModeResolution": {
+        "cold": "http",
+        "sharedOverride": null,
+        "warm": "opfs"
+      },
+      "metrics": {
+        "decodeTokensPerSec": {
+          "doppler": 77.8,
+          "speedup": 1.8694105078893992,
+          "transformersjs": 41.61739739434636
+        },
+        "promptTokensPerSecToFirstToken": {
+          "doppler": 186.53,
+          "speedup": 19.77687239570163,
+          "transformersjs": 9.43172389788696
+        }
+      },
+      "sourceCheckpointId": "Qwen/Qwen3.5-0.8B",
+      "transformersjsBlocker": null,
+      "transformersjsModelId": "onnx-community/Qwen3.5-0.8B-ONNX"
+    },
+    {
+      "artifact": {
+        "path": "../doppler/benchmarks/vendors/results/compare_20260421T134458.json",
+        "sha256": "b82301ec6dee6c5d839b0dd0a2868aeeeb951c3a83ac96f71067d4f227b22774",
+        "timestamp": "2026-04-21T13:42:29.186Z"
+      },
+      "benchmarkLaneId": "compare_20260421T134458",
+      "claimStatus": "claimable_doppler_faster",
+      "compareLane": {
+        "allowNonComparableLane": false,
+        "declared": "performance_comparable",
+        "reason": null
+      },
+      "correctness": {
+        "exactMatch": true,
+        "normalizedMatch": true,
+        "status": "match"
+      },
+      "dopplerArtifactIdentity": {
+        "artifactCompleteness": "complete",
+        "manifestVariantId": "qwen-3-5-2b-q4k-ehaf16-mv-exec-v1",
+        "shardSetHash": null,
+        "sourceCheckpointId": "Qwen/Qwen3.5-2B",
+        "weightPackId": "qwen-3-5-2b-q4k-ehaf16-wp-catalog-v1"
+      },
+      "dopplerModelId": "qwen-3-5-2b-q4k-ehaf16",
+      "loadModeResolution": {
+        "cold": "http",
+        "profileDefault": "http",
+        "profileDefaultReason": "Transformers.js WebGPU q4f16 for Qwen 3.5 2B completes warmup under OPFS, then fails the timed run after the strict offline switch; HTTP load mode keeps the shared WebGPU compare lane runnable and records the load mode explicitly.",
+        "sharedOverride": "http",
+        "sharedOverrideSource": "compare-profile",
+        "warm": "http"
+      },
+      "metrics": {
+        "decodeTokensPerSec": {
+          "doppler": 54.37,
+          "speedup": 1.3399572801422694,
+          "transformersjs": 40.57592044593189
+        },
+        "promptTokensPerSecToFirstToken": {
+          "doppler": 165.2,
+          "speedup": 18.871983375172316,
+          "transformersjs": 8.753716910186267
+        }
+      },
+      "sourceCheckpointId": "Qwen/Qwen3.5-2B",
+      "transformersjsBlocker": null,
+      "transformersjsModelId": "onnx-community/Qwen3.5-2B-ONNX"
+    },
+    {
+      "artifact": {
+        "path": "../doppler/benchmarks/vendors/results/compare_20260421T132340.json",
+        "sha256": "6593ca52f39cc1edf13460e0db2ae298c89ddd149ca98ccf10e3291d342ffe69",
+        "timestamp": "2026-04-21T13:21:35.381Z"
+      },
+      "benchmarkLaneId": "compare_20260421T132340",
+      "claimStatus": "blocked_transformersjs_load",
+      "compareLane": {
+        "allowNonComparableLane": false,
+        "declared": "performance_comparable",
+        "reason": "Doppler uses INT4 per-row PLE quantization (closer to TFLite shape); TJS uses standard ONNX q4f16. Both produce coherent Gemma 4 output on matching prompts \u2014 lane remains performance_comparable as compute-throughput comparison is meaningful."
+      },
+      "correctness": {
+        "exactMatch": null,
+        "normalizedMatch": null,
+        "status": "unavailable"
+      },
+      "dopplerArtifactIdentity": {
+        "artifactCompleteness": "complete",
+        "manifestVariantId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-mv-exec-v1",
+        "shardSetHash": null,
+        "sourceCheckpointId": "google/gemma-4-E2B-it",
+        "weightPackId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1"
+      },
+      "dopplerModelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+      "loadModeResolution": {
+        "cold": "http",
+        "sharedOverride": null,
+        "warm": "opfs"
+      },
+      "metrics": {
+        "decodeTokensPerSec": {
+          "doppler": 14.43,
+          "speedup": null,
+          "transformersjs": null
+        },
+        "promptTokensPerSecToFirstToken": {
+          "doppler": 134.62,
+          "speedup": null,
+          "transformersjs": null
+        }
+      },
+      "sourceCheckpointId": "google/gemma-4-E2B-it",
+      "transformersjsBlocker": {
+        "code": "transformersjs_ort_webgpu_external_data_load_failed",
+        "summary": "Transformers.js/ONNX Runtime WebGPU failed while loading Gemma q4f16 external data for embed_tokens_q4f16.onnx_data."
+      },
+      "transformersjsModelId": "onnx-community/gemma-4-E2B-it-ONNX"
+    },
+    {
+      "artifact": {
+        "path": "../doppler/benchmarks/vendors/results/compare_20260421T135045.json",
+        "sha256": "6b76b33aa8a8d9bb8706d6dd8fbdc1df988da6123268330623781b4a0b09d500",
+        "timestamp": "2026-04-21T13:47:39.064Z"
+      },
+      "benchmarkLaneId": "compare_20260421T135045",
+      "claimStatus": "blocked_transformersjs_load",
+      "compareLane": {
+        "allowNonComparableLane": false,
+        "declared": "performance_comparable",
+        "reason": "Doppler and the paired Transformers.js ONNX q4f16 runner both produce coherent Gemma 4 output, but current greedy text is not exact-match; this lane is claimable for compute-throughput comparisons, not correctness-parity claims."
+      },
+      "correctness": {
+        "exactMatch": null,
+        "normalizedMatch": null,
+        "status": "unavailable"
+      },
+      "dopplerArtifactIdentity": {
+        "artifactCompleteness": "complete",
+        "manifestVariantId": "gemma-4-e2b-it-q4k-ehf16-af32-mv-exec-v1",
+        "shardSetHash": null,
+        "sourceCheckpointId": "google/gemma-4-E2B-it",
+        "weightPackId": "gemma-4-e2b-it-q4k-ehf16-af32-wp-catalog-v1"
+      },
+      "dopplerModelId": "gemma-4-e2b-it-q4k-ehf16-af32",
+      "loadModeResolution": {
+        "cold": "http",
+        "profileDefault": null,
+        "profileDefaultReason": null,
+        "sharedOverride": null,
+        "sharedOverrideSource": null,
+        "warm": "opfs"
+      },
+      "metrics": {
+        "decodeTokensPerSec": {
+          "doppler": 16.2,
+          "speedup": null,
+          "transformersjs": null
+        },
+        "promptTokensPerSecToFirstToken": {
+          "doppler": 132.63,
+          "speedup": null,
+          "transformersjs": null
+        }
+      },
+      "sourceCheckpointId": "google/gemma-4-E2B-it",
+      "transformersjsBlocker": {
+        "code": "transformersjs_ort_webgpu_external_data_load_failed",
+        "summary": "Transformers.js/ONNX Runtime WebGPU failed while loading Gemma q4f16 external data for embed_tokens_q4f16.onnx_data."
+      },
+      "transformersjsModelId": "onnx-community/gemma-4-E2B-it-ONNX"
+    }
+  ],
+  "schemaVersion": 1,
+  "source": {
+    "sourceKind": "doppler_vendor_compare_artifacts",
+    "sourceRepo": "../doppler"
+  }
+}

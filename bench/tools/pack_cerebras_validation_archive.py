@@ -85,6 +85,9 @@ INCLUDE_FILES: tuple = (
     # Manifest-shape blocker: upstream tensor metadata vs Doe manifest fields.
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json",
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-attention-core.json",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-runtime-path.json",
+    "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json",
     # Real-weight parity verdicts and depth diagnostics.
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
     *(
@@ -163,6 +166,9 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json": "emulator-speed-verdict",
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json": "manifest-shape-probe",
     "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json": "manifest-shape-execution-oracle",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-attention-core.json": "manifest-shape-attention-core",
+    "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-runtime-path.json": "manifest-shape-runtime-path",
+    "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json": "doppler-webgpu-capture-graph",
     "bench/out/gemma-4-e2b-real-weight-parity-L1.json": "real-weight-parity-verdict",
     **{
         (

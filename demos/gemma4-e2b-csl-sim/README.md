@@ -45,6 +45,14 @@ block is explicitly non-claimable: no manifest-shape Doe/CSL runtime
 execution, no full E2B runtime execution, and no Cerebras hardware
 receipt.
 
+The cockpit also reads
+`config/generated/doppler-vs-tjs-20260421-digest.json`.
+That digest hash-links sibling Doppler vendor benchmark artifacts: Qwen
+rows are claimable Doppler-vs-TJS WebGPU wins when exact-match correctness
+and comparable metrics are present; Gemma 4 E2B rows remain blocked because
+Transformers.js / ONNX Runtime WebGPU did not load the external-data ONNX
+artifact on this host.
+
 LAN note: browser WebGPU requires a secure context. Loading this page
 from `http://192.168.x.x:8001` may show the page but block the live
 browser WebGPU run. Use localhost, an SSH tunnel, or a browser trusted

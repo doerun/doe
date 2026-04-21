@@ -19,10 +19,14 @@ bundle" for the prose workflow; this file is the tool-reference.
 ## Underlying tools (called by the prep script, usable standalone)
 
 - **`run_cerebras_evidence_bundle.py`** — runs the local gate sequence
-  in order (truth-table test, self-check, manifest-shape probe,
-  manifest-shape CPU execution oracle, Doppler RDRR/int4ple
-  structural probe, Doppler RDRR Q4_K_M L1 smoke-contract parity,
+  in order (truth-table test, Doppler Gemma-4 WebGPU capture graph,
+  self-check, manifest-shape probe, manifest-shape CPU execution
+  oracle, Doppler RDRR/int4ple structural probe,
+  Doppler RDRR Q4_K_M L1 smoke-contract parity,
   declared-depth BF16/RDRR diagnostics,
+  E2B model receipt refresh after those diagnostics, manifest-shape
+  attention-core SdkLayout diagnostic, manifest-shape Doe/CSL
+  runtime-path contract after a second receipt refresh,
   claim-discipline, SdkLayout streaming hardening, receipt link
   integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
@@ -73,10 +77,15 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │           ├── bench/out/streaming-executor/*-cross-runtime-parity-check.json
   │           ├── bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
   │           ├── bench/out/gemma-4-*-real-weight-parity-L1.json
+  │           ├── bench/out/gemma-4-e2b-real-weight-parity-L{2,4,8,35}.json
   │           ├── bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json
   │           ├── bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json
+  │           ├── bench/out/manifest-shape/gemma-4-e2b-manifest-shape-attention-core.json
+  │           ├── bench/out/manifest-shape/gemma-4-e2b-manifest-shape-runtime-path.json
+  │           ├── bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json
   │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json
   │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-*.json
+  │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-l{1,2,4,8,35}-parity.json
   │           ├── bench/out/weights-audit/gemma-4-e2b-rdrr-int4ple-weights-audit.json
   │           ├── bench/out/26b-moe-lane/*.json                  (7 files)
   │           ├── bench/out/doe-run/all-lanes-summary-L1.json
@@ -118,6 +127,10 @@ locks most of this pipeline via numbered contracts:
 | C39 | manifest-shape probe records the upstream E2B tensor-shape contract and accepts Doe manifest fields only when they match the source metadata |
 | C40 | manifest-shape CPU oracle executes the raw BF16 E2B text stack through 35 layers and tied lm-head top-k while Doe/CSL runtime claims remain blocked |
 | C41 | CSL emitters target the SDK 2.10 parameter surface and use queue-bound fabric DSDs without `fabric_color` metadata |
+| C42 | model receipt promotes the generated E2B SdkLayout layer-block smoke with stream graph, telemetry, `rt.stop()`, non-stub kernel, and parity evidence |
+| C43 | model receipt binds BF16 + RDRR declared-depth smoke diagnostics as non-claimable evidence with manifest-shape/runtime/hardware blockers intact |
+| C44 | model receipt binds the partial manifest-shape attention-core SdkLayout slice with local/global heads, grouped KV, and CPU-oracle parity while full claims stay blocked |
+| C45 | model receipt binds the Doppler Gemma-4 WebGPU capture graph as shared JS/WGSL input while HostPlan/SdkLayout/CSL lowering claims remain blocked |
 
 ## What this pipeline does NOT do
 
@@ -127,6 +140,15 @@ locks most of this pipeline via numbered contracts:
 - Produce a Cerebras hardware receipt — that requires a reachable
   CS / WSC endpoint; see `docs/hardware-validation-appendix.md`.
 - Replace full real-weight parity — the bundle now includes E2B L1
-  BF16-derived and RDRR-derived smoke-contract parity. Optional
-  declared-depth diagnostics can exist locally, but they are not
+  BF16-derived and RDRR-derived smoke-contract parity plus bundled
+  declared-depth diagnostics, but those diagnostics are not
   Doe/CSL manifest-shape runtime, 31B, MoE, or hardware receipts.
+- Promote manifest-shape runtime — the runtime-path artifact is still a
+  blocked checklist for embed, decoder stack, unembed/logits, and parity
+  receipts. The attention-core receipt covers only the local/global
+  head-dim plus grouped-KV diagnostic rung, not full attention or model
+  execution.
+- Promote captured Doppler WebGPU graphs — the capture graph proves the
+  shared input surface can be recorded through Doppler's Node provider
+  bootstrap, but it is not yet lowered to HostPlan/SdkLayout/CSL or
+  compared against Doppler production inference.

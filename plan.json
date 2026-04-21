@@ -1,0 +1,505 @@
+{
+  "data": {
+    "arcs": {
+      "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_tx_out_port-/io_port_0_3:io_port_0_3_io_port_0_3_in_color_port": {
+        "details": {
+          "_original": null,
+          "from_port": "gemma4_e2b_manifest_attention_core_tx_out_port",
+          "prop": "",
+          "to_port": "io_port_0_3_io_port_0_3_in_color_port"
+        },
+        "from": "/gemma4_e2b_manifest_attention_core",
+        "id": "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_tx_out_port-/io_port_0_3:io_port_0_3_io_port_0_3_in_color_port",
+        "label": "",
+        "path": [
+          {
+            "kernel": "/gemma4_e2b_manifest_attention_core",
+            "port": "gemma4_e2b_manifest_attention_core_tx_out_port"
+          },
+          {
+            "kernel": "/io_port_0_3",
+            "port": "io_port_0_3_io_port_0_3_in_color_port"
+          }
+        ],
+        "to": "/io_port_0_3"
+      },
+      "/io_port_0_0:io_port_0_0_io_port_0_0_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_q_port": {
+        "details": {
+          "_original": null,
+          "from_port": "io_port_0_0_io_port_0_0_out_color_port",
+          "prop": "",
+          "to_port": "gemma4_e2b_manifest_attention_core_rx_q_port"
+        },
+        "from": "/io_port_0_0",
+        "id": "/io_port_0_0:io_port_0_0_io_port_0_0_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_q_port",
+        "label": "",
+        "path": [
+          {
+            "kernel": "/io_port_0_0",
+            "port": "io_port_0_0_io_port_0_0_out_color_port"
+          },
+          {
+            "kernel": "/gemma4_e2b_manifest_attention_core",
+            "port": "gemma4_e2b_manifest_attention_core_rx_q_port"
+          }
+        ],
+        "to": "/gemma4_e2b_manifest_attention_core"
+      },
+      "/io_port_0_1:io_port_0_1_io_port_0_1_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_k_port": {
+        "details": {
+          "_original": null,
+          "from_port": "io_port_0_1_io_port_0_1_out_color_port",
+          "prop": "",
+          "to_port": "gemma4_e2b_manifest_attention_core_rx_k_port"
+        },
+        "from": "/io_port_0_1",
+        "id": "/io_port_0_1:io_port_0_1_io_port_0_1_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_k_port",
+        "label": "",
+        "path": [
+          {
+            "kernel": "/io_port_0_1",
+            "port": "io_port_0_1_io_port_0_1_out_color_port"
+          },
+          {
+            "kernel": "/gemma4_e2b_manifest_attention_core",
+            "port": "gemma4_e2b_manifest_attention_core_rx_k_port"
+          }
+        ],
+        "to": "/gemma4_e2b_manifest_attention_core"
+      },
+      "/io_port_0_2:io_port_0_2_io_port_0_2_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_v_port": {
+        "details": {
+          "_original": null,
+          "from_port": "io_port_0_2_io_port_0_2_out_color_port",
+          "prop": "",
+          "to_port": "gemma4_e2b_manifest_attention_core_rx_v_port"
+        },
+        "from": "/io_port_0_2",
+        "id": "/io_port_0_2:io_port_0_2_io_port_0_2_out_color_port-/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_v_port",
+        "label": "",
+        "path": [
+          {
+            "kernel": "/io_port_0_2",
+            "port": "io_port_0_2_io_port_0_2_out_color_port"
+          },
+          {
+            "kernel": "/gemma4_e2b_manifest_attention_core",
+            "port": "gemma4_e2b_manifest_attention_core_rx_v_port"
+          }
+        ],
+        "to": "/gemma4_e2b_manifest_attention_core"
+      }
+    },
+    "buses": {
+      "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_tx_out_port": {
+        "router": "pathfinder",
+        "routes": {
+          "/io_port_0_3:io_port_0_3_io_port_0_3_in_color_port": {
+            "iport": {
+              "node": "/io_port_0_3",
+              "port": "io_port_0_3_io_port_0_3_in_color_port",
+              "type": "PT_INPUT"
+            },
+            "wires": [
+              {
+                "pts": [
+                  {
+                    "c": 20,
+                    "x": 4,
+                    "y": 2
+                  },
+                  {
+                    "c": 20,
+                    "x": 0,
+                    "y": 2
+                  },
+                  {
+                    "c": 20,
+                    "x": 0,
+                    "y": 3
+                  }
+                ],
+                "sink_net_id": 0,
+                "sink_pin_id": 0,
+                "src_net_id": 0,
+                "src_pin_id": 0
+              }
+            ]
+          }
+        }
+      },
+      "/io_port_0_0:io_port_0_0_io_port_0_0_out_color_port": {
+        "router": "pathfinder",
+        "routes": {
+          "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_q_port": {
+            "iport": {
+              "node": "/gemma4_e2b_manifest_attention_core",
+              "port": "gemma4_e2b_manifest_attention_core_rx_q_port",
+              "type": "PT_INPUT"
+            },
+            "wires": [
+              {
+                "pts": [
+                  {
+                    "c": 22,
+                    "x": 0,
+                    "y": 0
+                  },
+                  {
+                    "c": 22,
+                    "x": 4,
+                    "y": 0
+                  },
+                  {
+                    "c": 22,
+                    "x": 4,
+                    "y": 2
+                  }
+                ],
+                "sink_net_id": 0,
+                "sink_pin_id": 0,
+                "src_net_id": 0,
+                "src_pin_id": 0
+              }
+            ]
+          }
+        }
+      },
+      "/io_port_0_1:io_port_0_1_io_port_0_1_out_color_port": {
+        "router": "pathfinder",
+        "routes": {
+          "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_k_port": {
+            "iport": {
+              "node": "/gemma4_e2b_manifest_attention_core",
+              "port": "gemma4_e2b_manifest_attention_core_rx_k_port",
+              "type": "PT_INPUT"
+            },
+            "wires": [
+              {
+                "pts": [
+                  {
+                    "c": 21,
+                    "x": 0,
+                    "y": 1
+                  },
+                  {
+                    "c": 21,
+                    "x": 4,
+                    "y": 1
+                  },
+                  {
+                    "c": 21,
+                    "x": 4,
+                    "y": 2
+                  }
+                ],
+                "sink_net_id": 0,
+                "sink_pin_id": 0,
+                "src_net_id": 0,
+                "src_pin_id": 0
+              }
+            ]
+          }
+        }
+      },
+      "/io_port_0_2:io_port_0_2_io_port_0_2_out_color_port": {
+        "router": "pathfinder",
+        "routes": {
+          "/gemma4_e2b_manifest_attention_core:gemma4_e2b_manifest_attention_core_rx_v_port": {
+            "iport": {
+              "node": "/gemma4_e2b_manifest_attention_core",
+              "port": "gemma4_e2b_manifest_attention_core_rx_v_port",
+              "type": "PT_INPUT"
+            },
+            "wires": [
+              {
+                "pts": [
+                  {
+                    "c": 23,
+                    "x": 0,
+                    "y": 2
+                  },
+                  {
+                    "c": 23,
+                    "x": 4,
+                    "y": 2
+                  }
+                ],
+                "sink_net_id": 0,
+                "sink_pin_id": 0,
+                "src_net_id": 0,
+                "src_pin_id": 0
+              }
+            ]
+          }
+        }
+      }
+    },
+    "details": {
+      "attributes": {
+        "@type": "type.googleapis.com/cerebras.CigarAttributes",
+        "batch_in_graph": 0,
+        "direct_routes": false,
+        "disable_weight_update": false,
+        "fabric_height": 4,
+        "fabric_width": 5,
+        "target": "",
+        "tensor_data": []
+      }
+    },
+    "metrics": {
+      "data": {},
+      "defs": {},
+      "use_samples_per_sec": false
+    },
+    "nodes": {
+      "/": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": []
+        },
+        "id": "",
+        "label": "",
+        "location": {
+          "ht": 0,
+          "wd": 0,
+          "x": 0,
+          "y": 0
+        },
+        "type": ""
+      },
+      "/gemma4_e2b_manifest_attention_core": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": [
+            {
+              "hot_pes": [
+                {
+                  "x": 4,
+                  "y": 2
+                }
+              ],
+              "name": "gemma4_e2b_manifest_attention_core_rx_q_port"
+            },
+            {
+              "hot_pes": [
+                {
+                  "x": 4,
+                  "y": 2
+                }
+              ],
+              "name": "gemma4_e2b_manifest_attention_core_rx_k_port"
+            },
+            {
+              "hot_pes": [
+                {
+                  "x": 4,
+                  "y": 2
+                }
+              ],
+              "name": "gemma4_e2b_manifest_attention_core_rx_v_port"
+            },
+            {
+              "hot_pes": [
+                {
+                  "x": 4,
+                  "y": 2
+                }
+              ],
+              "name": "gemma4_e2b_manifest_attention_core_tx_out_port"
+            }
+          ]
+        },
+        "id": "/gemma4_e2b_manifest_attention_core",
+        "label": "/gemma4_e2b_manifest_attention_core",
+        "location": {
+          "ht": 1,
+          "wd": 1,
+          "x": 4,
+          "y": 2
+        },
+        "type": ""
+      },
+      "/io_port_0_0": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": [
+            {
+              "hot_pes": [
+                {
+                  "x": 0,
+                  "y": 0
+                }
+              ],
+              "name": "io_port_0_0_io_port_0_0_out_color_port"
+            }
+          ]
+        },
+        "id": "/io_port_0_0",
+        "label": "/io_port_0_0",
+        "location": {
+          "ht": 1,
+          "wd": 1,
+          "x": 0,
+          "y": 0
+        },
+        "type": ""
+      },
+      "/io_port_0_1": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": [
+            {
+              "hot_pes": [
+                {
+                  "x": 0,
+                  "y": 1
+                }
+              ],
+              "name": "io_port_0_1_io_port_0_1_out_color_port"
+            }
+          ]
+        },
+        "id": "/io_port_0_1",
+        "label": "/io_port_0_1",
+        "location": {
+          "ht": 1,
+          "wd": 1,
+          "x": 0,
+          "y": 1
+        },
+        "type": ""
+      },
+      "/io_port_0_2": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": [
+            {
+              "hot_pes": [
+                {
+                  "x": 0,
+                  "y": 2
+                }
+              ],
+              "name": "io_port_0_2_io_port_0_2_out_color_port"
+            }
+          ]
+        },
+        "id": "/io_port_0_2",
+        "label": "/io_port_0_2",
+        "location": {
+          "ht": 1,
+          "wd": 1,
+          "x": 0,
+          "y": 2
+        },
+        "type": ""
+      },
+      "/io_port_0_3": {
+        "details": {
+          "_original": {},
+          "annotate": null,
+          "location": {
+            "ht": 0,
+            "wd": 0,
+            "x": 0,
+            "y": 0
+          },
+          "ports": [
+            {
+              "hot_pes": [
+                {
+                  "x": 0,
+                  "y": 3
+                }
+              ],
+              "name": "io_port_0_3_io_port_0_3_in_color_port"
+            }
+          ]
+        },
+        "id": "/io_port_0_3",
+        "label": "/io_port_0_3",
+        "location": {
+          "ht": 1,
+          "wd": 1,
+          "x": 0,
+          "y": 3
+        },
+        "type": ""
+      }
+    },
+    "tree": {
+      "branch": [
+        {
+          "branch": [],
+          "name": "/gemma4_e2b_manifest_attention_core"
+        },
+        {
+          "branch": [],
+          "name": "/io_port_0_0"
+        },
+        {
+          "branch": [],
+          "name": "/io_port_0_1"
+        },
+        {
+          "branch": [],
+          "name": "/io_port_0_2"
+        },
+        {
+          "branch": [],
+          "name": "/io_port_0_3"
+        }
+      ],
+      "name": ""
+    }
+  },
+  "meta": {
+    "_original": null,
+    "date_created": "1970-01-01T00:00:00Z",
+    "hash": "",
+    "id": "",
+    "notes": "",
+    "source_file": "",
+    "source_type": "SRC_VIZ_NONE",
+    "source_version": 0,
+    "title": "",
+    "type": "ST_VIZ_GRAPH",
+    "username": ""
+  }
+}

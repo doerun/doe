@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -29,6 +30,24 @@ SOURCE_SKIP_FILES = {
 VERSION_SCAN_ROOTS = (
     REPO_ROOT / "examples",
     REPO_ROOT / "runtime" / "zig" / "examples",
+)
+
+LAYER_BLOCK_CSL_SOURCE = REPO_ROOT / (
+    "bench/out/streaming-executor/e2b-layer-block-source/"
+    "transformer_layer_shape.csl"
+)
+
+LAYER_BLOCK_RUNNER_SOURCES = (
+    REPO_ROOT / "bench/tools/generate_e2b_layer_block_runner.py",
+    REPO_ROOT / "bench/runners/csl-runners/e2b_layer_block_smoke.py",
+    REPO_ROOT / "bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py",
+)
+
+LAYER_BLOCK_COLOR_PARAMS = (
+    "rx_ple_rows",
+    "rx_ple_projection",
+    "rx_layer_weights",
+    "tx_activation",
 )
 
 
@@ -86,6 +105,30 @@ class CslSdk210MigrationTests(unittest.TestCase):
             if '"1.4.0"' in text:
                 offenders.append(str(path.relative_to(REPO_ROOT)))
         self.assertEqual([], offenders)
+
+    def test_e2b_layer_block_sdklayout_color_binding_is_sdk_210_clean(self) -> None:
+        csl_text = LAYER_BLOCK_CSL_SOURCE.read_text(encoding="utf-8")
+        self.assertNotIn(".fabric_color", csl_text)
+        for color_param in LAYER_BLOCK_COLOR_PARAMS:
+            with self.subTest(color_param=color_param):
+                self.assertRegex(
+                    csl_text,
+                    rf"param\s+{re.escape(color_param)}\s*:\s*u16;",
+                )
+                self.assertIn(f"@get_color({color_param})", csl_text)
+
+        for path in LAYER_BLOCK_RUNNER_SOURCES:
+            text = path.read_text(encoding="utf-8")
+            for color_param in LAYER_BLOCK_COLOR_PARAMS:
+                with self.subTest(path=path.name, color_param=color_param):
+                    self.assertNotIn(
+                        f'region.set_param_all("{color_param}"',
+                        text,
+                    )
+                    self.assertIn(
+                        f"region.set_param_all({color_param})",
+                        text,
+                    )
 
 
 if __name__ == "__main__":

@@ -64,9 +64,13 @@ const result = await device.compute({
 ## Subpaths
 
 - `doe-gpu`: default native-runtime surface
+- `doe-gpu/api`: provider-neutral JS API helpers and types
+- `doe-gpu/native`: explicit Zig-backed native WebGPU provider
+- `doe-gpu/plan`: JSON command-stream, capture-graph, and execution-plan contracts
+- `doe-gpu/capture`: alias for the record-only WebGPU capture provider
 - `doe-gpu/compute`: narrower compute-focused surface
 - `doe-gpu/browser`: browser wrapper over the browser's built-in WebGPU runtime
-- `doe-gpu/hybrid`: hybrid/local fallback surface
+- `doe-gpu/hybrid`: legacy integration helper for local/cloud fallback
 
 ## Runtime requirements
 
@@ -120,14 +124,42 @@ Release order matters:
 6. Publish `doe-gpu` only after every platform package version referenced in
    its `optionalDependencies` is already live on npm.
 
-## Important distinction
+## Important distinctions
 
-The default package, `/compute`, and `/hybrid` subpaths are Doe native-runtime
-surfaces.
+The default package and `/compute` remain batteries-included Doe native-runtime
+surfaces. `/native` is the explicit subpath for consumers that want to bind to
+the Zig-backed WebGPU provider directly.
 
 `doe-gpu/browser` is different. It wraps the browser's incumbent WebGPU
 implementation so code written against `doe-gpu` can run in a browser, but it
 does not mean Doe has replaced the browser runtime.
+
+`doe-gpu/api`, `doe-gpu/plan`, and `doe-gpu/capture` do not load native addons
+or platform packages. They expose provider-neutral helpers, JSON shape checks,
+WebGPU enum globals, and a record-only WebGPU provider that captures supported
+compute calls into a Doe execution graph.
+
+The portable capture boundary is WebGPU behavior, not arbitrary JavaScript
+source translation. Host code may use normal JavaScript, but the observable GPU
+work must flow through the supported provider subset:
+`requestAdapter`, `requestDevice`, buffer creation/writes, WGSL shader module
+creation, bind group and compute pipeline creation, command encoding,
+compute dispatch, buffer copies, queue submission, and selected readback
+checkpoints. Unsupported CSL features such as render passes, textures,
+samplers, atomics, and generic subgroup behavior fail explicitly in capture
+mode.
+
+`doe-gpu/hybrid` is kept for compatibility, but product model loading,
+tokenizers, generation, and local/cloud routing should live above Doe. New
+Doppler integrations should prefer an explicit Doppler provider over treating
+`/hybrid` as a core Doe runtime layer.
+
+There is intentionally no public `doe-gpu/csl` subpath yet. CSL and SdkLayout
+lowering stays private until the HostPlan and receipt boundary is stable enough
+to publish without overpromising. The public boundary today is the captured
+WebGPU graph plus plan/receipt contracts. Public demos should bind the Doppler
+runner, capture graph hash, WGSL hashes, lowering stage status, and parity
+verdict through `doe_webgpu_capture_evidence` receipts.
 
 ## Repo-adjacent surfaces
 

@@ -12,7 +12,8 @@ source of truth.
 The current public package contract is:
 
 - `doe-gpu`
-- its documented subpath exports
+- its documented subpath exports, including `api`, `native`, `plan`, `capture`,
+  `compute`, `browser`, and compatibility `hybrid`
 - the package docs in [`packages/doe-gpu/README.md`](../packages/doe-gpu/README.md)
 
 Advanced helper exports such as `createDoeRuntime()` and
@@ -21,6 +22,8 @@ repo-adjacent helpers, not the canonical operator front doors for benchmark or
 release work.
 
 The npm package does not ship compare, bench, or release pipeline CLIs.
+It also does not ship a public `doe-gpu/csl` subpath until the CSL HostPlan and
+receipt contracts are stable enough to treat as semver package surface.
 
 ## Internal operator tooling
 

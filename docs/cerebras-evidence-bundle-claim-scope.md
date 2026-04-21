@@ -61,22 +61,30 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    dimensions. It is not Doe/CSL runtime evidence, not hardware
    evidence, and not a performance claim.
 
-7. **Doe carries E2B and 31B through governed compiler/runtime
+7. **Doe/CSL executes the E2B manifest-shape attention-core diagnostic
+   for local/global head dimensions.** Backed by the
+   `manifest-shape-attention-core` artifact. This covers SdkLayout
+   simfabric execution for `headDim=256`, `globalHeadDim=512`, and
+   grouped-KV stream reuse across eight query heads. It is not full
+   attention, not decoder-stack execution, not logits parity, not
+   hardware, and not a performance claim.
+
+8. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
    contracts. This is a lowering/artifact-chain claim, not a
    Doe/CSL full-model execution claim.
 
-8. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+9. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent* — a separate WGSL harness matching
    the semantic contract, not Doppler's production inference path.
 
-9. **CSL WebGPU emulator is faster than local CSL simfabric on the
+10. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-10. **Unified Doe entrypoint routes to 5 real backend targets.**
+11. **Unified Doe entrypoint routes to 5 real backend targets.**
    Backed by `rollup/all-lanes-summary-L1.json`: webgpu-wgsl,
    doe-metal (backendId=doe_direct_plan), doe-vulkan, csl-sdklayout,
    csl-webgpu-emulator. `doe-metal`/`doe-vulkan` are backend-identity
@@ -135,7 +143,7 @@ a bundle integrity failure.
 | --- | --- |
 | Doppler production RDRR output parity | Doppler-owned production export or committed inference path that emits comparable activations from the same prompt/input contract |
 | 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
-| Manifest-shape execution | Kernel rewrite for E2B local `headDim=256`, `globalHeadDim=512`, `numKeyValueHeads=1`, or 31B `headDim=160`; in-repo structural work |
+| Manifest-shape execution | Embed/unembed, decoder-stack stream binding, full attention semantics, and logits parity for E2B local `headDim=256`, `globalHeadDim=512`, `numKeyValueHeads=1`, or 31B `headDim=160`; in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
 | Gemma-4 runs on Cerebras hardware | Hardware receipt via either (a) endpoint access for us to run the runner with `--cmaddr` / `csl_appliance_driver.py`, or (b) Cerebras-assisted bundle run that returns the receipt |
 | Any MoE claim | 6 MoE component receipts (router, top-k, dispatch, shared-expert, combine, per-expert-batching) replacing the current TODO files |

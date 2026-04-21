@@ -60,6 +60,17 @@ function decodeSampledCommandsPath() {
   return existsSync(path) ? path : null;
 }
 
+function shouldSkipOptionalRuntimeExercise(err) {
+  const message = String(err?.message ?? err ?? '');
+  return (
+    message.includes('FileNotFound') ||
+    message.includes('ENOENT') ||
+    message.includes('EPERM') ||
+    message.includes('module-core-runner') ||
+    message.includes('doe-zig-runtime binary not found')
+  );
+}
+
 console.log('=== doe-gpu smoke test ===\n');
 
 // ── 1. Import the main package surface ──────────────────────────────────
@@ -224,7 +235,112 @@ if (compute) {
   check('compute.gpu.bind', typeof compute.gpu?.bind === 'function');
 }
 
-// ── 7. Doe runtime tooling surface ──────────────────────────────────────
+// ── 7. Split package surfaces ───────────────────────────────────────────
+
+console.log('\nsplit package surfaces:');
+let api;
+try {
+  api = await import('doe-gpu/api');
+  check('api import succeeds', true);
+} catch (err) {
+  check('api import succeeds', false, err.message);
+}
+if (api) {
+  check('api.createDoeNamespace', typeof api.createDoeNamespace === 'function');
+  check('api.createGpuNamespace', typeof api.createGpuNamespace === 'function');
+  check('api.gpu.bind', typeof api.gpu?.bind === 'function');
+}
+
+let native;
+try {
+  native = await import('doe-gpu/native');
+  check('native import succeeds', true);
+} catch (err) {
+  check('native import succeeds', false, err.message);
+}
+if (native) {
+  check('native.requestDevice', typeof native.requestDevice === 'function');
+  check('native.providerInfo', typeof native.providerInfo === 'function');
+  check('native.gpu.requestDevice', typeof native.gpu?.requestDevice === 'function');
+}
+
+let plan;
+try {
+  plan = await import('doe-gpu/plan');
+  check('plan import succeeds', true);
+} catch (err) {
+  check('plan import succeeds', false, err.message);
+}
+if (plan) {
+  const commandValidation = plan.validateCommandStream([
+    { kind: 'buffer_write', handle: 1, bufferSize: 4, data: [1] },
+    { kind: 'kernel_dispatch', kernel: 'demo.wgsl', x: 1, y: 1, z: 1 },
+  ]);
+  check('plan validates command streams', commandValidation.ok === true);
+  const evidenceArtifactValidation = plan.validatePlanArtifact({
+    schemaVersion: 1,
+    artifactKind: plan.DOE_WEBGPU_CAPTURE_EVIDENCE_ARTIFACT_KIND,
+  });
+  check('plan recognizes capture evidence artifact kind', evidenceArtifactValidation.ok === true);
+  check('plan exposes lowering stages', plan.DOE_CAPTURE_LOWERING_STAGES.includes('parity'));
+  check('plan exposes WebGPU globals', typeof plan.globals?.GPUBufferUsage?.STORAGE === 'number');
+  check('plan exposes capture gpu provider', typeof plan.gpu?.requestAdapter === 'function');
+  check('plan exposes capture provider', typeof plan.createCaptureProvider === 'function');
+}
+
+let capture;
+try {
+  capture = await import('doe-gpu/capture');
+  check('capture import succeeds', true);
+} catch (err) {
+  check('capture import succeeds', false, err.message);
+}
+if (capture) {
+  check('capture.requestDevice', typeof capture.requestDevice === 'function');
+  const provider = capture.createCaptureProvider({
+    metadata: { smoke: true },
+  });
+  const device = await provider.requestDevice();
+  const buffer = device.createBuffer({ label: 'data', size: 16, usage: 0x88 });
+  device.queue.writeBuffer(buffer, 0, new Uint32Array([1, 2, 3, 4]));
+  const shader = device.createShaderModule({
+    label: 'double',
+    code: '@group(0) @binding(0) var<storage, read_write> data: array<u32>; @compute @workgroup_size(1) fn main() { data[0] = data[0] + 1u; }',
+  });
+  const bindGroupLayout = device.createBindGroupLayout({
+    entries: [{ binding: 0, visibility: 4, buffer: { type: 'storage' } }],
+  });
+  const pipelineLayout = device.createPipelineLayout({
+    bindGroupLayouts: [bindGroupLayout],
+  });
+  const pipeline = device.createComputePipeline({
+    layout: pipelineLayout,
+    compute: { module: shader, entryPoint: 'main' },
+  });
+  const bindGroup = device.createBindGroup({
+    layout: bindGroupLayout,
+    entries: [{ binding: 0, resource: { buffer } }],
+  });
+  const encoder = device.createCommandEncoder();
+  const pass = encoder.beginComputePass();
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.dispatchWorkgroups(1);
+  pass.end();
+  const commandBuffer = encoder.finish();
+  device.queue.submit([commandBuffer]);
+  const graph = await provider.snapshot();
+  check('capture snapshot is capture graph', graph.artifactKind === capture.DOE_WEBGPU_CAPTURE_GRAPH_ARTIFACT_KIND);
+  check('capture snapshot validates as artifact', capture.validatePlanArtifact(graph).ok === true);
+  check('capture snapshot validates as capture graph', capture.validateCaptureGraph(graph).ok === true);
+  check('capture snapshot hashes WGSL', typeof graph.shaderModules?.[0]?.wgslSha256 === 'string' && graph.shaderModules[0].wgslSha256.length === 64);
+  check('capture snapshot hashes buffer writes', typeof graph.bufferWrites?.[0]?.dataSha256 === 'string' && graph.bufferWrites[0].dataSha256.length === 64);
+  check('capture snapshot records submit', graph.submissions?.length === 1);
+  check('capture exports WebGPU enum globals', typeof capture.GPUShaderStage?.COMPUTE === 'number');
+  check('capture exports gpu provider', typeof capture.gpu?.requestAdapter === 'function');
+}
+
+// ── 8. Doe runtime tooling surface ──────────────────────────────────────
 
 console.log('\ndoe runtime tooling surface:');
 try {
@@ -274,7 +390,11 @@ try {
       check('numericStability host helper returns abstain route', abstain.routeDecision === 'abstain', JSON.stringify(abstain));
       check('numericStability host helper returns null token for abstain', abstain.token == null, JSON.stringify(abstain));
     } catch (err) {
-      check('numericStability host helper succeeds', false, err.message);
+      if (shouldSkipOptionalRuntimeExercise(err)) {
+        console.log(`  skip: numericStability host helper (${err.message})`);
+      } else {
+        check('numericStability host helper succeeds', false, err.message);
+      }
     }
   }
   if (typeof runtime.runOrdinaryExecution === 'function') {

@@ -16,6 +16,7 @@ const paths = {
   modelRuntimeReceipt: "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
   realWeightParity: "bench/out/gemma-4-e2b-real-weight-parity-L1.json",
   manifestShapeExecution: "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
+  vendorBenchmarkDigest: "config/generated/doppler-vs-tjs-20260421-digest.json",
   hostPlan: "runtime/zig/examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json",
   thirtyOneBReceipt: "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
 };
@@ -996,6 +997,23 @@ function blockerText(blockers) {
   return list.length ? list.map(escapeHtml).join("<br>") : "none";
 }
 
+function formatRate(value) {
+  return Number.isFinite(value) ? `${value.toFixed(2)} tok/s` : "-";
+}
+
+function formatSpeedup(value) {
+  return Number.isFinite(value) ? `${value.toFixed(2)}x` : "-";
+}
+
+function vendorDigestSummary(digest) {
+  const rows = Array.isArray(digest.rows) ? digest.rows : [];
+  const qwen = rows.filter((row) => row.claimStatus === "claimable_doppler_faster");
+  const gemma = rows.filter((row) => (
+    String(row.sourceCheckpointId) === "google/gemma-4-E2B-it"
+  ));
+  return { qwen, gemma };
+}
+
 function renderEvidenceReceiptRows(rows) {
   const body = el("evidence-receipts-body");
   if (!body) return;
@@ -1116,6 +1134,60 @@ async function refreshEvidenceReceiptMatrix() {
       path: paths.manifestShapeExecution,
       linkLabel: "manifest-shape oracle",
       blockers: [err.message || "unreadable receipt"],
+    });
+  }
+
+  try {
+    const digest = await fetchJson(paths.vendorBenchmarkDigest);
+    const { qwen, gemma } = vendorDigestSummary(digest);
+    const qwenDetails = qwen.map((row) => {
+      const decode = row.metrics?.decodeTokensPerSec || {};
+      const prompt = row.metrics?.promptTokensPerSecToFirstToken || {};
+      return `${row.dopplerModelId}: decode ${formatRate(decode.doppler)} vs ` +
+        `${formatRate(decode.transformersjs)} (${formatSpeedup(decode.speedup)}), ` +
+        `TTFT prompt ${formatSpeedup(prompt.speedup)}`;
+    });
+    const gemmaBlockers = gemma.map((row) => {
+      const decode = row.metrics?.decodeTokensPerSec || {};
+      const code = row.transformersjsBlocker?.code || "tjs_not_run";
+      return `${row.dopplerModelId}: ${code}; Doppler decode ` +
+        `${formatRate(decode.doppler)}`;
+    });
+    rows.push({
+      label: "Qwen Doppler vs TJS WebGPU",
+      status: qwen.length ? `${qwen.length} claimable wins` : "not claimable",
+      cls: qwen.length ? "pass" : "warn",
+      path: paths.vendorBenchmarkDigest,
+      linkLabel: "vendor digest",
+      blockers: qwenDetails,
+    });
+    rows.push({
+      label: "Gemma 4 E2B vs TJS WebGPU",
+      status: gemma.length ? "TJS loader blocked" : "missing",
+      cls: "warn",
+      path: paths.vendorBenchmarkDigest,
+      linkLabel: "vendor digest",
+      blockers: [
+        ...gemmaBlockers,
+        "no Gemma/TJS speedup claim until TJS WebGPU loads and compares",
+      ],
+    });
+    badgeSet("badge-vendor-bench", "vendor bench", {
+      label: `${qwen.length} Qwen wins · Gemma TJS blocked`,
+      cls: qwen.length && gemma.length ? "warn" : "warn",
+    });
+  } catch (err) {
+    rows.push({
+      label: "Doppler vs TJS benchmark digest",
+      status: "missing",
+      cls: "warn",
+      path: paths.vendorBenchmarkDigest,
+      linkLabel: "vendor digest",
+      blockers: [err.message || "digest not generated"],
+    });
+    badgeSet("badge-vendor-bench", "vendor bench", {
+      label: "missing",
+      cls: "warn",
     });
   }
 

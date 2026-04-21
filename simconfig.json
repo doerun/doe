@@ -37,6 +37,10 @@
   "orderTraces": false,
   "outdir": ".",
   "planmeta": "",
+  "power": {
+    "name": "",
+    "params": null
+  },
   "randSeed": 1,
   "savepointInterval": 0,
   "simtile": "hwtile",

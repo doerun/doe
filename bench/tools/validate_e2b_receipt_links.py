@@ -33,6 +33,13 @@ Link locations walked:
       parity.weightsAudit.path  + parity.weightsAudit.sha256
       trace.path                + trace.sha256
       trace.output.path         + trace.output.sha256
+  manifestShapePartialExecutionEvidence:
+      attentionCoreReceipt.path + attentionCoreReceipt.sha256
+      inputs.executionManifest.path + inputs.executionManifest.sha256
+      inputs.kernelSource.path  + inputs.kernelSource.sha256
+  dopplerWebgpuCaptureEvidence:
+      captureGraph.path         + captureGraph.sha256
+      model.manifestPath        + model.manifestSha256
 """
 
 from __future__ import annotations
@@ -152,6 +159,42 @@ def collect_links(receipt: dict[str, Any]) -> list[tuple[str, str, str]]:
             "sdkLayoutModelExecutionEvidence.parity",
             parity["verdictPath"],
             parity["verdictSha256"],
+        ))
+
+    manifest_partial = (
+        receipt.get("manifestShapePartialExecutionEvidence") or {}
+    )
+    attention_core = manifest_partial.get("attentionCoreReceipt") or {}
+    if attention_core.get("path") and attention_core.get("sha256"):
+        links.append((
+            "manifestShapePartialExecutionEvidence.attentionCoreReceipt",
+            attention_core["path"],
+            attention_core["sha256"],
+        ))
+    partial_inputs = manifest_partial.get("inputs") or {}
+    for sub_key in ("executionManifest", "kernelSource"):
+        sub = partial_inputs.get(sub_key) or {}
+        if sub.get("path") and sub.get("sha256"):
+            links.append((
+                f"manifestShapePartialExecutionEvidence.inputs.{sub_key}",
+                sub["path"],
+                sub["sha256"],
+            ))
+
+    capture = receipt.get("dopplerWebgpuCaptureEvidence") or {}
+    capture_graph = capture.get("captureGraph") or {}
+    if capture_graph.get("path") and capture_graph.get("sha256"):
+        links.append((
+            "dopplerWebgpuCaptureEvidence.captureGraph",
+            capture_graph["path"],
+            capture_graph["sha256"],
+        ))
+    capture_model = capture.get("model") or {}
+    if capture_model.get("manifestPath") and capture_model.get("manifestSha256"):
+        links.append((
+            "dopplerWebgpuCaptureEvidence.model.manifest",
+            capture_model["manifestPath"],
+            capture_model["manifestSha256"],
         ))
 
     depth = receipt.get("sdkLayoutDepthDiagnosticEvidence") or {}

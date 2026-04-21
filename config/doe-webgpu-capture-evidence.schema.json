@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-webgpu-capture-evidence.schema.json",
+  "title": "Doe WebGPU capture evidence receipt",
+  "description": "Dashboard-facing receipt for the one-model-graph/two-destination story. It binds Doppler's ordinary WebGPU-visible graph to GPU execution evidence and Doe capture/lowering/parity evidence, including named blockers when a stage is not complete.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "sourceProgram",
+    "destinations",
+    "loweringStages",
+    "verdict"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "doe_webgpu_capture_evidence" },
+    "generatedAt": { "type": "string" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "runner",
+        "captureGraphPath",
+        "captureGraphSha256",
+        "wgslModuleHashes"
+      ],
+      "properties": {
+        "owner": { "type": "string", "enum": ["doppler-gpu"] },
+        "runner": { "type": "string", "minLength": 1 },
+        "providerContract": { "type": "string", "const": "webgpu-capture-provider" },
+        "captureGraphPath": { "type": "string", "minLength": 1 },
+        "captureGraphSha256": { "$ref": "#/$defs/Sha256" },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "$ref": "#/$defs/Sha256" },
+        "weightsPath": { "type": "string" },
+        "weightsSha256": { "$ref": "#/$defs/Sha256" },
+        "tokenizerPath": { "type": "string" },
+        "tokenizerSha256": { "$ref": "#/$defs/Sha256" },
+        "wgslModuleHashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "sha256"],
+            "properties": {
+              "label": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/Sha256" }
+            }
+          }
+        }
+      }
+    },
+    "destinations": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/Destination" }
+    },
+    "loweringStages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/LoweringStage" }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "summary"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["matched", "blocked", "pending", "failed"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "blocker": { "type": "string" },
+        "maxAbsErr": { "type": "number" },
+        "parityPassed": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "StageStatus": {
+      "type": "string",
+      "enum": ["pass", "blocked", "pending", "not_attempted", "metadata_bound"]
+    },
+    "Destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "kind", "status", "summary", "evidencePath"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "browser_webgpu",
+            "node_webgpu",
+            "bun_webgpu",
+            "doe_native_webgpu",
+            "doe_capture",
+            "doe_csl_simulator",
+            "doe_csl_hardware"
+          ]
+        },
+        "status": { "$ref": "#/$defs/StageStatus" },
+        "summary": { "type": "string", "minLength": 1 },
+        "evidencePath": { "type": "string" },
+        "evidenceSha256": { "$ref": "#/$defs/Sha256" },
+        "blocker": { "type": "string" },
+        "maxAbsErr": { "type": "number" },
+        "parityPassed": { "type": "boolean" }
+      }
+    },
+    "LoweringStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "status",
+        "consumedCaptureGraphSha256",
+        "summary"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "enum": [
+            "capture",
+            "wgsl_classification",
+            "host_plan",
+            "stream_plan",
+            "sdk_layout_python",
+            "csl_emit",
+            "compile",
+            "simulate",
+            "hardware",
+            "parity"
+          ]
+        },
+        "status": { "$ref": "#/$defs/StageStatus" },
+        "consumedCaptureGraphSha256": { "$ref": "#/$defs/Sha256" },
+        "summary": { "type": "string", "minLength": 1 },
+        "evidencePath": { "type": "string" },
+        "evidenceSha256": { "$ref": "#/$defs/Sha256" },
+        "emittedArtifactPath": { "type": "string" },
+        "emittedArtifactSha256": { "$ref": "#/$defs/Sha256" },
+        "blocker": { "type": "string" },
+        "loweredWgslHashes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Sha256" }
+        },
+        "unsupportedFeatures": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "maxAbsErr": { "type": "number" },
+        "parityPassed": { "type": "boolean" }
+      }
+    }
+  }
+}

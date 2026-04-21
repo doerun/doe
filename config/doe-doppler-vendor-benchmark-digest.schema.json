@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Doppler vendor benchmark digest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactKind",
+    "digestId",
+    "rollup",
+    "rows",
+    "schemaVersion",
+    "source"
+  ],
+  "properties": {
+    "artifactKind": {
+      "const": "doe_doppler_vendor_benchmark_digest"
+    },
+    "digestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rollup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claimableQwenComparisons",
+        "gemmaE2bBlockerCode",
+        "gemmaE2bTransformersjsBlocked",
+        "performanceClaimBoundary"
+      ],
+      "properties": {
+        "claimableQwenComparisons": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gemmaE2bBlockerCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gemmaE2bTransformersjsBlocked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "performanceClaimBoundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/BenchmarkRow"
+      }
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceKind",
+        "sourceRepo"
+      ],
+      "properties": {
+        "sourceKind": {
+          "const": "doppler_vendor_compare_artifacts"
+        },
+        "sourceRepo": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ArtifactLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "timestamp"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "BenchmarkRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "benchmarkLaneId",
+        "claimStatus",
+        "compareLane",
+        "correctness",
+        "dopplerArtifactIdentity",
+        "dopplerModelId",
+        "loadModeResolution",
+        "metrics",
+        "sourceCheckpointId",
+        "transformersjsBlocker",
+        "transformersjsModelId"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/ArtifactLink"
+        },
+        "benchmarkLaneId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimStatus": {
+          "type": "string",
+          "enum": [
+            "blocked_transformersjs_load",
+            "claimable_doppler_faster",
+            "diagnostic_only"
+          ]
+        },
+        "compareLane": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "allowNonComparableLane",
+            "declared"
+          ],
+          "properties": {
+            "allowNonComparableLane": {
+              "type": "boolean"
+            },
+            "declared": {
+              "type": "string"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "correctness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exactMatch",
+            "normalizedMatch",
+            "status"
+          ],
+          "properties": {
+            "exactMatch": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "normalizedMatch": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "status": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "dopplerArtifactIdentity": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "dopplerModelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "loadModeResolution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cold": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "profileDefault": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "profileDefaultReason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sharedOverride": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sharedOverrideSource": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "warm": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decodeTokensPerSec",
+            "promptTokensPerSecToFirstToken"
+          ],
+          "properties": {
+            "decodeTokensPerSec": {
+              "$ref": "#/$defs/MetricPair"
+            },
+            "promptTokensPerSecToFirstToken": {
+              "$ref": "#/$defs/MetricPair"
+            }
+          }
+        },
+        "sourceCheckpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transformersjsBlocker": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TransformersjsBlocker"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transformersjsModelId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "MetricPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "doppler",
+        "speedup",
+        "transformersjs"
+      ],
+      "properties": {
+        "doppler": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "speedup": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "transformersjs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "TransformersjsBlocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "summary"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

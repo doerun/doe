@@ -1,0 +1,92 @@
+// Gemma 4 E2B manifest-shape attention-core diagnostic.
+//
+// This is not the full attention operator. It is the first SdkLayout
+// runtime rung for the real E2B attention dimensions: the host streams
+// one Q head plus the single grouped-KV K/V head into the PE, the PE
+// computes a scalar Q.K diagnostic over the full head_dim, and returns
+// that scalar in output[0] with V copied through output[1..]. The wrapper
+// runs the same K/V payload for all 8 query heads so the receipt proves
+// the grouped-KV source contract without claiming logits or model output.
+
+param head_dim: u16;
+param rx_q: u16;
+param rx_k: u16;
+param rx_v: u16;
+param tx_out: u16;
+
+const q_queue = @get_input_queue(0);
+const k_queue = @get_input_queue(1);
+const v_queue = @get_input_queue(2);
+const out_queue = @get_output_queue(0);
+
+const q_input = @get_dsd(fabin_dsd, .{
+    .extent = head_dim,
+    .input_queue = q_queue,
+});
+const k_input = @get_dsd(fabin_dsd, .{
+    .extent = head_dim,
+    .input_queue = k_queue,
+});
+const v_input = @get_dsd(fabin_dsd, .{
+    .extent = head_dim,
+    .input_queue = v_queue,
+});
+const out_dsd = @get_dsd(fabout_dsd, .{
+    .extent = head_dim,
+    .output_queue = out_queue,
+});
+
+var q_buf: [head_dim]f32;
+var k_buf: [head_dim]f32;
+var v_buf: [head_dim]f32;
+var out_buf: [head_dim]f32;
+
+const q_mem = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{head_dim} -> q_buf[i] });
+const k_mem = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{head_dim} -> k_buf[i] });
+const v_mem = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{head_dim} -> v_buf[i] });
+const out_mem = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{head_dim} -> out_buf[i] });
+
+const main_id = @get_local_task_id(8);
+const got_k_id = @get_local_task_id(9);
+const got_v_id = @get_local_task_id(10);
+const done_id = @get_local_task_id(11);
+
+task main() void {
+    @mov32(q_mem, q_input, .{ .async = true, .activate = got_k_id });
+}
+
+task got_k() void {
+    @mov32(k_mem, k_input, .{ .async = true, .activate = got_v_id });
+}
+
+task got_v() void {
+    @mov32(v_mem, v_input, .{ .async = true, .activate = done_id });
+}
+
+task done() void {
+    var dot: f32 = 0.0;
+    for (@range(u16, head_dim)) |i| {
+        dot = dot + (q_buf[i] * k_buf[i]);
+    }
+    for (@range(u16, head_dim)) |i| {
+        out_buf[i] = v_buf[i];
+    }
+    out_buf[0] = dot;
+    @mov32(out_dsd, out_mem);
+    @activate(main_id);
+}
+
+comptime {
+    @bind_local_task(main, main_id);
+    @bind_local_task(got_k, got_k_id);
+    @bind_local_task(got_v, got_v_id);
+    @bind_local_task(done, done_id);
+    @activate(main_id);
+
+    @initialize_queue(q_queue, .{ .color = @get_color(rx_q) });
+    @initialize_queue(k_queue, .{ .color = @get_color(rx_k) });
+    @initialize_queue(v_queue, .{ .color = @get_color(rx_v) });
+    if (@is_arch("wse3")) {
+        @initialize_queue(out_queue, .{ .color = @get_color(tx_out) });
+    }
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_webgpu_capture_evidence",
+  "generatedAt": "2026-04-21T00:00:00Z",
+  "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
+  "sourceProgram": {
+    "owner": "doppler-gpu",
+    "runner": "runGemma4E2B",
+    "providerContract": "webgpu-capture-provider",
+    "captureGraphPath": "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json",
+    "captureGraphSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "manifestPath": "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+    "manifestSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "wgslModuleHashes": [
+      {
+        "label": "gemma4-e2b-capture-kernel",
+        "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+      }
+    ]
+  },
+  "destinations": [
+    {
+      "id": "doppler-browser-webgpu",
+      "label": "Doppler browser/WebGPU execution",
+      "kind": "browser_webgpu",
+      "status": "metadata_bound",
+      "summary": "Doppler owns the live model path; this row binds the same runner and WGSL hashes while browser output capture is still pending.",
+      "evidencePath": "bench/out/doppler-capture/browser-reference.pending.json",
+      "blocker": "browser_reference_output_not_bound"
+    },
+    {
+      "id": "doe-webgpu-capture",
+      "label": "Doe WebGPU capture graph",
+      "kind": "doe_capture",
+      "status": "pass",
+      "summary": "The Doppler-visible WebGPU subset was recorded into a Doe capture graph.",
+      "evidencePath": "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json",
+      "evidenceSha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "doe-csl-simulator",
+      "label": "Doe CSL simulator execution",
+      "kind": "doe_csl_simulator",
+      "status": "blocked",
+      "summary": "The capture graph has not yet been fed through the public HostPlan/SdkLayout/CSL lowering lane.",
+      "evidencePath": "bench/out/doppler-capture/csl-simulator.pending.json",
+      "blocker": "capture_to_csl_lowering_not_wired"
+    }
+  ],
+  "loweringStages": [
+    {
+      "stage": "capture",
+      "status": "pass",
+      "consumedCaptureGraphSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "summary": "Capture graph exists and binds WGSL module hashes plus command order.",
+      "evidencePath": "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json",
+      "evidenceSha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "stage": "wgsl_classification",
+      "status": "pending",
+      "consumedCaptureGraphSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "summary": "Doe must classify captured WGSL modules against the CSL-lowerable kernel set.",
+      "blocker": "classification_artifact_absent",
+      "loweredWgslHashes": []
+    },
+    {
+      "stage": "host_plan",
+      "status": "not_attempted",
+      "consumedCaptureGraphSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "summary": "HostPlan emission waits on WGSL classification for this captured graph.",
+      "blocker": "wgsl_classification_not_complete"
+    },
+    {
+      "stage": "parity",
+      "status": "blocked",
+      "consumedCaptureGraphSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "summary": "Parity cannot be claimed until a lowered simulator or hardware run consumes this same capture graph.",
+      "blocker": "lowered_execution_absent",
+      "parityPassed": false
+    }
+  ],
+  "verdict": {
+    "status": "blocked",
+    "summary": "The same Doppler WebGPU graph is captured, but capture-to-CSL lowering/parity is not complete.",
+    "blocker": "capture_to_csl_lowering_not_wired",
+    "parityPassed": false
+  }
+}

@@ -9,18 +9,23 @@ before attaching the hardware-validation appendix to an email.
 Steps (in order):
 
   1. truth-table test for compute_execution_status (14 cases)
-  2. e2b_layer_block_self_check (regens E2B receipt + rollup +
+  2. Doppler Gemma-4 E2B WebGPU capture graph via doe-gpu/capture
+  3. e2b_layer_block_self_check (regens E2B receipt + rollup +
      validates the numbered contract assertions)
-  3. Gemma-4 E2B manifest-shape probe
-  4. Gemma-4 E2B manifest-shape CPU execution oracle
-  5. Doppler RDRR/int4ple structural probe
-  6. Doppler RDRR Q4_K_M L1 smoke-contract parity
-  7. BF16-derived E2B smoke-chain diagnostic parity depths
-  8. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
-  9. claim-discipline gate (hardware + MoE fronts)
- 10. SdkLayout streaming hardening gate (against any available live
+  4. Gemma-4 E2B manifest-shape probe
+  5. Gemma-4 E2B manifest-shape CPU execution oracle
+  6. Doppler RDRR/int4ple structural probe
+  7. Doppler RDRR Q4_K_M L1 smoke-contract parity
+  8. BF16-derived E2B smoke-chain diagnostic parity depths
+  9. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
+ 10. E2B model receipt refresh after depth diagnostics
+ 11. Gemma-4 E2B manifest-shape attention-core SdkLayout diagnostic
+ 12. E2B model receipt refresh after attention-core restamp
+ 13. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
+ 14. claim-discipline gate (hardware + MoE fronts)
+ 15. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 11. schema validation of 31B receipt and receipt-link integrity for
+ 16. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -144,14 +149,27 @@ def main() -> int:
     if args.fail_fast and steps[-1]["status"] != "passed":
         pass
 
-    # 2. self-check (regens receipts, 15 contracts, rollup regen).
+    # 2. Doppler Gemma-4 E2B WebGPU capture graph via doe-gpu/capture.
+    steps.append(run(
+        "doppler-gemma4-e2b-webgpu-capture-graph",
+        [
+            "node",
+            "bench/tools/capture_doppler_gemma4_webgpu_graph.mjs",
+            "--out-json",
+            "bench/out/doppler-capture/"
+            "gemma-4-e2b-doe-webgpu-capture-graph.json",
+        ],
+        timeout=300,
+    ))
+
+    # 3. self-check (regens receipts, numbered contracts, rollup regen).
     steps.append(run(
         "self-check",
         ["python3", "bench/tools/e2b_layer_block_self_check.py"],
         timeout=900,
     ))
 
-    # 3. Gemma-4 E2B manifest-shape probe. A contract mismatch is
+    # 4. Gemma-4 E2B manifest-shape probe. A contract mismatch is
     # expected today and is a passed diagnostic step; source unreadable
     # errors remain failures via the probe's exit code.
     steps.append(run(
@@ -164,7 +182,7 @@ def main() -> int:
         ],
     ))
 
-    # 4. Gemma-4 E2B manifest-shape CPU execution oracle.
+    # 5. Gemma-4 E2B manifest-shape CPU execution oracle.
     steps.append(run(
         "gemma4-e2b-manifest-shape-execution",
         [
@@ -177,7 +195,7 @@ def main() -> int:
         timeout=600,
     ))
 
-    # 5. Doppler RDRR/int4ple structural probe.
+    # 6. Doppler RDRR/int4ple structural probe.
     steps.append(run(
         "doppler-rdrr-int4ple-probe",
         [
@@ -190,7 +208,7 @@ def main() -> int:
         ],
     ))
 
-    # 6. Doppler RDRR Q4_K_M smoke-contract parity.
+    # 7. Doppler RDRR Q4_K_M smoke-contract parity.
     steps.append(run(
         "doppler-rdrr-q4k-l1-parity",
         [
@@ -202,7 +220,7 @@ def main() -> int:
         timeout=2600,
     ))
 
-    # 7-8. Diagnostic smoke-chain depths. These are bundle-visible so
+    # 8-9. Diagnostic smoke-chain depths. These are bundle-visible so
     # reviewers can inspect depth progress, but they do not promote any
     # depth to full-model or hardware evidence.
     for depth in DIAGNOSTIC_DEPTHS:
@@ -235,13 +253,95 @@ def main() -> int:
             timeout=2600,
         ))
 
-    # 9. claim-discipline gate (hardware + MoE fronts).
+    # 10. Refresh the E2B model receipt after the depth diagnostics.
+    # Those diagnostics rewrite final-depth parity/trace artifacts, and the
+    # receipt now hash-links them through sdkLayoutDepthDiagnosticEvidence.
+    # Rebuild here so the final standalone link-integrity gate validates
+    # the current bytes, not the pre-depth self-check bytes.
+    steps.append(run(
+        "e2b-model-receipt-refresh-after-depth-diagnostics",
+        [
+            "python3",
+            "bench/tools/build_model_runtime_receipt.py",
+            "--execution-manifest",
+            "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+            "--host-plan",
+            "bench/out/e2b-full-graph/host-plan.json",
+            "--memory-plan",
+            "bench/out/e2b-full-graph/memory-plan.json",
+            "--runtime-config",
+            "bench/out/e2b-full-graph/runtime-config.json",
+            "--simulator-plan",
+            "bench/out/e2b-full-graph/simulator-plan.json",
+            "--out-json",
+            "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+            "--out-md",
+            "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md",
+        ],
+    ))
+
+    # 11. Manifest-shape attention-core diagnostic. This is the first
+    # SdkLayout runtime rung for local/global headDim plus grouped KV;
+    # it remains non-claimable for the full model path.
+    steps.append(run(
+        "gemma4-e2b-manifest-shape-attention-core",
+        [
+            "python3",
+            "bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py",
+            "--out-json",
+            "bench/out/manifest-shape/"
+            "gemma-4-e2b-manifest-shape-attention-core.json",
+        ],
+        timeout=3900,
+    ))
+
+    # 12. Refresh the E2B model receipt again after attention-core.
+    # The attention-core step restamps its receipt. Refresh here so
+    # manifestShapePartialExecutionEvidence links the final bytes, not
+    # the pre-attention-core hash.
+    steps.append(run(
+        "e2b-model-receipt-refresh-after-attention-core",
+        [
+            "python3",
+            "bench/tools/build_model_runtime_receipt.py",
+            "--execution-manifest",
+            "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json",
+            "--host-plan",
+            "bench/out/e2b-full-graph/host-plan.json",
+            "--memory-plan",
+            "bench/out/e2b-full-graph/memory-plan.json",
+            "--runtime-config",
+            "bench/out/e2b-full-graph/runtime-config.json",
+            "--simulator-plan",
+            "bench/out/e2b-full-graph/simulator-plan.json",
+            "--out-json",
+            "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json",
+            "--out-md",
+            "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.md",
+        ],
+    ))
+
+    # 13. Manifest-shape Doe/CSL runtime-path contract. This links the
+    # post-attention-core refreshed model receipt, so it must run after
+    # the second receipt refresh to avoid stale hashes.
+    steps.append(run(
+        "gemma4-e2b-manifest-shape-runtime-path",
+        [
+            "python3",
+            "bench/tools/record_gemma4_e2b_manifest_shape_runtime_path.py",
+            "--out-json",
+            "bench/out/manifest-shape/"
+            "gemma-4-e2b-manifest-shape-runtime-path.json",
+        ],
+    ))
+
+    # 14. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 10. SdkLayout streaming hardening gate against the freshest live
+    # 15. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -265,7 +365,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 11. receipt link integrity (already invoked by self-check STEP 5,
+    # 16. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

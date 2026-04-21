@@ -136,10 +136,10 @@ def main() -> int:
     send = RoutingPosition().set_input([Route.RAMP])
 
     region.set_param_all("size", args.size)
-    region.set_param_all("rx_ple_rows", rx_ple_rows)
-    region.set_param_all("rx_ple_projection", rx_ple_projection)
-    region.set_param_all("rx_layer_weights", rx_layer_weights)
-    region.set_param_all("tx_activation", tx_activation)
+    region.set_param_all(rx_ple_rows)
+    region.set_param_all(rx_ple_projection)
+    region.set_param_all(rx_layer_weights)
+    region.set_param_all(tx_activation)
 
     rows_port = region.create_input_port(rx_ple_rows, Edge.LEFT, [recv], args.size)
     proj_port = region.create_input_port(rx_ple_projection, Edge.TOP, [recv], args.size)
@@ -180,7 +180,7 @@ def main() -> int:
     # the region.
     import hashlib as _hashlib_cache  # local to avoid module-top noise
     compile_cache_key = _hashlib_cache.sha256(
-        ("023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4|e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729|wse3|size=" + str(args.size)).encode("utf-8")
+        ("24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab|e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729|wse3|size=" + str(args.size)).encode("utf-8")
     ).hexdigest()
 
     run_start = time.time()
@@ -643,7 +643,7 @@ def main() -> int:
             "status": "succeeded",
             "cacheKey": compile_cache_key,
             "cacheKeyComponents": {
-                "kernelSourceSha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4",
+                "kernelSourceSha256": "24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab",
                 "planSha256": "e8fa1420ddcac5700338b9a1b96071d3403c95618c5c6ea536f24e581a505729",
                 "target": "wse3",
                 "size": args.size,
@@ -726,7 +726,7 @@ def main() -> int:
             "layerIndex": 0,
             "regionName": "transformer_layer_shape",
             "kernelSourcePath": "bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl",
-            "kernelSourceSha256": "023b391f136de9f5feb65d206b1144c3dfe760d49adfb7a771f409f0c7fb23a4",
+            "kernelSourceSha256": "24b8dc11a180534df27100257cdbbbd8fabaa81ea1979b8cfacd0e659a7eacab",
             "kernelIsStub": False,
             "combineRule": (
                 "rmsnorm[i] = (ple_rows[i] / sqrt(mean(ple_rows^2) + 1e-6)) * ple_projection[i]; "

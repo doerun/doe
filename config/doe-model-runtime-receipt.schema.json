@@ -451,6 +451,195 @@
         }
       }
     },
+    "manifestShapePartialExecutionEvidence": {
+      "type": "object",
+      "description": "Partial manifest-shape SdkLayout execution evidence. This records operator-slice progress toward full Gemma-4 E2B execution without changing executionStatus or claiming full decoder/logits/hardware coverage.",
+      "required": [
+        "status",
+        "claimable",
+        "claimScope",
+        "attentionCoreReceipt",
+        "manifestShapeContract",
+        "coverage",
+        "semanticParity",
+        "groupedKvEvidence",
+        "shapeRuns",
+        "blockers",
+        "remainingClaimBlockers"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["attention_core_runtime_slice_passed", "blocked"]
+        },
+        "claimable": { "const": false },
+        "claimScope": { "type": "string", "minLength": 1 },
+        "attentionCoreReceipt": {
+          "type": "object",
+          "required": ["path", "exists"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "exists": { "type": "boolean" },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "executionManifest": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "exists": { "type": "boolean" },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            },
+            "kernelSource": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "exists": { "type": "boolean" },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+              }
+            }
+          }
+        },
+        "manifestShapeContract": {
+          "type": "object",
+          "required": [
+            "localHeadDim",
+            "globalHeadDim",
+            "numAttentionHeads",
+            "numKeyValueHeads",
+            "numLayers",
+            "hiddenSize"
+          ],
+          "properties": {
+            "localHeadDim": { "const": 256 },
+            "globalHeadDim": { "const": 512 },
+            "numAttentionHeads": { "const": 8 },
+            "numKeyValueHeads": { "const": 1 },
+            "numLayers": { "type": "integer", "minimum": 1 },
+            "hiddenSize": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "required": [
+            "localHeadDimExecuted",
+            "globalHeadDimExecuted",
+            "groupedKvExecuted",
+            "attentionCoreCslRuntimeExecuted",
+            "embedUnembedExecuted",
+            "logitsParityExecuted",
+            "hardwareExecuted",
+            "claimable"
+          ],
+          "properties": {
+            "localHeadDimExecuted": { "type": "boolean" },
+            "globalHeadDimExecuted": { "type": "boolean" },
+            "groupedKvExecuted": { "type": "boolean" },
+            "attentionCoreCslRuntimeExecuted": { "type": "boolean" },
+            "embedUnembedExecuted": { "const": false },
+            "logitsParityExecuted": { "const": false },
+            "hardwareExecuted": { "const": false },
+            "claimable": { "const": false }
+          }
+        },
+        "semanticParity": {
+          "type": "object",
+          "required": [
+            "scope",
+            "comparison",
+            "passed",
+            "maxAbsErr",
+            "queryHeadsCompared",
+            "claimScope"
+          ],
+          "properties": {
+            "scope": { "const": "attention_core_cpu_oracle_bit_exact" },
+            "comparison": { "const": "bit_exact_np_array_equal" },
+            "passed": { "type": "boolean" },
+            "maxAbsErr": { "type": "number", "minimum": 0 },
+            "queryHeadsCompared": { "type": "integer", "minimum": 0 },
+            "claimScope": { "type": "string", "minLength": 1 }
+          }
+        },
+        "groupedKvEvidence": {
+          "type": "object",
+          "required": [
+            "numAttentionHeads",
+            "numKeyValueHeads",
+            "queryHeadsPerKvHead",
+            "executed"
+          ],
+          "properties": {
+            "numAttentionHeads": { "const": 8 },
+            "numKeyValueHeads": { "const": 1 },
+            "queryHeadsPerKvHead": { "const": 8 },
+            "executed": { "type": "boolean" }
+          }
+        },
+        "shapeRuns": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "required": [
+              "attentionKind",
+              "headDim",
+              "status",
+              "compileStatus",
+              "compileDir",
+              "runStatus",
+              "runtimeStopReached",
+              "numericalParity",
+              "queryHeadsCompared",
+              "queryHeadsPassed"
+            ],
+            "properties": {
+              "attentionKind": { "type": "string", "enum": ["local", "global"] },
+              "headDim": { "type": "integer", "enum": [256, 512] },
+              "status": { "type": "string", "minLength": 1 },
+              "compileStatus": { "type": ["string", "null"] },
+              "compileDir": {
+                "type": "object",
+                "required": ["path", "exists"],
+                "properties": {
+                  "path": { "type": "string" },
+                  "exists": { "type": "boolean" },
+                  "fileCount": { "type": "integer", "minimum": 1 }
+                }
+              },
+              "runStatus": { "type": ["string", "null"] },
+              "runtimeStopReached": { "type": "boolean" },
+              "numericalParity": {
+                "type": "object",
+                "required": ["comparison", "passed", "maxAbsErr", "atol"],
+                "properties": {
+                  "comparison": { "const": "bit_exact_np_array_equal" },
+                  "passed": { "type": "boolean" },
+                  "maxAbsErr": { "type": "number", "minimum": 0 },
+                  "atol": { "type": "number", "minimum": 0 }
+                }
+              },
+              "queryHeadsCompared": { "type": "integer", "minimum": 0 },
+              "queryHeadsPassed": { "type": "integer", "minimum": 0 },
+              "bytesTransferred": { "type": "integer", "minimum": 0 },
+              "elapsedMs": { "type": ["number", "null"], "minimum": 0 }
+            }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "remainingClaimBlockers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "sdkLayoutDepthDiagnosticEvidence": {
       "type": "object",
       "description": "Model-level diagnostic block for full declared-depth E2B smoke-chain runs. This remains non-claimable until manifest-shape Doe/CSL runtime execution and hardware receipts land.",
@@ -585,6 +774,200 @@
         }
       }
     },
+    "dopplerWebgpuCaptureEvidence": {
+      "type": "object",
+      "description": "Doppler-owned WebGPU capture graph bound into the model receipt. This is the shared JS/WGSL input surface for Doe HostPlan/SdkLayout/CSL lowering and remains non-claimable until lowered, compiled, and parity-checked.",
+      "required": [
+        "status",
+        "claimable",
+        "claimScope",
+        "captureGraph",
+        "bootstrap",
+        "model",
+        "webgpuSubset",
+        "lowering",
+        "counts",
+        "blockers",
+        "remainingClaimBlockers"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["capture_graph_recorded", "blocked"]
+        },
+        "claimable": { "const": false },
+        "claimScope": { "type": "string", "minLength": 1 },
+        "captureGraph": {
+          "type": "object",
+          "required": ["path", "exists", "sha256", "graphSha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "exists": { "const": true },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "graphSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "bootstrap": {
+          "type": "object",
+          "required": [
+            "adapterProbeSucceeded",
+            "providerInstalled",
+            "providerModule",
+            "sourcePath",
+            "sourceRepo"
+          ],
+          "properties": {
+            "sourceRepo": { "const": "../doppler" },
+            "sourcePath": {
+              "const": "../doppler/src/tooling/node-webgpu.js"
+            },
+            "providerModule": {
+              "const": "packages/doe-gpu/src/capture.js"
+            },
+            "providerInstalled": { "const": true },
+            "adapterProbeSucceeded": { "const": true }
+          }
+        },
+        "model": {
+          "type": "object",
+          "required": [
+            "architecture",
+            "manifestPath",
+            "manifestSha256",
+            "modelId",
+            "modelType",
+            "quantization",
+            "shardCount",
+            "tensorCount"
+          ],
+          "properties": {
+            "modelId": { "const": "gemma-4-e2b-it-q4k-ehf16-af32" },
+            "modelType": { "const": "gemma4" },
+            "quantization": { "type": "string", "minLength": 1 },
+            "manifestPath": { "type": "string", "minLength": 1 },
+            "manifestSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "shardCount": { "type": "integer", "minimum": 1 },
+            "tensorCount": { "type": "integer", "minimum": 1 },
+            "architecture": {
+              "type": "object",
+              "required": [
+                "globalHeadDim",
+                "headDim",
+                "hiddenSize",
+                "numAttentionHeads",
+                "numKeyValueHeads",
+                "numLayers",
+                "vocabSize"
+              ],
+              "properties": {
+                "globalHeadDim": { "const": 512 },
+                "headDim": { "const": 256 },
+                "hiddenSize": { "const": 1536 },
+                "numAttentionHeads": { "const": 8 },
+                "numKeyValueHeads": { "const": 1 },
+                "numLayers": { "const": 35 },
+                "vocabSize": { "type": "integer", "minimum": 1 }
+              }
+            }
+          }
+        },
+        "webgpuSubset": {
+          "type": "object",
+          "required": [
+            "recordedUnsupportedCalls",
+            "shaderWgslSha256",
+            "supportedWebgpuMethods",
+            "unsupportedCslFeatures"
+          ],
+          "properties": {
+            "supportedWebgpuMethods": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 },
+              "contains": { "const": "device.createShaderModule" }
+            },
+            "unsupportedCslFeatures": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 },
+              "contains": { "const": "textures" }
+            },
+            "shaderWgslSha256": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "recordedUnsupportedCalls": {
+              "type": "array",
+              "maxItems": 0,
+              "items": { "type": "object" }
+            }
+          }
+        },
+        "lowering": {
+          "type": "object",
+          "required": [
+            "hostPlanLinked",
+            "sourceGraphSha256",
+            "status",
+            "targetBackend",
+            "targetRuntime"
+          ],
+          "properties": {
+            "status": { "const": "pending_hostplan_lowering" },
+            "targetBackend": { "const": "csl" },
+            "targetRuntime": { "const": "sdk_layout_streaming" },
+            "hostPlanLinked": { "const": false },
+            "sourceGraphSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "bufferWrites",
+            "buffers",
+            "commandBuffers",
+            "computePipelines",
+            "readbacks",
+            "shaderModules",
+            "submissions",
+            "unsupported"
+          ],
+          "properties": {
+            "buffers": { "type": "integer", "minimum": 1 },
+            "bufferWrites": { "type": "integer", "minimum": 1 },
+            "shaderModules": { "type": "integer", "minimum": 1 },
+            "computePipelines": { "type": "integer", "minimum": 1 },
+            "commandBuffers": { "type": "integer", "minimum": 1 },
+            "submissions": { "type": "integer", "minimum": 1 },
+            "readbacks": { "type": "integer", "minimum": 1 },
+            "unsupported": { "const": 0 }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "remainingClaimBlockers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "contains": { "const": "captured_graph_to_hostplan_lowering" }
+        }
+      }
+    },
     "fullGridCompileProbeEvidence": {
       "type": "object",
       "description": "Optional pointer to the cslc grid-probe aggregate documenting which PE counts cslc accepts for this arch. Captured once per repo; referenced by every model receipt so downstream consumers can correlate 'this model wants NN PEs' against 'cslc has been proven to handle up to MM PEs'.",
@@ -651,7 +1034,8 @@
       "then": {
         "required": [
           "sdkLayoutModelExecutionEvidence",
-          "sdkLayoutDepthDiagnosticEvidence"
+          "sdkLayoutDepthDiagnosticEvidence",
+          "dopplerWebgpuCaptureEvidence"
         ]
       }
     }

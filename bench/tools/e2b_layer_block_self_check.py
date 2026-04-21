@@ -1541,6 +1541,216 @@ def main() -> int:
             "smoke diagnostics as non-claimable BF16 + RDRR evidence"
         )
 
+    # C44: first manifest-shape SdkLayout runtime slice is visible in
+    # the model receipt as partial evidence. This is intentionally
+    # narrower than executionStatus: it proves the local/global head
+    # dimensions plus grouped-KV attention-core diagnostic ran and
+    # matched its CPU oracle, while full attention semantics, decoder
+    # stack, logits, hardware, and performance remain blocked.
+    _partial = receipt.get("manifestShapePartialExecutionEvidence") or {}
+    _c44_bad = []
+    if not _partial:
+        _c44_bad.append("manifestShapePartialExecutionEvidence missing")
+    else:
+        if _partial.get("status") != "attention_core_runtime_slice_passed":
+            _c44_bad.append(
+                f"status={_partial.get('status')!r}, expected slice_passed"
+            )
+        if _partial.get("claimable") is not False:
+            _c44_bad.append("claimable is not false")
+        if _partial.get("blockers") != []:
+            _c44_bad.append(f"blockers not empty: {_partial.get('blockers')!r}")
+        _receipt_link = _partial.get("attentionCoreReceipt") or {}
+        _receipt_path = _receipt_link.get("path")
+        if not (_receipt_path and (REPO_ROOT / _receipt_path).is_file()):
+            _c44_bad.append("attentionCoreReceipt path missing")
+        if not _receipt_link.get("sha256"):
+            _c44_bad.append("attentionCoreReceipt sha256 missing")
+        _contract = _partial.get("manifestShapeContract") or {}
+        if _contract.get("localHeadDim") != 256:
+            _c44_bad.append("localHeadDim is not 256")
+        if _contract.get("globalHeadDim") != 512:
+            _c44_bad.append("globalHeadDim is not 512")
+        if _contract.get("numKeyValueHeads") != 1:
+            _c44_bad.append("numKeyValueHeads is not 1")
+        _coverage = _partial.get("coverage") or {}
+        for _field in (
+            "localHeadDimExecuted",
+            "globalHeadDimExecuted",
+            "groupedKvExecuted",
+            "attentionCoreCslRuntimeExecuted",
+        ):
+            if _coverage.get(_field) is not True:
+                _c44_bad.append(f"coverage.{_field} is not true")
+        for _field in (
+            "embedUnembedExecuted",
+            "logitsParityExecuted",
+            "hardwareExecuted",
+            "claimable",
+        ):
+            if _coverage.get(_field) is not False:
+                _c44_bad.append(f"coverage.{_field} is not false")
+        _semantic = _partial.get("semanticParity") or {}
+        if _semantic.get("scope") != "attention_core_cpu_oracle_bit_exact":
+            _c44_bad.append("semanticParity.scope mismatch")
+        if _semantic.get("passed") is not True:
+            _c44_bad.append("semanticParity.passed is not true")
+        if _semantic.get("maxAbsErr") != 0.0:
+            _c44_bad.append("semanticParity.maxAbsErr is not 0")
+        if _semantic.get("queryHeadsCompared") != 16:
+            _c44_bad.append("semanticParity.queryHeadsCompared is not 16")
+        _grouped = _partial.get("groupedKvEvidence") or {}
+        if _grouped.get("executed") is not True:
+            _c44_bad.append("groupedKvEvidence.executed is not true")
+        if _grouped.get("queryHeadsPerKvHead") != 8:
+            _c44_bad.append("queryHeadsPerKvHead is not 8")
+        _runs = _partial.get("shapeRuns") or []
+        _run_kinds = {
+            run.get("attentionKind") for run in _runs
+            if isinstance(run, dict)
+        }
+        if _run_kinds != {"local", "global"}:
+            _c44_bad.append(f"shape run kinds mismatch: {_run_kinds!r}")
+        for _run in _runs:
+            if not isinstance(_run, dict):
+                _c44_bad.append("shape run is not an object")
+                continue
+            _kind = _run.get("attentionKind")
+            if _run.get("status") != "succeeded":
+                _c44_bad.append(f"{_kind}: status not succeeded")
+            if _run.get("compileStatus") != "succeeded":
+                _c44_bad.append(f"{_kind}: compileStatus not succeeded")
+            if _run.get("runStatus") != "succeeded":
+                _c44_bad.append(f"{_kind}: runStatus not succeeded")
+            if _run.get("runtimeStopReached") is not True:
+                _c44_bad.append(f"{_kind}: runtimeStop not reached")
+            _parity = _run.get("numericalParity") or {}
+            if _parity.get("passed") is not True:
+                _c44_bad.append(f"{_kind}: numericalParity not passed")
+            if _run.get("queryHeadsCompared") != 8:
+                _c44_bad.append(f"{_kind}: queryHeadsCompared is not 8")
+            if _run.get("queryHeadsPassed") != 8:
+                _c44_bad.append(f"{_kind}: queryHeadsPassed is not 8")
+            _compile_dir = (_run.get("compileDir") or {}).get("path")
+            if not (_compile_dir and (REPO_ROOT / _compile_dir).is_dir()):
+                _c44_bad.append(f"{_kind}: compileDir missing")
+        _remaining = set(_partial.get("remainingClaimBlockers") or [])
+        for _expected in (
+            "full_attention_semantics_parity",
+            "full_decoder_block_manifest_shape_execution",
+            "embed_unembed_and_logits_parity",
+            "cerebras_hardware_receipt",
+        ):
+            if _expected not in _remaining:
+                _c44_bad.append(
+                    f"remainingClaimBlockers missing {_expected}"
+                )
+    if _c44_bad:
+        failures.extend(f"C44 FAIL: {_bad}" for _bad in _c44_bad)
+    else:
+        print(
+            "  C44 PASS: model receipt binds partial manifest-shape "
+            "attention-core SdkLayout execution with local/global heads, "
+            "grouped KV, and CPU-oracle parity while full claims stay blocked"
+        )
+
+    # C45: Doppler WebGPU capture graph is model-receipt-visible. This
+    # locks the shared-input contract: Doppler installs Doe's capture
+    # provider through its normal Node WebGPU bootstrap, records WGSL
+    # and command graph hashes, and still blocks HostPlan/SdkLayout/CSL
+    # lowering claims until the captured graph is consumed downstream.
+    _capture = receipt.get("dopplerWebgpuCaptureEvidence") or {}
+    _c45_bad = []
+    if not _capture:
+        _c45_bad.append("dopplerWebgpuCaptureEvidence missing")
+    else:
+        if _capture.get("status") != "capture_graph_recorded":
+            _c45_bad.append(
+                f"status={_capture.get('status')!r}, expected recorded"
+            )
+        if _capture.get("claimable") is not False:
+            _c45_bad.append("claimable is not false")
+        if _capture.get("blockers") != []:
+            _c45_bad.append(
+                f"blockers not empty: {_capture.get('blockers')!r}"
+            )
+        _graph = _capture.get("captureGraph") or {}
+        _graph_path = _graph.get("path")
+        if not (_graph_path and (REPO_ROOT / _graph_path).is_file()):
+            _c45_bad.append("captureGraph.path missing")
+        if not _graph.get("sha256"):
+            _c45_bad.append("captureGraph.sha256 missing")
+        if not _graph.get("graphSha256"):
+            _c45_bad.append("captureGraph.graphSha256 missing")
+        _bootstrap = _capture.get("bootstrap") or {}
+        if _bootstrap.get("sourceRepo") != "../doppler":
+            _c45_bad.append("bootstrap.sourceRepo mismatch")
+        if _bootstrap.get("providerModule") != "packages/doe-gpu/src/capture.js":
+            _c45_bad.append("bootstrap.providerModule mismatch")
+        if _bootstrap.get("providerInstalled") is not True:
+            _c45_bad.append("providerInstalled is not true")
+        if _bootstrap.get("adapterProbeSucceeded") is not True:
+            _c45_bad.append("adapterProbeSucceeded is not true")
+        _model = _capture.get("model") or {}
+        if _model.get("modelId") != "gemma-4-e2b-it-q4k-ehf16-af32":
+            _c45_bad.append("model.modelId mismatch")
+        _arch = _model.get("architecture") or {}
+        if _arch.get("headDim") != 256:
+            _c45_bad.append("architecture.headDim is not 256")
+        if _arch.get("globalHeadDim") != 512:
+            _c45_bad.append("architecture.globalHeadDim is not 512")
+        if _arch.get("numKeyValueHeads") != 1:
+            _c45_bad.append("architecture.numKeyValueHeads is not 1")
+        _subset = _capture.get("webgpuSubset") or {}
+        if "device.createShaderModule" not in (
+            _subset.get("supportedWebgpuMethods") or []
+        ):
+            _c45_bad.append("supportedWebgpuMethods missing shader module")
+        if _subset.get("recordedUnsupportedCalls") != []:
+            _c45_bad.append("recordedUnsupportedCalls not empty")
+        if not _subset.get("shaderWgslSha256"):
+            _c45_bad.append("shaderWgslSha256 missing")
+        _counts = _capture.get("counts") or {}
+        for _field in (
+            "buffers",
+            "bufferWrites",
+            "shaderModules",
+            "computePipelines",
+            "commandBuffers",
+            "submissions",
+            "readbacks",
+        ):
+            if int(_counts.get(_field, 0)) < 1:
+                _c45_bad.append(f"counts.{_field} < 1")
+        if _counts.get("unsupported") != 0:
+            _c45_bad.append("counts.unsupported is not 0")
+        _lowering = _capture.get("lowering") or {}
+        if _lowering.get("status") != "pending_hostplan_lowering":
+            _c45_bad.append("lowering.status mismatch")
+        if _lowering.get("hostPlanLinked") is not False:
+            _c45_bad.append("lowering.hostPlanLinked is not false")
+        if not _lowering.get("sourceGraphSha256"):
+            _c45_bad.append("lowering.sourceGraphSha256 missing")
+        _remaining = set(_capture.get("remainingClaimBlockers") or [])
+        for _expected in (
+            "captured_graph_to_hostplan_lowering",
+            "hostplan_to_sdklayout_compile",
+            "csl_simulator_parity_against_doppler_runtime",
+            "cerebras_hardware_receipt",
+        ):
+            if _expected not in _remaining:
+                _c45_bad.append(
+                    f"remainingClaimBlockers missing {_expected}"
+                )
+    if _c45_bad:
+        failures.extend(f"C45 FAIL: {_bad}" for _bad in _c45_bad)
+    else:
+        print(
+            "  C45 PASS: model receipt binds Doppler Gemma-4 WebGPU "
+            "capture graph as shared JS/WGSL input while lowering claims "
+            "remain blocked"
+        )
+
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL
     # contract check when a matching-depth trace is absent — WGSL
     # must always execute, contract check is an independent axis.

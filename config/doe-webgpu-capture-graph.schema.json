@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-webgpu-capture-graph.schema.json",
+  "title": "Doe WebGPU capture graph",
+  "description": "Record-only WebGPU compute graph captured by doe-gpu/capture. This is the allowed JS/WebGPU/WGSL surface that can be inspected and lowered toward Doe HostPlan/SdkLayout/CSL. It is not by itself proof of CSL execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactKind",
+    "bindGroupLayouts",
+    "bindGroups",
+    "bufferEvents",
+    "bufferWrites",
+    "buffers",
+    "commandBuffers",
+    "commandEncoders",
+    "computePipelines",
+    "graphSha256",
+    "metadata",
+    "pipelineLayouts",
+    "provider",
+    "readbacks",
+    "schemaVersion",
+    "shaderModules",
+    "submissions",
+    "supportedWebgpuMethods",
+    "unsupported",
+    "unsupportedCslFeatures"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_webgpu_capture_graph"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "mode", "name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mode": { "type": "string", "const": "capture" },
+        "contract": {
+          "type": "string",
+          "const": "webgpu-capture-provider"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "supportedWebgpuMethods": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "contains": { "const": "device.createShaderModule" }
+    },
+    "unsupportedCslFeatures": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "contains": { "const": "textures" }
+    },
+    "buffers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BufferRecord" }
+    },
+    "bufferEvents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "bufferWrites": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BufferWrite" }
+    },
+    "shaderModules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ShaderModule" }
+    },
+    "bindGroupLayouts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "pipelineLayouts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "computePipelines": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ComputePipeline" }
+    },
+    "bindGroups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "commandEncoders": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "commandBuffers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/CommandBuffer" }
+    },
+    "submissions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Submission" }
+    },
+    "readbacks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "unsupported": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/GenericRecord" }
+    },
+    "graphSha256": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "GenericRecord": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "BufferRecord": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["descriptor", "id", "mappedAtCreation", "size", "usage"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "label": { "type": ["string", "null"] },
+        "size": { "type": "integer", "minimum": 0 },
+        "usage": { "type": "integer", "minimum": 0 },
+        "mappedAtCreation": { "type": "boolean" },
+        "descriptor": { "type": "object" }
+      }
+    },
+    "BufferWrite": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "buffer",
+        "bufferOffset",
+        "byteLength",
+        "dataSha256",
+        "id"
+      ],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "buffer": { "type": "integer", "minimum": 1 },
+        "bufferOffset": { "type": "integer", "minimum": 0 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "dataSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "ShaderModule": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "id", "wgslSha256"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "label": { "type": ["string", "null"] },
+        "code": { "type": "string", "minLength": 1 },
+        "wgslSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "ComputePipeline": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["entryPoint", "id", "module"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "label": { "type": ["string", "null"] },
+        "module": { "type": "integer", "minimum": 1 },
+        "entryPoint": { "type": "string", "minLength": 1 }
+      }
+    },
+    "CommandBuffer": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["commands", "encoder", "id"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "encoder": { "type": "integer", "minimum": 1 },
+        "commands": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "Submission": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["commandBuffers", "id"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "commandBuffers": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

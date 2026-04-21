@@ -81,6 +81,15 @@ E2B bundle:
 - E2B manifest-shape probe
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json`
   (records the upstream local/global head-dim and grouped-KV contract)
+- E2B manifest-shape attention-core diagnostic
+  `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-attention-core.json`
+  (SdkLayout simfabric execution for local/global headDim 256/512 and
+  grouped-KV stream reuse; not full attention/logits/model execution)
+- Doppler WebGPU capture graph
+  `bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json`
+  (Doppler Node provider bootstrap plus Gemma-4 E2B WGSL/command capture
+  through `doe-gpu/capture`; not HostPlan/SdkLayout/CSL lowering or
+  production inference parity)
 - Doppler RDRR/int4ple fixture
   `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` and probe
   verdict `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json`
@@ -135,6 +144,18 @@ E2B SafeTensors metadata and records that upstream uses local `headDim=256`,
 `globalHeadDim=512`, and `numKeyValueHeads=1`. It binds Doe's manifest
 fields to that source metadata, but it is still not a real manifest-shape
 execution path.
+
+The manifest-shape attention-core receipt is the first runtime-executed
+diagnostic for those dimensions. It compiles and runs the local and global
+head dimensions through SdkLayout, reusing one K/V stream for all eight query
+heads to exercise the grouped-KV source contract. It is still only a
+Q.K-plus-V diagnostic, not the production attention operator, decoder stack,
+logits parity, hardware, or performance evidence.
+
+The Doppler WebGPU capture graph is the shared-input rung. It proves Doppler's
+Node WebGPU bootstrap can install `doe-gpu/capture` and record a Gemma-4 E2B
+WGSL/command graph with manifest identity and hashes. It is not yet lowered
+to HostPlan/SdkLayout/CSL and is not production Doppler inference parity.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1

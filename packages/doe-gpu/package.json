@@ -12,6 +12,22 @@
       "deno": "./src/deno.js",
       "default": "./src/index.js"
     },
+    "./api": {
+      "types": "./src/api.d.ts",
+      "default": "./src/api.js"
+    },
+    "./native": {
+      "types": "./src/native.d.ts",
+      "default": "./src/native.js"
+    },
+    "./plan": {
+      "types": "./src/plan.d.ts",
+      "default": "./src/plan.js"
+    },
+    "./capture": {
+      "types": "./src/capture.d.ts",
+      "default": "./src/capture.js"
+    },
     "./compute": {
       "types": "./src/compute.d.ts",
       "default": "./src/compute.js"

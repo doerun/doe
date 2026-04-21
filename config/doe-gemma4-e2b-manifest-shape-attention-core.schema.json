@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Gemma-4 E2B manifest-shape attention core",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "verdict",
+    "modelId",
+    "claimable",
+    "inputs",
+    "manifestShapeContract",
+    "coverage",
+    "shapeRuns",
+    "groupedKvEvidence",
+    "claimScope",
+    "blockers",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_gemma4_e2b_manifest_shape_attention_core"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "blocked", "failed"]
+    },
+    "verdict": { "type": "string", "minLength": 1 },
+    "modelId": { "type": "string", "minLength": 1 },
+    "claimable": { "const": false },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionManifest", "kernelSource"],
+      "properties": {
+        "executionManifest": { "$ref": "#/$defs/FileLink" },
+        "kernelSource": { "$ref": "#/$defs/FileLink" }
+      }
+    },
+    "manifestShapeContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localHeadDim",
+        "globalHeadDim",
+        "numAttentionHeads",
+        "numKeyValueHeads",
+        "numLayers",
+        "hiddenSize"
+      ],
+      "properties": {
+        "localHeadDim": { "type": "integer", "const": 256 },
+        "globalHeadDim": { "type": "integer", "const": 512 },
+        "numAttentionHeads": { "type": "integer", "const": 8 },
+        "numKeyValueHeads": { "type": "integer", "const": 1 },
+        "numLayers": { "type": "integer", "minimum": 1 },
+        "hiddenSize": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localHeadDimExecuted",
+        "globalHeadDimExecuted",
+        "groupedKvExecuted",
+        "attentionCoreCslRuntimeExecuted",
+        "embedUnembedExecuted",
+        "logitsParityExecuted",
+        "hardwareExecuted",
+        "claimable"
+      ],
+      "properties": {
+        "localHeadDimExecuted": { "type": "boolean" },
+        "globalHeadDimExecuted": { "type": "boolean" },
+        "groupedKvExecuted": { "type": "boolean" },
+        "attentionCoreCslRuntimeExecuted": { "type": "boolean" },
+        "embedUnembedExecuted": { "const": false },
+        "logitsParityExecuted": { "const": false },
+        "hardwareExecuted": { "const": false },
+        "claimable": { "const": false }
+      }
+    },
+    "shapeRuns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ShapeRun" }
+    },
+    "groupedKvEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numAttentionHeads",
+        "numKeyValueHeads",
+        "queryHeadsPerKvHead",
+        "executed"
+      ],
+      "properties": {
+        "numAttentionHeads": { "type": "integer", "const": 8 },
+        "numKeyValueHeads": { "type": "integer", "const": 1 },
+        "queryHeadsPerKvHead": { "type": "integer", "const": 8 },
+        "executed": { "type": "boolean" },
+        "kvSourceHeadByQueryHead": {
+          "type": "array",
+          "items": { "type": "integer", "const": 0 }
+        }
+      }
+    },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "summary", "notClaimable"],
+      "properties": {
+        "claimable": { "const": false },
+        "summary": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "FileLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "exists"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "exists": { "type": "boolean" },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "ShapeRun": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schemaVersion",
+        "artifactKind",
+        "status",
+        "attentionKind",
+        "shape",
+        "executedRun",
+        "subprocess"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "artifactKind": {
+          "type": "string",
+          "const": "doe_gemma4_e2b_manifest_shape_attention_core_shape_run"
+        },
+        "status": { "type": "string", "minLength": 1 },
+        "attentionKind": {
+          "type": "string",
+          "enum": ["local", "global"]
+        },
+        "shape": {
+          "type": "object",
+          "required": [
+            "headDim",
+            "numAttentionHeads",
+            "numKeyValueHeads",
+            "groupedKvQueryHeadsPerKvHead"
+          ],
+          "properties": {
+            "headDim": { "type": "integer", "enum": [256, 512] },
+            "numAttentionHeads": { "type": "integer", "const": 8 },
+            "numKeyValueHeads": { "type": "integer", "const": 1 },
+            "groupedKvQueryHeadsPerKvHead": {
+              "type": "integer",
+              "const": 8
+            }
+          }
+        },
+        "executedRun": {
+          "type": "object",
+          "required": ["status", "numericalParity", "perQueryHead"],
+          "properties": {
+            "status": { "type": "string", "minLength": 1 },
+            "numericalParity": {
+              "type": "object",
+              "required": ["passed", "maxAbsErr", "atol"],
+              "properties": {
+                "passed": { "type": "boolean" },
+                "maxAbsErr": { "type": "number" },
+                "atol": { "type": "number" }
+              }
+            },
+            "perQueryHead": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["queryHead", "keyValueHead", "passed"],
+                "properties": {
+                  "queryHead": { "type": "integer", "minimum": 0 },
+                  "keyValueHead": { "type": "integer", "const": 0 },
+                  "passed": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "subprocess": {
+          "type": "object",
+          "required": ["returnCode", "elapsedMs", "stdoutTail", "stderrTail"],
+          "properties": {
+            "returnCode": { "type": "integer" },
+            "elapsedMs": { "type": "number" },
+            "stdoutTail": { "type": "string" },
+            "stderrTail": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

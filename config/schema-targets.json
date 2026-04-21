@@ -178,6 +178,10 @@
       "data": "examples/doe-csl-demo-evidence.gemma-4-e2b.sample.json"
     },
     {
+      "schema": "config/doe-webgpu-capture-evidence.schema.json",
+      "data": "examples/doe-webgpu-capture-evidence.gemma-4-e2b.sample.json"
+    },
+    {
       "schema": "config/doe-csl-appliance-driver-receipt.schema.json",
       "data": "examples/doe-csl-appliance-driver-receipt.sample.json"
     },
@@ -198,6 +202,14 @@
       "data": "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json"
     },
     {
+      "schema": "config/doe-gemma4-e2b-manifest-shape-attention-core.schema.json",
+      "data": "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-attention-core.json"
+    },
+    {
+      "schema": "config/doe-gemma4-e2b-manifest-shape-runtime-path.schema.json",
+      "data": "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-runtime-path.json"
+    },
+    {
       "schema": "config/doppler-rdrr-fixture.schema.json",
       "data": "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json"
     },
@@ -212,6 +224,14 @@
     {
       "schema": "config/doe-doppler-rdrr-q4k-parity.schema.json",
       "data": "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json"
+    },
+    {
+      "schema": "config/doe-doppler-vendor-benchmark-digest.schema.json",
+      "data": "config/generated/doppler-vs-tjs-20260421-digest.json"
+    },
+    {
+      "schema": "config/doe-webgpu-capture-graph.schema.json",
+      "data": "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json"
     },
     {
       "schema": "config/doe-stream-graph.schema.json",
