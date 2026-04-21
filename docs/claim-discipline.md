@@ -30,18 +30,24 @@ catalog promotes it past the current numerical-correctness blocker. The
 existing Doe-side Doppler-equivalent WebGPU harness remains useful for smoke
 evidence, but it is not production Doppler inference parity.
 
-The first proof is not speed. The first proof is that the same source artifact,
-manifest identity, graph or capture identity, weight identity, and prompt/input
-contract produce matching outputs in Doppler WebGPU and Doe-emitted CSL within
-the declared numerical tolerance. Unsupported captured operations must fail
-with explicit CSL taxonomy errors. Hidden fallbacks do not promote the lane.
+The first proof is not speed. The proof target is a bounded deterministic
+prefill+decode transcript for the same source artifact, manifest identity,
+graph or capture identity, weight identity, and prompt/input contract. Doppler
+WebGPU and Doe-emitted CSL must complete full prefill, run a fixed number of
+greedy decode steps, record per-step logits hashes, select the same token IDs
+at every step, and produce the same generated token sequence within the
+declared numerical tolerance. KV/cache state must be real, not stubbed.
+Unsupported captured operations must fail with explicit CSL taxonomy errors.
+Hidden fallbacks do not promote the lane.
 
 The parity contract already exists at
-`/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`. The speed-first
-promotion path should bind one output tensor first, preferably final logits, via
-a production Doppler export such as `doppler_int4ple_reference_export.json`;
-additional named layer activations can either use one receipt per tensor or a
-future schema extension after the first same-program path is green.
+`/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`. A full
+`final_logits` tensor receipt is a useful intermediate bring-up check, but it is
+not the portable model-execution proof by itself. The production Doppler export
+should grow from `doppler_int4ple_reference_export.json` into a bounded
+prefill+decode reference transcript with per-step logits and token IDs; named
+intermediate tensors can use one receipt per tensor or a future schema
+extension after the transcript path is green.
 
 This target lane is not itself an allowed claim today. It becomes claimable only
 through the receipts and gates below.

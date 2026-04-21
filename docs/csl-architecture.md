@@ -42,7 +42,11 @@ receipts can distinguish same-program portability from a separate hand-authored
 CSL demo. The binding surface for that evidence is
 `/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`, which already
 separates `sourceProgram`, `referenceRun`, `cslRun`, `comparison`, and
-`promotionCriteria`.
+`promotionCriteria`. The model-scale proof target is not a single tensor
+snapshot. It is a bounded deterministic prefill+decode transcript: full prefill,
+fixed-step greedy decode, real KV/cache state, per-step logits hashes, matching
+selected token IDs, matching final generated token sequence, no synthetic
+inputs or weights, and no stub stages.
 
 Simulator and hardware execution use the same receipt path. The default target
 is local simfabric. When `DOE_CSL_CMADDR` or the governed-lane

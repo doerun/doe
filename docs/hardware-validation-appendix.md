@@ -155,11 +155,16 @@ path and not the Doe-side Doppler-equivalent WebGPU harness. The direct path
 remains useful for shape and adapter work, but it is not the current
 correctness-claim lane. The promotion target is a same-program parity receipt
 at `/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`: matching
-Doppler WebGPU and Doe-emitted CSL outputs for the same source artifact,
-manifest identity, graph or capture identity, weight identity, and prompt/input
-contract under the declared tolerance policy. Until the production INT4 PLE
-reference export exists, the hardware ask remains scoped to the L1/smoke and
-diagnostic evidence above.
+Doppler WebGPU and Doe-emitted CSL bounded prefill+decode transcripts for the
+same source artifact, manifest identity, graph or capture identity, weight
+identity, and prompt/input contract under the declared tolerance policy. The
+transcript must include full prefill completion, fixed-step greedy decode, real
+KV/cache state, per-step logits hashes, matching selected token IDs, matching
+final generated token sequence, no synthetic inputs or weights, and no stub
+stages. A full `final_logits` tensor export is a useful intermediate bring-up
+check, but not the final Cerebras-facing proof. Until the production INT4 PLE
+reference transcript exists, the hardware ask remains scoped to the L1/smoke
+and diagnostic evidence above.
 
 The manifest-shape attention-core receipt is the first runtime-executed
 diagnostic for those dimensions. It compiles and runs the local and global
