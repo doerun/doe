@@ -829,10 +829,10 @@ def main() -> int:
         "emitterWidened2D": False,
         "paramsShape": {
             "width": 1024,
-            "head_dim": 512,
-            "num_pairs": 256
+            "head_dim": 256,
+            "num_pairs": 128
         },
-        "cslcParamsString": "width:1024,head_dim:512,num_pairs:256",
+        "cslcParamsString": "width:1024,head_dim:256,num_pairs:128",
         "derivationSource": "width = num_tokens from --size (1-D layout, per-token \u2014 layout-2d-needs audit keeps rope 1-D since num_tokens<=i16); head_dim from manifest.modelConfig.headDim; num_pairs is the standard RoPE half-head_dim convention (cos+sin pair count).",
         "manifestSteps": [
             "rope_q",
@@ -853,10 +853,10 @@ def main() -> int:
                     "P": 2,
                     "Mt": 512,
                     "Kt": 768,
-                    "Nt": 2048
+                    "Nt": 1024
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:2048",
-                "weightMatrixShape": "M=1024 K=1536 N=4096"
+                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:1024",
+                "weightMatrixShape": "M=1024 K=1536 N=2048"
             },
             {
                 "stepName": "k_proj",
@@ -864,10 +864,10 @@ def main() -> int:
                     "P": 2,
                     "Mt": 512,
                     "Kt": 768,
-                    "Nt": 2048
+                    "Nt": 128
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:2048",
-                "weightMatrixShape": "M=1024 K=1536 N=4096"
+                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:128",
+                "weightMatrixShape": "M=1024 K=1536 N=256"
             },
             {
                 "stepName": "v_proj",
@@ -875,21 +875,21 @@ def main() -> int:
                     "P": 2,
                     "Mt": 512,
                     "Kt": 768,
-                    "Nt": 2048
+                    "Nt": 128
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:2048",
-                "weightMatrixShape": "M=1024 K=1536 N=4096"
+                "cslcParamsString": "P:2,Mt:512,Kt:768,Nt:128",
+                "weightMatrixShape": "M=1024 K=1536 N=256"
             },
             {
                 "stepName": "o_proj",
                 "paramsShape": {
                     "P": 2,
                     "Mt": 512,
-                    "Kt": 2048,
+                    "Kt": 1024,
                     "Nt": 768
                 },
-                "cslcParamsString": "P:2,Mt:512,Kt:2048,Nt:768",
-                "weightMatrixShape": "M=1024 K=4096 N=1536"
+                "cslcParamsString": "P:2,Mt:512,Kt:1024,Nt:768",
+                "weightMatrixShape": "M=1024 K=2048 N=1536"
             },
             {
                 "stepName": "gate_proj",
@@ -925,7 +925,7 @@ def main() -> int:
                 "weightMatrixShape": "M=1024 K=6144 N=1536"
             }
         ],
-        "derivationSource": "P = 2 for smoke (even SUMMA partition; real deployment picks P from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight matrix M/K/N derived from manifest.modelConfig: M = num_tokens (--size), K/N chosen per step \u2014 hiddenDim for projection inputs and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor for FFN gate/up N-dim and down K-dim, qkv_out_dim = numHeads * headDim for QKV N-dim. This per-invocation shape emission is the pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/fused_ffn) will also use.",
+        "derivationSource": "P = 2 for smoke (even SUMMA partition; real deployment picks P from memory-plan); Mt/Kt/Nt = weight-matrix dim // P. Weight matrix M/K/N derived from manifest.modelConfig: M = num_tokens (--size), K/N chosen per step \u2014 hiddenDim for projection inputs and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor for FFN gate/up N-dim and down K-dim, q_out_dim = numHeads * headDim for q/o and kv_out_dim = numKeyValueHeads * headDim for k/v. globalHeadDim is recorded for the manifest-shape attention rewrite (current value 512). This per-invocation shape emission is the pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/fused_ffn) will also use.",
         "manifestSteps": [
             "q_proj",
             "k_proj",
@@ -946,11 +946,11 @@ def main() -> int:
                 "stepName": "attention",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "kv_len": 4096,
                     "q_len": 1024
                 },
-                "cslcParamsString": "width:1024,head_dim:512,kv_len:4096,q_len:1024"
+                "cslcParamsString": "width:1024,head_dim:256,kv_len:4096,q_len:1024"
             }
         ],
         "derivationSource": "width/q_len = num_tokens from --size (1-D per-tile row); head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen as the prefill upper bound (4096 for both E2B and 31B \u2014 well under i16). Per the layout-2d-needs audit, attention_tiled stays 1-D.",
@@ -969,10 +969,10 @@ def main() -> int:
                 "variant": "sliding",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "kv_chunk": 1
                 },
-                "cslcParamsString": "width:1024,head_dim:512,kv_chunk:1",
+                "cslcParamsString": "width:1024,head_dim:256,kv_chunk:1",
                 "kvLenBound": 512
             },
             {
@@ -980,10 +980,10 @@ def main() -> int:
                 "variant": "global",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "kv_chunk": 4
                 },
-                "cslcParamsString": "width:1024,head_dim:512,kv_chunk:4",
+                "cslcParamsString": "width:1024,head_dim:256,kv_chunk:4",
                 "kvLenBound": 4096
             }
         ],
@@ -1063,45 +1063,45 @@ def main() -> int:
                 "stepName": "q_proj",
                 "paramsShape": {
                     "width": 1024,
-                    "out_dim": 4096,
+                    "out_dim": 2048,
                     "in_dim_per_pe": 1,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:4096,in_dim_per_pe:1,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:2048,in_dim_per_pe:1,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=1536 N=2048 (decode row-vector)"
             },
             {
                 "stepName": "k_proj",
                 "paramsShape": {
                     "width": 1024,
-                    "out_dim": 4096,
+                    "out_dim": 256,
                     "in_dim_per_pe": 1,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:4096,in_dim_per_pe:1,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:256,in_dim_per_pe:1,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=1536 N=256 (decode row-vector)"
             },
             {
                 "stepName": "v_proj",
                 "paramsShape": {
                     "width": 1024,
-                    "out_dim": 4096,
+                    "out_dim": 256,
                     "in_dim_per_pe": 1,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:4096,in_dim_per_pe:1,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=1536 N=4096 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:256,in_dim_per_pe:1,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=1536 N=256 (decode row-vector)"
             },
             {
                 "stepName": "o_proj",
                 "paramsShape": {
                     "width": 1024,
                     "out_dim": 1536,
-                    "in_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
                     "num_blocks_per_row": 1
                 },
-                "cslcParamsString": "width:1024,out_dim:1536,in_dim_per_pe:4,num_blocks_per_row:1",
-                "weightMatrixShape": "M=1 K=4096 N=1536 (decode row-vector)"
+                "cslcParamsString": "width:1024,out_dim:1536,in_dim_per_pe:2,num_blocks_per_row:1",
+                "weightMatrixShape": "M=1 K=2048 N=1536 (decode row-vector)"
             },
             {
                 "stepName": "gate_proj",
@@ -1137,7 +1137,7 @@ def main() -> int:
                 "weightMatrixShape": "M=1 K=6144 N=1536 (decode row-vector)"
             }
         ],
-        "derivationSource": "width = --size smoke arg (deployment picks per-weight-matrix width from memory-plan budgets; the audit flags this pattern as needs2DFor31B=likely pending step-1 generator output). out_dim per step from manifest.modelConfig: hiddenDim, qkv_out_dim = numHeads*headDim, or intermediate = hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block).",
+        "derivationSource": "width = --size smoke arg (deployment picks per-weight-matrix width from memory-plan budgets; the audit flags this pattern as needs2DFor31B=likely pending step-1 generator output). out_dim per step from manifest.modelConfig: hiddenDim, q_out_dim = numHeads*headDim, kv_out_dim = numKeyValueHeads*headDim, or intermediate = hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block).",
         "manifestSteps": [
             "q_proj",
             "k_proj",
@@ -1159,10 +1159,10 @@ def main() -> int:
                 "stepName": "(dormant)",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "kv_len": 4096
                 },
-                "cslcParamsString": "width:1024,head_dim:512,kv_len:4096"
+                "cslcParamsString": "width:1024,head_dim:256,kv_len:4096"
             }
         ],
         "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. Pattern is dormant in Gemma-4 \u2014 no manifest step has op=attention_streaming.",
@@ -1178,10 +1178,10 @@ def main() -> int:
                 "stepName": "(dormant)",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "kv_len": 4096
                 },
-                "cslcParamsString": "width:1024,head_dim:512,kv_len:4096"
+                "cslcParamsString": "width:1024,head_dim:256,kv_len:4096"
             }
         ],
         "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; kv_len = manifest.modelConfig.maxSeqLen. Pattern is dormant in Gemma-4 \u2014 no manifest step has op=attention_linear.",
@@ -1199,20 +1199,20 @@ def main() -> int:
                 "variant": "standard",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "max_seq_len": 4096
                 },
-                "cslcParamsString": "width:1024,head_dim:512,max_seq_len:4096"
+                "cslcParamsString": "width:1024,head_dim:256,max_seq_len:4096"
             },
             {
                 "stepName": "kv_write_shared",
                 "variant": "shared",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "max_seq_len": 4096
                 },
-                "cslcParamsString": "width:1024,head_dim:512,max_seq_len:4096"
+                "cslcParamsString": "width:1024,head_dim:256,max_seq_len:4096"
             }
         ],
         "derivationSource": "width = num_tokens from --size (1-D per-head). head_dim from manifest.modelConfig.headDim; max_seq_len is the KV-cache capacity bound from manifest.modelConfig.maxSeqLen. Shared variant uses the same --params shape; the shared/standard split is surfaced via the invocation's `variant` field for downstream routing.",
@@ -1231,10 +1231,10 @@ def main() -> int:
                 "stepName": "(dormant)",
                 "paramsShape": {
                     "width": 1024,
-                    "head_dim": 512,
+                    "head_dim": 256,
                     "read_len": 1024
                 },
-                "cslcParamsString": "width:1024,head_dim:512,read_len:1024"
+                "cslcParamsString": "width:1024,head_dim:256,read_len:1024"
             }
         ],
         "derivationSource": "width = num_tokens from --size; head_dim from manifest.modelConfig.headDim; read_len defaults to num_tokens for the smoke case \u2014 the dormant pattern has no manifest step driving its shape. If a future graph adds an explicit kv_read step, derivation should key on that step's payload.",

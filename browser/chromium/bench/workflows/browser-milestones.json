@@ -77,17 +77,17 @@
           "id": "seam_note",
           "kind": "note",
           "path": "browser/chromium/notes/browser-runtime-seam-edit-plan.md",
-          "description": "Track A selector and decoder seam work log.",
-          "required": true,
-          "mustExist": true
+          "description": "Historical Track A selector and decoder seam work log; no longer required as local evidence.",
+          "required": false,
+          "mustExist": false
         },
         {
           "id": "bringup_status_note",
           "kind": "note",
           "path": "browser/chromium/notes/bringup-status-2026-02-24.md",
-          "description": "Local Chromium lane bring-up and selector status snapshot.",
-          "required": true,
-          "mustExist": true
+          "description": "Historical local Chromium lane bring-up and selector status snapshot; no longer required as local evidence.",
+          "required": false,
+          "mustExist": false
         },
         {
           "id": "lane_preflight",
@@ -143,7 +143,7 @@
           "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
           "description": "Fresh Track A browser gate report proving governed preflight and smoke execution on this host.",
           "required": false,
-          "mustExist": true
+          "mustExist": false
         }
       ],
       "exitCriteria": [
@@ -211,9 +211,9 @@
           "id": "fresh_bringup_note",
           "kind": "note",
           "path": "browser/chromium/notes/bringup-status-2026-03-09.md",
-          "description": "Fresh March 9 browser-gate status note with promoted strict-run outcomes.",
+          "description": "Historical March 9 browser-gate status note with promoted strict-run outcomes; no longer required as local evidence.",
           "required": false,
-          "mustExist": true
+          "mustExist": false
         },
         {
           "id": "promotion_approvals",
@@ -229,7 +229,7 @@
           "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
           "description": "Core Track A browser gate report covering fresh strict layered validation.",
           "required": false,
-          "mustExist": true
+          "mustExist": false
         }
       ],
       "exitCriteria": [
@@ -291,7 +291,7 @@
           "path": "bench/out/browser-promotion/20260309T015018Z/browser_gate.json",
           "description": "Core Track A browser gate report proving fresh smoke and layered performance artifacts were generated under governance.",
           "required": false,
-          "mustExist": true
+          "mustExist": false
         }
       ],
       "exitCriteria": [
@@ -382,7 +382,7 @@
         {
           "id": "module_core_gate",
           "kind": "script",
-          "path": "bench/module_gate.py",
+          "path": "bench/gates/module_gate.py",
           "description": "Blocking core Track B (modules) gate for promoted modules.",
           "required": true,
           "mustExist": true
@@ -588,7 +588,7 @@
         {
           "id": "module_core_gate_m5",
           "kind": "script",
-          "path": "bench/module_gate.py",
+          "path": "bench/gates/module_gate.py",
           "description": "Blocking core Track B (modules) gate covering all promoted modules.",
           "required": true,
           "mustExist": true
@@ -652,7 +652,7 @@
         {
           "id": "module_blocking_gate",
           "kind": "script",
-          "path": "bench/module_gate.py",
+          "path": "bench/gates/module_gate.py",
           "description": "Blocking schema/correctness/trace gate for all promoted Track B (modules).",
           "required": true,
           "mustExist": true

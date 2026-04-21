@@ -74,6 +74,14 @@ pub fn emitRuntimeConfigJson(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitErro
     try writeInt(buf, pos, rt.config.num_heads);
     try write(buf, pos, ",\n    \"headDim\": ");
     try writeInt(buf, pos, rt.config.head_dim);
+    if (rt.config.global_head_dim) |global_head_dim| {
+        try write(buf, pos, ",\n    \"globalHeadDim\": ");
+        try writeInt(buf, pos, global_head_dim);
+    }
+    if (rt.config.num_key_value_heads) |num_key_value_heads| {
+        try write(buf, pos, ",\n    \"numKeyValueHeads\": ");
+        try writeInt(buf, pos, num_key_value_heads);
+    }
     try write(buf, pos, ",\n    \"numLayers\": ");
     try writeInt(buf, pos, rt.config.num_layers);
     try write(buf, pos, ",\n    \"vocabSize\": ");

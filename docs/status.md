@@ -138,13 +138,15 @@ Read this file first. Use the shard files under
 - Cerebras-facing Gemma-4 lane is in outreach phase: the current local
   side-by-side evidence includes L1 synthetic layer-block parity, E2B L1
   BF16-derived real-weight smoke-contract parity, a structural
-  Doppler RDRR/int4ple artifact-readability probe, and RDRR-derived
-  Q4_K_M L1 smoke-contract parity. The model receipt now
+  Doppler RDRR/int4ple artifact-readability probe, RDRR-derived
+  Q4_K_M L1 smoke-contract parity, declared-depth smoke diagnostics,
+  and an E2B manifest-shape tensor-contract probe for the upstream local/global
+  head-dim plus grouped-KV contract. The model receipt now
   reports `executionStatus=real_weight_layer_block_success` for that narrow
-  L1 layer-block contract. L2/L4/L8/L35 promoted-depth receipts, full E2B,
-  Doppler production inference parity, 31B manifest-shape and real-weight
-  receipts, MoE, and hardware remain gated in the current April shard and
-  in `docs/hardware-validation-appendix.md`.
+  L1 layer-block contract. Promoted deeper receipts, full E2B, Doppler
+  production inference parity, 31B manifest-shape and real-weight receipts,
+  MoE, and hardware remain gated in the current April shard and in
+  `docs/hardware-validation-appendix.md`.
 
 ## Current follow-up highlights
 

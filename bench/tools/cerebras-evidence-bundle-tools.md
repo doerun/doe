@@ -19,10 +19,11 @@ bundle" for the prose workflow; this file is the tool-reference.
 ## Underlying tools (called by the prep script, usable standalone)
 
 - **`run_cerebras_evidence_bundle.py`** — runs the local gate sequence
-  in order (truth-table test, self-check, Doppler RDRR/int4ple
-  structural probe, Doppler RDRR Q4_K_M L1 smoke-contract parity,
-  BF16/RDRR L2 diagnostic parity, claim-discipline, SdkLayout
-  streaming hardening, receipt link integrity) and writes
+  in order (truth-table test, self-check, manifest-shape probe,
+  Doppler RDRR/int4ple structural probe, Doppler RDRR Q4_K_M L1
+  smoke-contract parity, declared-depth BF16/RDRR diagnostics,
+  claim-discipline, SdkLayout streaming hardening, receipt link
+  integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
   plus an aggregate verdict.
@@ -71,6 +72,7 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │           ├── bench/out/streaming-executor/*-cross-runtime-parity-check.json
   │           ├── bench/out/doppler-reference/csl-emulator-speed-verdict-L1.json
   │           ├── bench/out/gemma-4-*-real-weight-parity-L1.json
+  │           ├── bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json
   │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json
   │           ├── bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-*.json
   │           ├── bench/out/weights-audit/gemma-4-e2b-rdrr-int4ple-weights-audit.json
@@ -110,7 +112,8 @@ locks most of this pipeline via numbered contracts:
 | C35 | declared depth list stays synchronized between the depth matrix generator and E2B cockpit |
 | C36 | Doppler RDRR/int4ple structural probe validates manifest, selected shard hash, target spans, and keeps Q4 dequant explicitly blocked |
 | C37 | Doppler RDRR Q4_K_M L1 smoke parity verdict stays scoped to smoke-contract parity and blocks full-model / hardware claims |
-| C38 | optional E2B L2 BF16/RDRR diagnostic parity verdicts pass exactly two layers and remain non-full-model / non-hardware evidence |
+| C38 | optional E2B BF16/RDRR diagnostic verdicts pass exactly their requested smoke depth and remain non-full-model / non-hardware evidence |
+| C39 | manifest-shape probe records the upstream E2B tensor-shape contract and accepts Doe manifest fields only when they match the source metadata |
 
 ## What this pipeline does NOT do
 
@@ -120,6 +123,6 @@ locks most of this pipeline via numbered contracts:
 - Produce a Cerebras hardware receipt — that requires a reachable
   CS / WSC endpoint; see `docs/hardware-validation-appendix.md`.
 - Replace full real-weight parity — the bundle now includes E2B L1
-  BF16-derived and RDRR-derived smoke-contract parity. Optional L2
-  diagnostics can exist locally, but they are not manifest-shape,
-  full-depth, 31B, MoE, or hardware receipts.
+  BF16-derived and RDRR-derived smoke-contract parity. Optional
+  declared-depth diagnostics can exist locally, but they are not
+  manifest-shape, full-depth, 31B, MoE, or hardware receipts.

@@ -11,6 +11,7 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 VALID_STATUSES = {
+    "archived",
     "planned",
     "in_progress",
     "local_evidence",

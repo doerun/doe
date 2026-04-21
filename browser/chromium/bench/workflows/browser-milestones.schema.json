@@ -25,6 +25,7 @@
       "items": {
         "type": "string",
         "enum": [
+          "archived",
           "planned",
           "in_progress",
           "local_evidence",
@@ -129,6 +130,7 @@
         "status": {
           "type": "string",
           "enum": [
+            "archived",
             "planned",
             "in_progress",
             "local_evidence",

@@ -130,27 +130,50 @@ Allowed wording:
   Doppler production inference output parity, not manifest-shape
   execution, not full E2B, not 31B, not MoE, and not hardware."
 
-### L2 real-weight smoke diagnostics are local, not promoted
+### Declared real-weight smoke diagnostics are local, not promoted
 
 Evidence:
 
-- `bench/out/gemma-4-e2b-real-weight-parity-L2.json` records the
-  BF16-derived WebGPU-vs-CSL simfabric diagnostic verdict for the
-  two-layer smoke chain. See the artifact for current tolerance metrics.
-- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json`
-  records the parallel RDRR Q4_K_M diagnostic wrapper verdict. See the
-  artifact for current tolerance metrics.
+- `bench/out/gemma-4-e2b-real-weight-parity-L{2,4,8,35}.json`
+  records BF16-derived WebGPU-vs-CSL simfabric diagnostic verdicts for
+  the declared smoke-chain depths. See the artifacts for current
+  tolerance metrics.
+- `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L{2,4,8,35}.json`
+  records the parallel RDRR Q4_K_M diagnostic wrapper verdicts. See the
+  artifacts for current tolerance metrics.
 - C38 in `bench/tools/e2b_layer_block_self_check.py` treats these as
   optional diagnostics and rejects any state that promotes them to
   full-model or hardware evidence.
 
 Allowed wording:
 
-- "Doe has local E2B two-layer smoke-chain diagnostics for both
-  BF16-derived and RDRR-derived weight slices."
+- "Doe has local E2B smoke-chain diagnostics across declared depths for
+  both BF16-derived and RDRR-derived weight slices."
 - "These diagnostics extend the depth of the smoke contract only. They
-  are not manifest-shape execution, not full E2B inference, not promoted
-  L2 release evidence, not 31B, not MoE, and not hardware."
+  are not manifest-shape execution, not full E2B inference, not
+  promoted release evidence, not 31B, not MoE, and not hardware."
+
+### E2B manifest-shape tensor contract is recorded
+
+Evidence:
+
+- `bench/tools/probe_gemma4_e2b_manifest_shape.py` reads the local raw
+  Gemma-4 E2B SafeTensors header and upstream text config without
+  loading tensor bytes.
+- `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json`
+  records the upstream tensor contract: local `headDim=256`,
+  `globalHeadDim=512`, `numKeyValueHeads=1`, `numHeads=8`, and
+  layer-0 q/k/v/o/projection tensor shapes.
+- C39 in `bench/tools/e2b_layer_block_self_check.py` requires Doe's
+  execution manifest fields to match the upstream tensor metadata.
+
+Allowed wording:
+
+- "Doe has a schema-backed E2B manifest-shape tensor-contract artifact
+  that binds local `headDim=256`, `globalHeadDim=512`, and
+  `numKeyValueHeads=1` to the source checkpoint metadata."
+- "This is not manifest-shape execution; it is the config/tensor
+  contract needed before that execution path can be implemented."
 
 ### The CSL kernel implements the transformer layer-block shape
 
@@ -258,7 +281,7 @@ Each rejected claim has a single-command unlock path in the repo.
 | Rejected claim | Unlock command or external dep |
 | --- | --- |
 | Production Doppler pipeline parity | Doppler commits their WGSL shader into their pipeline and emits `activation_out.f32` matching the CSL runner's seeded-RNG inputs |
-| Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt to manifest-shape/full-depth receipts; 31B needs its own real-weight parity verdict |
+| Full real-weight model execution | Extend from the evidenced E2B L1 smoke-contract receipt to manifest-shape/full-depth receipts; E2B manifest-shape first needs local `headDim=256`, `globalHeadDim=512`, and `numKeyValueHeads=1` support; 31B needs its own real-weight parity verdict |
 | L2/L4/L8/L35 claimable depth | `summarize_doe_run_lanes.py` emits `evidenceEligibility.claimable=true` for that depth and `emit_depth_coverage_matrix.py` counts it under `depthsClaimableWithinTolerance` |
 | Full E2B simulator | Extend runner to the full graph (embed + 35 transformer blocks + unembed + sample); this is structural work in Doe |
 | Manifest-shape 31B | Extend the generator/kernel to `head_dim=160, num_heads=32`; validate memory budget + streaming |

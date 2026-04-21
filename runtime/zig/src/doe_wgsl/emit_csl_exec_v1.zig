@@ -238,6 +238,8 @@ fn parseModelConfig(value: ?std.json.Value) LowerError!?host.ModelConfig {
         .hidden_dim = try expectU32(object.get("hiddenDim") orelse return error.InvalidJson),
         .num_heads = try expectU32(object.get("numHeads") orelse return error.InvalidJson),
         .head_dim = try expectU32(object.get("headDim") orelse return error.InvalidJson),
+        .global_head_dim = try parseOptionalU32(object.get("globalHeadDim")),
+        .num_key_value_heads = try parseOptionalU32(object.get("numKeyValueHeads")),
         .num_layers = try expectU32(object.get("numLayers") orelse return error.InvalidJson),
         .vocab_size = try expectU32(object.get("vocabSize") orelse return error.InvalidJson),
         .max_seq_len = try expectU32(object.get("maxSeqLen") orelse return error.InvalidJson),

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Gemma-4 E2B real-weight L1 parity harness.
+"""Gemma-4 E2B real-weight smoke-depth parity harness.
 
 Reads the canonical fixture at
 `config/gemma-4-e2b-real-weight-fixture.json`, checks the weightsDir
-against the validator contract, invokes two runtime lanes at L=1
+against the validator contract, invokes two runtime lanes at the
+requested smoke-chain depth
 (WebGPU reference + CSL simfabric) on the same manifest/graph/input
 and the same --weights-dir, and diffs the per-layer outputs under the
 fixture's tolerance policy. Emits a `doe_e2b_real_weight_parity`
@@ -15,9 +16,10 @@ path the fixture expects. Once real weights are materialized, re-running
 this tool emits a concrete pass/fail verdict with the real lanes
 executed.
 
-Scope caveat: L=1 single-layer parity only. L>1 and manifest-shape
-(headDim=512) runs are explicit follow-ups per the fixture's
-fixtureChain block.
+Scope caveat: this harness still runs the reduced smoke contract at
+size=1024. Deeper chain depths are diagnostic unless a rollup marks
+them claimable. Manifest-shape execution remains blocked until the
+local/global head-dim and grouped-KV rewrite lands.
 
 Usage:
   python3 bench/tools/run_e2b_real_weight_l1_parity.py \\
@@ -39,6 +41,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CSL_TMPDIR = REPO_ROOT / "bench/out/scratch/csl-sdk-tmp"
 
 
 def parse_args() -> argparse.Namespace:
@@ -117,6 +120,20 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def csl_subprocess_env() -> tuple[dict[str, str], str]:
+    env = os.environ.copy()
+    tmpdir = (
+        env.get("DOE_CSL_TMPDIR")
+        or env.get("TMPDIR")
+        or str(DEFAULT_CSL_TMPDIR)
+    )
+    Path(tmpdir).mkdir(parents=True, exist_ok=True)
+    env["TMPDIR"] = tmpdir
+    env.setdefault("APPTAINER_TMPDIR", tmpdir)
+    env.setdefault("SINGULARITY_TMPDIR", tmpdir)
+    return env, tmpdir
 
 
 def write_verdict(args: argparse.Namespace, verdict: dict) -> None:
@@ -370,6 +387,7 @@ def main() -> int:
         csl_trace = csl_out / "trace.json"
         compile_out = csl_out / "compile"
         compile_out.mkdir(parents=True, exist_ok=True)
+        csl_env, csl_tmpdir = csl_subprocess_env()
         csl_proc = subprocess.run(
             [cs_python,
              "bench/runners/csl-runners/e2b_layer_block_smoke.py",
@@ -380,13 +398,14 @@ def main() -> int:
              str(weights_dir_path.relative_to(REPO_ROOT)) if
              weights_dir_path.is_relative_to(REPO_ROOT) else str(weights_dir_path)],
             cwd=REPO_ROOT, capture_output=True, text=True,
-            timeout=1800, check=False,
+            timeout=1800, check=False, env=csl_env,
         )
         if csl_proc.returncode != 0 or not csl_trace.is_file():
             lanes["csl-sdklayout"] = {
                 "status": "failed",
                 "returnCode": csl_proc.returncode,
                 "stderrTail": csl_proc.stderr[-400:],
+                "tmpDir": csl_tmpdir,
             }
         else:
             ct = json.loads(csl_trace.read_text(encoding="utf-8"))
@@ -399,6 +418,7 @@ def main() -> int:
                 "perLayerOutputs": er.get("perLayerOutputs"),
                 "dataSource": (er.get("dataSource") or {}).get("kind"),
                 "tracePath": rel(csl_trace),
+                "tmpDir": csl_tmpdir,
             }
 
     # Parity: output digest + per-layer tolerance diff when both

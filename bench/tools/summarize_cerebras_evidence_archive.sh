@@ -2,7 +2,8 @@
 # Summarize a packed Cerebras evidence archive WITHOUT extracting it.
 # Operates on the tarball via `tar -xzO | jq`, prints human-readable
 # status for E2B, 31B, 26B/A4B MoE, the bundle-level gate verdict,
-# RDRR Q4_K_M smoke parity, and claimable-depth coverage.
+# manifest-shape contract, RDRR Q4_K_M smoke parity, and claimable-depth
+# coverage.
 #
 # Usage:
 #   bench/tools/summarize_cerebras_evidence_archive.sh <archive.tar.gz>
@@ -17,7 +18,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 summarize_cerebras_evidence_archive.sh — quick status from inside an archive
 
 Prints E2B, 31B, 26B/A4B MoE status + bundle gate verdict +
-RDRR Q4_K_M parity + claimable-depth coverage, entirely from the
+manifest-shape contract + RDRR Q4_K_M parity + claimable-depth coverage, entirely from the
 tarball via `tar -xzO | jq`.
 No extraction to disk.
 
@@ -108,6 +109,15 @@ extract_json "bench/out/cerebras-evidence-bundle/summary.json" '
 '
 echo
 
+echo "--- manifest-shape contract ---"
+extract_json "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json" '
+    "verdict:           \(.verdict // "?")",
+    "status:            \(.status // "?")",
+    "upstream heads:    local=\(.upstreamConfig.headDim // "?"), global=\(.upstreamConfig.globalHeadDim // "?"), kv=\(.upstreamConfig.numKeyValueHeads // "?")",
+    "blockers:          \((.blockers // []) | length)"
+' 2>/dev/null || echo "manifest-shape-probe: not present"
+echo
+
 echo "--- Doppler RDRR Q4_K_M smoke parity ---"
 extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json" '
     "verdict:           \(.verdict // "?")",
@@ -116,17 +126,15 @@ extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json" '
 ' 2>/dev/null || echo "rdrr-q4k-parity: not present"
 echo
 
-echo "--- E2B L2 diagnostic parity ---"
-extract_json "bench/out/gemma-4-e2b-real-weight-parity-L2.json" '
-    "bf16 verdict:      \(.verdict // "?")",
-    "bf16 layers:       \(.parity.layersCompared // "?")",
-    "bf16 tolerance:    \(.parity.tolerancePassed // "?")"
-' 2>/dev/null || echo "bf16-l2-parity: not present"
-extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L2.json" '
-    "rdrr verdict:      \(.verdict // "?")",
-    "rdrr layers:       \(.paritySummary.layersCompared // "?")",
-    "rdrr tolerance:    \(.paritySummary.tolerancePassed // "?")"
-' 2>/dev/null || echo "rdrr-q4k-l2-parity: not present"
+echo "--- E2B diagnostic smoke-depth parity ---"
+for depth in 2 4 8 35; do
+    extract_json "bench/out/gemma-4-e2b-real-weight-parity-L${depth}.json" '
+        "bf16 L\(.numLayers):        \(.verdict // "?"), layers=\(.parity.layersCompared // "?"), tolerance=\(.parity.tolerancePassed // "?")"
+    ' 2>/dev/null || echo "bf16-L${depth}-parity: not present"
+    extract_json "bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity-L${depth}.json" '
+        "rdrr L\(.numLayers):        \(.verdict // "?"), layers=\(.paritySummary.layersCompared // "?"), tolerance=\(.paritySummary.tolerancePassed // "?")"
+    ' 2>/dev/null || echo "rdrr-q4k-L${depth}-parity: not present"
+done
 echo
 
 echo "--- claimable depth coverage ---"

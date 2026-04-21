@@ -968,6 +968,8 @@ def derive_per_kernel_shapes(
     mc = manifest.get("modelConfig", {})
     hidden_dim = int(mc.get("hiddenDim", 0))
     head_dim = int(mc.get("headDim", 0))
+    global_head_dim = int(mc.get("globalHeadDim", 0))
+    num_kv_heads = int(mc.get("numKeyValueHeads", 0))
     shapes: list[dict] = []
 
     # Pattern -> fixture-scale cslc --params string, one entry per
@@ -1075,7 +1077,8 @@ def derive_per_kernel_shapes(
     # Pick a small P for smoke so Mt/Kt/Nt stay small ints cslc can
     # round-trip. Real deployment uses larger P from memory-plan.
     P_smoke = 2
-    qkv_out_dim = (num_heads or 8) * (head_dim or 512)  # total Q/K/V dim
+    q_out_dim = (num_heads or 8) * (head_dim or 256)
+    kv_out_dim = (num_kv_heads or 1) * (head_dim or 256)
 
     def mm_params(step_name: str, m: int, k: int, n: int) -> dict:
         """Compute {P, Mt, Kt, Nt} with simple even division; round up if
@@ -1091,10 +1094,10 @@ def derive_per_kernel_shapes(
         }
 
     mm_invocations = [
-        mm_params("q_proj",    smoke_size, hidden,       qkv_out_dim),
-        mm_params("k_proj",    smoke_size, hidden,       qkv_out_dim),
-        mm_params("v_proj",    smoke_size, hidden,       qkv_out_dim),
-        mm_params("o_proj",    smoke_size, qkv_out_dim,  hidden),
+        mm_params("q_proj",    smoke_size, hidden,      q_out_dim),
+        mm_params("k_proj",    smoke_size, hidden,      kv_out_dim),
+        mm_params("v_proj",    smoke_size, hidden,      kv_out_dim),
+        mm_params("o_proj",    smoke_size, q_out_dim,   hidden),
         mm_params("gate_proj", smoke_size, hidden,       intermediate),
         mm_params("up_proj",   smoke_size, hidden,       intermediate),
         mm_params("down_proj", smoke_size, intermediate, hidden),
@@ -1110,8 +1113,11 @@ def derive_per_kernel_shapes(
             "matrix M/K/N derived from manifest.modelConfig: M = num_tokens "
             "(--size), K/N chosen per step — hiddenDim for projection inputs "
             "and output (q/k/v/o), intermediate = hiddenDim * ffnExpansionFactor "
-            "for FFN gate/up N-dim and down K-dim, qkv_out_dim = numHeads * "
-            "headDim for QKV N-dim. This per-invocation shape emission is the "
+            "for FFN gate/up N-dim and down K-dim, q_out_dim = numHeads * "
+            "headDim for q/o and kv_out_dim = numKeyValueHeads * headDim "
+            "for k/v. globalHeadDim is recorded for the manifest-shape "
+            f"attention rewrite (current value {global_head_dim or 'absent'}). "
+            "This per-invocation shape emission is the "
             "pattern the 4 audit-blocked emitters (dequant/sample/fused_gemv/"
             "fused_ffn) will also use."
         ),
@@ -1331,10 +1337,12 @@ def derive_per_kernel_shapes(
         name = s["name"]
         # Same weight-matrix shape table as tiled_matmul — the decode
         # path uses the same matrices, dequantized on the fly.
-        if name in ("q_proj", "k_proj", "v_proj"):
-            in_dim, out_dim = hidden, qkv_out_dim
+        if name == "q_proj":
+            in_dim, out_dim = hidden, q_out_dim
+        elif name in ("k_proj", "v_proj"):
+            in_dim, out_dim = hidden, kv_out_dim
         elif name == "o_proj":
-            in_dim, out_dim = qkv_out_dim, hidden
+            in_dim, out_dim = q_out_dim, hidden
         elif name in ("gate_proj", "up_proj"):
             in_dim, out_dim = hidden, intermediate
         elif name == "down_proj":
@@ -1371,7 +1379,8 @@ def derive_per_kernel_shapes(
                 "width from memory-plan budgets; the audit flags this pattern "
                 "as needs2DFor31B=likely pending step-1 generator output). "
                 "out_dim per step from manifest.modelConfig: hiddenDim, "
-                "qkv_out_dim = numHeads*headDim, or intermediate = "
+                "q_out_dim = numHeads*headDim, kv_out_dim = "
+                "numKeyValueHeads*headDim, or intermediate = "
                 "hiddenDim*ffnExpansionFactor. in_dim_per_pe = in_dim // width. "
                 "num_blocks_per_row = in_dim_per_pe // 32 (Q4K GGML block)."
             ),

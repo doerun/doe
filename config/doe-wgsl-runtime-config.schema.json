@@ -71,6 +71,8 @@
         "hiddenDim": { "type": "integer", "minimum": 1 },
         "numHeads": { "type": "integer", "minimum": 1 },
         "headDim": { "type": "integer", "minimum": 1 },
+        "globalHeadDim": { "type": "integer", "minimum": 1 },
+        "numKeyValueHeads": { "type": "integer", "minimum": 1 },
         "numLayers": { "type": "integer", "minimum": 1 },
         "vocabSize": { "type": "integer", "minimum": 1 },
         "maxSeqLen": { "type": "integer", "minimum": 1 },

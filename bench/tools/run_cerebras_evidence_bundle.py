@@ -11,14 +11,15 @@ Steps (in order):
   1. truth-table test for compute_execution_status (14 cases)
   2. e2b_layer_block_self_check (regens E2B receipt + rollup +
      validates the numbered contract assertions)
-  3. Doppler RDRR/int4ple structural probe
-  4. Doppler RDRR Q4_K_M L1 smoke-contract parity
-  5. BF16-derived E2B L2 smoke-chain diagnostic parity
-  6. Doppler RDRR Q4_K_M L2 smoke-chain diagnostic parity
-  7. claim-discipline gate (hardware + MoE fronts)
-  8. SdkLayout streaming hardening gate (against any available live
+  3. Gemma-4 E2B manifest-shape probe
+  4. Doppler RDRR/int4ple structural probe
+  5. Doppler RDRR Q4_K_M L1 smoke-contract parity
+  6. BF16-derived E2B smoke-chain diagnostic parity depths
+  7. Doppler RDRR Q4_K_M smoke-chain diagnostic parity depths
+  8. claim-discipline gate (hardware + MoE fronts)
+  9. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
-  9. schema validation of 31B receipt and receipt-link integrity for
+ 10. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -51,6 +52,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUNDLE_DIR = REPO_ROOT / "bench/out/cerebras-evidence-bundle"
+DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
 
 
 def parse_args() -> argparse.Namespace:
@@ -148,7 +150,20 @@ def main() -> int:
         timeout=900,
     ))
 
-    # 3. Doppler RDRR/int4ple structural probe.
+    # 3. Gemma-4 E2B manifest-shape probe. A contract mismatch is
+    # expected today and is a passed diagnostic step; source unreadable
+    # errors remain failures via the probe's exit code.
+    steps.append(run(
+        "gemma4-e2b-manifest-shape-probe",
+        [
+            "python3",
+            "bench/tools/probe_gemma4_e2b_manifest_shape.py",
+            "--out-json",
+            "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json",
+        ],
+    ))
+
+    # 4. Doppler RDRR/int4ple structural probe.
     steps.append(run(
         "doppler-rdrr-int4ple-probe",
         [
@@ -161,7 +176,7 @@ def main() -> int:
         ],
     ))
 
-    # 4. Doppler RDRR Q4_K_M smoke-contract parity.
+    # 5. Doppler RDRR Q4_K_M smoke-contract parity.
     steps.append(run(
         "doppler-rdrr-q4k-l1-parity",
         [
@@ -173,47 +188,46 @@ def main() -> int:
         timeout=2600,
     ))
 
-    # 5. BF16-derived E2B L2 smoke-chain diagnostic parity. This is
-    # bundle-visible so reviewers can inspect depth progress, but it
-    # does not promote L2 to full-model or hardware evidence.
-    steps.append(run(
-        "e2b-real-weight-l2-diagnostic-parity",
-        [
-            "python3",
-            "bench/tools/run_e2b_real_weight_l1_parity.py",
-            "--fixture",
-            "config/gemma-4-e2b-real-weight-fixture.json",
-            "--weights-dir",
-            "bench/out/gemma-4-e2b-real-weights",
-            "--num-layers",
-            "2",
-            "--out-json",
-            "bench/out/gemma-4-e2b-real-weight-parity-L2.json",
-            "--lane-out-dir",
-            "bench/out/gemma-4-e2b-real-weight-parity/L2",
-        ],
-        timeout=2400,
-    ))
+    # 6-7. Diagnostic smoke-chain depths. These are bundle-visible so
+    # reviewers can inspect depth progress, but they do not promote any
+    # depth to full-model or hardware evidence.
+    for depth in DIAGNOSTIC_DEPTHS:
+        steps.append(run(
+            f"e2b-real-weight-depth-{depth}-diagnostic",
+            [
+                "python3",
+                "bench/tools/run_e2b_real_weight_l1_parity.py",
+                "--fixture",
+                "config/gemma-4-e2b-real-weight-fixture.json",
+                "--weights-dir",
+                "bench/out/gemma-4-e2b-real-weights",
+                "--num-layers",
+                str(depth),
+                "--out-json",
+                f"bench/out/gemma-4-e2b-real-weight-parity-L{depth}.json",
+                "--lane-out-dir",
+                f"bench/out/gemma-4-e2b-real-weight-parity/L{depth}",
+            ],
+            timeout=2400,
+        ))
+        steps.append(run(
+            f"doppler-rdrr-q4k-depth-{depth}-diagnostic",
+            [
+                "python3",
+                "bench/tools/run_doppler_rdrr_q4k_parity.py",
+                "--num-layers",
+                str(depth),
+            ],
+            timeout=2600,
+        ))
 
-    # 6. Doppler RDRR Q4_K_M L2 smoke-chain diagnostic parity.
-    steps.append(run(
-        "doppler-rdrr-q4k-l2-diagnostic-parity",
-        [
-            "python3",
-            "bench/tools/run_doppler_rdrr_q4k_parity.py",
-            "--num-layers",
-            "2",
-        ],
-        timeout=2600,
-    ))
-
-    # 7. claim-discipline gate (hardware + MoE fronts).
+    # 8. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 8. SdkLayout streaming hardening gate against the freshest live
+    # 9. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -237,7 +251,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 9. receipt link integrity (already invoked by self-check STEP 5,
+    # 10. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

@@ -131,6 +131,7 @@ def _load_known_claim_roles() -> set[str]:
             "cross-runtime-parity-verdict",
             "emulator-accuracy-verdict",
             "emulator-speed-verdict",
+            "manifest-shape-probe",
             "real-weight-parity-verdict",
             "doppler-rdrr-probe",
             "doppler-rdrr-q4k-extraction",

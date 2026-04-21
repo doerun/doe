@@ -190,6 +190,10 @@
       "data": "bench/out/e2b-full-graph/gemma-4-e2b-runtime-receipt.json"
     },
     {
+      "schema": "config/doe-gemma4-e2b-manifest-shape-probe.schema.json",
+      "data": "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-probe.json"
+    },
+    {
       "schema": "config/doppler-rdrr-fixture.schema.json",
       "data": "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json"
     },

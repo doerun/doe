@@ -89,11 +89,12 @@ cross-references inside the receipts resolve as written.
 | `cross-runtime-parity-verdict` | Layer-block diagnostic parity artifacts | Numerical reviewers |
 | `emulator-accuracy-verdict` | CSL simfabric vs WebGPU emulator where claimable | Correctness reviewers |
 | `emulator-speed-verdict` | Local-debug-only speedup (not hardware) | Ergonomics reviewers |
-| `real-weight-parity-verdict` | Real-weight smoke-contract parity, including bundled diagnostic depths | Reviewers of the checkpoint-derived layer-block path |
+| `manifest-shape-probe` | Upstream E2B tensor-shape contract probe | Reviewers of the manifest-shape rewrite |
+| `real-weight-parity-verdict` | Real-weight smoke-contract parity, including bundled diagnostic smoke depths | Reviewers of the checkpoint-derived layer-block path |
 | `doppler-rdrr-probe` | Manifest/shard/tensor-span probe for the Doppler int4ple artifact | Reviewers of structural RDRR ingestion |
 | `doppler-rdrr-q4k-extraction` | Q4_K_M RDRR-to-smoke-slice materialization verdict | Reviewers of the RDRR dequant path |
 | `doppler-rdrr-q4k-audit` | Shape/hash audit for RDRR-derived smoke-contract slices | Reviewers of the RDRR dequant path |
-| `doppler-rdrr-q4k-parity` | RDRR-derived smoke-contract WebGPU-vs-CSL parity verdicts, including bundled diagnostic depths | Numerical reviewers; not Doppler production inference parity |
+| `doppler-rdrr-q4k-parity` | RDRR-derived smoke-contract WebGPU-vs-CSL parity verdicts, including bundled diagnostic smoke depths | Numerical reviewers; not Doppler production inference parity |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
 | `depth-coverage-rollup` | Which declared depths have raw files vs evidence-eligible receipts; today only L1 synthetic is claimable | Anyone asking "is this the full model?" |

@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Gemma-4 E2B manifest-shape probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "status",
+    "verdict",
+    "executionManifestPath",
+    "sourceDir",
+    "upstreamConfigPath",
+    "safetensorsPath",
+    "layer",
+    "upstreamConfig",
+    "doeManifestConfig",
+    "expectedTensorShapes",
+    "tensorAudit",
+    "manifestChecks",
+    "manifestDerivedTensorChecks",
+    "blockers",
+    "advisories",
+    "claimScope",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_gemma4_e2b_manifest_shape_probe"
+    },
+    "modelId": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "blocked", "failed"]
+    },
+    "verdict": { "type": "string", "minLength": 1 },
+    "executionManifestPath": { "type": "string", "minLength": 1 },
+    "sourceDir": { "type": "string", "minLength": 1 },
+    "upstreamConfigPath": { "type": "string", "minLength": 1 },
+    "safetensorsPath": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "layer": { "type": "integer", "minimum": 0 },
+    "upstreamConfig": { "$ref": "#/$defs/ExtensibleObject" },
+    "doeManifestConfig": { "$ref": "#/$defs/ExtensibleObject" },
+    "expectedTensorShapes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "tensorAudit": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TensorAudit" }
+    },
+    "manifestChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Check" }
+    },
+    "manifestDerivedTensorChecks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DerivedTensorCheck" }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "advisories": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "claimScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "notClaimable"],
+      "properties": {
+        "claimable": { "type": "string", "minLength": 1 },
+        "notClaimable": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "TensorAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "present",
+        "dtype",
+        "shape",
+        "expectedShape",
+        "passed",
+        "file"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "present": { "type": "boolean" },
+        "dtype": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 }
+            },
+            { "type": "null" }
+          ]
+        },
+        "expectedShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "passed": { "type": "boolean" },
+        "file": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "Check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "expected", "actual", "passed", "level"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "expected": {},
+        "actual": {},
+        "passed": { "type": "boolean" },
+        "level": { "type": "string", "enum": ["blocking", "advisory"] }
+      }
+    },
+    "DerivedTensorCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "expectedFromDoeManifest",
+        "actualSafeTensorsShape",
+        "passed",
+        "level"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "expectedFromDoeManifest": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "actualSafeTensorsShape": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 }
+            },
+            { "type": "null" }
+          ]
+        },
+        "passed": { "type": "boolean" },
+        "level": { "type": "string", "enum": ["blocking", "advisory"] }
+      }
+    },
+    "ExtensibleObject": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

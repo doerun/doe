@@ -47,11 +47,11 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    production inference output parity, not manifest-shape execution,
    and not full E2B.
 
-5. **E2B L2 smoke-chain diagnostics are bundled.** Backed by the
-   BF16-derived and RDRR Q4_K_M L2 diagnostic parity verdicts. These
-   artifacts show depth progress for the same smoke contract; they are
-   not promoted L2 release evidence, manifest-shape execution, full
-   E2B, or hardware evidence.
+5. **E2B declared-depth smoke-chain diagnostics are bundled.** Backed
+   by the BF16-derived and RDRR Q4_K_M diagnostic parity verdicts for
+   the declared smoke depths beyond L1. These artifacts show depth
+   progress for the same smoke contract; they are not promoted release
+   evidence, manifest-shape execution, full E2B, or hardware evidence.
 
 6. **Doe carries E2B and 31B through governed compiler/runtime
    artifacts.** Backed by the model-runtime receipts and fixture
@@ -101,9 +101,9 @@ a bundle integrity failure.
 
 - **L2/L4/L8/L35 are claimable E2B parity depths.** The depth matrix
   distinguishes raw diagnostic files from evidence-eligible receipts.
-  Bundled L2 BF16/RDRR smoke diagnostics are not promoted receipts.
-  Today only L1 synthetic and E2B L1 real-weight smoke-contract
-  evidence are claimable.
+  Bundled BF16/RDRR smoke diagnostics beyond L1 are not promoted
+  receipts. Today only L1 synthetic and E2B L1 real-weight
+  smoke-contract evidence are claimable.
 
 - **31B real Gemma-4 weights have been used.** The 31B
   real-weight parity verdict remains blocked until its own extractor
@@ -125,7 +125,7 @@ a bundle integrity failure.
 | --- | --- |
 | Doppler production RDRR output parity | Doppler-owned production export or committed inference path that emits comparable activations from the same prompt/input contract |
 | 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
-| Manifest-shape execution | Kernel rewrite for `headDim=512` (E2B) or `headDim=160` (31B); in-repo structural work |
+| Manifest-shape execution | Kernel rewrite for E2B local `headDim=256`, `globalHeadDim=512`, `numKeyValueHeads=1`, or 31B `headDim=160`; in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
 | Gemma-4 runs on Cerebras hardware | Hardware receipt via either (a) endpoint access for us to run the runner with `--cmaddr` / `csl_appliance_driver.py`, or (b) Cerebras-assisted bundle run that returns the receipt |
 | Any MoE claim | 6 MoE component receipts (router, top-k, dispatch, shared-expert, combine, per-expert-batching) replacing the current TODO files |

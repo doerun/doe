@@ -857,7 +857,8 @@ def main() -> int:
                 "compute the identical f32 op sequence (no tanh "
                 "/ exp / erf divergence). Remaining structural "
                 "gaps are real manifest-derived weight loading "
-                "and head_dim toward the manifest's 512."
+                "and the upstream local/global head-dim plus "
+                "grouped-KV contract."
             ),
             "kernelSourcePath": layer_block_kernel_path,
             "kernelSourceSha256": sha256_file(resolve(layer_block_kernel_path)),
@@ -957,7 +958,8 @@ def main() -> int:
                 "j in [0, 4); V_h is NOT rotated. The remaining "
                 "structural gaps to a real Gemma-4 attention block "
                 "are real manifest-derived weight loading and "
-                "head_dim toward the manifest's 512."
+                "the upstream local/global head-dim plus grouped-KV "
+                "contract."
             ),
             **layer_block_trace_evidence,
             **synthetic_trace_evidence,
@@ -987,7 +989,7 @@ def main() -> int:
             ),
             "pendingStages": [
                 "publish_real_per_layer_weight_slices_to_weights_dir",
-                "head_dim_toward_manifest_512",
+                "local_global_head_dim_and_grouped_kv_manifest_shape",
             ],
         },
     }

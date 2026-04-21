@@ -4,7 +4,9 @@
   "modelConfig": {
     "hiddenDim": 1536,
     "numHeads": 8,
-    "headDim": 512,
+    "headDim": 256,
+    "globalHeadDim": 512,
+    "numKeyValueHeads": 1,
     "numLayers": 35,
     "vocabSize": 262144,
     "maxSeqLen": 4096,
@@ -26,7 +28,7 @@
     "period": 5,
     "offset": 4
   },
-  "numKvSharedLayers": 4,
+  "numKvSharedLayers": 20,
   "steps": [
     { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed", "weightsKey": "embed_tokens" },
     { "name": "ple_gather", "phase": "prefill", "op": "ple_gather", "kernelKey": "ple_embed", "weightsKey": "per_layer_inputs.embedTokensPerLayer" },

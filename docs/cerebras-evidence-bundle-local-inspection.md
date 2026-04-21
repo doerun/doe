@@ -116,9 +116,9 @@ their own compile artifact dir, then visualize it locally.
 bench/tools/summarize_cerebras_evidence_archive.sh <archive>
 ```
 
-Prints E2B/31B/MoE status, bundle gate verdict, RDRR Q4_K_M parity,
-L2 diagnostics, and emulator verdicts — entirely from inside the tarball
-via `tar -xzO | jq`, no unpack needed.
+Prints E2B/31B/MoE status, bundle gate verdict, manifest-shape contract,
+RDRR Q4_K_M parity, declared-depth diagnostics, and emulator verdicts —
+entirely from inside the tarball via `tar -xzO | jq`, no unpack needed.
 
 ## Evidence-bundle regen (on the bundler's tree)
 

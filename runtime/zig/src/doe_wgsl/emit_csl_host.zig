@@ -28,6 +28,8 @@ pub const ModelConfig = struct {
     hidden_dim: u32,
     num_heads: u32,
     head_dim: u32,
+    global_head_dim: ?u32 = null,
+    num_key_value_heads: ?u32 = null,
     num_layers: u32,
     vocab_size: u32,
     max_seq_len: u32,

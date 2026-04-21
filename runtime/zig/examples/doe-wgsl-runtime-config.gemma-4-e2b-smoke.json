@@ -8,7 +8,9 @@
   "modelConfig": {
     "hiddenDim": 1536,
     "numHeads": 8,
-    "headDim": 512,
+    "headDim": 256,
+    "globalHeadDim": 512,
+    "numKeyValueHeads": 1,
     "numLayers": 35,
     "vocabSize": 262144,
     "maxSeqLen": 4096,
