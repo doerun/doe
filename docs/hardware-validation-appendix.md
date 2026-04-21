@@ -145,6 +145,18 @@ E2B SafeTensors metadata and records that upstream uses local `headDim=256`,
 fields to that source metadata, but it is still not a real manifest-shape
 execution path.
 
+The next valuable Cerebras proof should use the production Doppler INT4 PLE
+RDRR inference path as the source program, not the direct LiteRT/TFLite `.task`
+path and not the Doe-side Doppler-equivalent WebGPU harness. The direct path
+remains useful for shape and adapter work, but it is not the current
+correctness-claim lane. The promotion target is a same-program parity receipt
+at `/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`: matching
+Doppler WebGPU and Doe-emitted CSL outputs for the same source artifact,
+manifest identity, graph or capture identity, weight identity, and prompt/input
+contract under the declared tolerance policy. Until the production INT4 PLE
+reference export exists, the hardware ask remains scoped to the L1/smoke and
+diagnostic evidence above.
+
 The manifest-shape attention-core receipt is the first runtime-executed
 diagnostic for those dimensions. It compiles and runs the local and global
 head dimensions through SdkLayout, reusing one K/V stream for all eight query

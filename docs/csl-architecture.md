@@ -17,6 +17,14 @@ WebGPU runtime contract directly.
 
 ## The abstraction stack
 
+For Gemma-4, the intended source program is the production Doppler INT4 PLE
+RDRR WebGPU inference path: JavaScript host/model orchestration, WGSL compute
+kernels, weights, and an `execution-v1` manifest. Doe does not replace that
+authoring surface for the Cerebras lane. It governs the lowering of that
+surface into explicit Cerebras contracts and receipts. The Doe-side
+Doppler-equivalent WebGPU harness is not a substitute for this production
+reference when making Cerebras-facing parity claims.
+
 The current CSL lowering stack is:
 
 1. WGSL enters the normal Doe compiler pipeline and becomes Doe IR.
@@ -28,6 +36,13 @@ The current CSL lowering stack is:
 
 The most important design rule is that the explicit `HostPlan` is the contract
 boundary between higher-level execution intent and Cerebras-specific emission.
+For model-scale Gemma-4 evidence, the `HostPlan` must stay tied back to the
+source manifest, captured graph, weight identity, and input contract so parity
+receipts can distinguish same-program portability from a separate hand-authored
+CSL demo. The binding surface for that evidence is
+`/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`, which already
+separates `sourceProgram`, `referenceRun`, `cslRun`, `comparison`, and
+`promotionCriteria`.
 
 Simulator and hardware execution use the same receipt path. The default target
 is local simfabric. When `DOE_CSL_CMADDR` or the governed-lane

@@ -12,6 +12,40 @@ supports, and what still needs external input.
 If you catch marketing or a PR description claiming something not
 listed in "allowed claims today," revise it.
 
+## Target lane
+
+The useful Cerebras-facing Gemma-4 path is single-program portability from the
+production Doppler INT4 PLE RDRR WebGPU inference path to Doe-emitted CSL. The
+source program is the Doppler execution bundle: JavaScript orchestration, WGSL
+kernels, weights, and an `execution-v1` manifest. Doe's job is to capture or
+ingest that program, lower the supported compute subset through Doe IR, and
+emit explicit Cerebras contracts: `HostPlan`, memory plan, stream/operation
+graph, SdkLayout/Python orchestration where needed, runtime config, CSL source,
+simulator receipts, and eventually hardware receipts.
+
+For the current Gemma-4 E2B work, the INT4 PLE RDRR artifact is the preferred
+source artifact for this lane. The direct LiteRT/TFLite `.task` path is useful
+source-shape evidence, but it is not the correctness-claim path until Doppler's
+catalog promotes it past the current numerical-correctness blocker. The
+existing Doe-side Doppler-equivalent WebGPU harness remains useful for smoke
+evidence, but it is not production Doppler inference parity.
+
+The first proof is not speed. The first proof is that the same source artifact,
+manifest identity, graph or capture identity, weight identity, and prompt/input
+contract produce matching outputs in Doppler WebGPU and Doe-emitted CSL within
+the declared numerical tolerance. Unsupported captured operations must fail
+with explicit CSL taxonomy errors. Hidden fallbacks do not promote the lane.
+
+The parity contract already exists at
+`/home/x/deco/doe/config/doe-csl-reference-parity.schema.json`. The speed-first
+promotion path should bind one output tensor first, preferably final logits, via
+a production Doppler export such as `doppler_int4ple_reference_export.json`;
+additional named layer activations can either use one receipt per tensor or a
+future schema extension after the first same-program path is green.
+
+This target lane is not itself an allowed claim today. It becomes claimable only
+through the receipts and gates below.
+
 ## Allowed claims today
 
 Each claim below is backed by a specific on-disk artifact or gate.

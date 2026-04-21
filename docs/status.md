@@ -26,6 +26,14 @@ Read this file first. Use the shard files under
   `fabric_color`, and the E2B self-check has a source hygiene lock for removed
   SDK-1.4-only constructs.
   Existing SDK 1.4 simulator receipts remain historical until regenerated.
+- The Cerebras-facing Gemma-4 target lane is now documented as production
+  Doppler INT4 PLE RDRR inference → Doppler-owned reference export → Doe
+  HostPlan / SdkLayout / CSL lowering → simulator and hardware receipts, using
+  `/home/x/deco/doe/config/doe-csl-reference-parity.schema.json` as the parity
+  binding surface. This is a target-lane clarification, not a new claim: direct
+  LiteRT/TFLite and the Doe-side Doppler-equivalent harness remain out of the
+  correctness-claim path, and full E2B, Doppler production parity, hardware,
+  and performance claims remain gated.
 - Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and
