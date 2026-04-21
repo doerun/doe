@@ -855,6 +855,136 @@ def _build_doppler_webgpu_capture_evidence(
     }
 
 
+def _build_doppler_webgpu_capture_lowering_evidence(
+    receipt: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Bind the first captured WebGPU graph to a CSL attention slice."""
+    model_id = (receipt.get("modelId") or "").lower()
+    if "e2b" not in model_id:
+        return None
+
+    lowering_rel = (
+        "bench/out/doppler-capture/"
+        "gemma-4-e2b-capture-to-csl-attention-core-lowering.json"
+    )
+    lowering_link = _file_link(lowering_rel)
+    blockers: list[str] = []
+    lowering: dict[str, Any] = {}
+    if lowering_link.get("exists") is not True:
+        blockers.append("doppler_webgpu_capture_lowering_receipt_missing")
+    else:
+        try:
+            loaded = load_json(resolve(lowering_rel))
+            if isinstance(loaded, dict):
+                lowering = loaded
+            else:
+                blockers.append("doppler_webgpu_capture_lowering_not_object")
+        except json.JSONDecodeError:
+            blockers.append("doppler_webgpu_capture_lowering_invalid_json")
+
+    source = lowering.get("source") or {}
+    host_plan_view = lowering.get("capturedHostPlanView") or {}
+    artifacts = lowering.get("loweredArtifacts") or {}
+    simulator = lowering.get("simulatorEvidence") or {}
+    semantic = simulator.get("semanticParity") or {}
+    source_graph = source.get("captureGraph") or {}
+
+    if lowering:
+        if lowering.get("artifactKind") != (
+            "doe_doppler_webgpu_capture_to_csl_attention_core_lowering"
+        ):
+            blockers.append("doppler_webgpu_capture_lowering_kind_mismatch")
+        if lowering.get("status") != (
+            "attention_core_capture_slice_lowered_and_simulated"
+        ):
+            blockers.append("doppler_webgpu_capture_lowering_not_simulated")
+        if lowering.get("claimable") is not False:
+            blockers.append("doppler_webgpu_capture_lowering_claimable")
+        if source_graph.get("graphSha256") != (
+            (receipt.get("dopplerWebgpuCaptureEvidence") or {})
+            .get("captureGraph", {})
+            .get("graphSha256")
+        ):
+            blockers.append("doppler_webgpu_capture_lowering_graph_sha_mismatch")
+        if int(host_plan_view.get("workgroupDispatchCount", 0)) < 1:
+            blockers.append("doppler_webgpu_capture_lowering_no_dispatches")
+        if len(host_plan_view.get("bindings") or []) < 4:
+            blockers.append("doppler_webgpu_capture_lowering_bindings_missing")
+        if semantic.get("passed") is not True:
+            blockers.append("doppler_webgpu_capture_lowering_parity_not_passed")
+        if semantic.get("againstDopplerProductionInference") is not False:
+            blockers.append("doppler_webgpu_capture_lowering_scope_mismatch")
+
+    status = (
+        "attention_core_capture_slice_lowered_and_simulated"
+        if not blockers
+        else "blocked"
+    )
+    return {
+        "status": status,
+        "claimable": False,
+        "claimScope": (
+            "Partial captured-graph lowering only. This binds the "
+            "Doppler WebGPU capture graph to the first Gemma-4 E2B "
+            "manifest-shape attention-core SdkLayout/CSL simulator "
+            "slice and its CPU-oracle parity; it is not full Doppler "
+            "inference capture, not full graph lowering, not logits "
+            "parity, not hardware, and not performance evidence."
+        ),
+        "loweringReceipt": {
+            **lowering_link,
+            "sourceGraphSha256": source_graph.get("graphSha256"),
+        },
+        "source": {
+            "captureGraph": source_graph,
+            "shaderModules": source.get("shaderModules") or [],
+            "model": source.get("model") or {},
+        },
+        "capturedHostPlanView": {
+            "workload": host_plan_view.get("workload"),
+            "workgroupSize": host_plan_view.get("workgroupSize") or [],
+            "workgroupDispatchCount": host_plan_view.get(
+                "workgroupDispatchCount"
+            ),
+            "readbackCheckpoints": host_plan_view.get("readbackCheckpoints"),
+            "bindingCount": len(host_plan_view.get("bindings") or []),
+            "bufferRoles": [
+                role.get("role")
+                for role in (host_plan_view.get("bufferRoles") or [])
+                if isinstance(role, dict)
+            ],
+        },
+        "loweredArtifacts": {
+            "sdkVersionFloor": artifacts.get("sdkVersionFloor"),
+            "targetBackend": artifacts.get("targetBackend"),
+            "targetRuntime": artifacts.get("targetRuntime"),
+            "pythonSdkLayoutRunner": artifacts.get("pythonSdkLayoutRunner") or {},
+            "cslKernel": artifacts.get("cslKernel") or {},
+            "attentionCoreReceipt": artifacts.get("attentionCoreReceipt") or {},
+        },
+        "simulatorEvidence": {
+            "status": simulator.get("status"),
+            "hardwareExecuted": bool(simulator.get("hardwareExecuted")),
+            "semanticParity": {
+                "passed": bool(semantic.get("passed")),
+                "scope": semantic.get("scope"),
+                "againstDopplerProductionInference": bool(
+                    semantic.get("againstDopplerProductionInference")
+                ),
+                "shapeRunCount": len(semantic.get("shapeRuns") or []),
+            },
+        },
+        "blockers": blockers,
+        "remainingClaimBlockers": [
+            "ordinary_doppler_inference_graph_capture",
+            "full_captured_webgpu_graph_to_hostplan_lowering",
+            "automated_wgsl_to_csl_kernel_lowering",
+            "embed_unembed_decoder_logits_parity",
+            "cerebras_hardware_receipt",
+        ],
+    }
+
+
 def resolve(p: str) -> Path:
     path = Path(p)
     return path if path.is_absolute() else (REPO_ROOT / path).resolve()
