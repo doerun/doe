@@ -88,8 +88,12 @@ E2B bundle:
 - Doppler WebGPU capture graph
   `bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json`
   (Doppler Node provider bootstrap plus Gemma-4 E2B WGSL/command capture
-  through `doe-gpu/capture`; not HostPlan/SdkLayout/CSL lowering or
-  production inference parity)
+  through `doe-gpu/capture`; not production inference parity)
+- Doppler capture-to-CSL attention-core lowering receipt
+  `bench/out/doppler-capture/gemma-4-e2b-capture-to-csl-attention-core-lowering.json`
+  (consumes the capture graph hash and binds it to the first
+  SdkLayout/CSL attention-core simulator slice; not full captured-graph
+  lowering)
 - Doppler RDRR/int4ple fixture
   `config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json` and probe
   verdict `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json`
@@ -166,8 +170,10 @@ logits parity, hardware, or performance evidence.
 
 The Doppler WebGPU capture graph is the shared-input rung. It proves Doppler's
 Node WebGPU bootstrap can install `doe-gpu/capture` and record a Gemma-4 E2B
-WGSL/command graph with manifest identity and hashes. It is not yet lowered
-to HostPlan/SdkLayout/CSL and is not production Doppler inference parity.
+WGSL/command graph with manifest identity and hashes. The capture-to-CSL
+lowering receipt now consumes that graph for the first attention-core
+SdkLayout/CSL simulator slice. Full captured-graph HostPlan lowering and
+production Doppler inference parity remain blocked.
 
 Kernel surface: pre-attn RMSNorm, 8-head MHA with per-head vector
 Q/K/V and multi-pair ROPE, post-attn RMSNorm, gated MLP with poly_c1

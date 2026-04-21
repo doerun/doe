@@ -20,15 +20,15 @@ bundle" for the prose workflow; this file is the tool-reference.
 
 - **`run_cerebras_evidence_bundle.py`** — runs the local gate sequence
   in order (truth-table test, Doppler Gemma-4 WebGPU capture graph,
-  self-check, manifest-shape probe, manifest-shape CPU execution
-  oracle, Doppler RDRR/int4ple structural probe,
+  manifest-shape probe, manifest-shape CPU execution oracle,
+  Doppler RDRR/int4ple structural probe,
   Doppler RDRR Q4_K_M L1 smoke-contract parity,
-  declared-depth BF16/RDRR diagnostics,
+  declared-depth BF16/RDRR diagnostics, self-check,
   E2B model receipt refresh after those diagnostics, manifest-shape
-  attention-core SdkLayout diagnostic, manifest-shape Doe/CSL
-  runtime-path contract after a second receipt refresh,
-  claim-discipline, SdkLayout streaming hardening, receipt link
-  integrity) and writes
+  attention-core SdkLayout diagnostic, Doppler capture-to-CSL
+  attention-core lowering, manifest-shape Doe/CSL runtime-path
+  contract after a second receipt refresh, claim-discipline,
+  SdkLayout streaming hardening, receipt link integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
   plus an aggregate verdict.
@@ -130,7 +130,8 @@ locks most of this pipeline via numbered contracts:
 | C42 | model receipt promotes the generated E2B SdkLayout layer-block smoke with stream graph, telemetry, `rt.stop()`, non-stub kernel, and parity evidence |
 | C43 | model receipt binds BF16 + RDRR declared-depth smoke diagnostics as non-claimable evidence with manifest-shape/runtime/hardware blockers intact |
 | C44 | model receipt binds the partial manifest-shape attention-core SdkLayout slice with local/global heads, grouped KV, and CPU-oracle parity while full claims stay blocked |
-| C45 | model receipt binds the Doppler Gemma-4 WebGPU capture graph as shared JS/WGSL input while HostPlan/SdkLayout/CSL lowering claims remain blocked |
+| C45 | model receipt binds the Doppler Gemma-4 WebGPU capture graph as shared JS/WGSL input while full-graph HostPlan/SdkLayout/CSL lowering claims remain blocked |
+| C46 | model receipt binds the captured WebGPU graph to the first attention-core SdkLayout/CSL lowering receipt with CPU-oracle parity and full-inference blockers intact |
 
 ## What this pipeline does NOT do
 
@@ -148,7 +149,8 @@ locks most of this pipeline via numbered contracts:
   receipts. The attention-core receipt covers only the local/global
   head-dim plus grouped-KV diagnostic rung, not full attention or model
   execution.
-- Promote captured Doppler WebGPU graphs — the capture graph proves the
-  shared input surface can be recorded through Doppler's Node provider
-  bootstrap, but it is not yet lowered to HostPlan/SdkLayout/CSL or
-  compared against Doppler production inference.
+- Promote captured Doppler WebGPU graphs to full inference — the capture
+  graph proves the shared input surface can be recorded through Doppler's
+  Node provider bootstrap, and the lowering receipt now binds that graph to
+  the first attention-core SdkLayout/CSL slice. Full captured-graph
+  HostPlan lowering and Doppler production-inference parity remain blocked.

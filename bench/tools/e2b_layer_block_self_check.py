@@ -171,6 +171,32 @@ def main() -> int:
         return 1
 
     print()
+    print("STEP 3a: refresh Doppler WebGPU capture graph")
+    ok, msg = run_step("doppler-capture", [
+        "node",
+        "bench/tools/capture_doppler_gemma4_webgpu_graph.mjs",
+        "--out-json",
+        "bench/out/doppler-capture/"
+        "gemma-4-e2b-doe-webgpu-capture-graph.json",
+    ])
+    if not ok:
+        print(f"  FAILED: {msg}")
+        return 1
+
+    print()
+    print("STEP 3b: refresh capture-to-CSL attention-core lowering receipt")
+    ok, msg = run_step("capture-lowering", [
+        "python3",
+        "bench/tools/record_doppler_capture_to_csl_attention_core_lowering.py",
+        "--out-json",
+        "bench/out/doppler-capture/"
+        "gemma-4-e2b-capture-to-csl-attention-core-lowering.json",
+    ])
+    if not ok:
+        print(f"  FAILED: {msg}")
+        return 1
+
+    print()
     print("STEP 4: regen model receipt")
     ok, msg = run_step("receipt", [
         "python3", "bench/tools/build_model_runtime_receipt.py",
@@ -1747,8 +1773,113 @@ def main() -> int:
     else:
         print(
             "  C45 PASS: model receipt binds Doppler Gemma-4 WebGPU "
-            "capture graph as shared JS/WGSL input while lowering claims "
-            "remain blocked"
+            "capture graph as shared JS/WGSL input while full graph "
+            "lowering claims remain blocked"
+        )
+
+    # C46: first captured-graph lowering receipt is model-receipt-visible.
+    # This does not promote full inference. It proves the current capture
+    # graph hash is consumed by the attention-core SdkLayout/CSL slice and
+    # that the resulting simulator parity remains CPU-oracle scoped.
+    _capture_lowering = (
+        receipt.get("dopplerWebgpuCaptureLoweringEvidence") or {}
+    )
+    _c46_bad = []
+    if not _capture_lowering:
+        _c46_bad.append("dopplerWebgpuCaptureLoweringEvidence missing")
+    else:
+        if _capture_lowering.get("status") != (
+            "attention_core_capture_slice_lowered_and_simulated"
+        ):
+            _c46_bad.append(
+                f"status={_capture_lowering.get('status')!r}, "
+                "expected attention-core lowering"
+            )
+        if _capture_lowering.get("claimable") is not False:
+            _c46_bad.append("claimable is not false")
+        if _capture_lowering.get("blockers") != []:
+            _c46_bad.append(
+                f"blockers not empty: {_capture_lowering.get('blockers')!r}"
+            )
+        _lowering_receipt = _capture_lowering.get("loweringReceipt") or {}
+        _lowering_path = _lowering_receipt.get("path")
+        if not (_lowering_path and (REPO_ROOT / _lowering_path).is_file()):
+            _c46_bad.append("loweringReceipt.path missing")
+        if not _lowering_receipt.get("sha256"):
+            _c46_bad.append("loweringReceipt.sha256 missing")
+        _capture_graph_sha = (
+            (receipt.get("dopplerWebgpuCaptureEvidence") or {})
+            .get("captureGraph", {})
+            .get("graphSha256")
+        )
+        if _lowering_receipt.get("sourceGraphSha256") != _capture_graph_sha:
+            _c46_bad.append("sourceGraphSha256 does not match capture graph")
+        _lowering_source = _capture_lowering.get("source") or {}
+        _lowering_graph = _lowering_source.get("captureGraph") or {}
+        if _lowering_graph.get("graphSha256") != _capture_graph_sha:
+            _c46_bad.append("source.captureGraph.graphSha256 mismatch")
+        if not (_lowering_source.get("shaderModules") or []):
+            _c46_bad.append("source.shaderModules missing")
+        _host_view = _capture_lowering.get("capturedHostPlanView") or {}
+        if _host_view.get("workload") != (
+            "gemma4_e2b_manifest_shape_grouped_kv_capture_smoke"
+        ):
+            _c46_bad.append("capturedHostPlanView.workload mismatch")
+        if int(_host_view.get("workgroupDispatchCount", 0)) < 1:
+            _c46_bad.append("workgroupDispatchCount < 1")
+        if int(_host_view.get("bindingCount", 0)) < 4:
+            _c46_bad.append("bindingCount < 4")
+        if "grouped_kv_projection_input" not in (
+            _host_view.get("bufferRoles") or []
+        ):
+            _c46_bad.append("grouped KV buffer role missing")
+        _lowered = _capture_lowering.get("loweredArtifacts") or {}
+        if _lowered.get("sdkVersionFloor") != "2.10.0":
+            _c46_bad.append("sdkVersionFloor mismatch")
+        for _field in (
+            "pythonSdkLayoutRunner",
+            "cslKernel",
+            "attentionCoreReceipt",
+        ):
+            _link = _lowered.get(_field) or {}
+            _path = _link.get("path")
+            if not (_path and (REPO_ROOT / _path).is_file()):
+                _c46_bad.append(f"loweredArtifacts.{_field}.path missing")
+            if not _link.get("sha256"):
+                _c46_bad.append(f"loweredArtifacts.{_field}.sha256 missing")
+        _sim = _capture_lowering.get("simulatorEvidence") or {}
+        _semantic = _sim.get("semanticParity") or {}
+        if _sim.get("status") != "succeeded":
+            _c46_bad.append("simulatorEvidence.status mismatch")
+        if _sim.get("hardwareExecuted") is not False:
+            _c46_bad.append("hardwareExecuted is not false")
+        if _semantic.get("passed") is not True:
+            _c46_bad.append("semanticParity.passed is not true")
+        if _semantic.get("scope") != "attention_core_cpu_oracle_bit_exact":
+            _c46_bad.append("semanticParity.scope mismatch")
+        if _semantic.get("againstDopplerProductionInference") is not False:
+            _c46_bad.append(
+                "semanticParity claims Doppler production inference"
+            )
+        _remaining = set(_capture_lowering.get("remainingClaimBlockers") or [])
+        for _expected in (
+            "ordinary_doppler_inference_graph_capture",
+            "full_captured_webgpu_graph_to_hostplan_lowering",
+            "automated_wgsl_to_csl_kernel_lowering",
+            "embed_unembed_decoder_logits_parity",
+            "cerebras_hardware_receipt",
+        ):
+            if _expected not in _remaining:
+                _c46_bad.append(
+                    f"remainingClaimBlockers missing {_expected}"
+                )
+    if _c46_bad:
+        failures.extend(f"C46 FAIL: {_bad}" for _bad in _c46_bad)
+    else:
+        print(
+            "  C46 PASS: model receipt binds the captured WebGPU graph "
+            "to the first attention-core SdkLayout/CSL lowering receipt "
+            "with CPU-oracle parity and full-inference blockers intact"
         )
 
     # C27: emulator lane's runCslWebGpuEmulator() soft-fails the CSL

@@ -968,6 +968,181 @@
         }
       }
     },
+    "dopplerWebgpuCaptureLoweringEvidence": {
+      "type": "object",
+      "description": "Partial receipt proving that the Doppler WebGPU capture graph was consumed by the first manifest-shape attention-core SdkLayout/CSL simulator slice. This remains non-claimable for full inference.",
+      "required": [
+        "status",
+        "claimable",
+        "claimScope",
+        "loweringReceipt",
+        "source",
+        "capturedHostPlanView",
+        "loweredArtifacts",
+        "simulatorEvidence",
+        "blockers",
+        "remainingClaimBlockers"
+      ],
+      "properties": {
+        "status": {
+          "const": "attention_core_capture_slice_lowered_and_simulated"
+        },
+        "claimable": { "const": false },
+        "claimScope": { "type": "string", "minLength": 1 },
+        "loweringReceipt": {
+          "type": "object",
+          "required": ["path", "exists", "sha256", "sourceGraphSha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "exists": { "const": true },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "sourceGraphSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "source": {
+          "type": "object",
+          "required": ["captureGraph", "model", "shaderModules"],
+          "properties": {
+            "captureGraph": {
+              "type": "object",
+              "required": ["path", "exists", "sha256", "graphSha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "exists": { "const": true },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "graphSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            "model": {
+              "type": "object",
+              "required": ["architecture", "manifestPath", "manifestSha256", "modelId"],
+              "properties": {
+                "modelId": { "const": "gemma-4-e2b-it-q4k-ehf16-af32" },
+                "manifestPath": { "type": "string", "minLength": 1 },
+                "manifestSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "architecture": {
+                  "type": "object",
+                  "required": ["globalHeadDim", "headDim", "numKeyValueHeads"],
+                  "properties": {
+                    "globalHeadDim": { "const": 512 },
+                    "headDim": { "const": 256 },
+                    "numKeyValueHeads": { "const": 1 }
+                  }
+                }
+              }
+            },
+            "shaderModules": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["wgslSha256"],
+                "properties": {
+                  "wgslSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "capturedHostPlanView": {
+          "type": "object",
+          "required": [
+            "bindingCount",
+            "bufferRoles",
+            "readbackCheckpoints",
+            "workgroupDispatchCount",
+            "workgroupSize",
+            "workload"
+          ],
+          "properties": {
+            "workload": {
+              "const": "gemma4_e2b_manifest_shape_grouped_kv_capture_smoke"
+            },
+            "workgroupSize": {
+              "type": "array",
+              "prefixItems": [{ "const": 64 }],
+              "minItems": 1
+            },
+            "workgroupDispatchCount": { "type": "integer", "minimum": 1 },
+            "readbackCheckpoints": { "type": "integer", "minimum": 1 },
+            "bindingCount": { "type": "integer", "minimum": 4 },
+            "bufferRoles": {
+              "type": "array",
+              "contains": { "const": "grouped_kv_projection_input" }
+            }
+          }
+        },
+        "loweredArtifacts": {
+          "type": "object",
+          "required": [
+            "attentionCoreReceipt",
+            "cslKernel",
+            "pythonSdkLayoutRunner",
+            "sdkVersionFloor",
+            "targetBackend",
+            "targetRuntime"
+          ],
+          "properties": {
+            "sdkVersionFloor": { "const": "2.10.0" },
+            "targetBackend": { "const": "csl" },
+            "targetRuntime": { "const": "sdk_layout_streaming" },
+            "pythonSdkLayoutRunner": { "$ref": "#/$defs/ReceiptFileLink" },
+            "cslKernel": { "$ref": "#/$defs/ReceiptFileLink" },
+            "attentionCoreReceipt": { "$ref": "#/$defs/ReceiptFileLink" }
+          }
+        },
+        "simulatorEvidence": {
+          "type": "object",
+          "required": ["hardwareExecuted", "semanticParity", "status"],
+          "properties": {
+            "status": { "const": "succeeded" },
+            "hardwareExecuted": { "const": false },
+            "semanticParity": {
+              "type": "object",
+              "required": [
+                "againstDopplerProductionInference",
+                "passed",
+                "scope",
+                "shapeRunCount"
+              ],
+              "properties": {
+                "passed": { "const": true },
+                "scope": { "const": "attention_core_cpu_oracle_bit_exact" },
+                "againstDopplerProductionInference": { "const": false },
+                "shapeRunCount": { "type": "integer", "minimum": 2 }
+              }
+            }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "remainingClaimBlockers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "contains": {
+            "const": "full_captured_webgpu_graph_to_hostplan_lowering"
+          }
+        }
+      }
+    },
     "fullGridCompileProbeEvidence": {
       "type": "object",
       "description": "Optional pointer to the cslc grid-probe aggregate documenting which PE counts cslc accepts for this arch. Captured once per repo; referenced by every model receipt so downstream consumers can correlate 'this model wants NN PEs' against 'cslc has been proven to handle up to MM PEs'.",
@@ -1014,6 +1189,17 @@
         },
         "chainCoverageCount": { "type": "integer", "minimum": 0 },
         "chainCoverageTotal": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "ReceiptFileLink": {
+      "type": "object",
+      "required": ["path", "exists", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "exists": { "const": true },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
       }
     }
   },
