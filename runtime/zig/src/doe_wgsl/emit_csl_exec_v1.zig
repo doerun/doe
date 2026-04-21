@@ -67,6 +67,7 @@ pub const ExecStep = struct {
     attention_type: ?AttentionType = null,
     sliding_window_size: ?u32 = null,
     kv_cache_alias: ?[]const u8 = null,
+    repeat: u32 = LAUNCH_REPEAT,
 };
 
 const LayerPattern = struct {
@@ -291,6 +292,8 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
 
     const sliding_window_size = try parseOptionalU32(object.get("slidingWindowSize"));
     const kv_cache_alias = try parseNullableStringDup(allocator, object.get("kvCacheAlias"));
+    const repeat = (try parseOptionalU32(object.get("repeat"))) orelse LAUNCH_REPEAT;
+    if (repeat == 0) return error.MalformedStep;
 
     return .{
         .phase = try parsePhase(phase_text),
@@ -301,6 +304,7 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
         .attention_type = attention_type,
         .sliding_window_size = sliding_window_size,
         .kv_cache_alias = kv_cache_alias,
+        .repeat = repeat,
     };
 }
 
@@ -442,6 +446,7 @@ fn appendManifestPostLayerSteps(
 
 fn validateStep(step: ExecStep, op_spec: OpSpec) LowerError!void {
     if (step.op.len == 0 or step.kernel_key.len == 0) return error.MalformedStep;
+    if (step.repeat == 0) return error.MalformedStep;
     if (step.weights_key) |weights_key| {
         if (weights_key.len == 0) return error.MalformedStep;
     }
@@ -593,9 +598,11 @@ fn lowerToHostPlanWithMetadata(
             kernel_buf[kernel_count] = .{
                 .name = step.kernel_key,
                 .pattern = pattern,
-                .count = 1,
+                .count = step.repeat,
             };
             kernel_count += 1;
+        } else {
+            kernel_buf[ki].count += step.repeat - 1;
         }
 
         switch (step.phase) {
@@ -603,7 +610,7 @@ fn lowerToHostPlanWithMetadata(
                 if (prefill_count >= prefill_buf.len) return error.OutputTooLarge;
                 prefill_buf[prefill_count] = .{
                     .kernel_name = step.kernel_key,
-                    .repeat = LAUNCH_REPEAT,
+                    .repeat = step.repeat,
                     .attention_type = attention_type,
                     .sliding_window_size = sliding_window_size,
                     .current_pos_source = current_pos_source,
@@ -615,7 +622,7 @@ fn lowerToHostPlanWithMetadata(
                 if (decode_count >= decode_buf.len) return error.OutputTooLarge;
                 decode_buf[decode_count] = .{
                     .kernel_name = step.kernel_key,
-                    .repeat = LAUNCH_REPEAT,
+                    .repeat = step.repeat,
                     .attention_type = attention_type,
                     .sliding_window_size = sliding_window_size,
                     .current_pos_source = current_pos_source,
@@ -748,4 +755,39 @@ pub fn lowerManifestExecutionToHostPlan(
         };
     }
     return plan;
+}
+
+test "execution-v1 step repeat lowers into HostPlan launch repeat" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "grid": { "width": 2, "height": 1 },
+        \\  "steps": [
+        \\    {
+        \\      "phase": "prefill",
+        \\      "op": "embed",
+        \\      "kernelKey": "embed",
+        \\      "repeat": 3
+        \\    }
+        \\  ]
+        \\}
+    ;
+    var kernel_buf: [4]host.KernelSpec = undefined;
+    var prefill_buf: [4]host.LaunchSpec = undefined;
+    var decode_buf: [4]host.LaunchSpec = undefined;
+    const plan = try lowerJsonToHostPlan(
+        arena.allocator(),
+        payload,
+        &kernel_buf,
+        &prefill_buf,
+        &decode_buf,
+    );
+    try std.testing.expectEqual(@as(usize, 1), plan.kernels.len);
+    try std.testing.expectEqual(@as(u32, 3), plan.kernels[0].count);
+    try std.testing.expectEqual(@as(usize, 1), plan.prefill_launches.len);
+    try std.testing.expectEqual(
+        @as(u32, 3),
+        plan.prefill_launches[0].repeat,
+    );
 }

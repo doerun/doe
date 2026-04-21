@@ -54,8 +54,8 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    target is a bounded deterministic prefill+decode transcript with
    per-step logits and token IDs. The
    `doe-csl-int4ple-blocked-transcript` artifact records the Doe CSL
-   transcript receipt shape, graph-derived lowering blockers, and the
-   current missing simfabric producer.
+   transcript receipt shape, graph-derived lowering blockers, a normalized
+   HostPlan bundle, and the current missing simfabric producer.
    It is not Doe CSL parity, not hardware evidence, and not a performance
    claim.
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,12 @@ import jsonschema
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_REGISTRY = Path("config/csl-runtime-fixtures.json")
+HOST_PLAN_TOOL = Path("runtime/zig/zig-out/bin/doe-csl-host-plan-tool")
+DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
+    "bench/out/doppler-reference/"
+    "gemma-4-e2b-int4ple-doe-csl-hostplan"
+)
+CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
 
 FIXTURE_BY_DOPPLER_KERNEL = {
     "attn_decode": "attention-decode",
@@ -33,6 +40,24 @@ FIXTURE_BY_DOPPLER_KERNEL = {
     "rope": "rope",
     "sample": "sample",
     "tiled": "tiled-matmul",
+}
+
+DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
+    "attn_decode": "attention",
+    "attn_head256": "attention_prefill",
+    "attn_head512": "attention_prefill",
+    "embed": "embed",
+    "final_norm_stable": "rmsnorm",
+    "gelu": "gelu",
+    "gemv": "matmul_q4k",
+    "lm_head_gemv": "matmul_q4k",
+    "lm_head_gemv_stable": "matmul_q4k",
+    "lm_head_prefill_stable": "matmul",
+    "residual": "residual",
+    "rmsnorm": "rmsnorm",
+    "rope": "rope",
+    "sample": "sample",
+    "tiled": "matmul",
 }
 
 
@@ -62,6 +87,16 @@ def parse_args() -> argparse.Namespace:
         default=str(FIXTURE_REGISTRY),
         help="CSL fixture registry used to classify graph lowering gaps.",
     )
+    parser.add_argument(
+        "--hostplan-tool",
+        default=str(HOST_PLAN_TOOL),
+        help="Doe execution-v1 HostPlan lowering tool.",
+    )
+    parser.add_argument(
+        "--hostplan-bundle-root",
+        default=str(DEFAULT_HOSTPLAN_BUNDLE_ROOT),
+        help="Output directory for the normalized HostPlan bundle.",
+    )
     return parser.parse_args()
 
 
@@ -87,6 +122,19 @@ def write_json(path: Path, value: Any) -> None:
         json.dumps(value, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def clean_directory(path: Path) -> None:
+    if not path.exists():
+        return
+    if not path.is_dir():
+        raise ValueError(f"expected directory: {path}")
+    for child in path.iterdir():
+        if child.is_dir():
+            clean_directory(child)
+            child.rmdir()
+        else:
+            child.unlink()
 
 
 def sha256_json(value: Any) -> str:
@@ -157,6 +205,16 @@ def load_fixture_ids(path: Path) -> set[str]:
         for fixture in fixtures
         if isinstance(fixture, dict) and isinstance(fixture.get("id"), str)
     }
+
+
+def hash_link(path: Path, source: str | None = None) -> dict[str, Any]:
+    link: dict[str, Any] = {
+        "path": rel(path),
+        "sha256": sha256_file(path),
+    }
+    if source is not None:
+        link["source"] = source
+    return link
 
 
 def graph_path_from_export(export: dict[str, Any]) -> Path:
@@ -235,6 +293,280 @@ def kernel_metadata(
     kernels = graph.get("execution", {}).get("kernels", {})
     metadata = kernels.get(kernel_id, {})
     return metadata if isinstance(metadata, dict) else {}
+
+
+def manifest_model_config(
+    export: dict[str, Any],
+    bounded_max_seq_len: int,
+) -> dict[str, Any]:
+    manifest = load_json(resolve(export["manifestPath"]))
+    arch = manifest.get("architecture")
+    if not isinstance(arch, dict):
+        raise ValueError("Doppler manifest is missing architecture")
+    return {
+        "hiddenDim": int(arch["hiddenSize"]),
+        "numHeads": int(arch["numAttentionHeads"]),
+        "headDim": int(arch["headDim"]),
+        "globalHeadDim": int(arch["globalHeadDim"]),
+        "numKeyValueHeads": int(arch["numKeyValueHeads"]),
+        "numLayers": int(arch["numLayers"]),
+        "vocabSize": int(arch["vocabSize"]),
+        "maxSeqLen": bounded_max_seq_len,
+        "quantFormat": "q4k",
+        "ffnExpansionFactor": (
+            int(arch["intermediateSize"]) // int(arch["hiddenSize"])
+        ),
+        "ffnMatrixCount": 3,
+        "pleWidth": int(arch["hiddenSizePerLayerInput"]),
+        "pleVocabSize": int(arch["vocabSizePerLayerInput"]),
+    }
+
+
+def transcript_seq_len_bound(export: dict[str, Any]) -> int:
+    components = export.get("inputSetComponents") or {}
+    token_count = int(components.get("tokenCount") or 0)
+    decode_steps = int(components.get("decodeSteps") or 0)
+    return max(1, token_count + decode_steps)
+
+
+def sliding_window_size(export: dict[str, Any]) -> int:
+    manifest = load_json(resolve(export["manifestPath"]))
+    inference = manifest.get("inference") or {}
+    attention = inference.get("attention") or {}
+    value = attention.get("slidingWindow")
+    return int(value) if isinstance(value, int) and value > 0 else 512
+
+
+def step_to_hostplan(
+    phase: str,
+    step: Any,
+    *,
+    layer_index: int | None = None,
+) -> dict[str, Any]:
+    record = stage_record(phase, step)
+    kernel_id = record["kernelId"]
+    op = DOPPLER_KERNEL_TO_HOSTPLAN_OP.get(kernel_id)
+    if op is None:
+        raise ValueError(f"no HostPlan op mapping for kernel {kernel_id!r}")
+    entry = {
+        "name": record["operation"],
+        "phase": phase,
+        "op": op,
+        "kernelKey": kernel_id,
+    }
+    if "weightRef" in record:
+        weight_ref = record["weightRef"]
+        if layer_index is not None:
+            weight_ref = weight_ref.replace("{L}", str(layer_index))
+        entry["weightsKey"] = weight_ref
+    return entry
+
+
+def find_prefill_group_for_layer(
+    groups: list[Any],
+    layer_index: int,
+) -> dict[str, Any]:
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        layers = group.get("layers") or []
+        if layer_index in layers:
+            return group
+    raise ValueError(f"prefill group missing layer {layer_index}")
+
+
+def normalized_hostplan_execution(
+    export: dict[str, Any],
+    graph: dict[str, Any],
+) -> dict[str, Any]:
+    model_config = manifest_model_config(export, transcript_seq_len_bound(export))
+    execution = graph.get("execution")
+    if not isinstance(execution, dict):
+        raise ValueError("execution graph is missing execution object")
+
+    prefill_steps: list[dict[str, Any]] = []
+    decode_steps: list[dict[str, Any]] = []
+    for step in execution.get("preLayer") or []:
+        prefill_steps.append(step_to_hostplan("prefill", step))
+
+    prefill_groups = execution.get("prefill") or []
+    for layer_index in range(model_config["numLayers"]):
+        group = find_prefill_group_for_layer(prefill_groups, layer_index)
+        for step in group.get("steps") or []:
+            prefill_steps.append(
+                step_to_hostplan(
+                    "prefill",
+                    step,
+                    layer_index=layer_index,
+                )
+            )
+
+    for layer_index in range(model_config["numLayers"]):
+        for step in execution.get("decode") or []:
+            decode_steps.append(
+                step_to_hostplan(
+                    "decode",
+                    step,
+                    layer_index=layer_index,
+                )
+            )
+
+    for step in execution.get("postLayer") or []:
+        name = step[0] if isinstance(step, list) and step else ""
+        if name == "sample":
+            decode_steps.append(step_to_hostplan("decode", step))
+        elif name == "lm_head":
+            decode_steps.append(step_to_hostplan("decode", step))
+        elif isinstance(name, str) and name.endswith("_prefill"):
+            prefill_steps.append(step_to_hostplan("prefill", step))
+        else:
+            prefill_steps.append(step_to_hostplan("prefill", step))
+            decode_steps.append(step_to_hostplan("decode", step))
+
+    return {
+        "modelFamily": "gemma4",
+        "modelId": export["modelId"],
+        "sourceGraphSha256": export["executionGraphSha256"],
+        "modelConfig": model_config,
+        "placementPolicy": {
+            "maxGridWidth": 512,
+            "maxGridHeight": 512,
+            "preferSquare": True,
+        },
+        "eosTokenId": 1,
+        "slidingWindowSize": sliding_window_size(export),
+        "layerPattern": {
+            "type": "every_n",
+            "period": 5,
+            "offset": 4,
+        },
+        "numKvSharedLayers": int(model_config["numLayers"]),
+        "steps": prefill_steps + decode_steps,
+    }
+
+
+def hostplan_bundle_blocked(source_graph_sha256: str, message: str) -> dict[str, Any]:
+    return {
+        "status": "hostplan_failed",
+        "sourceGraphSha256": source_graph_sha256,
+        "normalizedExecution": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_normalization_failed",
+        },
+        "bundleRoot": "pending",
+        "hostPlan": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_lowering_failed",
+        },
+        "runtimeConfig": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_lowering_failed",
+        },
+        "memoryPlan": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_lowering_failed",
+        },
+        "simulatorPlan": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_lowering_failed",
+        },
+        "prefillLaunchCount": 0,
+        "decodeLaunchCount": 0,
+        "kernelCount": 0,
+        "blocker": message,
+    }
+
+
+def build_hostplan_bundle(
+    export: dict[str, Any],
+    bundle_root: Path,
+    hostplan_tool: Path,
+) -> dict[str, Any]:
+    graph_path = graph_path_from_export(export)
+    graph = load_json(graph_path)
+    source_graph_sha256 = export["executionGraphSha256"]
+    if sha256_file(graph_path) != source_graph_sha256:
+        raise ValueError("execution graph hash mismatch before HostPlan lowering")
+
+    bundle_root.mkdir(parents=True, exist_ok=True)
+    clean_directory(bundle_root)
+    normalized_path = bundle_root / "normalized-execution-v1.json"
+    normalized = normalized_hostplan_execution(export, graph)
+    write_json(normalized_path, normalized)
+
+    command = [
+        str(hostplan_tool),
+        "--input",
+        str(normalized_path),
+        "--bundle-root",
+        str(bundle_root),
+        "--mode",
+        "steps",
+        "--driver-executable-path",
+        str(resolve(CSL_SDK_DRIVER)),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        log_path = bundle_root / "hostplan-lowering-error.json"
+        write_json(
+            log_path,
+            {
+                "command": command,
+                "returncode": proc.returncode,
+                "stdout": proc.stdout,
+                "stderr": proc.stderr,
+            },
+        )
+        blocked = hostplan_bundle_blocked(
+            source_graph_sha256,
+            f"HostPlan lowering failed with exit code {proc.returncode}.",
+        )
+        blocked["normalizedExecution"] = hash_link(
+            normalized_path,
+            "production_graph_normalized_to_execution_v1",
+        )
+        return blocked
+
+    host_plan_path = bundle_root / "host-plan.json"
+    runtime_config_path = bundle_root / "runtime-config.json"
+    memory_plan_path = bundle_root / "memory-plan.json"
+    simulator_plan_path = bundle_root / "simulator-plan.json"
+    host_plan = load_json(host_plan_path)
+    host_plan_body = host_plan.get("hostPlan") or {}
+    phases = host_plan_body.get("phases") or {}
+    return {
+        "status": "hostplan_ready",
+        "sourceGraphSha256": source_graph_sha256,
+        "normalizedExecution": hash_link(
+            normalized_path,
+            "production_graph_normalized_to_execution_v1",
+        ),
+        "bundleRoot": rel(bundle_root),
+        "hostPlan": hash_link(host_plan_path, "doe_csl_host_plan_tool"),
+        "runtimeConfig": hash_link(runtime_config_path, "doe_csl_host_plan_tool"),
+        "memoryPlan": hash_link(memory_plan_path, "doe_csl_host_plan_tool"),
+        "simulatorPlan": hash_link(simulator_plan_path, "doe_csl_host_plan_tool"),
+        "prefillLaunchCount": len(phases.get("prefill") or []),
+        "decodeLaunchCount": len(phases.get("decode") or []),
+        "kernelCount": len(host_plan_body.get("kernels") or []),
+        "blocker": (
+            "HostPlan bundle is generated, but the CSL transcript runner is "
+            "still blocked until these production-bound kernels are compiled, "
+            "wired to real RDRR weights/KV state, run under simfabric, and "
+            "emit token/logit/KV transcript artifacts."
+        ),
+    }
 
 
 def build_lowering_plan(
@@ -339,6 +671,7 @@ def summarize_lowering_blocker(plan: dict[str, Any]) -> str:
 def build_blocked_receipt(
     export: dict[str, Any],
     lowering_plan: dict[str, Any],
+    hostplan_bundle: dict[str, Any],
 ) -> dict[str, Any]:
     transcript = export.get("decodeTranscript") or {}
     input_components = export.get("inputSetComponents") or {}
@@ -362,6 +695,7 @@ def build_blocked_receipt(
         },
         "referenceTranscript": reference,
         "loweringPlan": lowering_plan,
+        "hostPlanBundle": hostplan_bundle,
         "cslTranscript": {
             "status": "not_produced",
             "requestedDecodeSteps": requested,
@@ -419,7 +753,12 @@ def main() -> int:
         schema = load_json(resolve(args.schema))
         fixture_ids = load_fixture_ids(resolve(args.fixture_registry))
         lowering_plan = build_lowering_plan(export, fixture_ids)
-        receipt = build_blocked_receipt(export, lowering_plan)
+        hostplan_bundle = build_hostplan_bundle(
+            export,
+            resolve(args.hostplan_bundle_root),
+            resolve(args.hostplan_tool),
+        )
+        receipt = build_blocked_receipt(export, lowering_plan, hostplan_bundle)
         failures = schema_failures(receipt, schema)
         if failures:
             print("FAIL: Doe CSL INT4 PLE transcript receipt schema")

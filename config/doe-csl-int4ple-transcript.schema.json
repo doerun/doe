@@ -14,6 +14,7 @@
     "decodeRequest",
     "referenceTranscript",
     "loweringPlan",
+    "hostPlanBundle",
     "cslTranscript",
     "kvCacheEvidence",
     "simulatorRun",
@@ -54,6 +55,7 @@
     },
     "referenceTranscript": { "$ref": "#/$defs/transcriptDigest" },
     "loweringPlan": { "$ref": "#/$defs/loweringPlan" },
+    "hostPlanBundle": { "$ref": "#/$defs/hostPlanBundle" },
     "cslTranscript": { "$ref": "#/$defs/transcript" },
     "kvCacheEvidence": { "$ref": "#/$defs/kvCacheEvidence" },
     "simulatorRun": {
@@ -204,6 +206,44 @@
         "kernelId": { "type": "string" },
         "kernelFile": { "type": "string" },
         "reason": { "type": "string" }
+      }
+    },
+    "hostPlanBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sourceGraphSha256",
+        "normalizedExecution",
+        "bundleRoot",
+        "hostPlan",
+        "runtimeConfig",
+        "memoryPlan",
+        "simulatorPlan",
+        "prefillLaunchCount",
+        "decodeLaunchCount",
+        "kernelCount"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "hostplan_ready",
+            "hostplan_failed",
+            "not_attempted"
+          ]
+        },
+        "sourceGraphSha256": { "type": "string" },
+        "normalizedExecution": { "$ref": "#/$defs/hashLinkedPath" },
+        "bundleRoot": { "type": "string" },
+        "hostPlan": { "$ref": "#/$defs/hashLinkedPath" },
+        "runtimeConfig": { "$ref": "#/$defs/hashLinkedPath" },
+        "memoryPlan": { "$ref": "#/$defs/hashLinkedPath" },
+        "simulatorPlan": { "$ref": "#/$defs/hashLinkedPath" },
+        "prefillLaunchCount": { "type": "integer", "minimum": 0 },
+        "decodeLaunchCount": { "type": "integer", "minimum": 0 },
+        "kernelCount": { "type": "integer", "minimum": 0 },
+        "blocker": { "type": "string" }
       }
     },
     "transcriptDigest": {

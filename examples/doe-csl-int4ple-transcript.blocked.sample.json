@@ -27,6 +27,40 @@
     "requestedDecodeSteps": 8,
     "samplingSha256": "f18f44830e4e453ef563fd55680fcc2893a6cca52991bc21444f5c75b8fad4e9"
   },
+  "hostPlanBundle": {
+    "blocker": "HostPlan bundle is generated, but the CSL transcript runner is still blocked until these production-bound kernels are compiled, wired to real RDRR weights/KV state, run under simfabric, and emit token/logit/KV transcript artifacts.",
+    "bundleRoot": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan",
+    "decodeLaunchCount": 423,
+    "hostPlan": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/host-plan.json",
+      "sha256": "654aadd5cd10068b29cdd6a4f8ff9a8a8b4f237d02c1a72bc24cbdb9bde55e95",
+      "source": "doe_csl_host_plan_tool"
+    },
+    "kernelCount": 14,
+    "memoryPlan": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/memory-plan.json",
+      "sha256": "eded6b5f95b204bd38b7251c23bbcba9c8bb1bfba7c4768478e02adcb6d2f554",
+      "source": "doe_csl_host_plan_tool"
+    },
+    "normalizedExecution": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/normalized-execution-v1.json",
+      "sha256": "3084256426cc158d2af66bc23ce54ad20e1488acd2e0da424681346abc73b018",
+      "source": "production_graph_normalized_to_execution_v1"
+    },
+    "prefillLaunchCount": 423,
+    "runtimeConfig": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/runtime-config.json",
+      "sha256": "6c80901506a4a3efe4513697899571f77fd51403a5223d619e279e6b84f0310d",
+      "source": "doe_csl_host_plan_tool"
+    },
+    "simulatorPlan": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/simulator-plan.json",
+      "sha256": "d767477867488f1e5961b818cd194cbccb0261ad0f17efac495ddf9892af71fe",
+      "source": "doe_csl_host_plan_tool"
+    },
+    "sourceGraphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
+    "status": "hostplan_ready"
+  },
   "inputsSynthetic": false,
   "kvCacheEvidence": {
     "blocker": "full production INT4 PLE CSL prefill/decode lowering is not implemented",

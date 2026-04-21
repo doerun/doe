@@ -111,7 +111,7 @@ cross-references inside the receipts resolve as written.
 | `doppler-int4ple-reference-input` | Prompt and tokenized prompt bound into the reference input-set hash | Reviewers checking deterministic input identity |
 | `doppler-int4ple-reference-output-tokens` | Generated token IDs from the bounded greedy transcript | Reviewers checking transcript token parity |
 | `doppler-int4ple-reference-transcript` | Per-step logits and token IDs for the bounded Doppler reference transcript, without raw logits tensors | Numerical reviewers checking the transcript contract |
-| `doe-csl-int4ple-blocked-transcript` | Doe CSL transcript receipt shape and graph-derived lowering plan for the production INT4 PLE lane, currently blocked before simfabric output | Reviewers checking the missing proof producer and blocker taxonomy |
+| `doe-csl-int4ple-blocked-transcript` | Doe CSL transcript receipt shape, graph-derived lowering plan, and normalized HostPlan bundle for the production INT4 PLE lane, currently blocked before simfabric output | Reviewers checking the missing proof producer and blocker taxonomy |
 | `doppler-int4ple-pending-parity` | Doe parity receipt binding the production Doppler INT4 PLE reference and documenting the missing CSL transcript | Numerical reviewers; blocked until CSL emits the matching transcript |
 | `target-run-receipt` | Per-target L1 receipt for WebGPU WGSL, CSL WebGPU emulator, or CSL simfabric | Reviewers of the side-by-side layer-block demo |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |

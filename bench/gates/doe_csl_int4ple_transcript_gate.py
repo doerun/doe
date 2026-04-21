@@ -129,6 +129,22 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
             )
             break
 
+    hostplan = receipt.get("hostPlanBundle") or {}
+    if hostplan.get("status") != "hostplan_ready":
+        failures.append(
+            "hostPlanBundle.status="
+            f"{hostplan.get('status')!r}, expected hostplan_ready"
+        )
+    for label in ("normalizedExecution", "hostPlan", "runtimeConfig", "memoryPlan", "simulatorPlan"):
+        linked = hostplan.get(label) or {}
+        check_path_hash(
+            f"hostPlanBundle.{label}",
+            linked.get("path", ""),
+            linked.get("sha256", ""),
+            failures,
+            required=True,
+        )
+
     if receipt.get("status") != "simulator_success":
         failures.append(f"status={receipt.get('status')!r}, expected simulator_success")
     run = receipt.get("simulatorRun") or {}

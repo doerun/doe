@@ -42,7 +42,7 @@ const BundleConfigJson = struct {
 };
 
 const MAX_KERNELS: usize = 64;
-const MAX_LAUNCHES: usize = 96;
+const MAX_LAUNCHES: usize = 1024;
 const MAX_STATE_BUFFERS: usize = 16;
 const HOST_PLAN_CAPACITY: usize = 128 * 1024;
 const RUNTIME_CONFIG_CAPACITY: usize = 128 * 1024;

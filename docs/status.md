@@ -185,8 +185,9 @@ Read this file first. Use the shard files under
   hardware receipts are still required before the lane becomes Cerebras
   evidence. The blocked CSL receipt includes a graph-derived `loweringPlan`
   that classifies each production Doppler execution stage against existing CSL
-  fixtures and missing production-bound kernels. The promotion gate now
-  requires CSL trace source identity,
+  fixtures and missing production-bound kernels, plus a `hostPlanBundle`
+  generated from a normalized full-depth bounded `execution-v1` plan. The
+  promotion gate now requires CSL trace source identity,
   full-model depth evidence, real KV/cache behavior, token-ID parity,
   per-step logits parity, no stubs, and no synthetic inputs or weights before
   the INT4 PLE lane can pass strict promotion.
