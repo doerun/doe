@@ -9,14 +9,14 @@ always reflects the last successful pack.
 
 | Field | Value |
 | --- | --- |
-| archive | `bench/out/doe-cerebras-evidence-20260421-0810-9c90fca3c1f5-dirty.tar.gz` |
-| archive sha256 | `7a1af1ffb04f55906e5d4bf5ff069e1b470935457410c060a1918a325f36db2e` |
-| MANIFEST.txt sha256 | `bdc3a2a8b6522a043d9da58d0f2f425b5635e101211c6c509e52035b2ba76fca` |
-| BUNDLE_META.json sha256 | `30e5df578969f55855ed37699fd601b5bd26c468c012f682ec6e98a6f4c99204` |
-| archive size (bytes) | `88785` |
-| git commit | `9c90fca3c1f58aa336329a3cce2f1429faacf959` |
+| archive | `bench/out/doe-cerebras-evidence-20260422-1630-b121de880db7-dirty.tar.gz` |
+| archive sha256 | `554e5d9f91174ddf2e5294155d3c2558c9e79b59635e3ba1c17a7665e0865edb` |
+| MANIFEST.txt sha256 | `09a80980b02dfa60364373439af1d246ecf28bb3d3c8bdf2f2a827c34f2436a1` |
+| BUNDLE_META.json sha256 | `55292a4c598d8ca59f09e9ce6970d196dd03c6b642afe5a31f32b303ff846dd4` |
+| archive size (bytes) | `129401` |
+| git commit | `b121de880db7700d293bb3495d589c328c813521` |
 | git dirty | `dirty` |
-| evidence bundle verdict | `passed` (17/17 steps) |
+| evidence bundle verdict | `passed` (31/31 steps) |
 
 ## Verify the bytes you received
 

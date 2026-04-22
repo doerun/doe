@@ -21,6 +21,15 @@ from typing import Any
 import numpy as np
 
 import common
+from int4ple_runtime_scheduler import (
+    count_by,
+    load_normalized_execution,
+    resolve_artifact_path,
+    sha256_json,
+    synthesize_runtime_scheduler,
+)
+
+SCHEDULE_PREVIEW_COUNT = 4
 
 
 def parse_args() -> argparse.Namespace:
@@ -97,6 +106,360 @@ def write_array(path: Path, array: np.ndarray) -> dict[str, Any]:
         "path": str(path),
         "sha256": sha256_bytes(data),
         "byteLength": len(data),
+    }
+
+
+def compile_target_coverage(
+    plan: dict[str, Any],
+    compile_root: Path,
+) -> dict[str, Any]:
+    targets: list[dict[str, Any]] = []
+    source_ready = 0
+    compiled_ready = 0
+    for target in (plan.get("inputs") or {}).get("compileTargets") or []:
+        if not isinstance(target, dict):
+            continue
+        name = str(target.get("name", ""))
+        layout = str(target.get("layout", f"{name}/layout.csl"))
+        pe_program = str(target.get("peProgram", f"{name}/pe_program.csl"))
+        layout_path = compile_root / layout
+        pe_program_path = compile_root / pe_program
+        compiled_path = compile_root / "compiled" / name / "out.json"
+        target_source_ready = layout_path.is_file() and pe_program_path.is_file()
+        target_compiled_ready = compiled_path.is_file()
+        source_ready += 1 if target_source_ready else 0
+        compiled_ready += 1 if target_compiled_ready else 0
+        targets.append(
+            {
+                "name": name,
+                "sourceReady": target_source_ready,
+                "compiledReady": target_compiled_ready,
+                "layoutPath": str(layout_path),
+                "peProgramPath": str(pe_program_path),
+                "compiledOutPath": str(compiled_path),
+            }
+        )
+    return {
+        "totalTargetCount": len(targets),
+        "sourceReadyTargetCount": source_ready,
+        "compiledReadyTargetCount": compiled_ready,
+        "allSourcesReady": bool(targets) and source_ready == len(targets),
+        "allCompiledTargetsReady": bool(targets) and compiled_ready == len(targets),
+        "targets": targets,
+    }
+
+
+def host_plan_phase_summary(
+    host_plan_path: Path,
+    *,
+    runtime_config: dict[str, Any] | None = None,
+    normalized_execution: dict[str, Any] | None = None,
+    reference: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not host_plan_path.is_file():
+        return {
+            "path": str(host_plan_path),
+            "present": False,
+            "phaseLaunchCounts": {},
+            "phaseInvocationCounts": {},
+            "kernelLaunchCounts": {},
+            "kernelInvocationCounts": {},
+            "launchesCarrySymbolDataflow": False,
+            "launchSchedule": {
+                "schemaVersion": 1,
+                "artifactKind": "int4ple_hostplan_launch_schedule",
+                "status": "missing_host_plan",
+                "launchDescriptorCount": 0,
+                "scheduledInvocationCount": 0,
+                "launches": [],
+                "scheduleSha256": sha256_json([]),
+            },
+        }
+    host_plan = load_json(host_plan_path)
+    phases = (host_plan.get("hostPlan") or {}).get("phases") or {}
+    phase_counts: dict[str, int] = {}
+    phase_invocation_counts: dict[str, int] = {}
+    launches: list[dict[str, Any]] = []
+    if isinstance(phases, dict):
+        phase_names = [
+            name for name in ("prefill", "decode") if name in phases
+        ] + sorted(
+            str(name) for name in phases.keys() if name not in ("prefill", "decode")
+        )
+        for phase_name in phase_names:
+            raw_steps = phases[phase_name]
+            steps = raw_steps if isinstance(raw_steps, list) else []
+            phase_counts[str(phase_name)] = len(steps)
+            phase_invocation_counts[str(phase_name)] = sum(
+                max(1, int(step.get("repeat") or 1))
+                for step in steps
+                if isinstance(step, dict)
+            )
+            launches.extend(
+                {
+                    **step,
+                    "_phase": str(phase_name),
+                    "_phaseIndex": index,
+                }
+                for index, step in enumerate(steps)
+                if isinstance(step, dict)
+            )
+    kernels = (host_plan.get("hostPlan") or {}).get("kernels") or []
+    kernel_patterns = {
+        str(item.get("name")): str(item.get("pattern", "unknown"))
+        for item in kernels
+        if isinstance(item, dict) and item.get("name")
+    }
+    declared_kernel_counts = {
+        str(item.get("name")): int(item.get("count") or 0)
+        for item in kernels
+        if isinstance(item, dict) and item.get("name")
+    }
+    schedule_records: list[dict[str, Any]] = []
+    kernel_invocation_counts: dict[str, int] = {}
+    for launch_index, step in enumerate(launches):
+        kernel_name = str(step.get("kernelName") or step.get("name") or "unknown")
+        repeat = max(1, int(step.get("repeat") or 1))
+        inputs = step.get("inputs")
+        outputs = step.get("outputs")
+        symbols = step.get("symbols")
+        symbol_dataflow_present = (
+            isinstance(inputs, list)
+            or isinstance(outputs, list)
+            or isinstance(symbols, dict)
+        )
+        kernel_invocation_counts[kernel_name] = (
+            kernel_invocation_counts.get(kernel_name, 0) + repeat
+        )
+        schedule_records.append(
+            {
+                "launchIndex": launch_index,
+                "phase": step["_phase"],
+                "phaseLaunchIndex": int(step["_phaseIndex"]),
+                "kernelName": kernel_name,
+                "kernelPattern": kernel_patterns.get(kernel_name, "unknown"),
+                "repeat": repeat,
+                "symbolDataflowPresent": symbol_dataflow_present,
+                "inputSymbolCount": len(inputs) if isinstance(inputs, list) else 0,
+                "outputSymbolCount": len(outputs) if isinstance(outputs, list) else 0,
+                "symbolTablePresent": isinstance(symbols, dict),
+            }
+        )
+    runtime_scheduler = synthesize_runtime_scheduler(
+        launches=[
+            {
+                **step,
+                "launchIndex": index,
+                "phase": step["_phase"],
+                "phaseLaunchIndex": int(step["_phaseIndex"]),
+                "kernelName": str(step.get("kernelName") or step.get("name") or "unknown"),
+                "kernelPattern": kernel_patterns.get(
+                    str(step.get("kernelName") or step.get("name") or "unknown"),
+                    "unknown",
+                ),
+                "repeat": max(1, int(step.get("repeat") or 1)),
+            }
+            for index, step in enumerate(launches)
+        ],
+        runtime_config=runtime_config,
+        normalized_execution=normalized_execution,
+        reference=reference,
+    )
+    if runtime_scheduler.get("status") == "bound":
+        schedule_records = runtime_scheduler.get("launches") or schedule_records
+    launches_with_dataflow = sum(
+        1 for record in schedule_records if record["symbolDataflowPresent"]
+    )
+    all_launches_carry_dataflow = bool(schedule_records) and (
+        launches_with_dataflow == len(schedule_records)
+    )
+    scheduled_invocation_count = sum(record["repeat"] for record in schedule_records)
+    schedule_status = (
+        "symbol_dataflow_bound"
+        if all_launches_carry_dataflow
+        else "blocked_missing_symbol_dataflow"
+    )
+    schedule = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_hostplan_launch_schedule",
+        "status": schedule_status,
+        "launchDescriptorCount": len(schedule_records),
+        "scheduledInvocationCount": scheduled_invocation_count,
+        "phaseDescriptorCounts": phase_counts,
+        "phaseInvocationCounts": phase_invocation_counts,
+        "kernelDescriptorCounts": count_by(schedule_records, "kernelName"),
+        "kernelInvocationCounts": dict(sorted(kernel_invocation_counts.items())),
+        "launchesWithSymbolDataflowCount": launches_with_dataflow,
+        "allLaunchesCarrySymbolDataflow": all_launches_carry_dataflow,
+        "launches": schedule_records,
+    }
+    schedule["scheduleSha256"] = sha256_json(schedule_records)
+    return {
+        "path": str(host_plan_path),
+        "present": True,
+        "phaseLaunchCounts": phase_counts,
+        "phaseInvocationCounts": phase_invocation_counts,
+        "kernelLaunchCounts": dict(sorted(declared_kernel_counts.items())),
+        "kernelInvocationCounts": dict(sorted(kernel_invocation_counts.items())),
+        "launchesCarrySymbolDataflow": all_launches_carry_dataflow,
+        "firstLaunches": schedule_records[:SCHEDULE_PREVIEW_COUNT],
+        "lastLaunches": schedule_records[-SCHEDULE_PREVIEW_COUNT:],
+        "launchSchedule": schedule,
+        "runtimeScheduler": runtime_scheduler,
+    }
+
+
+def runtime_input_summary(runtime_config: dict[str, Any]) -> dict[str, Any]:
+    weight_mappings = runtime_config.get("weightMappings") or []
+    state_buffers = runtime_config.get("stateBuffers") or []
+    host_io_layout = runtime_config.get("hostIoLayout") or []
+    if not isinstance(weight_mappings, list):
+        weight_mappings = []
+    if not isinstance(state_buffers, list):
+        state_buffers = []
+    if not isinstance(host_io_layout, list):
+        host_io_layout = []
+    synthetic_host_entries = [
+        entry
+        for entry in host_io_layout
+        if isinstance(entry, dict)
+        and isinstance(entry.get("sourceIdentity"), dict)
+        and entry["sourceIdentity"].get("synthetic") is True
+    ]
+    weight_identity = runtime_config.get("weightIdentity") or {}
+    return {
+        "weightMappingCount": len(weight_mappings),
+        "requiredWeightCount": int(weight_identity.get("requiredWeightCount") or 0),
+        "missingWeightCount": int(weight_identity.get("missingWeightCount") or 0),
+        "stateBufferKinds": sorted(
+            str(item.get("kind"))
+            for item in state_buffers
+            if isinstance(item, dict) and item.get("kind")
+        ),
+        "hostIoRoleCounts": count_by(
+            [entry for entry in host_io_layout if isinstance(entry, dict)],
+            "bufferRole",
+        ),
+        "syntheticHostEntryCount": len(synthetic_host_entries),
+    }
+
+
+def reference_transcript_summary(
+    export: dict[str, Any],
+    reference_export_path: Path,
+) -> dict[str, Any]:
+    transcript = export.get("decodeTranscript") or {}
+    generated = transcript.get("generatedTokenIds") or {}
+    logits = transcript.get("logitsDigests") or []
+    transcript_payload: dict[str, Any] = {}
+    transcript_link = transcript.get("transcript") or {}
+    linked_path = transcript_link.get("path")
+    if isinstance(linked_path, str) and linked_path:
+        candidate = resolve_artifact_path(reference_export_path, linked_path)
+        if candidate.is_file():
+            transcript_payload = load_json(candidate)
+    kv_cache = transcript_payload.get("kvCache") or {}
+    return {
+        "status": transcript.get("status", "pending"),
+        "requestedDecodeSteps": int(transcript.get("requestedDecodeSteps") or 0),
+        "actualDecodeSteps": int(transcript.get("actualDecodeSteps") or 0),
+        "stopReason": transcript.get("stopReason", "pending"),
+        "generatedTokenCount": int(generated.get("tokenCount") or 0),
+        "logitsDigestCount": len(logits) if isinstance(logits, list) else 0,
+        "promptTokenCount": int((export.get("inputSetComponents") or {}).get("tokenCount") or 0),
+        "kvCacheMode": kv_cache.get("mode", "not_captured"),
+        "kvLayerDigestCount": int(kv_cache.get("layerDigestCount") or 0),
+    }
+
+
+def scheduler_readiness(
+    *,
+    plan_path: Path,
+    plan: dict[str, Any],
+    runtime_config: dict[str, Any],
+    export: dict[str, Any],
+    reference_export_path: Path,
+    compile_root: Path,
+) -> dict[str, Any]:
+    compile_targets = compile_target_coverage(plan, compile_root)
+    runtime_inputs = runtime_input_summary(runtime_config)
+    reference = reference_transcript_summary(export, reference_export_path)
+    normalized_execution = load_normalized_execution(plan_path)
+    host_plan = host_plan_phase_summary(
+        plan_path.parent / "host-plan.json",
+        runtime_config=runtime_config,
+        normalized_execution=normalized_execution,
+        reference=reference,
+    )
+    runtime_scheduler = host_plan.get("runtimeScheduler") or {}
+    activation = runtime_scheduler.get("activationRouting") or {}
+    kv_schedule = runtime_scheduler.get("kvCacheSchedule") or {}
+    transcript = runtime_scheduler.get("transcriptCaptureSchedule") or {}
+    expected_runtime = plan.get("runtime") or {}
+    readiness = {
+        "phaseLaunchesMaterialized": bool(host_plan.get("phaseLaunchCounts")),
+        "compileTargetsReady": compile_targets["allSourcesReady"]
+        and compile_targets["allCompiledTargetsReady"],
+        "weightMappingsReady": runtime_inputs["weightMappingCount"] > 0
+        and runtime_inputs["missingWeightCount"] == 0,
+        "stateBuffersDeclared": "kv_cache" in runtime_inputs["stateBufferKinds"],
+        "referenceTranscriptReady": reference["status"] == "output_ready"
+        and reference["actualDecodeSteps"] > 0
+        and reference["generatedTokenCount"] == reference["actualDecodeSteps"]
+        and reference["logitsDigestCount"] == reference["actualDecodeSteps"],
+        "kvReferenceReady": reference["kvLayerDigestCount"] > 0,
+        "launchesCarrySymbolDataflow": bool(host_plan["launchesCarrySymbolDataflow"]),
+        "activationRoutingBound": activation.get("status") == "bound",
+        "kvReadWriteScheduleBound": kv_schedule.get("status") == "bound",
+        "transcriptEmittersBound": transcript.get("status") == "bound",
+        "fullModelRuntimeExecutorBound": False,
+    }
+    blockers: list[str] = []
+    if not readiness["compileTargetsReady"]:
+        blockers.append("compiled_csl_targets_not_ready")
+    if not readiness["weightMappingsReady"]:
+        blockers.append("runtime_weight_mappings_incomplete")
+    if not readiness["referenceTranscriptReady"]:
+        blockers.append("doppler_reference_transcript_incomplete")
+    if not readiness["kvReferenceReady"]:
+        blockers.append("doppler_kv_reference_digest_missing")
+    if not readiness["launchesCarrySymbolDataflow"]:
+        blockers.append("hostplan_launches_lack_symbol_dataflow_bindings")
+    if not readiness["activationRoutingBound"]:
+        blockers.append("activation_tensor_lifetime_schedule_missing")
+    if not readiness["kvReadWriteScheduleBound"]:
+        blockers.append("kv_cache_write_read_schedule_missing")
+    if not readiness["transcriptEmittersBound"]:
+        blockers.append("logits_and_sample_output_capture_schedule_missing")
+    metadata_ready = not blockers
+    if metadata_ready:
+        blockers.append("full_model_prefill_decode_runtime_executor_missing")
+    status = (
+        "blocked_missing_full_model_runtime_execution"
+        if metadata_ready
+        else "blocked_missing_runtime_scheduler"
+    )
+    return {
+        "status": status,
+        "readiness": readiness,
+        "blockers": blockers,
+        "expectedRuntime": {
+            "prefillLaunchCount": int(expected_runtime.get("prefillLaunchCount") or 0),
+            "decodeLaunchCount": int(expected_runtime.get("decodeLaunchCount") or 0),
+            "maxDecodeTokens": expected_runtime.get("maxDecodeTokens"),
+            "weightMappingCount": expected_runtime.get("weightMappingCount"),
+            "stateBufferCount": expected_runtime.get("stateBufferCount"),
+        },
+        "hostPlan": host_plan,
+        "compileTargetCoverage": compile_targets,
+        "runtimeInputs": runtime_inputs,
+        "referenceTranscript": reference,
+        "nextRuntimeStep": (
+            "replace the residual-only diagnostic run with a multi-target "
+            "HostPlan interpreter that loads the bound symbols, moves "
+            "activation/KV tensors between launches, captures logits/tokens, "
+            "and emits the CSL transcript"
+        ),
     }
 
 
@@ -214,6 +577,7 @@ def diagnostic_trace(
     *,
     export: dict[str, Any],
     runtime_config: dict[str, Any],
+    scheduler: dict[str, Any],
     cmaddr: str | None,
     started: float,
     kernel_results: list[dict[str, Any]],
@@ -221,6 +585,21 @@ def diagnostic_trace(
     error: str | None = None,
 ) -> dict[str, Any]:
     elapsed_ms = (time.monotonic() - started) * 1000.0
+    if scheduler.get("status") == "blocked_missing_full_model_runtime_execution":
+        model_blocker = (
+            "The HostPlan runtime scheduler has symbol-level dataflow, "
+            "activation lifetime routing, KV read/write scheduling, and "
+            "logit/token capture points bound, but this runner still only "
+            "executes the residual diagnostic target. The full prefill/decode "
+            "target interpreter has not executed the bound schedule."
+        )
+    else:
+        model_blocker = (
+            "HostPlan phase launches, weights, and the Doppler reference "
+            "transcript are visible, but the runtime scheduler is not yet "
+            "fully bound for symbol-level dataflow, activation routing, "
+            "KV read/write scheduling, and logit/token capture."
+        )
     trace: dict[str, Any] = {
         "schemaVersion": 1,
         "artifactKind": "csl_simulator_trace",
@@ -243,15 +622,13 @@ def diagnostic_trace(
             ],
             "runtimeConfigMode": runtime_config.get("mode"),
             "diagnosticOnly": True,
+            "schedulerStatus": scheduler.get("status"),
         },
         "modelExecution": {
             "fullModelDepthExecuted": False,
-            "blocker": (
-                "Only a production-derived residual runtime diagnostic ran. "
-                "The full HostPlan prefill/decode scheduler has not emitted "
-                "token/logit/KV transcript artifacts."
-            ),
+            "blocker": model_blocker,
         },
+        "hostPlanScheduler": scheduler,
         "kernelResults": kernel_results,
     }
     if error is not None:
@@ -271,6 +648,20 @@ def main() -> int:
         runtime_config = load_json(Path(args.runtime_config))
         export = load_json(Path(args.reference_export))
         cmaddr = common.endpoint(args.cmaddr)
+        scheduler = scheduler_readiness(
+            plan_path=Path(args.plan),
+            plan=plan,
+            runtime_config=runtime_config,
+            export=export,
+            reference_export_path=Path(args.reference_export),
+            compile_root=Path(args.compile_root),
+        )
+        append_progress(
+            progress_path,
+            "scheduler_readiness",
+            status=scheduler["status"],
+            blockers=scheduler["blockers"],
+        )
         residual_target = target_by_name(plan, "residual")
         diagnostic_compile_dir = (
             Path(args.diagnostic_compile_dir)
@@ -288,6 +679,7 @@ def main() -> int:
         trace = diagnostic_trace(
             export=export,
             runtime_config=runtime_config,
+            scheduler=scheduler,
             cmaddr=cmaddr,
             started=started,
             kernel_results=[result],
@@ -306,6 +698,14 @@ def main() -> int:
             trace = diagnostic_trace(
                 export=export,
                 runtime_config=runtime_config,
+                scheduler=scheduler_readiness(
+                    plan_path=Path(args.plan),
+                    plan=load_json(Path(args.plan)),
+                    runtime_config=runtime_config,
+                    export=export,
+                    reference_export_path=Path(args.reference_export),
+                    compile_root=Path(args.compile_root),
+                ),
                 cmaddr=cmaddr,
                 started=started,
                 kernel_results=[],

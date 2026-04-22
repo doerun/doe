@@ -452,13 +452,37 @@ def main() -> int:
         ],
     ))
 
-    # 17. claim-discipline gate (hardware + MoE fronts).
+    # 17. Doe CSL INT4 PLE hardware receipt preflight. This is an access
+    # request surface only: the gate accepts pending_simulator_parity, while
+    # --require-hardware-success remains reserved for a real appliance/system run.
+    steps.append(run(
+        "doe-csl-int4ple-hardware-preflight",
+        [
+            "python3",
+            "bench/tools/prepare_doe_csl_int4ple_hardware_receipt.py",
+            "--program-bundle",
+            args.program_bundle,
+        ],
+    ))
+
+    steps.append(run(
+        "doe-csl-int4ple-hardware-preflight-gate",
+        [
+            "python3",
+            "bench/gates/doe_csl_int4ple_hardware_receipt_gate.py",
+            "--receipt",
+            "bench/out/doppler-reference/"
+            "gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json",
+        ],
+    ))
+
+    # 18. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 18. SdkLayout streaming hardening gate against the freshest live
+    # 19. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -482,7 +506,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 19. receipt link integrity (already invoked by self-check STEP 5,
+    # 20. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

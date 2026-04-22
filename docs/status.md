@@ -45,7 +45,10 @@ Read this file first. Use the shard files under
   transcript. The current local transcript/parity receipts are regenerated from
   Doppler-owned Program Bundle
   `gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46`; this refreshes source
-  identity and HostPlan evidence only, not the full execution claim.
+  identity and HostPlan evidence only, not the full execution claim. A pending
+  hardware receipt preflight now binds the same source identity and redacted
+  endpoint command, but remains blocked on simulator parity and a real
+  `hardware_success` run.
 - Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and

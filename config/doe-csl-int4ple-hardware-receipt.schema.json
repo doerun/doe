@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-csl-int4ple-hardware-receipt.schema.json",
+  "title": "Doe CSL INT4 PLE hardware receipt",
+  "description": "Binds a Doppler-owned INT4 PLE Program Bundle, Doe simulator parity receipt, and future Cerebras hardware execution receipt into one hardware-claim gate surface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "sourceProgram",
+    "referenceTranscript",
+    "simulatorParityReceipt",
+    "simulatorTranscriptReceipt",
+    "hardwareRun",
+    "promotionCriteria",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_int4ple_hardware_receipt" },
+    "modelId": { "type": "string" },
+    "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
+    "referenceTranscript": { "$ref": "#/$defs/transcriptDigest" },
+    "simulatorParityReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+    "simulatorTranscriptReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+    "hardwareRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "executionTarget",
+        "cmaddrProvided",
+        "endpointRedaction",
+        "command",
+        "blocker"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending_simulator_parity",
+            "pending_endpoint_access",
+            "hardware_success",
+            "hardware_failure"
+          ]
+        },
+        "executionTarget": {
+          "type": "string",
+          "enum": ["system", "wsc_appliance"]
+        },
+        "cmaddrProvided": { "type": "boolean" },
+        "endpointRedaction": { "const": "$DOE_CSL_CMADDR" },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "driverReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+        "cslTranscript": { "$ref": "#/$defs/transcriptDigest" },
+        "kvCacheEvidence": { "$ref": "#/$defs/kvCacheEvidence" },
+        "blocker": { "type": "string" }
+      }
+    },
+    "promotionCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sameSourceIdentity",
+        "simulatorParityPassed",
+        "hardwareExecuted",
+        "hardwareTranscriptBound",
+        "tokenIdsMatched",
+        "perStepLogitsParityPassed",
+        "realKvCacheUsed",
+        "endpointRedacted",
+        "stubStagesAbsent",
+        "syntheticInputsAbsent",
+        "syntheticWeightsAbsent",
+        "hardwareSuccessClaimable"
+      ],
+      "properties": {
+        "sameSourceIdentity": { "type": "boolean" },
+        "simulatorParityPassed": { "type": "boolean" },
+        "hardwareExecuted": { "type": "boolean" },
+        "hardwareTranscriptBound": { "type": "boolean" },
+        "tokenIdsMatched": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": "boolean" },
+        "realKvCacheUsed": { "type": "boolean" },
+        "endpointRedacted": { "type": "boolean" },
+        "stubStagesAbsent": { "type": "boolean" },
+        "syntheticInputsAbsent": { "type": "boolean" },
+        "syntheticWeightsAbsent": { "type": "boolean" },
+        "hardwareSuccessClaimable": { "type": "boolean" }
+      }
+    },
+    "claimBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "scope", "blockedUntil"],
+      "properties": {
+        "claimable": { "type": "boolean" },
+        "scope": { "type": "string" },
+        "blockedUntil": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authoringSurface",
+        "manifestPath",
+        "manifestSha256",
+        "graphPath",
+        "graphSha256",
+        "weightSetId",
+        "weightSha256",
+        "inputSetSha256",
+        "programBundle",
+        "programBundleId"
+      ],
+      "properties": {
+        "authoringSurface": { "const": "doppler_execution_v1" },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "graphPath": { "type": "string" },
+        "graphSha256": { "type": "string" },
+        "weightSetId": { "type": "string" },
+        "weightSha256": { "type": "string" },
+        "inputSetSha256": { "type": "string" },
+        "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
+        "programBundleId": { "type": "string" },
+        "programContractVersion": { "type": "string" },
+        "wgslModulesSha256": { "type": "string" },
+        "hostEntrypointSha256": { "type": "string" },
+        "runtimeProfile": { "type": "string" },
+        "captureProfile": { "type": "string" }
+      }
+    },
+    "transcriptDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "generatedTokenIdsSha256",
+        "logitsDigestSha256"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "type": "string" },
+        "decodeStepsProduced": { "type": "integer", "minimum": 0 },
+        "generatedTokenIdsSha256": { "type": "string" },
+        "logitsDigestSha256": { "type": "string" }
+      }
+    },
+    "kvCacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "realKvCache",
+        "cacheReadCount",
+        "cacheWriteCount",
+        "coveredLayerCount",
+        "layerCount",
+        "stepStateDigestCount"
+      ],
+      "properties": {
+        "realKvCache": { "type": "boolean" },
+        "cacheReadCount": { "type": "integer", "minimum": 0 },
+        "cacheWriteCount": { "type": "integer", "minimum": 0 },
+        "coveredLayerCount": { "type": "integer", "minimum": 0 },
+        "layerCount": { "type": "integer", "minimum": 0 },
+        "stepStateDigestCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

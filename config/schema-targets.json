@@ -198,6 +198,10 @@
       "data": "examples/doe-csl-appliance-driver-receipt.sample.json"
     },
     {
+      "schema": "config/doe-csl-int4ple-hardware-receipt.schema.json",
+      "data": "examples/doe-csl-int4ple-hardware-receipt.pending.sample.json"
+    },
+    {
       "schema": "config/wgsl-backend-matrix-report.schema.json",
       "data": "examples/wgsl-backend-matrix-report.sample.json"
     },

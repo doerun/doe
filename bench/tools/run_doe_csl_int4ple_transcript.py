@@ -38,6 +38,7 @@ INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
 )
 PROGRAM_BUNDLE_SCHEMA = Path("config/doe-doppler-program-bundle.schema.json")
+FLOAT32_BYTES = 4
 
 FIXTURE_BY_DOPPLER_KERNEL = {
     "attn_decode": "attention-decode",
@@ -393,6 +394,56 @@ def manifest_shard_identities(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     return identities
 
 
+def program_bundle_logits_digests(reference: dict[str, Any]) -> list[dict[str, Any]]:
+    logits = reference.get("logits") or {}
+    raw_steps = logits.get("steps") or []
+    if not isinstance(raw_steps, list):
+        return []
+
+    digests: list[dict[str, Any]] = []
+    for raw_step in raw_steps:
+        if not isinstance(raw_step, dict):
+            continue
+        step_index = int(raw_step.get("index") or len(digests))
+        element_count = int(raw_step.get("elementCount") or 0)
+        dtype = str(raw_step.get("dtype") or "f32")
+        digest = strip_doppler_hash(raw_step.get("digest"))
+        if not digest or digest == "pending":
+            continue
+        if dtype not in ("f32", "float32"):
+            raise ValueError(f"unsupported Program Bundle logits dtype: {dtype!r}")
+        digests.append(
+            {
+                "stepIndex": step_index,
+                "phase": "decode",
+                "contextTokenCount": int(raw_step.get("inputTokenCount") or 0),
+                "selectedTokenId": int(raw_step.get("tokenId") or 0),
+                "dtype": "float32",
+                "shape": [element_count],
+                "path": (
+                    "digest-only:doppler-program-bundle-reference-logits-step-"
+                    f"{step_index}"
+                ),
+                "sha256": digest,
+                "byteLength": element_count * FLOAT32_BYTES,
+            }
+        )
+    return digests
+
+
+def program_bundle_kv_cache_summary(reference: dict[str, Any]) -> dict[str, Any]:
+    kv_cache = reference.get("kvCache") or {}
+    byte_digests = kv_cache.get("byteDigests") or []
+    return {
+        "mode": kv_cache.get("mode", "not_captured"),
+        "byteDigestMode": kv_cache.get("byteDigestMode", "not_captured"),
+        "byteDigest": kv_cache.get("byteDigest", "pending"),
+        "layerDigestCount": len(byte_digests) if isinstance(byte_digests, list) else 0,
+        "seqLen": int(kv_cache.get("seqLen") or 0),
+        "kvDtype": kv_cache.get("kvDtype", "pending"),
+    }
+
+
 def export_from_program_bundle(
     program_bundle_path: Path,
     out_dir: Path,
@@ -430,6 +481,8 @@ def export_from_program_bundle(
         out_dir / "program_bundle_generated_tokens.u32",
         generated_token_ids,
     )
+    logits_digests = program_bundle_logits_digests(reference)
+    kv_cache_summary = program_bundle_kv_cache_summary(reference)
     transcript_path = out_dir / "program_bundle_decode_transcript.json"
     transcript_payload = {
         "schemaVersion": 1,
@@ -446,7 +499,8 @@ def export_from_program_bundle(
         "prompt": prompt,
         "generatedTokenIds": generated_token_ids,
         "generatedTokenIdsSha256": generated["sha256"],
-        "logitsDigests": [],
+        "logitsDigests": logits_digests,
+        "kvCache": kv_cache_summary,
         "sourceReferenceTranscript": reference,
     }
     write_json(transcript_path, transcript_payload)
@@ -533,7 +587,7 @@ def export_from_program_bundle(
                 "seed": None,
             },
             "generatedTokenIds": generated,
-            "logitsDigests": [],
+            "logitsDigests": logits_digests,
         },
         "producer": {
             "runtime": "doppler_browser_webgpu",
@@ -551,8 +605,9 @@ def export_from_program_bundle(
             "atol": 1e-3,
             "rtol": 0,
             "notes": (
-                "Doppler Program Bundle reference currently carries exact token "
-                "IDs and KV metadata, but not per-step logits tensors."
+                "Doppler Program Bundle reference carries exact token IDs, "
+                "per-step logits digests, and KV byte-digest metadata. Doe CSL "
+                "must produce its own bytes/digests before parity can pass."
             ),
         },
         "claimBoundary": {

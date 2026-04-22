@@ -1,0 +1,102 @@
+{
+  "artifactKind": "doe_csl_int4ple_hardware_receipt",
+  "claimBoundary": {
+    "blockedUntil": [
+      "Doe simfabric parity passes for the same Program Bundle",
+      "Cerebras endpoint or WSC appliance access is available",
+      "Hardware run emits matching token/logit/KV transcript evidence"
+    ],
+    "claimable": false,
+    "scope": "Hardware receipt preflight only. This is software evidence and an access request surface until hardwareRun.status is hardware_success and strict promotion criteria are true."
+  },
+  "hardwareRun": {
+    "blocker": "hardware run waits for Doe-vs-Doppler simfabric parity with real token/logit/KV transcript evidence",
+    "cmaddrProvided": false,
+    "command": [
+      "env",
+      "DOE_CSL_CMADDR=$DOE_CSL_CMADDR",
+      "python3",
+      "bench/tools/run_doe_csl_int4ple_transcript.py",
+      "--program-bundle",
+      "/home/x/deco/doppler/examples/program-bundles/gemma-4-e2b-it-q4k-ehf16-af32-int4ple.program-bundle.json"
+    ],
+    "cslTranscript": {
+      "actualDecodeSteps": 0,
+      "decodeStepsProduced": 0,
+      "generatedTokenIdsSha256": "pending",
+      "logitsDigestSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "path": "pending",
+      "requestedDecodeSteps": 8,
+      "sha256": "pending",
+      "stopReason": "not_run"
+    },
+    "endpointRedaction": "$DOE_CSL_CMADDR",
+    "executionTarget": "system",
+    "kvCacheEvidence": {
+      "cacheReadCount": 0,
+      "cacheWriteCount": 0,
+      "coveredLayerCount": 0,
+      "layerCount": 35,
+      "realKvCache": false,
+      "stepStateDigestCount": 0
+    },
+    "status": "pending_simulator_parity"
+  },
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "promotionCriteria": {
+    "endpointRedacted": true,
+    "hardwareExecuted": false,
+    "hardwareSuccessClaimable": false,
+    "hardwareTranscriptBound": false,
+    "perStepLogitsParityPassed": false,
+    "realKvCacheUsed": false,
+    "sameSourceIdentity": true,
+    "simulatorParityPassed": false,
+    "stubStagesAbsent": true,
+    "syntheticInputsAbsent": true,
+    "syntheticWeightsAbsent": true,
+    "tokenIdsMatched": false
+  },
+  "referenceTranscript": {
+    "actualDecodeSteps": 8,
+    "decodeStepsProduced": 8,
+    "generatedTokenIdsSha256": "d677c74890075135fbdc98aa7d2d6b5df3614c0e0bc5cdf5fbfcb4cea9990655",
+    "logitsDigestSha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/program_bundle_decode_transcript.json",
+    "requestedDecodeSteps": 8,
+    "sha256": "d4b025aa35fb462e6f2d98c02c14069b3331372c65456445743d09c47a595bc7",
+    "stopReason": "decode_steps_exhausted"
+  },
+  "schemaVersion": 1,
+  "simulatorParityReceipt": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
+    "sha256": "pending",
+    "source": "doe_csl_reference_parity"
+  },
+  "simulatorTranscriptReceipt": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
+    "sha256": "pending",
+    "source": "doe_csl_int4ple_transcript"
+  },
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "captureProfile": "doppler.capture-profile/v1",
+    "graphPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/program_bundle_execution_graph.json",
+    "graphSha256": "0894776e5a46f12d98d5574c050b3864806184cdf71ea640c2a03f4e30de0836",
+    "hostEntrypointSha256": "fa549136f8d099cb4e86e8dd28df213a4a828da620039e0ae2aa6f6e567f6e5f",
+    "inputSetSha256": "08b6c8575a07da302a2369533efa23aeaa800c053c85fbba014a88db7dd8c7a0",
+    "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+    "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+    "programBundle": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/doppler-program-bundle.json",
+      "sha256": "pending",
+      "source": "doe_program_bundle_ingest"
+    },
+    "programBundleId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46",
+    "programContractVersion": "doppler.program-bundle/v1",
+    "runtimeProfile": "program-bundle/browser-reference",
+    "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+    "weightSha256": "54c2eb104625a2a4c0bd82e25be15c1330af765a92927445aa5e231b2668213d",
+    "wgslModulesSha256": "dc5617db5ab2115863d7de811cde0954dd1e7588538a064c2773528fb520331c"
+  }
+}

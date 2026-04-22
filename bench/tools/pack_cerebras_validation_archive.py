@@ -134,6 +134,7 @@ INCLUDE_FILES: tuple = (
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json",
     "bench/out/cerebras-evidence-bundle/summary.json",
 )
 
@@ -229,6 +230,7 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json": "doppler-int4ple-reference-export",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json": "doe-csl-int4ple-blocked-transcript",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json": "doppler-int4ple-pending-parity",
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json": "doe-csl-int4ple-pending-hardware",
     "bench/out/cerebras-evidence-bundle/summary.json": "rollup",
 }
 
@@ -249,7 +251,18 @@ def git_commit() -> str:
 
 
 def git_dirty_tree() -> bool:
-    return bool(git_output(["status", "--porcelain"]))
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "status", "--porcelain"],
+            capture_output=True, text=True, check=False, timeout=60,
+        )
+        if r.returncode != 0:
+            return True
+        return bool(r.stdout.strip())
+    except (OSError, subprocess.TimeoutExpired):
+        # A timed-out or unreadable status must not produce a clean-
+        # looking archive. Dirty is the conservative external signal.
+        return True
 
 
 def git_short_sha(commit: str) -> str:

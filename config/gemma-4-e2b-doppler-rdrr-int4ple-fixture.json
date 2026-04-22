@@ -13,13 +13,8 @@
   },
   "expected": {
     "declaredShardCount": 60,
-    "localShardCount": 64,
-    "extraLocalShards": [
-      "shard_00060.bin",
-      "shard_00061.bin",
-      "shard_00062.bin",
-      "shard_00063.bin"
-    ],
+    "localShardCount": 60,
+    "extraLocalShards": [],
     "targetShardIndices": [38],
     "totalSize": 3995739078,
     "quantization": "Q4_K_M",

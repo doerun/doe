@@ -63,6 +63,7 @@ def default_paths() -> list[str]:
         "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json",
         "examples/doe-csl-demo-evidence.gemma-4-e2b.sample.json",
         "examples/doe-csl-appliance-driver-receipt.sample.json",
+        "examples/doe-csl-int4ple-hardware-receipt.pending.sample.json",
     ]
 
 
