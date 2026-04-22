@@ -886,6 +886,33 @@ def enable_compile_target_runtime_command(
     write_json(runtime_config_path, runtime_config)
 
 
+def patch_simulator_plan_runtime_metadata(
+    simulator_plan_path: Path,
+    runtime_config_path: Path,
+) -> None:
+    simulator_plan = load_json(simulator_plan_path)
+    runtime_config = load_json(runtime_config_path)
+    runtime = simulator_plan.get("runtime")
+    if not isinstance(runtime, dict):
+        raise ValueError(f"simulator plan lacks runtime object: {simulator_plan_path}")
+
+    weight_mappings = runtime_config.get("weightMappings")
+    state_buffers = runtime_config.get("stateBuffers")
+    runtime["weightMappingCount"] = (
+        len(weight_mappings) if isinstance(weight_mappings, list) else 0
+    )
+    runtime["stateBufferCount"] = (
+        len(state_buffers) if isinstance(state_buffers, list) else 0
+    )
+    for key in ("maxDecodeTokens", "timeoutMs", "batchSize", "eosTokenId"):
+        if key not in runtime_config:
+            continue
+        value = runtime_config.get(key)
+        if isinstance(value, int) or value is None:
+            runtime[key] = value
+    write_json(simulator_plan_path, simulator_plan)
+
+
 def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
     plan_path = bundle_root / "simulator-plan.json"
     result_path = bundle_root / "simulator-driver-result.json"
@@ -1036,6 +1063,11 @@ def build_hostplan_bundle(
         runtime_config_path,
         reference_export_path,
     )
+    patch_simulator_plan_runtime_metadata(
+        simulator_plan_path,
+        runtime_config_path,
+    )
+    simulator_plan = load_json(simulator_plan_path)
     runtime_config_sha256 = sha256_file(runtime_config_path)
     host_io_coverage["runtimeConfigSha256"] = runtime_config_sha256
     weight_coverage["runtimeConfigSha256"] = runtime_config_sha256

@@ -31,6 +31,12 @@ DRIVER_RESULT_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-driver-result.
 RUNTIME_CONFIG_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-runtime-config.schema.json"
 OPERATION_GRAPH_SCHEMA = REPO_ROOT / "config" / "csl-operation-graph.schema.json"
 CSL_SDK_VERSION_FLOOR = "2.10.0"
+DEFAULT_CSL_TMPDIR = REPO_ROOT / "bench" / "out" / "scratch" / "csl-sdk-tmp"
+DEFAULT_CSL_WORKDIR = REPO_ROOT / "bench" / "out" / "scratch" / "csl-sdk-work"
+DEFAULT_CSL_SDK_ROOTS: tuple[Path, ...] = (
+    Path("/home/x/cerebras-sdk"),
+    Path("/home/x/cerebras-sdk-2.10.0"),
+)
 
 # Matches `@export_name("<symbol>", <type>[, <bool>]);`.
 # The type pattern uses non-greedy `.+?` anchored on the closing `);` so it
@@ -110,6 +116,51 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def csl_tmpdir_from_env(env: dict[str, str]) -> Path:
+    raw = (
+        env.get("DOE_CSL_TMPDIR", "").strip()
+        or env.get("APPTAINER_TMPDIR", "").strip()
+        or env.get("SINGULARITY_TMPDIR", "").strip()
+        or env.get("TMPDIR", "").strip()
+        or str(DEFAULT_CSL_TMPDIR)
+    )
+    path = Path(raw)
+    if not path.is_absolute():
+        path = (REPO_ROOT / path).resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def append_bind_path(env: dict[str, str], key: str, path: Path) -> None:
+    raw = env.get(key, "").strip()
+    parts = [item for item in raw.split(",") if item]
+    bind = f"{path}:{path}"
+    if bind not in parts:
+        parts.append(bind)
+    env[key] = ",".join(parts)
+
+
+def csl_subprocess_env(*, bind_repo_root: bool = False) -> dict[str, str]:
+    env = os.environ.copy()
+    tmpdir = str(csl_tmpdir_from_env(env))
+    env["TMPDIR"] = tmpdir
+    env.setdefault("APPTAINER_TMPDIR", tmpdir)
+    env.setdefault("SINGULARITY_TMPDIR", tmpdir)
+    if bind_repo_root:
+        append_bind_path(env, "APPTAINER_BINDPATH", REPO_ROOT)
+        append_bind_path(env, "SINGULARITY_BINDPATH", REPO_ROOT)
+    return env
+
+
+def csl_workdir_from_env(env: dict[str, str]) -> Path:
+    raw = env.get("DOE_CSL_WORKDIR", "").strip() or str(DEFAULT_CSL_WORKDIR)
+    path = Path(raw)
+    if not path.is_absolute():
+        path = (REPO_ROOT / path).resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def read_runtime_config(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"missing runtime config: {path}")
@@ -124,14 +175,74 @@ def derive_driver_result_path(trace_path: Path) -> Path:
     return trace_path.with_name(f"{trace_path.name}.driver-result.json")
 
 
+def load_last_jsonl_record(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    last_line = ""
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                stripped = line.strip()
+                if stripped:
+                    last_line = stripped
+    except OSError:
+        return None
+    if not last_line:
+        return None
+    try:
+        payload = json.loads(last_line)
+    except json.JSONDecodeError:
+        return {"parseError": "invalid_jsonl_tail", "raw": last_line}
+    return payload if isinstance(payload, dict) else {"value": payload}
+
+
+def csl_sdk_roots() -> list[Path]:
+    roots: list[Path] = []
+    for key in ("DOE_CSL_SDK_ROOT", "CEREBRAS_SDK_ROOT", "CSL_SDK_ROOT"):
+        raw = os.environ.get(key, "").strip()
+        if raw:
+            roots.append(Path(raw))
+    roots.extend(DEFAULT_CSL_SDK_ROOTS)
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        resolved = root.expanduser()
+        try:
+            key = str(resolved.resolve())
+        except OSError:
+            key = str(resolved)
+        if key not in seen:
+            seen.add(key)
+            unique.append(resolved)
+    return unique
+
+
+def discover_csl_sdk_tool(default: str) -> str | None:
+    tool_name = Path(default).name
+    for root in csl_sdk_roots():
+        candidate = root / tool_name
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which(default)
+
+
 def env_or_which(explicit: str | None, env_var: str, default: str) -> str | None:
     if explicit:
         return explicit
     env_value = os.environ.get(env_var, "").strip()
     if env_value:
         return env_value
-    resolved = shutil.which(default)
-    return resolved
+    return discover_csl_sdk_tool(default)
+
+
+def infer_cs_python_from_cslc(cslc_executable: str | None) -> str | None:
+    if not cslc_executable:
+        return discover_csl_sdk_tool("cs_python")
+    sibling = Path(cslc_executable).resolve().with_name("cs_python")
+    if sibling.is_file():
+        return str(sibling)
+    return discover_csl_sdk_tool("cs_python")
 
 
 def _text_output(value: str | bytes | None) -> str:
@@ -148,9 +259,13 @@ def run_command(
     stderr_path: Path,
     *,
     timeout_seconds: int | None = None,
+    cwd: Path | None = None,
+    bind_repo_root: bool = False,
 ) -> tuple[int, str, str, bool]:
     ensure_parent(stdout_path)
     ensure_parent(stderr_path)
+    subprocess_env = csl_subprocess_env(bind_repo_root=bind_repo_root)
+    subprocess_cwd = cwd or REPO_ROOT
     timed_out = False
     proc: subprocess.Popen[str] | None = None
     try:
@@ -160,6 +275,8 @@ def run_command(
             stderr=subprocess.PIPE,
             text=True,
             start_new_session=True,
+            env=subprocess_env,
+            cwd=subprocess_cwd,
         )
         stdout_text, stderr_text = proc.communicate(timeout=timeout_seconds)
         return_code = int(proc.returncode or 0)
@@ -299,6 +416,25 @@ def materialize_command(template: list[str], substitutions: dict[str, str]) -> l
             continue
         command.append(rendered)
     return command
+
+
+def absolutize_repo_path_token(token: str) -> str:
+    path = Path(token)
+    if path.is_absolute():
+        return token
+    candidate = (REPO_ROOT / path).resolve()
+    return str(candidate) if candidate.exists() else token
+
+
+def absolutize_repo_command_paths(command: list[str]) -> list[str]:
+    resolved: list[str] = []
+    for item in command:
+        if item.startswith("--") and "=" in item:
+            key, value = item.split("=", 1)
+            resolved.append(f"{key}={absolutize_repo_path_token(value)}")
+        else:
+            resolved.append(absolutize_repo_path_token(item))
+    return resolved
 
 
 def redact_command_for_receipt(command: list[str], cmaddr: str) -> list[str]:
@@ -579,18 +715,23 @@ def run_simulation(
         "cmaddr_arg": f"--cmaddr={csl_cmaddr}" if csl_cmaddr else "",
         "execution_target": "system" if csl_cmaddr else "simfabric",
     }
-    command = materialize_command([str(item) for item in raw_command], substitutions)
+    command = absolutize_repo_command_paths(
+        materialize_command([str(item) for item in raw_command], substitutions)
+    )
     return_code, stdout_written, stderr_written, timed_out = run_command(
         command,
         stdout_path,
         stderr_path,
         timeout_seconds=runtime_timeout_seconds,
+        cwd=csl_workdir_from_env(os.environ.copy()),
+        bind_repo_root=True,
     )
     run_succeeded = return_code == 0 and trace_path.exists()
     reason = "ran" if run_succeeded else "runtime_failed"
     if timed_out:
         reason = "runtime_timeout"
-    return {
+    last_progress = load_last_jsonl_record(progress_path)
+    run_result: dict[str, Any] = {
         "attempted": True,
         "status": "succeeded" if run_succeeded else "failed",
         "reason": reason,
@@ -606,7 +747,17 @@ def run_simulation(
         "progressProduced": progress_path.exists(),
         "stdoutPath": stdout_written,
         "stderrPath": stderr_written,
+        "sdkTmpDir": str(csl_tmpdir_from_env(os.environ.copy())),
+        "subprocessCwd": str(csl_workdir_from_env(os.environ.copy())),
     }
+    if timed_out:
+        run_result["timeoutKillMethod"] = "process_group_sigkill"
+    if last_progress is not None:
+        run_result["lastProgress"] = last_progress
+        phase = last_progress.get("phase")
+        if isinstance(phase, str):
+            run_result["lastProgressPhase"] = phase
+    return run_result
 
 
 def parse_wgsl_storage_bindings(wgsl_path: Path) -> dict[str, str]:
@@ -1241,6 +1392,7 @@ def main() -> int:
     runtime_executable = (
         args.runtime_executable
         or os.environ.get("DOE_CSL_RUNTIME_EXECUTABLE", "").strip()
+        or infer_cs_python_from_cslc(cslc_executable)
         or None
     )
     csl_cmaddr = args.cmaddr.strip() or os.environ.get("DOE_CSL_CMADDR", "").strip()
