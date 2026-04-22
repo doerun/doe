@@ -30,7 +30,13 @@
         "graphPath": { "type": "string" },
         "graphSha256": { "type": "string" },
         "weightSetId": { "type": "string" },
-        "weightSha256": { "type": "string" }
+        "weightSha256": { "type": "string" },
+        "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
+        "programContractVersion": { "type": "string" },
+        "wgslModulesSha256": { "type": "string" },
+        "hostEntrypointSha256": { "type": "string" },
+        "runtimeProfile": { "type": "string" },
+        "captureProfile": { "type": "string" }
       }
     },
     "referenceRun": {
@@ -123,6 +129,16 @@
     }
   },
   "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
     "tensorDigest": {
       "type": "object",
       "additionalProperties": false,

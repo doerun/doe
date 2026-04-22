@@ -36,6 +36,7 @@ CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
 INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
 )
+PROGRAM_BUNDLE_SCHEMA = Path("config/doe-doppler-program-bundle.schema.json")
 
 FIXTURE_BY_DOPPLER_KERNEL = {
     "attn_decode": "attention-decode",
@@ -228,13 +229,189 @@ def reference_transcript_digest(export: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def strip_sha256_prefix(value: str) -> str:
+    return value.removeprefix("sha256:")
+
+
+def host_entrypoint_identity(export: dict[str, Any]) -> dict[str, Any]:
+    producer = export.get("producer") or {}
+    tool_path = producer.get("toolPath")
+    if not isinstance(tool_path, str) or not tool_path:
+        raise ValueError("reference export producer.toolPath is missing")
+    path = resolve(tool_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"host entrypoint path missing: {tool_path}")
+    return {
+        "path": rel(path),
+        "role": "reference_exporter",
+        "exportName": "export_doppler_int4ple_reference",
+        "sha256": sha256_file(path),
+    }
+
+
+def wgsl_modules_from_graph(graph: dict[str, Any]) -> list[dict[str, Any]]:
+    execution = graph.get("execution") or {}
+    kernels = execution.get("kernels") or {}
+    modules = []
+    for module_id in sorted(kernels):
+        kernel = kernels[module_id]
+        if not isinstance(kernel, dict):
+            continue
+        kernel_file = kernel.get("kernel")
+        entry = kernel.get("entry")
+        digest = kernel.get("digest")
+        declared = (kernel_file, entry, digest)
+        if not all(isinstance(value, str) and value for value in declared):
+            continue
+        modules.append(
+            {
+                "moduleId": module_id,
+                "path": f"src/gpu/kernels/{kernel_file}",
+                "entryPoint": entry,
+                "sha256": strip_sha256_prefix(digest),
+            }
+        )
+    if not modules:
+        raise ValueError("execution graph has no declared WGSL modules")
+    return modules
+
+
+def artifact_link(path_text: str, role: str, sha256: str) -> dict[str, Any]:
+    artifact = {
+        "role": role,
+        "path": path_text,
+        "sha256": sha256,
+    }
+    path = resolve(path_text)
+    if path.is_file():
+        artifact["sizeBytes"] = path.stat().st_size
+    return artifact
+
+
+def materialize_program_bundle_from_reference(
+    export: dict[str, Any],
+    bundle_path: Path,
+) -> dict[str, Any]:
+    graph_path = graph_path_from_export(export)
+    graph = load_json(graph_path)
+    if sha256_file(graph_path) != export["executionGraphSha256"]:
+        raise ValueError("execution graph hash mismatch before Program Bundle ingest")
+
+    transcript = reference_transcript_digest(export)
+    producer = export.get("producer") or {}
+    tokenized = export.get("tokenizedPrompt") or {}
+    prompt = export.get("prompt") or {}
+    artifacts = [
+        artifact_link(
+            export["manifestPath"],
+            "manifest",
+            export["manifestSha256"],
+        ),
+        artifact_link(
+            graph_path.as_posix(),
+            "execution_graph",
+            export["executionGraphSha256"],
+        ),
+        artifact_link(
+            transcript["path"],
+            "reference_transcript",
+            transcript["sha256"],
+        ),
+        artifact_link(
+            tokenized["path"],
+            "tokenized_prompt",
+            tokenized["sha256"],
+        ),
+        artifact_link(
+            prompt["path"],
+            "prompt",
+            prompt["sha256"],
+        ),
+    ]
+    for shard in export.get("shardIdentities") or []:
+        filename = shard.get("filename")
+        sha256 = shard.get("sha256")
+        if not isinstance(filename, str) or not isinstance(sha256, str):
+            continue
+        shard_path = Path(export["manifestPath"]).resolve().parent / filename
+        artifact = artifact_link(str(shard_path), "weight_shard", sha256)
+        size_bytes = shard.get("sizeBytes")
+        if isinstance(size_bytes, int):
+            artifact["sizeBytes"] = size_bytes
+        artifacts.append(artifact)
+
+    bundle = {
+        "schemaVersion": 1,
+        "artifactKind": "doppler_program_bundle",
+        "programContractVersion": "doppler-program-bundle/v1",
+        "modelId": export["modelId"],
+        "dopplerExecutionGraphVersion": "execution-v1",
+        "webgpuSubset": "webgpu-command-producing-v1",
+        "wgslSubset": "execution-v1-declared-wgsl-v1",
+        "jsSubset": "deterministic-webgpu-host-v1",
+        "unsupportedFeaturePolicy": "fail",
+        "manifest": {
+            "path": export["manifestPath"],
+            "sha256": export["manifestSha256"],
+        },
+        "executionGraph": {
+            "path": rel(graph_path),
+            "sha256": export["executionGraphSha256"],
+            "source": "manifest.inference.execution",
+        },
+        "hostEntrypoint": host_entrypoint_identity(export),
+        "wgslModules": wgsl_modules_from_graph(graph),
+        "artifacts": artifacts,
+        "tokenizerInput": {
+            "inputSetSha256": export["inputSetSha256"],
+            "prompt": {
+                "path": prompt["path"],
+                "sha256": prompt["sha256"],
+            },
+            "tokenizedPrompt": {
+                "path": tokenized["path"],
+                "sha256": tokenized["sha256"],
+                "dtype": tokenized["dtype"],
+                "tokenCount": tokenized["tokenCount"],
+            },
+        },
+        "runtimeProfile": {
+            "id": producer.get("runtimeProfile", "profiles/production"),
+            "producer": producer.get("runtime", "doppler_node_webgpu"),
+        },
+        "captureProfile": {
+            "provider": producer.get("webgpuProvider", "webgpu"),
+            "profileId": producer.get("runtimeProfile", "profiles/production"),
+        },
+        "referenceTranscript": {
+            "path": transcript["path"],
+            "sha256": transcript["sha256"],
+            "status": "output_ready",
+            "requestedDecodeSteps": transcript["requestedDecodeSteps"],
+            "actualDecodeSteps": transcript["actualDecodeSteps"],
+            "stopReason": transcript["stopReason"],
+            "generatedTokenIdsSha256": transcript["generatedTokenIdsSha256"],
+            "logitsDigestSha256": transcript["logitsDigestSha256"],
+        },
+    }
+    schema = load_json(resolve(PROGRAM_BUNDLE_SCHEMA))
+    failures = schema_failures(bundle, schema)
+    if failures:
+        joined = "; ".join(failures[:4])
+        raise ValueError(f"Program Bundle schema validation failed: {joined}")
+    write_json(bundle_path, bundle)
+    return bundle
+
+
 def source_program(
     export: dict[str, Any],
     *,
     execution_depth: str = "not_executed",
+    program_bundle: dict[str, Any] | None = None,
+    program_bundle_link: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph = export.get("executionGraph") or {}
-    return {
+    source = {
         "authoringSurface": "doppler_execution_v1",
         "manifestPath": export["manifestPath"],
         "manifestSha256": export["manifestSha256"],
@@ -245,6 +422,14 @@ def source_program(
         "inputSetSha256": export["inputSetSha256"],
         "executionDepth": execution_depth,
     }
+    if program_bundle is not None and program_bundle_link is not None:
+        source["programBundle"] = program_bundle_link
+        source["programContractVersion"] = program_bundle["programContractVersion"]
+        source["wgslModulesSha256"] = sha256_json(program_bundle["wgslModules"])
+        source["hostEntrypointSha256"] = program_bundle["hostEntrypoint"]["sha256"]
+        source["runtimeProfile"] = program_bundle["runtimeProfile"]["id"]
+        source["captureProfile"] = program_bundle["captureProfile"]["profileId"]
+    return source
 
 
 def load_fixture_ids(path: Path) -> set[str]:
@@ -553,6 +738,11 @@ def hostplan_bundle_blocked(source_graph_sha256: str, message: str) -> dict[str,
             "source": "hostplan_lowering_failed",
         },
         "simulatorPlan": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "hostplan_lowering_failed",
+        },
+        "programBundle": {
             "path": "pending",
             "sha256": "pending",
             "source": "hostplan_lowering_failed",
@@ -1047,6 +1237,11 @@ def build_hostplan_bundle(
     host_plan = load_json(host_plan_path)
     simulator_plan = load_json(simulator_plan_path)
     normalized_execution = load_json(normalized_path)
+    program_bundle_path = bundle_root / "doppler-program-bundle.json"
+    materialize_program_bundle_from_reference(
+        export,
+        program_bundle_path,
+    )
     host_plan_body = host_plan.get("hostPlan") or {}
     phases = host_plan_body.get("phases") or {}
     weight_coverage = patch_runtime_weight_mappings(
@@ -1085,6 +1280,7 @@ def build_hostplan_bundle(
         "runtimeConfig": hash_link(runtime_config_path, "doe_csl_host_plan_tool"),
         "memoryPlan": hash_link(memory_plan_path, "doe_csl_host_plan_tool"),
         "simulatorPlan": hash_link(simulator_plan_path, "doe_csl_host_plan_tool"),
+        "programBundle": hash_link(program_bundle_path, "doe_program_bundle_ingest"),
         "compileInputCoverage": coverage,
         "weightMappingCoverage": weight_coverage,
         "hostIoLayoutCoverage": host_io_coverage,
@@ -1706,6 +1902,14 @@ def build_blocked_receipt(
         blocker = hostplan_bundle.get("blocker", "HostPlan bundle is not ready.")
     elif status == "simulator_success":
         blocker = ""
+    program_bundle_link = hostplan_bundle.get("programBundle")
+    program_bundle = None
+    if isinstance(program_bundle_link, dict):
+        raw_path = program_bundle_link.get("path")
+        if isinstance(raw_path, str):
+            program_bundle_path = resolve(raw_path)
+            if program_bundle_path.is_file():
+                program_bundle = load_json(program_bundle_path)
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_csl_int4ple_transcript",
@@ -1714,6 +1918,8 @@ def build_blocked_receipt(
         "sourceProgram": source_program(
             export,
             execution_depth=simulator_evidence.execution_depth,
+            program_bundle=program_bundle,
+            program_bundle_link=program_bundle_link,
         ),
         "decodeRequest": {
             "requestedDecodeSteps": requested,

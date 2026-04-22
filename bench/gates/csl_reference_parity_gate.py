@@ -164,6 +164,14 @@ def main() -> int:
         source.get("graphSha256", ""),
         failures,
     )
+    program_bundle = source.get("programBundle")
+    if isinstance(program_bundle, dict):
+        check_path_hash(
+            "sourceProgram.programBundle",
+            program_bundle.get("path", ""),
+            program_bundle.get("sha256", ""),
+            failures,
+        )
 
     csl_run = receipt.get("cslRun", {})
     trace_path_text = csl_run.get("tracePath", "")

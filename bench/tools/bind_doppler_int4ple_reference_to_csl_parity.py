@@ -518,19 +518,32 @@ def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str,
     if reference_transcript is not None:
         reference_run["decodeTranscript"] = reference_transcript
 
+    source_program = {
+        "authoringSurface": "doppler_execution_v1",
+        "manifestPath": export["manifestPath"],
+        "manifestSha256": export["manifestSha256"],
+        "graphPath": export["executionGraph"]["path"],
+        "graphSha256": export["executionGraphSha256"],
+        "weightSetId": export["weightSetId"],
+        "weightSha256": export["weightSetSha256"],
+    }
+    if csl_transcript_receipt_bound:
+        for key in (
+            "programBundle",
+            "programContractVersion",
+            "wgslModulesSha256",
+            "hostEntrypointSha256",
+            "runtimeProfile",
+            "captureProfile",
+        ):
+            if key in transcript_source:
+                source_program[key] = transcript_source[key]
+
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_csl_reference_parity",
         "modelId": export["modelId"],
-        "sourceProgram": {
-            "authoringSurface": "doppler_execution_v1",
-            "manifestPath": export["manifestPath"],
-            "manifestSha256": export["manifestSha256"],
-            "graphPath": export["executionGraph"]["path"],
-            "graphSha256": export["executionGraphSha256"],
-            "weightSetId": export["weightSetId"],
-            "weightSha256": export["weightSetSha256"],
-        },
+        "sourceProgram": source_program,
         "referenceRun": reference_run,
         "cslRun": csl_run,
         "comparison": comparison,

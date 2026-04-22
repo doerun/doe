@@ -108,6 +108,46 @@ def check_reference_identity(
             "referenceTranscript.generatedTokenIdsSha256 does not match export"
         )
 
+    program_link = source.get("programBundle")
+    if isinstance(program_link, dict):
+        path_text = program_link.get("path", "")
+        sha256 = program_link.get("sha256", "")
+        check_path_hash(
+            "sourceProgram.programBundle",
+            path_text,
+            sha256,
+            failures,
+            required=True,
+        )
+        if path_text not in PENDING and sha256 not in PENDING:
+            program_bundle = load_json(resolve(path_text))
+            if program_bundle.get("artifactKind") != "doppler_program_bundle":
+                failures.append("sourceProgram.programBundle artifactKind mismatch")
+            if (
+                program_bundle.get("manifest") or {}
+            ).get("sha256") != export.get("manifestSha256"):
+                failures.append(
+                    "sourceProgram.programBundle manifest hash does not match export"
+                )
+            if (
+                program_bundle.get("executionGraph") or {}
+            ).get("sha256") != export.get("executionGraphSha256"):
+                failures.append(
+                    "sourceProgram.programBundle graph hash does not match export"
+                )
+            if (
+                program_bundle.get("tokenizerInput") or {}
+            ).get("inputSetSha256") != export.get("inputSetSha256"):
+                failures.append(
+                    "sourceProgram.programBundle input hash does not match export"
+                )
+            if (
+                program_bundle.get("referenceTranscript") or {}
+            ).get("sha256") != expected_transcript.get("sha256"):
+                failures.append(
+                    "sourceProgram.programBundle transcript hash does not match export"
+                )
+
 
 def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
     plan = receipt.get("loweringPlan") or {}
@@ -169,6 +209,21 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
             "hostPlanBundle.weightMappingCoverage.missingWeightCount must be zero"
         )
     source_program = receipt.get("sourceProgram") or {}
+    if "programBundle" not in source_program:
+        failures.append("sourceProgram.programBundle must be present")
+    else:
+        linked = source_program.get("programBundle") or {}
+        check_path_hash(
+            "sourceProgram.programBundle",
+            linked.get("path", ""),
+            linked.get("sha256", ""),
+            failures,
+            required=True,
+        )
+    if not source_program.get("wgslModulesSha256"):
+        failures.append("sourceProgram.wgslModulesSha256 must be present")
+    if not source_program.get("hostEntrypointSha256"):
+        failures.append("sourceProgram.hostEntrypointSha256 must be present")
     if (
         weight_coverage.get("manifestSha256")
         != source_program.get("manifestSha256")

@@ -125,6 +125,12 @@
         "weightSetId": { "type": "string" },
         "weightSha256": { "type": "string" },
         "inputSetSha256": { "type": "string" },
+        "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
+        "programContractVersion": { "type": "string" },
+        "wgslModulesSha256": { "type": "string" },
+        "hostEntrypointSha256": { "type": "string" },
+        "runtimeProfile": { "type": "string" },
+        "captureProfile": { "type": "string" },
         "executionDepth": {
           "type": "string",
           "enum": ["full_model", "not_executed"]
@@ -238,6 +244,7 @@
         "runtimeConfig",
         "memoryPlan",
         "simulatorPlan",
+        "programBundle",
         "compileInputCoverage",
         "weightMappingCoverage",
         "hostIoLayoutCoverage",
@@ -262,6 +269,7 @@
         "runtimeConfig": { "$ref": "#/$defs/hashLinkedPath" },
         "memoryPlan": { "$ref": "#/$defs/hashLinkedPath" },
         "simulatorPlan": { "$ref": "#/$defs/hashLinkedPath" },
+        "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
         "compileInputCoverage": { "$ref": "#/$defs/compileInputCoverage" },
         "weightMappingCoverage": { "$ref": "#/$defs/weightMappingCoverage" },
         "hostIoLayoutCoverage": { "$ref": "#/$defs/hostIoLayoutCoverage" },

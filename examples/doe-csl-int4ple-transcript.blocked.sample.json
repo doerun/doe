@@ -215,6 +215,11 @@
       "sha256": "d767477867488f1e5961b818cd194cbccb0261ad0f17efac495ddf9892af71fe",
       "source": "doe_csl_host_plan_tool"
     },
+    "programBundle": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/doppler-program-bundle.json",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "source": "doe_program_bundle_ingest"
+    },
     "sourceGraphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
     "status": "hostplan_ready",
     "weightMappingCoverage": {

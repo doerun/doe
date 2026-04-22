@@ -178,6 +178,10 @@
       "data": "examples/doppler-int4ple-reference-export.gemma-4-e2b.contract.json"
     },
     {
+      "schema": "config/doe-doppler-program-bundle.schema.json",
+      "data": "examples/doe-doppler-program-bundle.gemma-4-e2b.sample.json"
+    },
+    {
       "schema": "config/doe-csl-int4ple-transcript.schema.json",
       "data": "examples/doe-csl-int4ple-transcript.blocked.sample.json"
     },

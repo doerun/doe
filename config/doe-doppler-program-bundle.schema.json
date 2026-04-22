@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-doppler-program-bundle.schema.json",
+  "title": "Doe-accepted Doppler Program Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "programContractVersion",
+    "modelId",
+    "dopplerExecutionGraphVersion",
+    "webgpuSubset",
+    "wgslSubset",
+    "jsSubset",
+    "unsupportedFeaturePolicy",
+    "manifest",
+    "executionGraph",
+    "hostEntrypoint",
+    "wgslModules",
+    "artifacts",
+    "tokenizerInput",
+    "runtimeProfile",
+    "captureProfile",
+    "referenceTranscript"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "doppler_program_bundle" },
+    "programContractVersion": {
+      "type": "string",
+      "const": "doppler-program-bundle/v1"
+    },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourcePackage": { "$ref": "#/$defs/hashLinkedPath" },
+    "dopplerExecutionGraphVersion": {
+      "type": "string",
+      "const": "execution-v1"
+    },
+    "webgpuSubset": { "type": "string", "minLength": 1 },
+    "wgslSubset": { "type": "string", "minLength": 1 },
+    "jsSubset": { "type": "string", "minLength": 1 },
+    "unsupportedFeaturePolicy": { "type": "string", "const": "fail" },
+    "manifest": { "$ref": "#/$defs/hashLinkedPath" },
+    "executionGraph": { "$ref": "#/$defs/hashLinkedPath" },
+    "hostEntrypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "role": {
+          "type": "string",
+          "enum": ["program_factory", "reference_exporter"]
+        },
+        "exportName": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "wgslModules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/wgslModule" }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "tokenizerInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inputSetSha256", "prompt", "tokenizedPrompt"],
+      "properties": {
+        "inputSetSha256": { "$ref": "#/$defs/sha256" },
+        "prompt": { "$ref": "#/$defs/hashLinkedPath" },
+        "tokenizedPrompt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "dtype", "tokenCount"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "dtype": { "type": "string", "const": "uint32" },
+            "tokenCount": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "runtimeProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "producer"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "producer": { "type": "string", "minLength": 1 }
+      }
+    },
+    "captureProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "profileId"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "profileId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "referenceTranscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "status",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "generatedTokenIdsSha256",
+        "logitsDigestSha256"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "status": { "type": "string", "const": "output_ready" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "type": "string", "minLength": 1 },
+        "generatedTokenIdsSha256": { "$ref": "#/$defs/sha256" },
+        "logitsDigestSha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "wgslModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "path", "entryPoint", "sha256"],
+      "properties": {
+        "moduleId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "entryPoint": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "sha256"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "manifest",
+            "execution_graph",
+            "weight_shard",
+            "prompt",
+            "tokenized_prompt",
+            "reference_transcript",
+            "logits",
+            "generated_tokens"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "sizeBytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
