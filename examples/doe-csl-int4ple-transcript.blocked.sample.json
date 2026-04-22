@@ -156,6 +156,32 @@
       "sha256": "654aadd5cd10068b29cdd6a4f8ff9a8a8b4f237d02c1a72bc24cbdb9bde55e95",
       "source": "doe_csl_host_plan_tool"
     },
+    "hostIoLayoutCoverage": {
+      "coveredRoles": [
+        "generated_tokens_output",
+        "logits_output",
+        "state",
+        "tokenized_prompt",
+        "weight"
+      ],
+      "entryCount": 149,
+      "hostInputEntryCount": 143,
+      "hostIoLayoutSha256": "pending",
+      "hostOutputEntryCount": 2,
+      "mappedWeightEntryCount": 142,
+      "missingRoles": [],
+      "requiredRoles": [
+        "weight",
+        "state",
+        "tokenized_prompt",
+        "logits_output",
+        "generated_tokens_output"
+      ],
+      "runtimeConfigPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/runtime-config.json",
+      "runtimeConfigSha256": "bf63c43ff58cdb40764f6ff85124556bf942c922707ecbea89a7c3d3e3d0acb5",
+      "stateBufferEntryCount": 4,
+      "status": "complete"
+    },
     "kernelCount": 14,
     "memoryPlan": {
       "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/memory-plan.json",

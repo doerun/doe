@@ -274,6 +274,107 @@
           "bytesPerPe": { "type": "integer", "minimum": 0 }
         }
       }
+    },
+    "hostIoLayout": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hostIoLayoutEntry" }
+    }
+  },
+  "$defs": {
+    "hostIoLayoutEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "bufferRole",
+        "hostAction",
+        "dtype",
+        "peGrid",
+        "roi",
+        "order",
+        "elementsPerPe",
+        "bytesPerPe",
+        "totalElements",
+        "totalBytes",
+        "sourceIdentity"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "bufferRole": {
+          "type": "string",
+          "enum": [
+            "weight",
+            "state",
+            "tokenized_prompt",
+            "logits_output",
+            "generated_tokens_output"
+          ]
+        },
+        "hostAction": {
+          "type": "string",
+          "enum": ["memcpy_h2d", "memcpy_d2h", "allocate_device"]
+        },
+        "dtype": {
+          "type": "string",
+          "enum": ["bytes", "f16", "float32", "u8_q4k", "u8_q8", "uint32"]
+        },
+        "peGrid": { "$ref": "#/$defs/peGrid" },
+        "roi": { "$ref": "#/$defs/peRoi" },
+        "order": {
+          "type": "string",
+          "enum": ["host_linear", "row_major_pe_range"]
+        },
+        "elementsPerPe": { "type": "integer", "minimum": 0 },
+        "bytesPerPe": { "type": "integer", "minimum": 0 },
+        "totalElements": { "type": "integer", "minimum": 0 },
+        "totalBytes": { "type": "integer", "minimum": 0 },
+        "sourceIdentity": { "$ref": "#/$defs/hostIoSourceIdentity" }
+      }
+    },
+    "peGrid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "peRoi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height", "peStart", "peEnd"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "peStart": { "type": "integer", "minimum": 0 },
+        "peEnd": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "hostIoSourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "synthetic"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "doppler_reference_generated_tokens_contract",
+            "doppler_reference_tensor_contract",
+            "rdrr_weight_shard",
+            "runtime_state_buffer",
+            "tokenized_prompt"
+          ]
+        },
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" },
+        "tensor": { "type": "string" },
+        "offsetBytes": { "type": "integer", "minimum": 0 },
+        "synthetic": { "type": "boolean", "const": false }
+      }
     }
   }
 }

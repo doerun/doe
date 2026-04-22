@@ -36,7 +36,9 @@ Read this file first. Use the shard files under
   This is a target-lane clarification, not a new claim: direct LiteRT/TFLite and
   the Doe-side Doppler-equivalent harness remain out of the correctness-claim
   path, and full E2B, Doppler production parity, hardware, and performance
-  claims remain gated.
+  claims remain gated. The blocked Doe CSL transcript path now hash-links the
+  HostPlan bundle, mapped RDRR runtime config, and host I/O layout coverage
+  before strict simulator promotion can proceed.
 - Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and

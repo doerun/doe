@@ -21,6 +21,11 @@ from typing import Any
 import jsonschema
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools.doe_csl_host_io_layout import attach_host_io_layout
+
 FIXTURE_REGISTRY = Path("config/csl-runtime-fixtures.json")
 HOST_PLAN_TOOL = Path("runtime/zig/zig-out/bin/doe-csl-host-plan-tool")
 DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
@@ -571,6 +576,32 @@ def hostplan_bundle_blocked(source_graph_sha256: str, message: str) -> dict[str,
             "runtimeConfigPath": "pending",
             "runtimeConfigSha256": "pending",
         },
+        "hostIoLayoutCoverage": {
+            "status": "not_attempted",
+            "runtimeConfigPath": "pending",
+            "runtimeConfigSha256": "pending",
+            "hostIoLayoutSha256": "pending",
+            "entryCount": 0,
+            "requiredRoles": [
+                "weight",
+                "state",
+                "tokenized_prompt",
+                "logits_output",
+                "generated_tokens_output",
+            ],
+            "coveredRoles": [],
+            "missingRoles": [
+                "weight",
+                "state",
+                "tokenized_prompt",
+                "logits_output",
+                "generated_tokens_output",
+            ],
+            "mappedWeightEntryCount": 0,
+            "stateBufferEntryCount": 0,
+            "hostInputEntryCount": 0,
+            "hostOutputEntryCount": 0,
+        },
         "simulatorDriverResult": {
             "path": "pending",
             "sha256": "pending",
@@ -972,6 +1003,14 @@ def build_hostplan_bundle(
         export,
         normalized_execution,
     )
+    host_io_coverage = attach_host_io_layout(
+        runtime_config_path,
+        export,
+        REPO_ROOT,
+    )
+    weight_coverage["runtimeConfigSha256"] = host_io_coverage[
+        "runtimeConfigSha256"
+    ]
     coverage = compile_input_coverage(bundle_root, simulator_plan)
     driver_result = run_simulator_driver(bundle_root)
     return {
@@ -988,6 +1027,7 @@ def build_hostplan_bundle(
         "simulatorPlan": hash_link(simulator_plan_path, "doe_csl_host_plan_tool"),
         "compileInputCoverage": coverage,
         "weightMappingCoverage": weight_coverage,
+        "hostIoLayoutCoverage": host_io_coverage,
         "simulatorDriverResult": driver_result,
         "prefillLaunchCount": len(phases.get("prefill") or []),
         "decodeLaunchCount": len(phases.get("decode") or []),

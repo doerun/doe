@@ -183,6 +183,37 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
         failures.append(
             "hostPlanBundle.weightMappingCoverage.weightSetSha256 must match sourceProgram"
         )
+    host_io_coverage = hostplan.get("hostIoLayoutCoverage") or {}
+    if host_io_coverage.get("status") != "complete":
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.status must be complete"
+        )
+    if int(host_io_coverage.get("entryCount") or 0) <= 0:
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.entryCount must be positive"
+        )
+    if host_io_coverage.get("missingRoles"):
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.missingRoles must be empty"
+        )
+    if int(host_io_coverage.get("mappedWeightEntryCount") or 0) <= 0:
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.mappedWeightEntryCount "
+            "must be positive"
+        )
+    if int(host_io_coverage.get("stateBufferEntryCount") or 0) <= 0:
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.stateBufferEntryCount "
+            "must be positive"
+        )
+    if (
+        host_io_coverage.get("runtimeConfigSha256")
+        != weight_coverage.get("runtimeConfigSha256")
+    ):
+        failures.append(
+            "hostPlanBundle.hostIoLayoutCoverage.runtimeConfigSha256 must "
+            "match weightMappingCoverage"
+        )
     driver_result = hostplan.get("simulatorDriverResult") or {}
     check_path_hash(
         "hostPlanBundle.simulatorDriverResult",

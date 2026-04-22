@@ -238,6 +238,7 @@
         "simulatorPlan",
         "compileInputCoverage",
         "weightMappingCoverage",
+        "hostIoLayoutCoverage",
         "simulatorDriverResult",
         "prefillLaunchCount",
         "decodeLaunchCount",
@@ -261,6 +262,7 @@
         "simulatorPlan": { "$ref": "#/$defs/hashLinkedPath" },
         "compileInputCoverage": { "$ref": "#/$defs/compileInputCoverage" },
         "weightMappingCoverage": { "$ref": "#/$defs/weightMappingCoverage" },
+        "hostIoLayoutCoverage": { "$ref": "#/$defs/hostIoLayoutCoverage" },
         "simulatorDriverResult": { "$ref": "#/$defs/simulatorDriverResult" },
         "prefillLaunchCount": { "type": "integer", "minimum": 0 },
         "decodeLaunchCount": { "type": "integer", "minimum": 0 },
@@ -347,6 +349,77 @@
         "mappedWeightKeysSha256": { "type": "string" },
         "runtimeConfigPath": { "type": "string" },
         "runtimeConfigSha256": { "type": "string" }
+      }
+    },
+    "hostIoLayoutCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "runtimeConfigPath",
+        "runtimeConfigSha256",
+        "hostIoLayoutSha256",
+        "entryCount",
+        "requiredRoles",
+        "coveredRoles",
+        "missingRoles",
+        "mappedWeightEntryCount",
+        "stateBufferEntryCount",
+        "hostInputEntryCount",
+        "hostOutputEntryCount"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_attempted"]
+        },
+        "runtimeConfigPath": { "type": "string" },
+        "runtimeConfigSha256": { "type": "string" },
+        "hostIoLayoutSha256": { "type": "string" },
+        "entryCount": { "type": "integer", "minimum": 0 },
+        "requiredRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "weight",
+              "state",
+              "tokenized_prompt",
+              "logits_output",
+              "generated_tokens_output"
+            ]
+          }
+        },
+        "coveredRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "weight",
+              "state",
+              "tokenized_prompt",
+              "logits_output",
+              "generated_tokens_output"
+            ]
+          }
+        },
+        "missingRoles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "weight",
+              "state",
+              "tokenized_prompt",
+              "logits_output",
+              "generated_tokens_output"
+            ]
+          }
+        },
+        "mappedWeightEntryCount": { "type": "integer", "minimum": 0 },
+        "stateBufferEntryCount": { "type": "integer", "minimum": 0 },
+        "hostInputEntryCount": { "type": "integer", "minimum": 0 },
+        "hostOutputEntryCount": { "type": "integer", "minimum": 0 }
       }
     },
     "simulatorDriverResult": {
