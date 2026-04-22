@@ -18,12 +18,16 @@ WebGPU runtime contract directly.
 ## The abstraction stack
 
 For Gemma-4, the intended source program is the production Doppler INT4 PLE
-RDRR WebGPU inference path: JavaScript host/model orchestration, WGSL compute
-kernels, weights, and an `execution-v1` manifest. Doe does not replace that
-authoring surface for the Cerebras lane. It governs the lowering of that
+RDRR WebGPU inference path exported as a closed Doppler-owned program bundle:
+manifest identity, execution graph, deterministic WebGPU command-producing JS
+entrypoint, declared WGSL modules and digests, runtime profile, artifact
+identities, and reference transcript. Doe does not replace that authoring
+surface for the Cerebras lane and does not re-declare kernels through Doe
+configs. Doe selects the exported bundle and governs the lowering of that
 surface into explicit Cerebras contracts and receipts. The Doe-side
 Doppler-equivalent WebGPU harness is not a substitute for this production
-reference when making Cerebras-facing parity claims.
+reference when making Cerebras-facing parity claims. See
+`docs/doppler-ingest.md` for the Doe-owned ingest boundary.
 
 The current CSL lowering stack is:
 

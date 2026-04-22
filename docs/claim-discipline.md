@@ -16,12 +16,16 @@ listed in "allowed claims today," revise it.
 
 The useful Cerebras-facing Gemma-4 path is single-program portability from the
 production Doppler INT4 PLE RDRR WebGPU inference path to Doe-emitted CSL. The
-source program is the Doppler execution bundle: JavaScript orchestration, WGSL
-kernels, weights, and an `execution-v1` manifest. Doe's job is to capture or
-ingest that program, lower the supported compute subset through Doe IR, and
-emit explicit Cerebras contracts: `HostPlan`, memory plan, stream/operation
-graph, SdkLayout/Python orchestration where needed, runtime config, CSL source,
-simulator receipts, and eventually hardware receipts.
+source program is a closed, Doppler-owned portable program bundle: manifest
+identity, execution graph, deterministic WebGPU command-producing JS entrypoint,
+declared WGSL modules and digests, runtime profile, artifact identities, and
+reference transcript. Doe's job is to select that exported bundle, capture or
+ingest the supported command surface, lower the supported compute subset through
+Doe IR, and emit explicit Cerebras contracts: `HostPlan`, memory plan,
+stream/operation graph, SdkLayout/Python orchestration where needed, runtime
+config, CSL source, simulator receipts, and eventually hardware receipts. Doe
+configs must not become a second source of truth for Doppler kernels or
+execution behavior.
 
 For the current Gemma-4 E2B work, the INT4 PLE RDRR artifact is the preferred
 source artifact for this lane. The direct LiteRT/TFLite `.task` path is useful

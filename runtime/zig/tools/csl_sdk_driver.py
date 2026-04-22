@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -133,13 +134,59 @@ def env_or_which(explicit: str | None, env_var: str, default: str) -> str | None
     return resolved
 
 
-def run_command(command: list[str], stdout_path: Path, stderr_path: Path) -> tuple[int, str, str]:
+def _text_output(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
+def run_command(
+    command: list[str],
+    stdout_path: Path,
+    stderr_path: Path,
+    *,
+    timeout_seconds: int | None = None,
+) -> tuple[int, str, str, bool]:
     ensure_parent(stdout_path)
     ensure_parent(stderr_path)
-    proc = subprocess.run(command, check=False, capture_output=True, text=True)
-    stdout_path.write_text(proc.stdout or "", encoding="utf-8")
-    stderr_path.write_text(proc.stderr or "", encoding="utf-8")
-    return proc.returncode, str(stdout_path), str(stderr_path)
+    timed_out = False
+    proc: subprocess.Popen[str] | None = None
+    try:
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+        stdout_text, stderr_text = proc.communicate(timeout=timeout_seconds)
+        return_code = int(proc.returncode or 0)
+    except subprocess.TimeoutExpired as exc:
+        timed_out = True
+        if proc is not None:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            stdout_text, stderr_text = proc.communicate()
+        else:
+            stdout_text, stderr_text = "", ""
+        if not stdout_text:
+            stdout_text = _text_output(exc.stdout)
+        if not stderr_text:
+            stderr_text = _text_output(exc.stderr)
+        timeout_note = f"DOE command timed out after {timeout_seconds} seconds"
+        stderr_text = (
+            f"{stderr_text.rstrip()}\n{timeout_note}\n"
+            if stderr_text
+            else f"{timeout_note}\n"
+        )
+        return_code = 124
+    stdout_path.write_text(stdout_text or "", encoding="utf-8")
+    stderr_path.write_text(stderr_text or "", encoding="utf-8")
+    return return_code, str(stdout_path), str(stderr_path), timed_out
 
 
 # Ordered list of (pattern, failure_code) pairs used to classify cslc stderr
@@ -398,7 +445,11 @@ def compile_targets(
             command.append(f"--width-east-buf={width_east_buf}")
         if use_memcpy:
             command.append("--memcpy")
-        return_code, stdout_written, stderr_written = run_command(command, stdout_path, stderr_path)
+        return_code, stdout_written, stderr_written, _timed_out = run_command(
+            command,
+            stdout_path,
+            stderr_path,
+        )
         status = "succeeded" if return_code == 0 else "failed"
         target_failure_code: str | None = None
         if return_code != 0:
@@ -452,12 +503,14 @@ def run_simulation(
     working_paths: dict[str, Path],
     explicit_sim_runner: str | None,
     csl_cmaddr: str,
+    runtime_timeout_seconds: int | None,
 ) -> dict[str, Any]:
     plan_dir = plan_path.parent
     outputs = plan["outputs"]
     trace_path = resolve_relative(plan_dir, str(outputs["tracePath"]))
     stdout_path = resolve_relative(plan_dir, str(outputs["stdoutPath"]))
     stderr_path = resolve_relative(plan_dir, str(outputs["stderrPath"]))
+    progress_path = trace_path.with_name(f"{trace_path.name}.progress.jsonl")
 
     if compile_summary["status"] != "succeeded":
         return {
@@ -473,6 +526,10 @@ def run_simulation(
         }
 
     runtime_config = read_runtime_config(runtime_config_path)
+    if runtime_timeout_seconds is None:
+        timeout_ms = runtime_config.get("timeoutMs")
+        if isinstance(timeout_ms, int) and timeout_ms > 0:
+            runtime_timeout_seconds = max(1, (timeout_ms + 999) // 1000)
     mode = str(runtime_config.get("mode", ""))
     if mode == "compile-only":
         return {
@@ -517,22 +574,36 @@ def run_simulation(
         "trace_path": str(trace_path.resolve()),
         "stdout_path": str(stdout_path.resolve()),
         "stderr_path": str(stderr_path.resolve()),
+        "progress_path": str(progress_path.resolve()),
         "cmaddr": csl_cmaddr,
         "cmaddr_arg": f"--cmaddr={csl_cmaddr}" if csl_cmaddr else "",
         "execution_target": "system" if csl_cmaddr else "simfabric",
     }
     command = materialize_command([str(item) for item in raw_command], substitutions)
-    return_code, stdout_written, stderr_written = run_command(command, stdout_path, stderr_path)
+    return_code, stdout_written, stderr_written, timed_out = run_command(
+        command,
+        stdout_path,
+        stderr_path,
+        timeout_seconds=runtime_timeout_seconds,
+    )
+    run_succeeded = return_code == 0 and trace_path.exists()
+    reason = "ran" if run_succeeded else "runtime_failed"
+    if timed_out:
+        reason = "runtime_timeout"
     return {
         "attempted": True,
-        "status": "succeeded" if return_code == 0 and trace_path.exists() else "failed",
-        "reason": "ran" if return_code == 0 and trace_path.exists() else "runtime_failed",
+        "status": "succeeded" if run_succeeded else "failed",
+        "reason": reason,
         "executionTarget": "system" if csl_cmaddr else "simfabric",
         "cmaddrProvided": bool(csl_cmaddr),
         "command": redact_command_for_receipt(command, csl_cmaddr),
         "exitCode": return_code,
+        "timedOut": timed_out,
+        "timeoutSeconds": runtime_timeout_seconds,
         "tracePath": str(trace_path),
         "traceProduced": trace_path.exists(),
+        "progressPath": str(progress_path),
+        "progressProduced": progress_path.exists(),
         "stdoutPath": stdout_written,
         "stderrPath": stderr_written,
     }
@@ -1119,7 +1190,27 @@ def parse_args() -> argparse.Namespace:
             "SdkRuntime host commands should run on simfabric."
         ),
     )
+    parser.add_argument(
+        "--runtime-timeout-seconds",
+        type=int,
+        default=None,
+        help=(
+            "Optional wall-clock timeout for sdk-runtime-command execution. "
+            "Defaults to DOE_CSL_RUNTIME_TIMEOUT_SECONDS or runtime-config "
+            "timeoutMs."
+        ),
+    )
     return parser.parse_args()
+
+
+def env_timeout_seconds(explicit: int | None) -> int | None:
+    if explicit is not None:
+        return explicit if explicit > 0 else None
+    raw = os.environ.get("DOE_CSL_RUNTIME_TIMEOUT_SECONDS", "").strip()
+    if not raw:
+        return None
+    value = int(raw)
+    return value if value > 0 else None
 
 
 def main() -> int:
@@ -1142,9 +1233,18 @@ def main() -> int:
     )
 
     cslc_executable = env_or_which(args.cslc_executable or None, "DOE_CSLC_EXECUTABLE", "cslc")
-    sim_runner_executable = args.sim_runner_executable or os.environ.get("DOE_CSL_SIM_RUNNER_EXECUTABLE", "").strip() or None
-    runtime_executable = args.runtime_executable or os.environ.get("DOE_CSL_RUNTIME_EXECUTABLE", "").strip() or None
+    sim_runner_executable = (
+        args.sim_runner_executable
+        or os.environ.get("DOE_CSL_SIM_RUNNER_EXECUTABLE", "").strip()
+        or None
+    )
+    runtime_executable = (
+        args.runtime_executable
+        or os.environ.get("DOE_CSL_RUNTIME_EXECUTABLE", "").strip()
+        or None
+    )
     csl_cmaddr = args.cmaddr.strip() or os.environ.get("DOE_CSL_CMADDR", "").strip()
+    runtime_timeout_seconds = env_timeout_seconds(args.runtime_timeout_seconds)
 
     try:
         compile_summary, compile_targets_payload, working_paths = compile_targets(
@@ -1161,6 +1261,7 @@ def main() -> int:
             working_paths=working_paths,
             explicit_sim_runner=runtime_executable or sim_runner_executable,
             csl_cmaddr=csl_cmaddr,
+            runtime_timeout_seconds=runtime_timeout_seconds,
         )
         host_plan_kernels = load_host_plan_kernels(plan=plan, plan_dir=plan_dir)
         operation_graph = synthesize_operation_graph(

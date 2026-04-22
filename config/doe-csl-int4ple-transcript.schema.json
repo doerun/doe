@@ -70,6 +70,8 @@
         "status": { "type": "string" },
         "tracePath": { "type": "string" },
         "traceSha256": { "type": "string" },
+        "progressPath": { "type": "string" },
+        "progressSha256": { "type": "string" },
         "driverResult": { "$ref": "#/$defs/hashLinkedPath" },
         "executionTarget": {
           "type": "string",

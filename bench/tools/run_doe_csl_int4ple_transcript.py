@@ -33,6 +33,9 @@ DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
     "gemma-4-e2b-int4ple-doe-csl-hostplan"
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
+INT4PLE_RUNTIME_RUNNER = Path(
+    "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
+)
 
 FIXTURE_BY_DOPPLER_KERNEL = {
     "attn_decode": "attention-decode",
@@ -863,6 +866,26 @@ def patch_runtime_weight_mappings(
     }
 
 
+def enable_compile_target_runtime_command(
+    runtime_config_path: Path,
+    reference_export_path: Path,
+) -> None:
+    runtime_config = load_json(runtime_config_path)
+    runtime_config["mode"] = "sdk-runtime-command"
+    runtime_config["cmaddrEnvVar"] = "DOE_CSL_CMADDR"
+    runtime_config["command"] = [
+        rel(resolve(INT4PLE_RUNTIME_RUNNER)),
+        "--plan={plan_path}",
+        "--runtime-config={plan_dir}/runtime-config.json",
+        "--compile-root={compile_root}",
+        f"--reference-export={rel(reference_export_path)}",
+        "--trace-out={trace_path}",
+        "--progress-out={progress_path}",
+        "{cmaddr_arg}",
+    ]
+    write_json(runtime_config_path, runtime_config)
+
+
 def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
     plan_path = bundle_root / "simulator-plan.json"
     result_path = bundle_root / "simulator-driver-result.json"
@@ -934,6 +957,7 @@ def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
 
 def build_hostplan_bundle(
     export: dict[str, Any],
+    reference_export_path: Path,
     bundle_root: Path,
     hostplan_tool: Path,
 ) -> dict[str, Any]:
@@ -1008,9 +1032,13 @@ def build_hostplan_bundle(
         export,
         REPO_ROOT,
     )
-    weight_coverage["runtimeConfigSha256"] = host_io_coverage[
-        "runtimeConfigSha256"
-    ]
+    enable_compile_target_runtime_command(
+        runtime_config_path,
+        reference_export_path,
+    )
+    runtime_config_sha256 = sha256_file(runtime_config_path)
+    host_io_coverage["runtimeConfigSha256"] = runtime_config_sha256
+    weight_coverage["runtimeConfigSha256"] = runtime_config_sha256
     coverage = compile_input_coverage(bundle_root, simulator_plan)
     driver_result = run_simulator_driver(bundle_root)
     return {
@@ -1069,8 +1097,48 @@ def blocked_evidence(
     if trace_path is not None and trace_path.is_file():
         sim_run["tracePath"] = rel(trace_path)
         sim_run["traceSha256"] = sha256_file(trace_path)
+        try:
+            trace = load_json(trace_path)
+        except (OSError, json.JSONDecodeError):
+            trace = {}
+        trace_run = trace.get("simulatorRun") if isinstance(trace, dict) else {}
+        if isinstance(trace_run, dict):
+            if trace_run.get("kernelIsStub") is False:
+                sim_run["kernelIsStub"] = False
+            for key in ("executionTarget", "compileStatus", "kernelStage", "elapsedMs"):
+                value = trace_run.get(key)
+                if value is not None:
+                    sim_run[key] = value
     if driver_result_path is not None and driver_result_path.is_file():
         sim_run["driverResult"] = hash_link(driver_result_path, "csl_sdk_driver")
+        try:
+            driver_result = load_json(driver_result_path)
+        except (OSError, json.JSONDecodeError):
+            driver_result = {}
+        compile_result = (
+            driver_result.get("compile") if isinstance(driver_result, dict) else {}
+        )
+        if isinstance(compile_result, dict):
+            compile_status = compile_result.get("status")
+            if compile_status is not None:
+                sim_run["compileStatus"] = compile_status
+        run = driver_result.get("run") if isinstance(driver_result, dict) else {}
+        if isinstance(run, dict):
+            execution_target = run.get("executionTarget")
+            if execution_target is not None:
+                sim_run["executionTarget"] = execution_target
+            progress_path = run.get("progressPath")
+            if isinstance(progress_path, str) and Path(progress_path).is_file():
+                progress_file = Path(progress_path)
+                sim_run["progressPath"] = rel(progress_file)
+                sim_run["progressSha256"] = sha256_file(progress_file)
+                try:
+                    progress_text = progress_file.read_text(encoding="utf-8")
+                except OSError:
+                    progress_text = ""
+                if '"phase": "launch_compute"' in progress_text:
+                    sim_run["kernelStage"] = "int4ple_compile_target_runtime_diagnostic"
+                    sim_run["kernelIsStub"] = False
     return SimulatorEvidence(
         receipt_status=receipt_status,
         csl_transcript={
@@ -1637,11 +1705,13 @@ def build_blocked_receipt(
 def main() -> int:
     args = parse_args()
     try:
-        export = load_json(resolve(args.reference_export))
+        reference_export_path = resolve(args.reference_export)
+        export = load_json(reference_export_path)
         schema = load_json(resolve(args.schema))
         fixture_ids = load_fixture_ids(resolve(args.fixture_registry))
         hostplan_bundle = build_hostplan_bundle(
             export,
+            reference_export_path,
             resolve(args.hostplan_bundle_root),
             resolve(args.hostplan_tool),
         )

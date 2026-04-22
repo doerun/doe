@@ -24,6 +24,7 @@ from csl_sdk_driver import (  # type: ignore[import-not-found]
     classify_cslc_failure,
     materialize_command,
     redact_command_for_receipt,
+    run_command,
 )
 
 
@@ -203,6 +204,27 @@ class RuntimeCommandReceiptTests(unittest.TestCase):
             redact_command_for_receipt(command, "10.1.2.3:9000"),
             ["cs_python", "run.py", "--name", "out", "--cmaddr=$DOE_CSL_CMADDR"],
         )
+
+    def test_run_command_records_timeout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            return_code, stdout_path, stderr_path, timed_out = run_command(
+                [
+                    sys.executable,
+                    "-c",
+                    "import time; print('started', flush=True); time.sleep(5)",
+                ],
+                root / "stdout.log",
+                root / "stderr.log",
+                timeout_seconds=1,
+            )
+            self.assertEqual(return_code, 124)
+            self.assertTrue(timed_out)
+            self.assertIn("started", Path(stdout_path).read_text(encoding="utf-8"))
+            self.assertIn(
+                "DOE command timed out after 1 seconds",
+                Path(stderr_path).read_text(encoding="utf-8"),
+            )
 
 
 if __name__ == "__main__":

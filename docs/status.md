@@ -37,8 +37,11 @@ Read this file first. Use the shard files under
   the Doe-side Doppler-equivalent harness remain out of the correctness-claim
   path, and full E2B, Doppler production parity, hardware, and performance
   claims remain gated. The blocked Doe CSL transcript path now hash-links the
-  HostPlan bundle, mapped RDRR runtime config, and host I/O layout coverage
-  before strict simulator promotion can proceed.
+  HostPlan bundle, mapped RDRR runtime config, host I/O layout coverage, SDK
+  compile result, and runtime-command timeout/progress evidence before strict
+  simulator promotion can proceed. The current blocker is runtime execution:
+  simfabric reaches a generated compile-target diagnostic but times out before
+  returning a full token/logit/KV transcript.
 - Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and
@@ -193,10 +196,10 @@ Read this file first. Use the shard files under
   coverage, and binds the explicit CSL SDK simulator-driver compile/run result
   when available. The HostPlan runtime config can now carry artifact-backed
   RDRR tensor spans and shard hashes from the normalized execution input. The
-  current blocker is concrete CSL execution: SDK simulator success, real
-  mapped-weight runtime loading, real KV/cache runtime wiring, and token/logit
-  transcript artifacts are still missing. The promotion gate now requires CSL
-  trace source identity, full-model depth evidence, real KV/cache behavior,
+  generated runtime config now invokes an SDK runtime-command diagnostic runner;
+  the current blocker is that simfabric times out before returning trace,
+  token/logit transcript, or KV/cache artifacts. The promotion gate now requires
+  CSL trace source identity, full-model depth evidence, real KV/cache behavior,
   token-ID parity, per-step logits parity, non-stub kernels, complete
   compile/weight coverage, and no synthetic inputs or weights before the INT4
   PLE lane can pass strict promotion.
