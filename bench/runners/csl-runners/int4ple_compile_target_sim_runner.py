@@ -30,6 +30,11 @@ from int4ple_runtime_scheduler import (
 )
 
 SCHEDULE_PREVIEW_COUNT = 4
+COMPILE_DISTINCT_PE_WARNING_THRESHOLD = 10_000
+Q4K_BLOCK_SIZE = 256
+TARGET_MATMUL_TILE = 16
+ATTENTION_PREFILL_BLOCK_SIZE = 32
+DEFAULT_GEMV_INPUT_PER_PE = 512
 
 
 def parse_args() -> argparse.Namespace:
@@ -146,6 +151,312 @@ def compile_target_coverage(
         "allSourcesReady": bool(targets) and source_ready == len(targets),
         "allCompiledTargetsReady": bool(targets) and compiled_ready == len(targets),
         "targets": targets,
+    }
+
+
+def compiled_target_params(compile_root: Path, target_name: str) -> dict[str, int]:
+    compiled_path = compile_root / "compiled" / target_name / "out.json"
+    if not compiled_path.is_file():
+        return {}
+    try:
+        compiled = load_json(compiled_path)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    params = compiled.get("params") or {}
+    if not isinstance(params, dict):
+        return {}
+    parsed: dict[str, int] = {}
+    for key, value in params.items():
+        try:
+            parsed[str(key)] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return parsed
+
+
+def require_minimum(
+    *,
+    blockers: list[str],
+    checks: list[dict[str, Any]],
+    check_id: str,
+    actual: int,
+    minimum: int,
+) -> None:
+    passed = actual >= minimum
+    checks.append(
+        {
+            "id": check_id,
+            "actual": actual,
+            "minimum": minimum,
+            "passed": passed,
+        }
+    )
+    if not passed:
+        blockers.append(f"{check_id}:{actual}<{minimum}")
+
+
+def ceil_div(numerator: int, denominator: int) -> int:
+    if denominator <= 0:
+        return 0
+    return (numerator + denominator - 1) // denominator
+
+
+def runtime_grid(runtime_config: dict[str, Any]) -> dict[str, int]:
+    memory_plan = runtime_config.get("memoryPlan") or {}
+    grid = memory_plan.get("grid") if isinstance(memory_plan, dict) else {}
+    if not isinstance(grid, dict):
+        grid = {}
+    return {
+        "width": int(grid.get("width") or 0),
+        "height": int(grid.get("height") or 0),
+    }
+
+
+def manifest_compile_param_projection(
+    *,
+    runtime_config: dict[str, Any],
+    reference: dict[str, Any],
+) -> dict[str, Any]:
+    model = runtime_config.get("modelConfig") or {}
+    if not isinstance(model, dict) or not model:
+        return {"status": "not_evaluated", "reason": "model_config_missing"}
+    grid = runtime_grid(runtime_config)
+    grid_width = grid["width"]
+    grid_height = grid["height"]
+    if grid_width <= 0 or grid_height <= 0:
+        return {"status": "not_evaluated", "reason": "runtime_grid_missing"}
+
+    vocab_size = int(model.get("vocabSize") or model.get("pleVocabSize") or 0)
+    hidden_dim = int(model.get("hiddenDim") or 0)
+    head_dim = int(model.get("headDim") or 0)
+    global_head_dim = int(model.get("globalHeadDim") or head_dim)
+    max_seq_len = int(model.get("maxSeqLen") or reference.get("promptTokenCount") or 0)
+    prompt_tokens = int(reference.get("promptTokenCount") or max_seq_len or 0)
+    pe_count = grid_width * grid_height
+    matmul_p = min(
+        grid_width,
+        grid_height,
+        int(COMPILE_DISTINCT_PE_WARNING_THRESHOLD**0.5),
+        max(1, ceil_div(hidden_dim, TARGET_MATMUL_TILE)),
+    )
+    matmul_tile = ceil_div(hidden_dim, matmul_p)
+    gemv_input_per_pe = max(
+        DEFAULT_GEMV_INPUT_PER_PE,
+        ceil_div(hidden_dim, max(1, grid_width)),
+    )
+    gemv_blocks = ceil_div(gemv_input_per_pe, Q4K_BLOCK_SIZE)
+    lm_head_out_dim = ceil_div(vocab_size, max(1, grid_width))
+    sample_chunk = ceil_div(vocab_size, max(1, grid_width))
+    attention_tokens = max(1, prompt_tokens)
+
+    params = {
+        "embed": {
+            "height": grid_height,
+            "hidden_size": hidden_dim,
+            "num_tokens": max_seq_len,
+            "rows_per_pe": ceil_div(vocab_size, max(1, pe_count)),
+        },
+        "tiled": {
+            "P": matmul_p,
+            "Mt": matmul_tile,
+            "Kt": matmul_tile,
+            "Nt": matmul_tile,
+        },
+        "attn_head256": {
+            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
+            "head_dim": head_dim,
+            "kv_len": attention_tokens,
+            "q_len": attention_tokens,
+        },
+        "attn_head512": {
+            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
+            "head_dim": global_head_dim,
+            "kv_len": attention_tokens,
+            "q_len": attention_tokens,
+        },
+        "lm_head_gemv_stable": {
+            "out_dim": lm_head_out_dim,
+            "in_dim_per_pe": gemv_input_per_pe,
+            "num_blocks_per_row": gemv_blocks,
+        },
+        "sample": {
+            "chunk_size": sample_chunk,
+        },
+    }
+    compile_scale = {
+        "embedDistinctPeProgramCount": pe_count,
+        "tiledDistinctPeProgramCount": matmul_p * matmul_p,
+        "warningThreshold": COMPILE_DISTINCT_PE_WARNING_THRESHOLD,
+    }
+    warnings = [
+        f"{key}:{value}>{COMPILE_DISTINCT_PE_WARNING_THRESHOLD}"
+        for key, value in compile_scale.items()
+        if key.endswith("Count") and value > COMPILE_DISTINCT_PE_WARNING_THRESHOLD
+    ]
+    return {
+        "status": "projected",
+        "source": "runtime_config_model_and_grid",
+        "grid": grid,
+        "params": params,
+        "coverage": {
+            "embedRows": pe_count * int(params["embed"]["rows_per_pe"]),
+            "tiledM": matmul_p * matmul_tile,
+            "tiledN": matmul_p * matmul_tile,
+            "lmHeadLogits": grid_width * lm_head_out_dim,
+            "sampleLogits": grid_width * sample_chunk,
+        },
+        "compileScale": compile_scale,
+        "warnings": warnings,
+    }
+
+
+def host_plan_executor_preflight(
+    *,
+    compile_root: Path,
+    runtime_config: dict[str, Any],
+    reference: dict[str, Any],
+) -> dict[str, Any]:
+    """Fail closed before a full-model executor can promote smoke targets."""
+
+    model = runtime_config.get("modelConfig") or {}
+    if not isinstance(model, dict) or not model:
+        return {
+            "status": "not_evaluated",
+            "blockers": ["model_config_missing"],
+            "checks": [],
+            "targetParams": {},
+        }
+
+    target_names = (
+        "embed",
+        "tiled",
+        "lm_head_gemv_stable",
+        "attn_head256",
+        "attn_head512",
+        "sample",
+    )
+    target_params = {
+        name: compiled_target_params(compile_root, name)
+        for name in target_names
+    }
+    if not any(target_params.values()):
+        return {
+            "status": "not_evaluated",
+            "blockers": ["compiled_target_params_unavailable"],
+            "checks": [],
+            "targetParams": target_params,
+        }
+
+    blockers: list[str] = []
+    checks: list[dict[str, Any]] = []
+    vocab_size = int(model.get("vocabSize") or model.get("pleVocabSize") or 0)
+    hidden_dim = int(model.get("hiddenDim") or 0)
+    prompt_tokens = int(reference.get("promptTokenCount") or 0)
+
+    embed = target_params.get("embed") or {}
+    if embed:
+        embed_rows = (
+            int(embed.get("width") or 0)
+            * int(embed.get("height") or 0)
+            * int(embed.get("rows_per_pe") or 0)
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="embed_vocab_row_coverage",
+            actual=embed_rows,
+            minimum=vocab_size,
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="embed_prompt_token_capacity",
+            actual=int(embed.get("num_tokens") or 0),
+            minimum=prompt_tokens,
+        )
+    else:
+        blockers.append("embed_target_params_missing")
+
+    tiled = target_params.get("tiled") or {}
+    if tiled:
+        tile_m = int(tiled.get("Mt") or 0) * int(tiled.get("P") or 0)
+        tile_n = int(tiled.get("Nt") or 0) * int(tiled.get("P") or 0)
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="tiled_m_dimension_coverage",
+            actual=tile_m,
+            minimum=hidden_dim,
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="tiled_n_dimension_coverage",
+            actual=tile_n,
+            minimum=hidden_dim,
+        )
+    else:
+        blockers.append("tiled_target_params_missing")
+
+    for target_name in ("attn_head256", "attn_head512"):
+        params = target_params.get(target_name) or {}
+        if not params:
+            blockers.append(f"{target_name}_target_params_missing")
+            continue
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id=f"{target_name}_prefill_q_len_coverage",
+            actual=int(params.get("q_len") or 0),
+            minimum=prompt_tokens,
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id=f"{target_name}_prefill_kv_len_coverage",
+            actual=int(params.get("kv_len") or 0),
+            minimum=prompt_tokens,
+        )
+
+    lm_head = target_params.get("lm_head_gemv_stable") or {}
+    if lm_head:
+        logits_coverage = int(lm_head.get("width") or 0) * int(
+            lm_head.get("out_dim") or 0
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="lm_head_vocab_logit_coverage",
+            actual=logits_coverage,
+            minimum=vocab_size,
+        )
+    else:
+        blockers.append("lm_head_target_params_missing")
+
+    sample = target_params.get("sample") or {}
+    if sample:
+        sample_coverage = int(sample.get("width") or 0) * int(
+            sample.get("chunk_size") or 0
+        )
+        require_minimum(
+            blockers=blockers,
+            checks=checks,
+            check_id="sample_vocab_logit_coverage",
+            actual=sample_coverage,
+            minimum=vocab_size,
+        )
+    else:
+        blockers.append("sample_target_params_missing")
+
+    return {
+        "status": "passed" if not blockers else "failed",
+        "blockers": blockers,
+        "checks": checks,
+        "targetParams": target_params,
+        "manifestCompileParamProjection": manifest_compile_param_projection(
+            runtime_config=runtime_config,
+            reference=reference,
+        ),
     }
 
 
@@ -395,6 +706,11 @@ def scheduler_readiness(
     activation = runtime_scheduler.get("activationRouting") or {}
     kv_schedule = runtime_scheduler.get("kvCacheSchedule") or {}
     transcript = runtime_scheduler.get("transcriptCaptureSchedule") or {}
+    executor_preflight = host_plan_executor_preflight(
+        compile_root=compile_root,
+        runtime_config=runtime_config,
+        reference=reference,
+    )
     expected_runtime = plan.get("runtime") or {}
     readiness = {
         "phaseLaunchesMaterialized": bool(host_plan.get("phaseLaunchCounts")),
@@ -412,6 +728,7 @@ def scheduler_readiness(
         "activationRoutingBound": activation.get("status") == "bound",
         "kvReadWriteScheduleBound": kv_schedule.get("status") == "bound",
         "transcriptEmittersBound": transcript.get("status") == "bound",
+        "manifestShapePreflightPassed": executor_preflight.get("status") == "passed",
         "fullModelRuntimeExecutorBound": False,
     }
     blockers: list[str] = []
@@ -432,6 +749,8 @@ def scheduler_readiness(
     if not readiness["transcriptEmittersBound"]:
         blockers.append("logits_and_sample_output_capture_schedule_missing")
     metadata_ready = not blockers
+    if metadata_ready and executor_preflight.get("status") == "failed":
+        blockers.append("manifest_shape_preflight_failed")
     if metadata_ready:
         blockers.append("full_model_prefill_decode_runtime_executor_missing")
     status = (
@@ -454,6 +773,11 @@ def scheduler_readiness(
         "compileTargetCoverage": compile_targets,
         "runtimeInputs": runtime_inputs,
         "referenceTranscript": reference,
+        "hostPlanExecutor": {
+            "status": "blocked",
+            "fullModelRuntimeExecutorBound": False,
+            "manifestShapePreflight": executor_preflight,
+        },
         "nextRuntimeStep": (
             "replace the residual-only diagnostic run with a multi-target "
             "HostPlan interpreter that loads the bound symbols, moves "

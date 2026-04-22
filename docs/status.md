@@ -42,7 +42,10 @@ Read this file first. Use the shard files under
   simulator promotion can proceed. The current blocker is execution depth, not
   residual diagnostic timeout: simfabric returns the production-derived
   residual diagnostic trace, but Doe still does not emit a full token/logit/KV
-  transcript. The current local transcript/parity receipts are regenerated from
+  transcript. The current trace also carries a fail-closed HostPlan executor
+  preflight; the present compiled targets still include diagnostic-shaped
+  coverage and cannot be promoted as full-model evidence until manifest/tiled
+  coverage passes. The current local transcript/parity receipts are regenerated from
   Doppler-owned Program Bundle
   `gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46`; this refreshes source
   identity and HostPlan evidence only, not the full execution claim. A pending

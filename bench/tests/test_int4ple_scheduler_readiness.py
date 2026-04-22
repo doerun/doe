@@ -426,6 +426,100 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
             1,
         )
 
+    def test_executor_preflight_rejects_smoke_shape_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            compile_root = root / "compile"
+            target_params = {
+                "embed": {
+                    "width": "130",
+                    "height": "1",
+                    "hidden_size": "256",
+                    "num_tokens": "23",
+                    "rows_per_pe": "1",
+                },
+                "tiled": {
+                    "width": "130",
+                    "height": "127",
+                    "Mt": "8",
+                    "Kt": "8",
+                    "Nt": "8",
+                    "P": "2",
+                },
+                "lm_head_gemv_stable": {
+                    "width": "130",
+                    "height": "127",
+                    "out_dim": "64",
+                    "in_dim_per_pe": "512",
+                    "num_blocks_per_row": "2",
+                },
+                "attn_head256": {
+                    "width": "130",
+                    "height": "127",
+                    "head_dim": "256",
+                    "q_len": "1",
+                    "kv_len": "1",
+                },
+                "attn_head512": {
+                    "width": "130",
+                    "height": "127",
+                    "head_dim": "512",
+                    "q_len": "1",
+                    "kv_len": "1",
+                },
+                "sample": {
+                    "width": "130",
+                    "height": "127",
+                    "chunk_size": "2017",
+                },
+            }
+            for target, params in target_params.items():
+                out_json = compile_root / "compiled" / target / "out.json"
+                write_json(out_json, {"params": params})
+
+            preflight = runner.host_plan_executor_preflight(
+                compile_root=compile_root,
+                runtime_config={
+                    "memoryPlan": {"grid": {"width": 130, "height": 127}},
+                    "modelConfig": {
+                        "hiddenDim": 1536,
+                        "headDim": 256,
+                        "globalHeadDim": 512,
+                        "maxSeqLen": 23,
+                        "pleVocabSize": 262144,
+                        "vocabSize": 262144,
+                    }
+                },
+                reference={"promptTokenCount": 15},
+            )
+
+        self.assertEqual(preflight["status"], "failed")
+        self.assertIn(
+            "embed_vocab_row_coverage:130<262144",
+            preflight["blockers"],
+        )
+        self.assertIn(
+            "attn_head256_prefill_q_len_coverage:1<15",
+            preflight["blockers"],
+        )
+        self.assertIn(
+            "lm_head_vocab_logit_coverage:8320<262144",
+            preflight["blockers"],
+        )
+        self.assertTrue(
+            any(
+                check["id"] == "sample_vocab_logit_coverage"
+                and check["passed"] is True
+                for check in preflight["checks"]
+            )
+        )
+        projection = preflight["manifestCompileParamProjection"]
+        self.assertEqual(projection["status"], "projected")
+        self.assertEqual(projection["params"]["embed"]["rows_per_pe"], 16)
+        self.assertEqual(projection["params"]["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
+        self.assertEqual(projection["params"]["attn_head256"]["q_len"], 15)
+        self.assertGreaterEqual(projection["coverage"]["lmHeadLogits"], 262144)
+
 
 if __name__ == "__main__":
     unittest.main()
