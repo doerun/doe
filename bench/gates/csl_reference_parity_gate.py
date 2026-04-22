@@ -51,6 +51,12 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def strip_sha256_prefix(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.removeprefix("sha256:")
+
+
 def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -74,6 +80,38 @@ def check_path_hash(
     actual = sha256_file(path)
     if actual != expected:
         failures.append(f"{label}.sha256={expected!r}, actual {actual!r}")
+
+
+def check_source_graph_hash(
+    source: dict[str, Any],
+    failures: list[str],
+) -> None:
+    path_text = source.get("graphPath", "")
+    expected = source.get("graphSha256", "")
+    if path_text in PENDING_VALUES or expected in PENDING_VALUES:
+        failures.append("sourceProgram.graph.path/hash pending")
+        return
+    path = resolve(path_text)
+    if not path.is_file():
+        failures.append(f"sourceProgram.graph.path missing: {path_text}")
+        return
+    actual = sha256_file(path)
+    if actual == expected:
+        return
+    try:
+        graph = load_json(path)
+    except json.JSONDecodeError:
+        failures.append(
+            f"sourceProgram.graph.sha256={expected!r}, actual {actual!r}"
+        )
+        return
+    projected_hash = strip_sha256_prefix(
+        graph.get("programBundleExecutionGraphSha256")
+    )
+    if projected_hash != expected:
+        failures.append(
+            f"sourceProgram.graph.sha256={expected!r}, actual {actual!r}"
+        )
 
 
 def check_tensor_digest(
@@ -158,12 +196,7 @@ def main() -> int:
         source.get("manifestSha256", ""),
         failures,
     )
-    check_path_hash(
-        "sourceProgram.graph",
-        source.get("graphPath", ""),
-        source.get("graphSha256", ""),
-        failures,
-    )
+    check_source_graph_hash(source, failures)
     program_bundle = source.get("programBundle")
     if isinstance(program_bundle, dict):
         check_path_hash(

@@ -24,8 +24,9 @@ Steps (in order):
  13. E2B model receipt refresh after attention-core/lowering restamp
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
  15. Doppler INT4 PLE bounded reference export and gate
- 16. Doe CSL INT4 PLE blocked transcript receipt, gate, parity bind,
-     and metadata parity gate
+ 16. Doe CSL INT4 PLE blocked transcript receipt from the current
+     Doppler-owned Program Bundle, gate, parity bind, and metadata
+     parity gate
  17. claim-discipline gate (hardware + MoE fronts)
  18. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
@@ -63,6 +64,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUNDLE_DIR = REPO_ROOT / "bench/out/cerebras-evidence-bundle"
 DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
+DEFAULT_DOPPLER_PROGRAM_BUNDLE = (
+    "/home/x/deco/doppler/examples/program-bundles/"
+    "gemma-4-e2b-it-q4k-ehf16-af32-int4ple.program-bundle.json"
+)
+PROGRAM_BUNDLE_REFERENCE_EXPORT = (
+    "bench/out/doppler-reference/"
+    "gemma-4-e2b-int4ple-production-final-logits/"
+    "doppler_program_bundle_reference_export.json"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -75,6 +85,14 @@ def parse_args() -> argparse.Namespace:
         "--fail-fast",
         action="store_true",
         help="Stop at first failing step (default: run all, report all).",
+    )
+    p.add_argument(
+        "--program-bundle",
+        default=DEFAULT_DOPPLER_PROGRAM_BUNDLE,
+        help=(
+            "Doppler-owned Program Bundle source for the Doe CSL INT4 PLE "
+            "transcript/parity lane."
+        ),
     )
     return p.parse_args()
 
@@ -386,7 +404,12 @@ def main() -> int:
     # transcript.
     steps.append(run(
         "doe-csl-int4ple-blocked-transcript",
-        ["python3", "bench/tools/run_doe_csl_int4ple_transcript.py"],
+        [
+            "python3",
+            "bench/tools/run_doe_csl_int4ple_transcript.py",
+            "--program-bundle",
+            args.program_bundle,
+        ],
     ))
 
     steps.append(run(
@@ -398,9 +421,7 @@ def main() -> int:
             "bench/out/doppler-reference/"
             "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
             "--reference-export",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-production-final-logits/"
-            "doppler_int4ple_reference_export.json",
+            PROGRAM_BUNDLE_REFERENCE_EXPORT,
         ],
     ))
 
@@ -410,9 +431,7 @@ def main() -> int:
             "python3",
             "bench/tools/bind_doppler_int4ple_reference_to_csl_parity.py",
             "--reference-export",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-production-final-logits/"
-            "doppler_int4ple_reference_export.json",
+            PROGRAM_BUNDLE_REFERENCE_EXPORT,
             "--csl-transcript-receipt",
             "bench/out/doppler-reference/"
             "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",

@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -95,6 +96,15 @@ def parse_args() -> argparse.Namespace:
             "bench/out/doppler-reference/"
             "gemma-4-e2b-int4ple-production-final-logits/"
             "doppler_int4ple_reference_export.json"
+        ),
+    )
+    parser.add_argument(
+        "--program-bundle",
+        default=None,
+        help=(
+            "Optional Doppler-owned Program Bundle source. When present, Doe "
+            "derives the HostPlan projection from this bundle instead of the "
+            "older local reference-export graph hash."
         ),
     )
     parser.add_argument(
@@ -231,6 +241,339 @@ def reference_transcript_digest(export: dict[str, Any]) -> dict[str, Any]:
 
 def strip_sha256_prefix(value: str) -> str:
     return value.removeprefix("sha256:")
+
+
+def strip_doppler_hash(value: Any) -> str:
+    if not isinstance(value, str) or not value:
+        return "pending"
+    return strip_sha256_prefix(value)
+
+
+def program_bundle_repo_root(program_bundle_path: Path) -> Path:
+    for parent in program_bundle_path.resolve().parents:
+        if (
+            (parent / "package.json").is_file()
+            and (parent / "src/tooling/program-bundle.js").is_file()
+        ):
+            return parent
+    return program_bundle_path.resolve().parent
+
+
+def resolve_program_bundle_path(
+    program_bundle_path: Path,
+    raw_path: str,
+) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path.resolve()
+    root = program_bundle_repo_root(program_bundle_path)
+    return (root / path).resolve()
+
+
+def write_u32_array(path: Path, values: list[int]) -> dict[str, Any]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = b"".join(int(value).to_bytes(4, "little", signed=False) for value in values)
+    path.write_bytes(data)
+    return {
+        "path": rel(path),
+        "sha256": sha256_file(path),
+        "dtype": "uint32",
+        "tokenCount": len(values),
+        "preview": values[:8],
+    }
+
+
+def program_bundle_step_array(step: dict[str, Any]) -> list[str]:
+    result = [str(step["op"]), str(step["kernelId"])]
+    weights = step.get("weights")
+    if isinstance(weights, str) and weights:
+        result.append(weights)
+    return result
+
+
+def program_bundle_execution_graph_projection(
+    program_bundle: dict[str, Any],
+    export: dict[str, Any],
+) -> dict[str, Any]:
+    graph_hash = export["executionGraphSha256"]
+    execution = program_bundle.get("execution") or {}
+    kernels = {}
+    for module in program_bundle.get("wgslModules") or []:
+        if not isinstance(module, dict):
+            continue
+        module_id = module.get("id")
+        if not isinstance(module_id, str) or not module_id:
+            continue
+        kernels[module_id] = {
+            "kernel": module.get("file", "pending"),
+            "entry": module.get("entry", "main"),
+            "digest": module.get("digest", "sha256:pending"),
+        }
+
+    pre_layer: list[list[str]] = []
+    decode: list[list[str]] = []
+    post_layer: list[list[str]] = []
+    prefill_groups: list[dict[str, Any]] = []
+    prefill_by_layers: dict[tuple[int, ...], dict[str, Any]] = {}
+
+    for step in execution.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        section = step.get("section")
+        phase = step.get("phase")
+        record = program_bundle_step_array(step)
+        if section == "preLayer":
+            pre_layer.append(record)
+        elif section == "postLayer":
+            post_layer.append(record)
+        elif section == "layer" and phase == "decode":
+            decode.append(record)
+        elif section == "layer" and phase == "prefill":
+            raw_layers = step.get("layers")
+            if not isinstance(raw_layers, list):
+                raise ValueError(
+                    f"Program Bundle prefill step lacks explicit layers: {step.get('id')}"
+                )
+            layers = tuple(int(layer) for layer in raw_layers)
+            group = prefill_by_layers.get(layers)
+            if group is None:
+                group = {"layers": list(layers), "steps": []}
+                prefill_by_layers[layers] = group
+                prefill_groups.append(group)
+            group["steps"].append(record)
+
+    return {
+        "schemaVersion": 1,
+        "artifactKind": "doppler_program_bundle_execution_graph_projection",
+        "source": "doppler.program-bundle.execution.steps",
+        "modelId": export["modelId"],
+        "manifestSha256": export["manifestSha256"],
+        "programBundleId": program_bundle.get("bundleId", "pending"),
+        "programBundleExecutionGraphSha256": graph_hash,
+        "execution": {
+            "kernels": kernels,
+            "preLayer": pre_layer,
+            "prefill": prefill_groups,
+            "decode": decode,
+            "postLayer": post_layer,
+        },
+    }
+
+
+def normalize_program_bundle_stop_reason(raw: Any) -> str:
+    if raw == "max-tokens":
+        return "decode_steps_exhausted"
+    if isinstance(raw, str) and raw:
+        return raw
+    return "pending"
+
+
+def manifest_shard_identities(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    identities = []
+    for shard in manifest.get("shards") or []:
+        if not isinstance(shard, dict):
+            continue
+        sha256 = shard.get("sha256") or shard.get("hash")
+        filename = shard.get("filename") or shard.get("path")
+        if not isinstance(sha256, str) or not isinstance(filename, str):
+            continue
+        identity = {
+            "index": int(shard.get("index", len(identities))),
+            "filename": filename,
+            "sha256": strip_doppler_hash(sha256),
+            "sizeBytes": int(shard.get("sizeBytes") or shard.get("size") or 0),
+            "identitySource": "manifest_declared",
+        }
+        offset = shard.get("offsetBytes") or shard.get("offset")
+        if isinstance(offset, int):
+            identity["offsetBytes"] = offset
+        identities.append(identity)
+    if not identities:
+        raise ValueError("Program Bundle manifest has no shard identities")
+    return identities
+
+
+def export_from_program_bundle(
+    program_bundle_path: Path,
+    out_dir: Path,
+) -> tuple[dict[str, Any], Path]:
+    program_bundle = load_json(program_bundle_path)
+    if program_bundle.get("schema") != "doppler.program-bundle/v1":
+        raise ValueError(
+            f"unsupported Program Bundle schema: {program_bundle.get('schema')!r}"
+        )
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    sources = program_bundle.get("sources") or {}
+    manifest_source = sources.get("manifest") or {}
+    manifest_path = resolve_program_bundle_path(
+        program_bundle_path,
+        str(manifest_source.get("path", "")),
+    )
+    manifest = load_json(manifest_path)
+    manifest_sha256 = strip_doppler_hash(manifest_source.get("hash"))
+    graph_sha256 = strip_doppler_hash((sources.get("executionGraph") or {}).get("hash"))
+    reference = program_bundle.get("referenceTranscript") or {}
+    prompt = reference.get("prompt") or {}
+    tokens = reference.get("tokens") or {}
+    output = reference.get("output") or {}
+    phase = reference.get("phase") or {}
+
+    prompt_path = out_dir / "program_bundle_prompt.txt"
+    prompt_text = str(prompt.get("identity", ""))
+    prompt_path.write_text(prompt_text, encoding="utf-8")
+
+    generated_token_ids = [
+        int(token) for token in (tokens.get("ids") or []) if isinstance(token, int)
+    ]
+    generated = write_u32_array(
+        out_dir / "program_bundle_generated_tokens.u32",
+        generated_token_ids,
+    )
+    transcript_path = out_dir / "program_bundle_decode_transcript.json"
+    transcript_payload = {
+        "schemaVersion": 1,
+        "artifactKind": "doppler_program_bundle_reference_transcript_projection",
+        "bundleId": program_bundle.get("bundleId", "pending"),
+        "modelId": program_bundle.get("modelId", "pending"),
+        "manifestSha256": manifest_sha256,
+        "executionGraphSha256": graph_sha256,
+        "requestedDecodeSteps": int(output.get("tokensGenerated") or 0),
+        "actualDecodeSteps": len(generated_token_ids),
+        "decodeStepsRequested": int(output.get("tokensGenerated") or 0),
+        "decodeStepsProduced": len(generated_token_ids),
+        "stopReason": normalize_program_bundle_stop_reason(output.get("stopReason")),
+        "prompt": prompt,
+        "generatedTokenIds": generated_token_ids,
+        "generatedTokenIdsSha256": generated["sha256"],
+        "logitsDigests": [],
+        "sourceReferenceTranscript": reference,
+    }
+    write_json(transcript_path, transcript_payload)
+
+    shard_identities = manifest_shard_identities(manifest)
+    weight_set_id = (
+        manifest.get("artifactIdentity", {}).get("weightPackId")
+        or manifest.get("weightSetId")
+        or f"{program_bundle.get('modelId', 'unknown')}-declared-shards"
+    )
+    token_count = int(phase.get("prefillTokens") or 0)
+    input_set_components = {
+        "modelId": program_bundle["modelId"],
+        "promptSha256": strip_doppler_hash(prompt.get("hash")),
+        "runtimeProfile": "program-bundle/browser-reference",
+        "decodeSteps": int(output.get("tokensGenerated") or 0),
+        "samplingSha256": sha256_json({"source": "doppler_program_bundle"}),
+        "tokenCount": token_count,
+        "tokenizedPromptSha256": strip_doppler_hash(prompt.get("tokenIdsHash")),
+        "useChatTemplate": False,
+    }
+    input_set_sha256 = sha256_json(input_set_components)
+    graph_path = out_dir / "program_bundle_execution_graph.json"
+
+    export = {
+        "schemaVersion": 1,
+        "artifactKind": "doppler_int4ple_reference_export",
+        "referenceKind": "prefill_decode_transcript",
+        "exportStatus": "contract_bound",
+        "modelId": program_bundle["modelId"],
+        "manifestPath": str(manifest_path),
+        "manifestSha256": manifest_sha256,
+        "executionGraphSha256": graph_sha256,
+        "executionGraph": {
+            "path": rel(graph_path),
+            "sha256": graph_sha256,
+            "source": "doppler.program-bundle.execution.steps",
+        },
+        "weightSetId": weight_set_id,
+        "weightSetSha256": strip_doppler_hash(sources.get("weightSetHash")),
+        "shardIdentities": shard_identities,
+        "inputSetSha256": input_set_sha256,
+        "inputSetComponents": input_set_components,
+        "prompt": {
+            "path": rel(prompt_path),
+            "sha256": sha256_file(prompt_path),
+            "source": "doppler_program_bundle_reference_prompt",
+        },
+        "tokenizedPrompt": {
+            "path": "not_captured_by_doppler_program_bundle",
+            "sha256": "not_captured_by_doppler_program_bundle",
+            "dtype": "uint32",
+            "tokenCount": token_count,
+            "preview": [],
+        },
+        "tensorDigest": {
+            "name": "final_logits",
+            "status": "pending",
+            "dtype": "float32",
+            "shape": [0],
+            "path": "pending",
+            "sha256": "pending",
+            "byteLength": 0,
+            "preview": [],
+        },
+        "decodeTranscript": {
+            "status": "output_ready",
+            "transcript": {
+                "path": rel(transcript_path),
+                "sha256": sha256_file(transcript_path),
+                "source": "doppler_program_bundle_reference_transcript_projection",
+            },
+            "requestedDecodeSteps": transcript_payload["requestedDecodeSteps"],
+            "actualDecodeSteps": transcript_payload["actualDecodeSteps"],
+            "decodeStepsRequested": transcript_payload["decodeStepsRequested"],
+            "decodeStepsProduced": transcript_payload["decodeStepsProduced"],
+            "stopReason": transcript_payload["stopReason"],
+            "sampling": {
+                "temperature": 0,
+                "topK": 1,
+                "topP": 1,
+                "repetitionPenalty": 1.0,
+                "padTokenId": None,
+                "seed": None,
+            },
+            "generatedTokenIds": generated,
+            "logitsDigests": [],
+        },
+        "producer": {
+            "runtime": "doppler_browser_webgpu",
+            "toolPath": rel(program_bundle_path),
+            "dopplerRoot": str(program_bundle_repo_root(program_bundle_path)),
+            "runtimeProfile": "program-bundle/browser-reference",
+            "webgpuProvider": reference.get("surface", "browser-webgpu"),
+        },
+        "programBundleSourcePath": str(program_bundle_path.resolve()),
+        "programBundleId": program_bundle.get("bundleId", "pending"),
+        "inputsSynthetic": False,
+        "weightsSynthetic": False,
+        "tolerancePolicy": {
+            "comparison": "max_abs",
+            "atol": 1e-3,
+            "rtol": 0,
+            "notes": (
+                "Doppler Program Bundle reference currently carries exact token "
+                "IDs and KV metadata, but not per-step logits tensors."
+            ),
+        },
+        "claimBoundary": {
+            "claimable": False,
+            "scope": (
+                "Doppler-owned Program Bundle reference. It becomes Cerebras "
+                "evidence only after Doe CSL binds the same bundle id, graph, "
+                "weights, prompt, token IDs, logits policy, and KV evidence."
+            ),
+            "blockedUntil": [
+                "Doe CSL simfabric bounded prefill+decode transcript for the same Program Bundle",
+                "Doe CSL reference parity gate promotion criteria pass",
+                "Cerebras hardware receipt binds the same Program Bundle",
+            ],
+        },
+    }
+    graph = program_bundle_execution_graph_projection(program_bundle, export)
+    write_json(graph_path, graph)
+    export_path = out_dir / "doppler_program_bundle_reference_export.json"
+    write_json(export_path, export)
+    return export, export_path
 
 
 def host_entrypoint_identity(export: dict[str, Any]) -> dict[str, Any]:
@@ -424,11 +767,25 @@ def source_program(
     }
     if program_bundle is not None and program_bundle_link is not None:
         source["programBundle"] = program_bundle_link
-        source["programContractVersion"] = program_bundle["programContractVersion"]
-        source["wgslModulesSha256"] = sha256_json(program_bundle["wgslModules"])
-        source["hostEntrypointSha256"] = program_bundle["hostEntrypoint"]["sha256"]
-        source["runtimeProfile"] = program_bundle["runtimeProfile"]["id"]
-        source["captureProfile"] = program_bundle["captureProfile"]["profileId"]
+        if program_bundle.get("schema") == "doppler.program-bundle/v1":
+            entrypoints = (program_bundle.get("host") or {}).get("entrypoints") or []
+            first_entrypoint = entrypoints[0] if entrypoints else {}
+            source["programBundleId"] = program_bundle.get("bundleId", "pending")
+            source["programContractVersion"] = program_bundle["schema"]
+            source["wgslModulesSha256"] = sha256_json(program_bundle["wgslModules"])
+            source["hostEntrypointSha256"] = strip_doppler_hash(
+                first_entrypoint.get("sourceHash")
+            )
+            source["runtimeProfile"] = "program-bundle/browser-reference"
+            source["captureProfile"] = (
+                program_bundle.get("captureProfile") or {}
+            ).get("schema", "doppler.capture-profile/v1")
+        else:
+            source["programContractVersion"] = program_bundle["programContractVersion"]
+            source["wgslModulesSha256"] = sha256_json(program_bundle["wgslModules"])
+            source["hostEntrypointSha256"] = program_bundle["hostEntrypoint"]["sha256"]
+            source["runtimeProfile"] = program_bundle["runtimeProfile"]["id"]
+            source["captureProfile"] = program_bundle["captureProfile"]["profileId"]
     return source
 
 
@@ -1182,7 +1539,12 @@ def build_hostplan_bundle(
     graph_path = graph_path_from_export(export)
     graph = load_json(graph_path)
     source_graph_sha256 = export["executionGraphSha256"]
-    if sha256_file(graph_path) != source_graph_sha256:
+    graph_file_sha256 = sha256_file(graph_path)
+    projected_graph_sha256 = graph.get("programBundleExecutionGraphSha256")
+    if (
+        graph_file_sha256 != source_graph_sha256
+        and projected_graph_sha256 != source_graph_sha256
+    ):
         raise ValueError("execution graph hash mismatch before HostPlan lowering")
 
     bundle_root.mkdir(parents=True, exist_ok=True)
@@ -1239,10 +1601,14 @@ def build_hostplan_bundle(
     simulator_plan = load_json(simulator_plan_path)
     normalized_execution = load_json(normalized_path)
     program_bundle_path = bundle_root / "doppler-program-bundle.json"
-    materialize_program_bundle_from_reference(
-        export,
-        program_bundle_path,
-    )
+    program_bundle_source = export.get("programBundleSourcePath")
+    if isinstance(program_bundle_source, str) and program_bundle_source:
+        shutil.copyfile(resolve(program_bundle_source), program_bundle_path)
+    else:
+        materialize_program_bundle_from_reference(
+            export,
+            program_bundle_path,
+        )
     host_plan_body = host_plan.get("hostPlan") or {}
     phases = host_plan_body.get("phases") or {}
     weight_coverage = patch_runtime_weight_mappings(
@@ -1776,7 +2142,8 @@ def build_lowering_plan(
     graph = load_json(graph_path)
     graph_hash = sha256_file(graph_path)
     expected_hash = export["executionGraphSha256"]
-    if graph_hash != expected_hash:
+    projected_hash = graph.get("programBundleExecutionGraphSha256")
+    if graph_hash != expected_hash and projected_hash != expected_hash:
         raise ValueError(
             "execution graph hash mismatch: "
             f"{graph_hash} != {expected_hash}"
@@ -1945,7 +2312,13 @@ def main() -> int:
     args = parse_args()
     try:
         reference_export_path = resolve(args.reference_export)
-        export = load_json(reference_export_path)
+        if args.program_bundle:
+            export, reference_export_path = export_from_program_bundle(
+                resolve(args.program_bundle),
+                reference_export_path.parent,
+            )
+        else:
+            export = load_json(reference_export_path)
         schema = load_json(resolve(args.schema))
         fixture_ids = load_fixture_ids(resolve(args.fixture_registry))
         hostplan_bundle = build_hostplan_bundle(

@@ -268,18 +268,41 @@ def real_kv_cache_used(csl_receipt: dict[str, Any]) -> bool:
 
 def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str, Any]:
     tensor = export["tensorDigest"]
-    if export.get("exportStatus") != "output_ready":
-        raise ValueError("reference export must have exportStatus=output_ready")
-    if tensor.get("status") != "output_ready":
-        raise ValueError("reference tensorDigest must have status=output_ready")
+    reference_transcript = parity_transcript_from_export(export)
+    tensor_ready = (
+        export.get("exportStatus") == "output_ready"
+        and tensor.get("status") == "output_ready"
+    )
+    transcript_ready = (
+        reference_transcript is not None
+        and (export.get("decodeTranscript") or {}).get("status") == "output_ready"
+    )
+    if not tensor_ready and not transcript_ready:
+        raise ValueError(
+            "reference export must have an output_ready tensorDigest or "
+            "an output_ready decodeTranscript"
+        )
+    if (
+        export.get("exportStatus") != "output_ready"
+        and not (
+            export.get("exportStatus") == "contract_bound"
+            and transcript_ready
+            and export.get("programBundleId")
+        )
+    ):
+        raise ValueError(
+            "contract_bound reference exports must be Program Bundle "
+            "transcript references"
+        )
 
     csl_output_bound = args.csl_output is not None
     if csl_output_bound and args.csl_trace is None:
         raise ValueError("--csl-output requires --csl-trace")
+    if csl_output_bound and not tensor_ready:
+        raise ValueError("--csl-output requires an output_ready reference tensorDigest")
     csl_transcript_receipt_bound = args.csl_transcript_receipt is not None
 
-    reference_output = parity_output_from_export(tensor)
-    reference_transcript = parity_transcript_from_export(export)
+    reference_output = parity_output_from_export(tensor) if tensor_ready else None
     tolerance = export.get("tolerancePolicy", {})
     atol = float(tolerance.get("atol", 0.0))
     rtol = float(tolerance.get("rtol", 0.0))
@@ -513,8 +536,9 @@ def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str,
         "inputsSynthetic": export["inputsSynthetic"],
         "weightsSynthetic": export["weightsSynthetic"],
         "inputSetSha256": export["inputSetSha256"],
-        "output": reference_output,
     }
+    if reference_output is not None:
+        reference_run["output"] = reference_output
     if reference_transcript is not None:
         reference_run["decodeTranscript"] = reference_transcript
 
@@ -530,6 +554,7 @@ def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str,
     if csl_transcript_receipt_bound:
         for key in (
             "programBundle",
+            "programBundleId",
             "programContractVersion",
             "wgslModulesSha256",
             "hostEntrypointSha256",

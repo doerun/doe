@@ -15,6 +15,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PENDING = {"", "pending", "<pending>"}
 
 
+def strip_sha256_prefix(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.removeprefix("sha256:")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--receipt", required=True)
@@ -121,6 +127,26 @@ def check_reference_identity(
         )
         if path_text not in PENDING and sha256 not in PENDING:
             program_bundle = load_json(resolve(path_text))
+            if program_bundle.get("schema") == "doppler.program-bundle/v1":
+                sources = program_bundle.get("sources") or {}
+                if strip_sha256_prefix(
+                    (sources.get("manifest") or {}).get("hash")
+                ) != export.get("manifestSha256"):
+                    failures.append(
+                        "sourceProgram.programBundle manifest hash does not match export"
+                    )
+                if strip_sha256_prefix(
+                    (sources.get("executionGraph") or {}).get("hash")
+                ) != export.get("executionGraphSha256"):
+                    failures.append(
+                        "sourceProgram.programBundle graph hash does not match export"
+                    )
+                if (
+                    source.get("programBundleId")
+                    and source.get("programBundleId") != program_bundle.get("bundleId")
+                ):
+                    failures.append("sourceProgram.programBundleId mismatch")
+                return
             if program_bundle.get("artifactKind") != "doppler_program_bundle":
                 failures.append("sourceProgram.programBundle artifactKind mismatch")
             if (

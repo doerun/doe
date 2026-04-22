@@ -32,6 +32,7 @@
         "weightSetId": { "type": "string" },
         "weightSha256": { "type": "string" },
         "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
+        "programBundleId": { "type": "string" },
         "programContractVersion": { "type": "string" },
         "wgslModulesSha256": { "type": "string" },
         "hostEntrypointSha256": { "type": "string" },

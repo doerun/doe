@@ -38,10 +38,14 @@ Read this file first. Use the shard files under
   path, and full E2B, Doppler production parity, hardware, and performance
   claims remain gated. The blocked Doe CSL transcript path now hash-links the
   HostPlan bundle, mapped RDRR runtime config, host I/O layout coverage, SDK
-  compile result, and runtime-command timeout/progress evidence before strict
-  simulator promotion can proceed. The current blocker is runtime execution:
-  simfabric reaches a generated compile-target diagnostic but times out before
-  returning a full token/logit/KV transcript.
+  compile result, and runtime-command diagnostic trace evidence before strict
+  simulator promotion can proceed. The current blocker is execution depth, not
+  residual diagnostic timeout: simfabric returns the production-derived
+  residual diagnostic trace, but Doe still does not emit a full token/logit/KV
+  transcript. The current local transcript/parity receipts are regenerated from
+  Doppler-owned Program Bundle
+  `gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46`; this refreshes source
+  identity and HostPlan evidence only, not the full execution claim.
 - Gemma-4 E2B manifest-shape evidence now includes a CPU/Numpy oracle at
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and

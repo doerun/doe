@@ -44,6 +44,8 @@
     "executionGraphSha256": { "type": "string" },
     "captureGraphSha256": { "type": "string" },
     "executionGraph": { "$ref": "#/$defs/hashLinkedPath" },
+    "programBundleId": { "type": "string" },
+    "programBundleSourcePath": { "type": "string" },
     "weightSetId": { "type": "string" },
     "weightSetSha256": { "type": "string" },
     "shardIdentities": {
