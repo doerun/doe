@@ -14,6 +14,7 @@ import hashlib
 import json
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -113,12 +114,33 @@ def parse_args() -> argparse.Namespace:
         default=str(DEFAULT_HOSTPLAN_BUNDLE_ROOT),
         help="Output directory for the normalized HostPlan bundle.",
     )
+    parser.add_argument(
+        "--simulator-driver-result",
+        default=None,
+        help=(
+            "Optional simulator driver result. Defaults to the driver-result "
+            "path derived from the HostPlan bundle simulator trace path."
+        ),
+    )
+    parser.add_argument(
+        "--simulator-trace",
+        default=None,
+        help=(
+            "Optional simulator trace. Defaults to the trace path declared by "
+            "the HostPlan bundle simulator plan."
+        ),
+    )
     return parser.parse_args()
 
 
 def resolve(raw: str | Path) -> Path:
     path = Path(raw)
     return path if path.is_absolute() else (REPO_ROOT / path).resolve()
+
+
+def resolve_relative(base: Path, raw: str | Path) -> Path:
+    path = Path(raw)
+    return path if path.is_absolute() else (base / path).resolve()
 
 
 def rel(path: Path) -> str:
@@ -198,7 +220,11 @@ def reference_transcript_digest(export: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def source_program(export: dict[str, Any]) -> dict[str, Any]:
+def source_program(
+    export: dict[str, Any],
+    *,
+    execution_depth: str = "not_executed",
+) -> dict[str, Any]:
     graph = export.get("executionGraph") or {}
     return {
         "authoringSurface": "doppler_execution_v1",
@@ -209,7 +235,7 @@ def source_program(export: dict[str, Any]) -> dict[str, Any]:
         "weightSetId": export["weightSetId"],
         "weightSha256": export["weightSetSha256"],
         "inputSetSha256": export["inputSetSha256"],
-        "executionDepth": "not_executed",
+        "executionDepth": execution_depth,
     }
 
 
@@ -231,6 +257,38 @@ def hash_link(path: Path, source: str | None = None) -> dict[str, Any]:
     if source is not None:
         link["source"] = source
     return link
+
+
+def pending_link(source: str) -> dict[str, Any]:
+    return {
+        "path": "pending",
+        "sha256": "pending",
+        "source": source,
+    }
+
+
+def derived_driver_result_path(trace_path: Path) -> Path:
+    return trace_path.with_name(f"{trace_path.name}.driver-result.json")
+
+
+def plan_trace_path(simulator_plan_path: Path) -> Path:
+    plan = load_json(simulator_plan_path)
+    outputs = plan.get("outputs") or {}
+    trace_path = outputs.get("tracePath")
+    if not isinstance(trace_path, str) or not trace_path:
+        raise ValueError("simulator plan is missing outputs.tracePath")
+    return resolve_relative(simulator_plan_path.parent, trace_path)
+
+
+@dataclass(frozen=True)
+class SimulatorEvidence:
+    receipt_status: str
+    csl_transcript: dict[str, Any]
+    kv_cache_evidence: dict[str, Any]
+    simulator_run: dict[str, Any]
+    blocker: str
+    production_ops: frozenset[str]
+    execution_depth: str
 
 
 def graph_path_from_export(export: dict[str, Any]) -> Path:
@@ -578,6 +636,34 @@ def runtime_dtype(manifest_dtype: str) -> str:
     raise ValueError(f"unsupported runtime weight dtype: {manifest_dtype}")
 
 
+def runtime_quant(manifest_dtype: str) -> dict[str, Any]:
+    if manifest_dtype == "F16":
+        return {
+            "format": "F16",
+            "storageDtype": "float16",
+            "sourceDtype": "float16",
+        }
+    if manifest_dtype == "Q4_K_M":
+        return {
+            "format": "Q4_K_M",
+            "storageDtype": "uint8",
+            "sourceDtype": "float16",
+            "blockSizeElements": 256,
+            "blockSizeBytes": 144,
+            "encoding": "rdrr_int4ple",
+        }
+    if manifest_dtype == "Q8_0":
+        return {
+            "format": "Q8_0",
+            "storageDtype": "uint8",
+            "sourceDtype": "float16",
+            "blockSizeElements": 32,
+            "blockSizeBytes": 34,
+            "encoding": "rdrr_int4ple",
+        }
+    raise ValueError(f"unsupported runtime weight quant metadata: {manifest_dtype}")
+
+
 def shard_identities_by_index(
     export: dict[str, Any],
 ) -> dict[int, dict[str, Any]]:
@@ -634,18 +720,26 @@ def runtime_weight_mapping(
 ) -> dict[str, Any]:
     if not spans:
         raise ValueError(f"tensor has no shard span: {tensor_name}")
+    manifest_dtype = str(tensor["dtype"])
+    shape = [int(value) for value in tensor.get("shape", [])]
+    byte_offset = int(spans[0]["offset"])
     mapping: dict[str, Any] = {
         "shard": spans[0]["shardPath"],
+        "path": spans[0]["shardPath"],
+        "sha256": spans[0]["shardSha256"],
         "peBuffer": weight_key,
         "peRange": [0, max(0, pe_count - 1)],
-        "dtype": runtime_dtype(str(tensor["dtype"])),
+        "dtype": runtime_dtype(manifest_dtype),
+        "tensor": weight_key,
+        "offsetBytes": byte_offset,
+        "shape": shape,
+        "quant": runtime_quant(manifest_dtype),
         "weightKey": weight_key,
         "tensorName": tensor_name,
         "role": str(tensor.get("role", "unknown")),
         "layout": str(tensor.get("layout", "unknown")),
-        "shape": [int(value) for value in tensor.get("shape", [])],
         "byteSize": int(tensor["size"]),
-        "byteOffset": int(spans[0]["offset"]),
+        "byteOffset": byte_offset,
         "spans": spans,
     }
     source_transform = tensor.get("sourceTransform")
@@ -908,9 +1002,433 @@ def build_hostplan_bundle(
     }
 
 
+def blocked_evidence(
+    export: dict[str, Any],
+    receipt_status: str,
+    blocker: str,
+    *,
+    driver_result_path: Path | None = None,
+    trace_path: Path | None = None,
+    simulator_status: str = "not_run",
+    production_ops: frozenset[str] = frozenset(),
+) -> SimulatorEvidence:
+    requested = reference_transcript_digest(export)["requestedDecodeSteps"]
+    layer_count = manifest_model_config(export, transcript_seq_len_bound(export))[
+        "numLayers"
+    ]
+    sim_run = {
+        "runner": rel(Path(__file__)),
+        "status": simulator_status,
+        "tracePath": "pending",
+        "traceSha256": "pending",
+        "kernelStage": "pending_full_int4ple_csl_transcript_lowering",
+        "kernelIsStub": True,
+        "elapsedMs": None,
+        "runReason": blocker,
+    }
+    if trace_path is not None and trace_path.is_file():
+        sim_run["tracePath"] = rel(trace_path)
+        sim_run["traceSha256"] = sha256_file(trace_path)
+    if driver_result_path is not None and driver_result_path.is_file():
+        sim_run["driverResult"] = hash_link(driver_result_path, "csl_sdk_driver")
+    return SimulatorEvidence(
+        receipt_status=receipt_status,
+        csl_transcript={
+            "status": "not_produced",
+            "requestedDecodeSteps": requested,
+            "actualDecodeSteps": 0,
+            "stopReason": "not_run",
+            "transcript": pending_link(
+                "pending_full_int4ple_csl_transcript_lowering"
+            ),
+            "generatedTokenIds": {
+                "path": "pending",
+                "sha256": "pending",
+                "dtype": "uint32",
+                "tokenCount": 0,
+                "preview": [],
+            },
+            "logitsDigests": [],
+        },
+        kv_cache_evidence={
+            "realKvCache": False,
+            "evidenceSource": "not_available",
+            "cacheWriteCount": 0,
+            "cacheReadCount": 0,
+            "blocker": blocker,
+            "layerSpanCoverage": {
+                "layerCount": layer_count,
+                "coveredLayerCount": 0,
+                "spans": [],
+            },
+            "stepStateDigests": [],
+        },
+        simulator_run=sim_run,
+        blocker=blocker,
+        production_ops=production_ops,
+        execution_depth="not_executed",
+    )
+
+
+def driver_targets(driver_result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    targets = (driver_result.get("compile") or {}).get("targets") or []
+    return {
+        target["name"]: target
+        for target in targets
+        if isinstance(target, dict) and isinstance(target.get("name"), str)
+    }
+
+
+def target_input_ready(
+    compile_root: Path,
+    plan_target: dict[str, Any],
+    driver_target: dict[str, Any],
+) -> tuple[bool, str]:
+    name = plan_target.get("name")
+    source_wgsl = plan_target.get("sourceWgslPath")
+    if isinstance(source_wgsl, str) and source_wgsl:
+        return (
+            resolve(source_wgsl).is_file(),
+            f"sourceWgslPath missing for {name}: {source_wgsl}",
+        )
+    layout_raw = plan_target.get("layout")
+    pe_raw = plan_target.get("peProgram")
+    if not isinstance(layout_raw, str) or not isinstance(pe_raw, str):
+        return False, f"compile target {name} lacks layout/peProgram paths"
+    candidates = [
+        (resolve_relative(compile_root, layout_raw), resolve_relative(compile_root, pe_raw)),
+        (resolve(driver_target.get("layoutPath", "")), resolve(driver_target.get("peProgramPath", ""))),
+    ]
+    if any(layout.is_file() and pe.is_file() for layout, pe in candidates):
+        return True, ""
+    return False, f"compile/source inputs missing for {name}"
+
+
+def production_ops_from_driver_result(
+    simulator_plan: dict[str, Any],
+    simulator_plan_path: Path,
+    driver_result: dict[str, Any],
+) -> tuple[frozenset[str], list[str]]:
+    inputs = simulator_plan.get("inputs") or {}
+    raw_root = inputs.get("compileRootPath")
+    if not isinstance(raw_root, str) or not raw_root:
+        return frozenset(), ["simulator plan is missing inputs.compileRootPath"]
+    compile_root = resolve_relative(simulator_plan_path.parent, raw_root)
+    targets_by_name = driver_targets(driver_result)
+    production_ops: set[str] = set()
+    blockers = []
+    for target in inputs.get("compileTargets") or []:
+        name = target.get("name") if isinstance(target, dict) else None
+        driver_target = targets_by_name.get(name or "", {})
+        if not isinstance(name, str):
+            blockers.append("simulator plan compile target missing name")
+        elif driver_target.get("status") != "succeeded":
+            blockers.append(f"compile target {name} status={driver_target.get('status')!r}")
+        else:
+            ready, reason = target_input_ready(compile_root, target, driver_target)
+            production_ops.add(name) if ready else blockers.append(reason)
+    return frozenset(production_ops), blockers
+
+
+def trace_source_matches(trace: dict[str, Any], export: dict[str, Any]) -> bool:
+    source = trace.get("sourceProgram") or {}
+    return isinstance(source, dict) and all(
+        source.get(key) == export[expected_key]
+        for key, expected_key in (
+            ("manifestSha256", "manifestSha256"),
+            ("graphSha256", "executionGraphSha256"),
+            ("inputSetSha256", "inputSetSha256"),
+            ("weightSha256", "weightSetSha256"),
+        )
+    )
+
+
+def trace_full_model_depth(trace: dict[str, Any]) -> bool:
+    source = trace.get("sourceProgram") or {}
+    executed = trace.get("executedRun") or {}
+    model_execution = trace.get("modelExecution") or {}
+    return (
+        isinstance(source, dict) and source.get("executionDepth") == "full_model"
+    ) or (
+        isinstance(executed, dict) and executed.get("fullModelDepthExecuted") is True
+    ) or (
+        isinstance(model_execution, dict)
+        and model_execution.get("fullModelDepthExecuted") is True
+    )
+
+
+def normalize_hash_link(
+    value: dict[str, Any],
+    trace_dir: Path,
+    label: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    path_text = value.get("path")
+    sha256 = value.get("sha256")
+    if not isinstance(path_text, str) or not isinstance(sha256, str):
+        return None, f"{label}.path/hash is missing"
+    path = resolve_relative(trace_dir, path_text)
+    if not path.is_file():
+        path = resolve(path_text)
+    if not path.is_file():
+        return None, f"{label}.path missing: {path_text}"
+    actual = sha256_file(path)
+    if actual != sha256:
+        return None, f"{label}.sha256={sha256!r}, actual {actual!r}"
+    return {**value, "path": rel(path), "sha256": sha256}, None
+
+
+def normalize_transcript_artifacts(
+    transcript: dict[str, Any],
+    trace_dir: Path,
+) -> tuple[dict[str, Any] | None, str | None]:
+    result = {
+        key: transcript.get(key)
+        for key in ("status", "requestedDecodeSteps", "actualDecodeSteps", "stopReason")
+    }
+    linked, failure = normalize_hash_link(
+        transcript.get("transcript") or {},
+        trace_dir,
+        "cslTranscript.transcript",
+    )
+    if failure:
+        return None, failure
+    result["transcript"] = linked
+    tokens = dict(transcript.get("generatedTokenIds") or {})
+    linked, failure = normalize_hash_link(
+        tokens,
+        trace_dir,
+        "cslTranscript.generatedTokenIds",
+    )
+    if failure:
+        return None, failure
+    tokens["path"], tokens["sha256"] = linked["path"], linked["sha256"]
+    result["generatedTokenIds"] = tokens
+    logits = []
+    allowed = {
+        "stepIndex",
+        "phase",
+        "contextTokenCount",
+        "selectedTokenId",
+        "dtype",
+        "shape",
+        "path",
+        "sha256",
+        "byteLength",
+    }
+    for index, digest in enumerate(transcript.get("logitsDigests") or []):
+        if not isinstance(digest, dict):
+            return None, f"cslTranscript.logitsDigests[{index}] is not an object"
+        linked, failure = normalize_hash_link(
+            digest,
+            trace_dir,
+            f"cslTranscript.logitsDigests[{index}]",
+        )
+        if failure:
+            return None, failure
+        item = {key: value for key, value in digest.items() if key in allowed}
+        item["path"], item["sha256"] = linked["path"], linked["sha256"]
+        logits.append(item)
+    result["logitsDigests"] = logits
+    return result, None
+
+
+def successful_trace_evidence(
+    *,
+    export: dict[str, Any],
+    trace: dict[str, Any],
+    trace_path: Path,
+    driver_result: dict[str, Any],
+    driver_result_path: Path,
+    production_ops: frozenset[str],
+) -> SimulatorEvidence:
+    run = driver_result.get("run") or {}
+
+    def block(reason: str) -> SimulatorEvidence:
+        return blocked_evidence(
+            export,
+            "blocked_incomplete_simulator_evidence",
+            reason,
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+            simulator_status=str(run.get("status", "succeeded")),
+            production_ops=production_ops,
+        )
+
+    simulator = trace.get("simulatorRun") or {}
+    simulator = simulator if isinstance(simulator, dict) else {}
+    if not trace_source_matches(trace, export):
+        return block("simulator trace sourceProgram does not match reference export")
+    if not trace_full_model_depth(trace):
+        return block("simulator trace does not prove full-model execution depth")
+    transcript = trace.get("cslTranscript")
+    if not isinstance(transcript, dict) or transcript.get("status") != "output_ready":
+        return block("simulator trace does not contain cslTranscript output_ready")
+    normalized_transcript, failure = normalize_transcript_artifacts(
+        transcript,
+        trace_path.parent,
+    )
+    if failure:
+        return block(failure)
+    kv_cache = trace.get("kvCacheEvidence")
+    if not isinstance(kv_cache, dict) or kv_cache.get("realKvCache") is not True:
+        return block("simulator trace does not contain real kvCacheEvidence")
+    if simulator.get("kernelIsStub", trace.get("kernelIsStub")) is not False:
+        return block("simulator trace does not prove kernelIsStub=false")
+    return SimulatorEvidence(
+        receipt_status="simulator_success",
+        csl_transcript=normalized_transcript,
+        kv_cache_evidence=kv_cache,
+        simulator_run={
+            "runner": rel(Path(__file__)),
+            "status": "succeeded",
+            "tracePath": rel(trace_path),
+            "traceSha256": sha256_file(trace_path),
+            "driverResult": hash_link(driver_result_path, "csl_sdk_driver"),
+            "executionTarget": run.get("executionTarget", "simfabric"),
+            "compileStatus": (driver_result.get("compile") or {}).get(
+                "status",
+                "succeeded",
+            ),
+            "runReason": run.get("reason", "simulator run succeeded"),
+            "kernelStage": simulator.get("kernelStage", "full_int4ple_csl_transcript"),
+            "kernelIsStub": False,
+            "elapsedMs": simulator.get("elapsedMs"),
+        },
+        blocker="",
+        production_ops=production_ops,
+        execution_depth="full_model",
+    )
+
+
+def load_simulator_evidence(
+    export: dict[str, Any],
+    hostplan_bundle: dict[str, Any],
+    *,
+    simulator_driver_result: str | None,
+    simulator_trace: str | None,
+) -> SimulatorEvidence:
+    if hostplan_bundle.get("status") != "hostplan_ready":
+        return blocked_evidence(
+            export,
+            "blocked_missing_hostplan_bundle",
+            hostplan_bundle.get("blocker", "HostPlan bundle is not ready."),
+        )
+
+    simulator_plan_link = hostplan_bundle.get("simulatorPlan") or {}
+    simulator_plan_path_text = simulator_plan_link.get("path")
+    if not isinstance(simulator_plan_path_text, str):
+        return blocked_evidence(
+            export,
+            "blocked_missing_simulator_evidence",
+            "HostPlan bundle is missing simulatorPlan.path.",
+        )
+    simulator_plan_path = resolve(simulator_plan_path_text)
+    if not simulator_plan_path.is_file():
+        return blocked_evidence(
+            export,
+            "blocked_missing_simulator_evidence",
+            f"simulator plan missing: {simulator_plan_path_text}",
+        )
+
+    trace_path = (
+        resolve(simulator_trace)
+        if simulator_trace is not None
+        else plan_trace_path(simulator_plan_path)
+    )
+    driver_link = hostplan_bundle.get("simulatorDriverResult") or {}
+    driver_link_path = driver_link.get("path")
+    driver_result_path = resolve(simulator_driver_result) if simulator_driver_result else (
+        resolve(driver_link_path)
+        if isinstance(driver_link_path, str) and driver_link_path != "pending"
+        else derived_driver_result_path(trace_path)
+    )
+    if not driver_result_path.is_file():
+        return blocked_evidence(
+            export,
+            "blocked_missing_simulator_evidence",
+            f"simulator driver result missing: {rel(driver_result_path)}",
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+        )
+
+    driver_result = load_json(driver_result_path)
+    if driver_result.get("artifactKind") != "csl_simulator_driver_result":
+        return blocked_evidence(
+            export,
+            "blocked_incomplete_simulator_evidence",
+            "simulator driver result artifactKind is not csl_simulator_driver_result",
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+        )
+
+    compile_status = (driver_result.get("compile") or {}).get("status")
+    run = driver_result.get("run") or {}
+    run_status = run.get("status")
+    run_trace_path = run.get("tracePath")
+    if simulator_trace is None and isinstance(run_trace_path, str) and run_trace_path:
+        trace_path = resolve(run_trace_path)
+    simulator_plan = load_json(simulator_plan_path)
+    production_ops, compile_input_blockers = production_ops_from_driver_result(
+        simulator_plan,
+        simulator_plan_path,
+        driver_result,
+    )
+    if compile_status != "succeeded":
+        return blocked_evidence(
+            export,
+            "simulator_failed",
+            f"simulator compile status={compile_status!r}",
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+            simulator_status=str(run_status or "blocked"),
+            production_ops=production_ops,
+        )
+    if compile_input_blockers:
+        return blocked_evidence(
+            export,
+            "blocked_incomplete_simulator_evidence",
+            "; ".join(compile_input_blockers[:4]),
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+            simulator_status=str(run_status or "blocked"),
+            production_ops=production_ops,
+        )
+    if run_status != "succeeded":
+        return blocked_evidence(
+            export,
+            "simulator_failed",
+            f"simulator run status={run_status!r}: {run.get('reason', '')}",
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+            simulator_status=str(run_status or "failed"),
+            production_ops=production_ops,
+        )
+    if not trace_path.is_file():
+        return blocked_evidence(
+            export,
+            "blocked_missing_simulator_evidence",
+            f"simulator trace missing: {rel(trace_path)}",
+            driver_result_path=driver_result_path,
+            trace_path=trace_path,
+            simulator_status=str(run_status),
+            production_ops=production_ops,
+        )
+
+    trace = load_json(trace_path)
+    return successful_trace_evidence(
+        export=export,
+        trace=trace,
+        trace_path=trace_path,
+        driver_result=driver_result,
+        driver_result_path=driver_result_path,
+        production_ops=production_ops,
+    )
+
+
 def build_lowering_plan(
     export: dict[str, Any],
     fixture_ids: set[str],
+    production_ops: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
     graph_path = graph_path_from_export(export)
     graph = load_json(graph_path)
@@ -929,17 +1447,23 @@ def build_lowering_plan(
         kernel_id = record["kernelId"]
         metadata = kernel_metadata(graph, kernel_id)
         fixture_id = FIXTURE_BY_DOPPLER_KERNEL.get(kernel_id)
+        hostplan_op = DOPPLER_KERNEL_TO_HOSTPLAN_OP.get(kernel_id)
         stage = {
             "stage": record["stage"],
             "operation": record["operation"],
             "kernelId": kernel_id,
             "status": "missing_production_csl_kernel",
         }
+        if hostplan_op is not None:
+            stage["hostPlanOp"] = hostplan_op
         if isinstance(metadata.get("kernel"), str):
             stage["kernelFile"] = metadata["kernel"]
         if isinstance(metadata.get("entry"), str):
             stage["entry"] = metadata["entry"]
-        if fixture_id and fixture_id in fixture_ids:
+        if hostplan_op is not None and hostplan_op in production_ops:
+            stage["status"] = "production_csl_kernel_available"
+            stage["source"] = "simulator_driver_compile_target"
+        elif fixture_id and fixture_id in fixture_ids:
             stage["fixtureId"] = fixture_id
             stage["status"] = "fixture_available_not_production_bound"
             stage["blocker"] = (
@@ -959,12 +1483,16 @@ def build_lowering_plan(
             )
             reason = "no production CSL lowering registered for this kernel"
         stages.append(stage)
+        if stage["status"] == "production_csl_kernel_available":
+            continue
         unsupported_stage = {
             "stage": stage["stage"],
             "operation": stage["operation"],
             "kernelId": kernel_id,
             "reason": reason,
         }
+        if "hostPlanOp" in stage:
+            unsupported_stage["hostPlanOp"] = stage["hostPlanOp"]
         if "kernelFile" in stage:
             unsupported_stage["kernelFile"] = stage["kernelFile"]
         unsupported.append(unsupported_stage)
@@ -1011,40 +1539,35 @@ def build_blocked_receipt(
     export: dict[str, Any],
     lowering_plan: dict[str, Any],
     hostplan_bundle: dict[str, Any],
+    simulator_evidence: SimulatorEvidence,
 ) -> dict[str, Any]:
-    transcript = export.get("decodeTranscript") or {}
     input_components = export.get("inputSetComponents") or {}
     reference = reference_transcript_digest(export)
     requested = reference["requestedDecodeSteps"]
     actual = reference["actualDecodeSteps"]
     stop_reason = reference["stopReason"]
-    blocker = summarize_lowering_blocker(lowering_plan)
-    simulator_status = "not_run"
-    trace_path = "pending"
-    trace_sha256 = "pending"
-    kernel_stage = "pending_full_int4ple_csl_transcript_lowering"
-    driver = hostplan_bundle.get("simulatorDriverResult") or {}
-    coverage = hostplan_bundle.get("compileInputCoverage") or {}
-    if hostplan_bundle.get("status") == "hostplan_ready":
-        kernel_stage = "hostplan_ready_pending_transcript_runtime"
-        simulator_status = (
-            f"blocked_{driver.get('compileReason', 'compile_not_ready')}"
-        )
-        if driver.get("path"):
-            trace_path = str(driver["path"])
-            trace_sha256 = str(driver.get("sha256", "pending"))
-        missing_targets = int(coverage.get("missingTargetCount") or 0)
-        if missing_targets > 0:
-            blocker = (
-                f"{blocker} HostPlan is ready, but {missing_targets} CSL "
-                "compile target(s) are missing production layout/PE sources."
-            )
+    blocker = simulator_evidence.blocker
+    status = simulator_evidence.receipt_status
+    if (
+        status == "simulator_success"
+        and lowering_plan.get("status") != "ready_for_simfabric"
+    ):
+        status = "blocked_missing_csl_lowering"
+        blocker = summarize_lowering_blocker(lowering_plan)
+    elif hostplan_bundle.get("status") != "hostplan_ready":
+        status = "blocked_missing_hostplan_bundle"
+        blocker = hostplan_bundle.get("blocker", "HostPlan bundle is not ready.")
+    elif status == "simulator_success":
+        blocker = ""
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_csl_int4ple_transcript",
-        "status": "blocked_missing_csl_lowering",
+        "status": status,
         "modelId": export["modelId"],
-        "sourceProgram": source_program(export),
+        "sourceProgram": source_program(
+            export,
+            execution_depth=simulator_evidence.execution_depth,
+        ),
         "decodeRequest": {
             "requestedDecodeSteps": requested,
             "expectedActualDecodeSteps": actual,
@@ -1055,50 +1578,9 @@ def build_blocked_receipt(
         "referenceTranscript": reference,
         "loweringPlan": lowering_plan,
         "hostPlanBundle": hostplan_bundle,
-        "cslTranscript": {
-            "status": "not_produced",
-            "requestedDecodeSteps": requested,
-            "actualDecodeSteps": 0,
-            "stopReason": "not_run",
-            "transcript": {
-                "path": "pending",
-                "sha256": "pending",
-                "source": "pending_full_int4ple_csl_transcript_lowering",
-            },
-            "generatedTokenIds": {
-                "path": "pending",
-                "sha256": "pending",
-                "dtype": "uint32",
-                "tokenCount": 0,
-                "preview": [],
-            },
-            "logitsDigests": [],
-        },
-        "kvCacheEvidence": {
-            "realKvCache": False,
-            "evidenceSource": "not_available",
-            "cacheWriteCount": 0,
-            "cacheReadCount": 0,
-            "blocker": (
-                "full production INT4 PLE CSL prefill/decode lowering is "
-                "not implemented"
-            ),
-            "layerSpanCoverage": {
-                "layerCount": 35,
-                "coveredLayerCount": 0,
-                "spans": [],
-            },
-            "stepStateDigests": [],
-        },
-        "simulatorRun": {
-            "runner": rel(Path(__file__)),
-            "status": simulator_status,
-            "tracePath": trace_path,
-            "traceSha256": trace_sha256,
-            "kernelStage": kernel_stage,
-            "kernelIsStub": True,
-            "elapsedMs": None,
-        },
+        "cslTranscript": simulator_evidence.csl_transcript,
+        "kvCacheEvidence": simulator_evidence.kv_cache_evidence,
+        "simulatorRun": simulator_evidence.simulator_run,
         "inputsSynthetic": False,
         "weightsSynthetic": False,
         "blocker": blocker,
@@ -1111,13 +1593,28 @@ def main() -> int:
         export = load_json(resolve(args.reference_export))
         schema = load_json(resolve(args.schema))
         fixture_ids = load_fixture_ids(resolve(args.fixture_registry))
-        lowering_plan = build_lowering_plan(export, fixture_ids)
         hostplan_bundle = build_hostplan_bundle(
             export,
             resolve(args.hostplan_bundle_root),
             resolve(args.hostplan_tool),
         )
-        receipt = build_blocked_receipt(export, lowering_plan, hostplan_bundle)
+        simulator_evidence = load_simulator_evidence(
+            export,
+            hostplan_bundle,
+            simulator_driver_result=args.simulator_driver_result,
+            simulator_trace=args.simulator_trace,
+        )
+        lowering_plan = build_lowering_plan(
+            export,
+            fixture_ids,
+            simulator_evidence.production_ops,
+        )
+        receipt = build_blocked_receipt(
+            export,
+            lowering_plan,
+            hostplan_bundle,
+            simulator_evidence,
+        )
         failures = schema_failures(receipt, schema)
         if failures:
             print("FAIL: Doe CSL INT4 PLE transcript receipt schema")
@@ -1131,7 +1628,7 @@ def main() -> int:
         return 1
 
     print(
-        "PASS: wrote blocked Doe CSL INT4 PLE transcript receipt "
+        "PASS: wrote Doe CSL INT4 PLE transcript receipt "
         f"({rel(resolve(args.out))})"
     )
     return 0

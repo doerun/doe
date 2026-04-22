@@ -29,6 +29,9 @@
       "type": "string",
       "enum": [
         "blocked_missing_csl_lowering",
+        "blocked_missing_hostplan_bundle",
+        "blocked_missing_simulator_evidence",
+        "blocked_incomplete_simulator_evidence",
         "simulator_success",
         "simulator_failed"
       ]
@@ -67,6 +70,16 @@
         "status": { "type": "string" },
         "tracePath": { "type": "string" },
         "traceSha256": { "type": "string" },
+        "driverResult": { "$ref": "#/$defs/hashLinkedPath" },
+        "executionTarget": {
+          "type": "string",
+          "enum": ["simfabric", "system"]
+        },
+        "compileStatus": {
+          "type": "string",
+          "enum": ["succeeded", "blocked", "failed"]
+        },
+        "runReason": { "type": "string" },
         "kernelStage": { "type": "string" },
         "kernelIsStub": { "type": "boolean" },
         "elapsedMs": { "type": ["number", "null"], "minimum": 0 }
@@ -177,9 +190,11 @@
         "stage": { "type": "string" },
         "operation": { "type": "string" },
         "kernelId": { "type": "string" },
+        "hostPlanOp": { "type": "string" },
         "kernelFile": { "type": "string" },
         "entry": { "type": "string" },
         "fixtureId": { "type": "string" },
+        "source": { "type": "string" },
         "status": {
           "type": "string",
           "enum": [
@@ -204,6 +219,7 @@
         "stage": { "type": "string" },
         "operation": { "type": "string" },
         "kernelId": { "type": "string" },
+        "hostPlanOp": { "type": "string" },
         "kernelFile": { "type": "string" },
         "reason": { "type": "string" }
       }

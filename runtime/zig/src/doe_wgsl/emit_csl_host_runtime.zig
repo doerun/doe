@@ -22,12 +22,37 @@ pub const EmitError = error{
 /// Weight shard → PE buffer mapping for host-side staging.
 pub const WeightMapping = struct {
     shard_name: []const u8,
+    shard_path: []const u8,
+    shard_sha256: []const u8,
     pe_buffer: []const u8,
     pe_start: u32,
     pe_end: u32,
     dtype: Dtype = .f16,
+    tensor_name: []const u8,
+    tensor_offset_bytes: u64,
+    tensor_shape: []const u64,
+    quant: QuantMetadata,
 
     pub const Dtype = enum { f16, u8_q4k, u8_q8 };
+
+    pub const QuantMetadata = struct {
+        format: []const u8,
+        storage_dtype: []const u8,
+        source_dtype: ?[]const u8 = null,
+        block_size_elements: ?u32 = null,
+        block_size_bytes: ?u32 = null,
+        encoding: ?[]const u8 = null,
+    };
+};
+
+pub const WeightMappingStatus = struct {
+    status: Status,
+    proof_status: ProofStatus,
+    reason: []const u8,
+    synthetic_weights: bool = false,
+
+    pub const Status = enum { artifact_backed, blocked };
+    pub const ProofStatus = enum { not_proven };
 };
 
 /// Persistent state buffer allocated on PEs.
@@ -45,6 +70,7 @@ pub const RuntimeConfig = struct {
     config: host.ModelConfig,
     weight_mappings: []const WeightMapping,
     weight_mapping_count: u32,
+    weight_mapping_status: ?WeightMappingStatus = null,
     state_buffers: []const StateBuffer,
     state_buffer_count: u32,
     memory_plan: ?mem_plan.MemoryPlan = null,
@@ -55,6 +81,9 @@ pub const RuntimeConfig = struct {
 
 /// Emit a JSON runtime configuration for programmatic consumers.
 pub fn emitRuntimeConfigJson(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitError!void {
+    const wm_count = rt.weight_mapping_count;
+    const mapping_status = rt.weight_mapping_status orelse defaultWeightMappingStatus(wm_count);
+
     try write(buf, pos, "{\n");
     try write(buf, pos, "  \"schemaVersion\": ");
     try writeInt(buf, pos, spec.RUNTIME_CONFIG_SCHEMA_VERSION);
@@ -110,22 +139,66 @@ pub fn emitRuntimeConfigJson(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitErro
     try write(buf, pos, ",\n  \"batchSize\": ");
     try writeInt(buf, pos, rt.batch_size);
     try write(buf, pos, ",\n");
+    try write(buf, pos, "  \"weightMappingStatus\": {\n");
+    try write(buf, pos, "    \"status\": ");
+    try writeJsonString(buf, pos, @tagName(mapping_status.status));
+    try write(buf, pos, ",\n    \"proofStatus\": ");
+    try writeJsonString(buf, pos, @tagName(mapping_status.proof_status));
+    try write(buf, pos, ",\n    \"reason\": ");
+    try writeJsonString(buf, pos, mapping_status.reason);
+    try write(buf, pos, ",\n    \"syntheticWeights\": ");
+    try write(buf, pos, if (mapping_status.synthetic_weights) "true" else "false");
+    try write(buf, pos, "\n  },\n");
 
     // Weight mappings
     try write(buf, pos, "  \"weightMappings\": [\n");
-    const wm_count = rt.weight_mapping_count;
     for (rt.weight_mappings[0..wm_count], 0..) |wm, idx| {
-        try write(buf, pos, "    { \"shard\": \"");
-        try write(buf, pos, wm.shard_name);
-        try write(buf, pos, "\", \"peBuffer\": \"");
-        try write(buf, pos, wm.pe_buffer);
-        try write(buf, pos, "\", \"peRange\": [");
+        try write(buf, pos, "    {\n");
+        try write(buf, pos, "      \"shard\": ");
+        try writeJsonString(buf, pos, wm.shard_name);
+        try write(buf, pos, ",\n      \"path\": ");
+        try writeJsonString(buf, pos, wm.shard_path);
+        try write(buf, pos, ",\n      \"sha256\": ");
+        try writeJsonString(buf, pos, wm.shard_sha256);
+        try write(buf, pos, ",\n      \"peBuffer\": ");
+        try writeJsonString(buf, pos, wm.pe_buffer);
+        try write(buf, pos, ",\n      \"peRange\": [");
         try writeInt(buf, pos, wm.pe_start);
         try write(buf, pos, ", ");
         try writeInt(buf, pos, wm.pe_end);
-        try write(buf, pos, "], \"dtype\": \"");
-        try write(buf, pos, @tagName(wm.dtype));
-        try write(buf, pos, "\" }");
+        try write(buf, pos, "],\n      \"dtype\": ");
+        try writeJsonString(buf, pos, @tagName(wm.dtype));
+        try write(buf, pos, ",\n      \"tensor\": ");
+        try writeJsonString(buf, pos, wm.tensor_name);
+        try write(buf, pos, ",\n      \"offsetBytes\": ");
+        try writeInt(buf, pos, wm.tensor_offset_bytes);
+        try write(buf, pos, ",\n      \"shape\": [");
+        for (wm.tensor_shape, 0..) |dim, dim_idx| {
+            if (dim_idx > 0) try write(buf, pos, ", ");
+            try writeInt(buf, pos, dim);
+        }
+        try write(buf, pos, "],\n      \"quant\": {\n");
+        try write(buf, pos, "        \"format\": ");
+        try writeJsonString(buf, pos, wm.quant.format);
+        try write(buf, pos, ",\n        \"storageDtype\": ");
+        try writeJsonString(buf, pos, wm.quant.storage_dtype);
+        if (wm.quant.source_dtype) |source_dtype| {
+            try write(buf, pos, ",\n        \"sourceDtype\": ");
+            try writeJsonString(buf, pos, source_dtype);
+        }
+        if (wm.quant.block_size_elements) |block_size_elements| {
+            try write(buf, pos, ",\n        \"blockSizeElements\": ");
+            try writeInt(buf, pos, block_size_elements);
+        }
+        if (wm.quant.block_size_bytes) |block_size_bytes| {
+            try write(buf, pos, ",\n        \"blockSizeBytes\": ");
+            try writeInt(buf, pos, block_size_bytes);
+        }
+        if (wm.quant.encoding) |encoding| {
+            try write(buf, pos, ",\n        \"encoding\": ");
+            try writeJsonString(buf, pos, encoding);
+        }
+        try write(buf, pos, "\n      }\n    }");
         if (idx + 1 < wm_count) try write(buf, pos, ",");
         try write(buf, pos, "\n");
     }
@@ -504,6 +577,42 @@ fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
     pos.* += text.len;
 }
 
+fn writeJsonString(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
+    try write(buf, pos, "\"");
+    for (text) |c| {
+        switch (c) {
+            '"' => try write(buf, pos, "\\\""),
+            '\\' => try write(buf, pos, "\\\\"),
+            '\n' => try write(buf, pos, "\\n"),
+            '\r' => try write(buf, pos, "\\r"),
+            '\t' => try write(buf, pos, "\\t"),
+            else => try writeByte(buf, pos, c),
+        }
+    }
+    try write(buf, pos, "\"");
+}
+
+fn writeByte(buf: []u8, pos: *usize, byte: u8) EmitError!void {
+    if (pos.* + 1 > buf.len) return error.OutputTooLarge;
+    buf[pos.*] = byte;
+    pos.* += 1;
+}
+
+fn defaultWeightMappingStatus(weight_mapping_count: u32) WeightMappingStatus {
+    if (weight_mapping_count == 0) {
+        return .{
+            .status = .blocked,
+            .proof_status = .not_proven,
+            .reason = "execution-v1 did not provide artifact-backed weightMappings",
+        };
+    }
+    return .{
+        .status = .artifact_backed,
+        .proof_status = .not_proven,
+        .reason = "execution-v1 provided artifact-backed weightMappings; runtime proof remains blocked until transcript parity consumes them",
+    };
+}
+
 fn writeLaunchDict(buf: []u8, pos: *usize, launch: host.LaunchSpec) EmitError!void {
     try write(buf, pos, "    {'kernelName': '");
     try write(buf, pos, launch.kernel_name);
@@ -547,8 +656,28 @@ test "runtime config JSON emits weight mappings and state buffers" {
     const decode = [_]host.LaunchSpec{
         .{ .kernel_name = "embed" },
     };
+    const shape = [_]u64{ 262144, 1536 };
     const wm = [_]WeightMapping{
-        .{ .shard_name = "embed.bin", .pe_buffer = "weights_embed", .pe_start = 0, .pe_end = 16 },
+        .{
+            .shard_name = "shard_00038.bin",
+            .shard_path = "model/shard_00038.bin",
+            .shard_sha256 = "6a0e8ecfb1190554392143f79434839b629ee9284a3fd643d84cb62522a0cdcd",
+            .pe_buffer = "weights_embed",
+            .pe_start = 0,
+            .pe_end = 16,
+            .dtype = .u8_q4k,
+            .tensor_name = "embed_tokens.weight",
+            .tensor_offset_bytes = 2550136832,
+            .tensor_shape = &shape,
+            .quant = .{
+                .format = "Q4_K_M",
+                .storage_dtype = "uint8",
+                .source_dtype = "float16",
+                .block_size_elements = 256,
+                .block_size_bytes = 144,
+                .encoding = "rdrr_int4ple",
+            },
+        },
     };
     const sb = [_]StateBuffer{
         .{ .name = "kv_cache_0", .kind = .kv_cache, .bytes_per_pe = 4096 },
@@ -583,9 +712,52 @@ test "runtime config JSON emits weight mappings and state buffers" {
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"artifactKind\": \"csl_runtime_config\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"mode\": \"compile-only\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"weightMappings\"") != null);
-    try std.testing.expect(std.mem.indexOf(u8, json_str, "embed.bin") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"status\": \"artifact_backed\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"proofStatus\": \"not_proven\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "shard_00038.bin") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"tensor\": \"embed_tokens.weight\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"offsetBytes\": 2550136832") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"format\": \"Q4_K_M\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"stateBuffers\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "kv_cache") != null);
+}
+
+test "runtime config JSON marks empty weight mappings as blocked non proof" {
+    const kernels = [_]host.KernelSpec{
+        .{ .name = "embed", .pattern = "gather" },
+    };
+    const prefill = [_]host.LaunchSpec{
+        .{ .kernel_name = "embed" },
+    };
+    const rt = RuntimeConfig{
+        .plan = .{
+            .pe_grid_width = 16,
+            .kernels = &kernels,
+            .prefill_launches = &prefill,
+            .decode_launches = &.{},
+        },
+        .config = .{
+            .hidden_dim = 1024,
+            .num_heads = 16,
+            .head_dim = 64,
+            .num_layers = 24,
+            .vocab_size = 151936,
+            .max_seq_len = 2048,
+            .quant_format = .q4k,
+        },
+        .weight_mappings = &.{},
+        .weight_mapping_count = 0,
+        .state_buffers = &.{},
+        .state_buffer_count = 0,
+    };
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emitRuntimeConfigJson(&buf, &pos, rt);
+    const json_str = buf[0..pos];
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"status\": \"blocked\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"proofStatus\": \"not_proven\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"syntheticWeights\": false") != null);
 }
 
 test "full Python runner emits staging, state init, and decode" {
@@ -604,8 +776,24 @@ test "full Python runner emits staging, state init, and decode" {
             .current_pos_source = .decode_position,
         },
     };
+    const shape = [_]u64{ 1024, 1024 };
     const wm = [_]WeightMapping{
-        .{ .shard_name = "embed.bin", .pe_buffer = "weights", .pe_start = 0, .pe_end = 8 },
+        .{
+            .shard_name = "embed.bin",
+            .shard_path = "model/embed.bin",
+            .shard_sha256 = "6a0e8ecfb1190554392143f79434839b629ee9284a3fd643d84cb62522a0cdcd",
+            .pe_buffer = "weights",
+            .pe_start = 0,
+            .pe_end = 8,
+            .dtype = .u8_q4k,
+            .tensor_name = "embed.weight",
+            .tensor_offset_bytes = 0,
+            .tensor_shape = &shape,
+            .quant = .{
+                .format = "Q4_K_M",
+                .storage_dtype = "uint8",
+            },
+        },
     };
     const sb = [_]StateBuffer{
         .{ .name = "kv_cache", .kind = .kv_cache, .bytes_per_pe = 2048 },

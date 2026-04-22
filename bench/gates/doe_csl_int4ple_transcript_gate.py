@@ -209,6 +209,31 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
         )
     if run.get("kernelIsStub") is not False:
         failures.append("simulatorRun.kernelIsStub must be false")
+    if run.get("executionTarget") != "simfabric":
+        failures.append(
+            "simulatorRun.executionTarget="
+            f"{run.get('executionTarget')!r}, expected simfabric"
+        )
+    if run.get("compileStatus") != "succeeded":
+        failures.append(
+            "simulatorRun.compileStatus="
+            f"{run.get('compileStatus')!r}, expected succeeded"
+        )
+    driver_result = run.get("driverResult") or {}
+    check_path_hash(
+        "simulatorRun.driverResult",
+        driver_result.get("path", ""),
+        driver_result.get("sha256", ""),
+        failures,
+        required=True,
+    )
+    check_path_hash(
+        "simulatorRun.trace",
+        run.get("tracePath", ""),
+        run.get("traceSha256", ""),
+        failures,
+        required=True,
+    )
 
     transcript = receipt.get("cslTranscript") or {}
     if transcript.get("status") != "output_ready":
@@ -243,6 +268,12 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
             failures,
             required=True,
         )
+    if len(transcript.get("logitsDigests") or []) != transcript.get(
+        "actualDecodeSteps"
+    ):
+        failures.append(
+            "cslTranscript.logitsDigests length differs from actualDecodeSteps"
+        )
 
     kv = receipt.get("kvCacheEvidence") or {}
     if kv.get("realKvCache") is not True:
@@ -257,6 +288,9 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
     actual_steps = transcript.get("actualDecodeSteps")
     if isinstance(actual_steps, int) and len(kv.get("stepStateDigests") or []) != actual_steps:
         failures.append("kvCacheEvidence.stepStateDigests length differs from actualDecodeSteps")
+    source = receipt.get("sourceProgram") or {}
+    if source.get("executionDepth") != "full_model":
+        failures.append("sourceProgram.executionDepth must be full_model")
 
 
 def main() -> int:

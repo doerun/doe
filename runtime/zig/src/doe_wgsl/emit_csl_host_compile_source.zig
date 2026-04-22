@@ -1,0 +1,489 @@
+const std = @import("std");
+
+const mod = @import("mod.zig");
+const classify = @import("emit_csl_classify.zig");
+const layout = @import("emit_csl_layout.zig");
+const elementwise = @import("emit_csl_elementwise.zig");
+const reduction = @import("emit_csl_reduction.zig");
+const matmul = @import("emit_csl_matmul.zig");
+const attention = @import("emit_csl_attention.zig");
+const linear_attn = @import("emit_csl_linear_attn.zig");
+const kv_cache = @import("emit_csl_kv_cache.zig");
+const gather = @import("emit_csl_gather.zig");
+const rope = @import("emit_csl_rope.zig");
+const dequant = @import("emit_csl_dequant.zig");
+const sample = @import("emit_csl_sample.zig");
+const fused = @import("emit_csl_fused.zig");
+const fused_ffn = @import("emit_csl_fused_ffn.zig");
+const validate = @import("emit_csl_validate.zig");
+const spec = @import("csl_spec.zig");
+const ir = @import("ir.zig");
+
+pub const EmitError = error{
+    OutputTooLarge,
+    InvalidIr,
+    UnsupportedBuiltin,
+    UnsupportedConstruct,
+    UnsupportedPattern,
+    InvalidWgsl,
+    DuplicateSymbol,
+    InvalidAttribute,
+    InvalidType,
+    OutOfMemory,
+    ShaderToolchainUnavailable,
+    UnexpectedToken,
+    TypeMismatch,
+    UnknownIdentifier,
+    UnknownType,
+    UnsupportedWgsl,
+};
+
+pub const CompileSourceSections = struct {
+    combined: []const u8,
+    layout: []const u8,
+    pe_program: []const u8,
+};
+
+pub fn emitPatternSections(
+    allocator: std.mem.Allocator,
+    pattern: []const u8,
+    out: []u8,
+) EmitError!CompileSourceSections {
+    const source = patternSource(pattern) orelse return error.UnsupportedPattern;
+    var module_ir = try mod.analyzeToIr(allocator, source);
+    defer module_ir.deinit();
+
+    if (module_ir.entry_points.items.len == 0) return error.InvalidIr;
+    const entry = module_ir.entry_points.items[0];
+    if (entry.stage != .compute) return error.UnsupportedConstruct;
+
+    var pos: usize = 0;
+    const pattern_info = try resolvePattern(pattern, &module_ir, entry);
+
+    try writeSection(out, &pos, spec.LAYOUT_FILENAME);
+    try emitLayout(out, &pos, &module_ir, entry, pattern_info);
+
+    try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
+    try emitPeProgram(out, &pos, &module_ir, entry, pattern_info);
+
+    const validation_kind = try validationKind(pattern);
+    const validation = validate.validatePattern(out[0..pos], validation_kind);
+    if (!validation.valid) return error.InvalidIr;
+
+    const combined = out[0..pos];
+    return .{
+        .combined = combined,
+        .layout = sectionBody(combined, spec.LAYOUT_FILENAME) orelse return error.InvalidIr,
+        .pe_program = sectionBody(combined, spec.PE_PROGRAM_FILENAME) orelse return error.InvalidIr,
+    };
+}
+
+fn resolvePattern(pattern: []const u8, module_ir: *const ir.Module, entry: ir.EntryPoint) EmitError!classify.KernelPattern {
+    if (std.mem.eql(u8, pattern, "kv_read")) {
+        return .{ .kv_read = .{
+            .key_cache_global = 0,
+            .val_cache_global = 1,
+            .key_out_global = 2,
+            .val_out_global = 3,
+        } };
+    }
+    if (std.mem.eql(u8, pattern, "fused_ffn")) {
+        return .{ .fused_ffn = .{
+            .input_global = 0,
+            .gate_weight_global = 1,
+            .up_weight_global = 2,
+            .output_global = 3,
+            .input_count = 3,
+            .output_count = 1,
+        } };
+    }
+
+    const detected = classify.classify(module_ir, entry);
+    if (!classify.patternContractValid(detected)) return error.UnsupportedPattern;
+
+    switch (detected) {
+        .element_wise => if (std.mem.eql(u8, pattern, "element_wise")) return detected,
+        .reduction => if (std.mem.eql(u8, pattern, "reduction")) return detected,
+        .tiled_matmul => if (std.mem.eql(u8, pattern, "tiled_matmul")) return detected,
+        .gather => if (std.mem.eql(u8, pattern, "gather")) return detected,
+        .rope => if (std.mem.eql(u8, pattern, "rope")) return detected,
+        .attention_streaming => if (std.mem.eql(u8, pattern, "attention_streaming")) return detected,
+        .attention_decode => if (std.mem.eql(u8, pattern, "attention_decode")) return detected,
+        .attention_tiled => if (std.mem.eql(u8, pattern, "attention_tiled")) return detected,
+        .dequant => if (std.mem.eql(u8, pattern, "dequant")) return detected,
+        .sample => if (std.mem.eql(u8, pattern, "sample")) return detected,
+        .fused_gemv_dequant => if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) return detected,
+        .attention_linear => if (std.mem.eql(u8, pattern, "attention_linear")) return detected,
+        .kv_write => if (std.mem.eql(u8, pattern, "kv_write")) return detected,
+        .fused_ffn => if (std.mem.eql(u8, pattern, "fused_ffn")) return detected,
+        .kv_read, .unsupported => {},
+    }
+    return error.InvalidIr;
+}
+
+fn emitLayout(
+    out: []u8,
+    pos: *usize,
+    module_ir: *const ir.Module,
+    entry: ir.EntryPoint,
+    pattern: classify.KernelPattern,
+) EmitError!void {
+    switch (pattern) {
+        .element_wise => |info| try layout.emitElementWiseLayout(out, pos, module_ir, entry, info),
+        .reduction => |info| try layout.emitReductionLayout(out, pos, module_ir, entry, info),
+        .tiled_matmul => |info| try layout.emitMatmulLayout(out, pos, module_ir, entry, info),
+        .gather => |info| try layout.emitGatherLayout(out, pos, module_ir, info),
+        .rope => |info| try layout.emitRoPELayout(out, pos, module_ir, info),
+        .attention_streaming => |info| try layout.emitStreamingAttentionLayout(out, pos, module_ir, info),
+        .attention_decode => |info| try layout.emitDecodeAttentionLayout(out, pos, module_ir, info),
+        .attention_tiled => |info| try layout.emitTiledAttentionLayout(out, pos, module_ir, info),
+        .dequant => |info| try layout.emitDequantLayout(out, pos, module_ir, info),
+        .sample => |info| try layout.emitSampleLayout(out, pos, module_ir, info),
+        .fused_gemv_dequant => |info| try layout.emitFusedGemvLayout(out, pos, module_ir, info),
+        .attention_linear => |info| try layout.emitLinearAttentionLayout(out, pos, module_ir, info),
+        .kv_write => |info| try layout.emitKvWriteLayout(out, pos, module_ir, info),
+        .kv_read => |info| try layout.emitKvReadLayout(out, pos, module_ir, info),
+        .fused_ffn => |info| try layout.emitFusedFfnLayout(out, pos, module_ir, info),
+        .unsupported => return error.UnsupportedPattern,
+    }
+}
+
+fn emitPeProgram(
+    out: []u8,
+    pos: *usize,
+    module_ir: *const ir.Module,
+    entry: ir.EntryPoint,
+    pattern: classify.KernelPattern,
+) EmitError!void {
+    switch (pattern) {
+        .element_wise => |info| try elementwise.emit(out, pos, module_ir, entry, info),
+        .reduction => |info| try reduction.emit(out, pos, module_ir, entry, info),
+        .tiled_matmul => |info| try matmul.emit(out, pos, module_ir, entry, info),
+        .gather => |info| try gather.emit(out, pos, module_ir, info),
+        .rope => |info| try rope.emit(out, pos, module_ir, info),
+        .attention_streaming => |info| try attention.emitStreaming(out, pos, module_ir, info),
+        .attention_decode => |info| try attention.emitDecode(out, pos, module_ir, info),
+        .attention_tiled => |info| try attention.emitTiled(out, pos, module_ir, info),
+        .dequant => |info| try dequant.emit(out, pos, module_ir, info),
+        .sample => |info| try sample.emit(out, pos, module_ir, info),
+        .fused_gemv_dequant => |info| try fused.emit(out, pos, module_ir, info),
+        .attention_linear => |info| try linear_attn.emit(out, pos, module_ir, info),
+        .kv_write => |info| try kv_cache.emitWrite(out, pos, module_ir, info),
+        .kv_read => |info| try kv_cache.emitRead(out, pos, module_ir, info),
+        .fused_ffn => |info| try fused_ffn.emit(out, pos, module_ir, info),
+        .unsupported => return error.UnsupportedPattern,
+    }
+}
+
+fn validationKind(pattern: []const u8) EmitError!validate.PatternKind {
+    if (std.mem.eql(u8, pattern, "element_wise")) return .element_wise;
+    if (std.mem.eql(u8, pattern, "reduction")) return .reduction;
+    if (std.mem.eql(u8, pattern, "tiled_matmul")) return .tiled_matmul;
+    if (std.mem.eql(u8, pattern, "gather")) return .gather;
+    if (std.mem.eql(u8, pattern, "rope")) return .rope;
+    if (std.mem.eql(u8, pattern, "attention_streaming")) return .attention_streaming;
+    if (std.mem.eql(u8, pattern, "attention_decode")) return .attention_decode;
+    if (std.mem.eql(u8, pattern, "attention_tiled")) return .attention_tiled;
+    if (std.mem.eql(u8, pattern, "attention_linear")) return .attention_linear;
+    if (std.mem.eql(u8, pattern, "dequant")) return .dequant;
+    if (std.mem.eql(u8, pattern, "sample")) return .sample;
+    if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) return .fused_gemv_dequant;
+    if (std.mem.eql(u8, pattern, "kv_write")) return .kv_write;
+    if (std.mem.eql(u8, pattern, "kv_read")) return .kv_read;
+    if (std.mem.eql(u8, pattern, "fused_ffn")) return .fused_ffn;
+    return error.UnsupportedPattern;
+}
+
+pub fn patternSource(pattern: []const u8) ?[]const u8 {
+    if (std.mem.eql(u8, pattern, "element_wise")) return ELEMENT_WISE_WGSL;
+    if (std.mem.eql(u8, pattern, "reduction")) return REDUCTION_WGSL;
+    if (std.mem.eql(u8, pattern, "tiled_matmul")) return TILED_MATMUL_WGSL;
+    if (std.mem.eql(u8, pattern, "gather")) return GATHER_WGSL;
+    if (std.mem.eql(u8, pattern, "rope")) return ROPE_WGSL;
+    if (std.mem.eql(u8, pattern, "attention_streaming")) return ATTENTION_STREAMING_WGSL;
+    if (std.mem.eql(u8, pattern, "attention_decode")) return ATTENTION_DECODE_WGSL;
+    if (std.mem.eql(u8, pattern, "attention_tiled")) return ATTENTION_TILED_WGSL;
+    if (std.mem.eql(u8, pattern, "attention_linear")) return ATTENTION_LINEAR_WGSL;
+    if (std.mem.eql(u8, pattern, "dequant")) return DEQUANT_WGSL;
+    if (std.mem.eql(u8, pattern, "sample")) return SAMPLE_WGSL;
+    if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) return FUSED_GEMV_DEQUANT_WGSL;
+    if (std.mem.eql(u8, pattern, "kv_write")) return KV_WRITE_WGSL;
+    if (std.mem.eql(u8, pattern, "kv_read")) return KV_READ_WGSL;
+    if (std.mem.eql(u8, pattern, "fused_ffn")) return FUSED_FFN_WGSL;
+    return null;
+}
+
+pub fn sectionBody(csl: []const u8, filename: []const u8) ?[]const u8 {
+    var marker_buf: [128]u8 = undefined;
+    const marker = std.fmt.bufPrint(
+        &marker_buf,
+        "{s}{s}{s}",
+        .{ spec.SECTION_SEPARATOR, filename, spec.SECTION_SEPARATOR_END },
+    ) catch return null;
+
+    const header_index = std.mem.indexOf(u8, csl, marker) orelse return null;
+    const body_start = header_index + marker.len;
+    const next_header = std.mem.indexOfPos(u8, csl, body_start, spec.SECTION_SEPARATOR) orelse csl.len;
+    return csl[body_start..next_header];
+}
+
+fn writeSection(buf: []u8, pos: *usize, filename: []const u8) EmitError!void {
+    try write(buf, pos, spec.SECTION_SEPARATOR);
+    try write(buf, pos, filename);
+    try write(buf, pos, spec.SECTION_SEPARATOR_END);
+}
+
+fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
+    if (pos.* + text.len > buf.len) return error.OutputTooLarge;
+    @memcpy(buf[pos.*..][0..text.len], text);
+    pos.* += text.len;
+}
+
+const ELEMENT_WISE_WGSL =
+    \\struct Uniforms {
+    \\    size: u32,
+    \\}
+    \\@group(0) @binding(0) var<uniform> u: Uniforms;
+    \\@group(0) @binding(1) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(256)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let idx = gid.x;
+    \\    if (idx >= u.size) { return; }
+    \\    output[idx] = input[idx] * 1.0;
+    \\}
+;
+
+const REDUCTION_WGSL =
+    \\@group(0) @binding(0) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+    \\var<workgroup> partial: array<f32, 64>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    partial[lid.x] = input[gid.x] * input[gid.x];
+    \\    workgroupBarrier();
+    \\    if (lid.x == 0u) {
+    \\        var sum: f32 = 0.0;
+    \\        for (var i: u32 = 0u; i < 64u; i = i + 1u) {
+    \\            sum = sum + partial[i];
+    \\        }
+    \\        output[gid.x] = sum;
+    \\    }
+    \\}
+;
+
+const TILED_MATMUL_WGSL =
+    \\@group(0) @binding(0) var<storage, read> a: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> b: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+    \\var<workgroup> tile_a: array<f32, 64>;
+    \\var<workgroup> tile_b: array<f32, 64>;
+    \\@compute @workgroup_size(8, 8, 1)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    tile_a[lid.x] = a[gid.x];
+    \\    tile_b[lid.y] = b[gid.y];
+    \\    workgroupBarrier();
+    \\    var acc: f32 = 0.0;
+    \\    for (var k: u32 = 0u; k < 8u; k = k + 1u) {
+    \\        acc = acc + tile_a[k] * tile_b[k];
+    \\    }
+    \\    c[gid.x] = acc;
+    \\}
+;
+
+const GATHER_WGSL =
+    \\@group(0) @binding(0) var<storage, read> indices: array<u32>;
+    \\@group(0) @binding(1) var<storage, read> table: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let token = indices[gid.x];
+    \\    output[gid.x] = table[token];
+    \\}
+;
+
+const ROPE_WGSL =
+    \\@group(0) @binding(0) var<storage, read_write> input: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> cos_table: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> sin_table: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let x = input[gid.x];
+    \\    input[gid.x] = x * cos_table[gid.x] - x * sin_table[gid.x];
+    \\}
+;
+
+const ATTENTION_LINEAR_WGSL =
+    \\@group(0) @binding(0) var<storage, read> query: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> key: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> val: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    output[gid.x] = query[gid.x] * key[gid.x] + val[gid.x];
+    \\}
+;
+
+const ATTENTION_STREAMING_WGSL =
+    \\@group(0) @binding(0) var<storage, read> query: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> key: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> val: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let score = exp(query[gid.x] * key[gid.x]);
+    \\    output[gid.x] = score * val[gid.x];
+    \\}
+;
+
+const ATTENTION_DECODE_WGSL =
+    \\@group(0) @binding(0) var<storage, read> query: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> key: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> val: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+    \\var<workgroup> partial: array<f32, 64>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    partial[lid.x] = query[gid.x] * key[gid.x];
+    \\    workgroupBarrier();
+    \\    if (lid.x == 0u) {
+    \\        output[gid.x] = partial[0] * val[gid.x];
+    \\    }
+    \\}
+;
+
+const ATTENTION_TILED_WGSL =
+    \\@group(0) @binding(0) var<storage, read> query: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> key: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> val: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+    \\var<workgroup> shared_k: array<f32, 64>;
+    \\var<workgroup> shared_v: array<f32, 64>;
+    \\var<workgroup> shared_scores: array<f32, 64>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    shared_k[lid.x] = key[gid.x];
+    \\    shared_v[lid.x] = val[gid.x];
+    \\    shared_scores[lid.x] = query[gid.x] * key[gid.x];
+    \\    workgroupBarrier();
+    \\    output[gid.x] = shared_scores[lid.x] * shared_v[lid.x];
+    \\}
+;
+
+const DEQUANT_WGSL =
+    \\struct Q4Block {
+    \\    packed: u32,
+    \\}
+    \\@group(0) @binding(0) var<storage, read> quant: array<Q4Block>;
+    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    output[gid.x] = f32(quant[0].packed);
+    \\}
+;
+
+const SAMPLE_WGSL =
+    \\@group(0) @binding(0) var<storage, read> logits: array<f32>;
+    \\@group(0) @binding(1) var<storage, read_write> tokens: array<u32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    tokens[0] = gid.x;
+    \\    _ = logits[gid.x];
+    \\}
+;
+
+const FUSED_GEMV_DEQUANT_WGSL =
+    \\struct Q4Block {
+    \\    packed: u32,
+    \\}
+    \\@group(0) @binding(0) var<storage, read> activation: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> weight: array<Q4Block>;
+    \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
+    \\var<workgroup> partial: array<f32, 64>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    partial[lid.x] = activation[gid.x] + f32(weight[0].packed);
+    \\    workgroupBarrier();
+    \\    if (lid.x == 0u) {
+    \\        output[gid.x] = partial[0];
+    \\    }
+    \\}
+;
+
+const KV_WRITE_WGSL =
+    \\@group(0) @binding(0) var<storage, read> key_proj: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> val_proj: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> key_cache: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> val_cache: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    key_cache[gid.x] = key_proj[gid.x];
+    \\    val_cache[gid.x] = val_proj[gid.x];
+    \\}
+;
+
+const KV_READ_WGSL =
+    \\@group(0) @binding(0) var<storage, read> key_cache: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> val_cache: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> key_out: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> val_out: array<f32>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    key_out[gid.x] = key_cache[gid.x];
+    \\    val_out[gid.x] = val_cache[gid.x];
+    \\}
+;
+
+const FUSED_FFN_WGSL =
+    \\@group(0) @binding(0) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> gate_weight: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> up_weight: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
+    \\var<workgroup> partial: array<f32, 64>;
+    \\@compute @workgroup_size(64)
+    \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
+    \\    partial[lid.x] = input[gid.x] * gate_weight[gid.x] + up_weight[gid.x];
+    \\    workgroupBarrier();
+    \\    if (lid.x == 0u) {
+    \\        output[gid.x] = partial[0];
+    \\    }
+    \\}
+;
+
+test "host compile source emits known HostPlan CSL families" {
+    const patterns = [_][]const u8{
+        "element_wise",
+        "reduction",
+        "tiled_matmul",
+        "gather",
+        "rope",
+        "attention_streaming",
+        "attention_decode",
+        "attention_tiled",
+        "attention_linear",
+        "dequant",
+        "sample",
+        "fused_gemv_dequant",
+        "kv_write",
+        "kv_read",
+        "fused_ffn",
+    };
+
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    for (patterns) |pattern| {
+        const sections = try emitPatternSections(std.testing.allocator, pattern, &buf);
+        try std.testing.expect(sections.combined.len > 0);
+        try std.testing.expect(sections.layout.len > 0);
+        try std.testing.expect(sections.pe_program.len > 0);
+        try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_rectangle") != null);
+        try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(compute)") != null);
+    }
+}
+
+test "host compile source rejects unknown HostPlan pattern" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    try std.testing.expectError(
+        error.UnsupportedPattern,
+        emitPatternSections(std.testing.allocator, "not_a_pattern", &buf),
+    );
+}

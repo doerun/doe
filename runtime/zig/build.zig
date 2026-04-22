@@ -856,6 +856,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/csl_host_plan_tool.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
         }),
     });
     csl_host_plan_tool.linkLibC();

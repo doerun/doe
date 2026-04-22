@@ -86,14 +86,47 @@
     "maxDecodeTokens": { "type": "integer", "minimum": 0 },
     "timeoutMs": { "type": "integer", "minimum": 0 },
     "batchSize": { "type": "integer", "minimum": 1 },
+    "weightMappingStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "proofStatus", "reason", "syntheticWeights"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["artifact_backed", "blocked"]
+        },
+        "proofStatus": {
+          "type": "string",
+          "enum": ["not_proven"]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "syntheticWeights": { "type": "boolean", "const": false }
+      }
+    },
     "weightMappings": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["shard", "peBuffer", "peRange", "dtype"],
+        "required": [
+          "shard",
+          "path",
+          "sha256",
+          "peBuffer",
+          "peRange",
+          "dtype",
+          "tensor",
+          "offsetBytes",
+          "shape",
+          "quant"
+        ],
         "properties": {
           "shard": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
           "peBuffer": { "type": "string", "minLength": 1 },
           "peRange": {
             "type": "array",
@@ -107,14 +140,17 @@
           "dtype": { "type": "string", "enum": ["f16", "u8_q4k", "u8_q8"] },
           "weightKey": { "type": "string", "minLength": 1 },
           "tensorName": { "type": "string", "minLength": 1 },
+          "tensor": { "type": "string", "minLength": 1 },
           "role": { "type": "string", "minLength": 1 },
           "layout": { "type": "string", "minLength": 1 },
           "shape": {
             "type": "array",
-            "items": { "type": "integer", "minimum": 0 }
+            "minItems": 1,
+            "items": { "type": "integer", "minimum": 1 }
           },
           "byteSize": { "type": "integer", "minimum": 0 },
           "byteOffset": { "type": "integer", "minimum": 0 },
+          "offsetBytes": { "type": "integer", "minimum": 0 },
           "spans": {
             "type": "array",
             "items": {
@@ -139,6 +175,19 @@
           "sourceTransform": {
             "type": "object",
             "additionalProperties": true
+          },
+          "quant": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["format", "storageDtype"],
+            "properties": {
+              "format": { "type": "string", "minLength": 1 },
+              "storageDtype": { "type": "string", "minLength": 1 },
+              "sourceDtype": { "type": "string", "minLength": 1 },
+              "blockSizeElements": { "type": "integer", "minimum": 1 },
+              "blockSizeBytes": { "type": "integer", "minimum": 1 },
+              "encoding": { "type": "string", "minLength": 1 }
+            }
           }
         }
       }

@@ -6,6 +6,7 @@ const host_plan = wgsl.emit_csl_host_plan;
 const host_runtime = wgsl.emit_csl_host_runtime;
 const mem_plan = wgsl.emit_csl_mem_plan;
 const simulator = wgsl.emit_csl_simulator;
+const compile_source = @import("doe_wgsl/emit_csl_host_compile_source.zig");
 
 const Mode = enum {
     steps,
@@ -44,11 +45,13 @@ const BundleConfigJson = struct {
 const MAX_KERNELS: usize = 64;
 const MAX_LAUNCHES: usize = 1024;
 const MAX_STATE_BUFFERS: usize = 16;
+const SHA256_HEX_LEN: usize = 64;
 const HOST_PLAN_CAPACITY: usize = 128 * 1024;
 const RUNTIME_CONFIG_CAPACITY: usize = 128 * 1024;
 const MEMORY_PLAN_CAPACITY: usize = 64 * 1024;
 const SIMULATOR_PLAN_CAPACITY: usize = 64 * 1024;
 const LAUNCHER_CAPACITY: usize = 8 * 1024;
+const COMPILE_ROOT_NAME: []const u8 = "compile";
 
 fn printUsage() void {
     std.debug.print(
@@ -196,6 +199,145 @@ fn parseQuantFormat(raw: []const u8) ?host.ModelConfig.QuantFormat {
     return null;
 }
 
+fn parseWeightDtype(raw: []const u8) ?host_runtime.WeightMapping.Dtype {
+    if (std.mem.eql(u8, raw, "f16")) return .f16;
+    if (std.mem.eql(u8, raw, "u8_q4k")) return .u8_q4k;
+    if (std.mem.eql(u8, raw, "u8_q8")) return .u8_q8;
+    return null;
+}
+
+fn jsonObject(value: std.json.Value) !std.json.ObjectMap {
+    return switch (value) {
+        .object => |object| object,
+        else => error.InvalidArgument,
+    };
+}
+
+fn jsonArray(value: std.json.Value) !std.json.Array {
+    return switch (value) {
+        .array => |array| array,
+        else => error.InvalidArgument,
+    };
+}
+
+fn jsonString(value: std.json.Value) ![]const u8 {
+    return switch (value) {
+        .string => |string| string,
+        else => error.InvalidArgument,
+    };
+}
+
+fn jsonU32(value: std.json.Value) !u32 {
+    return switch (value) {
+        .integer => |integer| std.math.cast(u32, integer) orelse error.InvalidArgument,
+        else => error.InvalidArgument,
+    };
+}
+
+fn jsonU64(value: std.json.Value) !u64 {
+    return switch (value) {
+        .integer => |integer| std.math.cast(u64, integer) orelse error.InvalidArgument,
+        else => error.InvalidArgument,
+    };
+}
+
+fn optionalJsonStringDup(allocator: std.mem.Allocator, value: ?std.json.Value) !?[]const u8 {
+    const raw = value orelse return null;
+    return switch (raw) {
+        .null => null,
+        else => try allocator.dupe(u8, try jsonString(raw)),
+    };
+}
+
+fn optionalJsonU32(value: ?std.json.Value) !?u32 {
+    const raw = value orelse return null;
+    return switch (raw) {
+        .null => null,
+        else => try jsonU32(raw),
+    };
+}
+
+fn parseSha256(raw: []const u8) ![]const u8 {
+    if (raw.len != SHA256_HEX_LEN) return error.InvalidArgument;
+    for (raw) |c| {
+        const is_digit = c >= '0' and c <= '9';
+        const is_lower_hex = c >= 'a' and c <= 'f';
+        if (!is_digit and !is_lower_hex) return error.InvalidArgument;
+    }
+    return raw;
+}
+
+fn parseWeightPeRange(value: std.json.Value) !struct { start: u32, end: u32 } {
+    const array = try jsonArray(value);
+    if (array.items.len != 2) return error.InvalidArgument;
+    const start = try jsonU32(array.items[0]);
+    const end = try jsonU32(array.items[1]);
+    if (end <= start) return error.InvalidArgument;
+    return .{ .start = start, .end = end };
+}
+
+fn parseWeightShape(allocator: std.mem.Allocator, value: std.json.Value) ![]const u64 {
+    const array = try jsonArray(value);
+    if (array.items.len == 0) return error.InvalidArgument;
+    const shape = try allocator.alloc(u64, array.items.len);
+    errdefer allocator.free(shape);
+    for (array.items, 0..) |item, idx| {
+        const dim = try jsonU64(item);
+        if (dim == 0) return error.InvalidArgument;
+        shape[idx] = dim;
+    }
+    return shape;
+}
+
+fn parseWeightQuant(allocator: std.mem.Allocator, value: std.json.Value) !host_runtime.WeightMapping.QuantMetadata {
+    const object = try jsonObject(value);
+    return .{
+        .format = try allocator.dupe(u8, try jsonString(object.get("format") orelse return error.InvalidArgument)),
+        .storage_dtype = try allocator.dupe(u8, try jsonString(object.get("storageDtype") orelse return error.InvalidArgument)),
+        .source_dtype = try optionalJsonStringDup(allocator, object.get("sourceDtype")),
+        .block_size_elements = try optionalJsonU32(object.get("blockSizeElements")),
+        .block_size_bytes = try optionalJsonU32(object.get("blockSizeBytes")),
+        .encoding = try optionalJsonStringDup(allocator, object.get("encoding")),
+    };
+}
+
+fn parseBundleWeightMappings(
+    allocator: std.mem.Allocator,
+    payload: []const u8,
+) ![]const host_runtime.WeightMapping {
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, payload, .{});
+    defer parsed.deinit();
+
+    const root = try jsonObject(parsed.value);
+    const mappings_value = root.get("weightMappings") orelse return &.{};
+    const mappings_array = try jsonArray(mappings_value);
+    if (mappings_array.items.len == 0) return &.{};
+
+    const mappings = try allocator.alloc(host_runtime.WeightMapping, mappings_array.items.len);
+    errdefer allocator.free(mappings);
+
+    for (mappings_array.items, 0..) |mapping_value, idx| {
+        const mapping = try jsonObject(mapping_value);
+        const pe_range = try parseWeightPeRange(mapping.get("peRange") orelse return error.InvalidArgument);
+        const dtype_text = try jsonString(mapping.get("dtype") orelse return error.InvalidArgument);
+        mappings[idx] = .{
+            .shard_name = try allocator.dupe(u8, try jsonString(mapping.get("shard") orelse return error.InvalidArgument)),
+            .shard_path = try allocator.dupe(u8, try jsonString(mapping.get("path") orelse return error.InvalidArgument)),
+            .shard_sha256 = try allocator.dupe(u8, try parseSha256(try jsonString(mapping.get("sha256") orelse return error.InvalidArgument))),
+            .pe_buffer = try allocator.dupe(u8, try jsonString(mapping.get("peBuffer") orelse return error.InvalidArgument)),
+            .pe_start = pe_range.start,
+            .pe_end = pe_range.end,
+            .dtype = parseWeightDtype(dtype_text) orelse return error.InvalidArgument,
+            .tensor_name = try allocator.dupe(u8, try jsonString(mapping.get("tensor") orelse return error.InvalidArgument)),
+            .tensor_offset_bytes = try jsonU64(mapping.get("offsetBytes") orelse return error.InvalidArgument),
+            .tensor_shape = try parseWeightShape(allocator, mapping.get("shape") orelse return error.InvalidArgument),
+            .quant = try parseWeightQuant(allocator, mapping.get("quant") orelse return error.InvalidArgument),
+        };
+    }
+
+    return mappings;
+}
+
 fn buildCompileTargets(
     allocator: std.mem.Allocator,
     plan: host.HostPlan,
@@ -268,7 +410,7 @@ fn emitSimulatorPlanFile(
     try simulator.emitSimulatorPlanArtifactJson(&buf, &pos, runtime, targets, .{
         .host_plan_artifact_path = "host-plan.json",
         .runtime_config_path = "runtime-config.json",
-        .compile_root_path = "compile",
+        .compile_root_path = COMPILE_ROOT_NAME,
         .stdout_path = "stdout.log",
         .stderr_path = "stderr.log",
         .trace_path = "trace.json",
@@ -290,6 +432,33 @@ fn defaultDriverPath(allocator: std.mem.Allocator, bundle_root: []const u8) ![]c
     defer allocator.free(cwd);
     const driver_abs = try std.fs.path.join(allocator, &.{ cwd, "tools", "csl_sdk_driver.py" });
     return driver_abs;
+}
+
+fn materializeCompileSources(
+    allocator: std.mem.Allocator,
+    bundle_root: []const u8,
+    plan: host.HostPlan,
+    targets: []const host_plan.CompileTarget,
+) !void {
+    if (plan.kernels.len != targets.len) return error.InvalidIr;
+
+    var csl_buf: [wgsl.MAX_CSL_OUTPUT]u8 = undefined;
+    for (plan.kernels, targets) |kernel, target| {
+        if (!std.mem.eql(u8, kernel.name, target.kernel_name)) return error.InvalidIr;
+        const sections = try compile_source.emitPatternSections(allocator, kernel.pattern, &csl_buf);
+
+        const layout_path = try std.fs.path.join(
+            allocator,
+            &.{ bundle_root, COMPILE_ROOT_NAME, target.layout_path },
+        );
+        const pe_program_path = try std.fs.path.join(
+            allocator,
+            &.{ bundle_root, COMPILE_ROOT_NAME, target.pe_program_path },
+        );
+
+        try writeFile(layout_path, sections.layout);
+        try writeFile(pe_program_path, sections.pe_program);
+    }
 }
 
 pub fn main() !void {
@@ -334,14 +503,15 @@ pub fn main() !void {
 
     if (args.bundle_root) |bundle_root| {
         const model_config = (try parseBundleModelConfig(allocator, input_bytes)) orelse return error.InvalidArgument;
+        const weight_mappings = try parseBundleWeightMappings(allocator, input_bytes);
         const memory = mem_plan.planMemory(model_config, plan, .{});
         var state_buffer_buf: [MAX_STATE_BUFFERS]host_runtime.StateBuffer = undefined;
         const state_buffers = buildStateBuffers(memory, &state_buffer_buf);
         const runtime = host_runtime.RuntimeConfig{
             .plan = plan,
             .config = model_config,
-            .weight_mappings = &[_]host_runtime.WeightMapping{},
-            .weight_mapping_count = 0,
+            .weight_mappings = weight_mappings,
+            .weight_mapping_count = @as(u32, @intCast(weight_mappings.len)),
             .state_buffers = state_buffers,
             .state_buffer_count = @as(u32, @intCast(state_buffers.len)),
             .memory_plan = memory,
@@ -352,6 +522,7 @@ pub fn main() !void {
         const simulator_plan_path = try std.fs.path.join(allocator, &.{ bundle_root, "simulator-plan.json" });
         const launcher_path = try std.fs.path.join(allocator, &.{ bundle_root, "launch-simulator.sh" });
 
+        try materializeCompileSources(allocator, bundle_root, plan, targets);
         try emitHostPlanFile(host_plan_path, plan, targets, cslc_plan);
         try emitMemoryPlanFile(memory_plan_path, memory);
         try emitRuntimeConfigFile(runtime_config_path, runtime);
@@ -368,4 +539,54 @@ pub fn main() !void {
     }
 
     try emitHostPlanFile(args.output_path.?, plan, targets, cslc_plan);
+}
+
+test "parseBundleWeightMappings preserves artifact-backed RDRR tensor metadata" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const payload =
+        \\{
+        \\  "weightMappings": [
+        \\    {
+        \\      "shard": "shard_00038.bin",
+        \\      "path": "/models/gemma/shard_00038.bin",
+        \\      "sha256": "6a0e8ecfb1190554392143f79434839b629ee9284a3fd643d84cb62522a0cdcd",
+        \\      "peBuffer": "weights_q",
+        \\      "peRange": [0, 16],
+        \\      "dtype": "u8_q4k",
+        \\      "tensor": "layer.0.self_attn.q_proj",
+        \\      "offsetBytes": 2550136832,
+        \\      "shape": [1536, 1536],
+        \\      "quant": {
+        \\        "format": "Q4_K_M",
+        \\        "storageDtype": "uint8",
+        \\        "sourceDtype": "float16",
+        \\        "blockSizeElements": 256,
+        \\        "blockSizeBytes": 144,
+        \\        "encoding": "rdrr_int4ple"
+        \\      }
+        \\    }
+        \\  ]
+        \\}
+    ;
+
+    const mappings = try parseBundleWeightMappings(arena.allocator(), payload);
+    try std.testing.expectEqual(@as(usize, 1), mappings.len);
+    try std.testing.expectEqualStrings("shard_00038.bin", mappings[0].shard_name);
+    try std.testing.expectEqualStrings("/models/gemma/shard_00038.bin", mappings[0].shard_path);
+    try std.testing.expectEqualStrings("layer.0.self_attn.q_proj", mappings[0].tensor_name);
+    try std.testing.expectEqual(@as(u64, 2550136832), mappings[0].tensor_offset_bytes);
+    try std.testing.expectEqual(@as(u64, 1536), mappings[0].tensor_shape[0]);
+    try std.testing.expectEqual(@as(u64, 1536), mappings[0].tensor_shape[1]);
+    try std.testing.expectEqualStrings("Q4_K_M", mappings[0].quant.format);
+    try std.testing.expectEqualStrings("rdrr_int4ple", mappings[0].quant.encoding.?);
+}
+
+test "parseBundleWeightMappings leaves absent mapping input empty" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mappings = try parseBundleWeightMappings(arena.allocator(), "{}");
+    try std.testing.expectEqual(@as(usize, 0), mappings.len);
 }

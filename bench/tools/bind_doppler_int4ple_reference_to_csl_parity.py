@@ -332,6 +332,10 @@ def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str,
         blocker_text = transcript_receipt.get("blocker")
         if isinstance(blocker_text, str) and blocker_text:
             csl_transcript_blocker = blocker_text
+        simulator = transcript_receipt.get("simulatorRun") or {}
+        run_reason = simulator.get("runReason") if isinstance(simulator, dict) else None
+        if csl_transcript_blocker is None and isinstance(run_reason, str):
+            csl_transcript_blocker = run_reason
         csl_transcript = transcript_receipt.get("cslTranscript") or {}
         csl_decode_transcript_bound = (
             transcript_receipt.get("status") == "simulator_success"
@@ -353,7 +357,6 @@ def build_receipt(args: argparse.Namespace, export: dict[str, Any]) -> dict[str,
             and csl_decode_transcript_bound
             and real_kv_cache
         )
-        simulator = transcript_receipt.get("simulatorRun") or {}
         csl_transcript_digest = transcript_digest_from_csl(transcript_receipt)
         csl_run = {
             "tracePath": repo_relative(transcript_path),
