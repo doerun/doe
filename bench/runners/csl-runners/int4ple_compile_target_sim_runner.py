@@ -2,9 +2,10 @@
 """Diagnostic runtime runner for generated INT4 PLE CSL compile targets.
 
 This is not the final bounded transcript runner. It drives one generated
-production compile target through SdkRuntime so timeout/debug evidence moves
-past compile-only mode. The trace intentionally keeps full-model transcript
-depth false until the HostPlan scheduler emits token/logit/KV artifacts.
+production-derived residual target through SdkRuntime so timeout/debug evidence
+moves past compile-only mode. The trace intentionally keeps full-model
+transcript depth false until the HostPlan scheduler emits token/logit/KV
+artifacts.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-export", required=True)
     parser.add_argument("--trace-out", required=True)
     parser.add_argument("--progress-out", required=True)
+    parser.add_argument("--diagnostic-compile-dir", default="")
     parser.add_argument("--cmaddr", default="")
     return parser.parse_args()
 
@@ -101,6 +103,7 @@ def write_array(path: Path, array: np.ndarray) -> dict[str, Any]:
 def run_residual_target(
     *,
     compile_root: Path,
+    diagnostic_compile_dir: Path | None,
     target: dict[str, Any],
     trace_path: Path,
     progress_path: Path,
@@ -119,13 +122,17 @@ def run_residual_target(
     input_host = (np.arange(chunk_size, dtype=np.float32) * 0.25) + 1.0
     expected = input_host.copy()
     actual = np.zeros(chunk_size, dtype=np.float32)
-    compile_dir = compile_root / "compiled" / "residual"
+    compile_dir = diagnostic_compile_dir or (compile_root / "compiled" / "residual")
+    compile_dir_source = "compact_diagnostic" if diagnostic_compile_dir else "production"
+    if not (compile_dir / "out.json").is_file():
+        raise FileNotFoundError(f"missing compiled residual target: {compile_dir}")
 
     append_progress(
         progress_path,
         "runtime_create",
         target="residual",
         compileDir=str(compile_dir),
+        compileDirSource=compile_dir_source,
         cmaddrProvided=cmaddr is not None,
     )
     runner = SdkRuntime(str(compile_dir), cmaddr=cmaddr)
@@ -184,11 +191,13 @@ def run_residual_target(
         "runtime_target_succeeded",
         target="residual",
         maxAbsErr=max_abs_err,
+        compileDirSource=compile_dir_source,
     )
     return {
         "target": "residual",
         "status": "succeeded",
         "compileDir": str(compile_dir),
+        "compileDirSource": compile_dir_source,
         "roi": {"x": 0, "y": 0, "width": 1, "height": 1},
         "chunkSize": chunk_size,
         "maxAbsErr": max_abs_err,
@@ -238,7 +247,7 @@ def diagnostic_trace(
         "modelExecution": {
             "fullModelDepthExecuted": False,
             "blocker": (
-                "Only a production compile-target runtime diagnostic ran. "
+                "Only a production-derived residual runtime diagnostic ran. "
                 "The full HostPlan prefill/decode scheduler has not emitted "
                 "token/logit/KV transcript artifacts."
             ),
@@ -263,8 +272,14 @@ def main() -> int:
         export = load_json(Path(args.reference_export))
         cmaddr = common.endpoint(args.cmaddr)
         residual_target = target_by_name(plan, "residual")
+        diagnostic_compile_dir = (
+            Path(args.diagnostic_compile_dir)
+            if args.diagnostic_compile_dir.strip()
+            else None
+        )
         result = run_residual_target(
             compile_root=Path(args.compile_root),
+            diagnostic_compile_dir=diagnostic_compile_dir,
             target=residual_target,
             trace_path=trace_path,
             progress_path=progress_path,

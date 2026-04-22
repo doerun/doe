@@ -46,6 +46,48 @@
               "command": {
                 "type": "array",
                 "items": { "type": "string" }
+              },
+              "diagnosticCompile": {
+                "type": "object",
+                "required": ["purpose", "sourceTarget", "outputDir", "status"],
+                "properties": {
+                  "purpose": { "const": "compact_residual_runtime_diagnostic" },
+                  "sourceTarget": { "type": "string", "minLength": 1 },
+                  "layoutPath": { "type": "string", "minLength": 1 },
+                  "peProgramPath": { "type": "string", "minLength": 1 },
+                  "outputDir": { "type": "string", "minLength": 1 },
+                  "status": { "enum": ["succeeded", "failed"] },
+                  "exitCode": { "type": "integer" },
+                  "stdoutPath": { "type": "string", "minLength": 1 },
+                  "stderrPath": { "type": "string", "minLength": 1 },
+                  "command": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "peGrid": {
+                    "type": "object",
+                    "required": ["width", "height"],
+                    "properties": {
+                      "width": { "type": "integer", "minimum": 1 },
+                      "height": { "type": "integer", "minimum": 1 }
+                    },
+                    "additionalProperties": false
+                  },
+                  "fabricDims": {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 1 },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "fabricOffsets": {
+                    "type": "array",
+                    "items": { "type": "integer", "minimum": 0 },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "failureCode": { "type": "string" }
+                },
+                "additionalProperties": false
               }
             },
             "additionalProperties": true

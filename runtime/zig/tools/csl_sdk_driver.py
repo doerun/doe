@@ -37,6 +37,13 @@ DEFAULT_CSL_SDK_ROOTS: tuple[Path, ...] = (
     Path("/home/x/cerebras-sdk"),
     Path("/home/x/cerebras-sdk-2.10.0"),
 )
+COMPACT_DIAGNOSTIC_WIDTH = 1
+COMPACT_DIAGNOSTIC_HEIGHT = 1
+MEMCPY_FABRIC_WEST_RESERVED = 4
+MEMCPY_FABRIC_EAST_RESERVED = 3
+MEMCPY_FABRIC_NORTH_RESERVED = 1
+MEMCPY_FABRIC_SOUTH_RESERVED = 1
+RESIDUAL_DIAGNOSTIC_TARGET = "residual"
 
 # Matches `@export_name("<symbol>", <type>[, <bool>]);`.
 # The type pattern uses non-greedy `.+?` anchored on the closing `);` so it
@@ -406,6 +413,82 @@ def check_unblock_cmd_stream(pe_program_path: Path, launch_function: str) -> str
     return "unblock_missing"
 
 
+def compile_compact_residual_diagnostic(
+    *,
+    cslc_executable: str,
+    layout_path: Path,
+    pe_program_path: Path,
+    output_dir: Path,
+    logs_dir: Path,
+    arch: str,
+    channels: int,
+    use_memcpy: bool,
+    width_west_buf: int,
+    width_east_buf: int,
+) -> dict[str, Any]:
+    diagnostic_width = COMPACT_DIAGNOSTIC_WIDTH
+    diagnostic_height = COMPACT_DIAGNOSTIC_HEIGHT
+    fabric_offset_x = width_west_buf + MEMCPY_FABRIC_WEST_RESERVED
+    fabric_offset_y = MEMCPY_FABRIC_NORTH_RESERVED
+    fabric_width = (
+        width_west_buf
+        + MEMCPY_FABRIC_WEST_RESERVED
+        + diagnostic_width
+        + width_east_buf
+        + MEMCPY_FABRIC_EAST_RESERVED
+    )
+    fabric_height = (
+        MEMCPY_FABRIC_NORTH_RESERVED
+        + diagnostic_height
+        + MEMCPY_FABRIC_SOUTH_RESERVED
+    )
+    diagnostic_output_dir = (output_dir / "diagnostic" / "residual-compact").resolve()
+    diagnostic_output_dir.parent.mkdir(parents=True, exist_ok=True)
+    stdout_path = logs_dir / "residual.compact-diagnostic.cslc.stdout.log"
+    stderr_path = logs_dir / "residual.compact-diagnostic.cslc.stderr.log"
+    command = [
+        cslc_executable,
+        str(layout_path),
+        f"--arch={arch}",
+        f"--fabric-dims={fabric_width},{fabric_height}",
+        f"--fabric-offsets={fabric_offset_x},{fabric_offset_y}",
+        f"--channels={channels}",
+        f"--params=width:{diagnostic_width},height:{diagnostic_height}",
+        "-o",
+        str(diagnostic_output_dir),
+    ]
+    if width_west_buf > 0:
+        command.append(f"--width-west-buf={width_west_buf}")
+    if width_east_buf > 0:
+        command.append(f"--width-east-buf={width_east_buf}")
+    if use_memcpy:
+        command.append("--memcpy")
+
+    return_code, stdout_written, stderr_written, _timed_out = run_command(
+        command,
+        stdout_path,
+        stderr_path,
+    )
+    result: dict[str, Any] = {
+        "purpose": "compact_residual_runtime_diagnostic",
+        "sourceTarget": RESIDUAL_DIAGNOSTIC_TARGET,
+        "layoutPath": str(layout_path),
+        "peProgramPath": str(pe_program_path),
+        "outputDir": str(diagnostic_output_dir),
+        "status": "succeeded" if return_code == 0 else "failed",
+        "exitCode": return_code,
+        "stdoutPath": stdout_written,
+        "stderrPath": stderr_written,
+        "command": command,
+        "peGrid": {"width": diagnostic_width, "height": diagnostic_height},
+        "fabricDims": [fabric_width, fabric_height],
+        "fabricOffsets": [fabric_offset_x, fabric_offset_y],
+    }
+    if return_code != 0:
+        result["failureCode"] = classify_cslc_failure(stderr_written)
+    return result
+
+
 def materialize_command(template: list[str], substitutions: dict[str, str]) -> list[str]:
     command: list[str] = []
     for item in template:
@@ -606,6 +689,19 @@ def compile_targets(
         }
         if target_failure_code is not None:
             target_entry["failureCode"] = target_failure_code
+        if name == RESIDUAL_DIAGNOSTIC_TARGET and return_code == 0:
+            target_entry["diagnosticCompile"] = compile_compact_residual_diagnostic(
+                cslc_executable=cslc_executable,
+                layout_path=layout_path,
+                pe_program_path=pe_program_path,
+                output_dir=outputs_dir,
+                logs_dir=logs_dir,
+                arch=arch,
+                channels=channels,
+                use_memcpy=use_memcpy,
+                width_west_buf=width_west_buf,
+                width_east_buf=width_east_buf,
+            )
         target_results.append(target_entry)
 
     summary: dict[str, Any] = {
@@ -698,15 +794,32 @@ def run_simulation(
         raw_command = [explicit_sim_runner, *[str(item) for item in raw_command]]
 
     first_output_dir = ""
+    residual_diagnostic_output_dir = ""
     for target in compile_targets_payload:
         if target.get("status") == "succeeded":
             first_output_dir = str(target.get("outputDir", ""))
             break
+    for target in compile_targets_payload:
+        if target.get("name") != RESIDUAL_DIAGNOSTIC_TARGET:
+            continue
+        diagnostic_compile = target.get("diagnosticCompile")
+        if not isinstance(diagnostic_compile, dict):
+            continue
+        if diagnostic_compile.get("status") != "succeeded":
+            continue
+        residual_diagnostic_output_dir = str(diagnostic_compile.get("outputDir", ""))
+        break
+    residual_diagnostic_compile_dir_arg = (
+        f"--diagnostic-compile-dir={residual_diagnostic_output_dir}"
+        if residual_diagnostic_output_dir
+        else ""
+    )
     substitutions = {
         "plan_path": str(plan_path.resolve()),
         "plan_dir": str(plan_dir.resolve()),
         "compile_root": str(working_paths["compileRoot"].resolve()),
         "compile_output_dir": first_output_dir,
+        "residual_diagnostic_compile_dir_arg": residual_diagnostic_compile_dir_arg,
         "trace_path": str(trace_path.resolve()),
         "stdout_path": str(stdout_path.resolve()),
         "stderr_path": str(stderr_path.resolve()),

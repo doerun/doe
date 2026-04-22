@@ -1071,6 +1071,7 @@ def enable_compile_target_runtime_command(
         f"--reference-export={rel(reference_export_path)}",
         "--trace-out={trace_path}",
         "--progress-out={progress_path}",
+        "{residual_diagnostic_compile_dir_arg}",
         "{cmaddr_arg}",
     ]
     write_json(runtime_config_path, runtime_config)
