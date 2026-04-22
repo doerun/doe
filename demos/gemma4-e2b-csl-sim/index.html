@@ -15,8 +15,8 @@
     </nav>
     <header class="top">
       <div>
-        <p class="eyebrow">Gemma 4 E2B layer-block proof</p>
-        <h1>Gemma 4 E2B evidence cockpit for Doe, CSL, and WebGPU</h1>
+        <p class="eyebrow">Doppler -> Doe -> Cerebras proof path</p>
+        <h1>Show the same program moving from WebGPU to CSL</h1>
       </div>
       <div class="hashes" id="source-hashes">
         <span>manifest: loading</span>
@@ -24,51 +24,82 @@
       </div>
     </header>
 
+    <section class="proof-flow" aria-label="Proof path">
+      <article class="proof-step" id="proof-step-doppler">
+        <span class="proof-index">1</span>
+        <span class="label">Doppler reference</span>
+        <strong id="proof-doppler-status">checking</strong>
+        <span id="proof-doppler-detail">reference transcript</span>
+      </article>
+      <article class="proof-step" id="proof-step-doe">
+        <span class="proof-index">2</span>
+        <span class="label">Doe compile</span>
+        <strong id="proof-doe-status">checking</strong>
+        <span id="proof-doe-detail">HostPlan and CSL</span>
+      </article>
+      <article class="proof-step" id="proof-step-simfabric">
+        <span class="proof-index">3</span>
+        <span class="label">Simfabric parity</span>
+        <strong id="proof-simfabric-status">checking</strong>
+        <span id="proof-simfabric-detail">tokens, logits, KV</span>
+      </article>
+      <article class="proof-step" id="proof-step-hardware">
+        <span class="proof-index">4</span>
+        <span class="label">Cerebras hardware</span>
+        <strong id="proof-hardware-status">waiting</strong>
+        <span id="proof-hardware-detail">after simfabric</span>
+      </article>
+    </section>
+
     <section class="controls" aria-label="Run controls">
-      <label for="num-layers-select" style="display:inline-flex;gap:0.4rem;align-items:center;">
-        <span class="label">chain depth</span>
-        <select id="num-layers-select">
-          <option value="1" selected>L=1 synthetic + real-weight smoke · claimable</option>
-          <option value="2">L=2 diagnostic · blocked</option>
-          <option value="4">L=4 diagnostic · blocked</option>
-          <option value="8">L=8 diagnostic · blocked</option>
-          <option value="35">L=35 diagnostic · not full E2B</option>
-        </select>
-      </label>
-      <button id="run-webgpu" type="button">Run WebGPU</button>
-      <button id="run-csl" type="button">Load / Run CSL Simulator</button>
-      <button id="run-emulator" type="button">Run CSL WebGPU Emulator</button>
-      <button id="load-stored-csl" type="button">Load Stored CSL</button>
+      <button id="run-all" class="primary-action" type="button">Run visible proof</button>
+      <details class="lane-controls">
+        <summary>Lane controls</summary>
+        <label for="num-layers-select" class="inline-control">
+          <span class="label">chain depth</span>
+          <select id="num-layers-select">
+            <option value="1" selected>L=1 synthetic + real-weight smoke · claimable</option>
+            <option value="2">L=2 diagnostic · blocked</option>
+            <option value="4">L=4 diagnostic · blocked</option>
+            <option value="8">L=8 diagnostic · blocked</option>
+            <option value="35">L=35 diagnostic · not full E2B</option>
+          </select>
+        </label>
+        <button id="run-webgpu" type="button">Run WebGPU</button>
+        <button id="run-csl" type="button">Load / Run CSL Simulator</button>
+        <button id="run-emulator" type="button">Run CSL WebGPU Emulator</button>
+        <button id="load-stored-csl" type="button">Load Stored CSL</button>
+      </details>
       <span id="server-status" class="status-pill pending">server: checking</span>
     </section>
 
     <section class="truth-strip" aria-label="Current evidence boundary">
-      <strong id="truth-headline">Current claim: L1 synthetic + real-weight smoke layer-block</strong>
-      <span id="truth-detail">Full E2B runtime execution and Cerebras hardware remain blocked until matching receipts exist.</span>
+      <strong id="truth-headline">Current visible run: L1 layer-block parity</strong>
+      <span id="truth-detail">The full INT4 PLE prefill+decode proof is tracked in the cards above.</span>
     </section>
 
-    <section class="proof-scope" aria-label="Proof scope">
-      <div>
-        <span class="label">what this proves</span>
-        <strong>L1 parity plus manifest-shape oracle</strong>
-        <p>
-          Browser WebGPU, Doe CSL simfabric, and the CSL semantic WebGPU
-          emulator share receipt-backed identity and parity. The L1 smoke path
-          also carries BF16-derived Gemma weight evidence, and the CPU oracle
-          executes the upstream 35-layer manifest shape.
-        </p>
-      </div>
-      <div>
-        <span class="label">what this does not prove</span>
-        <strong>No full runtime or hardware claim yet</strong>
-        <p>
-          The emulator is a semantic/debug lane, not CSL running on WebGPU.
-          L35 chain artifacts and the manifest-shape oracle are diagnostic
-          until Doe CSL runtime and Cerebras WSE/WSC receipts execute the full
-          graph.
-        </p>
-      </div>
-    </section>
+    <details class="proof-notes">
+      <summary>Claim boundary</summary>
+      <section class="proof-scope" aria-label="Proof scope">
+        <div>
+          <span class="label">what the visible lanes prove</span>
+          <strong>L1 parity plus manifest-shape oracle</strong>
+          <p>
+            Browser WebGPU, Doe CSL simfabric, and the CSL semantic WebGPU
+            emulator share receipt-backed identity and parity for the current
+            layer-block path.
+          </p>
+        </div>
+        <div>
+          <span class="label">what remains blocked</span>
+          <strong>Full prefill+decode and hardware</strong>
+          <p>
+            The production INT4 PLE path still needs a successful simfabric
+            transcript before any Cerebras hardware or tok/s claim is ready.
+          </p>
+        </div>
+      </section>
+    </details>
 
     <section class="scope-strip" aria-label="Run scope">
       <div>
@@ -142,68 +173,71 @@
         <span class="badge" id="badge-hardware">hardware: pending</span>
         <span class="badge" id="badge-bundle">bundle: -</span>
       </div>
-      <table class="cockpit-table evidence-receipt-table" aria-label="Receipt-backed evidence matrix">
-        <thead>
-          <tr>
-            <th>evidence row</th>
-            <th>status</th>
-            <th>receipt</th>
-            <th>blockers</th>
-          </tr>
-        </thead>
-        <tbody id="evidence-receipts-body">
-          <tr><td colspan="4" class="cockpit-empty">loading receipts...</td></tr>
-        </tbody>
-      </table>
-      <div class="evidence-ladder" id="evidence-ladder" aria-label="Evidence ladder">
-        <div class="ladder-row">
-          <span>loading evidence ladder...</span>
+      <details class="receipt-drawer">
+        <summary>Receipt tables and diagnostics</summary>
+        <table class="cockpit-table evidence-receipt-table" aria-label="Receipt-backed evidence matrix">
+          <thead>
+            <tr>
+              <th>evidence row</th>
+              <th>status</th>
+              <th>receipt</th>
+              <th>blockers</th>
+            </tr>
+          </thead>
+          <tbody id="evidence-receipts-body">
+            <tr><td colspan="4" class="cockpit-empty">loading receipts...</td></tr>
+          </tbody>
+        </table>
+        <div class="evidence-ladder" id="evidence-ladder" aria-label="Evidence ladder">
+          <div class="ladder-row">
+            <span>loading evidence ladder...</span>
+          </div>
         </div>
-      </div>
-      <table class="cockpit-table lane-label-table" aria-label="Model-lane labels">
-        <thead>
-          <tr>
-            <th>model</th>
-            <th>lane label</th>
-            <th>laneStatus</th>
-          </tr>
-        </thead>
-        <tbody id="lane-label-body">
-          <tr><td colspan="3" class="cockpit-empty">loading lane labels…</td></tr>
-        </tbody>
-      </table>
-      <table class="cockpit-table">
-        <thead>
-          <tr>
-            <th>target</th>
-            <th>status</th>
-            <th>backendId</th>
-            <th>outputSha256</th>
-            <th>elapsed</th>
-          </tr>
-        </thead>
-        <tbody id="cockpit-body">
-          <tr><td colspan="5" class="cockpit-empty">rollup not loaded</td></tr>
-        </tbody>
-      </table>
-      <div class="cockpit-head">
-        <h3 style="margin:0;font-size:0.9rem;">Runtime-lane output parity (tolerance-aware)</h3>
-        <span id="parity-rollup">rollup: -</span>
-      </div>
-      <table class="cockpit-table" aria-label="Runtime-lane parity matrix with tolerance">
-        <thead>
-          <tr>
-            <th>pair</th>
-            <th>digest</th>
-            <th>tolerance</th>
-            <th>maxAbsDiff</th>
-            <th>atol</th>
-          </tr>
-        </thead>
-        <tbody id="parity-matrix-body">
-          <tr><td colspan="5" class="cockpit-empty">parity matrix not loaded</td></tr>
-        </tbody>
-      </table>
+        <table class="cockpit-table lane-label-table" aria-label="Model-lane labels">
+          <thead>
+            <tr>
+              <th>model</th>
+              <th>lane label</th>
+              <th>laneStatus</th>
+            </tr>
+          </thead>
+          <tbody id="lane-label-body">
+            <tr><td colspan="3" class="cockpit-empty">loading lane labels…</td></tr>
+          </tbody>
+        </table>
+        <table class="cockpit-table">
+          <thead>
+            <tr>
+              <th>target</th>
+              <th>status</th>
+              <th>backendId</th>
+              <th>outputSha256</th>
+              <th>elapsed</th>
+            </tr>
+          </thead>
+          <tbody id="cockpit-body">
+            <tr><td colspan="5" class="cockpit-empty">rollup not loaded</td></tr>
+          </tbody>
+        </table>
+        <div class="cockpit-head">
+          <h3 style="margin:0;font-size:0.9rem;">Runtime-lane output parity</h3>
+          <span id="parity-rollup">rollup: -</span>
+        </div>
+        <table class="cockpit-table" aria-label="Runtime-lane parity matrix with tolerance">
+          <thead>
+            <tr>
+              <th>pair</th>
+              <th>digest</th>
+              <th>tolerance</th>
+              <th>maxAbsDiff</th>
+              <th>atol</th>
+            </tr>
+          </thead>
+          <tbody id="parity-matrix-body">
+            <tr><td colspan="5" class="cockpit-empty">parity matrix not loaded</td></tr>
+          </tbody>
+        </table>
+      </details>
     </section>
 
     <section class="lan-note" id="secure-context-note" hidden>

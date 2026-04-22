@@ -18,6 +18,8 @@ const paths = {
   manifestShapeExecution: "bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json",
   int4PleReferenceExport:
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+  int4PleTranscript:
+    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
   int4PleParityPending:
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
   vendorBenchmarkDigest: "config/generated/doppler-vs-tjs-20260421-digest.json",
@@ -232,6 +234,92 @@ async function checkServer() {
     }
   } catch {
     setPill("server-status", "server: static only", "warn");
+  }
+}
+
+function shortHash(value) {
+  return typeof value === "string" && value.length > 12
+    ? `${value.slice(0, 12)}...`
+    : value || "-";
+}
+
+function setProofStep(key, state, status, detail) {
+  const step = el(`proof-step-${key}`);
+  const statusEl = el(`proof-${key}-status`);
+  const detailEl = el(`proof-${key}-detail`);
+  if (step) step.dataset.state = state;
+  if (statusEl) statusEl.textContent = status;
+  if (detailEl) detailEl.textContent = detail;
+}
+
+async function refreshProofFlow() {
+  try {
+    const ref = await fetchJson(paths.int4PleReferenceExport);
+    const transcript = ref.decodeTranscript || {};
+    const tensor = ref.tensorDigest || {};
+    const ready = (
+      ref.exportStatus === "output_ready"
+      && transcript.status === "output_ready"
+      && tensor.status === "output_ready"
+    );
+    const steps = transcript.actualDecodeSteps ?? transcript.decodeStepsProduced ?? 0;
+    setProofStep(
+      "doppler",
+      ready ? "pass" : "warn",
+      ready ? "reference ready" : ref.exportStatus || "blocked",
+      `${steps} token steps · logits ${shortHash(tensor.sha256)}`,
+    );
+  } catch (err) {
+    setProofStep("doppler", "fail", "missing", err.message || "reference missing");
+  }
+
+  let transcript = null;
+  try {
+    transcript = await fetchJson(paths.int4PleTranscript);
+    const hostplan = transcript.hostPlanBundle || {};
+    const run = transcript.simulatorRun || {};
+    const compileReady = (
+      transcript.loweringPlan?.status === "ready_for_simfabric"
+      && hostplan.status === "hostplan_ready"
+      && run.compileStatus === "succeeded"
+    );
+    setProofStep(
+      "doe",
+      compileReady ? "pass" : "warn",
+      compileReady ? "CSL compiled" : hostplan.status || "blocked",
+      `${hostplan.prefillLaunchCount || 0} prefill · ` +
+        `${hostplan.decodeLaunchCount || 0} decode · ` +
+        `${hostplan.kernelCount || 0} kernels`,
+    );
+  } catch (err) {
+    setProofStep("doe", "fail", "missing", err.message || "transcript missing");
+  }
+
+  if (transcript) {
+    const csl = transcript.cslTranscript || {};
+    const kv = transcript.kvCacheEvidence || {};
+    const simPass = (
+      transcript.status === "simulator_success"
+      && csl.status === "output_ready"
+      && kv.realKvCache === true
+    );
+    setProofStep(
+      "simfabric",
+      simPass ? "pass" : "fail",
+      simPass ? "parity ready" : transcript.status || "blocked",
+      simPass
+        ? `${csl.actualDecodeSteps || 0} token steps · KV real`
+        : transcript.blocker || "CSL transcript not produced",
+    );
+    setProofStep(
+      "hardware",
+      simPass ? "pending" : "pending",
+      simPass ? "ready to ask" : "waiting",
+      simPass ? "needs endpoint or assisted run" : "blocked by simfabric",
+    );
+  } else {
+    setProofStep("simfabric", "pending", "waiting", "Doe transcript missing");
+    setProofStep("hardware", "pending", "waiting", "blocked by simfabric");
   }
 }
 
@@ -895,6 +983,24 @@ async function onRunLiveCsl() {
   }
 }
 
+async function onRunAllVisible() {
+  const button = el("run-all");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Running...";
+  }
+  try {
+    await onRunWebGpu();
+    await onRunLiveCsl();
+    await onRunEmulator();
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Run visible proof";
+    }
+  }
+}
+
 function updateCslCommand() {
   const node = el("csl-command");
   const n = selectedNumLayers();
@@ -954,6 +1060,7 @@ function onDepthChange() {
 
 function init() {
   setInitialDepth();
+  el("run-all")?.addEventListener("click", onRunAllVisible);
   el("run-webgpu").addEventListener("click", onRunWebGpu);
   el("run-csl").addEventListener("click", onRunLiveCsl);
   el("run-emulator").addEventListener("click", onRunEmulator);
@@ -965,6 +1072,7 @@ function init() {
   }
   loadSourceHashes().catch(() => {});
   checkServer();
+  refreshProofFlow();
   drawPlot();
   refreshEvidenceStrip();
   refreshCockpit();
