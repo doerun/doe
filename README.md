@@ -63,6 +63,7 @@ Outputs:
 - Runtime contributors: [`runtime/zig/README.md`](runtime/zig/README.md)
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
+- Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
 - Project rationale and boundaries: [`docs/thesis.md`](docs/thesis.md),
   [`docs/architecture.md`](docs/architecture.md),
   [`docs/process.md`](docs/process.md)
