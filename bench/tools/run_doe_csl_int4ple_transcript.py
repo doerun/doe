@@ -1162,11 +1162,16 @@ def production_ops_from_driver_result(
         driver_target = targets_by_name.get(name or "", {})
         if not isinstance(name, str):
             blockers.append("simulator plan compile target missing name")
-        elif driver_target.get("status") != "succeeded":
-            blockers.append(f"compile target {name} status={driver_target.get('status')!r}")
         else:
             ready, reason = target_input_ready(compile_root, target, driver_target)
-            production_ops.add(name) if ready else blockers.append(reason)
+            if ready:
+                production_ops.add(name)
+            else:
+                blockers.append(reason)
+            if driver_target.get("status") != "succeeded":
+                blockers.append(
+                    f"compile target {name} status={driver_target.get('status')!r}"
+                )
     return frozenset(production_ops), blockers
 
 
@@ -1500,7 +1505,9 @@ def build_lowering_plan(
             stage["kernelFile"] = metadata["kernel"]
         if isinstance(metadata.get("entry"), str):
             stage["entry"] = metadata["entry"]
-        if hostplan_op is not None and hostplan_op in production_ops:
+        if kernel_id in production_ops or (
+            hostplan_op is not None and hostplan_op in production_ops
+        ):
             stage["status"] = "production_csl_kernel_available"
             stage["source"] = "simulator_driver_compile_target"
         elif fixture_id and fixture_id in fixture_ids:
