@@ -104,8 +104,78 @@
             "minItems": 2,
             "maxItems": 2
           },
-          "dtype": { "type": "string", "enum": ["f16", "u8_q4k", "u8_q8"] }
+          "dtype": { "type": "string", "enum": ["f16", "u8_q4k", "u8_q8"] },
+          "weightKey": { "type": "string", "minLength": 1 },
+          "tensorName": { "type": "string", "minLength": 1 },
+          "role": { "type": "string", "minLength": 1 },
+          "layout": { "type": "string", "minLength": 1 },
+          "shape": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 }
+          },
+          "byteSize": { "type": "integer", "minimum": 0 },
+          "byteOffset": { "type": "integer", "minimum": 0 },
+          "spans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "shardIndex",
+                "shardPath",
+                "shardSha256",
+                "offset",
+                "size"
+              ],
+              "properties": {
+                "shardIndex": { "type": "integer", "minimum": 0 },
+                "shardPath": { "type": "string", "minLength": 1 },
+                "shardSha256": { "type": "string", "minLength": 1 },
+                "offset": { "type": "integer", "minimum": 0 },
+                "size": { "type": "integer", "minimum": 0 }
+              }
+            }
+          },
+          "sourceTransform": {
+            "type": "object",
+            "additionalProperties": true
+          }
         }
+      }
+    },
+    "weightIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelId",
+        "manifestPath",
+        "manifestSha256",
+        "weightSetId",
+        "weightSetSha256",
+        "declaredShardCount",
+        "requiredWeightCount",
+        "mappedWeightCount",
+        "missingWeightCount",
+        "missingWeightKeys",
+        "requiredWeightKeysSha256",
+        "mappedWeightKeysSha256"
+      ],
+      "properties": {
+        "modelId": { "type": "string", "minLength": 1 },
+        "manifestPath": { "type": "string", "minLength": 1 },
+        "manifestSha256": { "type": "string", "minLength": 1 },
+        "weightSetId": { "type": "string", "minLength": 1 },
+        "weightSetSha256": { "type": "string", "minLength": 1 },
+        "declaredShardCount": { "type": "integer", "minimum": 0 },
+        "requiredWeightCount": { "type": "integer", "minimum": 0 },
+        "mappedWeightCount": { "type": "integer", "minimum": 0 },
+        "missingWeightCount": { "type": "integer", "minimum": 0 },
+        "missingWeightKeys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredWeightKeysSha256": { "type": "string", "minLength": 1 },
+        "mappedWeightKeysSha256": { "type": "string", "minLength": 1 }
       }
     },
     "memoryPlan": {

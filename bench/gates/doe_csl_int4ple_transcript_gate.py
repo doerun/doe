@@ -135,7 +135,13 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
             "hostPlanBundle.status="
             f"{hostplan.get('status')!r}, expected hostplan_ready"
         )
-    for label in ("normalizedExecution", "hostPlan", "runtimeConfig", "memoryPlan", "simulatorPlan"):
+    for label in (
+        "normalizedExecution",
+        "hostPlan",
+        "runtimeConfig",
+        "memoryPlan",
+        "simulatorPlan",
+    ):
         linked = hostplan.get(label) or {}
         check_path_hash(
             f"hostPlanBundle.{label}",
@@ -143,6 +149,55 @@ def check_success_fields(receipt: dict[str, Any], failures: list[str]) -> None:
             linked.get("sha256", ""),
             failures,
             required=True,
+        )
+    coverage = hostplan.get("compileInputCoverage") or {}
+    if int(coverage.get("missingTargetCount") or 0) != 0:
+        failures.append(
+            "hostPlanBundle.compileInputCoverage.missingTargetCount must be zero"
+        )
+    weight_coverage = hostplan.get("weightMappingCoverage") or {}
+    if weight_coverage.get("status") != "complete":
+        failures.append(
+            "hostPlanBundle.weightMappingCoverage.status must be complete"
+        )
+    if int(weight_coverage.get("mappedWeightCount") or 0) <= 0:
+        failures.append(
+            "hostPlanBundle.weightMappingCoverage.mappedWeightCount must be positive"
+        )
+    if int(weight_coverage.get("missingWeightCount") or 0) != 0:
+        failures.append(
+            "hostPlanBundle.weightMappingCoverage.missingWeightCount must be zero"
+        )
+    source_program = receipt.get("sourceProgram") or {}
+    if (
+        weight_coverage.get("manifestSha256")
+        != source_program.get("manifestSha256")
+    ):
+        failures.append(
+            "hostPlanBundle.weightMappingCoverage.manifestSha256 must match sourceProgram"
+        )
+    if (
+        weight_coverage.get("weightSetSha256")
+        != source_program.get("weightSha256")
+    ):
+        failures.append(
+            "hostPlanBundle.weightMappingCoverage.weightSetSha256 must match sourceProgram"
+        )
+    driver_result = hostplan.get("simulatorDriverResult") or {}
+    check_path_hash(
+        "hostPlanBundle.simulatorDriverResult",
+        driver_result.get("path", ""),
+        driver_result.get("sha256", ""),
+        failures,
+        required=True,
+    )
+    if driver_result.get("compileStatus") != "succeeded":
+        failures.append(
+            "hostPlanBundle.simulatorDriverResult.compileStatus must be succeeded"
+        )
+    if driver_result.get("runStatus") != "succeeded":
+        failures.append(
+            "hostPlanBundle.simulatorDriverResult.runStatus must be succeeded"
         )
 
     if receipt.get("status") != "simulator_success":

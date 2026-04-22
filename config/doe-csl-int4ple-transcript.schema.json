@@ -220,6 +220,9 @@
         "runtimeConfig",
         "memoryPlan",
         "simulatorPlan",
+        "compileInputCoverage",
+        "weightMappingCoverage",
+        "simulatorDriverResult",
         "prefillLaunchCount",
         "decodeLaunchCount",
         "kernelCount"
@@ -240,10 +243,122 @@
         "runtimeConfig": { "$ref": "#/$defs/hashLinkedPath" },
         "memoryPlan": { "$ref": "#/$defs/hashLinkedPath" },
         "simulatorPlan": { "$ref": "#/$defs/hashLinkedPath" },
+        "compileInputCoverage": { "$ref": "#/$defs/compileInputCoverage" },
+        "weightMappingCoverage": { "$ref": "#/$defs/weightMappingCoverage" },
+        "simulatorDriverResult": { "$ref": "#/$defs/simulatorDriverResult" },
         "prefillLaunchCount": { "type": "integer", "minimum": 0 },
         "decodeLaunchCount": { "type": "integer", "minimum": 0 },
         "kernelCount": { "type": "integer", "minimum": 0 },
         "blocker": { "type": "string" }
+      }
+    },
+    "compileInputCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compileRoot",
+        "totalTargetCount",
+        "presentTargetCount",
+        "missingTargetCount",
+        "targets"
+      ],
+      "properties": {
+        "compileRoot": { "type": "string" },
+        "totalTargetCount": { "type": "integer", "minimum": 0 },
+        "presentTargetCount": { "type": "integer", "minimum": 0 },
+        "missingTargetCount": { "type": "integer", "minimum": 0 },
+        "targets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compileInputTarget" }
+        }
+      }
+    },
+    "compileInputTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "layoutPath",
+        "peProgramPath",
+        "layoutPresent",
+        "peProgramPresent",
+        "ready"
+      ],
+      "properties": {
+        "name": { "type": "string" },
+        "layoutPath": { "type": "string" },
+        "peProgramPath": { "type": "string" },
+        "layoutPresent": { "type": "boolean" },
+        "peProgramPresent": { "type": "boolean" },
+        "ready": { "type": "boolean" }
+      }
+    },
+    "weightMappingCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "manifestPath",
+        "manifestSha256",
+        "weightSetId",
+        "weightSetSha256",
+        "requiredWeightCount",
+        "mappedWeightCount",
+        "missingWeightCount",
+        "missingWeightKeys",
+        "requiredWeightKeysSha256",
+        "mappedWeightKeysSha256",
+        "runtimeConfigPath",
+        "runtimeConfigSha256"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_attempted"]
+        },
+        "manifestPath": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "weightSetId": { "type": "string" },
+        "weightSetSha256": { "type": "string" },
+        "requiredWeightCount": { "type": "integer", "minimum": 0 },
+        "mappedWeightCount": { "type": "integer", "minimum": 0 },
+        "missingWeightCount": { "type": "integer", "minimum": 0 },
+        "missingWeightKeys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredWeightKeysSha256": { "type": "string" },
+        "mappedWeightKeysSha256": { "type": "string" },
+        "runtimeConfigPath": { "type": "string" },
+        "runtimeConfigSha256": { "type": "string" }
+      }
+    },
+    "simulatorDriverResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "status",
+        "exitCode",
+        "compileStatus",
+        "compileReason",
+        "runStatus",
+        "runReason"
+      ],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["succeeded", "blocked", "failed"]
+        },
+        "exitCode": { "type": "integer" },
+        "compileStatus": { "type": "string" },
+        "compileReason": { "type": "string" },
+        "runStatus": { "type": "string" },
+        "runReason": { "type": "string" }
       }
     },
     "transcriptDigest": {

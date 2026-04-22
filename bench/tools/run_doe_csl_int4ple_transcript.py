@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +60,21 @@ DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
     "sample": "sample",
     "tiled": "matmul",
 }
+
+
+def tensor_name_for_weight_key(weight_key: str) -> str:
+    if weight_key == "embed_tokens":
+        return "model.language_model.embed_tokens_per_layer.weight"
+    if weight_key == "lm_head":
+        return "model.language_model.embed_tokens.weight"
+    if weight_key.startswith("layer."):
+        parts = weight_key.split(".")
+        if len(parts) >= 4 and parts[2] == "self_attn":
+            return (
+                "model.language_model.layers."
+                f"{parts[1]}.self_attn.{parts[3]}.weight"
+            )
+    raise ValueError(f"unsupported HostPlan weight key: {weight_key}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -475,10 +491,319 @@ def hostplan_bundle_blocked(source_graph_sha256: str, message: str) -> dict[str,
             "sha256": "pending",
             "source": "hostplan_lowering_failed",
         },
+        "compileInputCoverage": {
+            "compileRoot": "pending",
+            "totalTargetCount": 0,
+            "presentTargetCount": 0,
+            "missingTargetCount": 0,
+            "targets": [],
+        },
+        "weightMappingCoverage": {
+            "status": "not_attempted",
+            "manifestPath": "pending",
+            "manifestSha256": "pending",
+            "weightSetId": "pending",
+            "weightSetSha256": "pending",
+            "requiredWeightCount": 0,
+            "mappedWeightCount": 0,
+            "missingWeightCount": 0,
+            "missingWeightKeys": [],
+            "requiredWeightKeysSha256": "pending",
+            "mappedWeightKeysSha256": "pending",
+            "runtimeConfigPath": "pending",
+            "runtimeConfigSha256": "pending",
+        },
+        "simulatorDriverResult": {
+            "path": "pending",
+            "sha256": "pending",
+            "source": "not_attempted",
+            "status": "blocked",
+            "exitCode": 0,
+            "compileStatus": "not_attempted",
+            "compileReason": "hostplan_lowering_failed",
+            "runStatus": "blocked",
+            "runReason": "hostplan_lowering_failed",
+        },
         "prefillLaunchCount": 0,
         "decodeLaunchCount": 0,
         "kernelCount": 0,
         "blocker": message,
+    }
+
+
+def compile_input_coverage(
+    bundle_root: Path,
+    simulator_plan: dict[str, Any],
+) -> dict[str, Any]:
+    inputs = simulator_plan.get("inputs") or {}
+    compile_root = bundle_root / str(inputs.get("compileRootPath", "compile"))
+    targets = []
+    present = 0
+    for target in inputs.get("compileTargets") or []:
+        name = str(target["name"])
+        layout_path = compile_root / str(target["layout"])
+        pe_program_path = compile_root / str(target["peProgram"])
+        layout_present = layout_path.is_file()
+        pe_program_present = pe_program_path.is_file()
+        ready = layout_present and pe_program_present
+        if ready:
+            present += 1
+        targets.append(
+            {
+                "name": name,
+                "layoutPath": rel(layout_path),
+                "peProgramPath": rel(pe_program_path),
+                "layoutPresent": layout_present,
+                "peProgramPresent": pe_program_present,
+                "ready": ready,
+            }
+        )
+    total = len(targets)
+    return {
+        "compileRoot": rel(compile_root),
+        "totalTargetCount": total,
+        "presentTargetCount": present,
+        "missingTargetCount": total - present,
+        "targets": targets,
+    }
+
+
+def runtime_dtype(manifest_dtype: str) -> str:
+    if manifest_dtype == "F16":
+        return "f16"
+    if manifest_dtype == "Q4_K_M":
+        return "u8_q4k"
+    if manifest_dtype == "Q8_0":
+        return "u8_q8"
+    raise ValueError(f"unsupported runtime weight dtype: {manifest_dtype}")
+
+
+def shard_identities_by_index(
+    export: dict[str, Any],
+) -> dict[int, dict[str, Any]]:
+    identities: dict[int, dict[str, Any]] = {}
+    for shard in export.get("shardIdentities") or []:
+        if not isinstance(shard, dict):
+            continue
+        identities[int(shard["index"])] = shard
+    return identities
+
+
+def manifest_tensor_spans(
+    tensor: dict[str, Any],
+    shard_identities: dict[int, dict[str, Any]],
+    manifest_root: Path,
+) -> list[dict[str, Any]]:
+    raw_spans = tensor.get("spans")
+    if not isinstance(raw_spans, list):
+        raw_spans = [
+            {
+                "shardIndex": int(tensor["shard"]),
+                "offset": int(tensor["offset"]),
+                "size": int(tensor["size"]),
+            }
+        ]
+    spans: list[dict[str, Any]] = []
+    for raw_span in raw_spans:
+        shard_index = int(raw_span["shardIndex"])
+        identity = shard_identities.get(shard_index, {})
+        filename = str(identity.get("filename", f"shard_{shard_index:05d}.bin"))
+        spans.append(
+            {
+                "shardIndex": shard_index,
+                "shardPath": rel(manifest_root / filename),
+                "shardSha256": str(
+                    identity.get("sha256")
+                    or identity.get("hash")
+                    or "missing"
+                ),
+                "offset": int(raw_span["offset"]),
+                "size": int(raw_span["size"]),
+            }
+        )
+    return spans
+
+
+def runtime_weight_mapping(
+    *,
+    weight_key: str,
+    tensor_name: str,
+    tensor: dict[str, Any],
+    spans: list[dict[str, Any]],
+    pe_count: int,
+) -> dict[str, Any]:
+    if not spans:
+        raise ValueError(f"tensor has no shard span: {tensor_name}")
+    mapping: dict[str, Any] = {
+        "shard": spans[0]["shardPath"],
+        "peBuffer": weight_key,
+        "peRange": [0, max(0, pe_count - 1)],
+        "dtype": runtime_dtype(str(tensor["dtype"])),
+        "weightKey": weight_key,
+        "tensorName": tensor_name,
+        "role": str(tensor.get("role", "unknown")),
+        "layout": str(tensor.get("layout", "unknown")),
+        "shape": [int(value) for value in tensor.get("shape", [])],
+        "byteSize": int(tensor["size"]),
+        "byteOffset": int(spans[0]["offset"]),
+        "spans": spans,
+    }
+    source_transform = tensor.get("sourceTransform")
+    if isinstance(source_transform, dict):
+        mapping["sourceTransform"] = source_transform
+    return mapping
+
+
+def patch_runtime_weight_mappings(
+    runtime_config_path: Path,
+    export: dict[str, Any],
+    normalized_execution: dict[str, Any],
+) -> dict[str, Any]:
+    runtime_config = load_json(runtime_config_path)
+    manifest_path = resolve(export["manifestPath"])
+    manifest_root = manifest_path.parent
+    manifest = load_json(manifest_path)
+    tensors = manifest.get("tensors") or {}
+    if not isinstance(tensors, dict):
+        raise ValueError("Doppler manifest is missing tensor table")
+
+    required_keys = sorted(
+        {
+            str(step["weightsKey"])
+            for step in normalized_execution.get("steps") or []
+            if isinstance(step, dict) and isinstance(step.get("weightsKey"), str)
+        }
+    )
+    grid = runtime_config.get("memoryPlan", {}).get("grid", {})
+    pe_count = int(grid.get("width", 1)) * int(grid.get("height", 1))
+    shard_identities = shard_identities_by_index(export)
+    mappings: list[dict[str, Any]] = []
+    missing: list[str] = []
+
+    for weight_key in required_keys:
+        try:
+            tensor_name = tensor_name_for_weight_key(weight_key)
+        except ValueError:
+            missing.append(weight_key)
+            continue
+        tensor = tensors.get(tensor_name)
+        if not isinstance(tensor, dict):
+            missing.append(weight_key)
+            continue
+        spans = manifest_tensor_spans(tensor, shard_identities, manifest_root)
+        mappings.append(
+            runtime_weight_mapping(
+                weight_key=weight_key,
+                tensor_name=tensor_name,
+                tensor=tensor,
+                spans=spans,
+                pe_count=pe_count,
+            )
+        )
+
+    runtime_config["weightMappings"] = mappings
+    runtime_config["weightIdentity"] = {
+        "modelId": export["modelId"],
+        "manifestPath": export["manifestPath"],
+        "manifestSha256": export["manifestSha256"],
+        "weightSetId": export["weightSetId"],
+        "weightSetSha256": export["weightSetSha256"],
+        "declaredShardCount": len(export.get("shardIdentities") or []),
+        "requiredWeightCount": len(required_keys),
+        "mappedWeightCount": len(mappings),
+        "missingWeightCount": len(missing),
+        "missingWeightKeys": missing,
+        "requiredWeightKeysSha256": sha256_json(required_keys),
+        "mappedWeightKeysSha256": sha256_json(
+            [mapping["weightKey"] for mapping in mappings]
+        ),
+    }
+    write_json(runtime_config_path, runtime_config)
+    return {
+        "status": "complete" if not missing and mappings else "incomplete",
+        "manifestPath": export["manifestPath"],
+        "manifestSha256": export["manifestSha256"],
+        "weightSetId": export["weightSetId"],
+        "weightSetSha256": export["weightSetSha256"],
+        "requiredWeightCount": len(required_keys),
+        "mappedWeightCount": len(mappings),
+        "missingWeightCount": len(missing),
+        "missingWeightKeys": missing,
+        "requiredWeightKeysSha256": sha256_json(required_keys),
+        "mappedWeightKeysSha256": sha256_json(
+            [mapping["weightKey"] for mapping in mappings]
+        ),
+        "runtimeConfigPath": rel(runtime_config_path),
+        "runtimeConfigSha256": sha256_file(runtime_config_path),
+    }
+
+
+def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
+    plan_path = bundle_root / "simulator-plan.json"
+    result_path = bundle_root / "simulator-driver-result.json"
+    command = [
+        sys.executable,
+        str(resolve(CSL_SDK_DRIVER)),
+        str(plan_path),
+        "--out-json",
+        str(result_path),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if not result_path.exists():
+        write_json(
+            result_path,
+            {
+                "schemaVersion": 1,
+                "artifactKind": "csl_simulator_driver_result",
+                "target": "wse3",
+                "contract": "explicit_driver_outcome",
+                "simulatorPlanPath": str(plan_path),
+                "compilerExecutable": None,
+                "runtimeConfigPath": str(bundle_root / "runtime-config.json"),
+                "compile": {
+                    "attempted": False,
+                    "status": "failed",
+                    "reason": "driver_result_missing",
+                    "targets": [],
+                },
+                "run": {
+                    "attempted": False,
+                    "status": "blocked",
+                    "reason": "driver_result_missing",
+                    "executionTarget": "simfabric",
+                    "cmaddrProvided": False,
+                    "tracePath": str(bundle_root / "trace.json"),
+                    "traceProduced": False,
+                    "stdoutPath": str(bundle_root / "stdout.log"),
+                    "stderrPath": str(bundle_root / "stderr.log"),
+                },
+                "driverProcess": {
+                    "exitCode": proc.returncode,
+                    "stdout": proc.stdout,
+                    "stderr": proc.stderr,
+                },
+            },
+        )
+    result = load_json(result_path)
+    compile_result = result.get("compile") or {}
+    run_result = result.get("run") or {}
+    status = "succeeded" if proc.returncode == 0 else "blocked"
+    if compile_result.get("status") == "failed" or run_result.get("status") == "failed":
+        status = "failed"
+    return {
+        **hash_link(result_path, "csl_sdk_driver"),
+        "status": status,
+        "exitCode": proc.returncode,
+        "compileStatus": str(compile_result.get("status", "unknown")),
+        "compileReason": str(compile_result.get("reason", "unknown")),
+        "runStatus": str(run_result.get("status", "unknown")),
+        "runReason": str(run_result.get("reason", "unknown")),
     }
 
 
@@ -542,9 +867,19 @@ def build_hostplan_bundle(
     runtime_config_path = bundle_root / "runtime-config.json"
     memory_plan_path = bundle_root / "memory-plan.json"
     simulator_plan_path = bundle_root / "simulator-plan.json"
+    normalized_path = bundle_root / "normalized-execution-v1.json"
     host_plan = load_json(host_plan_path)
+    simulator_plan = load_json(simulator_plan_path)
+    normalized_execution = load_json(normalized_path)
     host_plan_body = host_plan.get("hostPlan") or {}
     phases = host_plan_body.get("phases") or {}
+    weight_coverage = patch_runtime_weight_mappings(
+        runtime_config_path,
+        export,
+        normalized_execution,
+    )
+    coverage = compile_input_coverage(bundle_root, simulator_plan)
+    driver_result = run_simulator_driver(bundle_root)
     return {
         "status": "hostplan_ready",
         "sourceGraphSha256": source_graph_sha256,
@@ -557,14 +892,18 @@ def build_hostplan_bundle(
         "runtimeConfig": hash_link(runtime_config_path, "doe_csl_host_plan_tool"),
         "memoryPlan": hash_link(memory_plan_path, "doe_csl_host_plan_tool"),
         "simulatorPlan": hash_link(simulator_plan_path, "doe_csl_host_plan_tool"),
+        "compileInputCoverage": coverage,
+        "weightMappingCoverage": weight_coverage,
+        "simulatorDriverResult": driver_result,
         "prefillLaunchCount": len(phases.get("prefill") or []),
         "decodeLaunchCount": len(phases.get("decode") or []),
         "kernelCount": len(host_plan_body.get("kernels") or []),
         "blocker": (
             "HostPlan bundle is generated, but the CSL transcript runner is "
-            "still blocked until these production-bound kernels are compiled, "
-            "wired to real RDRR weights/KV state, run under simfabric, and "
-            "emit token/logit/KV transcript artifacts."
+            "still blocked until compile inputs are materialized for every "
+            "production-bound kernel, real RDRR weights/KV state are wired, "
+            "simfabric runs, and token/logit/KV transcript artifacts are "
+            "emitted."
         ),
     }
 
@@ -680,6 +1019,26 @@ def build_blocked_receipt(
     actual = reference["actualDecodeSteps"]
     stop_reason = reference["stopReason"]
     blocker = summarize_lowering_blocker(lowering_plan)
+    simulator_status = "not_run"
+    trace_path = "pending"
+    trace_sha256 = "pending"
+    kernel_stage = "pending_full_int4ple_csl_transcript_lowering"
+    driver = hostplan_bundle.get("simulatorDriverResult") or {}
+    coverage = hostplan_bundle.get("compileInputCoverage") or {}
+    if hostplan_bundle.get("status") == "hostplan_ready":
+        kernel_stage = "hostplan_ready_pending_transcript_runtime"
+        simulator_status = (
+            f"blocked_{driver.get('compileReason', 'compile_not_ready')}"
+        )
+        if driver.get("path"):
+            trace_path = str(driver["path"])
+            trace_sha256 = str(driver.get("sha256", "pending"))
+        missing_targets = int(coverage.get("missingTargetCount") or 0)
+        if missing_targets > 0:
+            blocker = (
+                f"{blocker} HostPlan is ready, but {missing_targets} CSL "
+                "compile target(s) are missing production layout/PE sources."
+            )
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_csl_int4ple_transcript",
@@ -733,10 +1092,10 @@ def build_blocked_receipt(
         },
         "simulatorRun": {
             "runner": rel(Path(__file__)),
-            "status": "not_run",
-            "tracePath": "pending",
-            "traceSha256": "pending",
-            "kernelStage": "pending_full_int4ple_csl_transcript_lowering",
+            "status": simulator_status,
+            "tracePath": trace_path,
+            "traceSha256": trace_sha256,
+            "kernelStage": kernel_stage,
             "kernelIsStub": True,
             "elapsedMs": None,
         },

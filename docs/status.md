@@ -187,10 +187,17 @@ Read this file first. Use the shard files under
   that classifies each production Doppler execution stage against existing CSL
   fixtures and missing production-bound kernels, plus a `hostPlanBundle`
   generated from a normalized full-depth bounded `execution-v1` plan. The
-  promotion gate now requires CSL trace source identity,
-  full-model depth evidence, real KV/cache behavior, token-ID parity,
-  per-step logits parity, no stubs, and no synthetic inputs or weights before
-  the INT4 PLE lane can pass strict promotion.
+  blocked receipt now also records compile-input coverage for the HostPlan
+  targets and the explicit CSL SDK simulator-driver compile/run result. The
+  HostPlan runtime config is now patched from the production Doppler manifest
+  so HostPlan weight keys bind to real RDRR tensor spans and shard hashes. The
+  current blocker is concrete CSL execution materialization: complete
+  production CSL compile inputs, real mapped-weight runtime loading, real
+  KV/cache runtime wiring, and token/logit transcript artifacts are still
+  missing. The promotion gate now requires CSL trace source identity,
+  full-model depth evidence, real KV/cache behavior, token-ID parity, per-step
+  logits parity, no stubs, and no synthetic inputs or weights before the
+  INT4 PLE lane can pass strict promotion.
 
 ## Current follow-up highlights
 

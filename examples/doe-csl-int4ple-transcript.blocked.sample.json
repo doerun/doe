@@ -1,6 +1,6 @@
 {
   "artifactKind": "doe_csl_int4ple_transcript",
-  "blocker": "Doe CSL simfabric bounded prefill+decode transcript is blocked: 41 graph stage(s) lack production-bound CSL lowering (embed, rmsnorm, tiled, rope, attn_head256, residual, gelu, attn_head512, +6 more).",
+  "blocker": "Doe CSL simfabric bounded prefill+decode transcript is blocked: 41 graph stage(s) lack production-bound CSL lowering (embed, rmsnorm, tiled, rope, attn_head256, residual, gelu, attn_head512, +6 more). HostPlan is ready, but 14 CSL compile target(s) are missing production layout/PE sources.",
   "cslTranscript": {
     "actualDecodeSteps": 0,
     "generatedTokenIds": {
@@ -28,8 +28,128 @@
     "samplingSha256": "f18f44830e4e453ef563fd55680fcc2893a6cca52991bc21444f5c75b8fad4e9"
   },
   "hostPlanBundle": {
-    "blocker": "HostPlan bundle is generated, but the CSL transcript runner is still blocked until these production-bound kernels are compiled, wired to real RDRR weights/KV state, run under simfabric, and emit token/logit/KV transcript artifacts.",
+    "blocker": "HostPlan bundle is generated, but the CSL transcript runner is still blocked until compile inputs are materialized for every production-bound kernel, real RDRR weights/KV state are wired, simfabric runs, and token/logit/KV transcript artifacts are emitted.",
     "bundleRoot": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan",
+    "compileInputCoverage": {
+      "compileRoot": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile",
+      "missingTargetCount": 14,
+      "presentTargetCount": 0,
+      "targets": [
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/embed/layout.csl",
+          "layoutPresent": false,
+          "name": "embed",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/embed/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/rmsnorm/layout.csl",
+          "layoutPresent": false,
+          "name": "rmsnorm",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/rmsnorm/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/tiled/layout.csl",
+          "layoutPresent": false,
+          "name": "tiled",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/tiled/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/rope/layout.csl",
+          "layoutPresent": false,
+          "name": "rope",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/rope/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_head256/layout.csl",
+          "layoutPresent": false,
+          "name": "attn_head256",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_head256/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/residual/layout.csl",
+          "layoutPresent": false,
+          "name": "residual",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/residual/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/gelu/layout.csl",
+          "layoutPresent": false,
+          "name": "gelu",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/gelu/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_head512/layout.csl",
+          "layoutPresent": false,
+          "name": "attn_head512",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_head512/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/final_norm_stable/layout.csl",
+          "layoutPresent": false,
+          "name": "final_norm_stable",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/final_norm_stable/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill_stable/layout.csl",
+          "layoutPresent": false,
+          "name": "lm_head_prefill_stable",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill_stable/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/gemv/layout.csl",
+          "layoutPresent": false,
+          "name": "gemv",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/gemv/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_decode/layout.csl",
+          "layoutPresent": false,
+          "name": "attn_decode",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/attn_decode/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv_stable/layout.csl",
+          "layoutPresent": false,
+          "name": "lm_head_gemv_stable",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv_stable/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        },
+        {
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/sample/layout.csl",
+          "layoutPresent": false,
+          "name": "sample",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/sample/pe_program.csl",
+          "peProgramPresent": false,
+          "ready": false
+        }
+      ],
+      "totalTargetCount": 14
+    },
     "decodeLaunchCount": 423,
     "hostPlan": {
       "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/host-plan.json",
@@ -50,8 +170,19 @@
     "prefillLaunchCount": 423,
     "runtimeConfig": {
       "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/runtime-config.json",
-      "sha256": "6c80901506a4a3efe4513697899571f77fd51403a5223d619e279e6b84f0310d",
+      "sha256": "bf63c43ff58cdb40764f6ff85124556bf942c922707ecbea89a7c3d3e3d0acb5",
       "source": "doe_csl_host_plan_tool"
+    },
+    "simulatorDriverResult": {
+      "compileReason": "compiler_unavailable",
+      "compileStatus": "blocked",
+      "exitCode": 2,
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/simulator-driver-result.json",
+      "runReason": "compile_not_ready",
+      "runStatus": "blocked",
+      "sha256": "c9fc9260765190d24cb81f04430b9bc08408fc51378e60de78b91767efd268d1",
+      "source": "csl_sdk_driver",
+      "status": "blocked"
     },
     "simulatorPlan": {
       "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/simulator-plan.json",
@@ -59,7 +190,22 @@
       "source": "doe_csl_host_plan_tool"
     },
     "sourceGraphSha256": "a596c0a4ebfa181d94c191efa026b682a05c57993b8f02ac19e9aa17e8891765",
-    "status": "hostplan_ready"
+    "status": "hostplan_ready",
+    "weightMappingCoverage": {
+      "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/manifest.json",
+      "manifestSha256": "d3bd97d3f9065d2950cbee4267b93f345eabbb626eb7b8b9c96c9b0f590b6264",
+      "mappedWeightCount": 142,
+      "mappedWeightKeysSha256": "62c167c16349c6d52ac90e66c9c508206897aaff6e3d8c004cf6af52ce6aec56",
+      "missingWeightCount": 0,
+      "missingWeightKeys": [],
+      "requiredWeightCount": 142,
+      "requiredWeightKeysSha256": "62c167c16349c6d52ac90e66c9c508206897aaff6e3d8c004cf6af52ce6aec56",
+      "runtimeConfigPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/runtime-config.json",
+      "runtimeConfigSha256": "bf63c43ff58cdb40764f6ff85124556bf942c922707ecbea89a7c3d3e3d0acb5",
+      "status": "complete",
+      "weightSetId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-wp-catalog-v1",
+      "weightSetSha256": "b5d9977ff3e211ed28dff3625474421ffab828b3a324ae8f052eab341fe9e4d4"
+    }
   },
   "inputsSynthetic": false,
   "kvCacheEvidence": {
@@ -794,11 +940,11 @@
   "simulatorRun": {
     "elapsedMs": null,
     "kernelIsStub": true,
-    "kernelStage": "pending_full_int4ple_csl_transcript_lowering",
+    "kernelStage": "hostplan_ready_pending_transcript_runtime",
     "runner": "bench/tools/run_doe_csl_int4ple_transcript.py",
-    "status": "not_run",
-    "tracePath": "pending",
-    "traceSha256": "pending"
+    "status": "blocked_compiler_unavailable",
+    "tracePath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/simulator-driver-result.json",
+    "traceSha256": "c9fc9260765190d24cb81f04430b9bc08408fc51378e60de78b91767efd268d1"
   },
   "sourceProgram": {
     "authoringSurface": "doppler_execution_v1",
