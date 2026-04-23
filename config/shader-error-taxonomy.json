@@ -198,6 +198,13 @@
       "backendIds": ["doe_csl"]
     },
     {
+      "code": "csl_compile_container_runtime_blocked",
+      "stage": "csl_compile",
+      "severity": "error",
+      "description": "The configured Cerebras SDK cslc reached its SIF/container runtime, but the host denied container process creation or SIF root filesystem extraction. This is an execution-host permission problem, not CSL source evidence. Re-run on a host where the SDK container runtime is allowed.",
+      "backendIds": ["doe_csl"]
+    },
+    {
       "code": "csl_compile_unclassified",
       "stage": "csl_compile",
       "severity": "error",

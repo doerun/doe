@@ -44,6 +44,20 @@ MEMCPY_FABRIC_EAST_RESERVED = 3
 MEMCPY_FABRIC_NORTH_RESERVED = 1
 MEMCPY_FABRIC_SOUTH_RESERVED = 1
 RESIDUAL_DIAGNOSTIC_TARGET = "residual"
+ROW_KERNEL_TARGETS: frozenset[str] = frozenset(
+    {
+        "rmsnorm",
+        "final_norm_stable",
+        "gemv",
+        "lm_head_gemv_stable",
+        "sample",
+        "rope",
+        "attn_head256",
+        "attn_head512",
+        "attn_decode",
+    }
+)
+TILED_KERNEL_TARGETS: frozenset[str] = frozenset({"tiled", "lm_head_prefill_stable"})
 
 # Matches `@export_name("<symbol>", <type>[, <bool>]);`.
 # The type pattern uses non-greedy `.+?` anchored on the closing `);` so it
@@ -365,6 +379,13 @@ _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         re.compile(r"singularity not in \$PATH|apptainer not in \$PATH"),
         "csl_compile_sandbox_runtime_missing",
     ),
+    (
+        re.compile(
+            r"root filesystem extraction failed|"
+            r"Failed to create container process: Operation not permitted"
+        ),
+        "csl_compile_container_runtime_blocked",
+    ),
 ]
 
 
@@ -577,15 +598,14 @@ def compile_targets(
     # runtime.widthEastBuf without requiring a driver change.
     width_west_buf = int(runtime.get("widthWestBuf", 0))
     width_east_buf = int(runtime.get("widthEastBuf", 0))
-    fabric_offset_x = width_west_buf + 4
-    fabric_offset_y = 1
-    fabric_offsets = runtime.get("fabricOffsets") or [fabric_offset_x, fabric_offset_y]
-    fabric_offset_x, fabric_offset_y = int(fabric_offsets[0]), int(fabric_offsets[1])
-    fabric_dims = runtime.get("fabricDims") or [
-        width_west_buf + 4 + width + width_east_buf + 3,
-        1 + height + 1,
+    default_fabric_offset_x = width_west_buf + 4
+    default_fabric_offset_y = 1
+    default_fabric_offsets = runtime.get("fabricOffsets") or [
+        default_fabric_offset_x,
+        default_fabric_offset_y,
     ]
-    fabric_width, fabric_height = int(fabric_dims[0]), int(fabric_dims[1])
+    default_fabric_offset_x = int(default_fabric_offsets[0])
+    default_fabric_offset_y = int(default_fabric_offsets[1])
 
     target_results: list[dict[str, Any]] = []
 
@@ -638,16 +658,33 @@ def compile_targets(
         # (P, Mt, Kt, Nt) that cslc needs at compile time; record them on the
         # compileTarget so the governed plan stays the single source of truth.
         extra_compile_params = target.get("compileParams")
-        params_kvs = [f"width:{width}", f"height:{height}"]
+        compile_params_payload: dict[str, int] = {}
         if isinstance(extra_compile_params, dict):
             for key, value in extra_compile_params.items():
-                params_kvs.append(f"{key}:{int(value)}")
+                parsed_value = int(value)
+                compile_params_payload[str(key)] = parsed_value
+        target_width = int(compile_params_payload.get("width") or width)
+        target_height = int(compile_params_payload.get("height") or height)
+        if name in ROW_KERNEL_TARGETS:
+            target_height = 1
+        elif name in TILED_KERNEL_TARGETS:
+            target_p = int(compile_params_payload.get("P") or 0)
+            if target_p > 0:
+                target_width = target_p
+                target_height = target_p
+        params_kvs = [f"width:{target_width}", f"height:{target_height}"]
+        for key, parsed_value in compile_params_payload.items():
+            params_kvs.append(f"{key}:{parsed_value}")
+        target_fabric_offset_x = default_fabric_offset_x
+        target_fabric_offset_y = default_fabric_offset_y
+        target_fabric_width = width_west_buf + 4 + target_width + width_east_buf + 3
+        target_fabric_height = 1 + target_height + 1
         command = [
             cslc_executable,
             str(layout_path),
             f"--arch={arch}",
-            f"--fabric-dims={fabric_width},{fabric_height}",
-            f"--fabric-offsets={fabric_offset_x},{fabric_offset_y}",
+            f"--fabric-dims={target_fabric_width},{target_fabric_height}",
+            f"--fabric-offsets={target_fabric_offset_x},{target_fabric_offset_y}",
             f"--channels={channels}",
             # SDKs require top-level `param width` / `param height` in
             # emitted layout.csl to be supplied via the explicit --params
@@ -687,6 +724,8 @@ def compile_targets(
             "command": command,
             "unblockCmdStreamCheck": unblock_status,
         }
+        if compile_params_payload:
+            target_entry["compileParams"] = compile_params_payload
         if target_failure_code is not None:
             target_entry["failureCode"] = target_failure_code
         if name == RESIDUAL_DIAGNOSTIC_TARGET and return_code == 0:
@@ -1199,14 +1238,31 @@ def synthesize_operation_graph(
     inputs = plan.get("inputs", {})
     compile_targets = []
     for compile_target in inputs.get("compileTargets", []):
-        compile_targets.append(
-            {
-                "name": str(compile_target["name"]),
-                "layout": str(compile_target["layout"]),
-                "peProgram": str(compile_target["peProgram"]),
+        target_entry = {
+            "name": str(compile_target["name"]),
+            "layout": str(compile_target["layout"]),
+            "peProgram": str(compile_target["peProgram"]),
+        }
+        target_params = compile_target.get("compileParams")
+        if isinstance(target_params, dict):
+            target_entry["compileParams"] = {
+                str(key): int(value) for key, value in target_params.items()
             }
-        )
+        compile_targets.append(target_entry)
     output_dir = str(target.get("outputDir") or inputs.get("compileRootPath", "compile"))
+    compile_param_values: dict[str, int] = {"width": width, "height": height}
+    extra_compile_params = target.get("compileParams")
+    if not isinstance(extra_compile_params, dict):
+        target_name = str(target.get("name") or "")
+        for compile_target in inputs.get("compileTargets", []):
+            if str(compile_target.get("name") or "") == target_name:
+                candidate_params = compile_target.get("compileParams")
+                if isinstance(candidate_params, dict):
+                    extra_compile_params = candidate_params
+                break
+    if isinstance(extra_compile_params, dict):
+        for key, value in extra_compile_params.items():
+            compile_param_values[str(key)] = int(value)
 
     compile_section: dict[str, Any] = {
         "arch": str(plan.get("target", "wse3")),
@@ -1216,8 +1272,8 @@ def synthesize_operation_graph(
         "channels": channels,
         "memcpy": memcpy_enabled,
         "params": [
-            {"name": "width", "type": "i16", "value": width},
-            {"name": "height", "type": "i16", "value": height},
+            {"name": name, "type": "i16", "value": value}
+            for name, value in compile_param_values.items()
         ],
         "importPaths": [],
         "outputDir": output_dir,

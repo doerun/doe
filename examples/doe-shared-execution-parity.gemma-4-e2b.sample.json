@@ -1,0 +1,89 @@
+{
+  "artifactKind": "doe_shared_execution_parity",
+  "comparison": {
+    "actualDecodeStepsMatched": true,
+    "blocker": "",
+    "generatedTokenIdsMatched": true,
+    "perStepLogitsParityPassed": true,
+    "realKvCacheUsedOnExecutableLane": false,
+    "requestedDecodeStepsMatched": true,
+    "sameGraphHash": true,
+    "sameInputSetHash": true,
+    "sameManifestHash": true,
+    "status": "passed",
+    "stopReasonMatched": true
+  },
+  "leftRun": {
+    "inputsSynthetic": false,
+    "kernelIsStub": false,
+    "kind": "doppler_reference_export",
+    "realKvCacheUsed": false,
+    "sourceArtifact": {
+      "path": "left.json",
+      "sha256": "2424242424242424242424242424242424242424242424242424242424242424"
+    },
+    "sourceProgram": {
+      "graphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "weightSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "status": "output_ready",
+    "transcript": {
+      "actualDecodeSteps": 8,
+      "generatedTokenIdsSha256": "1414141414141414141414141414141414141414141414141414141414141414",
+      "logitsDigestSha256": "1515151515151515151515151515151515151515151515151515151515151515",
+      "path": "decode.json",
+      "requestedDecodeSteps": 8,
+      "sha256": "2525252525252525252525252525252525252525252525252525252525252525",
+      "stopReason": "decode_steps_exhausted"
+    },
+    "weightsSynthetic": false
+  },
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "promotionCriteria": {
+    "decodeContractMatched": true,
+    "perStepLogitsParityPassed": true,
+    "realKvCacheUsedOnExecutableLane": false,
+    "sourceProgramMatched": true,
+    "stubStagesAbsent": true,
+    "syntheticInputsAbsent": true,
+    "syntheticWeightsAbsent": true,
+    "tokenIdsMatched": true
+  },
+  "rightRun": {
+    "inputsSynthetic": false,
+    "kernelIsStub": false,
+    "kind": "doe_webgpu_transcript",
+    "realKvCacheUsed": false,
+    "sourceArtifact": {
+      "path": "right.json",
+      "sha256": "2626262626262626262626262626262626262626262626262626262626262626"
+    },
+    "sourceProgram": {
+      "graphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "weightSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "status": "output_ready",
+    "transcript": {
+      "actualDecodeSteps": 8,
+      "generatedTokenIdsSha256": "1414141414141414141414141414141414141414141414141414141414141414",
+      "logitsDigestSha256": "1515151515151515151515151515151515151515151515151515151515151515",
+      "path": "decode.json",
+      "requestedDecodeSteps": 8,
+      "sha256": "2727272727272727272727272727272727272727272727272727272727272727",
+      "stopReason": "decode_steps_exhausted"
+    },
+    "weightsSynthetic": false
+  },
+  "schemaVersion": 1,
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "graphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "weightSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

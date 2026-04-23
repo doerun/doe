@@ -60,7 +60,7 @@ pub fn create_instance(self: anytype) !void {
         .applicationVersion = 0,
         .pEngineName = ENGINE_NAME,
         .engineVersion = 0,
-        .apiVersion = c.VK_API_VERSION_1_0,
+        .apiVersion = c.VK_API_VERSION_1_2,
     };
     var create_info = c.VkInstanceCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,

@@ -1,0 +1,161 @@
+{
+  "artifactKind": "doe_shared_execution_contract",
+  "decodeRequest": {
+    "expectedActualDecodeSteps": 8,
+    "expectedStopReason": "decode_steps_exhausted",
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "requestedDecodeSteps": 8,
+    "sampling": {
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1
+    },
+    "samplingSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "hostPlanProjection": {
+    "status": "not_bound"
+  },
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "normalizedExecution": {
+    "modelConfig": {
+      "hiddenDim": 1536,
+      "numLayers": 35,
+      "vocabSize": 262144
+    },
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-shared-contract/normalized-execution-v1.json",
+    "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "sourceGraphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "stepCount": 431
+  },
+  "promptInput": {
+    "inputSetComponents": {
+      "decodeSteps": 8,
+      "tokenCount": 15,
+      "useChatTemplate": false
+    },
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "prompt": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-shared-contract/prompt.txt",
+      "sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+      "source": "doppler_prompt"
+    },
+    "tokenizedPrompt": {
+      "dtype": "uint32",
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-shared-contract/tokenized_prompt.u32",
+      "preview": [2, 3, 4],
+      "sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "tokenCount": 15
+    }
+  },
+  "referenceExport": {
+    "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+    "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "source": "doppler_reference_export"
+  },
+  "doeWebgpuRuntime": {
+    "host": "node",
+    "hostExecutable": "node",
+    "providerModule": "packages/doe-gpu/src/compute.js",
+    "kernelPathPolicy": {
+      "mode": "capability-aware",
+      "sourceScope": ["model", "manifest", "config"],
+      "allowSources": ["model", "manifest", "config"],
+      "onIncompatible": "remap"
+    }
+  },
+  "schemaVersion": 1,
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "captureProfile": "program-bundle/browser-reference",
+    "executionDepth": "not_executed",
+    "graphPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/program_bundle_execution_graph.json",
+    "graphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "hostEntrypointSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "manifestPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/manifest.json",
+    "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "programBundle": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler-program-bundle.json",
+      "sha256": "1212121212121212121212121212121212121212121212121212121212121212",
+      "source": "doppler_program_bundle"
+    },
+    "programBundleId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46",
+    "programContractVersion": "doppler.program-bundle/v1",
+    "runtimeProfile": "program-bundle/browser-reference",
+    "weightSetId": "gemma-4-e2b-declared-shards",
+    "weightSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "wgslModulesSha256": "1313131313131313131313131313131313131313131313131313131313131313"
+  },
+  "stateInputs": {
+    "hostStateEntries": [],
+    "hostStateEntryCount": 0,
+    "stateBufferCount": 0,
+    "stateBuffers": [],
+    "status": "not_bound"
+  },
+  "transcriptContract": {
+    "kvCache": {
+      "byteDigest": "pending",
+      "byteDigestMode": "not_captured",
+      "kvDtype": "pending",
+      "layerDigestCount": 0,
+      "mode": "not_captured",
+      "seqLen": 23
+    },
+    "referenceTranscript": {
+      "actualDecodeSteps": 8,
+      "generatedTokenIdsSha256": "1414141414141414141414141414141414141414141414141414141414141414",
+      "logitsDigestSha256": "1515151515151515151515151515151515151515151515151515151515151515",
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
+      "requestedDecodeSteps": 8,
+      "sha256": "1616161616161616161616161616161616161616161616161616161616161616",
+      "stopReason": "decode_steps_exhausted"
+    }
+  },
+  "weightMappings": {
+    "declaredShardCount": 1,
+    "manifestPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/manifest.json",
+    "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "mappedWeightKeysSha256": "2828282828282828282828282828282828282828282828282828282828282828",
+    "mappedWeightCount": 2,
+    "mappings": [
+      {
+        "byteLength": 64,
+        "byteOffset": 0,
+        "dtype": "Q4_K_M",
+        "layout": "row_major",
+        "quant": {
+          "blockSizeBytes": 144,
+          "blockSizeElements": 256,
+          "encoding": "rdrr_int4ple",
+          "format": "Q4_K_M",
+          "sourceDtype": "float16",
+          "storageDtype": "uint8"
+        },
+        "role": "weight",
+        "shape": [262144, 1536],
+        "sourceTransform": {
+          "kind": "int4ple_unpack"
+        },
+        "spans": [
+          {
+            "offset": 0,
+            "shardIndex": 0,
+            "shardPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/shard_00000.bin",
+            "shardSha256": "1717171717171717171717171717171717171717171717171717171717171717",
+            "size": 64
+          }
+        ],
+        "tensorName": "model.language_model.embed_tokens.weight",
+        "weightKey": "lm_head"
+      }
+    ],
+    "missingWeightCount": 0,
+    "missingWeightKeys": [],
+    "requiredWeightCount": 2,
+    "requiredWeightKeysSha256": "2929292929292929292929292929292929292929292929292929292929292929",
+    "status": "complete",
+    "weightSetId": "gemma-4-e2b-declared-shards",
+    "weightSetSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

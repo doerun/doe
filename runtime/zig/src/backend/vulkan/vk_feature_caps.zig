@@ -146,11 +146,25 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
     properties2.pNext = @ptrCast(&subgroup_properties);
     c.vkGetPhysicalDeviceProperties2(physical_device, &properties2);
 
+    // Explicit override: DOE_DISABLE_SUBGROUPS=1 suppresses the WebGPU
+    // `subgroups` feature advertisement from Doe's Vulkan adapter. This is a
+    // documented, declared workaround for the Doe WGSL translator gap on
+    // subgroup compute builtins; upstream callers (e.g. Doppler) respond by
+    // applying their `removeSubgroups` capability transform. Remove this gate
+    // once `doe_wgsl` compiles the subgroup kernel family.
+    const subgroup_disabled_by_env = blk: {
+        const value = std.posix.getenv("DOE_DISABLE_SUBGROUPS") orelse break :blk false;
+        if (value.len == 0) break :blk false;
+        const first = value[0];
+        break :blk first == '1' or first == 't' or first == 'T' or first == 'y' or first == 'Y';
+    };
+
     const caps = VulkanFeatureCaps{
         .shader_f16 = raw_vulkan12_features.shaderFloat16 == c.VK_TRUE,
         .float32_blendable = supports_all_formats(physical_device, &FLOAT32_BLENDABLE_FORMATS, supports_color_attachment_blend),
         .dual_source_blending = raw_features2.features.dualSrcBlend == c.VK_TRUE,
-        .subgroups = subgroup_properties.subgroupSize > 0 and
+        .subgroups = !subgroup_disabled_by_env and
+            subgroup_properties.subgroupSize > 0 and
             (subgroup_properties.supportedStages & c.VK_SHADER_STAGE_COMPUTE_BIT) != 0 and
             (subgroup_properties.supportedOperations & VK_SUBGROUP_REQUIRED_OPERATIONS) == VK_SUBGROUP_REQUIRED_OPERATIONS and
             raw_vulkan12_features.subgroupBroadcastDynamicId == c.VK_TRUE,

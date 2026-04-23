@@ -268,6 +268,83 @@ class SynthesizeOperationGraphKernelPatternsTests(unittest.TestCase):
             # kernelPatterns empty → field is omitted entirely, not present as [].
             self.assertNotIn("kernelPatterns", graph)
 
+    def test_compile_targets_preserve_per_target_compile_params(self) -> None:
+        """The operation graph must keep compile params on each compile
+        target, not only on the selected rpc-launch compile section. E2B has
+        heterogeneous targets, so this is the receipt surface downstream gates
+        need for manifest-shape checks."""
+        with tempfile.TemporaryDirectory() as td:
+            compile_root = Path(td) / "compile"
+            compile_root.mkdir(parents=True)
+            _write_compile_target(compile_root, "embed")
+            _write_compile_target(compile_root, "tiled")
+
+            plan = {
+                "target": "wse3",
+                "inputs": {
+                    "compileTargets": [
+                        {
+                            "name": "embed",
+                            "layout": "embed/layout.csl",
+                            "peProgram": "embed/pe_program.csl",
+                            "compileParams": {
+                                "height": 127,
+                                "hidden_size": 1536,
+                                "num_tokens": 23,
+                                "rows_per_pe": 16,
+                            },
+                        },
+                        {
+                            "name": "tiled",
+                            "layout": "tiled/layout.csl",
+                            "peProgram": "tiled/pe_program.csl",
+                            "compileParams": {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16},
+                        },
+                    ],
+                    "compileRootPath": str(compile_root),
+                },
+                "runtime": {
+                    "peGrid": {"width": 130, "height": 127},
+                    "channels": 1,
+                    "memcpy": True,
+                },
+            }
+            payload = [
+                {
+                    "name": "embed",
+                    "layoutPath": str(compile_root / "embed" / "layout.csl"),
+                    "peProgramPath": str(compile_root / "embed" / "pe_program.csl"),
+                    "outputDir": str(compile_root / "embed" / "out"),
+                    "status": "succeeded",
+                }
+            ]
+
+            graph = synthesize_operation_graph(
+                plan=plan,
+                compile_targets_payload=payload,
+                compile_root=compile_root,
+            )
+
+        self.assertIsNotNone(graph)
+        assert graph is not None
+        targets = {
+            target["name"]: target
+            for target in graph["compile"]["compileTargets"]
+        }
+        self.assertEqual(
+            targets["embed"]["compileParams"],
+            {
+                "height": 127,
+                "hidden_size": 1536,
+                "num_tokens": 23,
+                "rows_per_pe": 16,
+            },
+        )
+        self.assertEqual(
+            targets["tiled"]["compileParams"],
+            {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16},
+        )
+
     def test_270m_fixture_produces_full_pattern_table(self) -> None:
         """Real 270M HostPlan at bench/out/host-plan.actual.json: every
         compileTarget name matches a kernel name, so every target gets

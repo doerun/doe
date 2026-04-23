@@ -171,10 +171,10 @@ class DemoHandler(SimpleHTTPRequestHandler):
                 "runMode": "cached_trace_preferred_force_live",
             })
             return
-        if parsed.path == "/api/artifact-dir-info":
+        if parsed.path == "/api/workdir-info":
             qs = parse_qs(parsed.query or "")
             rel_path = (qs.get("path") or [""])[0]
-            self.send_json(self.inspect_artifact_dir(rel_path))
+            self.send_json(self.inspect_workdir(rel_path))
             return
         if parsed.path == "/api/trace-host-io-contract":
             qs = parse_qs(parsed.query or "")
@@ -359,7 +359,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
             ),
         }
 
-    def inspect_artifact_dir(self, rel_path: str) -> dict:
+    def inspect_workdir(self, rel_path: str) -> dict:
         # Safe enumerator: refuses absolute paths and parent-traversal,
         # pins everything to REPO_ROOT. Returns structured metadata
         # the SDK-GUI viewer renders; returns NO file bytes (.elf /
@@ -381,7 +381,7 @@ class DemoHandler(SimpleHTTPRequestHandler):
                 "ok": False, "error": f"not a directory: {rel_path}",
                 "pathChecked": rel_path,
             }
-        # SDK compile-artifact shape to surface: colors, elf, lst,
+        # SDK compile output shape to surface: colors, elf, lst,
         # map, symbols, viz, plus any nested generated/ directory.
         interesting = {".elf", ".lst", ".map", ".symbols", ".viz"}
         files = []

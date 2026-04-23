@@ -31,7 +31,11 @@ bundle" for the prose workflow; this file is the tool-reference.
   SdkLayout streaming hardening, receipt link integrity) and writes
   `bench/out/cerebras-evidence-bundle/summary.json` with per-step
   `step / status / returnCode / elapsedMs / stdoutTail / stderrTail`
-  plus an aggregate verdict.
+  plus an aggregate verdict. The INT4 PLE manifest compile-param promotion
+  gate is available through
+  `--require-int4ple-manifest-compile-params`; default bundle runs skip it
+  so blocked metadata evidence can still pass before manifest-shaped CSL
+  targets are available.
 - **`pack_cerebras_validation_archive.py`** — builds the tarball
   at `bench/out/doe-cerebras-evidence-<UTC>-<gitShortSha>[-dirty].tar.gz`.
   Allow-list + deny-list construction excludes SDK binaries

@@ -5,29 +5,20 @@
 Current demos:
 
 - `demos/doe-status-dashboard/`
-  - high-level status rollup of Doe lane statuses, driven from
-    `bench/out/` JSON at view time. Static, no server required.
-    Cross-links to the two Gemma-4 demos below.
+  - Project-wide readiness table that links artifacts for browser runtimes,
+    backend equivalence, CSL simulator parity, E2B and 31B receipts,
+    Doppler-equivalent diagnostics, hardware blockers, and companion dashboard
+    entry points for reviewers checking feature status.
 - `demos/gemma4-e2b-csl-sim/`
-  - Gemma 4 E2B-shaped L1 synthetic layer-block side-by-side:
-    browser WebGPU (via Dawn)
-    + stored/live CSL simfabric + CSL-WebGPU-emulator, with an
-    evidence cockpit (program identity, emulator-vs-simfabric
-    speed, depth eligibility, real-weight promotion badges).
-    Has `server.py` for live CSL runs + the two `/api` routes the
-    SDK-GUI viewer depends on.
+  - Side-by-side cockpit for Gemma 4 E2B, showing Doppler reference, Doe CSL
+    simfabric, WebGPU emulator, evidence ladder, claim scope, manifest-shape
+    oracle, parity blockers, and hardware readiness without granting
+    unsupported claims during demo reviews.
 - `demos/doe-sdk-gui-viewer/`
-  - Browser facsimile of the Cerebras SDK GUI shape: work-directory
-    bar, route/color selector, scalable fabric viewport, PE drilldown,
-    instruction/source/wavelet timeline panes, debug pane, timeline
-    navigation controls, and terminal/exported commands. Point it at
-    a compile artifact dir under
-    `bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>` to inspect
-    metadata without unpacking SDK binaries. Requires the E2B demo
-    server running on the same origin for its `/api` routes.
-    Has a "redact paths" toggle for screen-share-safe mode:
-    hides local filesystem path bytes, keeps hashes + verdicts
-    and the evidence-bundle step rollup visible.
+  - Cerebras SDK-style spatial compute viewer for inspecting fabric topology,
+    PE grids, routes, colors, source regions, instruction timelines, wavelet
+    movement, host streams, evidence overlays, bundle commands, and failure
+    state during CSL debugging sessions.
 - `demos/volume-render`
   - local package-backed volume rendering demo for manual exploration
 - `demos/service-worker-compute`

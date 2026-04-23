@@ -1,0 +1,95 @@
+{
+  "artifactKind": "doe_webgpu_transcript",
+  "blocker": "",
+  "decodeRequest": {
+    "expectedActualDecodeSteps": 8,
+    "expectedStopReason": "decode_steps_exhausted",
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "requestedDecodeSteps": 8,
+    "sampling": {
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1
+    },
+    "samplingSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "inputsSynthetic": false,
+  "kvCacheEvidence": {
+    "blocker": "Doe WebGPU exporter does not yet emit KV/cache byte-digest evidence for the shared execution contract.",
+    "realKvCache": false,
+    "status": "not_captured"
+  },
+  "modelId": "gemma-4-e2b-it-q4k-ehf16-af32-int4ple",
+  "runtimeRun": {
+    "exitCode": 0,
+    "exportTool": "bench/tools/export_doppler_int4ple_reference.mjs",
+    "exporterCommand": [
+      "node",
+      "bench/tools/export_doppler_int4ple_reference.mjs",
+      "--decode-steps",
+      "8"
+    ],
+    "jsExecutable": "node",
+    "jsHost": "node",
+    "observedProvider": "packages/doe-gpu/src/compute.js",
+    "providerModule": "packages/doe-gpu/src/compute.js",
+    "runner": "bench/tools/run_doe_webgpu_shared_contract.py",
+    "stderrLog": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-webgpu-export.stderr.log",
+      "sha256": "1919191919191919191919191919191919191919191919191919191919191919",
+      "source": "doe_webgpu_export_stderr"
+    },
+    "stdoutLog": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-webgpu-export.stdout.log",
+      "sha256": "1818181818181818181818181818181818181818181818181818181818181818",
+      "source": "doe_webgpu_export_stdout"
+    }
+  },
+  "schemaVersion": 1,
+  "sharedExecutionContract": {
+    "path": "examples/doe-shared-execution-contract.gemma-4-e2b.sample.json",
+    "sha256": "2020202020202020202020202020202020202020202020202020202020202020",
+    "source": "doe_shared_execution_contract"
+  },
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "executionDepth": "not_executed",
+    "graphPath": "graph.json",
+    "graphSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "inputSetSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "manifestPath": "manifest.json",
+    "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "weightSetId": "gemma-4-e2b-declared-shards",
+    "weightSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "status": "output_ready",
+  "webgpuTranscript": {
+    "decodeTranscript": {
+      "actualDecodeSteps": 8,
+      "generatedTokenIds": {
+        "sha256": "1414141414141414141414141414141414141414141414141414141414141414"
+      },
+      "logitsDigests": [],
+      "requestedDecodeSteps": 8,
+      "status": "output_ready",
+      "stopReason": "decode_steps_exhausted",
+      "transcript": {
+        "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-webgpu-export/decode_transcript.json",
+        "sha256": "2121212121212121212121212121212121212121212121212121212121212121"
+      }
+    },
+    "exporterReceipt": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-webgpu-export/doppler_int4ple_reference_export.json",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "source": "doppler_reference_export"
+    },
+    "producer": "doppler_js_webgpu_on_doe",
+    "status": "output_ready",
+    "tensorDigest": {
+      "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-webgpu-export/final_logits.f32",
+      "sha256": "2323232323232323232323232323232323232323232323232323232323232323",
+      "status": "output_ready"
+    }
+  },
+  "weightsSynthetic": false
+}

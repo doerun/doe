@@ -271,7 +271,22 @@
         "memoryPlan": { "$ref": "#/$defs/hashLinkedPath" },
         "simulatorPlan": { "$ref": "#/$defs/hashLinkedPath" },
         "programBundle": { "$ref": "#/$defs/hashLinkedPath" },
+        "sharedExecutionContract": { "$ref": "#/$defs/hashLinkedPath" },
         "compileInputCoverage": { "$ref": "#/$defs/compileInputCoverage" },
+        "manifestCompileParamProjection": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "manifestCompileParamApplication": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "heldDiagnosticTargets": {
+              "type": "array",
+              "items": { "type": "object", "additionalProperties": true }
+            }
+          }
+        },
         "weightMappingCoverage": { "$ref": "#/$defs/weightMappingCoverage" },
         "hostIoLayoutCoverage": { "$ref": "#/$defs/hostIoLayoutCoverage" },
         "simulatorDriverResult": { "$ref": "#/$defs/simulatorDriverResult" },

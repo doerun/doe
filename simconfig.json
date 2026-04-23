@@ -49,7 +49,7 @@
   "threading": {
     "batchSize": 16,
     "clusterThreads": false,
-    "numThreads": 16,
+    "numThreads": 5,
     "pinBias": 0,
     "pinThreads": false
   },

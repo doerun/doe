@@ -224,6 +224,8 @@ pub const VK_NOT_READY = vk.VK_NOT_READY;
 pub const VK_TRUE = vk.VK_TRUE;
 pub const VK_FALSE = vk.VK_FALSE;
 pub const VK_API_VERSION_1_0: u32 = 0x00400000;
+pub const VK_API_VERSION_1_1: u32 = 0x00401000;
+pub const VK_API_VERSION_1_2: u32 = 0x00402000;
 
 // --- VkStructureType values ---
 pub const VK_STRUCTURE_TYPE_APPLICATION_INFO: i32 = 0;

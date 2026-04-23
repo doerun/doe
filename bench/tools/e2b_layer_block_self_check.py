@@ -2967,7 +2967,7 @@ def main() -> int:
             )
             _mod = _ilu_c17.module_from_spec(_spec)
             _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
-            _inspect_dir = _mod.DemoHandler.inspect_artifact_dir
+            _inspect_dir = _mod.DemoHandler.inspect_workdir
             _inspect_trace = _mod.DemoHandler.inspect_trace_host_io
             _inspect_bundle = _mod.DemoHandler.inspect_bundle_summary
             _inspect_commands = _mod.DemoHandler.inspect_evidence_commands
@@ -2992,7 +2992,7 @@ def main() -> int:
             _c17_problems = []
             if not (_positive_dir.get("ok") and _positive_dir.get("numSdkArtifacts", 0) > 0):
                 _c17_problems.append(
-                    f"positive artifact-dir path did not return SDK artifacts: "
+                    f"positive workdir path did not return SDK artifacts: "
                     f"{_positive_dir}"
                 )
             if not (_positive_trace.get("ok") and _positive_trace.get("hostIoLayout")):

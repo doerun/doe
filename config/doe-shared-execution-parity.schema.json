@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-shared-execution-parity.schema.json",
+  "title": "Doe shared execution parity receipt",
+  "description": "Backend-agnostic parity receipt for bounded transcript comparisons across Doppler reference, Doe WebGPU, and Doe CSL runs of the same source program.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "sourceProgram",
+    "leftRun",
+    "rightRun",
+    "comparison",
+    "promotionCriteria"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_shared_execution_parity" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authoringSurface", "manifestSha256", "graphSha256"],
+      "properties": {
+        "authoringSurface": { "const": "doppler_execution_v1" },
+        "manifestSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "graphSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "weightSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "inputSetSha256": { "$ref": "#/$defs/sha256OrPending" }
+      }
+    },
+    "leftRun": { "$ref": "#/$defs/run" },
+    "rightRun": { "$ref": "#/$defs/run" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sameManifestHash",
+        "sameGraphHash",
+        "sameInputSetHash",
+        "requestedDecodeStepsMatched",
+        "actualDecodeStepsMatched",
+        "stopReasonMatched",
+        "generatedTokenIdsMatched",
+        "perStepLogitsParityPassed"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "pending"]
+        },
+        "sameManifestHash": { "type": "boolean" },
+        "sameGraphHash": { "type": "boolean" },
+        "sameInputSetHash": { "type": "boolean" },
+        "requestedDecodeStepsMatched": { "type": "boolean" },
+        "actualDecodeStepsMatched": { "type": "boolean" },
+        "stopReasonMatched": { "type": "boolean" },
+        "generatedTokenIdsMatched": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": "boolean" },
+        "realKvCacheUsedOnExecutableLane": { "type": "boolean" },
+        "blocker": { "type": "string" }
+      }
+    },
+    "promotionCriteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceProgramMatched",
+        "decodeContractMatched",
+        "tokenIdsMatched",
+        "perStepLogitsParityPassed",
+        "syntheticInputsAbsent",
+        "syntheticWeightsAbsent",
+        "stubStagesAbsent"
+      ],
+      "properties": {
+        "sourceProgramMatched": { "type": "boolean" },
+        "decodeContractMatched": { "type": "boolean" },
+        "tokenIdsMatched": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": "boolean" },
+        "realKvCacheUsedOnExecutableLane": { "type": "boolean" },
+        "syntheticInputsAbsent": { "type": "boolean" },
+        "syntheticWeightsAbsent": { "type": "boolean" },
+        "stubStagesAbsent": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256OrPending": {
+      "type": "string",
+      "pattern": "^(pending|[0-9a-f]{64})$"
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "status",
+        "sourceArtifact",
+        "sourceProgram",
+        "inputsSynthetic",
+        "weightsSynthetic",
+        "kernelIsStub"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["doppler_reference_export", "doe_webgpu_transcript", "doe_csl_transcript"]
+        },
+        "status": { "type": "string", "minLength": 1 },
+        "sourceArtifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "$ref": "#/$defs/sha256OrPending" }
+          }
+        },
+        "sourceProgram": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "transcript": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "realKvCacheUsed": { "type": "boolean" },
+        "inputsSynthetic": { "type": "boolean" },
+        "weightsSynthetic": { "type": "boolean" },
+        "kernelIsStub": { "type": "boolean" }
+      }
+    }
+  }
+}

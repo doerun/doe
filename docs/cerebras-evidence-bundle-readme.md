@@ -66,7 +66,7 @@ cross-references inside the receipts resolve as written.
 6. **Read `LOCAL_INSPECTION.md`** if you want to browse the
    evidence in a browser. Lists local-server commands for the
    status dashboard, E2B side-by-side demo, and SDK-GUI-style
-   artifact viewer — all consuming the same bundle files without
+   spatial compute viewer — all consuming the same bundle files without
    unpacking SDK binaries.
 
 7. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role

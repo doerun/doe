@@ -216,7 +216,12 @@
       "properties": {
         "name": { "$ref": "#/$defs/id" },
         "layout": { "$ref": "#/$defs/path" },
-        "peProgram": { "$ref": "#/$defs/path" }
+        "peProgram": { "$ref": "#/$defs/path" },
+        "compileParams": {
+          "type": "object",
+          "description": "Per-target compile-time params from the governed simulator plan. These extend the top-level width/height binding for kernels with target-specific layout params such as tiled matmul P/Mt/Kt/Nt, attention head dimensions, or LM-head shard sizes.",
+          "additionalProperties": { "type": "integer" }
+        }
       }
     },
     "compile": {

@@ -34,6 +34,20 @@ catalog promotes it past the current numerical-correctness blocker. The
 existing Doe-side Doppler-equivalent WebGPU harness remains useful for smoke
 evidence, but it is not production Doppler inference parity.
 
+Future additional source-artifact lanes may be admitted for the same Gemma-4
+portability story, but only as additive lanes. The most likely order is
+persisted direct-source `safetensors` first, then persisted direct-source
+`gguf`, after Doppler promotes those paths past the current experimental tier
+and they satisfy the same transcript and receipt discipline as the RDRR lane.
+That future work does not change the present target lane: `RDRR` remains the
+primary production-artifact path until a direct-source lane clears the same
+governed proof gates.
+
+Those future lanes still enter Doe through the same closed Program Bundle
+boundary. The portable-program contract is a materialized direct-source
+manifest plus normalized execution identity and transcript receipts, not raw
+`safetensors` or `gguf` parsing on the Doe side.
+
 The first proof is not speed. The proof target is a bounded deterministic
 prefill+decode transcript for the same source artifact, manifest identity,
 graph or capture identity, weight identity, and prompt/input contract. Doppler

@@ -402,10 +402,11 @@ def bind_launch_dataflow(
         elif op_name == "post_attn_norm" and layer_index is not None:
             layer_state["ffn_input"] = output
         set_current(output)
-    elif kernel_name in {"tiled", "gemv", "lm_head_gemv_stable"}:
+    elif kernel_name in {"tiled", "gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}:
         is_lm_head = op_name in {"lm_head", "lm_head_prefill"} or (
-            kernel_name == "lm_head_gemv_stable"
+            kernel_name in {"lm_head_gemv_stable", "lm_head_prefill_stable"}
         )
+        is_tiled_kernel = kernel_name in {"tiled", "lm_head_prefill_stable"}
         if op_name in {"q_proj", "k_proj", "v_proj"} and layer_index is not None:
             source = str(layer_state.get("attn_input") or current_buffer())
         else:
@@ -415,9 +416,9 @@ def bind_launch_dataflow(
             if is_lm_head
             else next_buffer(op_name)
         )
-        activation_symbol = "A" if kernel_name == "tiled" else "activation"
-        weight_symbol = "B" if kernel_name == "tiled" else "weight"
-        output_symbol = "C" if kernel_name == "tiled" else "output"
+        activation_symbol = "A" if is_tiled_kernel else "activation"
+        weight_symbol = "B" if is_tiled_kernel else "weight"
+        output_symbol = "C" if is_tiled_kernel else "output"
         inputs.append(
             binding(
                 symbol=activation_symbol,
@@ -557,13 +558,7 @@ def bind_launch_dataflow(
     elif kernel_name in {"residual", "gelu"}:
         source = current_buffer()
         output = next_buffer(op_name)
-        if kernel_name == "residual" and layer_index is not None:
-            residual_source = str(
-                layer_state.get(
-                    "ffn_residual_base" if op_name == "ffn_residual" else "residual_base",
-                    source,
-                )
-            )
+        if kernel_name == "gelu":
             inputs.append(
                 binding(
                     symbol="u",
@@ -582,25 +577,7 @@ def bind_launch_dataflow(
                     source="activation_router",
                 )
             )
-            inputs.append(
-                binding(
-                    symbol="residual",
-                    buffer=residual_source,
-                    role="activation",
-                    access="read",
-                    source="activation_router",
-                )
-            )
         else:
-            inputs.append(
-                binding(
-                    symbol="u",
-                    buffer=f"uniform:{op_name}",
-                    role="uniform",
-                    access="read",
-                    source="runtime_constant",
-                )
-            )
             inputs.append(
                 binding(
                     symbol="input",

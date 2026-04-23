@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-webgpu-transcript.schema.json",
+  "title": "Doe WebGPU transcript receipt",
+  "description": "Receipt for running the shared Doppler execution contract through the Doe-backed JS WebGPU provider. This lane is transcript/output evidence only until KV/cache evidence and backend parity gates pass.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "modelId",
+    "sourceProgram",
+    "sharedExecutionContract",
+    "decodeRequest",
+    "webgpuTranscript",
+    "kvCacheEvidence",
+    "runtimeRun",
+    "inputsSynthetic",
+    "weightsSynthetic",
+    "blocker"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_webgpu_transcript" },
+    "status": {
+      "type": "string",
+      "enum": ["output_ready", "failed", "blocked_missing_contract", "blocked_missing_provider"]
+    },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "authoringSurface",
+        "manifestPath",
+        "manifestSha256",
+        "graphPath",
+        "graphSha256",
+        "weightSetId",
+        "weightSha256",
+        "inputSetSha256",
+        "executionDepth"
+      ],
+      "properties": {
+        "authoringSurface": { "const": "doppler_execution_v1" },
+        "manifestPath": { "type": "string", "minLength": 1 },
+        "manifestSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "graphPath": { "type": "string", "minLength": 1 },
+        "graphSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "weightSetId": { "type": "string", "minLength": 1 },
+        "weightSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "inputSetSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "executionDepth": {
+          "type": "string",
+          "enum": ["not_executed", "full_model"]
+        }
+      }
+    },
+    "sharedExecutionContract": { "$ref": "#/$defs/hashLinkedPath" },
+    "decodeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestedDecodeSteps",
+        "expectedActualDecodeSteps",
+        "expectedStopReason",
+        "samplingSha256",
+        "inputSetSha256",
+        "sampling"
+      ],
+      "properties": {
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "expectedActualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "expectedStopReason": { "type": "string", "minLength": 1 },
+        "samplingSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "inputSetSha256": { "$ref": "#/$defs/sha256OrPending" },
+        "sampling": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "webgpuTranscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "producer", "exporterReceipt", "tensorDigest"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "producer": {
+          "type": "string",
+          "enum": ["doppler_js_webgpu_on_doe", "not_run"]
+        },
+        "exporterReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+        "tensorDigest": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "decodeTranscript": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "kvCacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "realKvCache", "blocker"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_captured", "output_ready"]
+        },
+        "realKvCache": { "type": "boolean" },
+        "blocker": { "type": "string" }
+      }
+    },
+    "runtimeRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner",
+        "jsHost",
+        "jsExecutable",
+        "providerModule",
+        "exportTool",
+        "exporterCommand",
+        "exitCode",
+        "stdoutLog",
+        "stderrLog"
+      ],
+      "properties": {
+        "runner": { "type": "string", "minLength": 1 },
+        "jsHost": {
+          "type": "string",
+          "enum": ["node", "bun"]
+        },
+        "jsExecutable": { "type": "string", "minLength": 1 },
+        "providerModule": { "type": "string", "minLength": 1 },
+        "exportTool": { "type": "string", "minLength": 1 },
+        "exporterCommand": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "exitCode": { "type": "integer" },
+        "stdoutLog": { "$ref": "#/$defs/hashLinkedPath" },
+        "stderrLog": { "$ref": "#/$defs/hashLinkedPath" },
+        "observedProvider": { "type": "string" }
+      }
+    },
+    "inputsSynthetic": { "const": false },
+    "weightsSynthetic": { "const": false },
+    "blocker": { "type": "string" }
+  },
+  "$defs": {
+    "sha256OrPending": {
+      "type": "string",
+      "pattern": "^(pending|[0-9a-f]{64})$"
+    },
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256OrPending" },
+        "source": { "type": "string" }
+      }
+    }
+  }
+}

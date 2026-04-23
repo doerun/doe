@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-transcript-parity-report.schema.json",
+  "title": "Doe transcript parity report",
+  "description": "Backend-agnostic pairwise transcript parity report for one Doppler reference export and one or more Doe transcript receipts bound to the same source-program contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "sourceProgram",
+    "comparisonPolicy",
+    "participants",
+    "comparisons",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_transcript_parity_report" },
+    "modelId": { "type": "string" },
+    "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
+    "comparisonPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comparison", "atol", "rtol"],
+      "properties": {
+        "comparison": { "type": "string" },
+        "atol": { "type": "number", "minimum": 0 },
+        "rtol": { "type": "number", "minimum": 0 }
+      }
+    },
+    "participants": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/participant" }
+    },
+    "comparisons": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/comparison" }
+    },
+    "summary": { "$ref": "#/$defs/summary" }
+  },
+  "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "source": { "type": "string" }
+      }
+    },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authoringSurface",
+        "manifestSha256",
+        "graphSha256",
+        "weightSha256",
+        "inputSetSha256"
+      ],
+      "properties": {
+        "authoringSurface": { "type": "string" },
+        "manifestSha256": { "type": "string" },
+        "graphSha256": { "type": "string" },
+        "weightSha256": { "type": "string" },
+        "inputSetSha256": { "type": "string" },
+        "programBundleId": { "type": "string" },
+        "programContractVersion": { "type": "string" },
+        "programBundle": { "$ref": "#/$defs/hashLinkedPath" }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "participantId",
+        "role",
+        "backendKind",
+        "artifactKind",
+        "receiptPath",
+        "receiptSha256",
+        "status",
+        "sourceProgram",
+        "transcript"
+      ],
+      "properties": {
+        "participantId": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": ["reference", "doe_transcript"]
+        },
+        "backendKind": { "type": "string" },
+        "artifactKind": { "type": "string" },
+        "receiptPath": { "type": "string" },
+        "receiptSha256": { "type": "string" },
+        "status": { "type": "string" },
+        "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
+        "transcript": { "$ref": "#/$defs/transcriptDigest" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "realKvCache": { "type": ["boolean", "null"] },
+            "kernelIsStub": { "type": ["boolean", "null"] },
+            "inputsSynthetic": { "type": ["boolean", "null"] },
+            "weightsSynthetic": { "type": ["boolean", "null"] }
+          }
+        }
+      }
+    },
+    "transcriptDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "generatedTokenIdsSha256",
+        "logitsDigestCount",
+        "logitsDigestsSha256"
+      ],
+      "properties": {
+        "status": { "type": "string" },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "decodeStepsProduced": { "type": "integer", "minimum": 0 },
+        "stopReason": { "type": "string" },
+        "transcriptPath": { "type": "string" },
+        "transcriptSha256": { "type": "string" },
+        "generatedTokenIdsSha256": { "type": "string" },
+        "logitsDigestCount": { "type": "integer", "minimum": 0 },
+        "logitsDigestsSha256": { "type": "string" }
+      }
+    },
+    "sourceProgramComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparable",
+        "manifestSha256Match",
+        "graphSha256Match",
+        "weightSha256Match",
+        "inputSetSha256Match"
+      ],
+      "properties": {
+        "comparable": { "type": "boolean" },
+        "manifestSha256Match": { "type": "boolean" },
+        "graphSha256Match": { "type": "boolean" },
+        "weightSha256Match": { "type": "boolean" },
+        "inputSetSha256Match": { "type": "boolean" },
+        "authoringSurfaceMatch": { "type": ["boolean", "null"] },
+        "programBundleIdMatch": { "type": ["boolean", "null"] },
+        "missingFields": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "transcriptComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparable",
+        "requestedDecodeStepsMatch",
+        "actualDecodeStepsMatch",
+        "stopReasonMatch",
+        "generatedTokenIdsMatch",
+        "logitsDigestCountMatch",
+        "perStepMetadataMatch"
+      ],
+      "properties": {
+        "comparable": { "type": "boolean" },
+        "requestedDecodeStepsMatch": { "type": "boolean" },
+        "actualDecodeStepsMatch": { "type": "boolean" },
+        "stopReasonMatch": { "type": "boolean" },
+        "generatedTokenIdsMatch": { "type": "boolean" },
+        "logitsDigestCountMatch": { "type": "boolean" },
+        "perStepMetadataMatch": { "type": "boolean" },
+        "perStepLogitsParityPassed": { "type": ["boolean", "null"] },
+        "comparedLogitsStepCount": { "type": "integer", "minimum": 0 },
+        "maxAbsErr": { "type": ["number", "null"], "minimum": 0 },
+        "atol": { "type": "number", "minimum": 0 },
+        "rtol": { "type": "number", "minimum": 0 },
+        "missingArtifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "leftParticipantId",
+        "rightParticipantId",
+        "status",
+        "sourceProgram",
+        "transcript"
+      ],
+      "properties": {
+        "leftParticipantId": { "type": "string" },
+        "rightParticipantId": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "blocked"]
+        },
+        "sourceProgram": { "$ref": "#/$defs/sourceProgramComparison" },
+        "transcript": { "$ref": "#/$defs/transcriptComparison" },
+        "blocker": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "referenceParticipantId",
+        "participantCount",
+        "comparisonCount",
+        "passedCount",
+        "failedCount",
+        "blockedCount",
+        "sameSourceProgramAcrossParticipants"
+      ],
+      "properties": {
+        "referenceParticipantId": { "type": "string" },
+        "participantCount": { "type": "integer", "minimum": 0 },
+        "comparisonCount": { "type": "integer", "minimum": 0 },
+        "passedCount": { "type": "integer", "minimum": 0 },
+        "failedCount": { "type": "integer", "minimum": 0 },
+        "blockedCount": { "type": "integer", "minimum": 0 },
+        "sameSourceProgramAcrossParticipants": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -20,6 +20,21 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- Doe now has a backend-agnostic transcript parity report surface for one
+  Doppler reference export plus Doe transcript receipts. The new contract is
+  `config/doe-transcript-parity-report.schema.json`, the builder is
+  `bench/tools/build_transcript_parity_report.py`, and the focused coverage is
+  `bench/tests/test_transcript_parity_report.py`. This is report-only tooling
+  for cross-lane source-program/transcript drift checks; it does not replace
+  the existing INT4-specific binder or change claim policy by itself.
+- Doe now also has a shared-contract WebGPU transcript receipt and a strict
+  pairwise parity binder for the same source program. The new surfaces are
+  `config/doe-webgpu-transcript.schema.json`,
+  `bench/tools/run_doe_webgpu_shared_contract.py`,
+  `config/doe-shared-execution-parity.schema.json`, and
+  `bench/tools/bind_shared_execution_parity.py`. This lands the Doe WebGPU
+  receipt shape and pairwise contract parity plumbing, but KV/cache evidence
+  for the WebGPU lane and the real CSL executor still remain open.
 - The CSL emitter floor has moved to Cerebras SDK 2.10. Generated PE programs
   now use the SDK 2.10 untyped parameter form for `memcpy_params` /
   `c2d_params`, fabric DSDs bind colors through explicit queues instead of
@@ -43,9 +58,34 @@ Read this file first. Use the shard files under
   residual diagnostic timeout: simfabric returns the production-derived
   residual diagnostic trace, but Doe still does not emit a full token/logit/KV
   transcript. The current trace also carries a fail-closed HostPlan executor
-  preflight; the present compiled targets still include diagnostic-shaped
-  coverage and cannot be promoted as full-model evidence until manifest/tiled
-  coverage passes. The current local transcript/parity receipts are regenerated from
+  preflight, a launch-dataflow executor validator, and a concrete execution
+  plan receipt that resolves layout exports into per-launch runtime actions
+  plus concrete activation/KV/logit/token buffer receipts. The runtime runner
+  now also probes each planned target session in its own subprocess to load
+  the compiled target and resolve device symbol ids without tripping the SDK's
+  multi-runtime global-state crash. Top-level scheduler readiness now fails
+  closed on validator/plan failure instead of collapsing to the generic
+  missing executor blocker, and the validator now requires symbol-table-
+  resolvable bindings, concrete transcript/KV buffers, and unique launch
+  indices. Weight staging, tensor movement, launch execution, and transcript
+  capture remain the open runtime step. The present compiled targets still
+  include diagnostic-shaped coverage and cannot be promoted as full-model
+  evidence until manifest/tiled coverage passes. The blocked
+  transcript receipt now records the projected
+  manifest compile params, and SDK container host-permission failures are
+  classified explicitly as `csl_compile_container_runtime_blocked`. The current
+  operation graph receipt also preserves governed per-target compile params on
+  `compile.compileTargets[]`, so manifest-shape checks can inspect the
+  heterogeneous HostPlan target surface without parsing the simulator plan; a
+  focused promotion gate now validates those params against the shared
+  manifest-scale projection, and the evidence-bundle runner exposes it behind
+  the explicit `--require-int4ple-manifest-compile-params` promotion flag. A
+  canonical `doe_shared_execution_contract` artifact now binds the same source
+  program identity, normalized execution, mapped weight spans/transforms,
+  prompt/state inputs, transcript request contract, and optional HostPlan
+  launch-schedule linkage, and the transcript HostPlan bundle links it at
+  `hostPlanBundle.sharedExecutionContract`. The
+  current local transcript/parity receipts are regenerated from
   Doppler-owned Program Bundle
   `gemma-4-e2b-it-q4k-ehf16-af32-int4ple-0894776e5a46`; this refreshes source
   identity and HostPlan evidence only, not the full execution claim. A pending

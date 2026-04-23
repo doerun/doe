@@ -1,5 +1,5 @@
 const el = (id) => document.getElementById(id);
-const DEFAULT_ARTIFACT_DIR = "bench/out/scratch/gemma4-e2b-csl-sim/compile-L1";
+const DEFAULT_WORKDIR = "bench/out/scratch/gemma4-e2b-csl-sim/compile-L1";
 const FABRIC_COLS = 19;
 const FABRIC_ROWS = 14;
 const ROUTE_COLORS = [
@@ -8,7 +8,7 @@ const ROUTE_COLORS = [
   "#5c7cff", "#c24cff", "#ff6ab5", "#ff344f", "#7444ff", "#2485ff",
   "#ff3ed8", "#a737ff", "#ff5575", "#426dff", "#b74dff", "#ff249c",
 ];
-let currentArtifactInfo = null;
+let currentWorkdirInfo = null;
 let currentTraceInfo = null;
 
 function redactEnabled() {
@@ -59,25 +59,25 @@ function setCommand(id, text, options = {}) {
   }
 }
 
-function sdkCommandText(artifactDir, serverCommand = null) {
-  const raw = serverCommand || `sdk_debug_shell visualize --artifact_dir ${artifactDir}`;
+function sdkCommandText(workdir, serverCommand = null) {
+  const raw = serverCommand || `sdk_debug_shell visualize --artifact_dir ${workdir}`;
   if (!redactEnabled()) return raw;
-  return raw.replace(artifactDir, maybeRedact(artifactDir));
+  return raw.replace(workdir, maybeRedact(workdir));
 }
 
-function setSdkCommand(artifactDir, options = {}) {
+function setSdkCommand(workdir, options = {}) {
   const placeholder =
-    "sdk_debug_shell visualize --artifact_dir <set artifact dir above>";
-  if (!artifactDir) {
+    "sdk_debug_shell visualize --artifact_dir <set compile workdir above>";
+  if (!workdir) {
     setCommand("sdk-command", placeholder, {
       copyable: false,
-      status: options.status || "missing artifact dir",
+      status: options.status || "missing compile workdir",
       statusClass: options.statusClass || "pending",
     });
     return;
   }
   const redacted = redactEnabled();
-  const displayText = sdkCommandText(artifactDir, options.serverCommand);
+  const displayText = sdkCommandText(workdir, options.serverCommand);
   const status = redacted
     ? "redacted"
     : (options.status || "ready");
@@ -91,15 +91,15 @@ function setSdkCommand(artifactDir, options = {}) {
   });
 }
 
-function setArtifactSummary(artifactDir) {
-  const node = el("artifact-summary");
+function setWorkdirSummary(workdir) {
+  const node = el("workdir-summary");
   if (!node) return;
-  if (!artifactDir) {
-    node.innerHTML = "<span>artifact dir: not configured</span>";
+  if (!workdir) {
+    node.innerHTML = "<span>compile workdir: not configured</span>";
     return;
   }
-  const shown = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
-  node.innerHTML = `<span>artifact dir: <code>${shown}</code></span>`;
+  const shown = redactEnabled() ? maybeRedact(workdir) : workdir;
+  node.innerHTML = `<span>compile workdir: <code>${shown}</code></span>`;
 }
 
 function routeColor(index) {
@@ -107,7 +107,7 @@ function routeColor(index) {
 }
 
 function clearSdkGui(message) {
-  currentArtifactInfo = null;
+  currentWorkdirInfo = null;
   currentTraceInfo = null;
   const colorList = el("color-list");
   if (colorList) {
@@ -161,7 +161,7 @@ function routeForCell(col, row, traceInfo = currentTraceInfo) {
   return { active, routeIndex };
 }
 
-function renderFabricGrid(info = currentArtifactInfo, traceInfo = currentTraceInfo) {
+function renderFabricGrid(info = currentWorkdirInfo, traceInfo = currentTraceInfo) {
   const grid = el("fabric-grid");
   if (!grid) return;
   const cells = [];
@@ -219,7 +219,7 @@ function selectPe(col, row, options = {}) {
   const route = routeForCell(x, y);
   const streams = currentTraceInfo?.perStreamCounters || [];
   const firstStream = streams[route.routeIndex % Math.max(1, streams.length)] || {};
-  const mapFile = currentArtifactInfo?.mapFile;
+  const mapFile = currentWorkdirInfo?.mapFile;
   node.classList.remove("placeholder");
   node.innerHTML = (
     `<strong>PE coordinate:</strong> <code>${x}, ${y}</code><br>` +
@@ -273,19 +273,19 @@ function renderTimelineRows(info) {
   }).join("");
 }
 
-async function inspectArtifactDir(artifactDir) {
-  setSdkCommand(artifactDir, {
+async function inspectWorkdir(workdir) {
+  setSdkCommand(workdir, {
     copyable: false,
     status: "validating",
     statusClass: "warn",
   });
-  setArtifactSummary(artifactDir);
-  setPill("artifact-status", "inspecting", "warn");
+  setWorkdirSummary(workdir);
+  setPill("workdir-status", "inspecting", "warn");
 
   let info = null;
   try {
     const res = await fetch(
-      `/api/artifact-dir-info?path=${encodeURIComponent(artifactDir)}`,
+      `/api/workdir-info?path=${encodeURIComponent(workdir)}`,
       { cache: "no-store" },
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -296,7 +296,7 @@ async function inspectArtifactDir(artifactDir) {
       status: "server required",
       statusClass: "fail",
     });
-    setPill("artifact-status", "server required", "fail");
+    setPill("workdir-status", "server required", "fail");
     for (const id of ["panel-fabric", "panel-pe", "panel-source",
                        "panel-trace", "panel-io", "panel-evidence"]) {
       const node = el(id);
@@ -304,7 +304,7 @@ async function inspectArtifactDir(artifactDir) {
       node.classList.add("placeholder");
       node.innerHTML = (
         `this viewer requires the E2B demo server running on the ` +
-        `same origin — its /api/artifact-dir-info route enumerates ` +
+        `same origin — its /api/workdir-info route enumerates ` +
         `the directory. Start via: python3 ` +
         `demos/gemma4-e2b-csl-sim/server.py --port 8020`
       );
@@ -313,12 +313,12 @@ async function inspectArtifactDir(artifactDir) {
   }
 
   if (info && info.ok === false) {
-    clearSdkGui("invalid artifact dir");
+    clearSdkGui("invalid compile workdir");
     setSdkCommand(null, {
-      status: "invalid artifact dir",
+      status: "invalid compile workdir",
       statusClass: "fail",
     });
-    setPill("artifact-status", "invalid path", "fail");
+    setPill("workdir-status", "invalid path", "fail");
     for (const id of ["panel-fabric", "panel-pe", "panel-source",
                        "panel-trace", "panel-io", "panel-evidence"]) {
       const node = el(id);
@@ -329,14 +329,14 @@ async function inspectArtifactDir(artifactDir) {
     return;
   }
 
-  setPill("artifact-status",
-          `${info.numFiles} files, ${info.numSdkArtifacts} SDK artifacts`,
+  setPill("workdir-status",
+          `${info.numFiles} files, ${info.numSdkArtifacts} SDK outputs`,
           "pass");
-  setSdkCommand(artifactDir, {
+  setSdkCommand(workdir, {
     serverCommand: info.sdkVisualizeCommand,
     copyable: true,
   });
-  currentArtifactInfo = info;
+  currentWorkdirInfo = info;
   renderColorList(info);
   renderFabricGrid(info);
 
@@ -349,20 +349,20 @@ async function inspectArtifactDir(artifactDir) {
       fabric.innerHTML = (
         `<strong>colors.json</strong>: ${info.colorsJson.numColors} colors` +
         (names ? `<br>${names}` : "") +
-        `<br><strong>files:</strong> ${info.numFiles}, SDK artifacts: ${info.numSdkArtifacts}` +
-        `<br><strong>path:</strong> <code>${maybeRedact(info.pathChecked || artifactDir)}</code>`
+        `<br><strong>files:</strong> ${info.numFiles}, SDK outputs: ${info.numSdkArtifacts}` +
+        `<br><strong>path:</strong> <code>${maybeRedact(info.pathChecked || workdir)}</code>`
       );
     } else if (info.colorsJson && info.colorsJson.error) {
       fabric.innerHTML = `colors.json: <code>${info.colorsJson.error}</code>`;
     } else {
       fabric.innerHTML = (
-        `no colors.json in ${maybeRedact(info.pathChecked || artifactDir)}<br>` +
-        `<strong>files:</strong> ${info.numFiles}, SDK artifacts: ${info.numSdkArtifacts}`
+        `no colors.json in ${maybeRedact(info.pathChecked || workdir)}<br>` +
+        `<strong>files:</strong> ${info.numFiles}, SDK outputs: ${info.numSdkArtifacts}`
       );
     }
   }
 
-  // Source panel: list SDK-artifact files with sizes.
+  // Source panel: list SDK output files with sizes.
   const source = el("panel-source");
   if (source) {
     source.classList.remove("placeholder");
@@ -370,27 +370,27 @@ async function inspectArtifactDir(artifactDir) {
       (f) => f.kind === "sdk_artifact",
     );
     if (!sdkFiles.length) {
-      source.innerHTML = "no SDK artifact files detected";
+      source.innerHTML = "no SDK output files detected";
     } else {
       const rows = sdkFiles.map((f) =>
         `${f.name}: ${f.sizeBytes} bytes`
       ).join("<br>");
-      source.innerHTML = `<strong>SDK artifacts:</strong><br>${rows}`;
+      source.innerHTML = `<strong>SDK outputs:</strong><br>${rows}`;
     }
   }
 
   // Host-IO + trace panels both read from the same trace JSON.
   // Fetch once, render twice.
-  await renderHostIoAndTracePanels(artifactDir);
+  await renderHostIoAndTracePanels(workdir);
 
   // Evidence overlay: cross-runtime parity verdict from the repo.
-  await renderEvidencePanel(artifactDir);
+  await renderEvidencePanel(workdir);
 }
 
-async function renderHostIoAndTracePanels(artifactDir) {
+async function renderHostIoAndTracePanels(workdir) {
   const ioNode = el("panel-io");
   const traceNode = el("panel-trace");
-  const tracePath = deriveTracePath(artifactDir);
+  const tracePath = deriveTracePath(workdir);
   if (!tracePath) {
     currentTraceInfo = null;
     renderTimelineRows(null);
@@ -406,7 +406,7 @@ async function renderHostIoAndTracePanels(artifactDir) {
     }
     if (traceNode) {
       traceNode.classList.add("placeholder");
-      traceNode.innerHTML = "no trace path derivable from the artifact dir";
+      traceNode.innerHTML = "no trace path derivable from the compile workdir";
     }
     return;
   }
@@ -437,8 +437,8 @@ async function renderHostIoAndTracePanels(artifactDir) {
     return;
   }
   currentTraceInfo = info;
-  renderColorList(currentArtifactInfo, info);
-  renderFabricGrid(currentArtifactInfo, info);
+  renderColorList(currentWorkdirInfo, info);
+  renderFabricGrid(currentWorkdirInfo, info);
   renderHostIoPanelFromInfo(ioNode, tracePath, info);
   renderTracePanelFromInfo(traceNode, tracePath, info);
 }
@@ -515,13 +515,13 @@ async function loadBundleSummarySnippet() {
   }
 }
 
-async function renderEvidencePanel(artifactDir) {
+async function renderEvidencePanel(workdir) {
   const node = el("panel-evidence");
   if (!node) return;
   // Cross-runtime parity verdict covers the E2B layer-block today;
-  // we surface it alongside the artifact dir so the reviewer can
+  // we surface it alongside the compile workdir so the reviewer can
   // see whether the *repo's* receipts attest to the program this
-  // artifact dir was compiled for. The verdict itself is a static
+  // workdir was compiled for. The verdict itself is a static
   // file — just fetch it.
   const parityPath =
     "/bench/out/streaming-executor/e2b-layer-block-cross-runtime-parity-check.json";
@@ -550,9 +550,9 @@ async function renderEvidencePanel(artifactDir) {
     const liveKernelSha = (kernel.liveSha256 || '').slice(0, 16);
     const runnerKernelSha = (runnerTrace.kernelSourceSha256InTrace || '').slice(0, 16);
     const syntheticSha = (syntheticTrace.sha256 || '').slice(0, 16);
-    const shownArtifact = redactEnabled() ? maybeRedact(artifactDir) : artifactDir;
+    const shownWorkdir = redactEnabled() ? maybeRedact(workdir) : workdir;
     node.innerHTML = (
-      `<strong>artifact dir:</strong> <code>${shownArtifact}</code><br>` +
+      `<strong>compile workdir:</strong> <code>${shownWorkdir}</code><br>` +
       `<strong>live kernel sha:</strong> <code>${liveKernelSha}...</code><br>` +
       `<strong>runner-recorded kernel sha:</strong> <code>${runnerKernelSha}...</code> ${driftTag}<br>` +
       `<strong>synthetic trace sha:</strong> <code>${syntheticSha}...</code><br>` +
@@ -561,7 +561,7 @@ async function renderEvidencePanel(artifactDir) {
       `<strong>evidence bundle:</strong> ${bundleSummary}<br>` +
       `<span style="color:var(--muted);font-size:11px">` +
       `parity verdict loaded from <code>${parityPath}</code> — ` +
-      `scope is the layer-block kernel, not the whole compile dir.` +
+      `scope is the layer-block kernel, not the whole compile workdir.` +
       `</span>`
     );
   } catch (err) {
@@ -574,30 +574,30 @@ async function renderEvidencePanel(artifactDir) {
   }
 }
 
-function deriveTracePath(artifactDir) {
+function deriveTracePath(workdir) {
   // Best-effort: for "bench/out/scratch/gemma4-e2b-csl-sim/compile-L<N>"
   // → "bench/out/scratch/gemma4-e2b-csl-sim/csl-L<N>-live-trace.json"
-  const m = artifactDir.match(
+  const m = workdir.match(
     /^(bench\/out\/scratch\/gemma4-e2b-csl-sim)\/compile-L(\d+)\/?$/
   );
   if (m) return `${m[1]}/csl-L${m[2]}-live-trace.json`;
   // Accept an explicit trace path too (if user pastes one).
-  if (/\/.*trace.*\.json$/.test(artifactDir)) return artifactDir;
+  if (/\/.*trace.*\.json$/.test(workdir)) return workdir;
   return null;
 }
 
-async function onLoadArtifact() {
-  const input = el("artifact-dir-input");
+async function onLoadWorkdir() {
+  const input = el("workdir-input");
   const raw = (input?.value || "").trim();
   if (!raw) {
     setSdkCommand(null, {
       status: "path required",
       statusClass: "fail",
     });
-    setPill("artifact-status", "path required", "fail");
+    setPill("workdir-status", "path required", "fail");
     return;
   }
-  await inspectArtifactDir(raw);
+  await inspectWorkdir(raw);
 }
 
 async function loadEvidenceCommands() {
@@ -743,13 +743,13 @@ async function copyCommand(commandId) {
 }
 
 function init() {
-  el("load-artifact")?.addEventListener("click", onLoadArtifact);
+  el("load-workdir")?.addEventListener("click", onLoadWorkdir);
   el("select-pe")?.addEventListener("click", selectPeFromInput);
   el("pe-coordinate-input")?.addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") selectPeFromInput();
   });
   el("fit-fabric")?.addEventListener("click", () => {
-    renderFabricGrid(currentArtifactInfo, currentTraceInfo);
+    renderFabricGrid(currentWorkdirInfo, currentTraceInfo);
   });
   el("toggle-terminal")?.addEventListener("click", () => {
     const drawer = el("terminal-drawer");
@@ -769,8 +769,8 @@ function init() {
       }
     });
   }
-  el("artifact-dir-input")?.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter") onLoadArtifact();
+  el("workdir-input")?.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") onLoadWorkdir();
   });
   // Redact toggle: persist across refreshes, re-inspect on change so
   // all panels redraw consistently.
@@ -782,27 +782,27 @@ function init() {
         "sdk-gui-redact",
         redactBox.checked ? "1" : "0",
       );
-      const current = el("artifact-dir-input")?.value?.trim();
-      if (current) inspectArtifactDir(current);
+      const current = el("workdir-input")?.value?.trim();
+      if (current) inspectWorkdir(current);
       else {
         setSdkCommand(null);
-        setArtifactSummary(null);
+        setWorkdirSummary(null);
       }
     });
   }
 
-  // URL ?artifact=<rel-path> auto-populates the input and runs
+  // URL ?workdir=<rel-path> auto-populates the input and runs
   // inspection so a dashboard link can open this viewer pinned to a
-  // specific artifact directory.
+  // specific compile workdir.
   const params = new URLSearchParams(window.location.search);
-  const qsArtifact = params.get("artifact");
-  const input = el("artifact-dir-input");
-  if (qsArtifact) {
-    if (input) input.value = qsArtifact;
-    inspectArtifactDir(qsArtifact);
+  const qsWorkdir = params.get("workdir");
+  const input = el("workdir-input");
+  if (qsWorkdir) {
+    if (input) input.value = qsWorkdir;
+    inspectWorkdir(qsWorkdir);
   } else {
-    if (input && !input.value) input.value = DEFAULT_ARTIFACT_DIR;
-    inspectArtifactDir(input?.value || DEFAULT_ARTIFACT_DIR);
+    if (input && !input.value) input.value = DEFAULT_WORKDIR;
+    inspectWorkdir(input?.value || DEFAULT_WORKDIR);
   }
   loadEvidenceCommands();
 }

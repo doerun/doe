@@ -26,7 +26,7 @@ Steps (in order):
  15. Doppler INT4 PLE bounded reference export and gate
  16. Doe CSL INT4 PLE blocked transcript receipt from the current
      Doppler-owned Program Bundle, gate, parity bind, and metadata
-     parity gate
+     parity gate; optional manifest compile-param promotion preflight
  17. claim-discipline gate (hardware + MoE fronts)
  18. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
@@ -94,6 +94,16 @@ def parse_args() -> argparse.Namespace:
             "transcript/parity lane."
         ),
     )
+    p.add_argument(
+        "--require-int4ple-manifest-compile-params",
+        action="store_true",
+        help=(
+            "Run the promotion-only INT4 PLE manifest compile-param gate "
+            "against the Doe CSL simulator driver result. Default skips this "
+            "preflight so blocked metadata evidence can still pass while "
+            "current compile targets are diagnostic-shaped or stale."
+        ),
+    )
     return p.parse_args()
 
 
@@ -134,6 +144,18 @@ def run(step: str, argv: list[str], timeout: int = 600) -> dict:
         "stdoutTail": stdout_tail,
         "stderrTail": stderr_tail,
         "elapsedMs": elapsed_ms,
+    }
+
+
+def skipped(step: str, message: str, command: list[str] | None = None) -> dict:
+    return {
+        "step": step,
+        "command": command or [],
+        "status": "skipped",
+        "returnCode": 0,
+        "stdoutTail": message,
+        "stderrTail": "",
+        "elapsedMs": 0.0,
     }
 
 
@@ -425,6 +447,37 @@ def main() -> int:
         ],
     ))
 
+    manifest_compile_params_gate_command = [
+        "python3",
+        "bench/gates/int4ple_manifest_compile_params_gate.py",
+        "--operation-graph",
+        "bench/out/doppler-reference/"
+        "gemma-4-e2b-int4ple-doe-csl-hostplan/"
+        "simulator-driver-result.json",
+        "--runtime-config",
+        "bench/out/doppler-reference/"
+        "gemma-4-e2b-int4ple-doe-csl-hostplan/"
+        "runtime-config.json",
+        "--reference-export",
+        PROGRAM_BUNDLE_REFERENCE_EXPORT,
+    ]
+    if args.require_int4ple_manifest_compile_params:
+        steps.append(run(
+            "doe-csl-int4ple-manifest-compile-params-gate",
+            manifest_compile_params_gate_command,
+        ))
+    else:
+        steps.append(skipped(
+            "doe-csl-int4ple-manifest-compile-params-gate",
+            (
+                "skipped: promotion-only gate. Pass "
+                "--require-int4ple-manifest-compile-params after refreshing "
+                "the operation graph with manifest-scale per-target "
+                "compileParams."
+            ),
+            manifest_compile_params_gate_command,
+        ))
+
     steps.append(run(
         "doe-csl-int4ple-parity-bind",
         [
@@ -487,18 +540,13 @@ def main() -> int:
     # trace exists today.
     trace = find_live_trace_with_telemetry()
     if trace is None:
-        steps.append({
-            "step": "sdklayout-streaming-hardening-gate",
-            "command": [],
-            "status": "skipped",
-            "returnCode": 0,
-            "stdoutTail": (
+        steps.append(skipped(
+            "sdklayout-streaming-hardening-gate",
+            (
                 "skipped: no live trace with streamTelemetry found. "
                 "Rerun the CSL runner via cs_python and try again."
             ),
-            "stderrTail": "",
-            "elapsedMs": 0.0,
-        })
+        ))
     else:
         steps.append(run(
             "sdklayout-streaming-hardening-gate",

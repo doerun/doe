@@ -30,6 +30,94 @@ the kernels or execution behavior that Doppler already owns.
 Ouroboros integration docs may link these artifacts into the critical user
 journey, but the enforceable contract fields live with the owning repository.
 
+## Reference implementation discipline
+
+Doe may use external reference implementations, including Cerebras Model Zoo,
+to inform architecture semantics, config interpretation, and checkpoint
+expectations for a Doppler bundle. Those references are inputs to analysis and
+parity work. They do not define Doe contracts.
+
+The contract boundary is:
+
+- external reference implementations may inform model semantics, config
+  interpretation, checkpoint expectations, and parity attribution;
+- they must not define Doe runtime contracts, transcript schemas, HostPlan
+  shape, or CSL executor behavior.
+
+Canonical truth for portability and parity comes from:
+
+- exported weights and shard identities;
+- tokenizer behavior;
+- model config and manifest state;
+- measured Doppler reference transcripts;
+- papers only when the bundle and measured artifacts are insufficient.
+
+When Doe consults a reference implementation, the allowed extracted facts are
+architecture-facing only:
+
+- block order;
+- norm placement;
+- attention type;
+- KV/cache policy;
+- MoE routing semantics;
+- tensor naming correspondences;
+- expected config fields.
+
+Those facts must be normalized into Doppler-owned or Doe-owned portable
+artifacts such as converter rules, normalized execution graphs, canonical
+operator identities, and manifest metadata. Doe must not import
+Cerebras-specific layer wrappers or execution assumptions as portable-program
+truth.
+
+The runtime leakage ban is explicit. Doe must not treat any of the following as
+portable inputs merely because they appear in a reference implementation:
+
+- CSL-specific kernels;
+- SDK layout assumptions;
+- Cerebras-only launch structure;
+- device memory conventions;
+- training-time fused shortcuts unless they are proven semantically identical
+  to the declared Doppler program.
+
+Reference implementations are valid for parity attribution when divergence is
+reduced to architecture boundaries such as:
+
+- embed;
+- `q_proj` / `k_proj` / `v_proj`;
+- attention score or value path;
+- FFN up / gate / down;
+- router logits;
+- residual or norm boundaries.
+
+Backends remain downstream of one declared program graph:
+
+```text
+Doppler semantics -> Doe normalized execution -> Doe WebGPU executor
+Doppler semantics -> Doe normalized execution -> HostPlan / CSL executor
+```
+
+Reference-implementation agreement is not proof. Proof requires:
+
+- a Doe WebGPU transcript;
+- a CSL transcript;
+- a strict parity receipt;
+- hardware promotion only after simulator parity on the same bundle.
+
+For every imported model family, Doe should keep drift tests that cover:
+
+- config mapping;
+- checkpoint and tensor-name correspondence;
+- operator-boundary transcript checks;
+- parity fixtures.
+
+The hard review question for any such change is:
+
+> Did this make Doppler more faithful, or did it make Doe more
+> Cerebras-specific?
+
+If the answer is the second one, the change should be rejected or rewritten so
+the portable-program boundary stays intact.
+
 ## Version gates
 
 Doe ingest must reject unsupported bundles early. A portable-program ingest
@@ -71,6 +159,28 @@ future contract version explicitly promotes capture-first ingest.
 Doe.js remains optional from Doppler's perspective. Browser and Node Doppler
 should remain WebGPU-first. Doe.js can act as an optional provider, capture, or
 lowering surface for bundles that select Doe-compatible profiles.
+
+Future direct-source lanes do not change that rule. Doe must not admit raw
+`safetensors`, raw `gguf`, or any other raw source-format file as a CSL proof
+input by itself. A direct-source lane is admissible only when Doppler exports a
+closed Program Bundle over a materialized direct-source `manifest.json`.
+
+For that future lane, Doe's ingest boundary stays normalized and bundle-first:
+
+- `sources.manifest.hash` must bind the exact materialized manifest;
+- the manifest must carry stable `metadata.sourceRuntime` identity, including
+  `sourceKind`, `hashAlgorithm`, `pathSemantics`, source-file digests, and
+  auxiliary/tokenizer asset digests;
+- `sources.executionGraph.hash`, `sources.weightSetHash`, and the reference
+  transcript remain the execution proof surface Doe binds into receipts.
+
+Doe consumes the normalized portable-program facts exported by Doppler. Doe
+does not derive HostPlan or CSL behavior from raw source-format metadata that
+is not already represented in the bundle or its materialized manifest.
+
+For portable ingest, `metadata.sourceRuntime.pathSemantics` must be
+`artifact-relative`. `runtime-local` paths or incomplete digests are local
+debugging aids only and are not eligible for CSL promotion.
 
 ## CSL promotion boundary
 

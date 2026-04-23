@@ -182,8 +182,20 @@
       "data": "examples/doe-doppler-program-bundle.gemma-4-e2b.sample.json"
     },
     {
+      "schema": "config/doe-shared-execution-contract.schema.json",
+      "data": "examples/doe-shared-execution-contract.gemma-4-e2b.sample.json"
+    },
+    {
       "schema": "config/doe-csl-int4ple-transcript.schema.json",
       "data": "examples/doe-csl-int4ple-transcript.blocked.sample.json"
+    },
+    {
+      "schema": "config/doe-webgpu-transcript.schema.json",
+      "data": "examples/doe-webgpu-transcript.gemma-4-e2b.sample.json"
+    },
+    {
+      "schema": "config/doe-shared-execution-parity.schema.json",
+      "data": "examples/doe-shared-execution-parity.gemma-4-e2b.sample.json"
     },
     {
       "schema": "config/doe-csl-demo-evidence.schema.json",

@@ -51,13 +51,13 @@ python3 demos/gemma4-e2b-csl-sim/server.py --port 8020
 # "Run CSL Simulator" now dispatches a live cs_python invocation
 ```
 
-## SDK-GUI-style viewer (browser SDK GUI facsimile)
+## SDK-GUI-style spatial compute viewer
 
 ```bash
 python3 demos/gemma4-e2b-csl-sim/server.py --port 8030
 # then open http://localhost:8030/demos/doe-sdk-gui-viewer/
-# default path auto-loads compile-L1; paste another artifact dir
-# into the work-directory input to inspect that compile output
+# default path auto-loads compile-L1; paste another compile workdir
+# into the work-directory input to inspect that spatial compute state
 ```
 
 The viewer is shaped after the Cerebras SDK GUI reference screenshots:
@@ -66,7 +66,7 @@ PE coordinate selector and drilldown, instruction/source/wavelet
 timeline panes, debug pane, timeline navigation controls, and a
 terminal drawer for exported commands.
 
-It inspects repo-relative artifact directories through the same
+It inspects repo-relative compile workdirs through the same
 metadata-only server routes used by the E2B side-by-side demo. It
 maps colors.json, host-I/O streams, stream telemetry, trace status,
 and Doe evidence-bundle verdicts into the GUI without returning
@@ -74,8 +74,8 @@ and Doe evidence-bundle verdicts into the GUI without returning
 
 The command strip also exposes copyable local commands for:
 
-- `sdk_debug_shell visualize --artifact_dir ...` once the artifact
-  directory is validated
+- `sdk_debug_shell visualize --artifact_dir ...` once the compile
+  workdir is validated
 - `python3 bench/tools/run_cerebras_evidence_bundle.py`
 - `python3 bench/tools/pack_cerebras_validation_archive.py`
 - `python3 bench/tools/verify_cerebras_validation_archive.py --archive ...`
@@ -92,10 +92,10 @@ is `true`, Cerebras SDK was reachable at pack time. The matching
 native visualize command on a Cerebras-SDK-equipped host:
 
 ```bash
-sdk_debug_shell visualize --artifact_dir <path-to-compile-artifact-dir>
+sdk_debug_shell visualize --artifact_dir <compile-workdir>
 ```
 
-The `<path-to-compile-artifact-dir>` is whichever directory the
+The `<compile-workdir>` is the compile workdir the
 runner wrote `.elf` / `.lst` / `.map` / `.symbols` / `.viz` into
 during compilation. These files are **explicitly excluded** from
 this bundle (see the deny-list in
@@ -108,7 +108,7 @@ the bundler had no Cerebras SDK installed; the visualize command
 is **not available via this bundle**. Reviewers with their own SDK
 installation can re-run the runner (see `CEREBRAS_ASK.md`) against
 the pinned manifest/graph/kernel hashes in this bundle to produce
-their own compile artifact dir, then visualize it locally.
+their own compile workdir, then visualize it locally.
 
 ## Quick archive summary
 

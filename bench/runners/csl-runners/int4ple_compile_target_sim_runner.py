@@ -13,14 +13,29 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 import common
+from bench.tools.doppler_rdrr_q4k import f16_bytes_to_f32_values
+from bench.tools.int4ple_manifest_compile_params import (
+    manifest_compile_param_projection,
+    runtime_grid,
+)
+from int4ple_hostplan_execution_plan import build_hostplan_execution_plan
+from int4ple_hostplan_executor_validator import validate_hostplan_executor
 from int4ple_runtime_scheduler import (
     count_by,
     load_normalized_execution,
@@ -30,11 +45,12 @@ from int4ple_runtime_scheduler import (
 )
 
 SCHEDULE_PREVIEW_COUNT = 4
-COMPILE_DISTINCT_PE_WARNING_THRESHOLD = 10_000
-Q4K_BLOCK_SIZE = 256
-TARGET_MATMUL_TILE = 16
-ATTENTION_PREFILL_BLOCK_SIZE = 32
-DEFAULT_GEMV_INPUT_PER_PE = 512
+TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
+LAUNCH_STEP_ADAPTER = Path(__file__).with_name("int4ple_launch_step_adapter.py")
+DEFAULT_CS_PYTHON_CANDIDATES = (
+    "/home/x/cerebras-sdk-2.10.0/cs_python",
+    "/home/x/cerebras-sdk/cs_python",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,6 +88,25 @@ def append_progress(path: Path, phase: str, **fields: Any) -> None:
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def cs_python_executable() -> str:
+    for env_key in ("DOE_CSL_RUNTIME_EXECUTABLE", "DOE_CSL_CS_PYTHON"):
+        candidate = os.environ.get(env_key, "").strip()
+        if candidate and Path(candidate).is_file():
+            return candidate
+    sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", "").strip()
+    if sdk_root:
+        candidate = Path(sdk_root) / "cs_python"
+        if candidate.is_file():
+            return str(candidate)
+    for candidate in DEFAULT_CS_PYTHON_CANDIDATES:
+        if Path(candidate).is_file():
+            return candidate
+    discovered = shutil.which("cs_python")
+    if discovered:
+        return discovered
+    return "cs_python"
 
 
 def target_by_name(plan: dict[str, Any], name: str) -> dict[str, Any]:
@@ -193,121 +228,6 @@ def require_minimum(
     )
     if not passed:
         blockers.append(f"{check_id}:{actual}<{minimum}")
-
-
-def ceil_div(numerator: int, denominator: int) -> int:
-    if denominator <= 0:
-        return 0
-    return (numerator + denominator - 1) // denominator
-
-
-def runtime_grid(runtime_config: dict[str, Any]) -> dict[str, int]:
-    memory_plan = runtime_config.get("memoryPlan") or {}
-    grid = memory_plan.get("grid") if isinstance(memory_plan, dict) else {}
-    if not isinstance(grid, dict):
-        grid = {}
-    return {
-        "width": int(grid.get("width") or 0),
-        "height": int(grid.get("height") or 0),
-    }
-
-
-def manifest_compile_param_projection(
-    *,
-    runtime_config: dict[str, Any],
-    reference: dict[str, Any],
-) -> dict[str, Any]:
-    model = runtime_config.get("modelConfig") or {}
-    if not isinstance(model, dict) or not model:
-        return {"status": "not_evaluated", "reason": "model_config_missing"}
-    grid = runtime_grid(runtime_config)
-    grid_width = grid["width"]
-    grid_height = grid["height"]
-    if grid_width <= 0 or grid_height <= 0:
-        return {"status": "not_evaluated", "reason": "runtime_grid_missing"}
-
-    vocab_size = int(model.get("vocabSize") or model.get("pleVocabSize") or 0)
-    hidden_dim = int(model.get("hiddenDim") or 0)
-    head_dim = int(model.get("headDim") or 0)
-    global_head_dim = int(model.get("globalHeadDim") or head_dim)
-    max_seq_len = int(model.get("maxSeqLen") or reference.get("promptTokenCount") or 0)
-    prompt_tokens = int(reference.get("promptTokenCount") or max_seq_len or 0)
-    pe_count = grid_width * grid_height
-    matmul_p = min(
-        grid_width,
-        grid_height,
-        int(COMPILE_DISTINCT_PE_WARNING_THRESHOLD**0.5),
-        max(1, ceil_div(hidden_dim, TARGET_MATMUL_TILE)),
-    )
-    matmul_tile = ceil_div(hidden_dim, matmul_p)
-    gemv_input_per_pe = max(
-        DEFAULT_GEMV_INPUT_PER_PE,
-        ceil_div(hidden_dim, max(1, grid_width)),
-    )
-    gemv_blocks = ceil_div(gemv_input_per_pe, Q4K_BLOCK_SIZE)
-    lm_head_out_dim = ceil_div(vocab_size, max(1, grid_width))
-    sample_chunk = ceil_div(vocab_size, max(1, grid_width))
-    attention_tokens = max(1, prompt_tokens)
-
-    params = {
-        "embed": {
-            "height": grid_height,
-            "hidden_size": hidden_dim,
-            "num_tokens": max_seq_len,
-            "rows_per_pe": ceil_div(vocab_size, max(1, pe_count)),
-        },
-        "tiled": {
-            "P": matmul_p,
-            "Mt": matmul_tile,
-            "Kt": matmul_tile,
-            "Nt": matmul_tile,
-        },
-        "attn_head256": {
-            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
-            "head_dim": head_dim,
-            "kv_len": attention_tokens,
-            "q_len": attention_tokens,
-        },
-        "attn_head512": {
-            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
-            "head_dim": global_head_dim,
-            "kv_len": attention_tokens,
-            "q_len": attention_tokens,
-        },
-        "lm_head_gemv_stable": {
-            "out_dim": lm_head_out_dim,
-            "in_dim_per_pe": gemv_input_per_pe,
-            "num_blocks_per_row": gemv_blocks,
-        },
-        "sample": {
-            "chunk_size": sample_chunk,
-        },
-    }
-    compile_scale = {
-        "embedDistinctPeProgramCount": pe_count,
-        "tiledDistinctPeProgramCount": matmul_p * matmul_p,
-        "warningThreshold": COMPILE_DISTINCT_PE_WARNING_THRESHOLD,
-    }
-    warnings = [
-        f"{key}:{value}>{COMPILE_DISTINCT_PE_WARNING_THRESHOLD}"
-        for key, value in compile_scale.items()
-        if key.endswith("Count") and value > COMPILE_DISTINCT_PE_WARNING_THRESHOLD
-    ]
-    return {
-        "status": "projected",
-        "source": "runtime_config_model_and_grid",
-        "grid": grid,
-        "params": params,
-        "coverage": {
-            "embedRows": pe_count * int(params["embed"]["rows_per_pe"]),
-            "tiledM": matmul_p * matmul_tile,
-            "tiledN": matmul_p * matmul_tile,
-            "lmHeadLogits": grid_width * lm_head_out_dim,
-            "sampleLogits": grid_width * sample_chunk,
-        },
-        "compileScale": compile_scale,
-        "warnings": warnings,
-    }
 
 
 def host_plan_executor_preflight(
@@ -711,6 +631,20 @@ def scheduler_readiness(
         runtime_config=runtime_config,
         reference=reference,
     )
+    executor_validator = validate_hostplan_executor(
+        plan=plan,
+        compile_root=compile_root,
+        runtime_config=runtime_config,
+        scheduler={"hostPlan": host_plan},
+        manifest_preflight=executor_preflight,
+    )
+    execution_plan = build_hostplan_execution_plan(
+        plan=plan,
+        compile_root=compile_root,
+        runtime_config=runtime_config,
+        scheduler={"hostPlan": host_plan},
+        executor_validator=executor_validator,
+    )
     expected_runtime = plan.get("runtime") or {}
     readiness = {
         "phaseLaunchesMaterialized": bool(host_plan.get("phaseLaunchCounts")),
@@ -729,6 +663,8 @@ def scheduler_readiness(
         "kvReadWriteScheduleBound": kv_schedule.get("status") == "bound",
         "transcriptEmittersBound": transcript.get("status") == "bound",
         "manifestShapePreflightPassed": executor_preflight.get("status") == "passed",
+        "hostPlanExecutorValidatorPassed": executor_validator.get("status") == "passed",
+        "hostPlanExecutionPlanReady": execution_plan.get("status") == "planned",
         "fullModelRuntimeExecutorBound": False,
     }
     blockers: list[str] = []
@@ -751,11 +687,17 @@ def scheduler_readiness(
     metadata_ready = not blockers
     if metadata_ready and executor_preflight.get("status") == "failed":
         blockers.append("manifest_shape_preflight_failed")
-    if metadata_ready:
+    if metadata_ready and not readiness["hostPlanExecutorValidatorPassed"]:
+        blockers.append("hostplan_executor_validator_not_passed")
+    elif metadata_ready and not readiness["hostPlanExecutionPlanReady"]:
+        blockers.append("hostplan_execution_plan_not_ready")
+    elif metadata_ready:
         blockers.append("full_model_prefill_decode_runtime_executor_missing")
     status = (
         "blocked_missing_full_model_runtime_execution"
         if metadata_ready
+        and readiness["hostPlanExecutorValidatorPassed"]
+        and readiness["hostPlanExecutionPlanReady"]
         else "blocked_missing_runtime_scheduler"
     )
     return {
@@ -777,13 +719,540 @@ def scheduler_readiness(
             "status": "blocked",
             "fullModelRuntimeExecutorBound": False,
             "manifestShapePreflight": executor_preflight,
+            "executorValidator": executor_validator,
+            "executionPlan": execution_plan,
         },
         "nextRuntimeStep": (
-            "replace the residual-only diagnostic run with a multi-target "
-            "HostPlan interpreter that loads the bound symbols, moves "
-            "activation/KV tensors between launches, captures logits/tokens, "
-            "and emits the CSL transcript"
+            "stage runtime weight/input buffers onto the concrete HostPlan "
+            "execution plan, execute the launch chain, and emit the bounded "
+            "logit/token/KV transcript"
         ),
+    }
+
+
+def _probe_target_session_command(
+    *,
+    target_session: dict[str, Any],
+    receipt_path: Path,
+    cmaddr: str | None,
+) -> list[str]:
+    command = [
+        cs_python_executable(),
+        str(TARGET_SESSION_PROBE),
+        "--compile-dir",
+        str(target_session.get("compileDir") or ""),
+        "--launch-fn",
+        str(target_session.get("launchFunction") or "compute"),
+        "--receipt-out",
+        str(receipt_path),
+    ]
+    required_symbols = sorted(
+        {
+            str(symbol)
+            for symbol in (
+                (target_session.get("requiredInputSymbols") or [])
+                + (target_session.get("requiredOutputSymbols") or [])
+            )
+            if isinstance(symbol, str) and symbol
+        }
+    )
+    for symbol in required_symbols:
+        command.extend(["--symbol", symbol])
+    if cmaddr is not None:
+        command.extend(["--cmaddr", cmaddr])
+    return command
+
+
+def probe_target_session(
+    *,
+    target_session: dict[str, Any],
+    progress_path: Path,
+    cmaddr: str | None,
+) -> dict[str, Any]:
+    target_name = str(target_session.get("targetName") or "unknown")
+    if not TARGET_SESSION_PROBE.is_file():
+        return {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_target_session_probe",
+            "status": "blocked",
+            "targetName": target_name,
+            "compileDir": str(target_session.get("compileDir") or ""),
+            "launchFunction": str(target_session.get("launchFunction") or "compute"),
+            "resolvedSymbols": {},
+            "blockers": [f"target_session_probe_missing:{TARGET_SESSION_PROBE}"],
+        }
+
+    with tempfile.TemporaryDirectory(prefix="int4ple-session-probe-") as tmpdir:
+        receipt_path = Path(tmpdir) / f"{target_name}-probe.json"
+        required_symbol_count = len(
+            {
+                str(symbol)
+                for symbol in (
+                    (target_session.get("requiredInputSymbols") or [])
+                    + (target_session.get("requiredOutputSymbols") or [])
+                )
+                if isinstance(symbol, str) and symbol
+            }
+        )
+        command = _probe_target_session_command(
+            target_session=target_session,
+            receipt_path=receipt_path,
+            cmaddr=cmaddr,
+        )
+        append_progress(
+            progress_path,
+            "hostplan_target_session_probe_start",
+            target=target_name,
+            symbolCount=required_symbol_count,
+            compileDir=str(target_session.get("compileDir") or ""),
+        )
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if receipt_path.is_file():
+            receipt = load_json(receipt_path)
+        else:
+            receipt = {
+                "schemaVersion": 1,
+                "artifactKind": "int4ple_target_session_probe",
+                "status": "blocked",
+                "targetName": target_name,
+                "compileDir": str(target_session.get("compileDir") or ""),
+                "launchFunction": str(target_session.get("launchFunction") or "compute"),
+                "resolvedSymbols": {},
+                "blockers": ["target_session_probe_receipt_missing"],
+            }
+        blockers = list(receipt.get("blockers") or [])
+        if completed.returncode != 0 and "target_session_probe_return_code" not in blockers:
+            blockers.append(f"target_session_probe_return_code:{completed.returncode}")
+        receipt["blockers"] = blockers
+        if blockers:
+            receipt["status"] = "blocked"
+        if completed.stdout.strip():
+            receipt["stdout"] = completed.stdout.strip().splitlines()[-1]
+        if completed.stderr.strip():
+            receipt["stderr"] = completed.stderr.strip().splitlines()[-1]
+        append_progress(
+            progress_path,
+            "hostplan_target_session_probe_complete",
+            target=target_name,
+            status=receipt.get("status"),
+            blockers=receipt.get("blockers"),
+        )
+        return receipt
+
+
+def execute_hostplan_runtime_bootstrap(
+    *,
+    execution_plan: dict[str, Any],
+    progress_path: Path,
+    cmaddr: str | None,
+    probe_session: Any | None = None,
+) -> dict[str, Any]:
+    probe_fn = probe_target_session if probe_session is None else probe_session
+    blockers: list[str] = []
+    target_sessions = execution_plan.get("targetSessions") or []
+    launches = execution_plan.get("launches") or []
+    if not isinstance(target_sessions, list) or not target_sessions:
+        blockers.append("execution_plan_target_sessions_missing")
+        target_sessions = []
+    if not isinstance(launches, list) or not launches:
+        blockers.append("execution_plan_launches_missing")
+        launches = []
+
+    append_progress(
+        progress_path,
+        "hostplan_executor_bootstrap_start",
+        targetSessionCount=len(target_sessions),
+        launchCount=len(launches),
+    )
+
+    resolved_by_target: dict[str, dict[str, Any]] = {}
+    target_receipts: list[dict[str, Any]] = []
+    for target_session in target_sessions:
+        if not isinstance(target_session, dict):
+            blockers.append("target_session_not_object")
+            continue
+        receipt = probe_fn(
+            target_session=target_session,
+            progress_path=progress_path,
+            cmaddr=cmaddr,
+        )
+        target_name = str(target_session.get("targetName") or "unknown")
+        target_receipts.append(receipt)
+        if receipt.get("status") != "resolved":
+            blockers.append(f"target_session_not_resolved:{target_name}")
+            for blocker in receipt.get("blockers") or []:
+                blockers.append(f"target[{target_name}]:{blocker}")
+            continue
+        resolved_symbols = receipt.get("resolvedSymbols") or {}
+        if not isinstance(resolved_symbols, dict) or not resolved_symbols:
+            blockers.append(f"target[{target_name}].resolved_symbols_missing")
+            continue
+        resolved_by_target[target_name] = resolved_symbols
+
+    launch_receipts: list[dict[str, Any]] = []
+    resolved_launch_count = 0
+    for launch in launches:
+        if not isinstance(launch, dict):
+            blockers.append("launch_not_object")
+            continue
+        target_name = str(launch.get("targetName") or "")
+        launch_index = int(launch.get("launchIndex") or len(launch_receipts))
+        launch_blockers: list[str] = []
+        target_symbols = resolved_by_target.get(target_name) or {}
+        resolved_inputs: list[dict[str, Any]] = []
+        resolved_outputs: list[dict[str, Any]] = []
+
+        for side, source_items, resolved_items in (
+            ("input", launch.get("inputBindings") or [], resolved_inputs),
+            ("output", launch.get("outputBindings") or [], resolved_outputs),
+        ):
+            for item in source_items:
+                if not isinstance(item, dict):
+                    launch_blockers.append(f"launch[{launch_index}].{side}_binding_not_object")
+                    continue
+                symbol = str(item.get("symbol") or "")
+                symbol_id = target_symbols.get(symbol)
+                if symbol_id is None:
+                    launch_blockers.append(
+                        f"launch[{launch_index}].{side}_symbol_id_missing:{target_name}.{symbol}"
+                    )
+                resolved_items.append({**item, "symbolId": symbol_id})
+
+        launch_status = "resolved" if not launch_blockers else "blocked"
+        if launch_status == "resolved":
+            resolved_launch_count += 1
+        blockers.extend(launch_blockers)
+        launch_receipts.append(
+            {
+                "launchIndex": launch_index,
+                "targetName": target_name,
+                "compileDir": launch.get("compileDir"),
+                "launchFunction": launch.get("launchFunction"),
+                "targetGeometry": launch.get("targetGeometry") or {},
+                "phase": launch.get("phase"),
+                "decodeStepIndex": launch.get("decodeStepIndex"),
+                "status": launch_status,
+                "resolvedInputs": resolved_inputs,
+                "resolvedOutputs": resolved_outputs,
+                "runtimeActions": launch.get("runtimeActions") or [],
+                "blockers": launch_blockers,
+            }
+        )
+
+    status = "ready_for_tensor_movement" if not blockers else "blocked"
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_hostplan_executor_runtime_bootstrap",
+        "status": status,
+        "blockers": blockers,
+        "cmaddrProvided": cmaddr is not None,
+        "targetSessionCount": len(target_sessions),
+        "targetSessionsLoadedCount": len(resolved_by_target),
+        "launchCount": len(launches),
+        "resolvedLaunchCount": resolved_launch_count,
+        "targetSessions": target_receipts,
+        "launches": launch_receipts,
+        "bufferPlan": execution_plan.get("bufferPlan") or {},
+        "nextAction": (
+            "stage runtime weights and prompt/state buffers, execute each launch, "
+            "and capture the bounded logit/token/KV transcript"
+        ),
+    }
+    append_progress(
+        progress_path,
+        "hostplan_executor_bootstrap_complete",
+        status=status,
+        blockers=blockers,
+        resolvedLaunchCount=resolved_launch_count,
+    )
+    return receipt
+
+
+def _load_tokenized_prompt(export: dict[str, Any], expected_per_pe: int, pe_count: int) -> np.ndarray:
+    tokenized = export.get("tokenizedPrompt") or {}
+    raw_path = tokenized.get("path")
+    if not isinstance(raw_path, str) or not raw_path:
+        raise ValueError("tokenized prompt path missing")
+    prompt_path = resolve_artifact_path(Path(__file__), raw_path)
+    tokens = np.fromfile(prompt_path, dtype=np.uint32)
+    padded = np.zeros(expected_per_pe, dtype=np.uint32)
+    count = min(tokens.size, expected_per_pe)
+    if count > 0:
+        padded[:count] = tokens[:count]
+    return np.tile(padded, pe_count)
+
+
+def _read_weight_prefix_bytes(weight_mapping: dict[str, Any], byte_count: int) -> bytes:
+    remaining = byte_count
+    chunks = bytearray()
+    spans = weight_mapping.get("spans") or []
+    if isinstance(spans, list) and spans:
+        for span in spans:
+            if remaining <= 0:
+                break
+            if not isinstance(span, dict):
+                continue
+            shard_path = Path(str(span.get("shardPath") or ""))
+            offset = int(span.get("offset") or 0)
+            size = min(int(span.get("size") or 0), remaining)
+            if not shard_path.is_file():
+                raise FileNotFoundError(f"weight shard missing: {shard_path}")
+            with shard_path.open("rb") as handle:
+                handle.seek(offset)
+                payload = handle.read(size)
+            chunks.extend(payload)
+            remaining -= len(payload)
+    else:
+        shard_path = Path(str(weight_mapping.get("path") or weight_mapping.get("shard") or ""))
+        offset = int(weight_mapping.get("byteOffset") or weight_mapping.get("offsetBytes") or 0)
+        if not shard_path.is_file():
+            raise FileNotFoundError(f"weight shard missing: {shard_path}")
+        with shard_path.open("rb") as handle:
+            handle.seek(offset)
+            chunks.extend(handle.read(byte_count))
+        remaining = byte_count - len(chunks)
+    if remaining > 0:
+        raise ValueError(
+            f"weight bytes unavailable:{weight_mapping.get('weightKey') or weight_mapping.get('tensor')} "
+            f"{byte_count - remaining}<{byte_count}"
+        )
+    return bytes(chunks[:byte_count])
+
+
+def _materialize_weight_input(
+    materialization: dict[str, Any],
+) -> np.ndarray:
+    mapping = materialization.get("weightMapping")
+    if not isinstance(mapping, dict):
+        raise ValueError("weight mapping missing")
+    dtype = str(materialization.get("dtype") or "")
+    total_elements = int(materialization.get("plannedElementCount") or 0)
+    source_transform = materialization.get("sourceTransform") or {}
+    transform_kind = (
+        str(source_transform.get("kind") or "")
+        if isinstance(source_transform, dict)
+        else ""
+    )
+    if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:
+        raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
+        values = np.array(f16_bytes_to_f32_values(raw), dtype=np.float32)
+        if values.size != total_elements:
+            raise ValueError(f"weight_f16_to_f32_size_mismatch:{values.size}!={total_elements}")
+        return values
+    raise ValueError(
+        "unsupported_weight_materialization:"
+        f"{mapping.get('weightKey') or mapping.get('tensor')}:{dtype}:{transform_kind or 'none'}"
+    )
+
+
+def _materialize_constant_input(
+    *,
+    materialization: dict[str, Any],
+    export: dict[str, Any],
+) -> np.ndarray:
+    dtype = str(materialization.get("dtype") or "")
+    elements_per_pe = int(materialization.get("elementsPerPe") or 0)
+    geometry = materialization.get("targetGeometry") or {}
+    pe_count = int(geometry.get("peCount") or 1)
+    role = str(materialization.get("role") or "")
+    buffer = str(materialization.get("buffer") or "")
+    if role == "tokenized_prompt":
+        return _load_tokenized_prompt(export, elements_per_pe, pe_count)
+    if role == "position_encoding":
+        count = elements_per_pe
+        pairs = np.arange(count, dtype=np.float32)
+        values = np.cos(pairs) if buffer.endswith("cos_table") else np.sin(pairs)
+        return np.tile(values.astype(np.float32), pe_count)
+    if role == "position":
+        value = 0
+        if buffer.endswith("sliding_window"):
+            value = 512
+        return np.full(pe_count * max(1, elements_per_pe), value, dtype=np.uint32)
+    if role == "uniform":
+        return np.zeros(pe_count * max(1, elements_per_pe), dtype=np.uint32)
+    if role == "kv_cache":
+        return np.zeros(pe_count * max(1, elements_per_pe), dtype=np.float32)
+    raise ValueError(f"unsupported_constant_input:{role}:{buffer}:{dtype}")
+
+
+def _launch_spec_path(runtime_dir: Path, launch_index: int) -> Path:
+    return runtime_dir / "launch-specs" / f"launch-{launch_index:04d}.json"
+
+
+def _launch_receipt_path(runtime_dir: Path, launch_index: int) -> Path:
+    return runtime_dir / "launch-receipts" / f"launch-{launch_index:04d}.json"
+
+
+def _buffer_path(runtime_dir: Path, buffer_name: str) -> Path:
+    safe = hashlib.sha256(buffer_name.encode("utf-8")).hexdigest()
+    return runtime_dir / "buffers" / f"{safe}.npy"
+
+
+def _stage_launch_arrays(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    export: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    staged_inputs: list[dict[str, Any]] = []
+    staged_outputs: list[dict[str, Any]] = []
+    for side, source_items, staged in (
+        ("input", launch.get("resolvedInputs") or [], staged_inputs),
+        ("output", launch.get("resolvedOutputs") or [], staged_outputs),
+    ):
+        for item in source_items:
+            if not isinstance(item, dict):
+                raise ValueError(f"launch[{launch.get('launchIndex')}].{side}_binding_not_object")
+            materialization = item.get("materialization") or {}
+            if not isinstance(materialization, dict):
+                raise ValueError(
+                    f"launch[{launch.get('launchIndex')}].{side}_materialization_missing"
+                )
+            buffer_name = str(item.get("buffer") or "")
+            path = _buffer_path(runtime_dir, buffer_name)
+            if side == "input":
+                existing = buffer_files.get(buffer_name)
+                total_elements = int(materialization.get("plannedElementCount") or 0)
+                if existing is not None:
+                    host = np.load(existing, allow_pickle=False).ravel()
+                    if int(host.size) != total_elements:
+                        raise ValueError(
+                            f"launch[{launch.get('launchIndex')}].input_buffer_size_mismatch:"
+                            f"{buffer_name}:{host.size}!={total_elements}"
+                        )
+                elif str(item.get("role") or "") == "weight":
+                    host = _materialize_weight_input(materialization)
+                else:
+                    host = _materialize_constant_input(
+                        materialization=materialization,
+                        export=export,
+                    )
+                    if int(host.size) != total_elements:
+                        raise ValueError(
+                            f"launch[{launch.get('launchIndex')}].constant_input_size_mismatch:"
+                            f"{buffer_name}:{host.size}!={total_elements}"
+                        )
+                path.parent.mkdir(parents=True, exist_ok=True)
+                np.save(path, host)
+                buffer_files[buffer_name] = path
+            staged.append(
+                {
+                    "symbol": str(item.get("symbol") or ""),
+                    "buffer": buffer_name,
+                    "path": str(path),
+                    "dtype": str(materialization.get("dtype") or ""),
+                    "elementsPerPe": int(materialization.get("elementsPerPe") or 0),
+                }
+            )
+    return staged_inputs, staged_outputs
+
+
+def execute_hostplan_runtime(
+    *,
+    bootstrap: dict[str, Any],
+    export: dict[str, Any],
+    progress_path: Path,
+    cmaddr: str | None,
+    trace_path: Path,
+) -> dict[str, Any]:
+    runtime_dir = trace_path.parent / "hostplan-runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    launches = bootstrap.get("launches") or []
+    blockers: list[str] = []
+    buffer_files: dict[str, Path] = {}
+    executed_launches: list[dict[str, Any]] = []
+    executed_count = 0
+    for launch in launches:
+        if not isinstance(launch, dict):
+            blockers.append("launch_not_object")
+            break
+        launch_index = int(launch.get("launchIndex") or executed_count)
+        append_progress(
+            progress_path,
+            "hostplan_launch_start",
+            launchIndex=launch_index,
+            target=launch.get("targetName"),
+        )
+        try:
+            staged_inputs, staged_outputs = _stage_launch_arrays(
+                runtime_dir=runtime_dir,
+                launch=launch,
+                buffer_files=buffer_files,
+                export=export,
+            )
+            receipt_path = _launch_receipt_path(runtime_dir, launch_index)
+            spec_path = _launch_spec_path(runtime_dir, launch_index)
+            launch_spec = {
+                "compileDir": launch.get("compileDir"),
+                "launchFunction": launch.get("launchFunction"),
+                "launchIndex": launch_index,
+                "cmaddr": cmaddr or "",
+                "targetGeometry": launch.get("targetGeometry") or {},
+                "inputs": staged_inputs,
+                "outputs": staged_outputs,
+            }
+            write_json(spec_path, launch_spec)
+            command = [
+                cs_python_executable(),
+                str(LAUNCH_STEP_ADAPTER),
+                "--spec",
+                str(spec_path),
+                "--receipt-out",
+                str(receipt_path),
+            ]
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if not receipt_path.is_file():
+                raise ValueError("launch_receipt_missing")
+            launch_receipt = load_json(receipt_path)
+            launch_receipt["stdoutTail"] = completed.stdout.strip().splitlines()[-1:] if completed.stdout.strip() else []
+            launch_receipt["stderrTail"] = completed.stderr.strip().splitlines()[-1:] if completed.stderr.strip() else []
+            executed_launches.append(launch_receipt)
+            if completed.returncode != 0 or launch_receipt.get("status") != "succeeded":
+                raise ValueError(
+                    "; ".join(launch_receipt.get("blockers") or ["launch_failed"])
+                )
+            for output in staged_outputs:
+                buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+            executed_count += 1
+            append_progress(
+                progress_path,
+                "hostplan_launch_complete",
+                launchIndex=launch_index,
+                target=launch.get("targetName"),
+                status="succeeded",
+            )
+        except Exception as exc:
+            blockers.append(f"launch[{launch_index}]_blocked:{exc}")
+            append_progress(
+                progress_path,
+                "hostplan_launch_blocked",
+                launchIndex=launch_index,
+                target=launch.get("targetName"),
+                error=str(exc),
+            )
+            break
+    status = "succeeded" if not blockers else "blocked"
+    return {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_hostplan_executor_runtime",
+        "status": status,
+        "blockers": blockers,
+        "executedLaunchCount": executed_count,
+        "launchCount": len(launches),
+        "bufferDir": str(runtime_dir / "buffers"),
+        "launches": executed_launches,
+        "targetSessions": bootstrap.get("targetSessions") or [],
     }
 
 
@@ -904,12 +1373,37 @@ def diagnostic_trace(
     scheduler: dict[str, Any],
     cmaddr: str | None,
     started: float,
+    hostplan_executor_runtime: dict[str, Any] | None,
     kernel_results: list[dict[str, Any]],
     status: str,
     error: str | None = None,
 ) -> dict[str, Any]:
     elapsed_ms = (time.monotonic() - started) * 1000.0
-    if scheduler.get("status") == "blocked_missing_full_model_runtime_execution":
+    runtime_artifact_kind = (
+        str(hostplan_executor_runtime.get("artifactKind"))
+        if isinstance(hostplan_executor_runtime, dict)
+        else ""
+    )
+    bootstrap_ready = (
+        isinstance(hostplan_executor_runtime, dict)
+        and hostplan_executor_runtime.get("status") == "ready_for_tensor_movement"
+    )
+    runtime_executed = runtime_artifact_kind == "int4ple_hostplan_executor_runtime"
+    if runtime_executed:
+        model_blocker = (
+            "The HostPlan executor launched real CSL targets, but stopped "
+            "before a full-model transcript because the bound launch graph "
+            "still hit an unsupported materialization or tensor-handoff blocker."
+        )
+    elif bootstrap_ready:
+        model_blocker = (
+            "The HostPlan executor bootstrap loaded each compiled target, "
+            "resolved the required runtime symbols, and materialized the "
+            "concrete activation/KV/logit/token buffer plan, but weight "
+            "staging, tensor movement, launch execution, and transcript "
+            "capture are still pending."
+        )
+    elif scheduler.get("status") == "blocked_missing_full_model_runtime_execution":
         model_blocker = (
             "The HostPlan runtime scheduler has symbol-level dataflow, "
             "activation lifetime routing, KV read/write scheduling, and "
@@ -924,6 +1418,19 @@ def diagnostic_trace(
             "fully bound for symbol-level dataflow, activation routing, "
             "KV read/write scheduling, and logit/token capture."
         )
+    production_targets = [
+        str(item.get("targetName") or item.get("target"))
+        for item in kernel_results
+        if item.get("status") in {"resolved", "succeeded"}
+    ]
+    kernel_stage = (
+        "int4ple_hostplan_executor_runtime"
+        if runtime_executed
+        else
+        "int4ple_hostplan_executor_bootstrap"
+        if hostplan_executor_runtime is not None
+        else "int4ple_compile_target_runtime_diagnostic"
+    )
     trace: dict[str, Any] = {
         "schemaVersion": 1,
         "artifactKind": "csl_simulator_trace",
@@ -934,19 +1441,25 @@ def diagnostic_trace(
             "status": status,
             "executionTarget": common.execution_target(cmaddr),
             "compileStatus": "succeeded",
-            "kernelStage": "int4ple_compile_target_runtime_diagnostic",
+            "kernelStage": kernel_stage,
             "kernelIsStub": False,
             "elapsedMs": elapsed_ms,
         },
         "executedRun": {
             "fullModelDepthExecuted": False,
             "boundedTranscriptProduced": False,
-            "productionCompileTargetsExecuted": [
-                item["target"] for item in kernel_results if item.get("status") == "succeeded"
-            ],
+            "productionCompileTargetsExecuted": production_targets,
             "runtimeConfigMode": runtime_config.get("mode"),
-            "diagnosticOnly": True,
+            "diagnosticOnly": hostplan_executor_runtime is None,
+            "executorBootstrapOnly": (
+                hostplan_executor_runtime is not None and not runtime_executed
+            ),
             "schedulerStatus": scheduler.get("status"),
+            "hostPlanExecutorRuntimeStatus": (
+                hostplan_executor_runtime.get("status")
+                if isinstance(hostplan_executor_runtime, dict)
+                else "not_run"
+            ),
         },
         "modelExecution": {
             "fullModelDepthExecuted": False,
@@ -955,6 +1468,8 @@ def diagnostic_trace(
         "hostPlanScheduler": scheduler,
         "kernelResults": kernel_results,
     }
+    if hostplan_executor_runtime is not None:
+        trace["hostPlanExecutorRuntime"] = hostplan_executor_runtime
     if error is not None:
         trace["simulatorRun"]["error"] = error
     return trace
@@ -966,6 +1481,7 @@ def main() -> int:
     progress_path = Path(args.progress_out)
     started = time.monotonic()
     append_progress(progress_path, "runner_start")
+    hostplan_executor_runtime: dict[str, Any] | None = None
 
     try:
         plan = load_json(Path(args.plan))
@@ -986,27 +1502,58 @@ def main() -> int:
             status=scheduler["status"],
             blockers=scheduler["blockers"],
         )
-        residual_target = target_by_name(plan, "residual")
-        diagnostic_compile_dir = (
-            Path(args.diagnostic_compile_dir)
-            if args.diagnostic_compile_dir.strip()
-            else None
+        execution_plan = ((scheduler.get("hostPlanExecutor") or {}).get("executionPlan") or {})
+        has_launch_plan = bool(execution_plan.get("targetSessions")) and bool(
+            execution_plan.get("launches")
         )
-        result = run_residual_target(
-            compile_root=Path(args.compile_root),
-            diagnostic_compile_dir=diagnostic_compile_dir,
-            target=residual_target,
-            trace_path=trace_path,
-            progress_path=progress_path,
-            cmaddr=cmaddr,
-        )
+        if has_launch_plan:
+            hostplan_executor_runtime = execute_hostplan_runtime_bootstrap(
+                execution_plan=execution_plan,
+                progress_path=progress_path,
+                cmaddr=cmaddr,
+            )
+            if hostplan_executor_runtime.get("status") != "ready_for_tensor_movement":
+                raise ValueError(
+                    "hostplan executor bootstrap blocked: "
+                    + ", ".join(hostplan_executor_runtime.get("blockers") or ["unknown"])
+                )
+            hostplan_executor_runtime = execute_hostplan_runtime(
+                bootstrap=hostplan_executor_runtime,
+                export=export,
+                progress_path=progress_path,
+                cmaddr=cmaddr,
+                trace_path=trace_path,
+            )
+            if hostplan_executor_runtime.get("status") != "succeeded":
+                raise ValueError(
+                    "hostplan executor runtime blocked: "
+                    + ", ".join(hostplan_executor_runtime.get("blockers") or ["unknown"])
+                )
+            kernel_results = hostplan_executor_runtime.get("launches") or []
+        else:
+            residual_target = target_by_name(plan, "residual")
+            diagnostic_compile_dir = (
+                Path(args.diagnostic_compile_dir)
+                if args.diagnostic_compile_dir.strip()
+                else None
+            )
+            result = run_residual_target(
+                compile_root=Path(args.compile_root),
+                diagnostic_compile_dir=diagnostic_compile_dir,
+                target=residual_target,
+                trace_path=trace_path,
+                progress_path=progress_path,
+                cmaddr=cmaddr,
+            )
+            kernel_results = [result]
         trace = diagnostic_trace(
             export=export,
             runtime_config=runtime_config,
             scheduler=scheduler,
             cmaddr=cmaddr,
             started=started,
-            kernel_results=[result],
+            hostplan_executor_runtime=hostplan_executor_runtime,
+            kernel_results=kernel_results,
             status="succeeded",
         )
         write_json(trace_path, trace)
@@ -1032,7 +1579,14 @@ def main() -> int:
                 ),
                 cmaddr=cmaddr,
                 started=started,
-                kernel_results=[],
+                hostplan_executor_runtime=hostplan_executor_runtime,
+                kernel_results=(
+                    hostplan_executor_runtime.get("launches")
+                    or hostplan_executor_runtime.get("targetSessions")
+                    or []
+                    if isinstance(hostplan_executor_runtime, dict)
+                    else []
+                ),
                 status="failed",
                 error=str(exc),
             )

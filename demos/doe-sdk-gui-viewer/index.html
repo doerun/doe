@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Doe browser SDK GUI</title>
+  <title>Doe Cerebras spatial compute viewer</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -16,25 +16,25 @@
 
     <header class="top">
       <div>
-        <p class="eyebrow">Doe - browser SDK GUI facsimile</p>
-        <h1>Cerebras SDK artifact visualizer</h1>
+        <p class="eyebrow">Doe - Cerebras SDK-style spatial compute</p>
+        <h1>Spatial compute viewer</h1>
       </div>
-      <div class="hashes" id="artifact-summary">
-        <span>artifact dir: not configured</span>
+      <div class="hashes" id="workdir-summary">
+        <span>compile workdir: not configured</span>
       </div>
     </header>
 
-    <section class="sdk-app" aria-label="Browser Cerebras SDK GUI">
+    <section class="sdk-app" aria-label="Cerebras spatial compute viewer">
       <div class="sdk-toolbar" aria-label="SDK GUI controls">
-        <label for="artifact-dir-input" class="path-control">
+        <label for="workdir-input" class="path-control">
           <span class="label">work directory</span>
-          <input type="text" id="artifact-dir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
+          <input type="text" id="workdir-input" size="60" placeholder="bench/out/scratch/gemma4-e2b-csl-sim/compile-L1">
         </label>
-        <button id="load-artifact" type="button">Open</button>
+        <button id="load-workdir" type="button">Open</button>
         <label class="toggle-control">
           <input type="checkbox" id="redact-toggle"> redact paths
         </label>
-        <span id="artifact-status" class="status-pill pending">awaiting path</span>
+        <span id="workdir-status" class="status-pill pending">awaiting workdir</span>
         <div class="toolbar-spacer"></div>
         <button type="button" class="icon-btn" id="fit-fabric" title="Fit fabric view">Fit</button>
         <button type="button" class="icon-btn" id="toggle-terminal" title="Toggle terminal">Term</button>
@@ -55,12 +55,12 @@
             <span class="panel-sub">colors.json + stream roles</span>
           </div>
           <div id="color-list" class="color-list">
-            <div class="empty-state">open a compile artifact dir</div>
+            <div class="empty-state">open a compile workdir</div>
           </div>
           <div class="sdk-card">
-            <span class="label">artifact metadata</span>
+            <span class="label">spatial metadata</span>
             <div class="panel-body placeholder" id="panel-fabric">
-              awaiting server-side artifact introspection
+              awaiting fabric introspection
             </div>
           </div>
         </aside>
@@ -73,7 +73,7 @@
               <input id="pe-coordinate-input" type="text" value="7,5" inputmode="numeric">
             </label>
             <button type="button" id="select-pe">Select</button>
-            <span id="fabric-status" class="mini-status">no artifact loaded</span>
+            <span id="fabric-status" class="mini-status">no workdir loaded</span>
           </div>
           <div class="fabric-stage">
             <div id="fabric-grid" class="fabric-grid" aria-label="Processing element grid"></div>
@@ -162,9 +162,9 @@
           <div class="command-row">
             <span class="label">sdk_debug_shell visualize
               <button type="button" id="sdk-command-copy" class="inline-copy" data-copy-for="sdk-command" title="Copy to clipboard">copy</button>
-              <span id="sdk-command-state" class="command-state pending">missing artifact dir</span>
+              <span id="sdk-command-state" class="command-state pending">missing compile workdir</span>
             </span>
-            <code id="sdk-command" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set artifact dir above&gt;</code>
+            <code id="sdk-command" class="copy-command" tabindex="0" data-copyable="false">sdk_debug_shell visualize --artifact_dir &lt;set compile workdir above&gt;</code>
           </div>
           <div class="command-row">
             <span class="label">evidence bundle runner

@@ -23,7 +23,17 @@ const DEFAULT_OUT_DIR =
 const DEFAULT_ATOL = 1e-3;
 const DEFAULT_RTOL = 0;
 const DEFAULT_DECODE_STEPS = 8;
+const DEFAULT_TEMPERATURE = 0;
+const DEFAULT_TOP_K = 1;
+const DEFAULT_TOP_P = 1;
 const DEFAULT_REPETITION_PENALTY = 1.0;
+const DEFAULT_KERNEL_PATH_POLICY_MODE = 'capability-aware';
+const DEFAULT_KERNEL_PATH_POLICY_ON_INCOMPATIBLE = 'remap';
+const DEFAULT_KERNEL_PATH_POLICY_SOURCE_SCOPE = Object.freeze([
+  'model',
+  'manifest',
+  'config',
+]);
 const PREVIEW_LIMIT = 8;
 
 function stableValue(value) {
@@ -87,6 +97,49 @@ function parseNonNegativeInteger(value, label) {
   return parsed;
 }
 
+function parsePositiveInteger(value, label) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${label} must be a positive integer.`);
+  }
+  return parsed;
+}
+
+function parseProbability(value, label) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1) {
+    throw new Error(`${label} must be a finite number in (0, 1].`);
+  }
+  return parsed;
+}
+
+function parseCommaSeparatedStrings(value, label) {
+  const entries = String(value)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (entries.length === 0) {
+    throw new Error(`${label} must include at least one value.`);
+  }
+  return entries;
+}
+
+function isPlainObject(value) {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mergePlainObjects(base, patch) {
+  const output = { ...(isPlainObject(base) ? base : {}) };
+  for (const [key, value] of Object.entries(patch)) {
+    if (isPlainObject(value) && isPlainObject(output[key])) {
+      output[key] = mergePlainObjects(output[key], value);
+    } else {
+      output[key] = value;
+    }
+  }
+  return output;
+}
+
 function parseArgs(argv) {
   const parsed = {
     dopplerRoot: DEFAULT_DOPPLER_ROOT,
@@ -99,7 +152,14 @@ function parseArgs(argv) {
     atol: DEFAULT_ATOL,
     rtol: DEFAULT_RTOL,
     decodeSteps: DEFAULT_DECODE_STEPS,
+    temperature: DEFAULT_TEMPERATURE,
+    topK: DEFAULT_TOP_K,
+    topP: DEFAULT_TOP_P,
     repetitionPenalty: DEFAULT_REPETITION_PENALTY,
+    seed: null,
+    kernelPathPolicyMode: DEFAULT_KERNEL_PATH_POLICY_MODE,
+    kernelPathPolicyOnIncompatible: DEFAULT_KERNEL_PATH_POLICY_ON_INCOMPATIBLE,
+    kernelPathPolicySourceScope: [...DEFAULT_KERNEL_PATH_POLICY_SOURCE_SCOPE],
     help: false,
   };
 
@@ -157,8 +217,58 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (arg === '--temperature') {
+      parsed.temperature = parseNumber(requireValue(argv, index, arg), arg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--top-k') {
+      parsed.topK = parsePositiveInteger(requireValue(argv, index, arg), arg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--top-p') {
+      parsed.topP = parseProbability(requireValue(argv, index, arg), arg);
+      index += 1;
+      continue;
+    }
     if (arg === '--repetition-penalty') {
       parsed.repetitionPenalty = parseNumber(requireValue(argv, index, arg), arg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--seed') {
+      parsed.seed = parseNonNegativeInteger(requireValue(argv, index, arg), arg);
+      index += 1;
+      continue;
+    }
+    if (arg === '--kernel-path-policy-mode') {
+      parsed.kernelPathPolicyMode = requireValue(argv, index, arg);
+      if (
+        parsed.kernelPathPolicyMode !== 'locked'
+        && parsed.kernelPathPolicyMode !== 'capability-aware'
+      ) {
+        throw new Error(`${arg} must be "locked" or "capability-aware".`);
+      }
+      index += 1;
+      continue;
+    }
+    if (arg === '--kernel-path-policy-on-incompatible') {
+      parsed.kernelPathPolicyOnIncompatible = requireValue(argv, index, arg);
+      if (
+        parsed.kernelPathPolicyOnIncompatible !== 'error'
+        && parsed.kernelPathPolicyOnIncompatible !== 'remap'
+      ) {
+        throw new Error(`${arg} must be "error" or "remap".`);
+      }
+      index += 1;
+      continue;
+    }
+    if (arg === '--kernel-path-policy-source-scope') {
+      parsed.kernelPathPolicySourceScope = parseCommaSeparatedStrings(
+        requireValue(argv, index, arg),
+        arg
+      );
       index += 1;
       continue;
     }
@@ -183,7 +293,7 @@ function requireValue(argv, index, flag) {
 function printHelp() {
   console.log(
     [
-      'Usage: node bench/tools/export_doppler_int4ple_reference.mjs [options]',
+      'Usage: <node|bun> bench/tools/export_doppler_int4ple_reference.mjs [options]',
       '',
       'Exports one production Doppler INT4 PLE RDRR WebGPU tensor:',
       'final_logits.f32 plus doppler_int4ple_reference_export.json.',
@@ -198,7 +308,14 @@ function printHelp() {
       `  --atol <value>            Promotion max-abs tolerance (default: ${DEFAULT_ATOL})`,
       `  --rtol <value>            Promotion relative tolerance (default: ${DEFAULT_RTOL})`,
       `  --decode-steps <count>    Greedy transcript steps (default: ${DEFAULT_DECODE_STEPS})`,
+      `  --temperature <value>     Sampling temperature (default: ${DEFAULT_TEMPERATURE})`,
+      `  --top-k <count>           Sampling top-k (default: ${DEFAULT_TOP_K})`,
+      `  --top-p <value>           Sampling top-p (default: ${DEFAULT_TOP_P})`,
       `  --repetition-penalty <x>  Decode sampling penalty (default: ${DEFAULT_REPETITION_PENALTY})`,
+      '  --seed <value>            Optional deterministic sampling seed',
+      `  --kernel-path-policy-mode <mode>  Execution kernel policy mode (default: ${DEFAULT_KERNEL_PATH_POLICY_MODE})`,
+      `  --kernel-path-policy-on-incompatible <mode>  Incompatible kernel action (default: ${DEFAULT_KERNEL_PATH_POLICY_ON_INCOMPATIBLE})`,
+      `  --kernel-path-policy-source-scope <csv>  Allowed kernel policy sources (default: ${DEFAULT_KERNEL_PATH_POLICY_SOURCE_SCOPE.join(',')})`,
       '  --no-chat-template        Disable Doppler chat-template expansion',
       '  --help, -h                Show this help',
     ].join('\n')
@@ -249,6 +366,28 @@ function cloneValue(value) {
     return structuredClone(value);
   }
   return JSON.parse(JSON.stringify(value));
+}
+
+function buildRuntimeConfig(baseRuntimeConfig, args) {
+  return mergePlainObjects(cloneValue(baseRuntimeConfig), {
+    inference: {
+      kernelPathPolicy: {
+        mode: args.kernelPathPolicyMode,
+        sourceScope: [...args.kernelPathPolicySourceScope],
+        allowSources: [...args.kernelPathPolicySourceScope],
+        onIncompatible: args.kernelPathPolicyOnIncompatible,
+      },
+    },
+    shared: {
+      harness: {
+        referenceTranscript: {
+          enabled: true,
+          captureLogits: true,
+          captureKvBytes: true,
+        },
+      },
+    },
+  });
 }
 
 function loadManifest(modelDir) {
@@ -561,7 +700,7 @@ async function main() {
       );
     }
 
-    const runtimeConfig = cloneValue(modules.getRuntimeConfig());
+    const runtimeConfig = buildRuntimeConfig(modules.getRuntimeConfig(), args);
     harness = await modules.initializeInference(resolveModelUrl(modelDir), {
       modelId,
       runtime: { runtimeConfig },
@@ -615,14 +754,14 @@ async function main() {
     const weightSetSha256 = sha256Json({ weightSetId, shardIdentities });
     const padTokenId = harness.pipeline.tokenizer?.getSpecialTokens?.()?.pad;
     const samplingConfig = {
-      temperature: 0,
-      topK: 1,
-      topP: 1,
+      temperature: args.temperature,
+      topK: args.topK,
+      topP: args.topP,
       repetitionPenalty: args.repetitionPenalty,
       padTokenId: Number.isInteger(padTokenId) && padTokenId >= 0
         ? padTokenId
         : null,
-      seed: null,
+      seed: args.seed,
     };
     const samplingSha256 = sha256Json(samplingConfig);
     const inputSetComponents = {
@@ -698,14 +837,16 @@ async function main() {
       },
       ...(decodeTranscript ? { decodeTranscript } : {}),
       producer: {
-        runtime: 'doppler_node_webgpu',
+        runtime: 'doppler_js_webgpu',
         toolPath: repoRelative(SCRIPT_PATH),
         dopplerRoot,
         runtimeProfile: args.runtimeProfile,
+        jsHost: process.versions?.bun ? 'bun' : 'node',
         webgpuProvider: bootstrap.provider ?? 'node-webgpu',
         kernelPathId: stats.kernelPathId ?? harness.pipeline.resolvedKernelPath?.id ?? null,
         kernelPathSource:
           stats.kernelPathSource ?? harness.pipeline.kernelPathSource ?? null,
+        kernelPathPolicy: runtimeConfig.inference?.kernelPathPolicy ?? null,
         nodeVersion: process.version,
         emittedAt: new Date().toISOString(),
       },

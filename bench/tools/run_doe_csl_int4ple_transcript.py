@@ -26,6 +26,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bench.tools.doe_csl_host_io_layout import attach_host_io_layout
+from bench.tools.int4ple_manifest_compile_params import (
+    apply_manifest_compile_params,
+    manifest_compile_param_projection,
+)
 
 FIXTURE_REGISTRY = Path("config/csl-runtime-fixtures.json")
 HOST_PLAN_TOOL = Path("runtime/zig/zig-out/bin/doe-csl-host-plan-tool")
@@ -34,8 +38,12 @@ DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
     "gemma-4-e2b-int4ple-doe-csl-hostplan"
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
+MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 600_000
 INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
+)
+SHARED_EXECUTION_CONTRACT_TOOL = Path(
+    "bench/tools/build_doppler_shared_execution_contract.py"
 )
 PROGRAM_BUNDLE_SCHEMA = Path("config/doe-doppler-program-bundle.schema.json")
 FLOAT32_BYTES = 4
@@ -1513,6 +1521,16 @@ def patch_simulator_plan_runtime_metadata(
         value = runtime_config.get(key)
         if isinstance(value, int) or value is None:
             runtime[key] = value
+    runtime_config_timeout = runtime_config.get("timeoutMs")
+    if (
+        not isinstance(runtime_config_timeout, int)
+        or runtime_config_timeout < MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS
+    ):
+        runtime_config["timeoutMs"] = MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS
+    timeout_ms = runtime.get("timeoutMs")
+    if not isinstance(timeout_ms, int) or timeout_ms < MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS:
+        runtime["timeoutMs"] = MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS
+    write_json(runtime_config_path, runtime_config)
     write_json(simulator_plan_path, simulator_plan)
 
 
@@ -1583,6 +1601,41 @@ def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
         "runStatus": str(run_result.get("status", "unknown")),
         "runReason": str(run_result.get("reason", "unknown")),
     }
+
+
+def build_shared_execution_contract(
+    *,
+    reference_export_path: Path,
+    program_bundle_path: Path,
+    bundle_root: Path,
+) -> dict[str, Any]:
+    contract_path = bundle_root / "shared-execution-contract.json"
+    command = [
+        sys.executable,
+        str(resolve(SHARED_EXECUTION_CONTRACT_TOOL)),
+        "--reference-export",
+        str(reference_export_path),
+        "--program-bundle",
+        str(program_bundle_path),
+        "--hostplan-bundle-root",
+        str(bundle_root),
+        "--out",
+        str(contract_path),
+    ]
+    proc = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0 or not contract_path.is_file():
+        details = proc.stderr.strip() or proc.stdout.strip() or "unknown error"
+        raise ValueError(
+            "shared execution contract build failed: "
+            f"{details}"
+        )
+    return hash_link(contract_path, "doe_shared_execution_contract")
 
 
 def build_hostplan_bundle(
@@ -1685,11 +1738,28 @@ def build_hostplan_bundle(
         runtime_config_path,
     )
     simulator_plan = load_json(simulator_plan_path)
+    runtime_config = load_json(runtime_config_path)
+    manifest_compile_projection = manifest_compile_param_projection(
+        runtime_config=runtime_config,
+        reference=export,
+    )
+    manifest_compile_application = apply_manifest_compile_params(
+        simulator_plan=simulator_plan,
+        runtime_config=runtime_config,
+        reference=export,
+    )
+    if manifest_compile_application.get("status") == "applied":
+        write_json(simulator_plan_path, simulator_plan)
     runtime_config_sha256 = sha256_file(runtime_config_path)
     host_io_coverage["runtimeConfigSha256"] = runtime_config_sha256
     weight_coverage["runtimeConfigSha256"] = runtime_config_sha256
     coverage = compile_input_coverage(bundle_root, simulator_plan)
     driver_result = run_simulator_driver(bundle_root)
+    shared_execution_contract = build_shared_execution_contract(
+        reference_export_path=reference_export_path,
+        program_bundle_path=program_bundle_path,
+        bundle_root=bundle_root,
+    )
     return {
         "status": "hostplan_ready",
         "sourceGraphSha256": source_graph_sha256,
@@ -1703,7 +1773,10 @@ def build_hostplan_bundle(
         "memoryPlan": hash_link(memory_plan_path, "doe_csl_host_plan_tool"),
         "simulatorPlan": hash_link(simulator_plan_path, "doe_csl_host_plan_tool"),
         "programBundle": hash_link(program_bundle_path, "doe_program_bundle_ingest"),
+        "sharedExecutionContract": shared_execution_contract,
         "compileInputCoverage": coverage,
+        "manifestCompileParamProjection": manifest_compile_projection,
+        "manifestCompileParamApplication": manifest_compile_application,
         "weightMappingCoverage": weight_coverage,
         "hostIoLayoutCoverage": host_io_coverage,
         "simulatorDriverResult": driver_result,
@@ -2333,24 +2406,68 @@ def build_blocked_receipt(
             program_bundle_path = resolve(raw_path)
             if program_bundle_path.is_file():
                 program_bundle = load_json(program_bundle_path)
+    shared_contract = None
+    shared_contract_link = hostplan_bundle.get("sharedExecutionContract")
+    if isinstance(shared_contract_link, dict):
+        raw_path = shared_contract_link.get("path")
+        if isinstance(raw_path, str):
+            contract_path = resolve(raw_path)
+            if contract_path.is_file():
+                shared_contract = load_json(contract_path)
+    source_program_payload = source_program(
+        export,
+        execution_depth=simulator_evidence.execution_depth,
+        program_bundle=program_bundle,
+        program_bundle_link=program_bundle_link,
+    )
+    decode_request = {
+        "requestedDecodeSteps": requested,
+        "expectedActualDecodeSteps": actual,
+        "expectedStopReason": stop_reason,
+        "samplingSha256": input_components.get("samplingSha256", "pending"),
+        "inputSetSha256": export["inputSetSha256"],
+    }
+    if isinstance(shared_contract, dict):
+        shared_source = shared_contract.get("sourceProgram")
+        if isinstance(shared_source, dict):
+            source_program_payload = dict(shared_source)
+            source_program_payload["executionDepth"] = (
+                simulator_evidence.execution_depth
+            )
+        shared_request = shared_contract.get("decodeRequest")
+        if isinstance(shared_request, dict):
+            decode_request = {
+                "requestedDecodeSteps": int(
+                    shared_request.get("requestedDecodeSteps") or requested
+                ),
+                "expectedActualDecodeSteps": int(
+                    shared_request.get("expectedActualDecodeSteps") or actual
+                ),
+                "expectedStopReason": shared_request.get(
+                    "expectedStopReason",
+                    stop_reason,
+                ),
+                "samplingSha256": shared_request.get(
+                    "samplingSha256",
+                    input_components.get("samplingSha256", "pending"),
+                ),
+                "inputSetSha256": shared_request.get(
+                    "inputSetSha256",
+                    export["inputSetSha256"],
+                ),
+            }
+        transcript_contract = shared_contract.get("transcriptContract")
+        if isinstance(transcript_contract, dict):
+            shared_reference = transcript_contract.get("referenceTranscript")
+            if isinstance(shared_reference, dict):
+                reference = shared_reference
     return {
         "schemaVersion": 1,
         "artifactKind": "doe_csl_int4ple_transcript",
         "status": status,
         "modelId": export["modelId"],
-        "sourceProgram": source_program(
-            export,
-            execution_depth=simulator_evidence.execution_depth,
-            program_bundle=program_bundle,
-            program_bundle_link=program_bundle_link,
-        ),
-        "decodeRequest": {
-            "requestedDecodeSteps": requested,
-            "expectedActualDecodeSteps": actual,
-            "expectedStopReason": stop_reason,
-            "samplingSha256": input_components.get("samplingSha256", "pending"),
-            "inputSetSha256": export["inputSetSha256"],
-        },
+        "sourceProgram": source_program_payload,
+        "decodeRequest": decode_request,
         "referenceTranscript": reference,
         "loweringPlan": lowering_plan,
         "hostPlanBundle": hostplan_bundle,
