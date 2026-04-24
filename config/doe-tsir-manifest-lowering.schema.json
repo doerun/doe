@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "doe-tsir-manifest-lowering.schema.json",
+  "title": "Manifest lowering entry",
+  "description": "One entry in the manifest's `integrityExtensions.lowerings[]` array. Binds a kernel's TSIR identity to the target + compiler versions under which it was lowered.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "backend",
+    "compilerVersion",
+    "emitterDigest",
+    "exactness",
+    "frontendVersion",
+    "kernelRef",
+    "rejectionReasons",
+    "targetDescriptorCorrectnessHash",
+    "tsirRealizationDigest",
+    "tsirSemanticDigest"
+  ],
+  "properties": {
+    "backend": { "type": "string", "minLength": 1 },
+    "compilerVersion": { "type": "string", "minLength": 1 },
+    "emitterDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "exactness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class"],
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": ["bit_exact_solo", "algorithm_exact", "tolerance_bounded"]
+        },
+        "algorithmExactInvariants": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "reduction_order",
+              "tree_shape",
+              "accum_dtype",
+              "associativity_grouping"
+            ]
+          }
+        },
+        "toleranceMetric": { "type": "string" },
+        "toleranceEpsilon": { "type": "number" }
+      }
+    },
+    "frontendVersion": { "type": "string" },
+    "kernelRef": { "type": "string", "minLength": 1 },
+    "rejectionReasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "tsir_subgroup_unlowerable",
+          "tsir_pe_budget_exhausted",
+          "tsir_collective_not_representable",
+          "tsir_dependence_unanalyzable",
+          "tsir_source_not_affine",
+          "tsir_target_unfit"
+        ]
+      }
+    },
+    "targetDescriptorCorrectnessHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tsirRealizationDigest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tsirSemanticDigest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

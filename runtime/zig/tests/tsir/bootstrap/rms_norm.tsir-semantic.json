@@ -1,0 +1,55 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "rms_norm",
+      "axes": [
+        { "name": "d", "lowerBound": "0", "upperBound": "hidden_size", "step": "1" },
+        { "name": "i", "lowerBound": "0", "upperBound": "hidden_size", "step": "1" }
+      ],
+      "bindings": [
+        {
+          "name": "input",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "weight",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "output",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": true
+        }
+      ],
+      "reductions": [
+        {
+          "axis": 1,
+          "op": "sum",
+          "contract": {
+            "accumulation": "f32",
+            "associativity": "strict_ordered",
+            "nanInf": "propagate"
+          },
+          "targetBinding": 2
+        }
+      ],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}

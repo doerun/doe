@@ -399,6 +399,17 @@ pub fn parseExprOrAssignStmt(self: anytype) @TypeOf(self.*).Error!u32 {
         });
     }
 
+    if (tag == .plus_plus or tag == .minus_minus) {
+        const op_token = self.token_idx;
+        self.advance();
+        self.skipSemicolon();
+        return self.tree.addNode(.{
+            .tag = if (tag == .plus_plus) .inc_stmt else .dec_stmt,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs },
+        });
+    }
+
     // Bare expression statement (e.g., function call).
     self.skipSemicolon();
     return self.tree.addNode(.{

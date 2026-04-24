@@ -102,6 +102,12 @@ pub fn analyze_stmt(self: anytype, node_idx: u32, body: anytype) !void {
             if (!self.type_compatible(lhs_ty, rhs_ty)) return error.TypeMismatch;
             self.module.node_info.items[node_idx].ty = lhs_ty;
         },
+        .inc_stmt, .dec_stmt => {
+            const lhs_ty = try analyze_expr(self, node.data.lhs, body);
+            const lhs_info = self.module.node_info.items[node.data.lhs];
+            if (lhs_info.category != .ref) return error.InvalidWgsl;
+            self.module.node_info.items[node_idx].ty = lhs_ty;
+        },
         else => {},
     }
 }

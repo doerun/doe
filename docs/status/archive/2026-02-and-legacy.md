@@ -12,6 +12,8 @@ Historical benchmark note:
 
 This shard contains the February 2026 status entries plus preserved older early-2026 backfilled sections that were still present in the original `docs/status.md` order.
 The entries remain in original top-to-bottom order.
+It is archive-only; add new status to the live topical shards under
+`docs/status/*.md`.
 
 ## Performance Reliability Investigation (2026-02-21)
 

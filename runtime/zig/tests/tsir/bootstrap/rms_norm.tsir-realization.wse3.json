@@ -1,0 +1,55 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [256, 256]
+      },
+      "peGrid": {
+        "width": 8,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 8,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 8,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [
+        {
+          "semanticIndex": 0,
+          "treeShape": "binomial"
+        }
+      ],
+      "emitterParams": {
+        "sketch": true,
+        "note": "mean-of-squares reduction uses binomial tree across 8 PEs; weight replicated because small; input/output row-sliced"
+      },
+      "targetDescriptorHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "rejections": []
+}

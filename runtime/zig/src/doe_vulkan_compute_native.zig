@@ -83,7 +83,11 @@ pub fn vulkan_create_shader_module(
     defer alloc.free(spirv_buf);
 
     var translation = runtime_compile.translateToSpirvForComputeRuntime(alloc, wgsl, spirv_buf) catch {
-        std.log.err("doe_vulkan_compute: WGSL→SPIR-V translation failed: {s}", .{doe_wgsl.lastErrorMessage()});
+        const head_len: usize = @min(wgsl.len, 120);
+        std.log.err(
+            "doe_vulkan_compute: WGSL→SPIR-V translation failed: {s} | wgsl[0..{d}]: {s}",
+            .{ doe_wgsl.lastErrorMessage(), head_len, wgsl[0..head_len] },
+        );
         return error.ShaderCompileFailed;
     };
     errdefer translation.info.deinit(alloc);

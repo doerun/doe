@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "doe-parity-receipt.schema.json",
+  "title": "Doe parity receipt",
+  "description": "Emitted by bench/tools/doe_parity.py. One receipt per kernel per invocation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "kernel",
+    "exactnessClass",
+    "inputsDigest",
+    "comparisons",
+    "rejectionReasons"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "doe_parity_receipt" },
+    "kernel": { "type": "string", "minLength": 1 },
+    "exactnessClass": {
+      "type": "string",
+      "enum": ["bit_exact_solo", "algorithm_exact", "tolerance_bounded"]
+    },
+    "referenceHash": { "type": ["string", "null"] },
+    "inputsDigest": { "type": "string" },
+    "comparisons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/comparison" }
+    },
+    "rejectionReasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "tsir_subgroup_unlowerable",
+          "tsir_pe_budget_exhausted",
+          "tsir_collective_not_representable",
+          "tsir_dependence_unanalyzable",
+          "tsir_source_not_affine",
+          "tsir_target_unfit"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "status"],
+      "properties": {
+        "backend": {
+          "type": "string",
+          "enum": ["reference", "webgpu", "csl-simfabric", "csl-hardware"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "deferred", "not_implemented", "rejected"]
+        },
+        "backendHash": { "type": ["string", "null"] },
+        "detail": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

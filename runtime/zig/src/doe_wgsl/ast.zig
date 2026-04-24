@@ -125,6 +125,14 @@ pub const NodeTag = enum(u8) {
     /// main_token = the assignment operator token.
     assign_stmt,
 
+    /// Postfix increment statement: `lhs++;`.
+    /// main_token = the `++` token. data.lhs = lhs expression node.
+    inc_stmt,
+
+    /// Postfix decrement statement: `lhs--;`.
+    /// main_token = the `--` token. data.lhs = lhs expression node.
+    dec_stmt,
+
     // ============================================================
     // Expressions
     // ============================================================

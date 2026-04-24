@@ -2,21 +2,28 @@
 
 This file is the front door for Doe project status.
 
-Read this file first. Use the shard files under
-[`docs/status/`](/Users/xyz/deco/doe/docs/status) for the dated history.
+Read this file first. Use the live topical shards under
+[`docs/status/`](/Users/xyz/deco/doe/docs/status) for active details and
+[`docs/status/archive/`](/Users/xyz/deco/doe/docs/status/archive) for dated
+history.
 
 ## How to use the status log
 
 - Keep this file concise. It is the mandatory-reading summary, not the full
   ledger.
-- Current shard: [`docs/status/2026-04.md`](/Users/xyz/deco/doe/docs/status/2026-04.md).
-- Add new dated status entries to the current shard at the top of that shard
-  file.
-- Historical shard files are append-only. Do not rewrite old entries except for
-  deliberate archive maintenance like this sharding change.
+- Live topical shards:
+  - [`docs/status/cerebras-csl.md`](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
+  - [`docs/status/compiler-and-webgpu.md`](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
+  - [`docs/status/runtime-backends-and-bench.md`](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
+- Add new status entries to the top of the relevant topical shard.
+- Live topical shards are LOC-capped at 1200 lines. Split by subdomain before a
+  shard exceeds the cap; do not create another date file just because the
+  calendar changed.
+- Dated archive files under `docs/status/archive/` are append-only. Do not
+  rewrite old entries except for deliberate archive maintenance.
 - When a task leaves placeholders, temporary methodology choices, or follow-up
-  work, record that in the current shard and refresh this front door only if
-  the current summary materially changes.
+  work, record that in the relevant topical shard and refresh this front door
+  only if the current summary materially changes.
 
 ## Current status summary
 
@@ -96,8 +103,15 @@ Read this file first. Use the shard files under
   `bench/out/manifest-shape/gemma-4-e2b-manifest-shape-execution.json`.
   It executes the raw BF16 text checkpoint at upstream tensor dimensions and
   keeps Doe/CSL runtime, hardware, Doppler production parity, and performance
-  claims blocked. See the current April shard for the scope boundary.
-- Apple Metal native Doe-vs-Dawn compare defaults are now fair-cold: default Metal executor ids pass `--no-pipeline-cache`, cache-enabled runs require explicit opt-in executor ids, report-level comparability coherence is default-on in `run_blocking_gates.py`, and the committed Metal archive is documented as a benchmark fixture rather than a product runtime contract. See `bench/docs/metal-pipeline-cache-policy.md` and the current April shard.
+  claims blocked. See `docs/status/cerebras-csl.md` for the active scope
+  boundary.
+- Apple Metal native Doe-vs-Dawn compare defaults are now fair-cold: default
+  Metal executor ids pass `--no-pipeline-cache`, cache-enabled runs require
+  explicit opt-in executor ids, report-level comparability coherence is
+  default-on in `run_blocking_gates.py`, and the committed Metal archive is
+  documented as a benchmark fixture rather than a product runtime contract. See
+  `bench/docs/metal-pipeline-cache-policy.md` and
+  `docs/status/runtime-backends-and-bench.md`.
 - A fresh Mac fair-cold compare at `bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.{json,claim.json}` recovers four of the seven previously cache-asymmetric compute workloads as strict claimable on `mac.lan` with Doe faster: `compute_workgroup_atomic_1024` (+9.6%), `compute_workgroup_non_atomic_1024` (+10.9%), `compute_zero_initialize_workgroup_memory_256` (+69.1%), `compute_concurrent_execution_single` (+4.3%). Both sides carry `pipelineCache.state="disabled" reason="cli-flag"`, confirming the end-to-end schema round-trip on Mac. Three matvec workloads still need a fair-cold Mac rerun.
 - Pipeline-cache direction differs by backend: Metal has Doe-ahead (Doe opens `MTLBinaryArchive`, Dawn delegate does not), Vulkan has Dawn-ahead (Dawn uses `PipelineCacheVk`, Doe passes `VK_NULL_U64`), D3D12 has Dawn-ahead (Dawn populates `CachedPSO.pCachedBlob`, Doe zero-initializes). The three-backend audit is at `bench/docs/pipeline-cache-backend-audit.md`. Existing AMD Vulkan claimable evidence is unchanged -- current Doe wins are runtime-engineering wins despite the Vulkan cache gap -- and the path to "Doe faster across all boards" splits into two programs: Metal Dawn-cache shim (Push 4 design) and Doe-side Vulkan + D3D12 cache implementation.
 - Doe-side Vulkan `VkPipelineCache` has landed (with optional disk persistence via `--pipeline-cache-dir`). Fresh strict AMD Vulkan compare at `bench/out/amd-vulkan/compare/20260417T114917Z/dawn-vs-doe.amd.vulkan.compare.{json,claim.json}` shows 10 of 11 workloads individually claimable -- including `compute_matvec_32768x2048_f32_swizzle1` (+11.26%), `compute_workgroup_atomic_1024` (+48.05%), `compute_workgroup_non_atomic_1024` (+49.90%), `pipeline_compile_stress` (+86.83%), and all 4 upload rows. The matvec naive_swizzle0 regression narrowed from -38.62% to -4.33% once Doe had cache parity with Dawn; the remaining Vulkan-side cache work is D3D12 CachedPSO (pending Windows host).
@@ -110,7 +124,7 @@ Read this file first. Use the shard files under
   and `bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.claim.json`.
   A stale home-level Bun install briefly caused fresh incumbent reruns to fall
   onto a Null adapter, but `bun install` restored Metal bring-up on the current
-  host; see the current April shard plus
+  host; see `docs/status/runtime-backends-and-bench.md` plus
   `bench/out/scratch/bun-null-backend-20260415.meta.json` and
   `bench/out/scratch/gemma64.bun-package.warm.ir.compare.postinstall.json`.
   These remain narrow Apple Metal package lanes, not a blanket Metal claim.
@@ -191,7 +205,8 @@ Read this file first. Use the shard files under
   copies/resolves are pending or the shared-event fallback is unavailable. The
   warm Node/Bun package lanes are now strict/comparable and claimable on
   `mac.lan`; broader Metal coverage still remains follow-up work. See
-  `docs/status/2026-04.md` for the diagnosis and implementation notes.
+  `docs/status/runtime-backends-and-bench.md` for the diagnosis and
+  implementation notes.
 - Benchmark reporting now treats `bench/out` as a portable JSON surface:
   compare/claim/run receipts plus cube/inventory/pipeline summary JSONs are
   commit-eligible, generated HTML is no longer the default path, and the single
@@ -225,7 +240,7 @@ Read this file first. Use the shard files under
   `sdkLayoutDepthDiagnosticEvidence` for non-claimable L35 BF16/RDRR smoke
   diagnostics. Promoted deeper receipts, full E2B, Doppler production
   inference parity, 31B manifest-shape and real-weight receipts, MoE, and
-  hardware remain gated in the current April shard and in
+  hardware remain gated in `docs/status/cerebras-csl.md` and in
   `docs/hardware-validation-appendix.md`.
   The E2B receipt also now binds a Doppler WebGPU capture graph as the
   shared JS/WGSL input surface, plus a first capture-to-CSL attention-core
@@ -261,16 +276,23 @@ Read this file first. Use the shard files under
   reporter entrypoint, build flavors, and refresh pattern are documented in
   `bench/README.md` under "Proof-backed shader metric front door". A fresh
   Vulkan-host timing pass is still the next refresh step.
-- Status history is now sharded; future follow-ups should go into the current
-  shard instead of bloating this front door.
+- Status history is now split into LOC-capped live topical shards plus a dated
+  archive; future follow-ups should go into the relevant topical shard instead
+  of bloating this front door.
 
-## Archive shards
+## Live topical shards
 
-- [2026-04.md](/Users/xyz/deco/doe/docs/status/2026-04.md)
-- [2026-03-30-to-2026-03-28.md](/Users/xyz/deco/doe/docs/status/2026-03-30-to-2026-03-28.md)
-- [2026-03-27-to-2026-03-24.md](/Users/xyz/deco/doe/docs/status/2026-03-27-to-2026-03-24.md)
-- [2026-03-23-to-2026-03-01.md](/Users/xyz/deco/doe/docs/status/2026-03-23-to-2026-03-01.md)
-- [2026-02-and-legacy.md](/Users/xyz/deco/doe/docs/status/2026-02-and-legacy.md)
+- [cerebras-csl.md](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
+- [compiler-and-webgpu.md](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
+- [runtime-backends-and-bench.md](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
+
+## Dated archive shards
+
+- [2026-04.md](/Users/xyz/deco/doe/docs/status/archive/2026-04.md)
+- [2026-03-30-to-2026-03-28.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-30-to-2026-03-28.md)
+- [2026-03-27-to-2026-03-24.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-27-to-2026-03-24.md)
+- [2026-03-23-to-2026-03-01.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-23-to-2026-03-01.md)
+- [2026-02-and-legacy.md](/Users/xyz/deco/doe/docs/status/archive/2026-02-and-legacy.md)
 
 ## Historical note
 

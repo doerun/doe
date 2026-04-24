@@ -44,7 +44,6 @@ pub const emit_csl_simulator = @import("emit_csl_simulator.zig");
 pub const emit_csl_mem_plan = @import("emit_csl_mem_plan.zig");
 pub const emit_csl_exec_v1 = @import("emit_csl_exec_v1.zig");
 pub const emit_csl_host_runtime = @import("emit_csl_host_runtime.zig");
-pub const emit_csl_decode = @import("emit_csl_decode.zig");
 pub const emit_csl_validate = @import("emit_csl_validate.zig");
 const csl_tests = @import("doe_wgsl_csl_tests.zig");
 pub const layout_utils = @import("layout_utils.zig");
@@ -109,6 +108,7 @@ pub const CompilationStage = enum {
     sema,
     ir_builder,
     ir_validate,
+    ir_transform,
     msl_emit,
     hlsl_emit,
     spirv_emit,
@@ -169,6 +169,10 @@ fn setLastError(stage: CompilationStage, kind: TranslateError, source: ?[]const 
         return;
     };
     last_error_len = text.len;
+}
+
+pub fn setLastErrorDetailPublic(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
+    setLastErrorDetail(stage, kind, detail);
 }
 
 fn setLastErrorDetail(stage: CompilationStage, kind: TranslateError, detail: []const u8) void {
@@ -322,11 +326,13 @@ pub fn analyzeToIrWithConfig(
             return TranslateError.InvalidIr;
         };
     }
-    ir_transform_robustness.apply(allocator, &module, config) catch {
-        return TranslateError.OutOfMemory;
+    ir_transform_robustness.apply(allocator, &module, config) catch |err| {
+        setLastErrorDetail(.ir_transform, TranslateError.InvalidIr, @errorName(err));
+        return TranslateError.InvalidIr;
     };
-    _ = ir_opt_rewrite.apply(allocator, &module) catch {
-        return TranslateError.OutOfMemory;
+    _ = ir_opt_rewrite.apply(allocator, &module) catch |err| {
+        setLastErrorDetail(.ir_transform, TranslateError.InvalidIr, @errorName(err));
+        return TranslateError.InvalidIr;
     };
     return module;
 }
@@ -617,7 +623,6 @@ test {
     _ = emit_csl_mem_plan;
     _ = emit_csl_exec_v1;
     _ = emit_csl_host_runtime;
-    _ = emit_csl_decode;
     _ = emit_csl_validate;
     _ = layout_utils;
     // Test files are registered in test_suite*.zig, not imported here,

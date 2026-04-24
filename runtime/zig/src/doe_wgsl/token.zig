@@ -52,6 +52,8 @@ pub const Tag = enum(u8) {
 
     // Compound operators.
     arrow, // ->
+    plus_plus, // ++
+    minus_minus, // --
     plus_eq, // +=
     minus_eq, // -=
     star_eq, // *=

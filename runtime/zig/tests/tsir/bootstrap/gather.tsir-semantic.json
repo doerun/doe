@@ -1,0 +1,44 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "gather",
+      "axes": [
+        { "name": "t", "lowerBound": "0", "upperBound": "num_tokens", "step": "1" },
+        { "name": "h", "lowerBound": "0", "upperBound": "hidden", "step": "1" }
+      ],
+      "bindings": [
+        {
+          "name": "indices",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [0],
+          "elem": "u32",
+          "readWrite": false
+        },
+        {
+          "name": "table",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [0, 0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "output",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [0, 0],
+          "elem": "f32",
+          "readWrite": true
+        }
+      ],
+      "reductions": [],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}

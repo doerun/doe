@@ -41,12 +41,17 @@ pub const Lexer = struct {
 
         // Compound or single-char operators.
         switch (c) {
-            '+' => return self.compoundOrSingle('=', .plus_eq, .@"+"),
+            '+' => {
+                if (self.peek(1) == '+') return self.double(.plus_plus);
+                if (self.peek(1) == '=') return self.double(.plus_eq);
+                return self.single(.@"+");
+            },
             '*' => return self.compoundOrSingle('=', .star_eq, .@"*"),
             '%' => return self.compoundOrSingle('=', .percent_eq, .@"%"),
             '^' => return self.compoundOrSingle('=', .caret_eq, .@"^"),
             '-' => {
                 if (self.peek(1) == '>') return self.double(.arrow);
+                if (self.peek(1) == '-') return self.double(.minus_minus);
                 if (self.peek(1) == '=') return self.double(.minus_eq);
                 return self.single(.@"-");
             },

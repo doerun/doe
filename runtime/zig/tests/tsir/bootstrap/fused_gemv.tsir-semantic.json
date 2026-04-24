@@ -1,0 +1,55 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "fused_gemv",
+      "axes": [
+        { "name": "i", "lowerBound": "0", "upperBound": "M", "step": "1" },
+        { "name": "k", "lowerBound": "0", "upperBound": "K", "step": "1" }
+      ],
+      "bindings": [
+        {
+          "name": "W",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [0, 0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "x",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "y",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": true
+        }
+      ],
+      "reductions": [
+        {
+          "axis": 1,
+          "op": "sum",
+          "contract": {
+            "accumulation": "f32",
+            "associativity": "strict_ordered",
+            "nanInf": "propagate"
+          },
+          "targetBinding": 2
+        }
+      ],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}

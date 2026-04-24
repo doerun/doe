@@ -38,8 +38,16 @@ The current CSL lowering stack is:
    and simulator-plan artifacts from that `HostPlan`.
 5. External Cerebras tools or the simulator runner consume those artifacts.
 
-The most important design rule is that the explicit `HostPlan` is the contract
-boundary between higher-level execution intent and Cerebras-specific emission.
+In the current classifier/template path, the explicit `HostPlan` is the
+contract boundary between higher-level execution intent and Cerebras-specific
+emission. That role is not the intended steady state: under the TSIR migration
+described in `docs/tsir-lowering-plan.md` and
+`docs/doppler-ingest.md` §Lowering architecture, kernel meaning, residency,
+collectives, and numerical exactness move into TSIR (semantic + realization),
+and `HostPlan` sits downstream of TSIR realization as the
+runtime-orchestration contract for launches, tensors, streams, and receipts.
+Until TSIR is wired end to end, the current-path statement above is the
+operative rule, and model-scale Gemma-4 evidence still flows through it.
 For model-scale Gemma-4 evidence, the `HostPlan` must stay tied back to the
 source manifest, captured graph, weight identity, and input contract so parity
 receipts can distinguish same-program portability from a separate hand-authored
@@ -58,6 +66,25 @@ is local simfabric. When `DOE_CSL_CMADDR` or the governed-lane
 allowed to target a CS system. Doe records that system targeting was requested
 without persisting the endpoint or credentials; SDK authentication material
 stays in the caller's environment.
+
+## Planned TSIR generalization
+
+The current stack above is still the operative implementation. It is not the
+intended steady state for general WGSL -> CSL lowering.
+
+The planned direction is a Tiled Spatial IR (TSIR) between WGSL IR and backend
+emitters:
+
+```text
+WGSL IR -> TSIR semantic -> TSIR realization -> mechanical CSL emitter
+```
+
+with a parity oracle defined against TSIR rather than against any backend.
+
+That planned architecture is documented in
+[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). The current in-tree
+`runtime/zig/src/tsir/` surface is scaffolding for that plan, not a completed
+replacement for the classifier/template path described in this document.
 
 ## SDK complete-program implication
 
@@ -416,6 +443,7 @@ Related user-facing entrypoints:
 
 - [`runtime/zig/README.md`](../runtime/zig/README.md)
 - [`runtime/zig/examples/csl-runtime-smoke.json`](../runtime/zig/examples/csl-runtime-smoke.json)
+- [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md)
 
 ## Fixture mirrors: `examples/` vs `runtime/zig/examples/`
 

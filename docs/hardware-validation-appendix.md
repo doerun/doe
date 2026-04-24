@@ -328,4 +328,4 @@ performance claim" in
 - Receipts: `bench/out/e2b-full-graph/`, `bench/out/31b-full-graph/`
 - Cross-runtime evidence: `bench/out/doppler-reference/`
 - Self-check: `python3 bench/tools/e2b_layer_block_self_check.py`
-- Status shard: `docs/status/2026-04.md`
+- Status shard: `docs/status/cerebras-csl.md`

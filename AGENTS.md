@@ -90,7 +90,7 @@ For Dawn-vs-Doe performance work, also read:
 - any production behavior change must be reflected in versioned config.
 
 2. Placeholder discipline
-- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in the status log (`docs/status.md` front door plus the current `docs/status/*.md` shard) and gate policy.
+- placeholders are allowed only for benchmark/gate bootstrap thresholds when explicitly flagged in config and tracked in the status log (`docs/status.md` front door plus the relevant live topical shard under `docs/status/*.md`) and gate policy.
 - runtime behavior placeholders are not allowed in `zig` execution paths; implement fully or fail with explicit unsupported taxonomy.
 
 3. Schema discipline
@@ -182,8 +182,8 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - never embed counts, percentages, or benchmark results in prose; reference the artifact path
 - structural claims ("Doe has a native DXIL emitter") are validated by CI against file existence
 - when a doc needs a specific number, use the pattern: "See `path/to/artifact.json` for current count."
-- `docs/status.md` is the concise status front door; dated append-only history lives in `docs/status/*.md`
-- new dated state goes at the top of the current shard; old shard entries are not edited except for deliberate archive maintenance
+- `docs/status.md` is the concise status front door; live status details live in topical shards under `docs/status/*.md`, and dated append-only history lives in `docs/status/archive/*.md`
+- new state goes at the top of the relevant topical shard; live shards are LOC-capped and must be split by subdomain before they grow past the cap, and old archive entries are not edited except for deliberate archive maintenance
 - artifacts are the source of truth, not docs:
   - theorem count/categories: `pipeline/lean/artifacts/proven-conditions.json`
   - benchmark results: `bench/out/*/dawn-vs-doe.*.json`
@@ -202,7 +202,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern
-- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in the current status shard with owner and next split target.
+- Python benchmark and tooling files must stay modular; when a file exceeds 1200 lines, add a tracked sharding follow-up in the relevant live topical shard with owner and next split target.
 
 ## Constants and thresholds
 
@@ -287,4 +287,4 @@ For each change set, verify:
 - pipeline/trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
 - if any workload is marked claimable, verify structural work equivalence: both sides executed the same commands, dispatch counts match, timing phases have symmetric non-zero coverage, and no hardware-path asymmetry is unannoted
-- the status log (`docs/status.md` plus the current shard) records remaining placeholders, temporary methodology choices, and follow-up work
+- the status log (`docs/status.md` plus the relevant topical shard) records remaining placeholders, temporary methodology choices, and follow-up work

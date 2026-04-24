@@ -181,6 +181,19 @@ const FunctionBuilder = struct {
                     .rhs = try self.lower_value_expr(node.data.rhs),
                 } });
             },
+            .inc_stmt, .dec_stmt => blk: {
+                const lhs_ref = try self.lower_ref_expr(node.data.lhs);
+                const one_id = try self.function.append_expr(self.allocator, .{
+                    .ty = self.semantic.abstract_int_type,
+                    .category = .value,
+                    .data = .{ .int_lit = 1 },
+                });
+                break :blk try self.function.append_stmt(self.allocator, .{ .assign = .{
+                    .op = if (node.tag == .inc_stmt) .add else .sub,
+                    .lhs = lhs_ref,
+                    .rhs = one_id,
+                } });
+            },
             .switch_stmt => try self.lower_switch_stmt(node),
             .switch_case, .else_clause => error.UnsupportedConstruct,
             else => error.UnsupportedConstruct,

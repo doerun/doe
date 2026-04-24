@@ -70,11 +70,15 @@ pub fn translateToSpirvForComputeRuntime(
     var module_ir = try mod.analyzeToIrWithConfig(allocator, wgsl, compute_runtime_robustness_config());
     defer module_ir.deinit();
 
-    const len = mod.emit_spirv.emit(&module_ir, out) catch |err| return switch (err) {
-        error.OutputTooLarge => mod.TranslateError.OutputTooLarge,
-        error.UnsupportedConstruct => mod.TranslateError.UnsupportedConstruct,
-        error.InvalidIr => mod.TranslateError.InvalidIr,
-        error.OutOfMemory => mod.TranslateError.OutOfMemory,
+    const len = mod.emit_spirv.emit(&module_ir, out) catch |err| {
+        const kind: mod.TranslateError = switch (err) {
+            error.OutputTooLarge => mod.TranslateError.OutputTooLarge,
+            error.UnsupportedConstruct => mod.TranslateError.UnsupportedConstruct,
+            error.InvalidIr => mod.TranslateError.InvalidIr,
+            error.OutOfMemory => mod.TranslateError.OutOfMemory,
+        };
+        mod.setLastErrorDetailPublic(.spirv_emit, kind, @errorName(err));
+        return kind;
     };
     return .{
         .len = len,

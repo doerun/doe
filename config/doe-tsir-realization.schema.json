@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "doe-tsir-realization.schema.json",
+  "title": "TSIR realization contract",
+  "description": "Target- and planner-dependent. Hashed into tsir.realizationDigest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "functions", "emitterDigest", "rejections"],
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "functions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/function" }
+    },
+    "emitterDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "rejections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rejection" }
+    }
+  },
+  "$defs": {
+    "residencyClass": {
+      "type": "string",
+      "enum": ["pe_replicated", "pe_sliced", "fabric_streamed", "host_copied", "recomputed"]
+    },
+    "treeShape": {
+      "type": "string",
+      "enum": ["binomial", "ring", "linear"]
+    },
+    "rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "nodePath", "detail"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "tsir_subgroup_unlowerable",
+            "tsir_pe_budget_exhausted",
+            "tsir_collective_not_representable",
+            "tsir_dependence_unanalyzable",
+            "tsir_source_not_affine",
+            "tsir_target_unfit"
+          ]
+        },
+        "nodePath": { "type": "string" },
+        "detail": { "type": "string" }
+      }
+    },
+    "residencyDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingIndex", "class"],
+      "properties": {
+        "bindingIndex": { "type": "integer", "minimum": 0 },
+        "class": { "$ref": "#/$defs/residencyClass" },
+        "axis": { "type": ["integer", "null"], "minimum": 0 },
+        "shards": { "type": ["integer", "null"], "minimum": 1 },
+        "fabricColor": { "type": ["integer", "null"], "minimum": 0 },
+        "chunkBytes": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "collectiveRealization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticIndex", "treeShape", "groupSize"],
+      "properties": {
+        "semanticIndex": { "type": "integer", "minimum": 0 },
+        "treeShape": { "$ref": "#/$defs/treeShape" },
+        "fabricColor": { "type": ["integer", "null"], "minimum": 0 },
+        "groupSize": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "reductionRealization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticIndex", "treeShape"],
+      "properties": {
+        "semanticIndex": { "type": "integer", "minimum": 0 },
+        "treeShape": { "$ref": "#/$defs/treeShape" }
+      }
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semanticIndex",
+        "tiles",
+        "peGrid",
+        "residency",
+        "collectives",
+        "emitterParams",
+        "targetDescriptorHash"
+      ],
+      "properties": {
+        "semanticIndex": { "type": "integer", "minimum": 0 },
+        "tiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["perAxis"],
+          "properties": {
+            "perAxis": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "peGrid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "residency": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/residencyDecision" }
+        },
+        "collectives": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/collectiveRealization" }
+        },
+        "reductions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/reductionRealization" }
+        },
+        "emitterParams": { "type": "object", "additionalProperties": true },
+        "targetDescriptorHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

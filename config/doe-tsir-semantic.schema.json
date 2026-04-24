@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "doe-tsir-semantic.schema.json",
+  "title": "TSIR semantic contract",
+  "description": "Stable across compiler policy iteration. Hashed into tsir.semanticDigest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "frontendVersion", "functions", "rejections"],
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "frontendVersion": { "type": "string" },
+    "functions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/function" }
+    },
+    "rejections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rejection" }
+    }
+  },
+  "$defs": {
+    "scalarKind": {
+      "type": "string",
+      "enum": ["f32", "f16", "bf16", "i32", "u32"]
+    },
+    "associativity": {
+      "type": "string",
+      "enum": ["strict_ordered", "associative_allowed"]
+    },
+    "nanInfPolicy": { "type": "string", "enum": ["propagate", "quiet_mask"] },
+    "exactnessClass": {
+      "type": "string",
+      "enum": ["bit_exact_solo", "algorithm_exact", "tolerance_bounded"]
+    },
+    "algorithmExactInvariant": {
+      "type": "string",
+      "enum": [
+        "reduction_order",
+        "tree_shape",
+        "accum_dtype",
+        "associativity_grouping"
+      ]
+    },
+    "exactness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class"],
+      "properties": {
+        "class": { "$ref": "#/$defs/exactnessClass" },
+        "algorithmExactInvariants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/algorithmExactInvariant" }
+        },
+        "toleranceMetric": { "type": "string" },
+        "toleranceEpsilon": { "type": "number" }
+      }
+    },
+    "familyHint": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "elementwise",
+        "reduction",
+        "gather",
+        "rms_norm",
+        "fused_gemv",
+        "tiled_matmul",
+        "attention_decode",
+        "attention_tiled",
+        "rope",
+        "dequant",
+        "sample",
+        "embed"
+      ]
+    },
+    "collectiveKind": {
+      "type": "string",
+      "enum": [
+        "subgroup_add",
+        "subgroup_min",
+        "subgroup_max",
+        "subgroup_mul",
+        "subgroup_broadcast",
+        "subgroup_ballot",
+        "subgroup_shuffle",
+        "subgroup_exclusive_scan",
+        "subgroup_inclusive_scan",
+        "workgroup_barrier",
+        "fabric_reduce",
+        "fabric_broadcast",
+        "fabric_allreduce"
+      ]
+    },
+    "rejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "nodePath", "detail"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "tsir_subgroup_unlowerable",
+            "tsir_pe_budget_exhausted",
+            "tsir_collective_not_representable",
+            "tsir_dependence_unanalyzable",
+            "tsir_source_not_affine",
+            "tsir_target_unfit"
+          ]
+        },
+        "nodePath": { "type": "string" },
+        "detail": { "type": "string" }
+      }
+    },
+    "buffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "group", "binding", "logicalShape", "elem", "readWrite"],
+      "properties": {
+        "name": { "type": "string" },
+        "group": { "type": "integer", "minimum": 0 },
+        "binding": { "type": "integer", "minimum": 0 },
+        "logicalShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "elem": { "$ref": "#/$defs/scalarKind" },
+        "readWrite": { "type": "boolean" }
+      }
+    },
+    "axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lowerBound", "upperBound", "step"],
+      "properties": {
+        "name": { "type": "string" },
+        "lowerBound": { "type": "string" },
+        "upperBound": { "type": "string" },
+        "step": { "type": "string" }
+      }
+    },
+    "reductionOp": {
+      "type": "string",
+      "enum": ["sum", "product", "min", "max"]
+    },
+    "reduction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axis", "op", "contract", "targetBinding"],
+      "properties": {
+        "axis": { "type": "integer", "minimum": 0 },
+        "op": { "$ref": "#/$defs/reductionOp" },
+        "contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accumulation", "associativity", "nanInf"],
+          "properties": {
+            "accumulation": { "$ref": "#/$defs/scalarKind" },
+            "associativity": { "$ref": "#/$defs/associativity" },
+            "nanInf": { "$ref": "#/$defs/nanInfPolicy" }
+          }
+        },
+        "targetBinding": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "collective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "axis", "exactness", "dtype"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/collectiveKind" },
+        "axis": { "type": "integer" },
+        "exactness": { "$ref": "#/$defs/exactness" },
+        "dtype": { "$ref": "#/$defs/scalarKind" }
+      }
+    },
+    "function": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "familyHint", "axes", "bindings", "reductions", "collectives", "sourceDigest"],
+      "properties": {
+        "name": { "type": "string" },
+        "familyHint": { "$ref": "#/$defs/familyHint" },
+        "axes": { "type": "array", "items": { "$ref": "#/$defs/axis" } },
+        "bindings": { "type": "array", "items": { "$ref": "#/$defs/buffer" } },
+        "reductions": { "type": "array", "items": { "$ref": "#/$defs/reduction" } },
+        "collectives": { "type": "array", "items": { "$ref": "#/$defs/collective" } },
+        "sourceDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

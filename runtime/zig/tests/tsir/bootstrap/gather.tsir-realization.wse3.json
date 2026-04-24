@@ -1,0 +1,50 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [64, 256]
+      },
+      "peGrid": {
+        "width": 8,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 8,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "fabric_streamed",
+          "axis": null,
+          "shards": null,
+          "fabricColor": 0,
+          "chunkBytes": 65536
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 8,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [],
+      "emitterParams": {
+        "sketch": true,
+        "note": "embedding table too large for per-PE residency; streamed over fabric color 0. Requires Merkle-block packaging on the table tensor (Doppler side); absent that, residency pass rejects with TSIR_PE_BUDGET_EXHAUSTED"
+      },
+      "targetDescriptorHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "rejections": []
+}

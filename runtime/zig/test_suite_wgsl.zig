@@ -37,6 +37,8 @@ const spirv_subsystem_test = @import("tests/core/spirv_subsystem_test.zig");
 const wgsl_parser_ir_test = @import("tests/core/wgsl_parser_ir_test.zig");
 const proof_matching_test = @import("tests/core/proof_matching_test.zig");
 const lean_proof_application_test = @import("tests/core/lean_proof_application_test.zig");
+const tsir_scaffold_test = @import("tests/wgsl/tsir_scaffold_test.zig");
+const tsir_frontend_test = @import("tests/wgsl/tsir_frontend_test.zig");
 
 comptime {
     _ = emit_hlsl_map_test;
@@ -78,4 +80,6 @@ comptime {
     _ = wgsl_parser_ir_test;
     _ = proof_matching_test;
     _ = lean_proof_application_test;
+    _ = tsir_scaffold_test;
+    _ = tsir_frontend_test;
 }

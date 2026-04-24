@@ -118,6 +118,20 @@ JS / C application
           GPU
 ```
 
+## Planned TSIR path for spatial backends
+
+The current compiler pipeline in this document is the operative path for Metal,
+Vulkan, and D3D12. It is also the frontend path that today's CSL classifier
+consumes. The planned general WGSL -> spatial-backend route adds a Tiled
+Spatial IR (TSIR) between Doe IR and backend emission so residency, tiling,
+collectives, and exactness are declared in one place instead of re-derived by
+per-kernel emitters.
+
+That planned path is documented in
+[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). The in-tree scaffold
+for it lives under `runtime/zig/src/tsir/`, but it is not yet the wired
+compiler path for CSL or WebGPU.
+
 ## Comparison with Dawn/Tint
 
 Dawn is Google's WebGPU implementation. Tint is Dawn's shader compiler.
@@ -257,6 +271,11 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 | Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
 | Public API + tests | mod.zig, mod_*_test.zig, emit_*_test.zig, coverage_*_test.zig | Sharded | All four translateTo* wired; tests split by backend, coverage, and integration concern |
 | **Total** | **~80 files** | **~16,000+** | Approximate; file/line counts are approximate and have grown since the original audit |
+
+## Related docs
+
+- [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md) for the planned
+  WGSL -> TSIR -> backend lowering architecture and parity-oracle contract
 
 ## Remaining work (current reality)
 
