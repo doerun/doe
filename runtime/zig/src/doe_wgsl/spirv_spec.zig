@@ -334,6 +334,7 @@ pub const Opcode = struct {
     pub const Kill: u16 = 252;
     pub const Return: u16 = 253;
     pub const ReturnValue: u16 = 254;
+    pub const Unreachable: u16 = 255;
     pub const FunctionCallResult: u16 = 57;
     pub const LoopMerge: u16 = 246;
     pub const SelectionMerge: u16 = 247;

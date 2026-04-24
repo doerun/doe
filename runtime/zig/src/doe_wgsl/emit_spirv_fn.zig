@@ -185,13 +185,27 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     const then_terminated = try self.emit_stmt(if_stmt.then_block);
                     if (!then_terminated) try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{merge_label});
 
+                    var both_branches_terminated = false;
                     if (if_stmt.else_block) |else_block| {
                         try self.emit_label(else_label);
                         const else_terminated = try self.emit_stmt(else_block);
                         if (!else_terminated) try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{merge_label});
+                        both_branches_terminated = then_terminated and else_terminated;
                     }
 
                     try self.emit_label(merge_label);
+                    if (both_branches_terminated) {
+                        // Both arms ended with a terminator (return/break/
+                        // continue) so no control-flow edge reaches
+                        // merge_label. SPIR-V requires every labeled block
+                        // to have a terminator; emit OpUnreachable as the
+                        // no-predecessor block's terminator and signal the
+                        // caller that the enclosing statement is terminated
+                        // (the .block handler then stops emitting subsequent
+                        // statements, which are dead code).
+                        try self.emitter.builder.append_function_inst(spirv.Opcode.Unreachable, &.{});
+                        return true;
+                    }
                     return false;
                 },
                 .loop_ => |loop_stmt| {

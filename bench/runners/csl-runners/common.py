@@ -275,12 +275,24 @@ def run_fused_gemv_2d(
         data_type=memcpy_data_type.MEMCPY_32BIT, nonblock=False,
     )
 
+    # cslc's memcpy runtime does not support MEMCPY_8BIT as a data_type in
+    # SDK 2.10; weight u8 payloads are transferred as MEMCPY_32BIT by
+    # viewing the underlying byte array as uint32. The PE program declares
+    # weight as `[]u8` in the fused GEMV emitter and indexes byte-by-byte,
+    # so the on-device memory layout after a u32-typed memcpy matches the
+    # expected byte layout (host and device are both little-endian).
     weight_bytes_flat = weight_shards.reshape(-1).astype(np.uint8, copy=False)
     bytes_per_pe = expected_weight_shape[2]
+    if bytes_per_pe % 4 != 0:
+        raise ValueError(
+            f"weight bytes_per_pe ({bytes_per_pe}) must be 4-aligned so the "
+            "MEMCPY_32BIT view preserves the byte layout"
+        )
+    weight_u32 = weight_bytes_flat.view(np.uint32)
     runner.memcpy_h2d(
-        wgt_id, weight_bytes_flat, 0, 0, width, height, bytes_per_pe,
+        wgt_id, weight_u32, 0, 0, width, height, bytes_per_pe // 4,
         streaming=False, order=memcpy_order.ROW_MAJOR,
-        data_type=memcpy_data_type.MEMCPY_8BIT, nonblock=False,
+        data_type=memcpy_data_type.MEMCPY_32BIT, nonblock=False,
     )
 
     runner.launch(compute_symbol, nonblock=False)

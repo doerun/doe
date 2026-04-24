@@ -3,6 +3,7 @@ const emit_hlsl_codegen_test = @import("tests/wgsl/emit_hlsl_codegen_test.zig");
 const emit_hlsl_stage_test = @import("tests/wgsl/emit_hlsl_stage_test.zig");
 const emit_spirv_builder_test = @import("tests/wgsl/emit_spirv_builder_test.zig");
 const emit_spirv_stage_test = @import("tests/wgsl/emit_spirv_stage_test.zig");
+const emit_spirv_if_termination_test = @import("tests/wgsl/emit_spirv_if_termination_test.zig");
 const emit_spirv_builtin_test = @import("tests/wgsl/emit_spirv_builtin_test.zig");
 const shader_emit_test = @import("tests/wgsl/shader_emit_test.zig");
 const shader_sema_test = @import("tests/wgsl/shader_sema_test.zig");
@@ -52,6 +53,7 @@ comptime {
     _ = emit_hlsl_stage_test;
     _ = emit_spirv_builder_test;
     _ = emit_spirv_stage_test;
+    _ = emit_spirv_if_termination_test;
     _ = emit_spirv_builtin_test;
     _ = shader_emit_test;
     _ = shader_sema_test;

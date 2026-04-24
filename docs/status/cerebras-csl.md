@@ -7,6 +7,50 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+3) — first WS4 kernel simfabric execution PASS
+
+`attention_tiled_streaming_sim_runner.py` executed end-to-end against a
+compiled streaming-KV bundle and produced a PASSING governed-lane trace:
+
+- kernel: `attention-tiled-streaming`
+- config: width=8, head_dim=256, q_len=32, q_len_per_pe=4, block_size=16,
+  kv_len=32, kv tiles=2
+- runtimePassed: true, runtimeMaxAbsErr = 2.98e-6 (within f32 precision
+  vs the numpy Flash Attention reference)
+- trace:
+  `bench/out/cslc-attn-streaming-probe/simfabric-trace/attn_streaming.trace.json`
+
+This is the first WS4 kernel to flip off `executionStatus=not_implemented`
+under the post-refactor streaming contract. The host helper
+`run_streaming_tiled_attention` in `bench/runners/csl-runners/common.py`
+drove the tile-loop (H2D K/V per block → launch `compute` → after all
+tiles launch `finalize` → D2H + concat across width); numerical parity
+holds within f32 precision against the numpy reference.
+
+`lmhead_gemv_2d_sim_runner.py` was written against the parallel
+`run_fused_gemv_2d` helper but ran into a simulator stall on D2H:
+"received length (0 bytes) is not expected (256 bytes), could be a
+kernel stall". The D2H expects all width×height PEs to have unblocked,
+and the fabric-reduce chain emits `unblock_cmd_stream` via
+`send_done_task` on PE 0..N-2 and directly on PE N-1, so all PEs
+*should* unblock. The most likely cause is an interaction between the
+newly-2-D layout's per-row reduce-chain routing and the async-send
+completion protocol (queue 2 was bound to color 4 in the pre-refactor
+path; my new `@set_color_config(pe_x, pe_y, reduce_color, …)` inline
+calls may be missing a tile-code side `@initialize_queue` on the
+sink PE that only runs in the single-row original loop). The refactor
+compiles clean; it's the runtime queue handshake that's off. Probe
+and compiled bundle are pinned under
+`bench/out/cslc-lmhead-2d-probe/` so the next session has a concrete
+reproduction.
+
+The embed helper side (your workstream) plus an integration into
+`run_doe_csl_int4ple_transcript.py` that invokes the three per-kernel
+cs_python runners and aggregates their traces into a single model-level
+receipt is the remaining path to flipping the transcript off
+`executionStatus=not_implemented`. The attention half of that chain
+now has a proven-working first link.
+
 ## 2026-04-24 (late+2) — lm_head_gemv_stable 2-D sharding lands
 
 Fourth and final WS4 blocker kernel. `emit_csl_fused.zig:emit` +
