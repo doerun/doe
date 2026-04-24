@@ -7,8 +7,10 @@ it lowers supported WGSL into backend receipts.
 
 The Doppler-owned export contract lives in
 [`../../doppler/docs/integration/program-bundle.md`](../../doppler/docs/integration/program-bundle.md).
-The wrapper-level narrative lives in
-[`../../ouroboros/docs/integration/doppler-doe-program-contract.md`](../../ouroboros/docs/integration/doppler-doe-program-contract.md).
+The wrapper-level narrative that composes the Doppler-Doe program boundary
+with broader cross-repo context is owned upstream, not in this repo. Doe
+docs intentionally describe only the Doe-local side of the boundary;
+motivation and composition context stay in the upstream planning repo.
 
 Doe does not compile arbitrary Doppler JavaScript. Doe accepts a closed,
 versioned Doppler Program Bundle that declares its model identity, execution

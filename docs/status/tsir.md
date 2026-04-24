@@ -19,6 +19,17 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Private-strategy leak gate: fixed two `ouroboros/` cross-repo path
+  references in `docs/doppler-ingest.md:11` that were failing
+  `bench/gates/doe_private_strategy_leak_gate.py` (a hard blocking gate
+  per CLAUDE.md). The line had a markdown link pointing at an upstream
+  planning repo path. Replaced with Doe-local prose describing only the
+  Doe-local side of the Doppler-Doe boundary; motivation and
+  composition context are intentionally not named. Gate now passes.
+  Not a TSIR wedge strictly, but logged here because the status shard
+  has been the main Loop 2 activity surface today and the leak was
+  discovered while confirming no TSIR doc drift during this tick's
+  scope search.
 - TSIR Loop 2 — cross-backend emitter digest distinctness lock: new
   test "tsir emitter code digests are pairwise distinct across all five
   backends" in `runtime/zig/tests/wgsl/tsir_emit_backend_skeleton_test.zig`.
