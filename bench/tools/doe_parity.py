@@ -38,6 +38,11 @@ import jsonschema
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools import tsir_manifest_lowering  # noqa: E402
+
 DEFAULT_RECEIPT_DIR = REPO_ROOT / "reports" / "parity"
 SCHEMA_PATH = REPO_ROOT / "config" / "doe-parity-receipt.schema.json"
 
@@ -63,6 +68,24 @@ class ComparisonOutcome:
     detail: str | None = None
 
 
+@dataclass(frozen=True)
+class LoweringIdentity:
+    tsir_semantic_digest: str
+    tsir_realization_digest: str
+    emitter_digest: str
+    target_descriptor_correctness_hash: str
+
+    def to_json(self) -> dict[str, str]:
+        return {
+            "emitterDigest": self.emitter_digest,
+            "targetDescriptorCorrectnessHash": (
+                self.target_descriptor_correctness_hash
+            ),
+            "tsirRealizationDigest": self.tsir_realization_digest,
+            "tsirSemanticDigest": self.tsir_semantic_digest,
+        }
+
+
 @dataclass
 class ParityReceipt:
     schema_version: int
@@ -73,9 +96,10 @@ class ParityReceipt:
     inputs_digest: str
     comparisons: list[ComparisonOutcome] = field(default_factory=list)
     rejection_reasons: list[str] = field(default_factory=list)
+    lowering_identity: LoweringIdentity | None = None
 
     def to_json(self) -> dict[str, Any]:
-        return {
+        doc: dict[str, Any] = {
             "schemaVersion": self.schema_version,
             "artifactKind": self.artifact_kind,
             "kernel": self.kernel,
@@ -93,6 +117,9 @@ class ParityReceipt:
             ],
             "rejectionReasons": self.rejection_reasons,
         }
+        if self.lowering_identity is not None:
+            doc["loweringIdentity"] = self.lowering_identity.to_json()
+        return doc
 
 
 def parse_args() -> argparse.Namespace:
@@ -127,6 +154,13 @@ def parse_args() -> argparse.Namespace:
         "--realization-tsir",
         type=Path,
         help="Optional TSIR realization JSON. Must be paired with --semantic-tsir.",
+    )
+    parser.add_argument(
+        "--manifest-lowering-entry",
+        type=Path,
+        help="Optional integrityExtensions.lowerings[] fixture entry. Copies "
+        "TSIR lowering identity digests into the receipt without changing "
+        "stub execution status.",
     )
     return parser.parse_args()
 
@@ -180,6 +214,28 @@ def load_rejection_reasons(
     if not isinstance(semantic_doc, dict) or not isinstance(realization_doc, dict):
         raise ValueError("TSIR JSON must be top-level objects")
     return extract_rejection_reasons(semantic_doc, realization_doc)
+
+
+def lowering_identity_from_manifest_entry(
+    entry_path: Path | None, exactness: str
+) -> LoweringIdentity | None:
+    if entry_path is None:
+        return None
+    entry = tsir_manifest_lowering.load_entry_doc(entry_path)
+    entry_exactness = entry["exactness"]["class"]
+    if entry_exactness != exactness:
+        raise ValueError(
+            "manifest lowering exactness class does not match CLI --class: "
+            f"{entry_exactness} != {exactness}"
+        )
+    return LoweringIdentity(
+        tsir_semantic_digest=entry["tsirSemanticDigest"],
+        tsir_realization_digest=entry["tsirRealizationDigest"],
+        emitter_digest=entry["emitterDigest"],
+        target_descriptor_correctness_hash=(
+            entry["targetDescriptorCorrectnessHash"]
+        ),
+    )
 
 
 def run_reference_interpreter(
@@ -319,6 +375,9 @@ def main() -> int:
         rejection_reasons = load_rejection_reasons(
             args.semantic_tsir, args.realization_tsir
         )
+        lowering_identity = lowering_identity_from_manifest_entry(
+            args.manifest_lowering_entry, args.exactness
+        )
         reference = run_reference_interpreter(
             args.kernel, inputs_digest, rejection_reasons
         )
@@ -331,7 +390,7 @@ def main() -> int:
         ]
 
         receipt = ParityReceipt(
-            schema_version=1,
+            schema_version=2,
             artifact_kind="doe_parity_receipt",
             kernel=args.kernel,
             exactness_class=args.exactness,
@@ -339,6 +398,7 @@ def main() -> int:
             inputs_digest=inputs_digest,
             comparisons=[reference] + comparisons,
             rejection_reasons=rejection_reasons,
+            lowering_identity=lowering_identity,
         )
         out_path = write_receipt(receipt, args.receipt_dir)
         try:

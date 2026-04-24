@@ -15,7 +15,7 @@
     "rejectionReasons"
   ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "artifactKind": { "type": "string", "const": "doe_parity_receipt" },
     "kernel": { "type": "string", "minLength": 1 },
     "exactnessClass": {
@@ -24,6 +24,7 @@
     },
     "referenceHash": { "type": ["string", "null"] },
     "inputsDigest": { "type": "string" },
+    "loweringIdentity": { "$ref": "#/$defs/loweringIdentity" },
     "comparisons": {
       "type": "array",
       "items": { "$ref": "#/$defs/comparison" }
@@ -44,6 +45,28 @@
     }
   },
   "$defs": {
+    "hexDigest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "loweringIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tsirSemanticDigest",
+        "tsirRealizationDigest",
+        "emitterDigest",
+        "targetDescriptorCorrectnessHash"
+      ],
+      "properties": {
+        "tsirSemanticDigest": { "$ref": "#/$defs/hexDigest" },
+        "tsirRealizationDigest": { "$ref": "#/$defs/hexDigest" },
+        "emitterDigest": { "$ref": "#/$defs/hexDigest" },
+        "targetDescriptorCorrectnessHash": {
+          "$ref": "#/$defs/hexDigest"
+        }
+      }
+    },
     "comparison": {
       "type": "object",
       "additionalProperties": false,
