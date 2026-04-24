@@ -107,6 +107,18 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh module docstring of
+  `bench/tests/test_tsir_bootstrap_catalog.py`. Described only
+  schema validation ("This test fails closed if any catalog entry
+  stops validating against the current schema"), but ticks 29/30
+  added `test_every_wgsl_has_realization_per_target` and
+  `test_no_orphan_artifacts_without_wgsl_pair` — the module now
+  locks four distinct internal-integrity contracts, not one.
+  Rewrote to enumerate all four (schema validation, WGSL+
+  semantic+notes pairing, per-target realization completeness,
+  orphan check). 6/6 catalog tests still pass; strategy-leak gate
+  PASS. Cites `docs/tsir-lowering-plan.md` Step 1.5 (bootstrap
+  catalog) and `docs/loop-protocol.md` Loop 2 protocol.
 - Code: refresh docstring of `bench/tests/test_doe_parity.py`. Said
   the tests "lock the fail-closed scaffolding contract until the
   TSIR reference interpreter and backend lanes land in future

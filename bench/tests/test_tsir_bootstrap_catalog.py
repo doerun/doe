@@ -1,12 +1,22 @@
-"""Schema-validate every TSIR JSON in the bootstrap kernel catalog.
+"""Lock the TSIR bootstrap kernel catalog's internal integrity.
 
 Step 1.5 of `docs/tsir-lowering-plan.md` pins a small catalog of WGSL
-snapshots with hand-sketched TSIR. This test fails closed if any
-catalog entry stops validating against the current schema — either
-because the schema drifted or because a new entry isn't
-schema-compliant. Category-error discoveries (kernels the schema
-CANNOT express) are documented in per-family `*.notes.md` files, not
-smuggled into the test via skips.
+snapshots with hand-sketched TSIR under
+`runtime/zig/tests/tsir/bootstrap/`. This module's tests fail closed
+on any break in those artifacts' internal contracts:
+
+* every `.tsir-semantic.json` / `.tsir-realization.*.json` validates
+  against its schema;
+* every `.wgsl` has a paired `.tsir-semantic.json` and `.notes.md`;
+* every `.wgsl` has a realization file for both Phase A target
+  descriptors (`webgpu-generic`, `wse3`);
+* every non-WGSL artifact (semantic, realization, notes) has a
+  matching WGSL — catches leftover orphan files after a kernel
+  rename/removal.
+
+Category-error discoveries (kernels the schema CANNOT express) are
+documented in per-family `*.notes.md` files, not smuggled into tests
+via skips.
 """
 
 from __future__ import annotations
