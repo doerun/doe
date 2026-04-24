@@ -187,9 +187,18 @@ def run_reference_interpreter(
 ) -> ComparisonOutcome:
     """Invoke the TSIR reference interpreter.
 
-    Scaffolding: the Zig reference interpreter currently returns
-    `NotImplemented` for every kernel. The CLI mirrors that here so the
-    fail-closed path is exercised end-to-end from day one.
+    Scaffolding: the CLI does not yet shell into the Zig oracle. The Zig
+    reference interpreter in `runtime/zig/src/tsir/reference_interpreter.zig`
+    now recognizes the Phase A bootstrap families (`fused_gemv`, `gather`,
+    `rms_norm`) across `{f32, f16, bf16}` with `strict_ordered` and
+    `associative_allowed` reductions plus `literal_f32` / `uniform_field`
+    epsilon for RMSNorm. Families outside that set still return
+    `NotImplemented`. This CLI mirrors the fail-closed contract as
+    `not_implemented` until the subprocess harness that feeds canonical
+    semantic/realization JSON plus input bytes to a Zig oracle binary
+    lands. Until then, wiring here must stay stub-only so the receipt
+    schema is exercised end-to-end without inventing a fake oracle
+    answer.
     """
     if rejection_reasons:
         return ComparisonOutcome(
@@ -207,9 +216,13 @@ def run_reference_interpreter(
 def run_backend(backend: str) -> ComparisonOutcome:
     """Run a backend emission path and return its hash.
 
-    Scaffolding: both backends (`webgpu`, `csl-simfabric`) are wired as
-    subprocess calls in a future session. For now return
-    `not_implemented` so the receipt reflects the actual state.
+    Scaffolding: both backend lanes are still stub-only. `webgpu` needs
+    the TSIR-to-WGSL re-emission or equivalent Doe-compute harness;
+    `csl-simfabric` needs TSIR-to-CSL executable bodies (the current
+    `runtime/zig/src/tsir/emit_csl.zig` is a skeleton contract emitter,
+    not an executable kernel emitter) plus the simfabric driver path.
+    Until those land, this CLI returns `not_implemented` so the receipt
+    reflects the actual state rather than an invented answer.
     """
     return ComparisonOutcome(
         backend=backend,

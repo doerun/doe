@@ -9,6 +9,24 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 8 parity CLI scaffolding comment refresh:
+  `bench/tools/doe_parity.py` scaffolding comments on
+  `run_reference_interpreter` and `run_backend` were stale — they claimed
+  the Zig oracle returns `NotImplemented` for every kernel, but the
+  oracle now recognizes the three Phase A bootstrap families
+  (`fused_gemv`, `gather`, `rms_norm`) across `{f32, f16, bf16}` with
+  `strict_ordered` + `associative_allowed` reductions plus
+  `literal_f32` / `uniform_field` epsilon. Updated comments to name
+  what the oracle covers, name the remaining CLI subprocess harness
+  that is the real gap, and name the backend-lane gaps (TSIR-to-WGSL
+  re-emission for WebGPU; TSIR-to-CSL executable kernel bodies for
+  simfabric, since `runtime/zig/src/tsir/emit_csl.zig` is a skeleton
+  contract emitter only). Doc-only; all 15 `bench/tests/test_doe_parity.py`
+  cases still pass. The CLI's `not_implemented` stub contract is
+  intentionally preserved — wiring real subprocess calls is a distinct
+  Loop 2 wedge that has not landed. Cites
+  `docs/tsir-lowering-plan.md` Step 8 and `docs/loop-protocol.md`
+  Loop 2 protocol.
 - TSIR Loop 2 — Phase A bootstrap pipeline identity increment:
   added a compiler-only pipeline test that lowers the pinned
   `fused_gemv`, `rms_norm`, and `gather` WGSL bootstrap kernels through
