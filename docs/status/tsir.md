@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh `fused_gemv.notes.md` and `gather.notes.md` Status
+  paragraphs in the bootstrap catalog. Both described their semantic
+  JSONs as "semantically incomplete" / "unrepresentable" — accurate
+  when the notes were written (pre-`SemanticBody` schema), but stale
+  after the body-op contract + oracle recognizers landed for both
+  families. Refreshed status entries now name the landed state
+  explicitly (body-op contract present, oracle recognizes the shape
+  across `{f32, f16, bf16}`) and preserve the "pre-`SemanticBody`"
+  framing for historical context. `rms_norm.notes.md` was already
+  refreshed in commit 9b6f6d117 (schema extension landing).
+  Bootstrap catalog tests pass. Strategy-leak gate PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 1.5 (bootstrap catalog) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: add `tsir.md` to the bottom-of-front-door "Live topical
   shards" list. The top-of-file "How to use the status log" section
   lists four shards including tsir.md, but the `## Live topical

@@ -100,9 +100,16 @@ turn in the GEMV → RMSNorm → gather sequence.
 ## Status
 
 - `gather.wgsl`: pinned WGSL snapshot.
-- `gather.tsir-semantic.json`: hand-sketched TSIR, schema-valid but
-  represents only the shape and dtypes; the kernel's actual indexed
-  copy operation is unrepresentable in the current schema.
+- `gather.tsir-semantic.json`: hand-sketched TSIR, schema-valid. The
+  `SemanticBody` contract is declared (`op: gather`, binding roles for
+  indices/table/output, axis roles for token/hidden), and the
+  reference interpreter recognizes this shape end-to-end across
+  `{f32, f16, bf16}` with fail-closed out-of-range index validation.
+  Original "unrepresentable" framing referred to the pre-`SemanticBody`
+  schema state — the indexed copy operation is now expressible via the
+  body-op contract, though the broader `GatherNode` extensions this
+  doc's earlier section describes (bounds policy, uniform-scalar refs)
+  remain Phase B / future work.
 - `gather.tsir-realization.wse3.json`: hand-sketched, schema-valid.
 - `gather.tsir-realization.webgpu-generic.json`: hand-sketched,
   schema-valid.

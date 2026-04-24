@@ -83,8 +83,13 @@ Caveats that flow from the semantic gap above:
 ## Status
 
 - `fused_gemv.wgsl`: pinned WGSL snapshot.
-- `fused_gemv.tsir-semantic.json`: hand-sketched TSIR, schema-valid but
-  semantically incomplete (no op-body representation).
+- `fused_gemv.tsir-semantic.json`: hand-sketched TSIR, schema-valid. The
+  `SemanticBody` contract is declared (`op: fused_gemv`, binding roles
+  for matrix/vector/output, axis roles for output/reduction), and the
+  reference interpreter recognizes this shape end-to-end across
+  `{f32, f16, bf16}` with `strict_ordered` + `associative_allowed`
+  reductions. Original "semantically incomplete" framing referred to the
+  pre-`SemanticBody` schema state.
 - `fused_gemv.tsir-realization.wse3.json`: hand-sketched, schema-valid.
 - `fused_gemv.tsir-realization.webgpu-generic.json`: hand-sketched,
   schema-valid.
