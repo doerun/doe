@@ -14,6 +14,124 @@ This is a live topical status shard.
 compiler work (shader compiler non-TSIR paths, WebGPU runtime,
 robustness).
 
+## 2026-04-24 — Track 1 diagnostic: Doe compute dispatch silently no-ops
+
+After landing WS B1+B2 (if/else termination fix + scalar-op-vector
+coercion fix), the Gemma 3 1B shared-contract lane was re-run. Stderr
+is now clean aside from one "non-fatal" `[GPU] Platform/registry init
+failed (reading 'vendor')` warning, but execution still emits `[1]`
+with zero KV and zero logits.
+
+### Root cause located: `adapter.info` was missing from the compute facade
+
+`packages/doe-gpu/src/vendor/webgpu/compute.js:wrapAdapter` returned a
+bare object with `_raw`, `features`, `limits`, `requestDevice`,
+`destroy` but **no `info` property**. Doppler's
+`src/config/platforms/loader.js:102` reads `adapter.info` and
+dereferences `.vendor` at line 54. Empty-string fallback exists at
+line 373 via `adapter.info || fallback`, but that fallback fires
+AFTER platform detection has already thrown. Doppler's try/catch at
+`src/gpu/device.js:337` swallows the error as "non-fatal" and sets
+`resolvedPlatformConfig = null`.
+
+Fix: added `get info() { return raw.info; }` to `wrapAdapter`. Direct
+probe now shows `adapter.info` returning the native adapter's
+Object.freeze with vendor/architecture/device as empty strings —
+valid, if informationless.
+
+### But adapter.info fix alone does NOT unblock execution
+
+Re-ran the C gate after the adapter.info fix. Stderr is now empty
+(platform detection no longer throws). Execution still produces
+`[1]` with zero KV and zero logits. The vendor-init warning was a
+symptom, not the blocker for all-zero output.
+
+### Typed first-divergence receipt (Track 1 exit signal)
+
+Constructed a minimum dispatch repro at
+`/tmp/doe-compute-zero-repro.mjs`:
+
+```js
+const shader = device.createShaderModule({ code: `
+  @group(0) @binding(0) var<storage, read_write> out: array<u32>;
+  @compute @workgroup_size(1) fn main() { out[0] = 42u; }
+` });
+// ...create pipeline, buffer, bind group, encode, submit, copy+readback...
+console.log('dispatched u32:', view[0], '(expect 42)');
+// → prints: dispatched u32: 0 (expect 42)
+```
+
+All intermediate calls succeed without throwing
+(`createShaderModule`, `createComputePipeline`, `createBuffer`,
+`createBindGroup`, `dispatchWorkgroups`, `queue.submit`,
+`copyBufferToBuffer`, `mapAsync`). The readback returns 0 instead
+of 42.
+
+**This is the first no-op dispatch.** Every real Doppler kernel
+(which is far more complex than the 3-line repro) reaches the same
+silent-zero endpoint. The Gemma 3 `[1]` + zero-KV + zero-logits
+failure mode is a direct consequence — embed dispatches write zero,
+which the sampler reads as the EOS token id, which stops decode at
+step 1.
+
+### Additional signals from the probe
+
+- `adapter.info` returns all-empty-string fallback. Native backend
+  isn't providing real vendor/architecture — platform detection falls
+  back to "generic" (expected in this env).
+- `device.adapterInfo` is **undefined** (same kind of bug as
+  `wrapAdapter`: `wrapDevice` in `compute.js:461` doesn't expose
+  `adapterInfo`). Fix would be analogous — `get adapterInfo() {
+  return raw.adapterInfo; }`. Not yet applied; adapter.info covers
+  the Doppler path and adapterInfo may be a follow-on.
+- `device.features` contains `depth-clip-control`,
+  `depth32float-stencil8`, three texture-compression features —
+  **graphics features, not compute features**. Critically missing:
+  `shader-f16`, `subgroups`. For Doppler's capability-aware kernel
+  path policy, this means f16 and subgroup kernels get remapped to
+  f32/non-subgroup fallbacks. That's correctness-preserving but
+  doesn't cause zeros; this is a pre-existing observation unrelated
+  to the silent no-op.
+
+### What this means for Track 1
+
+Track 1 exit condition was "Either realKvCacheUsedOnExecutableLane=true,
+OR a receipt names the first dispatch/buffer that failed to write
+non-zero data." The minimum repro IS that receipt. The first no-op
+dispatch is a 3-line WGSL compute shader writing a u32 literal —
+simpler than any Gemma kernel — so the blocker is at the Doe
+runtime / Vulkan compute queue level, NOT at WGSL compile, NOT at
+platform detection, NOT at shader-f16 handling, NOT at Doppler's
+kernel-path policy, NOT at buffer layout.
+
+The fix site lives in Doe's runtime compute path (`runtime/zig/src/`,
+specifically the Vulkan compute backend and the queue.submit /
+readback plumbing). Candidates to investigate first:
+
+1. Is `queue.submit` actually flushing the command buffer to the
+   Vulkan device? Probe: add a logger at submit-time, observe
+   command-buffer handle validity.
+2. Is the buffer memory backed by device-visible Vulkan memory, or
+   is it only CPU-visible? Probe: inspect buffer allocation flags
+   after `createBuffer`.
+3. Is `copyBufferToBuffer` targeting the correct source buffer? The
+   readback target was a freshly-created MAP_READ buffer; if the
+   storage buffer's memory is unsynchronized with the copy, we'd see
+   zero-initialized readback memory.
+4. Is `mapAsync(GPUMapMode.READ)` being handled correctly on a
+   buffer whose contents come from a device-side compute write?
+
+These are the four specific threads for the next Track 1 session.
+
+### Handoff artifacts
+
+- `packages/doe-gpu/src/vendor/webgpu/compute.js` — one-line fix
+  adding `info` getter to `wrapAdapter`; pushed in this session.
+- `/tmp/doe-compute-zero-repro.mjs` — the 60-line minimum repro;
+  reproduces `dispatched u32: 0 (expect 42)` deterministically.
+- `/tmp/ws-c-gate-postfix1-transcript.json` — post-fix Gemma 3 1B
+  transcript showing `[1]`/zero-KV/zero-logits persists.
+
 ## 2026-04-24 — WS2 gap report: four real-Doppler-kernel SPIR-V failures, two root causes
 
 Diagnosed the WGSL→SPIR-V failures blocking WS2 end-to-end green

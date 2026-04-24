@@ -726,6 +726,20 @@ function wrapAdapter(raw) {
     features: raw.features,
     limits: raw.limits,
     /**
+     * Adapter info — vendor, architecture, device, description. Delegates
+     * to the raw Doe Adapter's `info` getter (see
+     * `vendor/webgpu/shared/full-surface.js`'s Adapter.info). Previously
+     * omitted from the compute facade, which made consumers like
+     * Doppler's `src/config/platforms/loader.js` observe `adapter.info`
+     * as `undefined` and throw `Cannot read properties of undefined
+     * (reading 'vendor')` during platform detection. That error was
+     * swallowed by Doppler's try/catch around `initializePlatform`,
+     * silently dropping platform-config-driven kernel selection.
+     */
+    get info() {
+      return raw.info;
+    },
+    /**
      * Request a compute-only device facade from this adapter.
      *
      * This asks the underlying adapter for a Doe device and then narrows it to
