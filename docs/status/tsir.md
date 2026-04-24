@@ -17,25 +17,6 @@ cap once the TSIR Phase A wedges started landing. Historical TSIR entries
 remain in `compiler-and-webgpu.md` until a deliberate migration sweep
 moves them here; new TSIR entries go here going forward.
 
-## Scope
-
-Use this shard for:
-
-- TSIR schema + digest contract changes
-- TSIR reference interpreter (oracle) coverage
-- TSIR frontend lowering (WGSL IR → TSIR semantic)
-- TSIR planner (residency, tile factors, PE grid, realization)
-- TSIR mechanical backend emitters (CSL, WebGPU, MSL, HLSL/DXIL, SPIR-V)
-- TSIR manifest-lowering identity contract + fixtures
-- Loop 2 stop-until-green iteration status
-- Loop 3 per-kernel-family parity closure status
-
-Use `compiler-and-webgpu.md` for:
-
-- Doe WGSL shader compiler (non-TSIR paths: Metal, Vulkan, D3D12)
-- WebGPU runtime behavior outside TSIR lowering
-- Robustness / validator / conformance work
-
 ## 2026-04-24
 
 - TSIR Loop 2 — nightly parity canary increment:
@@ -55,3 +36,22 @@ Use `compiler-and-webgpu.md` for:
   traffic here. Cites `docs/loop-protocol.md` Loop 2 protocol
   (no-code subdomain-split increment). No runtime, test, or contract
   change.
+
+## Scope
+
+Use this shard for:
+
+- TSIR schema + digest contract changes
+- TSIR reference interpreter (oracle) coverage
+- TSIR frontend lowering (WGSL IR → TSIR semantic)
+- TSIR planner (residency, tile factors, PE grid, realization)
+- TSIR mechanical backend emitters (CSL, WebGPU, MSL, HLSL/DXIL, SPIR-V)
+- TSIR manifest-lowering identity contract + fixtures
+- Loop 2 stop-until-green iteration status
+- Loop 3 per-kernel-family parity closure status
+
+Use `compiler-and-webgpu.md` for:
+
+- Doe WGSL shader compiler (non-TSIR paths: Metal, Vulkan, D3D12)
+- WebGPU runtime behavior outside TSIR lowering
+- Robustness / validator / conformance work

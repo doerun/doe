@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Advisory nightly canary for TSIR bootstrap parity receipt plumbing."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools import doe_parity, tsir_manifest_lowering  # noqa: E402
+
+
+DEFAULT_FIXTURE_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "out" / "nightly-tsir-parity-canary"
+PARITY_CLI = REPO_ROOT / "bench" / "tools" / "doe_parity.py"
+EXPECTED_FIXTURE_COUNT = 6
+FAIL_STATUSES = {"fail"}
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--fixture-dir",
+        type=Path,
+        default=DEFAULT_FIXTURE_DIR,
+        help="Directory containing TSIR manifest lowering entry fixtures.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Directory for per-fixture receipts and the canary report.",
+    )
+    parser.add_argument(
+        "--python",
+        default=sys.executable,
+        help="Python executable used to invoke the parity CLI.",
+    )
+    return parser.parse_args()
+
+
+def _kernel_name(entry: dict[str, Any]) -> str:
+    prefix = "doe.tsir.bootstrap."
+    kernel_ref = entry["kernelRef"]
+    if not kernel_ref.startswith(prefix):
+        raise ValueError(f"unexpected bootstrap kernelRef: {kernel_ref}")
+    return kernel_ref.removeprefix(prefix)
+
+
+def _entry_backend(entry: dict[str, Any]) -> str:
+    backend = entry["backend"]
+    if not isinstance(backend, str) or not backend:
+        raise ValueError("manifest lowering backend must be non-empty")
+    return backend
+
+
+def load_fixture_entries(fixture_dir: Path) -> list[tuple[Path, dict[str, Any]]]:
+    paths = sorted(fixture_dir.glob("*.json"))
+    if len(paths) != EXPECTED_FIXTURE_COUNT:
+        raise ValueError(
+            f"expected {EXPECTED_FIXTURE_COUNT} TSIR manifest fixtures, "
+            f"got {len(paths)} in {fixture_dir}"
+        )
+    entries = [(path, tsir_manifest_lowering.load_entry_doc(path)) for path in paths]
+    seen = set()
+    for _, entry in entries:
+        pair = (_kernel_name(entry), _entry_backend(entry))
+        if pair in seen:
+            raise ValueError(f"duplicate TSIR manifest fixture pair: {pair}")
+        seen.add(pair)
+    return entries
+
+
+def _receipt_dir(output_dir: Path, entry: dict[str, Any]) -> Path:
+    return output_dir / "receipts" / f"{_kernel_name(entry)}.{_entry_backend(entry)}"
+
+
+def _expected_identity(entry: dict[str, Any]) -> dict[str, str]:
+    return {
+        "emitterDigest": entry["emitterDigest"],
+        "targetDescriptorCorrectnessHash": entry["targetDescriptorCorrectnessHash"],
+        "tsirRealizationDigest": entry["tsirRealizationDigest"],
+        "tsirSemanticDigest": entry["tsirSemanticDigest"],
+    }
+
+
+def run_fixture(
+    path: Path,
+    entry: dict[str, Any],
+    output_dir: Path,
+    python: str,
+) -> dict[str, Any]:
+    kernel = _kernel_name(entry)
+    receipt_dir = _receipt_dir(output_dir, entry)
+    cmd = [
+        python,
+        str(PARITY_CLI),
+        kernel,
+        "--class",
+        entry["exactness"]["class"],
+        "--inputs",
+        str(path),
+        "--manifest-lowering-entry",
+        str(path),
+        "--receipt-dir",
+        str(receipt_dir),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=REPO_ROOT,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    receipt_path = receipt_dir / f"{kernel}.parity.json"
+    result: dict[str, Any] = {
+        "backend": _entry_backend(entry),
+        "cliExitCode": proc.returncode,
+        "fixture": path.relative_to(REPO_ROOT).as_posix(),
+        "kernel": kernel,
+        "receiptPath": receipt_path.relative_to(REPO_ROOT).as_posix()
+        if receipt_path.is_relative_to(REPO_ROOT)
+        else str(receipt_path),
+        "stderr": proc.stderr,
+        "stdout": proc.stdout,
+        "statuses": [],
+    }
+    if not receipt_path.is_file():
+        result["failure"] = "parity CLI did not write a receipt"
+        return result
+
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if not isinstance(receipt, dict):
+        result["failure"] = "parity receipt must be a JSON object"
+        return result
+    doe_parity.validate_receipt_doc(receipt)
+    identity = receipt.get("loweringIdentity")
+    if identity != _expected_identity(entry):
+        result["failure"] = "parity receipt lowering identity mismatch"
+        result["loweringIdentity"] = identity
+        return result
+
+    statuses = [
+        comparison.get("status")
+        for comparison in receipt.get("comparisons", [])
+        if isinstance(comparison, dict)
+    ]
+    result["statuses"] = statuses
+    result["loweringIdentity"] = identity
+    if any(status in FAIL_STATUSES for status in statuses):
+        result["failure"] = f"parity receipt contains failing status: {statuses}"
+    return result
+
+
+def build_report(
+    fixture_dir: Path,
+    output_dir: Path,
+    python: str,
+) -> dict[str, Any]:
+    entries = load_fixture_entries(fixture_dir)
+    results = [
+        run_fixture(path, entry, output_dir, python)
+        for path, entry in entries
+    ]
+    failures = [
+        f"{result['fixture']}: {result['failure']}"
+        for result in results
+        if "failure" in result
+    ]
+    return {
+        "artifactKind": "tsir_nightly_parity_canary",
+        "schemaVersion": 1,
+        "fixtureCount": len(results),
+        "failures": failures,
+        "results": results,
+    }
+
+
+def write_report(report: dict[str, Any], output_dir: Path) -> Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_path = output_dir / "nightly-tsir-parity-canary.json"
+    report_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return report_path
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        report = build_report(args.fixture_dir, args.output_dir, args.python)
+        report_path = write_report(report, args.output_dir)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"FAIL: nightly TSIR parity canary: {exc}")
+        return 1
+
+    display_path: Path | str
+    try:
+        display_path = report_path.relative_to(REPO_ROOT)
+    except ValueError:
+        display_path = report_path
+
+    if report["failures"]:
+        print(f"FAIL: nightly TSIR parity canary ({display_path})")
+        for failure in report["failures"]:
+            print(f"  {failure}")
+        return 1
+
+    print(
+        "PASS: nightly TSIR parity canary "
+        f"({report['fixtureCount']} fixture receipts, report={display_path})"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
