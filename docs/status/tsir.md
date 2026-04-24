@@ -107,6 +107,16 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: finish `docs/doppler-ingest.md` TSIR framing refresh. Tick 41
+  updated item 1 of §Lowering architecture, but the "operative path
+  vs planned migration" framing further down (lines 146–160) still
+  used "planned migration path" / "planned lowering architecture"
+  language. Rewrote to "in-flight migration path" and named the
+  Phase A compiler surface + pointer to `docs/status/tsir.md` in
+  the plan-doc reference line. Ninth doc in the post-Phase-A
+  landed-state drift class. Strategy-leak gate PASS, doc-link
+  coverage PASS. Cites `docs/tsir-lowering-plan.md` §Current
+  scaffold and `docs/loop-protocol.md` Loop 2 protocol.
 - Code: refresh stale header comment in
   `runtime/zig/tests/wgsl/tsir_frontend_test.zig`. Said "Step 4
   scaffold tests" and "The lowering itself is minimal (names only

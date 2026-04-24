@@ -143,7 +143,7 @@ Doppler semantics -> Doe normalized execution -> Doe WebGPU executor
 Doppler semantics -> Doe normalized execution -> HostPlan / CSL executor
 ```
 
-That is the current operational path. The planned migration path adds a
+That is the current operational path. The in-flight migration path adds a
 compiler-side lowering contract between WGSL IR and backend artifacts:
 
 ```text
@@ -155,7 +155,8 @@ WGSL IR -> TSIR -> HostPlan / CSL artifacts
 In that target architecture, HostPlan remains the runtime orchestration
 boundary for the CSL lane, but TSIR owns kernel-level lowering decisions such
 as tiling, residency, collectives, and exactness. See
-`docs/tsir-lowering-plan.md` for the planned lowering architecture and
+`docs/tsir-lowering-plan.md` for the lowering architecture (Phase A compiler
+surface landed; `docs/status/tsir.md` has live status) and
 `docs/csl-architecture.md` for the current HostPlan/classifier path that this
 migrates from.
 
