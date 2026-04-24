@@ -70,6 +70,21 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Tests: add cross-layer kernelRef → bootstrap-WGSL integrity check
+  `test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl` in
+  `bench/tests/test_tsir_manifest_lowering.py`. Manifest fixtures
+  use `kernelRef: "doe.tsir.bootstrap.<name>"` where `<name>` must
+  correspond to an actual WGSL file in the bootstrap catalog.
+  Existing fixture tests enforced set-internal coherence but never
+  cross-referenced `<name>` back to the catalog — a kernel rename
+  or deletion in the catalog would otherwise leave a dangling
+  reference in the fixture set, and downstream receipts would
+  attribute artifacts to a kernel that no longer exists. Pairs
+  with tick 30's reverse-direction orphan check in the catalog:
+  together they enforce "every `<name>` appears in both places or
+  neither." 10/10 manifest-lowering tests pass; strategy-leak
+  gate PASS. Cites `docs/tsir-lowering-plan.md` Step 10 (manifest
+  binding) + `docs/loop-protocol.md` Loop 2 protocol.
 - Tests: add reverse-direction orphan check
   `test_no_orphan_artifacts_without_wgsl_pair` to
   `bench/tests/test_tsir_bootstrap_catalog.py`. Existing tests

@@ -261,6 +261,50 @@ class TestTsirManifestLowering(unittest.TestCase):
             descriptor_hashes["wse3"],
         )
 
+    def test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl(self) -> None:
+        """Every manifest-fixture `kernelRef` must name a real bootstrap
+        kernel.
+
+        kernelRef uses the pattern `doe.tsir.bootstrap.<name>` where
+        `<name>` should be the stem of a WGSL file in
+        `runtime/zig/tests/tsir/bootstrap/`. A kernel rename or deletion
+        in the bootstrap catalog would otherwise leave a dangling
+        reference in the fixture set — downstream receipts would
+        attribute artifacts to a kernel that no longer exists. Pairs
+        with the bootstrap-catalog orphan check (reverse direction):
+        together they enforce "every `<name>` appears in both places or
+        neither."
+        """
+        kernel_prefix = "doe.tsir.bootstrap."
+        bootstrap_dir = (
+            REPO_ROOT / "runtime" / "zig" / "tests" / "tsir" / "bootstrap"
+        )
+        wgsl_stems = {path.stem for path in bootstrap_dir.glob("*.wgsl")}
+        self.assertGreaterEqual(
+            len(wgsl_stems),
+            1,
+            "bootstrap catalog must pin at least one WGSL snapshot",
+        )
+
+        paths = sorted(FIXTURE_DIR.glob("*.json"))
+        for path in paths:
+            with self.subTest(fixture=path.name):
+                entry = tsir_manifest_lowering.load_entry_doc(path)
+                kernel_ref = entry["kernelRef"]
+                self.assertTrue(
+                    kernel_ref.startswith(kernel_prefix),
+                    f"bootstrap-fixture kernelRef must start with "
+                    f"{kernel_prefix!r}: {kernel_ref!r}",
+                )
+                kernel_name = kernel_ref.removeprefix(kernel_prefix)
+                self.assertIn(
+                    kernel_name,
+                    wgsl_stems,
+                    f"manifest fixture references kernel {kernel_name!r} "
+                    f"but no matching {kernel_name}.wgsl in the bootstrap "
+                    "catalog",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
