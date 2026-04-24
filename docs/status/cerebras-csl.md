@@ -7,6 +7,66 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+10) — Embed runs clean, rmsnorm width=1 blocks prefill launch[1]
+
+The embed launch now completes under the real HostPlan executor on Gemma 3
+1B. The progress log at
+`bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/trace.json.progress.jsonl`
+records six `embed_roi_sublaunch` completions stepping
+`hiddenOffset` through 0, 192, 384, 576, 768, 960 (the six
+`1152 / 192 = 6` hidden chunks) for 15 tokens, ending in
+`hostplan_launch_complete status=succeeded target=embed`.
+
+The next blocker is deterministic: launch[1] target `rmsnorm` fails the
+runner's input size check at
+`bench/runners/csl-runners/int4ple_compile_target_sim_runner.py:1166-1170`
+with
+`launch[1].input_buffer_size_mismatch:activation:prefill:0000:global:embed:17280!=1152`.
+The embed stages its batched `[prompt_tokens=15, hidden_dim=1152]` output
+(17280 f32) into `global:embed`, but the rmsnorm kernel was compiled with
+`width=1, hidden_size=1152` — a single-vector kernel that expects 1152 elements
+per launch. The rmsnorm `layout.csl` annotates itself as
+`single-PE reduction kernel (width x 1, no cross-PE fabric)`; `width` maps
+one PE per token via `@set_rectangle(width, 1)`.
+
+Source of the hardcoded width: `bench/tools/int4ple_manifest_compile_params.py`
+lines 434-447 pin `"width": 1` for rmsnorm, residual, and gelu, ignoring
+`attention_tokens = max(1, prompt_tokens)` that the same function already
+derives and threads into the attention kernels.
+
+Landed (this entry): the three hardcoded `width: 1` values are replaced
+with `attention_tokens` so rmsnorm / residual / gelu compile for the
+prefill token batch. The compiled kernel's `plannedElementCount` becomes
+`attention_tokens * hidden_dim` and matches the embed's staged batched
+activation.
+
+Decode-phase follow-up (not landed): the same rmsnorm / residual / gelu
+kernels are reused in the decode phase (393 launches each for prefill and
+decode in `simulator-plan.json:runtime`). Decode stages a single-token
+activation (1152 f32) into the same symbol, so the next blocker will shift
+to the first decode launch with the inverse mismatch (`1152 != N*1152`).
+Three design options are open:
+
+- phase-aware compile: emit distinct `rmsnorm_prefill` and `rmsnorm_decode`
+  targets with their own `width` values; extends the kernel registry.
+- runner-side decode padding: stage a zero-padded N-token buffer and read
+  back only the first 1152 elements. Keeps one compiled kernel; adds
+  runner logic.
+- runner-side per-token unroll (prefill): keep `width=1`, have the runner
+  loop per token during prefill. Mirrors the existing embed-ROI sublaunch
+  pattern in `_is_embed_roi_launch` at the same runner file. Cleanest long-term
+  shape, biggest change surface.
+
+The `late+9` entry below is superseded: embed runtime is no longer the blocker.
+
+Verified:
+
+- `python3 -m unittest bench.tests.test_int4ple_manifest_compile_params_gate bench.tests.test_int4ple_scheduler_readiness`
+- `python3 -m unittest bench.tests.test_csl_host_plan_kernel_patterns bench.tests.test_csl_driver_taxonomy bench.tests.test_csl_governed_lane_gate bench.tests.test_csl_governed_lane_receipt bench.tests.test_csl_source_wgsl_regeneration bench.tests.test_csl_sdk_210_migration`
+
+Full-pipeline revalidation (cslc recompile + simfabric run) is not yet
+performed; the edit changes the params dict only.
+
 ## 2026-04-24 (late+9) — Gemma 3 HostPlan compile green; real embed launch is the blocker
 
 The Gemma 3 CSL HostPlan now clears the previous compile blockers. The

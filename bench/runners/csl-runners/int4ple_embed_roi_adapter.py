@@ -115,8 +115,6 @@ def main() -> int:
             token_start = int(sublaunch.get("tokenStart") or 0)
             token_chunk_count = int(sublaunch.get("tokenCount") or 0)
             hidden_offset = int(sublaunch.get("hiddenOffset") or 0)
-            indices_info = sublaunch.get("indices") or {}
-            indices = load_array(Path(str(indices_info.get("path") or "")), np.uint32, tokens_per_chunk)
             pe_tables = [
                 item
                 for item in sublaunch.get("peTables") or []
@@ -133,6 +131,12 @@ def main() -> int:
             )
             for pe in pe_tables:
                 table_info = pe.get("table") or {}
+                indices_info = pe.get("indices") or {}
+                indices = load_array(
+                    Path(str(indices_info.get("path") or "")),
+                    np.uint32,
+                    tokens_per_chunk,
+                )
                 table = load_array(
                     Path(str(table_info.get("path") or "")),
                     np.float32,
@@ -176,8 +180,6 @@ def main() -> int:
             for pe in pe_tables:
                 x = int(pe.get("x") or 0)
                 y = int(pe.get("y") or 0)
-                row_start = int(pe.get("rowStart") or 0)
-                row_end = int(pe.get("rowEnd") or row_start)
                 host = np.zeros(tokens_per_chunk * hidden_per_pe, dtype=np.float32)
                 runner.memcpy_d2h(
                     host,
@@ -192,10 +194,14 @@ def main() -> int:
                     data_type=MemcpyDataType.MEMCPY_32BIT,
                     nonblock=False,
                 )
-                for local_token_index in range(token_chunk_count):
-                    global_token_index = token_start + local_token_index
-                    token_id = int(indices[local_token_index])
-                    if token_id < row_start or token_id >= row_end:
+                for owned in pe.get("ownedTokenRows") or []:
+                    if not isinstance(owned, dict):
+                        continue
+                    global_token_index = int(owned.get("globalTokenIndex") or 0)
+                    local_token_index = int(owned.get("localTokenIndex") or 0)
+                    if global_token_index < token_start:
+                        continue
+                    if global_token_index >= token_start + token_chunk_count:
                         continue
                     source_start = local_token_index * hidden_per_pe
                     source_end = source_start + int(sublaunch.get("hiddenCount") or 0)

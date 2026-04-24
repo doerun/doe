@@ -432,16 +432,16 @@ def manifest_compile_param_projection(
             "chunk_size": sample_chunk,
         },
         "rmsnorm": {
-            "width": 1,
+            "width": attention_tokens,
             "hidden_size": hidden_dim,
         },
         "residual": {
-            "width": 1,
+            "width": attention_tokens,
             "height": 1,
             "chunk_size": hidden_dim,
         },
         "gelu": {
-            "width": 1,
+            "width": attention_tokens,
             "height": 1,
             "chunk_size": hidden_dim,
         },

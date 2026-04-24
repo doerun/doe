@@ -210,14 +210,36 @@ def build_embed_roi_spec(
     rows_per_pe = int(compile_params.get("rows_per_pe") or 0)
     hidden_per_pe = int(compile_params.get("hidden_per_pe") or 0)
     tokens_per_chunk = int(compile_params.get("tokens_per_chunk") or 0)
-    width = int(geometry.get("width") or compile_params.get("width") or 1)
-    height = int(geometry.get("height") or compile_params.get("height") or 1)
-    pe_count = int(geometry.get("peCount") or (width * height))
-    if min(rows_per_pe, hidden_size, hidden_per_pe, tokens_per_chunk, width, height, pe_count) <= 0:
+    original_width = int(geometry.get("width") or compile_params.get("width") or 1)
+    original_height = int(geometry.get("height") or compile_params.get("height") or 1)
+    original_pe_count = int(geometry.get("peCount") or (original_width * original_height))
+    if min(
+        rows_per_pe,
+        hidden_size,
+        hidden_per_pe,
+        tokens_per_chunk,
+        original_width,
+        original_height,
+        original_pe_count,
+    ) <= 0:
         raise ValueError("embed compile params incomplete for ROI execution")
 
     tokens = load_token_ids(prompt_path)
     chunks = token_chunks(tokens, tokens_per_chunk)
+    chunk_active_pe_ids: list[list[int]] = []
+    for token_chunk_index, chunk in enumerate(chunks):
+        actual_count = min(
+            tokens_per_chunk,
+            max(0, int(tokens.size) - token_chunk_index * tokens_per_chunk),
+        )
+        chunk_active_pe_ids.append(
+            active_pe_ids_for_tokens(
+                chunk[:actual_count],
+                rows_per_pe=rows_per_pe,
+                pe_count=original_pe_count,
+            )
+        )
+    compact_width = max(1, max((len(items) for items in chunk_active_pe_ids), default=0))
     roi_dir.mkdir(parents=True, exist_ok=True)
     sublaunches: list[dict[str, Any]] = []
     input_symbol = str(table_binding.get("symbol") or "table")
@@ -232,22 +254,52 @@ def build_embed_roi_spec(
         {},
     )
     indices_symbol = str(indices_binding.get("symbol") or indices_symbol)
+    sentinel_token = compact_width * rows_per_pe + rows_per_pe
     for token_chunk_index, chunk in enumerate(chunks):
-        indices_path = roi_dir / f"indices-token-{token_chunk_index:04d}.npy"
-        np.save(indices_path, chunk)
-        active_pe_ids = active_pe_ids_for_tokens(
-            chunk[: min(tokens_per_chunk, max(0, int(tokens.size) - token_chunk_index * tokens_per_chunk))],
-            rows_per_pe=rows_per_pe,
-            pe_count=pe_count,
+        actual_count = min(
+            tokens_per_chunk,
+            max(0, int(tokens.size) - token_chunk_index * tokens_per_chunk),
         )
+        active_pe_ids = chunk_active_pe_ids[token_chunk_index]
+        compact_by_original = {
+            original_pe_id: compact_pe_id
+            for compact_pe_id, original_pe_id in enumerate(active_pe_ids)
+        }
         for hidden_offset in range(0, hidden_size, hidden_per_pe):
             pe_tables: list[dict[str, Any]] = []
-            for flat_pe_id in active_pe_ids:
-                pe_x, pe_y = pe_coordinates(flat_pe_id, width)
-                row_start = flat_pe_id * rows_per_pe
+            for original_flat_pe_id in active_pe_ids:
+                compact_flat_pe_id = compact_by_original[original_flat_pe_id]
+                pe_x, pe_y = pe_coordinates(compact_flat_pe_id, compact_width)
+                original_row_start = original_flat_pe_id * rows_per_pe
+                compact_row_start = compact_flat_pe_id * rows_per_pe
+                remapped_indices = np.full(tokens_per_chunk, sentinel_token, dtype=np.uint32)
+                owned_token_rows: list[dict[str, int]] = []
+                for local_token_index in range(actual_count):
+                    token_id = int(chunk[local_token_index])
+                    if not (
+                        original_row_start
+                        <= token_id
+                        < original_row_start + rows_per_pe
+                    ):
+                        continue
+                    remapped_indices[local_token_index] = np.uint32(
+                        compact_row_start + (token_id - original_row_start)
+                    )
+                    owned_token_rows.append(
+                        {
+                            "globalTokenIndex": token_chunk_index * tokens_per_chunk
+                            + local_token_index,
+                            "localTokenIndex": local_token_index,
+                        }
+                    )
+                indices_path = (
+                    roi_dir
+                    / f"indices-token-{token_chunk_index:04d}-hidden-{hidden_offset:06d}-pe-{compact_flat_pe_id:05d}.npy"
+                )
+                np.save(indices_path, remapped_indices)
                 table = materialize_f16_embedding_table_slice(
                     weight_mapping,
-                    row_start=row_start,
+                    row_start=original_row_start,
                     rows_per_pe=rows_per_pe,
                     hidden_offset=hidden_offset,
                     hidden_per_pe=hidden_per_pe,
@@ -256,16 +308,20 @@ def build_embed_roi_spec(
                 )
                 table_path = (
                     roi_dir
-                    / f"table-token-{token_chunk_index:04d}-hidden-{hidden_offset:06d}-pe-{flat_pe_id:05d}.npy"
+                    / f"table-token-{token_chunk_index:04d}-hidden-{hidden_offset:06d}-pe-{compact_flat_pe_id:05d}.npy"
                 )
                 np.save(table_path, table)
                 pe_tables.append(
                     {
-                        "flatPeId": flat_pe_id,
+                        "flatPeId": compact_flat_pe_id,
+                        "originalFlatPeId": original_flat_pe_id,
                         "x": pe_x,
                         "y": pe_y,
-                        "rowStart": row_start,
-                        "rowEnd": min(row_start + rows_per_pe, vocab_size),
+                        "compactRowStart": compact_row_start,
+                        "originalRowStart": original_row_start,
+                        "originalRowEnd": min(original_row_start + rows_per_pe, vocab_size),
+                        "ownedTokenRows": owned_token_rows,
+                        "indices": array_link(indices_path, remapped_indices),
                         "table": array_link(table_path, table),
                     }
                 )
@@ -273,17 +329,15 @@ def build_embed_roi_spec(
                 {
                     "tokenChunkIndex": token_chunk_index,
                     "tokenStart": token_chunk_index * tokens_per_chunk,
-                    "tokenCount": int(
-                        min(tokens_per_chunk, max(0, int(tokens.size) - token_chunk_index * tokens_per_chunk))
-                    ),
+                    "tokenCount": int(actual_count),
                     "hiddenOffset": hidden_offset,
                     "hiddenCount": int(min(hidden_per_pe, hidden_size - hidden_offset)),
-                    "indices": array_link(indices_path, chunk),
                     "activePeCount": len(active_pe_ids),
                     "peTables": pe_tables,
                 }
             )
     compact_output = np.zeros((int(tokens.size), hidden_size), dtype=np.float32)
+    output_buffer_path.parent.mkdir(parents=True, exist_ok=True)
     np.save(output_buffer_path, compact_output)
     output_buffer = str(output_binding.get("buffer") or "")
     spec = {
@@ -294,9 +348,9 @@ def build_embed_roi_spec(
         "launchIndex": int(launch.get("launchIndex") or 0),
         "cmaddr": "",
         "targetGeometry": {
-            "width": width,
-            "height": height,
-            "peCount": pe_count,
+            "width": compact_width,
+            "height": 1,
+            "peCount": compact_width,
         },
         "compileParams": {
             "rowsPerPe": rows_per_pe,
@@ -304,6 +358,10 @@ def build_embed_roi_spec(
             "hiddenPerPe": hidden_per_pe,
             "tokensPerChunk": tokens_per_chunk,
             "vocabSize": vocab_size,
+            "compactWidth": compact_width,
+            "originalWidth": original_width,
+            "originalHeight": original_height,
+            "originalPeCount": original_pe_count,
         },
         "symbols": {
             "indices": indices_symbol,

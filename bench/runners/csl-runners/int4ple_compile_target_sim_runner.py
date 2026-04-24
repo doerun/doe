@@ -52,6 +52,10 @@ DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
 )
+DEFAULT_CSLC_CANDIDATES = (
+    "/home/x/cerebras-sdk/cslc",
+    "/home/x/cerebras-sdk-2.10.0/cslc",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -108,6 +112,24 @@ def cs_python_executable() -> str:
     if discovered:
         return discovered
     return "cs_python"
+
+
+def cslc_executable() -> str:
+    candidate = os.environ.get("DOE_CSLC_EXECUTABLE", "").strip()
+    if candidate and Path(candidate).is_file():
+        return candidate
+    sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", "").strip()
+    if sdk_root:
+        candidate_path = Path(sdk_root) / "cslc"
+        if candidate_path.is_file():
+            return str(candidate_path)
+    for candidate_path in DEFAULT_CSLC_CANDIDATES:
+        if Path(candidate_path).is_file():
+            return candidate_path
+    discovered = shutil.which("cslc")
+    if discovered:
+        return discovered
+    return "cslc"
 
 
 def target_by_name(plan: dict[str, Any], name: str) -> dict[str, Any]:
@@ -1183,6 +1205,59 @@ def _is_embed_roi_launch(launch: dict[str, Any]) -> bool:
     )
 
 
+def _compile_embed_roi_target(
+    *,
+    launch: dict[str, Any],
+    roi_spec: dict[str, Any],
+    roi_dir: Path,
+) -> Path:
+    source_compile_dir = Path(str(launch.get("compileDir") or ""))
+    compile_root = source_compile_dir.parent.parent
+    layout_path = compile_root / "embed" / "layout.csl"
+    output_dir = roi_dir / "compiled"
+    params = roi_spec.get("compileParams") or {}
+    compact_width = int(params.get("compactWidth") or 1)
+    hidden_size = int(params.get("hiddenSize") or 0)
+    hidden_per_pe = int(params.get("hiddenPerPe") or 0)
+    rows_per_pe = int(params.get("rowsPerPe") or 0)
+    tokens_per_chunk = int(params.get("tokensPerChunk") or 0)
+    if min(compact_width, hidden_size, hidden_per_pe, rows_per_pe, tokens_per_chunk) <= 0:
+        raise ValueError("embed_roi_compile_params_incomplete")
+    command = [
+        cslc_executable(),
+        str(layout_path),
+        "--arch=wse3",
+        f"--fabric-dims={compact_width + 7},3",
+        "--fabric-offsets=4,1",
+        "--channels=1",
+        "--params="
+        + ",".join(
+            [
+                f"width:{compact_width}",
+                "height:1",
+                f"hidden_per_pe:{hidden_per_pe}",
+                f"hidden_size:{hidden_size}",
+                f"num_tokens:{tokens_per_chunk}",
+                f"rows_per_pe:{rows_per_pe}",
+                f"tokens_per_chunk:{tokens_per_chunk}",
+            ]
+        ),
+        "-o",
+        str(output_dir),
+        "--memcpy",
+    ]
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "unknown"
+        raise ValueError(f"embed_roi_compile_failed:{detail[-400:]}")
+    return output_dir
+
+
 def _execute_embed_roi_launch(
     *,
     runtime_dir: Path,
@@ -1215,7 +1290,16 @@ def _execute_embed_roi_launch(
         prompt_path=prompt_path,
         output_buffer_path=output_path,
     )
+    roi_compile_dir = _compile_embed_roi_target(
+        launch=launch,
+        roi_spec=roi_spec,
+        roi_dir=roi_dir,
+    )
+    roi_spec["compileDir"] = str(roi_compile_dir)
     roi_spec["cmaddr"] = cmaddr or ""
+    roi_digest = sha256_bytes(
+        json.dumps(roi_spec, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    )
     spec_path = roi_dir / "launch-spec.json"
     receipt_path = _launch_receipt_path(runtime_dir, launch_index)
     write_json(spec_path, roi_spec)
