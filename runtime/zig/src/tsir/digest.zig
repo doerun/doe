@@ -99,6 +99,18 @@ fn emitF64(buf: *std.ArrayList(u8), allocator: std.mem.Allocator, v: f64) Digest
     try buf.appendSlice(allocator, slice);
 }
 
+fn emitOptionalF64(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: ?f64,
+) DigestError!void {
+    if (value) |v| {
+        try emitF64(buf, allocator, v);
+    } else {
+        try buf.appendSlice(allocator, "null");
+    }
+}
+
 fn emitBool(buf: *std.ArrayList(u8), allocator: std.mem.Allocator, v: bool) DigestError!void {
     try buf.appendSlice(allocator, if (v) "true" else "false");
 }
@@ -223,7 +235,7 @@ fn emitSemanticBody(
     value: schema.SemanticBody,
 ) DigestError!void {
     try buf.append(allocator, '{');
-    // Lex: axisRoles, bindingRoles, op.
+    // Lex: axisRoles, bindingRoles, op, rmsNorm.
     try emitKey(buf, allocator, "axisRoles");
     try buf.append(allocator, '[');
     for (value.axis_roles, 0..) |role, i| {
@@ -242,6 +254,11 @@ fn emitSemanticBody(
     try buf.append(allocator, ',');
     try emitKey(buf, allocator, "op");
     try emitString(buf, allocator, @tagName(value.op));
+    if (value.rms_norm) |rms_norm| {
+        try buf.append(allocator, ',');
+        try emitKey(buf, allocator, "rmsNorm");
+        try emitRmsNormBody(buf, allocator, rms_norm);
+    }
     try buf.append(allocator, '}');
 }
 
@@ -272,6 +289,45 @@ fn emitSemanticBodyAxis(
     try buf.append(allocator, ',');
     try emitKey(buf, allocator, "role");
     try emitString(buf, allocator, @tagName(value.role));
+    try buf.append(allocator, '}');
+}
+
+fn emitRmsNormBody(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: schema.RmsNormBody,
+) DigestError!void {
+    try buf.append(allocator, '{');
+    // Lex: epsilon, formula, hiddenExtentAxis, reductionTarget.
+    try emitKey(buf, allocator, "epsilon");
+    try emitRmsNormEpsilon(buf, allocator, value.epsilon);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "formula");
+    try emitString(buf, allocator, @tagName(value.formula));
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "hiddenExtentAxis");
+    try emitU32(buf, allocator, value.hidden_extent_axis);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "reductionTarget");
+    try emitString(buf, allocator, @tagName(value.reduction_target));
+    try buf.append(allocator, '}');
+}
+
+fn emitRmsNormEpsilon(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: schema.RmsNormEpsilon,
+) DigestError!void {
+    try buf.append(allocator, '{');
+    // Lex: literalF32, path, source.
+    try emitKey(buf, allocator, "literalF32");
+    try emitOptionalF64(buf, allocator, value.literal_f32);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "path");
+    try emitString(buf, allocator, value.path);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "source");
+    try emitString(buf, allocator, @tagName(value.source));
     try buf.append(allocator, '}');
 }
 
@@ -850,6 +906,59 @@ test "semantic with one function canonicalizes with lex-sorted keys" {
         "]," ++
         "\"rejections\":[]}";
     try std.testing.expectEqualStrings(expected, bytes);
+}
+
+test "semantic body canonicalizes RMSNorm contract when present" {
+    const allocator = std.testing.allocator;
+    const binding_roles = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const axis_roles = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .rms_norm,
+        .binding_roles = &binding_roles,
+        .axis_roles = &axis_roles,
+        .rms_norm = .{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{
+                .source = .uniform_field,
+                .path = "uniform:u.eps",
+                .literal_f32 = null,
+            },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        },
+    };
+
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    try emitSemanticBody(&buf, allocator, body);
+
+    try std.testing.expectEqualStrings(
+        "{\"axisRoles\":[" ++
+            "{\"axisIndex\":0,\"role\":\"hidden\"}," ++
+            "{\"axisIndex\":1,\"role\":\"reduction\"}" ++
+            "]," ++
+            "\"bindingRoles\":[" ++
+            "{\"bindingIndex\":0,\"role\":\"input\"}," ++
+            "{\"bindingIndex\":1,\"role\":\"scale\"}," ++
+            "{\"bindingIndex\":2,\"role\":\"output\"}" ++
+            "]," ++
+            "\"op\":\"rms_norm\"," ++
+            "\"rmsNorm\":{" ++
+            "\"epsilon\":{\"literalF32\":null,\"path\":\"uniform:u.eps\",\"source\":\"uniform_field\"}," ++
+            "\"formula\":\"sum_squares_mean_epsilon_rsqrt_scale\"," ++
+            "\"hiddenExtentAxis\":0," ++
+            "\"reductionTarget\":\"intermediate_scalar\"" ++
+            "}" ++
+            "}",
+        buf.items,
+    );
 }
 
 test "string escaping covers the canonical-form-reserved characters" {

@@ -1934,11 +1934,28 @@ test "frontend lowers the Phase A rms_norm bootstrap kernel end-to-end" {
     try std.testing.expectEqual(@as(u32, 1), func.reductions[0].axis);
     try std.testing.expectEqual(tsir.schema.ReductionOp.sum, func.reductions[0].op);
     // RMSNorm has no single matrix-style access depending on both
-    // axes (`input[i]` and `input[d]` are separate accesses), so it
-    // must not promote to `.fused_gemv`. A later increment may refine
-    // this to `.rms_norm` when scalar-tail + post-loop normalize
-    // detection lands.
+    // axes (`input[i]` and `input[d]` are separate accesses), so the
+    // coarse hint remains `.reduction`. The semantic body carries the
+    // narrower RMSNorm contract consumed by oracle/emitter work.
     try std.testing.expectEqual(tsir.KernelFamilyHint.reduction, func.family_hint);
+    try std.testing.expectEqual(tsir.schema.SemanticBodyOp.rms_norm, func.body.op);
+    try std.testing.expect(func.body.rms_norm != null);
+    const rms_norm = func.body.rms_norm.?;
+    try std.testing.expectEqual(
+        tsir.schema.RmsNormFormula.sum_squares_mean_epsilon_rsqrt_scale,
+        rms_norm.formula,
+    );
+    try std.testing.expectEqual(
+        tsir.schema.RmsNormReductionTarget.intermediate_scalar,
+        rms_norm.reduction_target,
+    );
+    try std.testing.expectEqual(@as(u32, 0), rms_norm.hidden_extent_axis);
+    try std.testing.expectEqual(
+        tsir.schema.RmsNormEpsilonSource.uniform_field,
+        rms_norm.epsilon.source,
+    );
+    try std.testing.expectEqualStrings("uniform:u.eps", rms_norm.epsilon.path);
+    try std.testing.expectEqual(@as(?f64, null), rms_norm.epsilon.literal_f32);
 }
 
 test "frontend lowers the Phase A gather bootstrap kernel end-to-end" {

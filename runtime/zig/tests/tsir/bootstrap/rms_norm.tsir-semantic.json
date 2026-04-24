@@ -45,7 +45,17 @@
         "axisRoles": [
           { "axisIndex": 0, "role": "hidden" },
           { "axisIndex": 1, "role": "reduction" }
-        ]
+        ],
+        "rmsNorm": {
+          "epsilon": {
+            "source": "uniform_field",
+            "path": "uniform:u.eps",
+            "literalF32": null
+          },
+          "formula": "sum_squares_mean_epsilon_rsqrt_scale",
+          "hiddenExtentAxis": 0,
+          "reductionTarget": "intermediate_scalar"
+        }
       },
       "reductions": [
         {

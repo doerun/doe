@@ -131,7 +131,23 @@ fn inferSemanticBody(
         const axis_roles = try allocator.alloc(tsir.schema.SemanticBodyAxis, 2);
         axis_roles[0] = .{ .axis_index = 0, .role = .hidden };
         axis_roles[1] = .{ .axis_index = reductions[0].axis, .role = .reduction };
-        return .{ .op = .rms_norm, .binding_roles = binding_roles, .axis_roles = axis_roles };
+        const epsilon_path = try inferRmsNormEpsilonPath(allocator, axes[0].upper_bound);
+        const rms_norm = tsir.schema.RmsNormBody{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{
+                .source = .uniform_field,
+                .path = epsilon_path,
+                .literal_f32 = null,
+            },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        };
+        return .{
+            .op = .rms_norm,
+            .binding_roles = binding_roles,
+            .axis_roles = axis_roles,
+            .rms_norm = rms_norm,
+        };
     }
 
     return .{};
@@ -153,6 +169,18 @@ fn looksLikeRmsNorm(
 
 fn bindingNameEquals(binding: tsir.schema.BufferBinding, expected: []const u8) bool {
     return std.ascii.eqlIgnoreCase(binding.name, expected);
+}
+
+fn inferRmsNormEpsilonPath(
+    allocator: std.mem.Allocator,
+    hidden_extent_bound: []const u8,
+) FrontendError![]const u8 {
+    if (std.mem.startsWith(u8, hidden_extent_bound, "uniform:")) {
+        if (std.mem.lastIndexOfScalar(u8, hidden_extent_bound, '.')) |dot| {
+            return std.fmt.allocPrint(allocator, "{s}eps", .{hidden_extent_bound[0 .. dot + 1]});
+        }
+    }
+    return allocator.dupe(u8, "uniform:u.eps");
 }
 
 const PerFunctionBindings = struct {

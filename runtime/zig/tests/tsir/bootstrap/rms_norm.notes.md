@@ -12,13 +12,18 @@ Hand-sketched TSIR: [`rms_norm.tsir-semantic.json`](rms_norm.tsir-semantic.json)
 - One reduction region on axis `i` with `sum` / `strict_ordered` / `f32`
   accumulation, matching the interpreter's existing dispatch for
   single-axis strict-ordered f32 sums.
-- `targetBinding = 2` pins the output buffer as the reduction's
-  destination.
+- `SemanticBody.rmsNorm` now declares the RMSNorm summary contract:
+  sum-of-squares mean, epsilon add, reciprocal square-root, and output
+  scaling; epsilon is sourced from `uniform:u.eps`.
+- `reductionTarget = intermediate_scalar` records that the reduction feeds
+  a scalar intermediate, even though the legacy `ReductionRegion.targetBinding`
+  field still points at the output binding until TSIR gains stage-local
+  intermediate nodes.
 
 ## What does NOT fit the current schema
 
-Even more gaps than GEMV. RMSNorm requires four distinct op classes that
-the current schema cannot express:
+The body contract names the RMSNorm formula, but TSIR still lacks the
+executable expression graph needed to interpret or emit it mechanically:
 
 1. **Elementwise square before reduction.** The reduction computes
    `sum(x²)`, not `sum(x)`. Same category as GEMV's fused multiply:
@@ -35,8 +40,9 @@ the current schema cannot express:
    "reduction's result feeds a subsequent elementwise pass in the same
    function."
 
-The semantic JSON here captures ONLY the reduction shape. The full
-kernel intent is not representable.
+The semantic JSON now captures the family-level RMSNorm contract, but not
+the full executable dataflow. The reference interpreter must still reject
+RMSNorm until those node-level semantics exist.
 
 ## Implied Step 3 schema extensions
 
@@ -47,10 +53,10 @@ Beyond the GEMV-implied fused pre-op, RMSNorm demands:
    → `add_scalar` → `sqrt_scalar` → `recip_scalar` → `mul` → `mul` →
    `write`). This is option (2) from the GEMV notes, now additionally
    requiring scalar intrinsics (`sqrt`, `recip`).
-2. **Scalar operand representation.** `eps` is a uniform scalar; the
-   kernel reads it alongside per-element buffers. Either a `ScalarInput`
-   binding kind or uniform-buffer flattening with a declared read
-   pattern.
+2. **Scalar operand realization.** `eps` now has a symbolic source in the
+   body contract, but emitters still need uniform-buffer flattening or a
+   scalar-input binding representation before the value can flow into
+   generated backend artifacts.
 3. **Multi-stage function composition.** The reduction's output is
    consumed by a later elementwise pass *in the same SemanticFunction*.
    Either the `SemanticFunction` needs an ordered list of stages
@@ -82,11 +88,12 @@ under `doe-tsir-realization.schema.json`.
 
 Caveats that flow from the semantic gap above:
 
-- These sketches cover only the reduction's placement. The pre-op
-  square, scalar-eps tail, sqrt/recip, and post-reduction elementwise
-  normalization are not represented anywhere in TSIR yet (semantic or
-  realization). The sketches are therefore structurally correct for the
-  piece of the kernel the schema can express, and silent on the rest.
+- These sketches cover only the reduction's placement. The semantic now
+  records the family-level RMSNorm formula, but the pre-op square,
+  scalar-eps tail, sqrt/recip, and post-reduction elementwise normalization
+  are not represented as executable TSIR nodes yet. The sketches are
+  structurally correct for the placement layer and still silent on those
+  node-level execution details.
 - The WSE-3 sketch declares `binomial` tree shape; this choice is a
   numerical contract once Step 6 (collective synthesis) formalizes
   reduction-tree declaration as part of the `algorithm-exact`
@@ -95,10 +102,10 @@ Caveats that flow from the semantic gap above:
 ## Status
 
 - `rms_norm.wgsl`: pinned WGSL snapshot.
-- `rms_norm.tsir-semantic.json`: hand-sketched TSIR, schema-valid but
-  represents only the reduction shape; the full kernel body (pre-op
-  square, scalar tail, elementwise normalization) is unrepresentable
-  in the current schema.
+- `rms_norm.tsir-semantic.json`: hand-sketched TSIR, schema-valid, with a
+  family-level `rmsNorm` body contract. The full executable body (pre-op
+  square, scalar tail, elementwise normalization) is still not represented
+  as node-level TSIR.
 - `rms_norm.tsir-realization.wse3.json`: hand-sketched, schema-valid.
 - `rms_norm.tsir-realization.webgpu-generic.json`: hand-sketched,
   schema-valid.

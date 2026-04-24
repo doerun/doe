@@ -121,6 +121,63 @@
         "role": { "$ref": "#/$defs/axisRole" }
       }
     },
+    "rmsNormFormula": {
+      "type": "string",
+      "enum": ["sum_squares_mean_epsilon_rsqrt_scale"]
+    },
+    "rmsNormReductionTarget": {
+      "type": "string",
+      "enum": ["intermediate_scalar"]
+    },
+    "rmsNormEpsilonSource": {
+      "type": "string",
+      "enum": ["uniform_field", "literal_f32"]
+    },
+    "rmsNormEpsilon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "path", "literalF32"],
+      "properties": {
+        "source": { "$ref": "#/$defs/rmsNormEpsilonSource" },
+        "path": { "type": "string" },
+        "literalF32": { "type": ["number", "null"] }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "source": { "const": "uniform_field" } }
+          },
+          "then": {
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "literalF32": { "const": null }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "source": { "const": "literal_f32" } }
+          },
+          "then": {
+            "properties": {
+              "path": { "const": "" },
+              "literalF32": { "type": "number" }
+            }
+          }
+        }
+      ]
+    },
+    "rmsNormBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["epsilon", "formula", "hiddenExtentAxis", "reductionTarget"],
+      "properties": {
+        "epsilon": { "$ref": "#/$defs/rmsNormEpsilon" },
+        "formula": { "$ref": "#/$defs/rmsNormFormula" },
+        "hiddenExtentAxis": { "type": "integer", "minimum": 0 },
+        "reductionTarget": { "$ref": "#/$defs/rmsNormReductionTarget" }
+      }
+    },
     "body": {
       "type": "object",
       "additionalProperties": false,
@@ -134,8 +191,18 @@
         "axisRoles": {
           "type": "array",
           "items": { "$ref": "#/$defs/bodyAxisRole" }
+        },
+        "rmsNorm": { "$ref": "#/$defs/rmsNormBody" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "op": { "const": "rms_norm" } }
+          },
+          "then": { "required": ["rmsNorm"] },
+          "else": { "not": { "required": ["rmsNorm"] } }
         }
-      }
+      ]
     },
     "rejection": {
       "type": "object",

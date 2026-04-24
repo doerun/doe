@@ -294,6 +294,40 @@ pub const SemanticBodyAxis = struct {
     role: SemanticAxisRole,
 };
 
+pub const RmsNormFormula = enum {
+    sum_squares_mean_epsilon_rsqrt_scale,
+};
+
+pub const RmsNormReductionTarget = enum {
+    intermediate_scalar,
+};
+
+pub const RmsNormEpsilonSource = enum {
+    uniform_field,
+    literal_f32,
+};
+
+pub const RmsNormEpsilon = struct {
+    source: RmsNormEpsilonSource,
+    /// Canonical symbolic source for uniform-backed epsilon values, for
+    /// example `uniform:u.eps`. Empty when `source == .literal_f32`.
+    path: []const u8 = "",
+    /// Literal epsilon value when `source == .literal_f32`; null for
+    /// uniform-backed epsilon values.
+    literal_f32: ?f64 = null,
+};
+
+pub const RmsNormBody = struct {
+    formula: RmsNormFormula,
+    epsilon: RmsNormEpsilon,
+    /// Axis carrying the normalized hidden extent. The reduction axis
+    /// is still declared by `ReductionRegion.axis`; this field states
+    /// which body axis the per-element output shares with the reduction
+    /// extent.
+    hidden_extent_axis: u32,
+    reduction_target: RmsNormReductionTarget,
+};
+
 /// Declares the kernel body family in semantic, digestable form. Family hints
 /// are planner tie-breakers; this body contract is the semantic claim that
 /// parity and backend emitters consume.
@@ -301,6 +335,7 @@ pub const SemanticBody = struct {
     op: SemanticBodyOp = .unknown,
     binding_roles: []const SemanticBodyBinding = &.{},
     axis_roles: []const SemanticBodyAxis = &.{},
+    rms_norm: ?RmsNormBody = null,
 };
 
 // ============================================================

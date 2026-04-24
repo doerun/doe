@@ -9,6 +9,24 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — RMSNorm semantic-body contract: `SemanticBody` now carries
+  an optional `rms_norm` payload, mirrored in
+  `config/doe-tsir-semantic.schema.json` as `body.rmsNorm` and required
+  when `body.op == "rms_norm"`. The contract names the Phase A formula
+  (`sum_squares_mean_epsilon_rsqrt_scale`), epsilon source
+  (`uniform:u.eps` or a future literal), hidden extent axis, and
+  `intermediate_scalar` reduction target so RMSNorm execution is no longer
+  inferred from operand roles alone. `digest.zig` includes the payload in
+  canonical semantic bytes only when present, preserving non-RMS body
+  digests. The WGSL frontend attaches the payload to the bootstrap
+  RMSNorm shape while keeping the coarse family hint at `.reduction`;
+  `runtime/zig/tests/tsir/bootstrap/rms_norm.tsir-semantic.json` and notes
+  were updated to record the contract. This is not an RMSNorm oracle pass:
+  executable node-level square / scalar-tail / rsqrt / post-scale dataflow
+  is still rejected until a later increment. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and
+  `python3 -m unittest bench.tests.test_config_schemas`.
 - TSIR Loop 2 — Step 1 oracle dtype coverage for `fused_gemv` +
   `gather`: four focused tests added in
   `runtime/zig/src/tsir/reference_interpreter.zig` exercising the
