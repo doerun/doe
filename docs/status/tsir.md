@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh stale module-header comment in
+  `runtime/zig/src/tsir/digest.zig`. Said "Realization
+  canonicalization is still scaffolding (byte-string summary)
+  pending its own walker in a future iteration." — factually wrong.
+  `canonicalizeRealization` and `emitRealization` (lines 513+) are
+  full walkers that emit every field of every nested TSIR type in
+  declared order, matching what the semantic walker does. Rewrote
+  the header to describe the actual state: both semantic and
+  realization canonicalization are walker-based and produce stable
+  digests under content-equivalent inputs. `zig build test-wgsl`
+  still passes 933/933. Strategy-leak gate PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 3 (TSIR schema + canonical
+  digests) and `docs/loop-protocol.md` Loop 2 protocol.
 - Code: refresh misleading detail string in
   `bench/tools/doe_parity.py::run_reference_interpreter`. Said
   "tsir.reference_interpreter returns NotImplemented; scaffolding

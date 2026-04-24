@@ -11,10 +11,13 @@
 //
 // SHA-256 over the canonical UTF-8 bytes yields the 32-byte digest.
 //
-// Semantic canonicalization is now production-grade: every field of
-// every nested TSIR type is walked and emitted in the declared order.
-// Realization canonicalization is still scaffolding (byte-string
-// summary) pending its own walker in a future iteration.
+// Semantic canonicalization walks every field of every nested TSIR
+// type and emits it in the declared order (lex-sorted keys, canonical
+// JSON form per the grammar at the top of this file). Realization
+// canonicalization has the same treatment — a dedicated walker covers
+// tile factors, PE grid, residency, collectives, reductions, target
+// descriptor hash, and emitter params. Both produce stable digests
+// under content-equivalent TSIR inputs.
 
 const std = @import("std");
 const schema = @import("schema.zig");
