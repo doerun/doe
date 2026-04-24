@@ -107,6 +107,17 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Plan: add `runtime/zig/src/tsir_bootstrap_manifest_inputs.zig` to
+  `docs/tsir-lowering-plan.md §Current scaffold already in tree`.
+  The `tsir/` subdir enumeration covered all thirteen core compiler
+  files but missed the sibling build-step entrypoint added in tick 18
+  that the Python fixture generator shells into via
+  `zig build tsir-bootstrap-manifest-inputs`. Without it the scaffold
+  list implied fixture digests appeared by magic; the real chain is
+  Zig-computed inputs → Python pairing with descriptor/emitter
+  hashes. Discoverability-only — no code change. Per
+  `docs/loop-protocol.md` Loop 2 scope, within Step 3/5/10 supporting
+  surfaces (no phase boundary crossed).
 - Docs: add TSIR parity tooling entry to
   `docs/internal-tooling.md §Internal operator tooling`. That
   list enumerated bench/cli, release pipeline runner, blocking

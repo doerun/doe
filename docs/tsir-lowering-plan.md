@@ -244,6 +244,11 @@ Bench tooling + fixtures:
 - `runtime/zig/tests/tsir/bootstrap/` — pinned `.wgsl`, hand-sketched
   `.tsir-semantic.json`, and per-target `.tsir-realization.*.json`
   plus `.notes.md` for each bootstrap family.
+- `runtime/zig/src/tsir_bootstrap_manifest_inputs.zig` — build-step
+  entrypoint invoked by `bench/tools/generate_tsir_manifest_fixtures.py`
+  via `zig build tsir-bootstrap-manifest-inputs` to materialize the
+  canonical digest inputs the Python builder pairs with target descriptor
+  hashes and emitter-code digests.
 
 Rejection taxonomy is locked across five surfaces — the Zig canonical
 enum, the Python CLI's `REJECTION_REASONS`, and the three JSON schemas
