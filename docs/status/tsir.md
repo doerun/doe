@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh the `docs/status.md` front-door TSIR bullet. Tick-6
+  version was stale on three axes: (a) only named `emit_csl.zig` as
+  the mechanical emitter — five backends now have skeleton emitters
+  (csl, webgpu, msl, dxil, spir_v + shared text helper); (b) omitted
+  `family_hint.zig` from the TSIR core file list; (c) pointed
+  readers at both `docs/status/tsir.md` and
+  `docs/status/compiler-and-webgpu.md` for TSIR status — post
+  migrations (ticks 24/26), compiler-and-webgpu.md no longer holds
+  TSIR status. Same class of post-migration drift as ticks 27/28
+  (loop-protocol.md + tsir-lowering-plan.md). Strategy-leak gate
+  PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` §Current scaffold and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh the Phase A status-at-a-glance "Gates" list to
   reflect the four bootstrap-catalog ↔ manifest-fixture invariant
   tests added in ticks 29–32. Reorganized the list into four
