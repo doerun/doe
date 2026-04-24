@@ -36,15 +36,16 @@ history.
   (`frontend.zig`), residency/allocation planner (`planner.zig`), scalar
   reference interpreter (`reference_interpreter.zig`), and a mechanical
   TSIR-to-CSL skeleton emitter (`emit_csl.zig`). The plan is
-  [`docs/tsir-lowering-plan.md`](docs/tsir-lowering-plan.md); iteration
-  discipline is [`docs/loop-protocol.md`](docs/loop-protocol.md); live status
-  lives in [`docs/status/compiler-and-webgpu.md`](docs/status/compiler-and-webgpu.md).
+  [`docs/tsir-lowering-plan.md`](tsir-lowering-plan.md); iteration
+  discipline is [`docs/loop-protocol.md`](loop-protocol.md); live status
+  lives in [`docs/status/tsir.md`](status/tsir.md) and
+  [`docs/status/compiler-and-webgpu.md`](status/compiler-and-webgpu.md).
   This is compiler-only progress: no parity receipts under `reports/parity/`
   yet, no TSIR-backed manifest `integrityExtensions.lowerings[]` entries yet,
   and the mechanical emitter produces contract skeletons rather than
   executable CSL kernel bodies. The live INT4 PLE CSL lane still routes
   through the existing classifier/template path per
-  [`docs/status/cerebras-csl.md`](docs/status/cerebras-csl.md).
+  [`docs/status/cerebras-csl.md`](status/cerebras-csl.md).
 - Doe now has a backend-agnostic transcript parity report surface for one
   Doppler reference export plus Doe transcript receipts. The new contract is
   `config/doe-transcript-parity-report.schema.json`, the builder is

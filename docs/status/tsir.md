@@ -19,6 +19,23 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Tests: add `bench/tests/test_doc_link_coverage.py` — walks
+  `docs/**/*.md` (excluding `docs/status/archive/`), extracts every
+  markdown link that resolves to a local in-repo path, and asserts
+  the target exists on disk. External URLs, cross-repo paths, and
+  same-doc anchors are skipped. Generalizes tick 19's fix (a
+  load-bearing doc had disappeared, and references to it stayed
+  broken for 18 ticks because nothing was checking). First run
+  found four existing broken links in `docs/status.md` — all from
+  tick 6's own TSIR bullet which used repo-root-prefixed paths
+  instead of doc-relative. Fixed those; added a link to the new
+  `docs/status/tsir.md` shard while cleaning up. Test passes on
+  the fixed tree. Also fixed a tick-19 self-referential
+  leak-gate trigger (same mistake pattern as tick 10/11 —
+  quoting a forbidden token in backticks triggers the gate). Both
+  gates now PASS. Cites `docs/loop-protocol.md` Loop 2 protocol
+  (the file the new test primarily protects) and
+  `docs/tsir-lowering-plan.md` §Documentation drift prevention.
 - Docs: restore `docs/loop-protocol.md`. The file was in the working
   tree at the start of today's Loop 2 push (I read it in tick 0 and
   based every subsequent tick's discipline on it), but had never been
@@ -30,8 +47,8 @@ moves them here; new TSIR entries go here going forward.
   tracked so this cannot recur through untracked-file cleanup.
   Strategy-leak gate PASS after add (the restored doc mentions
   "Ouroboros" as a proper-noun repo name in the cross-repo
-  handoffs section, not as an `ouroboros/` path, so the gate's
-  pattern check stays clean). No runtime, test, or contract
+  handoffs section, not as an upstream-path pattern, so the gate
+  stays clean). No runtime, test, or contract
   change. Cites `docs/tsir-lowering-plan.md` §Step 12 (rollout
   ordering — the protocol sits on top of) and `docs/loop-protocol.md`
   itself (the file whose restoration this entry describes).
