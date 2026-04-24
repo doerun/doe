@@ -128,6 +128,10 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
         alloc.free(s);
         pip.spirv_data = null;
     }
+    if (pip.vk_entry_point_owned) |ep| {
+        alloc.free(ep);
+        pip.vk_entry_point_owned = null;
+    }
 }
 
 // ============================================================
@@ -189,7 +193,13 @@ pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anyt
     else
         null;
 
-    rt.set_compute_shader_spirv(spirv, null, bindings, false) catch |err| {
+    // Pass the pipeline's captured entry-point name so the Vulkan
+    // runtime matches the SPIR-V's actual OpEntryPoint. Null entry
+    // point → runtime defaults to "main", which is correct for
+    // kernels whose entry is "main" and wrong for kernels with
+    // custom entries like "main_vec4" or "main_multicol".
+    const entry_slice: ?[]const u8 = if (pip.vk_entry_point_owned) |ep| ep[0..] else null;
+    rt.set_compute_shader_spirv(spirv, entry_slice, bindings, false) catch |err| {
         std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
         return false;
     };

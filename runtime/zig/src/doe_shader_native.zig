@@ -568,7 +568,7 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
 // Compute Pipeline
 // ============================================================
 
-fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout) ?*anyopaque {
+fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout, entry_point: ?[]const u8) ?*anyopaque {
     const cp = make(DoeComputePipeline) orelse return null;
     cp.* = .{};
     if (layout) |pipeline_layout| {
@@ -585,12 +585,28 @@ fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout
         alloc.destroy(cp);
         return null;
     };
+    // Capture the descriptor's entry-point name as an owned,
+    // null-terminated string so the Vulkan submit path can match
+    // against the SPIR-V's OpEntryPoint. See DoeComputePipeline.vk_entry_point_owned.
+    if (entry_point) |ep| {
+        if (ep.len > 0) {
+            cp.vk_entry_point_owned = alloc.dupeZ(u8, ep) catch {
+                set_last_error_stage_name("native_compile");
+                set_last_error_kind("OutOfMemory");
+                set_last_error("Vulkan compute pipeline creation failed: OOM duplicating entry point name");
+                if (cp.dispatch_preconditions.len > 0) alloc.free(cp.dispatch_preconditions);
+                alloc.destroy(cp);
+                return null;
+            };
+        }
+    }
     const vk_compute = @import("doe_vulkan_compute_native.zig");
     vk_compute.vulkan_copy_pipeline_spirv(cp, sm) catch {
         set_last_error_stage_name("native_compile");
         set_last_error_kind("OutOfMemory");
         set_last_error("Vulkan compute pipeline creation failed: OOM duplicating SPIR-V");
         std.log.err("doe: createComputePipeline (Vulkan) failed: OOM duplicating SPIR-V", .{});
+        if (cp.vk_entry_point_owned) |ep| alloc.free(ep);
         if (cp.dispatch_preconditions.len > 0) alloc.free(cp.dispatch_preconditions);
         alloc.destroy(cp);
         return null;
@@ -689,7 +705,21 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     };
 
     if (dev.backend == .vulkan) {
-        const result = createComputePipelineVulkan(sm, cast(DoePipelineLayout, d.layout));
+        // Resolve the entry-point name from the descriptor so the
+        // Vulkan submit path can match against the SPIR-V's actual
+        // OpEntryPoint. Null/empty descriptor → default to "main".
+        const entry_slice: ?[]const u8 = blk: {
+            const ep = d.compute.entryPoint;
+            if (ep.data) |ep_data| {
+                const ep_len = if (ep.length == abi_core.WGPU_STRLEN)
+                    std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
+                else
+                    ep.length;
+                if (ep_len > 0) break :blk ep_data[0..ep_len];
+            }
+            break :blk null;
+        };
+        const result = createComputePipelineVulkan(sm, cast(DoePipelineLayout, d.layout), entry_slice);
         if (result != null) label_store.set(result, d.label.data, d.label.length);
         return result;
     }

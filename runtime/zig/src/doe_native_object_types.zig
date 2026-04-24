@@ -132,6 +132,16 @@ pub const DoeComputePipeline = struct {
     dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     texture_dispatch_preconditions: []const wgsl_compiler.ir.TextureDispatchPrecondition = &.{},
     spirv_data: ?[]const u32 = null,
+    /// Entry point name captured from the createComputePipeline
+    /// descriptor. Owned (heap-allocated, null-terminated) so it
+    /// survives the descriptor struct's lifetime. Consumed at submit
+    /// time by vulkan_submit_recorded_dispatch when the dispatch
+    /// hasn't overridden the entry point. Previously the Vulkan
+    /// pipeline path dropped this field and the runtime defaulted to
+    /// "main", which broke any kernel whose SPIR-V OpEntryPoint name
+    /// was not "main" (e.g. the Q4K vec4 variant's `main_vec4`).
+    /// Freed in `vulkan_release_compute_pipeline`.
+    vk_entry_point_owned: ?[:0]u8 = null,
 };
 
 pub const DoeBindGroupLayout = struct {
