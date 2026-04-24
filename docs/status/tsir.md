@@ -107,6 +107,17 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: finish the tick-39 refresh in `docs/csl-architecture.md` —
+  tick 39 refreshed the body of §Planned TSIR generalization but
+  left the section header ("Planned TSIR generalization") and
+  opening sentence ("The planned direction is a Tiled Spatial IR")
+  stale. Updated header to "TSIR generalization path" and reworded
+  the opening to name the general-lowering direction without
+  "planned" framing. Preserves the accurate "not yet a completed
+  replacement for the classifier/template path" framing from
+  tick 39. Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` §Current scaffold + §Relationship
+  to current Doe docs, and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: remove four TSIR-specific bullets from
   `docs/status/compiler-and-webgpu.md` §Current state. Left over
   from when that shard owned TSIR before the tick-8 split. Per

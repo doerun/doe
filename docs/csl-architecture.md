@@ -67,13 +67,14 @@ allowed to target a CS system. Doe records that system targeting was requested
 without persisting the endpoint or credentials; SDK authentication material
 stays in the caller's environment.
 
-## Planned TSIR generalization
+## TSIR generalization path
 
-The current stack above is still the operative implementation. It is not the
-intended steady state for general WGSL -> CSL lowering.
+The current classifier/template stack above is still the operative
+implementation for CSL. It is not the intended steady state for general
+WGSL -> CSL lowering.
 
-The planned direction is a Tiled Spatial IR (TSIR) between WGSL IR and backend
-emitters:
+The general-lowering direction is a Tiled Spatial IR (TSIR) between
+WGSL IR and backend emitters:
 
 ```text
 WGSL IR -> TSIR semantic -> TSIR realization -> mechanical CSL emitter
