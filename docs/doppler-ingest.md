@@ -46,10 +46,12 @@ boundary. It splits into two concerns at different levels of the stack:
    being rediscovered per-kernel by classifier/template emitters. The
    in-tree surface under `runtime/zig/src/tsir/` is the Phase A compiler
    surface for this plan (schema, digests, frontend, planner, reference
-   interpreter, and mechanical skeleton emitters for five backends) —
-   see `docs/status/tsir.md` for live status. Skeleton emitters produce
-   contract text, not executable kernel bodies, so the pipeline is not
-   yet a completed replacement for the classifier/template CSL path.
+   interpreter, collective-synthesis pass, and five backend emitters
+   whose realization-only entry points still serialize contract skeletons
+   while their semantic-aware entry points emit executable bodies for the
+   Phase A bootstrap families) — see `docs/status/tsir.md` for live
+   status. The live CSL lane still routes through the classifier/template
+   path, so the pipeline is not yet a completed replacement for that path.
 2. **Runtime orchestration — the HostPlan contract.** HostPlan is the
    runtime-orchestration contract for launches, tensors, streams, and
    receipts. It is NOT the place where kernel meaning, residency strategy,

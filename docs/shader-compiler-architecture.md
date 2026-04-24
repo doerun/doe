@@ -129,13 +129,15 @@ per-kernel emitters.
 
 This path is documented in
 [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). Phase A compiler
-surface (schema, digests, frontend, planner, reference interpreter, and
-mechanical skeleton emitters for five backends) is landed under
-`runtime/zig/src/tsir/`; live status is in
+surface (schema, digests, frontend, planner, reference interpreter,
+collective-synthesis pass, and five backend emitters whose realization-only
+entry points still serialize contract skeletons while their semantic-aware
+entry points emit executable bodies for the Phase A bootstrap families)
+is landed under `runtime/zig/src/tsir/`; live status is in
 [`docs/status/tsir.md`](./status/tsir.md). TSIR is not yet the wired
-executable compiler path for CSL or WebGPU — skeleton emitters produce
-contract text, not executable kernel bodies, and the classifier/template
-CSL lane + Doe IR → MSL/SPIR-V/HLSL WebGPU lanes remain live.
+executable compiler path for CSL or WebGPU — the live CSL lane still
+routes through the classifier/template path and the Doe IR →
+MSL/SPIR-V/HLSL WebGPU lanes remain live.
 
 ## Comparison with Dawn/Tint
 

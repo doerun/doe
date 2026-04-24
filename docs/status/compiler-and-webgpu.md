@@ -18,9 +18,9 @@ robustness).
 
 - TSIR (Tiled Spatial IR) current state and contracts live in
   [`tsir.md`](./tsir.md); that shard owns schema, digests, frontend,
-  planner, reference interpreter, backend skeleton emitters, parity
-  CLI, manifest fixtures, and canary. Do not duplicate those bullets
-  here.
+  planner, collective-synthesis pass, reference interpreter, backend
+  emitters (skeleton + semantic-aware body paths), parity CLI, manifest
+  fixtures, and canary. Do not duplicate those bullets here.
 - Postfix `++` / `--` statements are now supported in the WGSL compiler
   (tokens, lexer, AST `inc_stmt`/`dec_stmt`, parser, sema, IR lowering).
   `ir_transform` / `emit_spirv` errors are surfaced with specific kinds

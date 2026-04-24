@@ -87,11 +87,12 @@ That architecture is documented in
 [`docs/status/tsir.md`](./status/tsir.md). The in-tree
 `runtime/zig/src/tsir/` surface is the Phase A compiler surface for that
 plan — schema, digests, frontend, residency planner, reference interpreter,
-and mechanical skeleton emitters for five backends (including a TSIR-to-CSL
-skeleton). It is not yet a completed replacement for the classifier/template
-path described in this document: skeleton emitters produce contract text
-rather than executable kernel bodies, and the live CSL lane still routes
-through the classifier.
+collective-synthesis pass, and five backend emitters (including a
+TSIR-to-CSL emitter). Realization-only entry points still serialize
+contract skeletons; semantic-aware entry points emit executable bodies
+for the Phase A bootstrap families. It is not yet a completed replacement
+for the classifier/template path described in this document: the live CSL
+lane still routes through the classifier.
 
 ## SDK complete-program implication
 

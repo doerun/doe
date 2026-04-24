@@ -106,6 +106,29 @@ hygiene work through today has made every one of them safer to attempt.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — current-state prose refresh after Step 7 bodies landed:
+  five prose docs still described the TSIR backend emitters as
+  skeleton-only (`emit_*.zig` produce contract text, not executable
+  kernel bodies). Step 7 executable bodies for fused_gemv / rms_norm /
+  gather landed across all five emitters in `97c06859d`, so that framing
+  is now stale. Refreshed:
+  `docs/csl-architecture.md`,
+  `docs/shader-compiler-architecture.md`,
+  `docs/doppler-ingest.md`,
+  `runtime/zig/README.md` (also adds `collective_synthesis.zig` +
+  `emit_kernel_body.zig` to the enumerated file lists), and
+  `docs/status/compiler-and-webgpu.md §Current state` to describe five
+  backend emitters whose realization-only entry points still serialize
+  contract skeletons while their semantic-aware entry points emit
+  executable bodies for the Phase A bootstrap families. The
+  classifier/template CSL lane still lives (Step 12 unlanded) and that
+  caveat is preserved; what changed is the accurate current-state
+  description of the TSIR emitter surface itself. Strategy-leak gate
+  PASS, doc-link coverage PASS, 938/938 `test-wgsl` tests still pass.
+  Per `docs/loop-protocol.md` Loop 2 protocol: documentation
+  drift-prevention per CLAUDE.md §Documentation drift prevention; no
+  code change, no phase boundary crossed. Cites
+  `docs/tsir-lowering-plan.md` Step 7.
 - TSIR Loop 2 — Step 6 collective-synthesis edge-case test coverage:
   `runtime/zig/tests/wgsl/tsir_planner_test.zig` gains two tests that
   exercise branches of `runtime/zig/src/tsir/collective_synthesis.zig`

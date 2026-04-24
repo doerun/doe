@@ -157,16 +157,22 @@ WebGPU backend:
 - `src/core/resource/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
 
 TSIR compiler surface (Phase A landed — schema, digests, frontend, planner,
-reference interpreter, and mechanical skeleton emitters for five backends;
-see [`../../docs/status/tsir.md`](../../docs/status/tsir.md) for live status
-and [`../../docs/tsir-lowering-plan.md`](../../docs/tsir-lowering-plan.md)
-for the architecture):
+collective-synthesis pass, reference interpreter, and five backend emitters
+whose realization-only entry points still serialize contract skeletons while
+their semantic-aware entry points emit executable bodies for the Phase A
+bootstrap families; see [`../../docs/status/tsir.md`](../../docs/status/tsir.md)
+for live status and
+[`../../docs/tsir-lowering-plan.md`](../../docs/tsir-lowering-plan.md) for
+the architecture):
 - `src/tsir/schema.zig`, `src/tsir/digest.zig`, `src/tsir/family_hint.zig`,
   `src/tsir/frontend.zig`, `src/tsir/planner.zig`,
+  `src/tsir/collective_synthesis.zig`,
   `src/tsir/reference_interpreter.zig`, `src/tsir/mod.zig` — TSIR core.
 - `src/tsir/emit_csl.zig`, `src/tsir/emit_webgpu.zig`, `src/tsir/emit_msl.zig`,
   `src/tsir/emit_dxil.zig`, `src/tsir/emit_spir_v.zig`,
-  `src/tsir/emit_text_skeleton.zig` — mechanical backend skeleton emitters.
+  `src/tsir/emit_text_skeleton.zig`, `src/tsir/emit_kernel_body.zig` —
+  backend emitters (skeleton helpers plus the shared semantic-aware body
+  writer).
 - `src/targets/webgpu_generic.zig`, `src/targets/wse3.zig`,
   `src/targets/mod.zig` — target descriptors with correctness/planner split.
 
