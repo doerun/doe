@@ -70,6 +70,17 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: update `docs/loop-protocol.md` to reflect the post-migration
+  shard scopes. The protocol doc (restored in tick 19 from tick-0
+  content that predates the tsir.md split) still said "Loop 2 doc
+  output: status entry in `docs/status/compiler-and-webgpu.md` /
+  `docs/status/cerebras-csl.md`" and "Phase A is closed in
+  `docs/status/compiler-and-webgpu.md`". After ticks 8/24/26 made
+  tsir.md the TSIR shard, both references were stale. Updated: Loop
+  2 doc output for TSIR now routes to `docs/status/tsir.md`; Phase A
+  closure also lands there. Both gates PASS. Cites
+  `docs/loop-protocol.md` itself (the file this updates) and
+  `docs/tsir-lowering-plan.md` §Step 12 (Phase A exit criteria).
 - Docs: migrate 2026-04-23 TSIR Step 4 incremental history from
   `compiler-and-webgpu.md` to `archive/2026-04.md`. Tick 25
   deferred this under a design concern (archive file used a

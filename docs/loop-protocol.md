@@ -25,7 +25,7 @@ precedes and produces the current baseline.
 | Scope | Oracle, descriptors, schema, frontend, residency, collectives, emitter | GEMV → RMSNorm → gather, in that order |
 | Per-iteration | One committable increment of the lowest-numbered unlanded step | One kernel family, end to end |
 | Gating | Green tests + dated status entry; stop at phase boundary | Parity receipt + lowering binding committed |
-| Doc output | Status entry in `docs/status/compiler-and-webgpu.md` / `docs/status/cerebras-csl.md` | Parity receipt under `reports/parity/` + manifest `integrityExtensions.lowerings[]` entry |
+| Doc output | Status entry in `docs/status/tsir.md` (Loop 2 TSIR work) / `docs/status/cerebras-csl.md` (Cerebras-specific work) | Parity receipt under `reports/parity/` + manifest `integrityExtensions.lowerings[]` entry |
 
 ## Loop 2 — TSIR machinery
 
@@ -170,7 +170,7 @@ Loop 3 exits when:
   `algorithm-exact` or better against `webgpu-generic` and `wse3`
 - the corresponding Doppler manifests carry `integrityExtensions.lowerings[]`
   entries for those (kernelRef, backend) pairs
-- Phase A is closed in `docs/status/compiler-and-webgpu.md`
+- Phase A is closed in `docs/status/tsir.md`
 
 Attention and the remaining kernel families begin a new loop sequence
 (Phase B / Phase C); their rules are defined when Phase A exits, not earlier.
