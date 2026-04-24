@@ -261,6 +261,44 @@ class TestTsirManifestLowering(unittest.TestCase):
             descriptor_hashes["wse3"],
         )
 
+    def test_every_bootstrap_wgsl_has_manifest_fixture(self) -> None:
+        """Every bootstrap-catalog kernel must have a manifest fixture
+        for each Phase A target.
+
+        Complement to `test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl`
+        (which goes manifest → catalog). Reverse direction catches "new
+        kernel landed in the catalog but fixtures weren't regenerated":
+        the catalog test would pass (the new kernel has semantic +
+        realization + notes), existing fixture tests hard-code
+        `len(paths) == 6` and so only fire if a fixture is removed, not
+        if the catalog grew. Downstream consumers (nightly canary,
+        receipt producers) assume every kernel has fixtures — this
+        test makes that assumption testable.
+        """
+        bootstrap_dir = (
+            REPO_ROOT / "runtime" / "zig" / "tests" / "tsir" / "bootstrap"
+        )
+        wgsl_stems = {path.stem for path in bootstrap_dir.glob("*.wgsl")}
+        self.assertGreaterEqual(
+            len(wgsl_stems),
+            1,
+            "bootstrap catalog must pin at least one WGSL snapshot",
+        )
+
+        required_backends = ("webgpu-generic", "wse3")
+        for stem in sorted(wgsl_stems):
+            for backend in required_backends:
+                with self.subTest(kernel=stem, backend=backend):
+                    expected = FIXTURE_DIR / f"{stem}.{backend}.json"
+                    self.assertTrue(
+                        expected.is_file(),
+                        f"bootstrap kernel {stem!r} has no manifest "
+                        f"fixture for backend {backend!r}: expected "
+                        f"{expected.relative_to(REPO_ROOT).as_posix()}. "
+                        "Regenerate fixtures with "
+                        "`python3 bench/tools/generate_tsir_manifest_fixtures.py`.",
+                    )
+
     def test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl(self) -> None:
         """Every manifest-fixture `kernelRef` must name a real bootstrap
         kernel.

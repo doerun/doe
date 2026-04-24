@@ -70,6 +70,21 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Tests: add reverse-direction catalog → manifest-fixture check
+  `test_every_bootstrap_wgsl_has_manifest_fixture`. Complements tick
+  31's manifest → catalog check. Catches "new kernel landed in the
+  bootstrap catalog but manifest fixtures weren't regenerated" —
+  the catalog test passes (new kernel has semantic + realization +
+  notes), and existing fixture tests hard-code `len(paths) == 6`
+  which only fires if a fixture shrinks, not if the catalog grows.
+  Downstream consumers (nightly canary, receipt producers) assume
+  every kernel has fixtures; this makes the assumption testable.
+  Error message includes the regeneration command. Closes the
+  bidirectional bootstrap-catalog ↔ manifest-fixture invariant.
+  11/11 manifest-lowering tests pass. Strategy-leak gate PASS.
+  Cites `docs/tsir-lowering-plan.md` Step 1.5 (bootstrap catalog)
+  + Step 10 (manifest binding) + `docs/loop-protocol.md` Loop 2
+  protocol.
 - Tests: add cross-layer kernelRef → bootstrap-WGSL integrity check
   `test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl` in
   `bench/tests/test_tsir_manifest_lowering.py`. Manifest fixtures
