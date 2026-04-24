@@ -1,0 +1,63 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [1024, 1152]
+      },
+      "peGrid": {
+        "width": 256,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "fabric_streamed",
+          "axis": null,
+          "shards": null,
+          "fabricColor": 0,
+          "chunkBytes": 65536
+        },
+        {
+          "bindingIndex": 3,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 256,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [
+        {
+          "semanticIndex": 0,
+          "treeShape": "linear"
+        }
+      ],
+      "emitterParams": {
+        "sketch": true,
+        "note": "Target realization for Gemma 3 1B lm_head_gemv decode step (N=262144 vocab, K=1152 hidden, M=1). Output C is pe_sliced on the output-column axis (axis 0) with shards=256: 1024 cols/PE × 4 bytes = 4 KiB per PE, leaving ample headroom under the ~48 KiB working budget. Activation vector A is 1152 × 4 = 4.5 KiB, pe_replicated across the 256-wide row. Weight matrix B at 262144 × 1152 × 2 bytes = ~576 MiB must be fabric_streamed; chunkBytes=65536 matches the embed fixture's wse3 convention. Uniform binding u is host_copied per launch. The k-axis reduction is PE-local (each PE owns all K for its 1024 columns), so the reduction tree is linear with no fabric allreduce — matches the bootstrap fused_gemv pattern at larger shape. Host I/O shape: A broadcast-tiled to all PEs, C gathered from 256 PEs × 1024 f32 = N f32. See lm_head_gemv.notes.md for the per-PE budget math and planner decision rules this realization exercises."
+      },
+      "targetDescriptorHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "rejections": []
+}

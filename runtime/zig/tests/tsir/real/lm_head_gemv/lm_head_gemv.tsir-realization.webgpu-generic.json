@@ -1,0 +1,69 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [64, 1152]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 3,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [
+        {
+          "semanticIndex": 0,
+          "treeShape": "linear"
+        }
+      ],
+      "emitterParams": {
+        "sketch": true,
+        "workgroupSize": 256,
+        "entryPoint": "main_multicol",
+        "overrides": {
+          "MULTICOL_COLS_PER_WG": 64,
+          "MULTICOL_THREADS_PER_COL": 4
+        },
+        "note": "WebGPU-generic realization stays pe_replicated because adapter memory hosts the weight matrix. The TSIR path for this target is nominal: Doppler's browser WebGPU runtime is authoritative for real-kernel WGSL execution. This entry exists so the lowering identity is pairwise-complete across (kernelRef, backend), not because Doe emits WGSL bodies for real-kernel WebGPU. Parity gating for this row is reference=doppler-reference-transcript, backend=webgpu-generic deferred to Doppler's own runtime. The entryPoint plus overrides block pins which override constants Gemma 3 1B Q4K selects for lm_head_gemv; these match the Doppler conversion config binding (MULTICOL_COLS_PER_WG=64, MULTICOL_THREADS_PER_COL=4, WORKGROUP_SIZE=256 default)."
+      },
+      "targetDescriptorHash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "emitterDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "rejections": []
+}

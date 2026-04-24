@@ -1,0 +1,75 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "frontend-real-pipeline-v0",
+  "functions": [
+    {
+      "name": "main_multicol",
+      "familyHint": "fused_gemv",
+      "axes": [
+        { "name": "n", "lowerBound": "0", "upperBound": "N", "step": "1" },
+        { "name": "k", "lowerBound": "0", "upperBound": "K", "step": "1" }
+      ],
+      "bindings": [
+        {
+          "name": "u",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [1],
+          "elem": "u32",
+          "readWrite": false
+        },
+        {
+          "name": "A",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "B",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [0, 0],
+          "elem": "f16",
+          "readWrite": false
+        },
+        {
+          "name": "C",
+          "group": 0,
+          "binding": 3,
+          "logicalShape": [0],
+          "elem": "f32",
+          "readWrite": true
+        }
+      ],
+      "body": {
+        "op": "fused_gemv",
+        "bindingRoles": [
+          { "bindingIndex": 1, "role": "vector" },
+          { "bindingIndex": 2, "role": "matrix" },
+          { "bindingIndex": 3, "role": "output" }
+        ],
+        "axisRoles": [
+          { "axisIndex": 0, "role": "output" },
+          { "axisIndex": 1, "role": "reduction" }
+        ]
+      },
+      "reductions": [
+        {
+          "axis": 1,
+          "op": "sum",
+          "contract": {
+            "accumulation": "f32",
+            "associativity": "strict_ordered",
+            "nanInf": "propagate"
+          },
+          "targetBinding": 3
+        }
+      ],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}
