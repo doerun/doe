@@ -19,6 +19,14 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Gate: fix the third self-referential leak-gate trip of the day.
+  The test landed in tick 20 (`bench/tests/test_doc_link_coverage.py`)
+  had a code comment quoting the forbidden upstream-path pattern in
+  backticks while describing what the test skips. Same mistake shape
+  as tick 10 and tick 19 — describe the rule, don't quote the
+  literal token. Reworded. Both gates PASS. No behavior change; test
+  still passes on the fixed tree. Cites `docs/loop-protocol.md`
+  Loop 2 protocol (the recurring discipline this wedge repairs).
 - Tests: add `bench/tests/test_doc_link_coverage.py` — walks
   `docs/**/*.md` (excluding `docs/status/archive/`), extracts every
   markdown link that resolves to a local in-repo path, and asserts

@@ -73,8 +73,8 @@ def _resolve_link(doc_path: Path, raw_target: str) -> Path | None:
     except (OSError, ValueError):
         return None
 
-    # Only check paths that stay inside the Doe repo. Cross-repo paths
-    # (`../../doppler/...`, `../../ouroboros/...`) resolve outside and
+    # Only check paths that stay inside the Doe repo. Cross-repo
+    # paths that ascend out of the repo root resolve outside it and
     # are skipped — their existence is checked by those repos.
     try:
         resolved.relative_to(REPO_ROOT)
