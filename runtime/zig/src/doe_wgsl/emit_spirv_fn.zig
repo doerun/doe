@@ -355,15 +355,19 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 },
                 .load => |inner| try self.emit_load_from_ref(inner),
                 .unary => |unary| try self.emit_unary(unary.op, try self.emit_value_expr(unary.operand), expr.ty),
-                .binary => |binary| try self.emit_binary(
-                    binary.op,
-                    try self.emit_value_expr(binary.lhs),
-                    try self.emit_value_expr(binary.rhs),
-                    self.function.exprs.items[binary.lhs].ty,
-                    self.function.exprs.items[binary.rhs].ty,
-                    self.function.exprs.items[binary.lhs].ty,
-                    expr.ty,
-                ),
+                .binary => |binary| blk: {
+                    const lhs_ty = self.function.exprs.items[binary.lhs].ty;
+                    const rhs_ty = self.function.exprs.items[binary.rhs].ty;
+                    break :blk try self.emit_binary(
+                        binary.op,
+                        try self.emit_value_expr(binary.lhs),
+                        try self.emit_value_expr(binary.rhs),
+                        lhs_ty,
+                        rhs_ty,
+                        self.binary_operand_type(lhs_ty, rhs_ty),
+                        expr.ty,
+                    );
+                },
                 .call => |call| try self.emit_call(call, expr.ty),
                 .construct => |construct| try self.emit_construct(construct.ty, construct.args),
                 .member => |member| if (expr.category == .ref)
@@ -576,6 +580,30 @@ pub fn FunctionState(comptime EmitterT: type) type {
                 .bit_not => spirv.Opcode.Not,
             };
             return try self.emit_result_inst(opcode, try self.emitter.lower_type(result_ty), &.{operand_id});
+        }
+
+        /// Pick the operand type that both sides of a binary op can coerce TO.
+        /// `coerce_binary_operand` handles scalar→vector (splat) and
+        /// same-length vector→vector (element-wise cast) but errors on
+        /// vector→scalar because demoting a vector to a scalar has no valid
+        /// semantics. When lhs/rhs shapes differ (WGSL-legal
+        /// `scalar op vector` and `vector op scalar`), we must pick the
+        /// vector as the common operand type so the scalar side gets
+        /// broadcast and the vector side passes through unchanged.
+        /// For shape-matched operands, keep the existing default of lhs_ty.
+        fn binary_operand_type(self: *@This(), lhs_ty: ir.TypeId, rhs_ty: ir.TypeId) ir.TypeId {
+            const lhs_type = self.emitter.module.types.get(lhs_ty);
+            const rhs_type = self.emitter.module.types.get(rhs_ty);
+            const lhs_is_vector = switch (lhs_type) {
+                .vector => true,
+                else => false,
+            };
+            const rhs_is_vector = switch (rhs_type) {
+                .vector => true,
+                else => false,
+            };
+            if (!lhs_is_vector and rhs_is_vector) return rhs_ty;
+            return lhs_ty;
         }
 
         fn emit_binary(
