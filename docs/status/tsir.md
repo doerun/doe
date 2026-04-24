@@ -107,6 +107,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add TSIR row to `docs/doppler-ingest.md §Artifact
+  ownership` table. The table enumerated five Doe-owned /
+  Doppler-owned / Ouroboros-owned artifact classes (Doppler
+  Program Bundle, WebGPU capture graph, HostPlan, CSL bundle and
+  receipts, cross-repo CUJ narrative) but omitted TSIR semantic +
+  realization artifacts — post-Phase-A, a distinct Doe-owned
+  artifact class with schema-backed JSON contracts and
+  `integrityExtensions.lowerings[]` bindings. Added a TSIR row
+  between "WebGPU capture graph" and "HostPlan" naming what each
+  level is (target-independent semantic + target-pinned
+  realization), how it's digested, and where it binds. Strategy
+  leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 3 (schema + digests) + Step 10
+  (manifest binding) and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: add `## TSIR parity tooling` section to `bench/README.md`.
   The 2204-line bench README had zero TSIR mentions despite
   hosting the parity CLI, manifest-lowering builder, fixture

@@ -25,6 +25,7 @@ the kernels or execution behavior that Doppler already owns.
 | --- | --- | --- |
 | Doppler Program Bundle | Doppler | Manifest reference, execution graph reference, deterministic JS entrypoint, WGSL refs and digests, runtime/capture profile, artifact IDs, and reference transcript. |
 | WebGPU capture graph | Doe | Observed GPU command graph from running the declared program under a supported provider/capture profile. |
+| TSIR semantic + realization | Doe | Two-level lowering contract between WGSL IR and backend emitters; semantic is target-independent, realization pins target + planner choices. Both are hashable; digests bind into `integrityExtensions.lowerings[]`. See `docs/tsir-lowering-plan.md` + `docs/status/tsir.md`. |
 | HostPlan | Doe | Runtime orchestration contract for launches, tensors, scheduling, streams, and receipts derived from the declared/captured program surface. It is not the planned long-term place where kernel meaning, residency, or collective semantics are rediscovered. |
 | CSL bundle and receipts | Doe | Backend output plus SDK compile, simfabric, parity, and hardware validation receipts. |
 | Cross-repo CUJ narrative | Ouroboros | Milestone map and proof journey that links repo-local contracts without owning their fields. |
