@@ -9,6 +9,14 @@ ATTENTION_PREFILL_BLOCK_SIZE = 32
 DEFAULT_GEMV_INPUT_PER_PE = 512
 DEFAULT_DECODE_KV_CHUNK = 1
 
+# embed chunked-dispatch per-PE budget. Measured against `.blocked_ut_ival`
+# at 0xFC04 (~63 KiB) on WSE-3 SDK 2.10; half that (~31 KiB) leaves headroom
+# for stack, PE program code, and memcpy framework overhead. The chunked
+# dispatch solver below picks (hiddenPerPe, tokensPerChunk) such that
+# (rowsPerPe + tokensPerChunk) * hiddenPerPe * 4 ≤ EMBED_PE_DATA_BUDGET_BYTES.
+EMBED_PE_DATA_BUDGET_BYTES = 32 * 1024
+EMBED_DEFAULT_TOKENS_PER_CHUNK = 16
+
 
 def ceil_div(numerator: int, denominator: int) -> int:
     if denominator <= 0:
@@ -27,6 +35,79 @@ def runtime_grid(runtime_config: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def divisors_ascending(n: int) -> list[int]:
+    if n <= 0:
+        return []
+    out: list[int] = []
+    d = 1
+    while d * d <= n:
+        if n % d == 0:
+            out.append(d)
+            if d != n // d:
+                out.append(n // d)
+        d += 1
+    out.sort()
+    return out
+
+
+def solve_embed_chunked_dispatch(
+    *,
+    grid_width: int,
+    hidden_size: int,
+    vocab_size: int,
+    num_tokens: int,
+    budget_bytes: int = EMBED_PE_DATA_BUDGET_BYTES,
+) -> dict[str, int] | None:
+    """Jointly pick (rowsPerPe, hiddenPerPe, hiddenShardCount, tokensPerChunk)
+    that makes the chunked-dispatch embed kernel fit per-PE memory while
+    still covering the full vocabulary at the given grid width.
+
+    Constraints:
+      * rowsPerPe * grid_width >= vocab_size   (every row is held somewhere)
+      * (rowsPerPe + tokensPerChunk) * hiddenPerPe * 4 <= budget_bytes
+      * hiddenPerPe * hiddenShardCount == hidden_size (clean partition)
+
+    Strategy: given grid_width, rowsPerPe = ceil(vocab_size / grid_width) is
+    fixed by the coverage constraint. Then for each divisor of hidden_size
+    (largest first), check whether the budget constraint holds at the
+    default tokensPerChunk. Shrink tokensPerChunk only as a fallback.
+
+    Returns None only when no tokensPerChunk >= 1 and no divisor of
+    hidden_size can satisfy the budget — a truly unrescueable shape. The
+    caller must then accept that the pre-chunked compile will overflow.
+    """
+    if (
+        grid_width <= 0
+        or hidden_size <= 0
+        or vocab_size <= 0
+        or num_tokens <= 0
+        or budget_bytes <= 0
+    ):
+        return None
+    rows_per_pe = ceil_div(vocab_size, grid_width)
+    default_tokens = max(1, min(num_tokens, EMBED_DEFAULT_TOKENS_PER_CHUNK))
+    divisors_desc = sorted(divisors_ascending(hidden_size), reverse=True)
+    # Outer loop: tokens_per_chunk from default down to 1.
+    # Inner loop: hiddenPerPe from largest divisor down to 1.
+    # First tuple to fit wins (prefers larger chunks + larger hiddenPerPe
+    # for fewer host dispatches and larger per-PE working sets).
+    candidate_tokens = sorted({default_tokens, *range(default_tokens, 0, -1)}, reverse=True)
+    for tokens_per_chunk in candidate_tokens:
+        for hidden_per_pe in divisors_desc:
+            footprint = (rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4
+            if footprint <= budget_bytes:
+                return {
+                    "rowsPerPe": rows_per_pe,
+                    "hiddenPerPe": hidden_per_pe,
+                    "hiddenShardCount": hidden_size // hidden_per_pe,
+                    "tokensPerChunk": tokens_per_chunk,
+                    "perPeFootprintBytes": footprint,
+                    "budgetBytes": budget_bytes,
+                    "gridWidth": grid_width,
+                }
+    return None
+
+
 def reference_prompt_token_count(reference: dict[str, Any]) -> int:
     prompt_tokens = reference.get("promptTokenCount")
     if prompt_tokens is not None:
@@ -37,6 +118,58 @@ def reference_prompt_token_count(reference: dict[str, Any]) -> int:
         if token_count is not None:
             return int(token_count)
     return 0
+
+
+def embed_compile_params(
+    *,
+    grid_width: int,
+    grid_height: int,
+    hidden_dim: int,
+    vocab_size: int,
+    max_seq_len: int,
+) -> dict[str, int]:
+    """Build the compileParams dict for the `embed` kernel.
+
+    Always emits the four legacy 1-D knobs (`height`, `hidden_size`,
+    `num_tokens`, `rows_per_pe`). When the chunked-dispatch solver finds a
+    tuple that fits the per-PE budget, also emits `hidden_per_pe` and
+    `tokens_per_chunk`; cslc uses those to size the per-PE output buffer.
+    If no tuple fits (e.g., budget too small for rowsPerPe≥1 and any
+    divisor of hidden_size), emits only the legacy knobs and the compile
+    will still fail with the pre-chunked overflow — that is the honest
+    state, not a silently patched one.
+    """
+    # The legacy projection computed rows_per_pe across the full grid
+    # (width * height PEs). That assumed a 1-D kernel holding full hidden
+    # per PE. Chunked dispatch lowers width to grid_width and uses a
+    # separate hidden-shard axis: every PE only needs to cover its own
+    # row shard at grid_width, not grid_width × grid_height.
+    tuple_ = solve_embed_chunked_dispatch(
+        grid_width=grid_width,
+        hidden_size=hidden_dim,
+        vocab_size=vocab_size,
+        num_tokens=max_seq_len,
+    )
+    params: dict[str, int] = {
+        "hidden_size": hidden_dim,
+        "num_tokens": max_seq_len,
+    }
+    if tuple_ is not None:
+        # Embed's per-kernel grid is grid_width × hiddenShardCount. The
+        # `height` param is the hidden-shard count, not the global
+        # memory-plan grid_height which sizes other kernels' rectangles.
+        params["rows_per_pe"] = tuple_["rowsPerPe"]
+        params["height"] = tuple_["hiddenShardCount"]
+        params["hidden_per_pe"] = tuple_["hiddenPerPe"]
+        params["tokens_per_chunk"] = tuple_["tokensPerChunk"]
+    else:
+        # No feasible chunked-dispatch tuple found. Emit legacy 1-D
+        # params so the compile fails with the pre-chunked overflow
+        # signature rather than a silently patched one.
+        pe_count = max(1, grid_width * grid_height)
+        params["rows_per_pe"] = ceil_div(vocab_size, pe_count)
+        params["height"] = grid_height
+    return params
 
 
 def manifest_compile_param_projection(
@@ -82,12 +215,13 @@ def manifest_compile_param_projection(
         "sample": {
             "chunk_size": sample_chunk,
         },
-        "embed": {
-            "height": grid_height,
-            "hidden_size": hidden_dim,
-            "num_tokens": max_seq_len,
-            "rows_per_pe": ceil_div(vocab_size, max(1, pe_count)),
-        },
+        "embed": embed_compile_params(
+            grid_width=grid_width,
+            grid_height=grid_height,
+            hidden_dim=hidden_dim,
+            vocab_size=vocab_size,
+            max_seq_len=max_seq_len,
+        ),
         "rope": {
             "head_dim": head_dim,
             "num_pairs": ceil_div(head_dim, 2),

@@ -279,108 +279,149 @@ pub fn emitTiled(
     const v = module.globals.items[info.v_global].name;
     const out = module.globals.items[info.output_global].name;
 
-    try W.write(buf, pos, "// PE program: tiled Flash Attention for prefill (auto-generated)\n");
-    try W.write(buf, pos, "// KV tiles broadcast via collectives, online softmax accumulation.\n\n");
+    try W.write(buf, pos, "// PE program: tiled Flash Attention for prefill (streaming KV).\n");
+    try W.write(buf, pos, "// Host streams K/V block-by-block into the exported k/v buffers,\n");
+    try W.write(buf, pos, "// launching `compute_tile` once per tile; a final `finalize` pass\n");
+    try W.write(buf, pos, "// normalizes the accumulated output. See\n");
+    try W.write(buf, pos, "// bench/out/cslc-attn-streaming-probe/probe-result.json for the\n");
+    try W.write(buf, pos, "// per-PE feasibility map that drives the host-chosen\n");
+    try W.write(buf, pos, "// (block_size, q_len_per_pe) sizing.\n\n");
 
     try W.write(buf, pos, "param memcpy_params;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
-    try W.write(buf, pos, "param block_size: i16 = 32;\n");
-    try W.write(buf, pos, "param kv_len: i16;\n");
+    // block_size now names the streaming tile (host iteration unit), not
+    // the inner-loop chunk of a PE-resident KV matrix. Default 16 matches
+    // head_dim=256 feasibility; head_dim=512 hosts override to 4.
+    try W.write(buf, pos, "param block_size: i16 = 16;\n");
+    // q_len_per_pe shards q_len across the width dim of the layout.
+    // Defaults to q_len so a width=1 layout collapses to the full query.
     try W.write(buf, pos, "param q_len: i16;\n");
+    try W.write(buf, pos, "param q_len_per_pe: i16 = q_len;\n");
     try W.write(buf, pos, "param scale: f32 = 0.125;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
-    try emitStoragePtrs(buf, pos, module);
+    // Storage sizing:
+    //   q / out — q_len_per_pe × head_dim (per PE's shard of the query/output)
+    //   k / v   — block_size × head_dim (tile window; overwritten per host iteration)
+    try emitTiledStoragePtrs(buf, pos, module);
 
-    // K/V tile buffers
-    try W.write(buf, pos, "var K_tile = @zeros([block_size * head_dim]f32);\n");
-    try W.write(buf, pos, "var V_tile = @zeros([block_size * head_dim]f32);\n\n");
+    // Online softmax state, per-query-row, preserved across compute_tile calls.
+    try W.write(buf, pos, "var m_state: [q_len_per_pe]f32 = @zeros([q_len_per_pe]f32);\n");
+    try W.write(buf, pos, "var l_state: [q_len_per_pe]f32 = @zeros([q_len_per_pe]f32);\n\n");
 
-    // Online softmax state
-    try W.write(buf, pos, "var m_i: f32 = -3.4028235e+38;\n");
-    try W.write(buf, pos, "var l_i: f32 = 0.0;\n\n");
-
+    // compute: named `compute` to satisfy the csl_spec structural marker
+    // that every emitted PE program must export a `compute` symbol.
+    // Streaming semantics: consume the current k/v tile contents and update
+    // (output, m_state, l_state). Host dispatches it once per tile.
     try W.write(buf, pos, "fn compute() void {\n");
-    try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| { ");
-    try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] = 0.0; }\n");
-    try W.write(buf, pos, "    m_i = -3.4028235e+38;\n");
-    try W.write(buf, pos, "    l_i = 0.0;\n\n");
-
-    try W.write(buf, pos, "    var kv_start: i16 = 0;\n");
-    try W.write(buf, pos, "    while (kv_start < kv_len) : (kv_start += block_size) {\n");
-    // Current CSL has no 3-arg `math.min(T, a, b)` form; use inline
-    // ternary. Same pattern the element_wise emitter uses.
-    try W.write(buf, pos, "        const blk_end = (if ((kv_start + block_size) < kv_len) (kv_start + block_size) else kv_len);\n");
-    try W.write(buf, pos, "        const blk_len = blk_end - kv_start;\n\n");
-
-    // Load K/V tile
-    try W.write(buf, pos, "        for (@range(i16, blk_len)) |bi| {\n");
-    try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
-    try W.write(buf, pos, "                const src = @as(u32, kv_start + bi) * @as(u32, head_dim) + @as(u32, d);\n");
-    try W.write(buf, pos, "                const dst = @as(u32, bi) * @as(u32, head_dim) + @as(u32, d);\n");
-    try W.write(buf, pos, "                K_tile[dst] = ");
-    try W.write(buf, pos, k);
-    try W.write(buf, pos, "[src];\n");
-    try W.write(buf, pos, "                V_tile[dst] = ");
-    try W.write(buf, pos, v);
-    try W.write(buf, pos, "[src];\n");
-    try W.write(buf, pos, "            }\n");
-    try W.write(buf, pos, "        }\n\n");
-
-    // Online softmax over this block
+    try W.write(buf, pos, "    for (@range(i16, q_len_per_pe)) |qi| {\n");
+    try W.write(buf, pos, "        var m_i: f32 = m_state[@as(u32, qi)];\n");
+    try W.write(buf, pos, "        var l_i: f32 = l_state[@as(u32, qi)];\n");
     try W.write(buf, pos, "        var blk_max: f32 = -3.4028235e+38;\n");
-    try W.write(buf, pos, "        for (@range(i16, blk_len)) |bi| {\n");
+    try W.write(buf, pos, "        for (@range(i16, block_size)) |bi| {\n");
     try W.write(buf, pos, "            var score: f32 = 0.0;\n");
     try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "                score += ");
     try W.write(buf, pos, q);
-    try W.write(buf, pos, "[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
+    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]\n");
+    try W.write(buf, pos, "                    * ");
+    try W.write(buf, pos, k);
+    try W.write(buf, pos, "[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
     try W.write(buf, pos, "            }\n");
     try W.write(buf, pos, "            score *= scale;\n");
     try W.write(buf, pos, "            if (score > blk_max) blk_max = score;\n");
-    try W.write(buf, pos, "        }\n\n");
-
-    // Update running max and rescale
+    try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        const m_new = (if (m_i > blk_max) m_i else blk_max);\n");
     try W.write(buf, pos, "        const rescale = math.exp(m_i - m_new);\n");
     try W.write(buf, pos, "        l_i *= rescale;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "            ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] *= rescale;\n");
-    try W.write(buf, pos, "        }\n\n");
-
-    // Accumulate weighted V
-    try W.write(buf, pos, "        for (@range(i16, blk_len)) |bi| {\n");
+    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)] *= rescale;\n");
+    try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "        for (@range(i16, block_size)) |bi| {\n");
     try W.write(buf, pos, "            var score: f32 = 0.0;\n");
     try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "                score += ");
     try W.write(buf, pos, q);
-    try W.write(buf, pos, "[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
+    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]\n");
+    try W.write(buf, pos, "                    * ");
+    try W.write(buf, pos, k);
+    try W.write(buf, pos, "[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
     try W.write(buf, pos, "            }\n");
     try W.write(buf, pos, "            const w = math.exp(score * scale - m_new);\n");
     try W.write(buf, pos, "            l_i += w;\n");
     try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "                ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] += w * V_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
+    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]\n");
+    try W.write(buf, pos, "                    += w * ");
+    try W.write(buf, pos, v);
+    try W.write(buf, pos, "[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
     try W.write(buf, pos, "            }\n");
     try W.write(buf, pos, "        }\n");
-    try W.write(buf, pos, "        m_i = m_new;\n");
-    try W.write(buf, pos, "    }\n\n");
-
-    // Final normalize
-    try W.write(buf, pos, "    const inv = 1.0 / l_i;\n");
-    try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| { ");
-    try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] *= inv; }\n");
+    try W.write(buf, pos, "        m_state[@as(u32, qi)] = m_new;\n");
+    try W.write(buf, pos, "        l_state[@as(u32, qi)] = l_i;\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "}\n\n");
 
-    try emitComptime(buf, pos, module);
+    // finalize: normalize output by accumulated l_state. Called once by
+    // the host after all tiles are consumed.
+    try W.write(buf, pos, "fn finalize() void {\n");
+    try W.write(buf, pos, "    for (@range(i16, q_len_per_pe)) |qi| {\n");
+    try W.write(buf, pos, "        const inv = 1.0 / l_state[@as(u32, qi)];\n");
+    try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
+    try W.write(buf, pos, "            ");
+    try W.write(buf, pos, out);
+    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)] *= inv;\n");
+    try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "}\n\n");
+
+    try emitTiledComptime(buf, pos, module);
+}
+
+// Tiled-attention-specific storage sizing: q/out sized by q_len_per_pe
+// (the per-PE query shard) and k/v sized by block_size (the host-streamed
+// tile window). Distinct from emitStoragePtrs, which sizes K/V by the full
+// kv_len and does not fit manifest-scale PE memory.
+fn emitTiledStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage) continue;
+        const size_expr: []const u8 = if (isKvStorageName(global.name))
+            "block_size * head_dim"
+        else
+            "q_len_per_pe * head_dim";
+        try W.write(buf, pos, "var ");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, ": [");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32 = @zeros([");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32);\n");
+        try W.write(buf, pos, "var ");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, "_ptr: [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = &");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, ";\n");
+    }
+    try W.write(buf, pos, "\n");
+}
+
+fn emitTiledComptime(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    try W.write(buf, pos, "comptime {\n");
+    try emitStorageExports(buf, pos, module);
+    try W.write(buf, pos, "    @export_symbol(compute);\n");
+    try W.write(buf, pos, "    @export_symbol(finalize);\n");
+    try W.write(buf, pos, "}\n");
 }
 
 // ---------------------------------------------------------------------------

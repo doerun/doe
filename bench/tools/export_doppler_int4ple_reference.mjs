@@ -336,6 +336,7 @@ async function loadDopplerModules(dopplerRoot) {
     nodeWebgpu,
     sampling,
     bufferPool,
+    harnessText,
   ] = await Promise.all([
     importDopplerModule(dopplerRoot, 'src/config/runtime.js'),
     importDopplerModule(dopplerRoot, 'src/inference/test-harness.js'),
@@ -347,6 +348,10 @@ async function loadDopplerModules(dopplerRoot) {
     importDopplerModule(dopplerRoot, 'src/tooling/node-webgpu.js'),
     importDopplerModule(dopplerRoot, 'src/inference/pipelines/text/sampling.js'),
     importDopplerModule(dopplerRoot, 'src/memory/buffer-pool.js'),
+    importDopplerModule(
+      dopplerRoot,
+      'src/inference/browser-harness-text-helpers.js'
+    ),
   ]);
   return {
     getRuntimeConfig: runtime.getRuntimeConfig,
@@ -358,6 +363,7 @@ async function loadDopplerModules(dopplerRoot) {
     applyRepetitionPenalty: sampling.applyRepetitionPenalty,
     sample: sampling.sample,
     releaseBuffer: bufferPool.releaseBuffer,
+    captureKvCacheByteProof: harnessText.captureKvCacheByteProof,
   };
 }
 
@@ -388,6 +394,33 @@ function buildRuntimeConfig(baseRuntimeConfig, args) {
       },
     },
   });
+}
+
+function buildKvCacheEvidence(proof) {
+  if (!proof || typeof proof !== 'object') {
+    return {
+      status: 'not_captured',
+      realKvCache: false,
+      blocker: 'Doppler WebGPU exporter did not return KV/cache byte proof.',
+    };
+  }
+  const layers = Array.isArray(proof.layers) ? proof.layers : [];
+  const seqLen = layers.reduce((max, layer) => {
+    const value = Number(layer?.seqLen);
+    return Number.isFinite(value) ? Math.max(max, Math.floor(value)) : max;
+  }, 0);
+  return {
+    status: 'output_ready',
+    realKvCache: true,
+    blocker: '',
+    mode: proof.mode ?? 'sha256-layer-kv-bytes',
+    layout: proof.layout ?? null,
+    kvDtype: proof.kvDtype ?? null,
+    byteDigest: proof.digest ?? 'pending',
+    layerDigestCount: layers.length,
+    seqLen,
+    byteDigests: layers,
+  };
 }
 
 function loadManifest(modelDir) {
@@ -792,6 +825,11 @@ async function main() {
       samplingConfig,
       manifestEosTokenIds: manifest?.eos_token_id,
     });
+    const kvCacheByteProof = await modules.captureKvCacheByteProof(
+      harness.pipeline,
+      true
+    );
+    const kvCacheEvidence = buildKvCacheEvidence(kvCacheByteProof);
     const stats = harness.pipeline.getStats?.() ?? {};
     const receipt = {
       schemaVersion: 1,
@@ -835,6 +873,7 @@ async function main() {
         byteLength: logits.byteLength,
         preview: Array.from(logits.slice(0, PREVIEW_LIMIT)),
       },
+      kvCacheEvidence,
       ...(decodeTranscript ? { decodeTranscript } : {}),
       producer: {
         runtime: 'doppler_js_webgpu',

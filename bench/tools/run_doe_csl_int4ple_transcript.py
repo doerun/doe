@@ -303,10 +303,17 @@ def program_bundle_step_array(step: dict[str, Any]) -> list[str]:
 def program_bundle_execution_graph_projection(
     program_bundle: dict[str, Any],
     export: dict[str, Any],
+    manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     graph_hash = export["executionGraphSha256"]
     execution = program_bundle.get("execution") or {}
     kernels = {}
+    num_layers: int | None = None
+    if isinstance(manifest, dict):
+        arch = manifest.get("architecture") or {}
+        raw = arch.get("numLayers")
+        if isinstance(raw, int) and raw > 0:
+            num_layers = raw
     for module in program_bundle.get("wgslModules") or []:
         if not isinstance(module, dict):
             continue
@@ -339,6 +346,13 @@ def program_bundle_execution_graph_projection(
             decode.append(record)
         elif section == "layer" and phase == "prefill":
             raw_layers = step.get("layers")
+            if isinstance(raw_layers, str) and raw_layers == "all":
+                if num_layers is None:
+                    raise ValueError(
+                        f"Program Bundle prefill step declares layers=\"all\" but "
+                        f"manifest.architecture.numLayers is missing: {step.get('id')}"
+                    )
+                raw_layers = list(range(num_layers))
             if not isinstance(raw_layers, list):
                 raise ValueError(
                     f"Program Bundle prefill step lacks explicit layers: {step.get('id')}"
@@ -520,6 +534,12 @@ def export_from_program_bundle(
         or f"{program_bundle.get('modelId', 'unknown')}-declared-shards"
     )
     token_count = int(phase.get("prefillTokens") or 0)
+    chat_template = (manifest.get("inference") or {}).get("chatTemplate") or {}
+    use_chat_template = (
+        bool(chat_template.get("enabled"))
+        if isinstance(chat_template, dict)
+        else False
+    )
     input_set_components = {
         "modelId": program_bundle["modelId"],
         "promptSha256": strip_doppler_hash(prompt.get("hash")),
@@ -528,7 +548,7 @@ def export_from_program_bundle(
         "samplingSha256": sha256_json({"source": "doppler_program_bundle"}),
         "tokenCount": token_count,
         "tokenizedPromptSha256": strip_doppler_hash(prompt.get("tokenIdsHash")),
-        "useChatTemplate": False,
+        "useChatTemplate": use_chat_template,
     }
     input_set_sha256 = sha256_json(input_set_components)
     graph_path = out_dir / "program_bundle_execution_graph.json"
@@ -632,7 +652,7 @@ def export_from_program_bundle(
             ],
         },
     }
-    graph = program_bundle_execution_graph_projection(program_bundle, export)
+    graph = program_bundle_execution_graph_projection(program_bundle, export, manifest)
     write_json(graph_path, graph)
     export_path = out_dir / "doppler_program_bundle_reference_export.json"
     write_json(export_path, export)
@@ -990,11 +1010,21 @@ def manifest_model_config(
     arch = manifest.get("architecture")
     if not isinstance(arch, dict):
         raise ValueError("Doppler manifest is missing architecture")
+    # Gemma 3 (non-PLE) manifests omit globalHeadDim / hiddenSizePerLayerInput /
+    # vocabSizePerLayerInput. Default them to 0 so the INT4 PLE lowering can
+    # still run the transcript producer as a diagnostic; when a model has no
+    # PLE tier the downstream PLE slice routing is a no-op.
+    raw_global_head_dim = arch.get("globalHeadDim")
+    global_head_dim = int(raw_global_head_dim) if isinstance(raw_global_head_dim, int) else 0
+    raw_ple_width = arch.get("hiddenSizePerLayerInput")
+    ple_width = int(raw_ple_width) if isinstance(raw_ple_width, int) else 0
+    raw_ple_vocab = arch.get("vocabSizePerLayerInput")
+    ple_vocab = int(raw_ple_vocab) if isinstance(raw_ple_vocab, int) else 0
     return {
         "hiddenDim": int(arch["hiddenSize"]),
         "numHeads": int(arch["numAttentionHeads"]),
         "headDim": int(arch["headDim"]),
-        "globalHeadDim": int(arch["globalHeadDim"]),
+        "globalHeadDim": global_head_dim,
         "numKeyValueHeads": int(arch["numKeyValueHeads"]),
         "numLayers": int(arch["numLayers"]),
         "vocabSize": int(arch["vocabSize"]),
@@ -1004,8 +1034,8 @@ def manifest_model_config(
             int(arch["intermediateSize"]) // int(arch["hiddenSize"])
         ),
         "ffnMatrixCount": 3,
-        "pleWidth": int(arch["hiddenSizePerLayerInput"]),
-        "pleVocabSize": int(arch["vocabSizePerLayerInput"]),
+        "pleWidth": ple_width,
+        "pleVocabSize": ple_vocab,
     }
 
 

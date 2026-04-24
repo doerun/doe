@@ -35,6 +35,7 @@ DEFAULT_SCHEMA = Path("config/doe-webgpu-transcript.schema.json")
 DEFAULT_CONTRACT_SCHEMA = Path("config/doe-shared-execution-contract.schema.json")
 DEFAULT_EXPORT_TOOL = Path("bench/tools/export_doppler_int4ple_reference.mjs")
 DEFAULT_PROVIDER = Path("packages/doe-gpu/src/compute.js")
+DEFAULT_RUNTIME_PROFILE = "profiles/production"
 DEFAULT_BUN_PROVIDER = Path("packages/doe-gpu/src/bun.js")
 
 
@@ -217,10 +218,14 @@ def resolve_runtime_settings(
         or runtime.get("providerModule")
         or str(default_provider_module_for_host(host))
     )
-    return {
+    runtime_profile = runtime.get("runtimeProfile")
+    if not isinstance(runtime_profile, str) or not runtime_profile:
+        runtime_profile = DEFAULT_RUNTIME_PROFILE
+    settings = {
         "host": host,
         "jsExecutable": str(js_executable),
         "providerModule": str(provider_module),
+        "runtimeProfile": runtime_profile,
         "kernelPathPolicyMode": (
             args.kernel_path_policy_mode
             or kernel_policy.get("mode")
@@ -238,6 +243,7 @@ def resolve_runtime_settings(
             )
         ),
     }
+    return settings
 
 
 def export_command(
@@ -264,7 +270,7 @@ def export_command(
         "--prompt",
         prompt,
         "--runtime-profile",
-        source.get("runtimeProfile", "profiles/production"),
+        runtime["runtimeProfile"],
         "--out-dir",
         rel(export_out_dir),
         "--decode-steps",
@@ -302,6 +308,24 @@ def export_command(
     if use_chat_template is False:
         command.append("--no-chat-template")
     return command
+
+
+def kv_cache_evidence(exporter_receipt: dict[str, Any]) -> dict[str, Any]:
+    evidence = exporter_receipt.get("kvCacheEvidence")
+    if (
+        isinstance(evidence, dict)
+        and evidence.get("status") == "output_ready"
+        and evidence.get("realKvCache") is True
+    ):
+        return evidence
+    return {
+        "status": "not_captured",
+        "realKvCache": False,
+        "blocker": (
+            "Doe WebGPU exporter did not emit KV/cache byte-digest evidence "
+            "for the shared execution contract."
+        ),
+    }
 
 
 def failed_receipt(
@@ -410,14 +434,7 @@ def build_receipt(
             "tensorDigest": exporter_receipt.get("tensorDigest") or {},
             "decodeTranscript": exporter_receipt.get("decodeTranscript") or {},
         },
-        "kvCacheEvidence": {
-            "status": "not_captured",
-            "realKvCache": False,
-            "blocker": (
-                "Doe WebGPU exporter does not yet emit KV/cache byte-digest "
-                "evidence for the shared execution contract."
-            ),
-        },
+        "kvCacheEvidence": kv_cache_evidence(exporter_receipt),
         "runtimeRun": {
             "runner": rel(Path(__file__)),
             "jsHost": runtime["host"],

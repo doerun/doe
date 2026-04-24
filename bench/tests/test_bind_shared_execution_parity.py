@@ -55,6 +55,14 @@ class TestBindSharedExecutionParity(unittest.TestCase):
                         "logitsDigests": [],
                     }
                 },
+                "kvCacheEvidence": {
+                    "status": "output_ready",
+                    "realKvCache": True,
+                    "blocker": "",
+                    "byteDigest": "sha256:" + ("1" * 64),
+                    "layerDigestCount": 26,
+                    "seqLen": 15,
+                },
             }
             write_json(left_path, reference)
             write_json(right_path, webgpu)
@@ -63,6 +71,8 @@ class TestBindSharedExecutionParity(unittest.TestCase):
             comparison, promotion = compare_runs(left_run, right_run)
             self.assertEqual(comparison["status"], "passed")
             self.assertTrue(promotion["sourceProgramMatched"])
+            self.assertTrue(right_run["realKvCacheUsed"])
+            self.assertTrue(promotion["realKvCacheUsedOnExecutableLane"])
 
     def test_schema_accepts_normalized_receipt_shape(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -246,15 +246,21 @@ pub fn emitGatherLayout(
     // confirmed-need emitter among the non-elementwise patterns. Other
     // emitters sharing emitRowTileLoop (rope, attention variants) stay 1-D
     // because their width semantic is per-token/per-head, not per-row.
-    try write(buf, pos, "// Layout: embedding gather on a width x height PE grid (height defaults to 1).\n\n");
+    try write(buf, pos, "// Layout: embedding gather on a width x height PE grid.\n");
+    try write(buf, pos, "// width (pe_x) shards rows; height (pe_y) shards hidden. With height=1\n");
+    try write(buf, pos, "// and hidden_per_pe=hidden_size the kernel matches the pre-chunking 1-D\n");
+    try write(buf, pos, "// shape; real-shape E2B requires height>1 to fit per-PE memory.\n\n");
     try write(buf, pos, "param width: u16;\n");
     try write(buf, pos, "param height: u16;\n");
-    // Defaults let the driver's --params=width:W,height:H invocation compile
-    // without requiring extra knobs; callers that want different dims override
-    // via their own --params flags.
+    // Defaults let the driver's --params invocation compile without extra
+    // knobs. hidden_per_pe defaults to hidden_size (matching the pre-chunking
+    // 1-D kernel); tokens_per_chunk defaults to num_tokens (single-chunk
+    // dispatch). Real shapes override all five.
     try write(buf, pos, "param hidden_size: i16 = 64;\n");
+    try write(buf, pos, "param hidden_per_pe: i16 = 64;\n");
     try write(buf, pos, "param rows_per_pe: i16 = 8;\n");
-    try write(buf, pos, "param num_tokens: i16 = 4;\n\n");
+    try write(buf, pos, "param num_tokens: i16 = 4;\n");
+    try write(buf, pos, "param tokens_per_chunk: i16 = 4;\n\n");
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n    .height = height,\n});\n\n");
     try write(buf, pos, "layout {\n    @set_rectangle(width, height);\n\n");
@@ -265,8 +271,14 @@ pub fn emitGatherLayout(
     try write(buf, pos, "\", .{\n");
     try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
     try write(buf, pos, "                .pe_id = pe_y * width + pe_x,\n");
+    try write(buf, pos, "                .pe_x = pe_x,\n");
+    try write(buf, pos, "                .pe_y = pe_y,\n");
     try write(buf, pos, "                .num_pes = width * height,\n");
-    try write(buf, pos, "                .hidden_size = hidden_size, .rows_per_pe = rows_per_pe, .num_tokens = num_tokens,\n");
+    try write(buf, pos, "                .hidden_size = hidden_size,\n");
+    try write(buf, pos, "                .hidden_per_pe = hidden_per_pe,\n");
+    try write(buf, pos, "                .rows_per_pe = rows_per_pe,\n");
+    try write(buf, pos, "                .num_tokens = num_tokens,\n");
+    try write(buf, pos, "                .tokens_per_chunk = tokens_per_chunk,\n");
     try write(buf, pos, "            });\n");
     try write(buf, pos, "        }\n");
     try write(buf, pos, "    }\n\n");
@@ -407,16 +419,27 @@ pub fn emitTiledAttentionLayout(
     info: classify.AttentionTiledInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: tiled Flash Attention on a 1-D PE row.\n\n");
+    try write(buf, pos, "// Layout: tiled Flash Attention on a 1-D PE row (streaming KV).\n");
+    try write(buf, pos, "// q_len shards across width via q_len_per_pe; k/v sized by block_size\n");
+    try write(buf, pos, "// as the host-streamed tile window. Defaults preserve 1-D full-KV\n");
+    try write(buf, pos, "// behavior (q_len_per_pe=q_len, block_size=16). See\n");
+    try write(buf, pos, "// bench/out/cslc-attn-streaming-probe/probe-result.json for the\n");
+    try write(buf, pos, "// (block_size, q_len_per_pe) feasibility map used by the host.\n\n");
     try write(buf, pos, "param width: i16;\n");
     try write(buf, pos, "param head_dim: i16;\n");
-    try write(buf, pos, "param kv_len: i16;\n");
-    try write(buf, pos, "param q_len: i16;\n\n");
+    try write(buf, pos, "param q_len: i16;\n");
+    try write(buf, pos, "param q_len_per_pe: i16 = q_len;\n");
+    try write(buf, pos, "param block_size: i16 = 16;\n\n");
     try emitMemcpyRow(buf, pos);
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_len = kv_len, .q_len = q_len,\n");
+    try emitRowTileLoop(buf, pos,
+        ".head_dim = head_dim, .q_len = q_len, .q_len_per_pe = q_len_per_pe, .block_size = block_size,\n");
     try emitStorageExports(buf, pos, module);
-    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+    // `compute` keeps the csl_spec-required symbol name; semantically it is
+    // a single-tile consumer (see emit_csl_attention.zig:emitTiled docs).
+    // `finalize` is called once after all tiles to normalize the output.
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n");
+    try write(buf, pos, "    @export_name(\"finalize\", fn()void);\n}\n");
 }
 
 // ---------------------------------------------------------------------------

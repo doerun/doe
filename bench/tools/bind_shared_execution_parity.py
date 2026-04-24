@@ -131,6 +131,26 @@ def real_kv_cache_used(csl_receipt: dict[str, Any]) -> bool:
     )
 
 
+def real_kv_cache_used_webgpu(receipt: dict[str, Any]) -> bool:
+    kv = receipt.get("kvCacheEvidence") or {}
+    if kv.get("status") != "output_ready" or kv.get("realKvCache") is not True:
+        return False
+    byte_digest = kv.get("byteDigest")
+    if isinstance(byte_digest, str) and byte_digest not in {"", "pending"}:
+        return True
+    byte_digests = kv.get("byteDigests")
+    if isinstance(byte_digests, list) and byte_digests:
+        return True
+    layer_digest_count = kv.get("layerDigestCount")
+    if (
+        isinstance(layer_digest_count, int)
+        and not isinstance(layer_digest_count, bool)
+        and layer_digest_count > 0
+    ):
+        return True
+    return False
+
+
 def normalize_run(kind: str, path: Path, data: dict[str, Any]) -> dict[str, Any]:
     if kind == "doppler_reference_export":
         return {
@@ -157,7 +177,7 @@ def normalize_run(kind: str, path: Path, data: dict[str, Any]) -> dict[str, Any]
             "sourceArtifact": hash_link(path),
             "sourceProgram": data.get("sourceProgram") or {},
             "transcript": parity_transcript_from_webgpu(data),
-            "realKvCacheUsed": False,
+            "realKvCacheUsed": real_kv_cache_used_webgpu(data),
             "inputsSynthetic": bool(data.get("inputsSynthetic", False)),
             "weightsSynthetic": bool(data.get("weightsSynthetic", False)),
             "kernelIsStub": False,

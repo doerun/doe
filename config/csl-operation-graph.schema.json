@@ -78,6 +78,15 @@
       "description": "Optional per-compile-target HostPlan kernel-pattern binding. Each entry names a compile target (matching an entry in compile.compileTargets) and carries the HostPlan's pattern taxonomy (gather, reduction, tiled_matmul, attention_tiled, attention_decode, element_wise, fused_gemv_dequant, rope, sample, ...) plus the HostPlan-declared launch count. Surfaces Doppler's HostPlan taxonomy as a first-class op-graph receipt so heterogeneous multi-kernel plans (E2B, Gemma 4 31B) are not collapsed to the single rpc_launch that the top-level operations[] array currently describes.",
       "items": { "$ref": "#/$defs/kernelPattern" },
       "uniqueItems": true
+    },
+    "hostIoLayout": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-kernel host I/O layout directives consumed by the Python host runner. Each named entry describes how the host must shard, tile, stream, or chunk the I/O between its flat tensors and the (width, height) PE grid the kernel was compiled for. This is the contract that keeps memcpy_h2d and memcpy_d2h semantically correct when a kernel uses a 2-D grid or chunked token dispatch; the kernel itself cannot enforce host orchestration.",
+      "properties": {
+        "embed": { "$ref": "#/$defs/hostIoLayoutEmbed" },
+        "attention": { "$ref": "#/$defs/hostIoLayoutAttention" }
+      }
     }
   },
   "allOf": [
@@ -492,6 +501,86 @@
           ]
         },
         "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "hostIoLayoutEmbed": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Host I/O layout for the embed (gather) kernel. Describes the 2-D (row-shard x hidden-shard) PE grid that the embedding table is sharded over, and the chunked-token dispatch the host must perform to reassemble the full [num_tokens, hidden_size] output. The kernel itself holds only one chunk of one hidden shard; the host iterates chunks and concatenates per-column slices.",
+      "required": ["chunkedDispatch"],
+      "properties": {
+        "chunkedDispatch": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tokensPerChunk",
+            "hiddenShardCount",
+            "rowsPerPe",
+            "hiddenPerPe"
+          ],
+          "properties": {
+            "tokensPerChunk": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of tokens the kernel processes per launch. Host issues ceil(num_tokens / tokensPerChunk) launches."
+            },
+            "hiddenShardCount": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of PEs along the hidden (pe_y) axis. Equal to hidden_size / hiddenPerPe."
+            },
+            "rowsPerPe": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of embedding rows held per column PE. Host uses this to derive the (row_shard, hidden_shard) → shard-of-embed_tokens.weight mapping."
+            },
+            "hiddenPerPe": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of hidden columns held per PE. Equals hidden_size / hiddenShardCount."
+            }
+          }
+        }
+      }
+    },
+    "hostIoLayoutAttention": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Host I/O layout for the tiled attention kernel. Describes the 1-D (q-shard-across-width) grid and the K/V streaming the host performs: per tile it H2Ds the current K block and V block into the exported k/v symbols, launches compute, then after all tiles launches finalize once. Emitter contract: emit_csl_attention.zig:emitTiled expects (q_len_per_pe, block_size) such that `(q_len_per_pe + block_size) * head_dim * 4` fits the per-PE ~48 KiB .data.hi budget. Working pairs are catalogued in bench/out/cslc-attn-streaming-probe/probe-result.json.",
+      "required": ["kvStreaming"],
+      "properties": {
+        "kvStreaming": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "blockSize",
+            "qLenPerPe",
+            "width",
+            "tileCount"
+          ],
+          "properties": {
+            "blockSize": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of KV rows the PE processes per compute launch. Host issues ceil(kv_len / blockSize) + 1 launches (tiles + finalize)."
+            },
+            "qLenPerPe": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of query rows held per PE along the width axis. Host partitions q_len across width PEs and concatenates output by pe_x."
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "PE grid width used by the kernel. Equals ceil(q_len / qLenPerPe). Must match the compile-time --params=width value."
+            },
+            "tileCount": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "ceil(kv_len / blockSize). Host launches compute this many times and then finalize once."
+            }
+          }
+        }
       }
     }
   }

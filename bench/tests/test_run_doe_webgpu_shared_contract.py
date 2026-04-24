@@ -21,7 +21,7 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
                 "modelId": "gemma-test",
                 "sourceProgram": {
                     "manifestPath": str(tmp_path / "manifest.json"),
-                    "runtimeProfile": "profiles/production",
+                    "runtimeProfile": "program-bundle/browser-reference",
                 },
                 "promptInput": {
                     "prompt": {"path": str(prompt_path)},
@@ -30,6 +30,7 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
                 "doeWebgpuRuntime": {
                     "host": "node",
                     "hostExecutable": "node",
+                    "runtimeProfile": "profiles/production",
                     "providerModule": "packages/doe-gpu/src/compute.js",
                     "kernelPathPolicy": {
                         "mode": "capability-aware",
@@ -85,6 +86,8 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
             self.assertIn("--kernel-path-policy-on-incompatible", command)
             self.assertIn("remap", command)
             self.assertIn("--kernel-path-policy-source-scope", command)
+            self.assertIn("--runtime-profile", command)
+            self.assertIn("profiles/production", command)
 
     def test_build_receipt_matches_schema(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -107,6 +110,25 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
                     "requestedDecodeSteps": 2,
                     "actualDecodeSteps": 2,
                 },
+                "kvCacheEvidence": {
+                    "status": "output_ready",
+                    "realKvCache": True,
+                    "blocker": "",
+                    "mode": "sha256-layer-kv-bytes",
+                    "layout": "contiguous",
+                    "kvDtype": "f32",
+                    "byteDigest": "sha256:" + ("2" * 64),
+                    "layerDigestCount": 1,
+                    "seqLen": 3,
+                    "byteDigests": [
+                        {
+                            "layer": 0,
+                            "seqLen": 3,
+                            "keyDigest": "sha256:" + ("3" * 64),
+                            "valueDigest": "sha256:" + ("4" * 64),
+                        }
+                    ],
+                },
                 "producer": {"webgpuProvider": "doe-provider"},
             }
             write_json(exporter_receipt_path, exporter_receipt)
@@ -126,6 +148,7 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
                 "doeWebgpuRuntime": {
                     "host": "node",
                     "hostExecutable": "node",
+                    "runtimeProfile": "profiles/production",
                     "providerModule": "packages/doe-gpu/src/compute.js",
                     "kernelPathPolicy": {
                         "mode": "capability-aware",
@@ -178,6 +201,8 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
             )
             self.assertEqual(receipt["runtimeRun"]["jsHost"], "node")
             self.assertEqual(receipt["runtimeRun"]["jsExecutable"], "node")
+            self.assertEqual(receipt["kvCacheEvidence"]["status"], "output_ready")
+            self.assertTrue(receipt["kvCacheEvidence"]["realKvCache"])
 
 
 if __name__ == "__main__":

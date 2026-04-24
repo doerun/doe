@@ -55,6 +55,7 @@
   "doeWebgpuRuntime": {
     "host": "node",
     "hostExecutable": "node",
+    "runtimeProfile": "profiles/production",
     "providerModule": "packages/doe-gpu/src/compute.js",
     "kernelPathPolicy": {
       "mode": "capability-aware",

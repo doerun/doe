@@ -42,6 +42,7 @@ DEFAULT_DOE_WEBGPU_PROVIDER_BY_HOST = {
     "node": "packages/doe-gpu/src/compute.js",
     "bun": "packages/doe-gpu/src/bun.js",
 }
+DEFAULT_DOE_WEBGPU_RUNTIME_PROFILE = "profiles/production"
 DEFAULT_DOE_WEBGPU_KERNEL_PATH_POLICY = {
     "mode": "capability-aware",
     "sourceScope": ["model", "manifest", "config"],
@@ -116,6 +117,11 @@ def parse_args() -> argparse.Namespace:
         "--doe-webgpu-provider-module",
         default=None,
         help="Optional Doe provider module override encoded into the shared contract.",
+    )
+    parser.add_argument(
+        "--doe-webgpu-runtime-profile",
+        default=DEFAULT_DOE_WEBGPU_RUNTIME_PROFILE,
+        help="Doppler runtime profile used by the Doe WebGPU transcript runner.",
     )
     parser.add_argument(
         "--out",
@@ -194,6 +200,7 @@ def doe_webgpu_runtime(
     host: str,
     host_executable: str | None,
     provider_module: str | None,
+    runtime_profile: str,
 ) -> dict[str, Any]:
     return {
         "host": host,
@@ -201,6 +208,7 @@ def doe_webgpu_runtime(
         "providerModule": (
             provider_module or DEFAULT_DOE_WEBGPU_PROVIDER_BY_HOST[host]
         ),
+        "runtimeProfile": runtime_profile,
         "kernelPathPolicy": DEFAULT_DOE_WEBGPU_KERNEL_PATH_POLICY,
     }
 
@@ -439,6 +447,7 @@ def build_contract(
     doe_webgpu_host: str = DEFAULT_DOE_WEBGPU_HOST,
     doe_webgpu_host_executable: str | None = None,
     doe_webgpu_provider_module: str | None = None,
+    doe_webgpu_runtime_profile: str = DEFAULT_DOE_WEBGPU_RUNTIME_PROFILE,
 ) -> dict[str, Any]:
     graph = load_json(graph_path_from_export(export))
     normalized_payload = normalized_hostplan_execution(export, graph)
@@ -463,6 +472,7 @@ def build_contract(
             host=doe_webgpu_host,
             host_executable=doe_webgpu_host_executable,
             provider_module=doe_webgpu_provider_module,
+            runtime_profile=doe_webgpu_runtime_profile,
         ),
         "normalizedExecution": normalized,
         "promptInput": prompt_input(export),
@@ -512,6 +522,7 @@ def main() -> int:
         doe_webgpu_host=args.doe_webgpu_host,
         doe_webgpu_host_executable=args.doe_webgpu_host_executable,
         doe_webgpu_provider_module=args.doe_webgpu_provider_module,
+        doe_webgpu_runtime_profile=args.doe_webgpu_runtime_profile,
     )
     schema = load_json(resolve(args.schema))
     failures = schema_failures(contract, schema)

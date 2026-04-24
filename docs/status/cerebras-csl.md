@@ -7,6 +7,133 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late) — attn_head256/512 streaming KV emitter lands; compile probes green
+
+`emit_csl_attention.zig:emitTiled` rewritten from PE-resident full KV
+(`var key: [kv_len * head_dim]f32`, `var val: ...` — 128/256 KiB per PE at
+head_dim=256/512) to streaming-KV. New PE-program params: `q_len_per_pe`
+(shards q_len across width) and `block_size` (host-streamed tile window,
+default 16). K/V storage is now sized as `block_size * head_dim`, so host
+rewrites the tile buffers per block and launches `compute` once per tile;
+`finalize` normalizes the accumulated output when all tiles have run.
+Defaults (`q_len_per_pe=q_len`, `block_size=16`) preserve a usable 1-D
+shape when the host has not opted into the streaming contract.
+
+Layout emitter updated in `emit_csl_layout.zig:emitTiledAttentionLayout` to
+surface the new params with matching defaults; `kv_len` is removed from
+per-tile params (tile window size is `block_size`, iteration count is a
+host-side concern).
+
+Feasibility probe at PE budget ~63 KiB
+(`bench/out/cslc-attn-streaming-probe/probe-result.json`):
+
+- head_dim=256: `(block_size, q_len_per_pe) = (16, 4)` compiles clean.
+  Working region bounded by `block_size ≤ 16` AND
+  `(block_size + q_len_per_pe) ≤ ~24`; block_size=32 overflows even at
+  q_len_per_pe=2.
+- head_dim=512: `(block_size, q_len_per_pe) = (4, 4)` compiles clean.
+  block_size=16 overflows at all q_len_per_pe; only block_size≤8 pairs
+  fit in budget.
+
+Emitter output verified by direct cslc on the regenerated PE program at
+both shapes: `bench/out/cslc-attn-streaming-probe/emittedByDoe.*`. The
+unused-entry warnings on `pe_id`/`num_pes` are harmless carry-overs from
+the shared layout tile-loop helper; both PEs and host treat them as
+metadata.
+
+`zig build` and `zig build test-wgsl` are green. The validator's
+`@export_symbol(compute)` structural marker is preserved by keeping the
+streaming consumer named `compute`; a second `finalize` export carries
+the post-tile normalize.
+
+Not yet this session (remaining WS4-attn closure blockers):
+
+- HostPlan tool must pick `(width, q_len_per_pe, block_size)` from
+  `head_dim`, `kv_len`, and available grid, and emit them into the
+  simulator-plan `compileParams` for `attn_head256` / `attn_head512`.
+  Today it emits `width / head_dim / kv_len / q_len` only.
+- `config/csl-operation-graph.schema.json` needs
+  `hostIoLayout.attention.kvStreaming` with `blockSize` and
+  `qLenPerPe` keys (namespaced so it doesn't collide with the
+  `hostIoLayout.embed.chunkedDispatch` keys added by the embed
+  workstream).
+- Host Python runner (`int4ple_compile_target_sim_runner.py` or its
+  attention-specific sibling) needs to loop `ceil(kv_len / block_size)`
+  H2D(K_tile) + H2D(V_tile) + launch(compute) dispatches, then one
+  launch(finalize), then D2H the output shards across width PEs and
+  concatenate by q position.
+- KV cache residency upstream of the tile window: the existing
+  `kv_write`/`kv_read` emitters still allocate full per-PE KV memory;
+  they are orthogonal to this streaming tile design but block full-model
+  parity until wired.
+
+Silent-NaN hazard noted in `emit_csl_attention.zig` header: calling
+`compute` without first populating the K/V tile buffers reads zeroed
+memory and produces numerically wrong (but non-crashing) attention
+output. The emitter cannot detect this; host orchestration owns tile
+staging.
+
+## 2026-04-24 (afternoon) — embed chunked-dispatch emitter lands; compile probe green
+
+`emit_csl_gather.zig` rewritten from 1-D pre-chunking to 2-D chunked
+dispatch. New PE-program params: `pe_x`, `pe_y`, `hidden_per_pe`,
+`tokens_per_chunk`. Per-PE buffers now size as
+`[tokens_per_chunk]u32`, `[rows_per_pe * hidden_per_pe]f32`,
+`[tokens_per_chunk * hidden_per_pe]f32`. Defaults
+(`hidden_per_pe=hidden_size`, `tokens_per_chunk=num_tokens`) preserve
+the pre-chunking 1-D behavior when `height=1`.
+
+Layout emitter updated in `emit_csl_layout.zig:emitGatherLayout` to
+surface the new params with matching defaults.
+
+Direct cslc probe on the fresh emitter output at E2B per-PE shapes
+(`width=32,height=8,hidden_size=1536,hidden_per_pe=192,rows_per_pe=16,
+num_tokens=32,tokens_per_chunk=16`): **compile succeeded**. Second
+probe at `width=256,height=8` (2048 PEs) also succeeded. The original
+pre-chunking emitter output still fails with
+`integer value 49152 cannot be coerced to type 'i16'` on the same
+E2B shape, confirming the fix is a genuine kernel change rather than
+a probe-configuration coincidence. Evidence:
+`bench/out/cslc-embed-memory-probe/probe-result.json` plus the
+pinned `pe_program.csl` and `layout.csl`.
+
+Per-PE footprint at `(hidden_per_pe=192, rows_per_pe=16,
+tokens_per_chunk=16)` is `indices 64B + table 12 KiB + output 12 KiB
+= ~24 KiB`, well under the ~48 KiB `.data.hi` budget measured at
+`.blocked_ut_ival = 0xFC04`.
+
+`zig build` and `zig build test-wgsl` are green. No existing test
+exercised `emit_csl_gather.emit` with specific CSL-output expectations,
+so the emitter rewrite is source-compatible with the test surface.
+
+Not yet this session (remaining WS4-embed closure blockers — see
+`bench/out/cslc-embed-memory-probe/probe-result.json` for the
+authoritative list):
+
+- HostPlan tool (`emit_csl_host_compile_source.zig` path) must pick
+  `(width, height, hidden_per_pe, tokens_per_chunk)` that covers vocab
+  and fits per-PE budget, and emit them into the simulator-plan
+  `compileParams` for `embed`. Today it emits `width/height/
+  hidden_size/rows_per_pe/num_tokens` only.
+- `config/csl-operation-graph.schema.json` needs
+  `hostIoLayout.embed.chunkedDispatch` with `tokens_per_chunk` and
+  `hidden_shardCount` keys.
+- Host Python runner (in `bench/tools/run_doe_csl_int4ple_transcript.py`
+  or an embed-specific runner) needs to dispatch
+  `ceil(num_tokens / tokens_per_chunk)` chunks and concatenate per-
+  column slices across height PEs to reassemble the
+  `[num_tokens, hidden_size]f32` output.
+- Weight staging in `emit_csl_host_runtime.zig` is currently 1-D
+  (`pe_start:pe_end`). It needs a 2-D (row-shard, hidden-shard)
+  mapping so each PE receives the slice of `embed_tokens.weight`
+  that matches its `(pe_x, pe_y)` position.
+
+Silent-drop hazard noted in `emit_csl_gather.zig` header: until the
+host runner implements chunked iteration, calling the emitter with
+`tokens_per_chunk < num_tokens` produces only the first chunk of
+output and drops the rest. The kernel cannot detect this; it is a
+host-orchestration contract.
+
 ## 2026-04-24
 
 Direct cslc verification of the 4 manifest-scale blockers (see stderr logs
