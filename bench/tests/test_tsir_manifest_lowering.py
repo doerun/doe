@@ -204,6 +204,63 @@ class TestTsirManifestLowering(unittest.TestCase):
             wse3 = realization_by_pair[(kernel_ref, "wse3")]
             self.assertNotEqual(webgpu, wse3)
 
+    def test_bootstrap_fixtures_share_version_and_descriptor_identity(self) -> None:
+        """The full bootstrap fixture set must agree on
+        `frontendVersion`, `compilerVersion`, and per-backend
+        `targetDescriptorCorrectnessHash`.
+
+        Partial regeneration — someone runs the generator after a
+        frontend bump on one fixture but forgets the others, or
+        bumps the target descriptor and regenerates only one
+        backend's fixture — would leave the set internally
+        inconsistent. Downstream consumers (canary, manifest binder,
+        parity CLI) all assume the set is a coherent snapshot of a
+        single compiler+descriptor state; inconsistency silently
+        attributes receipts to a compiler identity that never
+        existed. Catch that before it reaches Loop 3 promotion.
+        """
+        paths = sorted(FIXTURE_DIR.glob("*.json"))
+        self.assertEqual(len(paths), 6)
+
+        frontend_versions: set[str] = set()
+        compiler_versions: set[str] = set()
+        descriptor_hashes: dict[str, str] = {}
+        for path in paths:
+            entry = tsir_manifest_lowering.load_entry_doc(path)
+            frontend_versions.add(entry["frontendVersion"])
+            compiler_versions.add(entry["compilerVersion"])
+            backend = entry["backend"]
+            descriptor_hash = entry["targetDescriptorCorrectnessHash"]
+            if backend in descriptor_hashes:
+                self.assertEqual(
+                    descriptor_hashes[backend],
+                    descriptor_hash,
+                    msg=(
+                        f"{path.name}: targetDescriptorCorrectnessHash "
+                        f"drifted for backend {backend!r} — set is not a "
+                        "coherent descriptor snapshot"
+                    ),
+                )
+            else:
+                descriptor_hashes[backend] = descriptor_hash
+
+        self.assertEqual(
+            len(frontend_versions),
+            1,
+            msg=f"fixture set disagrees on frontendVersion: {frontend_versions}",
+        )
+        self.assertEqual(
+            len(compiler_versions),
+            1,
+            msg=f"fixture set disagrees on compilerVersion: {compiler_versions}",
+        )
+        # Both target descriptors must be present and distinct.
+        self.assertEqual(set(descriptor_hashes), {"webgpu-generic", "wse3"})
+        self.assertNotEqual(
+            descriptor_hashes["webgpu-generic"],
+            descriptor_hashes["wse3"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,23 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — bootstrap fixture version + descriptor uniformity lock:
+  new `test_bootstrap_fixtures_share_version_and_descriptor_identity`
+  in `bench/tests/test_tsir_manifest_lowering.py` asserts every one
+  of the six manifest-lowering fixtures shares the same
+  `frontendVersion` and `compilerVersion`, and every fixture for a
+  given backend (`webgpu-generic` or `wse3`) shares the same
+  `targetDescriptorCorrectnessHash`. The existing
+  `test_bootstrap_fixtures_validate_and_bind_distinct_targets` covered
+  kernel/pair uniqueness and per-kernel semantic-digest coherence, but
+  not version or per-backend descriptor drift. Partial regeneration —
+  bumping the frontend or a descriptor and running
+  `bench/tools/generate_tsir_manifest_fixtures.py` against only a subset
+  — would leave the set internally inconsistent, and downstream
+  consumers (canary, manifest binder, parity CLI) assume the set is a
+  coherent snapshot. 9/9 manifest-lowering tests pass.
+  Cites `docs/tsir-lowering-plan.md` Step 10 (manifest binding) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - TSIR Loop 2 — canary receipt ↔ fixture identity lockstep: new
   `test_canary_receipts_carry_fixture_lowering_identity` in
   `bench/tests/test_nightly_tsir_parity_canary.py` asserts that every
