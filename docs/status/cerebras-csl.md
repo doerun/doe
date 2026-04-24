@@ -18,9 +18,13 @@ This is a live topical status shard.
 ## Current state
 
 - The forward architecture for replacing classifier/template CSL lowering with
-  parity-oracle-first TSIR lowering is now documented in
-  `docs/tsir-lowering-plan.md`. The TSIR scaffold is in tree, but the live CSL
-  lane still uses the existing classifier/template route.
+  parity-oracle-first TSIR lowering is documented in
+  `docs/tsir-lowering-plan.md`. Phase A compiler surface is landed (schema,
+  digests, frontend, planner, reference interpreter, and mechanical skeleton
+  emitters for five backends including a TSIR-to-CSL skeleton; see
+  [`docs/status/tsir.md`](./tsir.md)), but the live CSL lane still uses the
+  classifier/template route — the TSIR-to-CSL skeleton emits contract text
+  rather than executable kernels.
 - The INT4 PLE CSL lane now applies manifest compile params to the live
   simulator plan and records the result at
   `hostPlanBundle.manifestCompileParamApplication`.

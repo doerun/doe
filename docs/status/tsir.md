@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh `docs/status/cerebras-csl.md` §Current state first
+  bullet. Line said "The TSIR scaffold is in tree, but the live CSL
+  lane still uses the existing classifier/template route." Same
+  "scaffold" understatement as tick 42's fix in
+  compiler-and-webgpu.md. Rewrote to name Phase A landed surface
+  explicitly (with pointer to tsir.md) while preserving the
+  honest statement that the CSL-specific skeleton emitter produces
+  contract text rather than executable kernels. Non-refreshed text:
+  the dated 2026-04-23 entry at the top of the shard stays
+  untouched — dated entries are historical observations and
+  refreshing them destroys that history. Strategy-leak gate PASS,
+  doc-link coverage PASS. Cites `docs/loop-protocol.md` Loop 2
+  protocol.
 - Docs: finish the tick-39 refresh in `docs/csl-architecture.md` —
   tick 39 refreshed the body of §Planned TSIR generalization but
   left the section header ("Planned TSIR generalization") and
