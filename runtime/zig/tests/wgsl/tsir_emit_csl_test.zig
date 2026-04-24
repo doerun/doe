@@ -8,6 +8,18 @@ const std = @import("std");
 const tsir = @import("../../src/tsir/mod.zig");
 const targets = @import("../../src/targets/mod.zig");
 
+test "tsir csl emitter exposes source-backed code digest" {
+    const digest = tsir.emit_csl.emitterCodeDigest();
+    var expected: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(
+        @embedFile("../../src/tsir/emit_csl.zig"),
+        &expected,
+        .{},
+    );
+    try std.testing.expectEqualSlices(u8, &expected, &digest);
+    try std.testing.expect(!allZero(&digest));
+}
+
 test "tsir csl emitter serializes residency grid tiles and collectives" {
     const allocator = std.testing.allocator;
 
@@ -136,4 +148,11 @@ fn expectContains(haystack: []const u8, needle: []const u8) !void {
         std.debug.print("missing expected fragment:\n{s}\nfull output:\n{s}\n", .{ needle, haystack });
         return error.ExpectedFragmentMissing;
     }
+}
+
+fn allZero(bytes: []const u8) bool {
+    for (bytes) |byte| {
+        if (byte != 0) return false;
+    }
+    return true;
 }

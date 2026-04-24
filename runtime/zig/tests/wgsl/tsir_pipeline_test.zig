@@ -13,7 +13,6 @@ const sema = @import("../../src/doe_wgsl/sema.zig");
 const ir_builder = @import("../../src/doe_wgsl/ir_builder.zig");
 
 const FRONTEND_VERSION = "frontend-bootstrap-pipeline-v1";
-const EMITTER_VERSION = "tsir-csl-skeleton-v1";
 
 test "Phase A bootstrap kernels lower to stable WebGPU and WSE-3 TSIR digests" {
     try expectBootstrapKernel(
@@ -70,29 +69,33 @@ fn expectBootstrapKernel(
     try assertCleanRealization(name, "wse3-repeat", wse3_b);
     try assertHasResidency(wse3_a, .fabric_streamed);
 
-    const webgpu_digest_a = try tsir.digest.compute(
+    const emitter_digest = tsir.emit_csl.emitterCodeDigest();
+    try std.testing.expectEqualSlices(u8, &emitter_digest, &webgpu_a.emitter_digest);
+    try std.testing.expectEqualSlices(u8, &emitter_digest, &wse3_a.emitter_digest);
+
+    const webgpu_digest_a = try tsir.digest.computeWithEmitterDigest(
         allocator,
         semantic,
         webgpu_a,
-        EMITTER_VERSION,
+        emitter_digest,
     );
-    const webgpu_digest_b = try tsir.digest.compute(
+    const webgpu_digest_b = try tsir.digest.computeWithEmitterDigest(
         allocator,
         semantic,
         webgpu_b,
-        EMITTER_VERSION,
+        emitter_digest,
     );
-    const wse3_digest_a = try tsir.digest.compute(
+    const wse3_digest_a = try tsir.digest.computeWithEmitterDigest(
         allocator,
         semantic,
         wse3_a,
-        EMITTER_VERSION,
+        emitter_digest,
     );
-    const wse3_digest_b = try tsir.digest.compute(
+    const wse3_digest_b = try tsir.digest.computeWithEmitterDigest(
         allocator,
         semantic,
         wse3_b,
-        EMITTER_VERSION,
+        emitter_digest,
     );
 
     try std.testing.expectEqualSlices(u8, &webgpu_digest_a.semantic, &webgpu_digest_b.semantic);
@@ -101,6 +104,7 @@ fn expectBootstrapKernel(
     try std.testing.expectEqualSlices(u8, &wse3_digest_a.realization, &wse3_digest_b.realization);
     try std.testing.expectEqualSlices(u8, &webgpu_digest_a.semantic, &wse3_digest_a.semantic);
     try std.testing.expect(!std.mem.eql(u8, &webgpu_digest_a.realization, &wse3_digest_a.realization));
+    try std.testing.expectEqualSlices(u8, &emitter_digest, &webgpu_digest_a.emitter);
     try std.testing.expect(!allZero(&webgpu_digest_a.semantic));
     try std.testing.expect(!allZero(&webgpu_digest_a.realization));
     try std.testing.expect(!allZero(&wse3_digest_a.realization));
@@ -135,7 +139,7 @@ fn planWebGpu(
         allocator,
         semantic,
         targets.webgpu_generic.descriptor,
-        .{},
+        .{ .emitter_digest = tsir.emit_csl.emitterCodeDigest() },
     );
 }
 
@@ -148,6 +152,7 @@ fn planWse3(
         semantic,
         targets.wse3.descriptor,
         .{
+            .emitter_digest = tsir.emit_csl.emitterCodeDigest(),
             .loader = .{
                 .fabric_streaming = true,
                 .max_stream_chunk_bytes = 4096,

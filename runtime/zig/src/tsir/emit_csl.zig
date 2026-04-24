@@ -12,12 +12,21 @@ const INITIAL_OUTPUT_CAPACITY: usize = 4096;
 const HEX_DIGITS = "0123456789abcdef";
 const NIBBLE_SHIFT: u3 = 4;
 const NIBBLE_MASK: u8 = 0x0f;
+const EMITTER_SOURCE = @embedFile("emit_csl.zig");
 
 pub const EmitError = std.mem.Allocator.Error || error{
     FunctionIndexOutOfRange,
     RejectedRealization,
     TargetDescriptorHashMismatch,
 };
+
+/// SHA-256 over this emitter's source text. Manifest lowering entries use this
+/// digest to bind emitted backend artifacts to the exact mechanical emitter.
+pub fn emitterCodeDigest() [32]u8 {
+    var out: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(EMITTER_SOURCE, &out, .{});
+    return out;
+}
 
 /// Emit one checked realization function from a full realization artifact.
 ///

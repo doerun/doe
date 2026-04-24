@@ -32,6 +32,22 @@ pub fn compute(
     realization: schema.Realization,
     emitter_version: []const u8,
 ) DigestError!schema.Digests {
+    return computeWithEmitterDigest(
+        allocator,
+        semantic,
+        realization,
+        sha256(emitter_version),
+    );
+}
+
+/// Compute split TSIR digests when the caller already has a content-addressed
+/// emitter identity, such as `emit_csl.emitterCodeDigest()`.
+pub fn computeWithEmitterDigest(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    realization: schema.Realization,
+    emitter_digest: [32]u8,
+) DigestError!schema.Digests {
     const semantic_bytes = try canonicalizeSemantic(allocator, semantic);
     defer allocator.free(semantic_bytes);
     const realization_bytes = try canonicalizeRealization(allocator, realization);
@@ -40,7 +56,7 @@ pub fn compute(
     var digests: schema.Digests = undefined;
     digests.semantic = sha256(semantic_bytes);
     digests.realization = sha256(realization_bytes);
-    digests.emitter = sha256(emitter_version);
+    digests.emitter = emitter_digest;
     return digests;
 }
 
@@ -795,6 +811,27 @@ test "digest is stable and distinct for semantic vs realization" {
     try std.testing.expectEqualSlices(u8, &d1.semantic, &d2.semantic);
     try std.testing.expectEqualSlices(u8, &d1.realization, &d2.realization);
     try std.testing.expect(!std.mem.eql(u8, &d1.semantic, &d1.realization));
+}
+
+test "precomputed emitter digest participates verbatim" {
+    const allocator = std.testing.allocator;
+    const semantic = schema.Semantic{
+        .functions = &.{},
+        .rejections = &.{},
+    };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0x11} ** 32,
+        .rejections = &.{},
+    };
+    const emitter_digest = [_]u8{0xA5} ** 32;
+    const d = try computeWithEmitterDigest(
+        allocator,
+        semantic,
+        realization,
+        emitter_digest,
+    );
+    try std.testing.expectEqualSlices(u8, &emitter_digest, &d.emitter);
 }
 
 test "frontendVersion participates in semantic digest" {

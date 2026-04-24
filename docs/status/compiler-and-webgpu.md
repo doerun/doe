@@ -9,6 +9,16 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — emitter code digest increment: `emit_csl.zig` now exposes
+  `emitterCodeDigest()` as SHA-256 over the mechanical CSL emitter source, and
+  `digest.zig` has `computeWithEmitterDigest()` for callers that already hold
+  a content-addressed emitter identity instead of a version string. The Phase A
+  bootstrap pipeline test now feeds that source-backed digest into WebGPU and
+  WSE-3 realizations and asserts the returned split digest preserves it
+  verbatim. This removes the zero/placeholder emitter identity from the
+  compiler-only bootstrap lowering path. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and `git diff --check`.
 - TSIR Loop 2 — Step 8 parity CLI scaffolding comment refresh:
   `bench/tools/doe_parity.py` scaffolding comments on
   `run_reference_interpreter` and `run_backend` were stale — they claimed
