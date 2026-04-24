@@ -24,7 +24,12 @@ class TestRealManifestFixtureGenerator(unittest.TestCase):
         for name, entry in fixtures.items():
             with self.subTest(name=name):
                 self.assertTrue(
-                    name.startswith(("embed.", "lm_head_gemv.")),
+                    name.startswith((
+                        "embed.",
+                        "lm_head_gemv.",
+                        "attention_head256_f16kv.",
+                        "attention_head512_f16kv.",
+                    )),
                     f"unexpected fixture name: {name}",
                 )
                 for field in (
@@ -104,8 +109,11 @@ class TestRealManifestFixtureGenerator(unittest.TestCase):
                 gen.real_kernel_entry("embed", "webgpu-generic")
 
     def test_unknown_kernel_raises(self) -> None:
+        # Any kernel ref not in the KERNEL_EXACTNESS registry; using a
+        # deliberately non-existent kernel name so this test stays
+        # correct when new real-kernel registrations land.
         with self.assertRaisesRegex(ValueError, "KERNEL_EXACTNESS registry"):
-            gen.real_kernel_entry("attention_head256_f16kv", "wse3")
+            gen.real_kernel_entry("not_a_real_kernel_xyz", "wse3")
 
     def test_generator_output_matches_disk(self) -> None:
         fixtures = gen.generate_entries()

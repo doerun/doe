@@ -50,13 +50,36 @@ SUPPORTED_BACKENDS: tuple[str, ...] = ("webgpu-generic", "wse3")
 # Exactness policy per real kernel. Keyed to the body op and reduction
 # contract in the TSIR semantic JSON — the registry is narrow so the
 # generator does not grow a classifier.
-#   embed            -> gather body, no reduction           -> bit_exact_solo
-#   lm_head_gemv     -> fused_gemv body, strict-ordered sum -> algorithm_exact
-KERNEL_EXACTNESS: dict[str, tuple[str, tuple[str, ...]]] = {
-    "embed": ("bit_exact_solo", ()),
+#
+# Tuple shape: (exactness_class, algorithm_exact_invariants,
+#               tolerance_metric, tolerance_epsilon).
+# The last two are only meaningful for `tolerance_bounded`; for
+# `bit_exact_solo` / `algorithm_exact` they are ("", 0.0) and ignored.
+#   embed                    -> gather body, no reduction           -> bit_exact_solo
+#   lm_head_gemv             -> fused_gemv body, strict-ordered sum -> algorithm_exact
+#   attention_head256_f16kv  -> attention_scores, softmax/exp/tanh  -> tolerance_bounded
+#   attention_head512_f16kv  -> attention_scores, softmax/exp/tanh  -> tolerance_bounded
+KERNEL_EXACTNESS: dict[
+    str, tuple[str, tuple[str, ...], str, float]
+] = {
+    "embed": ("bit_exact_solo", (), "", 0.0),
     "lm_head_gemv": (
         "algorithm_exact",
         ("reduction_order", "accum_dtype"),
+        "",
+        0.0,
+    ),
+    "attention_head256_f16kv": (
+        "tolerance_bounded",
+        (),
+        "per_element_relative_error",
+        1e-5,
+    ),
+    "attention_head512_f16kv": (
+        "tolerance_bounded",
+        (),
+        "per_element_relative_error",
+        1e-5,
     ),
 }
 
@@ -125,7 +148,9 @@ def real_kernel_entry(kernel: str, backend: str) -> dict[str, Any]:
         backend
     )
     frontend_version = load_frontend_version(semantic_path)
-    exactness_class, invariants = KERNEL_EXACTNESS[kernel]
+    exactness_class, invariants, tolerance_metric, tolerance_epsilon = (
+        KERNEL_EXACTNESS[kernel]
+    )
 
     _assert_not_sentinel("tsirSemanticDigest", tsir_semantic_digest)
     _assert_not_sentinel("tsirRealizationDigest", tsir_realization_digest)
@@ -146,8 +171,8 @@ def real_kernel_entry(kernel: str, backend: str) -> dict[str, Any]:
             compiler_version=REAL_COMPILER_VERSION,
             exactness_class=exactness_class,
             algorithm_exact_invariants=invariants,
-            tolerance_metric="",
-            tolerance_epsilon=0,
+            tolerance_metric=tolerance_metric,
+            tolerance_epsilon=tolerance_epsilon,
             rejection_reasons=(),
         )
     )
