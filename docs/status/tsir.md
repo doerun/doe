@@ -19,6 +19,16 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Build: wire `test-wgsl` to `line_limit_check`. The tick-15 follow-up
+  is landed: `runtime/zig/build.zig` now makes `wgsl_test_step`
+  depend on `line_limit_check.step`, matching what `test`,
+  `test-core`, `test-full`, and `test-d3d12` already do. Future
+  Zig source-cap breaches surface on `zig build test-wgsl` rather
+  than hiding until a full `test` run. `zig build test-wgsl` passes
+  with advisory allowlist warnings (same three TSIR files tracked
+  in the tick-15 allowlist). Clears the sharding-pending follow-up
+  for this specific build wiring; the three source-file sharding
+  splits themselves remain pending per the entries below.
 - TSIR Loop 2 — Zig line-limit cap breach acknowledged + tracked:
   `zig build test` was failing because three TSIR modules are over
   the 999-line Zig source cap (`tsir/reference_interpreter.zig` at

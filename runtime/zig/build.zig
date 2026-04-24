@@ -1140,6 +1140,7 @@ pub fn build(b: *std.Build) void {
     });
     wgsl_test_exec.linkLibC();
     const run_wgsl_tests = b.addRunArtifact(wgsl_test_exec);
+    wgsl_test_step.dependOn(&line_limit_check.step);
     wgsl_test_step.dependOn(&run_wgsl_tests.step);
 
     const shader_bench_exe = b.addExecutable(.{
