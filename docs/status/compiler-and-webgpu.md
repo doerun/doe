@@ -9,6 +9,22 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle dtype coverage for `rms_norm`: two
+  focused tests in `runtime/zig/src/tsir/reference_interpreter.zig`
+  exercise the f16 and bf16 upcast/downcast paths for the
+  literal-epsilon recognizer committed in `39707259e`. Test values use
+  input=[2,2] and scale=[3,4] so `mean_sq=4.0` and `inv_rms=0.5` are
+  exactly representable and the f32 accumulator + dtype downcast
+  produces bit-exact output={3,4} — this validates the dtype plumbing,
+  not `@sqrt` rounding. `uniform_field` epsilon still falls through
+  until TSIR input plumbing lands for uniform scalars. Mirrors the
+  dtype-closure wedge landed for `fused_gemv`/`gather` earlier today.
+  `zig build test-wgsl` passes. No recognizer or schema change. Cites
+  `docs/tsir-lowering-plan.md` Step 1 and `docs/loop-protocol.md`
+  Loop 2 protocol (stop-until-green; same step, same wedge shape).
+  After this tick all three Phase A bootstrap families (fused_gemv,
+  gather, rms_norm) have positive oracle coverage on every declared
+  Phase A dtype {f32, f16, bf16}.
 - TSIR Loop 2 — Step 1 oracle increment for literal-epsilon `rms_norm`:
   new `tryRmsNorm` dispatch path in
   `runtime/zig/src/tsir/reference_interpreter.zig` consumes the

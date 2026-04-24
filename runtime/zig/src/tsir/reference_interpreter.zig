@@ -3679,3 +3679,159 @@ test "gather bf16 copies table rows in the declared element dtype" {
     try std.testing.expectEqual(@as(f32, 1.0), readF32FromBytes(result.outputs[0], .bf16, 2));
     try std.testing.expectEqual(@as(f32, 2.0), readF32FromBytes(result.outputs[0], .bf16, 3));
 }
+
+test "rms_norm f16 literal epsilon exercises upcast/downcast path" {
+    const allocator = std.testing.allocator;
+    const hidden_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &hidden_shape, .elem = .f16, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &hidden_shape, .elem = .f16, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &hidden_shape, .elem = .f16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .rms_norm,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+        .rms_norm = .{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{ .source = .literal_f32, .path = "", .literal_f32 = 0.0 },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        },
+    };
+    const func = schema.SemanticFunction{
+        .name = "rms_norm_f16",
+        .family_hint = .rms_norm,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // input = [2, 2] f16 → mean_sq = 4.0 exactly, inv_rms = 0.5 exactly.
+    // scale = [3, 4] f16 → output = [3, 4] f16, all exactly representable.
+    var input_bytes: [4]u8 = undefined;
+    writeF32AsElem(&input_bytes, 0, 2.0, .f16);
+    writeF32AsElem(&input_bytes, 1, 2.0, .f16);
+    var scale_bytes: [4]u8 = undefined;
+    writeF32AsElem(&scale_bytes, 0, 3.0, .f16);
+    writeF32AsElem(&scale_bytes, 1, 4.0, .f16);
+    const inputs = [_][]const u8{ &input_bytes, &scale_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 4), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.0), readF32FromBytes(result.outputs[0], .f16, 0));
+    try std.testing.expectEqual(@as(f32, 4.0), readF32FromBytes(result.outputs[0], .f16, 1));
+}
+
+test "rms_norm bf16 literal epsilon exercises upcast/downcast path" {
+    const allocator = std.testing.allocator;
+    const hidden_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &hidden_shape, .elem = .bf16, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &hidden_shape, .elem = .bf16, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &hidden_shape, .elem = .bf16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .rms_norm,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+        .rms_norm = .{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{ .source = .literal_f32, .path = "", .literal_f32 = 0.0 },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        },
+    };
+    const func = schema.SemanticFunction{
+        .name = "rms_norm_bf16",
+        .family_hint = .rms_norm,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Same small-integer shape: input = [2, 2] bf16 → mean_sq = 4.0
+    // exactly (the f32 accumulator doesn't lose precision on two bf16 2.0
+    // squared-and-summed), inv_rms = 0.5 exactly; scale = [3, 4] bf16 →
+    // output = [3, 4] bf16, all exactly representable.
+    var input_bytes: [4]u8 = undefined;
+    writeF32AsElem(&input_bytes, 0, 2.0, .bf16);
+    writeF32AsElem(&input_bytes, 1, 2.0, .bf16);
+    var scale_bytes: [4]u8 = undefined;
+    writeF32AsElem(&scale_bytes, 0, 3.0, .bf16);
+    writeF32AsElem(&scale_bytes, 1, 4.0, .bf16);
+    const inputs = [_][]const u8{ &input_bytes, &scale_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 4), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.0), readF32FromBytes(result.outputs[0], .bf16, 0));
+    try std.testing.expectEqual(@as(f32, 4.0), readF32FromBytes(result.outputs[0], .bf16, 1));
+}
