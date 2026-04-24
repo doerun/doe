@@ -379,6 +379,100 @@ test "planner emits reduction tree choices only for associative reductions" {
     try std.testing.expectEqual(@as(usize, 0), realization.rejections.len);
 }
 
+test "planner assigns distinct fabric colors and rejects once the budget is exhausted" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const budget = targets.wse3.descriptor.correctness.fabric_color_count;
+    try std.testing.expect(budget > 0);
+    const count: usize = @as(usize, budget) + 1;
+
+    const collectives = try allocator.alloc(tsir.schema.CollectiveSemanticNode, count);
+    for (collectives) |*c| {
+        c.* = .{
+            .kind = .fabric_reduce,
+            .axis = -1,
+            .exactness = .{
+                .class = .algorithm_exact,
+                .algorithm_exact_invariants = &.{
+                    .reduction_order,
+                    .tree_shape,
+                    .accum_dtype,
+                    .associativity_grouping,
+                },
+            },
+            .dtype = .f32,
+        };
+    }
+    const functions = [_]tsir.schema.SemanticFunction{semanticFunction(&.{}, &.{}, &.{}, collectives)};
+    const semantic = tsir.Semantic{ .functions = &functions, .rejections = &.{} };
+
+    const realization = try tsir.planner.planRealization(
+        allocator,
+        semantic,
+        targets.wse3.descriptor,
+        .{},
+    );
+
+    const out = realization.functions[0].collectives;
+    try std.testing.expectEqual(@as(usize, budget), out.len);
+    for (out, 0..) |node, i| {
+        try std.testing.expectEqual(@as(u32, @intCast(i)), node.semantic_index);
+        try std.testing.expectEqual(@as(?u32, @intCast(i)), node.fabric_color);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), realization.rejections.len);
+    try std.testing.expectEqual(
+        tsir.RejectionReason.tsir_collective_not_representable,
+        realization.rejections[0].reason,
+    );
+    const expected_path = try std.fmt.allocPrint(
+        allocator,
+        "functions[0].collectives[{d}]",
+        .{budget},
+    );
+    try std.testing.expectEqualStrings(expected_path, realization.rejections[0].node_path);
+    try std.testing.expectEqualStrings(
+        "target fabric color budget exhausted",
+        realization.rejections[0].detail,
+    );
+}
+
+test "planner accepts a bit_exact_solo capability for a tolerance_bounded semantic collective" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const collectives = [_]tsir.schema.CollectiveSemanticNode{
+        .{
+            .kind = .fabric_broadcast,
+            .axis = -1,
+            .exactness = .{
+                .class = .tolerance_bounded,
+                .tolerance_metric = "ulp",
+                .tolerance_epsilon = 4.0,
+            },
+            .dtype = .f32,
+        },
+    };
+    const functions = [_]tsir.schema.SemanticFunction{semanticFunction(&.{}, &.{}, &.{}, &collectives)};
+    const semantic = tsir.Semantic{ .functions = &functions, .rejections = &.{} };
+
+    const realization = try tsir.planner.planRealization(
+        allocator,
+        semantic,
+        targets.wse3.descriptor,
+        .{},
+    );
+
+    const out = realization.functions[0].collectives;
+    try std.testing.expectEqual(@as(usize, 1), out.len);
+    try std.testing.expectEqual(@as(u32, 0), out[0].semantic_index);
+    try std.testing.expectEqual(@as(?u32, 0), out[0].fabric_color);
+    try std.testing.expectEqual(@as(usize, 0), realization.rejections.len);
+}
+
 fn semanticFunction(
     bindings: []const tsir.schema.BufferBinding,
     axes: []const tsir.schema.IterationAxis,

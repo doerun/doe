@@ -106,6 +106,22 @@ hygiene work through today has made every one of them safer to attempt.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 6 collective-synthesis edge-case test coverage:
+  `runtime/zig/tests/wgsl/tsir_planner_test.zig` gains two tests that
+  exercise branches of `runtime/zig/src/tsir/collective_synthesis.zig`
+  not reached by the prior three planner tests — (1) fabric-color
+  budget exhaustion: submits `fabric_color_count + 1` native
+  `fabric_reduce` nodes against the wse3 descriptor and locks the
+  budget-many accepted entries (distinct `fabric_color` values), the
+  single `tsir_collective_not_representable` rejection on the overflow
+  index, and its exact detail string; (2) the
+  `bit_exact_solo → tolerance_bounded` satisfiability branch of
+  `collectiveExactnessSatisfies` via a `fabric_broadcast` semantic
+  node (the existing workgroup-barrier test only reaches
+  `bit_exact_solo → algorithm_exact`). 938/938 `test-wgsl` tests pass.
+  Strategy-leak gate PASS. Per `docs/loop-protocol.md` Loop 2 protocol:
+  within-step hardening of Step 6, no phase boundary crossed. Cites
+  `docs/tsir-lowering-plan.md` Step 6.
 - TSIR Step 8 — bootstrap parity oracle execution in the CLI:
   `bench/tools/doe_parity.py` now accepts dedicated bootstrap input
   JSON and computes real reference hashes for fused_gemv, rms_norm,
