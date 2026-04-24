@@ -9,6 +9,32 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — parity receipt lowering-identity increment:
+  `bench/tools/doe_parity.py` now accepts a schema-validated
+  `--manifest-lowering-entry` fixture and copies only the TSIR lowering
+  identity digests into the parity receipt:
+  `tsirSemanticDigest`, `tsirRealizationDigest`, `emitterDigest`, and
+  `targetDescriptorCorrectnessHash`. The receipt schema is versioned to
+  `schemaVersion=2` with an optional `loweringIdentity` object. This is still
+  receipt metadata only: the reference and backend lanes remain
+  `not_implemented`/`deferred`, and the CLI still exits nonzero unless real
+  comparisons pass in a future increment.
+- TSIR Loop 2 — rejection taxonomy cross-schema lockstep test: new
+  `test_rejection_taxonomy_is_consistent_across_schemas` in
+  `bench/tests/test_doe_parity.py` walks the four JSON schemas that carry
+  the TSIR rejection enum (`doe-parity-receipt.schema.json`,
+  `doe-tsir-semantic.schema.json`, `doe-tsir-realization.schema.json`,
+  `doe-tsir-manifest-lowering.schema.json`) and asserts each one's enum
+  set equals `doe_parity.REJECTION_REASONS`. Catches drift where someone
+  renames or adds a reason in one schema and forgets another — the
+  taxonomy is a single wire contract shared across all four artifacts
+  plus the Python CLI. The Zig canonical enum at
+  `runtime/zig/src/tsir/schema.zig::RejectionReason` is verified
+  separately by the existing scaffold test "rejection taxonomy is
+  exhaustive and enumerable". 16/16 parity CLI tests pass. Cites
+  `docs/tsir-lowering-plan.md` Step 1 (rejection taxonomy) and
+  `docs/loop-protocol.md` Loop 2 protocol. No runtime, schema, or
+  fixture change.
 - TSIR Loop 2 — bootstrap manifest fixture increment: added a source-hashed
   WebGPU-generic TSIR skeleton emitter so WebGPU and WSE-3 lowerings no longer
   share an emitter identity, added a Zig bootstrap manifest-input tool that
