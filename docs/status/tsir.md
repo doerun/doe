@@ -69,6 +69,16 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Tests: extend `test_doc_link_coverage` to scan root-level markdown
+  files (`AGENTS.md`, `README.md`, `CLAUDE.md`, `SKILLS.md`) in
+  addition to `docs/**/*.md`. Those root-level files carry
+  load-bearing in-repo links (AGENTS.md lists the per-language style
+  guides; CLAUDE.md lists mandatory-reading paths) that were outside
+  the test's coverage. The extension is additive — existing links
+  still pass, plus the five style-guide links from AGENTS.md now
+  verify. Test still completes in ~10ms. Strategy-leak gate PASS.
+  Cites `docs/loop-protocol.md` Loop 2 protocol (generalization of
+  the tick 20 regression guard).
 - Docs: add a Phase A status-at-a-glance section at the top of this
   shard. Readers coming fresh were landing on the dated entries
   immediately, which meant scanning 20+ tick entries to orient on

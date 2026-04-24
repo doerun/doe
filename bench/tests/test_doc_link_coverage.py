@@ -44,6 +44,13 @@ def _iter_doc_files() -> list[Path]:
         if ARCHIVE_PREFIX in path.parents or path == ARCHIVE_PREFIX:
             continue
         paths.append(path)
+    # Root-level markdown files carry load-bearing links too
+    # (AGENTS.md lists style guides, CLAUDE.md lists mandatory-reading
+    # docs, etc). Include any that exist; do not require all.
+    for name in ("AGENTS.md", "README.md", "CLAUDE.md", "SKILLS.md"):
+        candidate = REPO_ROOT / name
+        if candidate.is_file():
+            paths.append(candidate)
     return paths
 
 
