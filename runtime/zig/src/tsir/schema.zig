@@ -257,6 +257,53 @@ pub const ReductionRegion = struct {
 };
 
 // ============================================================
+// Semantic body roles
+// ============================================================
+
+pub const SemanticBodyOp = enum {
+    unknown,
+    fused_gemv,
+    rms_norm,
+    gather,
+};
+
+pub const SemanticBindingRole = enum {
+    matrix,
+    vector,
+    input,
+    scale,
+    indices,
+    table,
+    output,
+};
+
+pub const SemanticAxisRole = enum {
+    output,
+    reduction,
+    hidden,
+    token,
+};
+
+pub const SemanticBodyBinding = struct {
+    binding_index: u32,
+    role: SemanticBindingRole,
+};
+
+pub const SemanticBodyAxis = struct {
+    axis_index: u32,
+    role: SemanticAxisRole,
+};
+
+/// Declares the kernel body family in semantic, digestable form. Family hints
+/// are planner tie-breakers; this body contract is the semantic claim that
+/// parity and backend emitters consume.
+pub const SemanticBody = struct {
+    op: SemanticBodyOp = .unknown,
+    binding_roles: []const SemanticBodyBinding = &.{},
+    axis_roles: []const SemanticBodyAxis = &.{},
+};
+
+// ============================================================
 // Semantic (stable)
 // ============================================================
 
@@ -267,6 +314,7 @@ pub const SemanticFunction = struct {
     bindings: []const BufferBinding,
     reductions: []const ReductionRegion,
     collectives: []const CollectiveSemanticNode,
+    body: SemanticBody = .{},
     /// Hash of the owning WGSL IR module (pre-TSIR). Lets replay verify
     /// semantic identity without re-running the whole frontend.
     source_digest: [32]u8,

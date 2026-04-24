@@ -10,6 +10,7 @@ pub const digest = @import("digest.zig");
 pub const reference = @import("reference_interpreter.zig");
 pub const frontend = @import("frontend.zig");
 pub const planner = @import("planner.zig");
+pub const emit_csl = @import("emit_csl.zig");
 
 pub const CONTRACT_VERSION = schema.CONTRACT_VERSION;
 
@@ -25,6 +26,12 @@ pub const NanInfPolicy = schema.NanInfPolicy;
 pub const NumericalContract = schema.NumericalContract;
 pub const ReductionOp = schema.ReductionOp;
 pub const ReductionRealizationNode = schema.ReductionRealizationNode;
+pub const SemanticBodyOp = schema.SemanticBodyOp;
+pub const SemanticBindingRole = schema.SemanticBindingRole;
+pub const SemanticAxisRole = schema.SemanticAxisRole;
+pub const SemanticBodyBinding = schema.SemanticBodyBinding;
+pub const SemanticBodyAxis = schema.SemanticBodyAxis;
+pub const SemanticBody = schema.SemanticBody;
 pub const CollectiveKind = schema.CollectiveKind;
 pub const ReductionTreeShape = schema.ReductionTreeShape;
 pub const ResidencyClass = schema.ResidencyClass;

@@ -170,7 +170,7 @@ fn emitSemanticFunction(
     value: schema.SemanticFunction,
 ) DigestError!void {
     try buf.append(allocator, '{');
-    // Lex: axes, bindings, collectives, familyHint, name, reductions, sourceDigest.
+    // Lex: axes, bindings, body, collectives, familyHint, name, reductions, sourceDigest.
     try emitKey(buf, allocator, "axes");
     try buf.append(allocator, '[');
     for (value.axes, 0..) |a, i| {
@@ -186,6 +186,9 @@ fn emitSemanticFunction(
         try emitBufferBinding(buf, allocator, b);
     }
     try buf.append(allocator, ']');
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "body");
+    try emitSemanticBody(buf, allocator, value.body);
     try buf.append(allocator, ',');
     try emitKey(buf, allocator, "collectives");
     try buf.append(allocator, '[');
@@ -211,6 +214,64 @@ fn emitSemanticFunction(
     try buf.append(allocator, ',');
     try emitKey(buf, allocator, "sourceDigest");
     try emitHexDigest(buf, allocator, value.source_digest);
+    try buf.append(allocator, '}');
+}
+
+fn emitSemanticBody(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: schema.SemanticBody,
+) DigestError!void {
+    try buf.append(allocator, '{');
+    // Lex: axisRoles, bindingRoles, op.
+    try emitKey(buf, allocator, "axisRoles");
+    try buf.append(allocator, '[');
+    for (value.axis_roles, 0..) |role, i| {
+        if (i > 0) try buf.append(allocator, ',');
+        try emitSemanticBodyAxis(buf, allocator, role);
+    }
+    try buf.append(allocator, ']');
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "bindingRoles");
+    try buf.append(allocator, '[');
+    for (value.binding_roles, 0..) |role, i| {
+        if (i > 0) try buf.append(allocator, ',');
+        try emitSemanticBodyBinding(buf, allocator, role);
+    }
+    try buf.append(allocator, ']');
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "op");
+    try emitString(buf, allocator, @tagName(value.op));
+    try buf.append(allocator, '}');
+}
+
+fn emitSemanticBodyBinding(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: schema.SemanticBodyBinding,
+) DigestError!void {
+    try buf.append(allocator, '{');
+    // Lex: bindingIndex, role.
+    try emitKey(buf, allocator, "bindingIndex");
+    try emitU32(buf, allocator, value.binding_index);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "role");
+    try emitString(buf, allocator, @tagName(value.role));
+    try buf.append(allocator, '}');
+}
+
+fn emitSemanticBodyAxis(
+    buf: *std.ArrayList(u8),
+    allocator: std.mem.Allocator,
+    value: schema.SemanticBodyAxis,
+) DigestError!void {
+    try buf.append(allocator, '{');
+    // Lex: axisIndex, role.
+    try emitKey(buf, allocator, "axisIndex");
+    try emitU32(buf, allocator, value.axis_index);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "role");
+    try emitString(buf, allocator, @tagName(value.role));
     try buf.append(allocator, '}');
 }
 
@@ -765,7 +826,7 @@ test "semantic with one function canonicalizes with lex-sorted keys" {
     defer allocator.free(bytes);
 
     // Verify key ordering: contractVersion < frontendVersion < functions < rejections.
-    // Inside the function: axes < bindings < collectives < familyHint < name < reductions < sourceDigest.
+    // Inside the function: axes < bindings < body < collectives < familyHint < name < reductions < sourceDigest.
     // Inside an IterationAxis: lowerBound < name < step < upperBound.
     // Inside a BufferBinding: binding < elem < group < logicalShape < name < readWrite.
     const expected =
@@ -779,6 +840,7 @@ test "semantic with one function canonicalizes with lex-sorted keys" {
         "{\"binding\":0,\"elem\":\"f32\",\"group\":0,\"logicalShape\":[4],\"name\":\"in\",\"readWrite\":false}," ++
         "{\"binding\":1,\"elem\":\"f32\",\"group\":0,\"logicalShape\":[4],\"name\":\"out\",\"readWrite\":true}" ++
         "]," ++
+        "\"body\":{\"axisRoles\":[],\"bindingRoles\":[],\"op\":\"unknown\"}," ++
         "\"collectives\":[]," ++
         "\"familyHint\":\"elementwise\"," ++
         "\"name\":\"identity\"," ++

@@ -70,13 +70,16 @@ pub fn lowerIrToTsir(
         );
         const collectives = try collectCollectives(allocator, module, &ir_func, @intCast(i), &rejections);
         try recoverRejections(allocator, &ir_func, @intCast(i), &rejections);
+        const hint = family_hint.infer(&ir_func, axes, reductions);
+        const body = try inferSemanticBody(allocator, hint, axes, per_fn.bindings, reductions);
         functions[i] = .{
             .name = name_copy,
-            .family_hint = family_hint.infer(&ir_func, axes, reductions),
+            .family_hint = hint,
             .axes = axes,
             .bindings = per_fn.bindings,
             .reductions = reductions,
             .collectives = collectives,
+            .body = body,
             .source_digest = source_digest,
         };
     }
@@ -89,6 +92,67 @@ pub fn lowerIrToTsir(
         .functions = functions,
         .rejections = rejections_slice,
     };
+}
+
+fn inferSemanticBody(
+    allocator: std.mem.Allocator,
+    hint: tsir.schema.KernelFamilyHint,
+    axes: []const tsir.schema.IterationAxis,
+    bindings: []const tsir.schema.BufferBinding,
+    reductions: []const tsir.schema.ReductionRegion,
+) FrontendError!tsir.schema.SemanticBody {
+    if (hint == .fused_gemv and axes.len >= 2 and bindings.len >= 3 and reductions.len >= 1) {
+        const binding_roles = try allocator.alloc(tsir.schema.SemanticBodyBinding, 3);
+        binding_roles[0] = .{ .binding_index = 0, .role = .matrix };
+        binding_roles[1] = .{ .binding_index = 1, .role = .vector };
+        binding_roles[2] = .{ .binding_index = 2, .role = .output };
+        const axis_roles = try allocator.alloc(tsir.schema.SemanticBodyAxis, 2);
+        axis_roles[0] = .{ .axis_index = 0, .role = .output };
+        axis_roles[1] = .{ .axis_index = reductions[0].axis, .role = .reduction };
+        return .{ .op = .fused_gemv, .binding_roles = binding_roles, .axis_roles = axis_roles };
+    }
+
+    if (hint == .gather and axes.len >= 2 and bindings.len >= 3) {
+        const binding_roles = try allocator.alloc(tsir.schema.SemanticBodyBinding, 3);
+        binding_roles[0] = .{ .binding_index = 0, .role = .indices };
+        binding_roles[1] = .{ .binding_index = 1, .role = .table };
+        binding_roles[2] = .{ .binding_index = 2, .role = .output };
+        const axis_roles = try allocator.alloc(tsir.schema.SemanticBodyAxis, 2);
+        axis_roles[0] = .{ .axis_index = 0, .role = .token };
+        axis_roles[1] = .{ .axis_index = 1, .role = .hidden };
+        return .{ .op = .gather, .binding_roles = binding_roles, .axis_roles = axis_roles };
+    }
+
+    if (looksLikeRmsNorm(axes, bindings, reductions)) {
+        const binding_roles = try allocator.alloc(tsir.schema.SemanticBodyBinding, 3);
+        binding_roles[0] = .{ .binding_index = 0, .role = .input };
+        binding_roles[1] = .{ .binding_index = 1, .role = .scale };
+        binding_roles[2] = .{ .binding_index = 2, .role = .output };
+        const axis_roles = try allocator.alloc(tsir.schema.SemanticBodyAxis, 2);
+        axis_roles[0] = .{ .axis_index = 0, .role = .hidden };
+        axis_roles[1] = .{ .axis_index = reductions[0].axis, .role = .reduction };
+        return .{ .op = .rms_norm, .binding_roles = binding_roles, .axis_roles = axis_roles };
+    }
+
+    return .{};
+}
+
+fn looksLikeRmsNorm(
+    axes: []const tsir.schema.IterationAxis,
+    bindings: []const tsir.schema.BufferBinding,
+    reductions: []const tsir.schema.ReductionRegion,
+) bool {
+    if (axes.len < 2 or bindings.len < 3 or reductions.len != 1) return false;
+    if (reductions[0].op != .sum) return false;
+    if (reductions[0].axis >= axes.len) return false;
+    if (!std.mem.eql(u8, axes[0].upper_bound, axes[reductions[0].axis].upper_bound)) return false;
+    return bindingNameEquals(bindings[0], "input") and
+        (bindingNameEquals(bindings[1], "weight") or bindingNameEquals(bindings[1], "scale")) and
+        bindingNameEquals(bindings[2], "output");
+}
+
+fn bindingNameEquals(binding: tsir.schema.BufferBinding, expected: []const u8) bool {
+    return std.ascii.eqlIgnoreCase(binding.name, expected);
 }
 
 const PerFunctionBindings = struct {

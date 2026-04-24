@@ -25,6 +25,49 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["class"],
+      "allOf": [
+        {
+          "if": {
+            "properties": { "class": { "const": "bit_exact_solo" } },
+            "required": ["class"]
+          },
+          "then": {
+            "properties": {
+              "algorithmExactInvariants": { "maxItems": 0 },
+              "toleranceEpsilon": { "const": 0 },
+              "toleranceMetric": { "const": "" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "class": { "const": "algorithm_exact" } },
+            "required": ["class"]
+          },
+          "then": {
+            "required": ["algorithmExactInvariants"],
+            "properties": {
+              "algorithmExactInvariants": { "minItems": 1 },
+              "toleranceEpsilon": { "const": 0 },
+              "toleranceMetric": { "const": "" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "class": { "const": "tolerance_bounded" } },
+            "required": ["class"]
+          },
+          "then": {
+            "required": ["toleranceEpsilon", "toleranceMetric"],
+            "properties": {
+              "algorithmExactInvariants": { "maxItems": 0 },
+              "toleranceEpsilon": { "exclusiveMinimum": 0 },
+              "toleranceMetric": { "minLength": 1 }
+            }
+          }
+        }
+      ],
       "properties": {
         "class": {
           "type": "string",
@@ -32,6 +75,7 @@
         },
         "algorithmExactInvariants": {
           "type": "array",
+          "uniqueItems": true,
           "items": {
             "type": "string",
             "enum": [
@@ -50,6 +94,7 @@
     "kernelRef": { "type": "string", "minLength": 1 },
     "rejectionReasons": {
       "type": "array",
+      "uniqueItems": true,
       "items": {
         "type": "string",
         "enum": [

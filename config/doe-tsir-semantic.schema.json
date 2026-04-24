@@ -91,6 +91,52 @@
         "fabric_allreduce"
       ]
     },
+    "bodyOp": {
+      "type": "string",
+      "enum": ["unknown", "fused_gemv", "rms_norm", "gather"]
+    },
+    "bindingRole": {
+      "type": "string",
+      "enum": ["matrix", "vector", "input", "scale", "indices", "table", "output"]
+    },
+    "axisRole": {
+      "type": "string",
+      "enum": ["output", "reduction", "hidden", "token"]
+    },
+    "bodyBindingRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingIndex", "role"],
+      "properties": {
+        "bindingIndex": { "type": "integer", "minimum": 0 },
+        "role": { "$ref": "#/$defs/bindingRole" }
+      }
+    },
+    "bodyAxisRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axisIndex", "role"],
+      "properties": {
+        "axisIndex": { "type": "integer", "minimum": 0 },
+        "role": { "$ref": "#/$defs/axisRole" }
+      }
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "bindingRoles", "axisRoles"],
+      "properties": {
+        "op": { "$ref": "#/$defs/bodyOp" },
+        "bindingRoles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bodyBindingRole" }
+        },
+        "axisRoles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bodyAxisRole" }
+        }
+      }
+    },
     "rejection": {
       "type": "object",
       "additionalProperties": false,
@@ -176,12 +222,13 @@
     "function": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "familyHint", "axes", "bindings", "reductions", "collectives", "sourceDigest"],
+      "required": ["name", "familyHint", "axes", "bindings", "body", "reductions", "collectives", "sourceDigest"],
       "properties": {
         "name": { "type": "string" },
         "familyHint": { "$ref": "#/$defs/familyHint" },
         "axes": { "type": "array", "items": { "$ref": "#/$defs/axis" } },
         "bindings": { "type": "array", "items": { "$ref": "#/$defs/buffer" } },
+        "body": { "$ref": "#/$defs/body" },
         "reductions": { "type": "array", "items": { "$ref": "#/$defs/reduction" } },
         "collectives": { "type": "array", "items": { "$ref": "#/$defs/collective" } },
         "sourceDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
