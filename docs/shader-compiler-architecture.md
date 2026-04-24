@@ -279,10 +279,18 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 
 ## Related docs
 
+- [`docs/architecture.md`](./architecture.md) — project-level
+  architecture (where this doc sits in the broader compiler/runtime
+  story)
+- [`docs/csl-architecture.md`](./csl-architecture.md) — sibling
+  compiler doc covering the Cerebras CSL lane
 - [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md) for the
   WGSL -> TSIR -> backend lowering architecture and parity-oracle contract
   (Phase A compiler surface landed; live status in
   [`docs/status/tsir.md`](./status/tsir.md))
+- [`docs/loop-protocol.md`](./loop-protocol.md) — Loop 2 / Loop 3
+  iteration discipline that drives incremental TSIR + parity
+  landing
 
 ## Remaining work (current reality)
 

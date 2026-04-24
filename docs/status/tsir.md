@@ -107,6 +107,15 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: extend `docs/shader-compiler-architecture.md` §Related
+  docs. The section had a single entry (TSIR plan doc). Added
+  pointers to the overall architecture doc, the sibling compiler
+  doc (csl-architecture), and the loop-protocol iteration
+  discipline. Same discoverability pattern as ticks 54/55:
+  architecture-level docs should enumerate their companions so a
+  reader landing on one doc can find the others. Strategy-leak
+  gate PASS, doc-link coverage PASS. Cites `docs/loop-protocol.md`
+  Loop 2 protocol.
 - Docs: extend `docs/csl-architecture.md` §Source of truth
   "Related user-facing entrypoints" list with pointers to the
   two live-status shards that cover this doc's subject matter:
