@@ -70,6 +70,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: update `docs/tsir-lowering-plan.md` to reflect the
+  post-migration TSIR shard. Plan doc's "Current scaffold already
+  in tree" section pointed readers at both `docs/status/tsir.md`
+  and `docs/status/compiler-and-webgpu.md` for live TSIR status.
+  After ticks 8/24/26 made tsir.md the TSIR shard and moved all
+  TSIR content out of compiler-and-webgpu.md, the second
+  reference was stale. Updated to point at tsir.md only for live
+  status, with a pointer to `archive/2026-04.md` for the
+  2026-04-23 TSIR Step 4 incremental history. Same class of
+  post-migration drift as tick 27's loop-protocol.md fix — both
+  docs predated the shard split and both had content references
+  that outlived the migration. Both gates PASS. Cites
+  `docs/tsir-lowering-plan.md` §Current scaffold (the file this
+  updates) and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: update `docs/loop-protocol.md` to reflect the post-migration
   shard scopes. The protocol doc (restored in tick 19 from tick-0
   content that predates the tsir.md split) still said "Loop 2 doc

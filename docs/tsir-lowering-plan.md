@@ -158,10 +158,11 @@ shared compiler layer:
 ## Current scaffold already in tree
 
 Phase A compiler surface has landed for the bootstrap catalog
-(`fused_gemv`, `rms_norm`, `gather`). For live status refer to
-[`docs/status/tsir.md`](status/tsir.md) and
-[`docs/status/compiler-and-webgpu.md`](status/compiler-and-webgpu.md); the
-plan doc gives the shape of what exists, not counts or dates.
+(`fused_gemv`, `rms_norm`, `gather`). For live TSIR status refer to
+[`docs/status/tsir.md`](status/tsir.md); the plan doc gives the shape
+of what exists, not counts or dates. Archive of 2026-04-23 TSIR Step 4
+incremental history lives in
+[`docs/status/archive/2026-04.md`](status/archive/2026-04.md).
 
 TSIR core under `runtime/zig/src/tsir/`:
 
