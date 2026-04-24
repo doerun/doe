@@ -9,6 +9,20 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle increment for literal-epsilon `rms_norm`:
+  new `tryRmsNorm` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig` consumes the
+  `SemanticBody.rms_norm` contract, validates input/scale/output roles,
+  hidden/reduction axes, strict f32 sum-of-squares reduction semantics,
+  and equal {f32, f16, bf16} dtypes, then computes
+  `output[d] = input[d] * rsqrt(mean(input^2) + epsilon) * scale[d]`.
+  The executable wedge is deliberately limited to `literal_f32` epsilon;
+  `uniform_field` epsilon still falls through to `NotImplemented` until
+  scalar/uniform value plumbing is represented in TSIR inputs. Focused
+  tests cover the positive f32 literal-epsilon path plus the uniform-eps
+  fail-closed path. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir` and
+  `zig build test-wgsl`.
 - TSIR Loop 2 — RMSNorm semantic-body contract: `SemanticBody` now carries
   an optional `rms_norm` payload, mirrored in
   `config/doe-tsir-semantic.schema.json` as `body.rmsNorm` and required

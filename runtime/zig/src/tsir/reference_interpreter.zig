@@ -73,6 +73,9 @@ pub fn run(
     if (tryFusedGemv(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
+    if (tryRmsNorm(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
     if (tryGather(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
@@ -281,6 +284,161 @@ fn tryFusedGemv(
                 acc += w_val * x_val;
             }
             writeF32AsElem(output_bytes, i, acc, ob.elem);
+        }
+    }
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect the RMSNorm bootstrap-family case and interpret it for literal
+/// epsilon contracts.
+///
+/// Shape this recognizer matches:
+///   * one function, zero collectives
+///   * exactly three bindings with declared roles: input, scale, output
+///   * exactly two axes with declared roles: hidden, reduction
+///   * exactly one sum reduction over the reduction axis with f32
+///     accumulation, strict ordering, and an intermediate scalar target
+///   * equal `[H]` shapes and equal dtype over {f32, f16, bf16}
+///   * `body.rmsNorm.epsilon.source == literal_f32`
+///
+/// Uniform-field epsilon falls through until TSIR has scalar/uniform input
+/// value plumbing. That keeps the bootstrap frontend contract honest without
+/// inventing a hidden default epsilon in the oracle.
+fn tryRmsNorm(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.bindings.len != 3) return null;
+    if (func.reductions.len != 1) return null;
+    if (func.axes.len != 2) return null;
+
+    if (func.body.op != .rms_norm) return null;
+    const rms_norm = func.body.rms_norm orelse return null;
+    if (rms_norm.formula != .sum_squares_mean_epsilon_rsqrt_scale) return null;
+    if (rms_norm.reduction_target != .intermediate_scalar) return null;
+    if (rms_norm.epsilon.source != .literal_f32) return null;
+    const epsilon_f64 = rms_norm.epsilon.literal_f32 orelse return null;
+    if (std.math.isNan(epsilon_f64) or std.math.isInf(epsilon_f64)) return null;
+    const epsilon: f32 = @floatCast(epsilon_f64);
+
+    if (func.body.binding_roles.len != 3) return null;
+    if (func.body.axis_roles.len != 2) return null;
+
+    var input_index: ?u32 = null;
+    var scale_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .input => {
+                if (input_index != null) return null;
+                input_index = role.binding_index;
+            },
+            .scale => {
+                if (scale_index != null) return null;
+                scale_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            else => return null,
+        }
+    }
+    const ii = input_index orelse return null;
+    const si = scale_index orelse return null;
+    const oi = output_index orelse return null;
+    if (ii >= func.bindings.len or si >= func.bindings.len or oi >= func.bindings.len) return null;
+    if (ii == si or si == oi or ii == oi) return null;
+
+    var hidden_axis: ?u32 = null;
+    var reduction_axis: ?u32 = null;
+    for (func.body.axis_roles) |role| {
+        switch (role.role) {
+            .hidden => {
+                if (hidden_axis != null) return null;
+                hidden_axis = role.axis_index;
+            },
+            .reduction => {
+                if (reduction_axis != null) return null;
+                reduction_axis = role.axis_index;
+            },
+            else => return null,
+        }
+    }
+    const hid_axis = hidden_axis orelse return null;
+    const red_axis = reduction_axis orelse return null;
+    if (hid_axis == red_axis) return null;
+    if (hid_axis >= func.axes.len or red_axis >= func.axes.len) return null;
+    if (rms_norm.hidden_extent_axis != hid_axis) return null;
+    if (hid_axis != 0 or red_axis != 1) return null;
+
+    const reduction = func.reductions[0];
+    if (reduction.op != .sum) return null;
+    if (reduction.axis != red_axis) return null;
+    if (reduction.contract.accumulation != .f32) return null;
+    if (reduction.contract.associativity != .strict_ordered) return null;
+    if (reduction.contract.nan_inf != .propagate) return null;
+
+    const ib = func.bindings[ii];
+    const sb = func.bindings[si];
+    const ob = func.bindings[oi];
+    if (ib.read_write or sb.read_write) return null;
+    if (!ob.read_write) return null;
+    if (ib.elem != sb.elem or sb.elem != ob.elem) return null;
+    if (ib.elem != .f32 and ib.elem != .f16 and ib.elem != .bf16) return null;
+    if (ib.logical_shape.len != 1) return null;
+    if (sb.logical_shape.len != 1) return null;
+    if (ob.logical_shape.len != 1) return null;
+
+    const hidden_u64 = ib.logical_shape[0];
+    if (sb.logical_shape[0] != hidden_u64) return null;
+    if (ob.logical_shape[0] != hidden_u64) return null;
+    const hidden: usize = std.math.cast(usize, hidden_u64) orelse return null;
+
+    if (inputs.len != 2) return null;
+    const input_first = ii < si;
+    const input_bytes = if (input_first) inputs[0] else inputs[1];
+    const scale_bytes = if (input_first) inputs[1] else inputs[0];
+    const expected_input_bytes = computeExpectedBytes(ib) orelse return null;
+    const expected_scale_bytes = computeExpectedBytes(sb) orelse return null;
+    if (input_bytes.len != expected_input_bytes) return null;
+    if (scale_bytes.len != expected_scale_bytes) return null;
+
+    const expected_output_bytes = computeExpectedBytes(ob) orelse return null;
+    const output_len = std.math.cast(usize, expected_output_bytes) orelse return null;
+    const output_bytes = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(output_bytes);
+
+    if (hidden != 0) {
+        var sum_sq: f32 = 0.0;
+        var r: usize = 0;
+        while (r < hidden) : (r += 1) {
+            const x = readF32FromBytes(input_bytes, ib.elem, r);
+            sum_sq += x * x;
+        }
+        const mean_sq = sum_sq / @as(f32, @floatFromInt(hidden));
+        const inv_rms = 1.0 / @sqrt(mean_sq + epsilon);
+
+        var d: usize = 0;
+        while (d < hidden) : (d += 1) {
+            const x = readF32FromBytes(input_bytes, ib.elem, d);
+            const scale = readF32FromBytes(scale_bytes, sb.elem, d);
+            writeF32AsElem(output_bytes, d, x * inv_rms * scale, ob.elem);
         }
     }
 
@@ -3070,6 +3228,156 @@ test "gather rejects out-of-range token index instead of clamping" {
     writeF32AsElem(&table_bytes, 0, 1.0, .f32);
     writeF32AsElem(&table_bytes, 1, 2.0, .f32);
     const inputs = [_][]const u8{ &indices_bytes, &table_bytes };
+
+    const outcome = run(allocator, semantic, realization, &inputs);
+    try std.testing.expectError(InterpretError.NotImplemented, outcome);
+}
+
+test "rms_norm f32 literal epsilon computes normalized scaled output" {
+    const allocator = std.testing.allocator;
+    const hidden_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &hidden_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .rms_norm,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+        .rms_norm = .{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{ .source = .literal_f32, .path = "", .literal_f32 = 0.0 },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        },
+    };
+    const func = schema.SemanticFunction{
+        .name = "rms_norm",
+        .family_hint = .rms_norm,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // input = [2, 2], mean(square(input)) = 4, inv_rms = 0.5.
+    // weight = [3, 4], so output = [3, 4].
+    var input_bytes: [8]u8 = undefined;
+    writeF32AsElem(&input_bytes, 0, 2.0, .f32);
+    writeF32AsElem(&input_bytes, 1, 2.0, .f32);
+    var scale_bytes: [8]u8 = undefined;
+    writeF32AsElem(&scale_bytes, 0, 3.0, .f32);
+    writeF32AsElem(&scale_bytes, 1, 4.0, .f32);
+    const inputs = [_][]const u8{ &input_bytes, &scale_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 8), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.0), readF32FromBytes(result.outputs[0], .f32, 0));
+    try std.testing.expectEqual(@as(f32, 4.0), readF32FromBytes(result.outputs[0], .f32, 1));
+
+    var expected_hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(result.outputs[0], &expected_hash, .{});
+    try std.testing.expectEqualSlices(u8, &expected_hash, &result.reference_hash);
+}
+
+test "rms_norm uniform epsilon falls through until scalar input plumbing exists" {
+    const allocator = std.testing.allocator;
+    const hidden_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &hidden_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .rms_norm,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+        .rms_norm = .{
+            .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+            .epsilon = .{ .source = .uniform_field, .path = "uniform:u.eps", .literal_f32 = null },
+            .hidden_extent_axis = 0,
+            .reduction_target = .intermediate_scalar,
+        },
+    };
+    const func = schema.SemanticFunction{
+        .name = "rms_norm_uniform_eps",
+        .family_hint = .rms_norm,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+    var input_bytes: [8]u8 = undefined;
+    writeF32AsElem(&input_bytes, 0, 2.0, .f32);
+    writeF32AsElem(&input_bytes, 1, 2.0, .f32);
+    var scale_bytes: [8]u8 = undefined;
+    writeF32AsElem(&scale_bytes, 0, 3.0, .f32);
+    writeF32AsElem(&scale_bytes, 1, 4.0, .f32);
+    const inputs = [_][]const u8{ &input_bytes, &scale_bytes };
 
     const outcome = run(allocator, semantic, realization, &inputs);
     try std.testing.expectError(InterpretError.NotImplemented, outcome);
