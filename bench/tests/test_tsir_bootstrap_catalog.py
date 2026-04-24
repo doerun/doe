@@ -78,6 +78,32 @@ class TestTsirBootstrapCatalog(unittest.TestCase):
                     "documenting schema-fit",
                 )
 
+    def test_every_wgsl_has_realization_per_target(self) -> None:
+        """Every bootstrap kernel must have a realization for each Phase A
+        target descriptor (`webgpu-generic` and `wse3`).
+
+        test_every_wgsl_has_semantic_sketch verifies the semantic + notes
+        pairing. test_every_realization_json_validates verifies whatever
+        realization files exist. Neither enforces that all
+        (kernel, target) pairs are present, so a new bootstrap WGSL
+        could land with only one target's realization and the existing
+        tests would pass. Downstream consumers — the manifest-lowering
+        fixture set in `bench/fixtures/tsir-manifest-entries/` and the
+        nightly parity canary — assume the set is complete.
+        """
+        wgsl_files = sorted(BOOTSTRAP_DIR.glob("*.wgsl"))
+        required_targets = ("webgpu-generic", "wse3")
+        for path in wgsl_files:
+            stem = path.stem
+            for target in required_targets:
+                with self.subTest(family=stem, target=target):
+                    expected = BOOTSTRAP_DIR / f"{stem}.tsir-realization.{target}.json"
+                    self.assertTrue(
+                        expected.is_file(),
+                        f"WGSL {path.name} must have a realization for "
+                        f"target {target!r}: expected {expected.name}",
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

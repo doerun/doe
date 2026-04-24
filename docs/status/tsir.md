@@ -70,6 +70,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Tests: add `test_every_wgsl_has_realization_per_target` to
+  `bench/tests/test_tsir_bootstrap_catalog.py`. Existing tests
+  verified each WGSL has a matching semantic JSON and notes, and
+  that whatever realization files exist validate against the
+  schema — but neither enforced that every `(kernel, target)` pair
+  exists. A new bootstrap WGSL could land with only one target's
+  realization and both tests would pass. Downstream consumers
+  (`bench/fixtures/tsir-manifest-entries/`, nightly canary) assume
+  the set is complete. Test asserts both `webgpu-generic` and
+  `wse3` realization files exist for every bootstrap WGSL. 5/5
+  catalog tests pass; strategy-leak gate PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 1.5 (bootstrap catalog) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: update `docs/tsir-lowering-plan.md` to reflect the
   post-migration TSIR shard. Plan doc's "Current scaffold already
   in tree" section pointed readers at both `docs/status/tsir.md`
