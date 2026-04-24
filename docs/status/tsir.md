@@ -19,6 +19,22 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Docs: restore `docs/loop-protocol.md`. The file was in the working
+  tree at the start of today's Loop 2 push (I read it in tick 0 and
+  based every subsequent tick's discipline on it), but had never been
+  committed and somewhere in today's churn was removed from disk.
+  Every tick commit message since tick 0 cited it, `docs/status.md`
+  lists it, `docs/tsir-lowering-plan.md` references it, the user's
+  cron prompt names it — all pointing at a missing file. Restored
+  from the content captured in tick 0 Read output. File is now
+  tracked so this cannot recur through untracked-file cleanup.
+  Strategy-leak gate PASS after add (the restored doc mentions
+  "Ouroboros" as a proper-noun repo name in the cross-repo
+  handoffs section, not as an `ouroboros/` path, so the gate's
+  pattern check stays clean). No runtime, test, or contract
+  change. Cites `docs/tsir-lowering-plan.md` §Step 12 (rollout
+  ordering — the protocol sits on top of) and `docs/loop-protocol.md`
+  itself (the file whose restoration this entry describes).
 - Build: add `tsir-bootstrap-manifest-inputs` build step.
   `runtime/zig/src/tsir_bootstrap_manifest_inputs.zig` is invoked by
   the Python fixture generator (`bench/tools/generate_tsir_manifest_fixtures.py`)
