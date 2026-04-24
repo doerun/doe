@@ -19,6 +19,22 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — cross-backend emitter digest distinctness lock: new
+  test "tsir emitter code digests are pairwise distinct across all five
+  backends" in `runtime/zig/tests/wgsl/tsir_emit_backend_skeleton_test.zig`.
+  Computes `emitterCodeDigest()` for each of the five backend emitters
+  (`emit_csl`, `emit_webgpu`, `emit_msl`, `emit_dxil`, `emit_spir_v`)
+  and asserts all pairs are distinct. The manifest-lowering contract
+  binds `(kernelRef, backend)` pairs to an emitter digest so replay
+  identifies which backend produced an artifact; silent digest
+  collision (e.g. a refactor leaving two emitter sources identical)
+  would make that binding ambiguous and attribute artifacts to the
+  wrong backend. Per-emitter digest formation (emitter source +
+  shared `emit_text_skeleton.zig`) is still covered by the existing
+  "expose source-backed code digests" test. `zig build test-wgsl`:
+  933/933 pass. Cites `docs/tsir-lowering-plan.md` Step 7 (mechanical
+  emitter identity) and Step 10 (manifest binding); `docs/loop-protocol.md`
+  Loop 2 protocol.
 - TSIR Loop 2 — nightly parity canary increment:
   `bench/gates/nightly_tsir_parity_canary.py` now runs all six bootstrap
   manifest lowering fixtures through the parity CLI, validates the emitted v2

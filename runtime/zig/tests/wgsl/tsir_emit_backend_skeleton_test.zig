@@ -22,6 +22,40 @@ test "tsir backend skeleton emitters expose source-backed code digests" {
     );
 }
 
+test "tsir emitter code digests are pairwise distinct across all five backends" {
+    // Manifest-lowering entries bind (kernelRef, backend) pairs to an
+    // emitter digest so replay can identify the exact emitter that
+    // produced a backend artifact. If two emitters ever produce the
+    // same code digest — a copy-paste left sources identical, or a
+    // refactor collapsed two emitters into one without deleting one
+    // side — the binding becomes ambiguous and replay would attribute
+    // artifacts to the wrong backend silently. Lock the invariant
+    // here so that collision becomes a test failure, not a production
+    // ambiguity.
+    const digests = [_][32]u8{
+        tsir.emit_csl.emitterCodeDigest(),
+        tsir.emit_webgpu.emitterCodeDigest(),
+        tsir.emit_msl.emitterCodeDigest(),
+        tsir.emit_dxil.emitterCodeDigest(),
+        tsir.emit_spir_v.emitterCodeDigest(),
+    };
+    const names = [_][]const u8{ "csl", "webgpu", "msl", "dxil", "spir_v" };
+    var i: usize = 0;
+    while (i < digests.len) : (i += 1) {
+        try std.testing.expect(!allZero(&digests[i]));
+        var j: usize = i + 1;
+        while (j < digests.len) : (j += 1) {
+            if (std.mem.eql(u8, &digests[i], &digests[j])) {
+                std.debug.print(
+                    "emitter code digest collision: {s} == {s}\n",
+                    .{ names[i], names[j] },
+                );
+                return error.EmitterCodeDigestCollision;
+            }
+        }
+    }
+}
+
 test "tsir backend skeleton emitters serialize contract headers" {
     const allocator = std.testing.allocator;
     const function = fixtureFunction(targets.webgpu_generic.descriptor);
