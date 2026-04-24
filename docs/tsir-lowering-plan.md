@@ -157,44 +157,105 @@ shared compiler layer:
 
 ## Current scaffold already in tree
 
-The repo already has a TSIR scaffold under `runtime/zig/src/tsir/`:
+Phase A compiler surface has landed for the bootstrap catalog
+(`fused_gemv`, `rms_norm`, `gather`). For live status refer to
+[`docs/status/tsir.md`](status/tsir.md) and
+[`docs/status/compiler-and-webgpu.md`](status/compiler-and-webgpu.md); the
+plan doc gives the shape of what exists, not counts or dates.
 
-- `schema.zig`
-  - two-level TSIR shape (`Semantic`, `Realization`)
-  - exactness classes aligned to RDRR
-  - rejection taxonomy
-- `digest.zig`
-  - canonicalization/digest scaffolding
-- `reference_interpreter.zig`
-  - parity-oracle scaffold
-- `frontend.zig`
-  - WGSL IR to TSIR semantic lowering for bindings, axes, reductions,
-    collectives, typed rejections, and family hints
-- `planner.zig`
-  - correctness-first TSIR realization planning for residency, reduction tree
-    choices, descriptor-checked collectives, target hashes, and typed
-    rejections
-- `mod.zig`
-  - public module surface
+TSIR core under `runtime/zig/src/tsir/`:
 
-That scaffold is useful because it fixes vocabulary early:
+- `schema.zig` — two-level TSIR shape (`Semantic`, `Realization`), exactness
+  classes aligned to RDRR, rejection taxonomy, and `SemanticBody` contract
+  (body ops for `fused_gemv` / `rms_norm` / `gather`, RMSNorm epsilon source
+  + binding/offset plumbing).
+- `digest.zig` — canonical serialization and SHA-256 digests for semantic,
+  realization, and emitter-code identity.
+- `family_hint.zig` — structural classifier that infers coarse family hints
+  from IR shape; hints are tiebreakers only, never change feasibility or
+  rejection.
+- `frontend.zig` — WGSL IR to TSIR semantic lowering for bindings, axes,
+  reductions, collectives, typed rejections, family hints, and
+  kernel-specific semantic body recovery (fused_gemv, rms_norm, gather).
+- `planner.zig` — correctness-first TSIR realization planning for
+  residency, tile factors, PE grid, reduction tree choices,
+  descriptor-checked collectives, target hashes, and typed rejections.
+- `reference_interpreter.zig` — scalar reference oracle covering the three
+  bootstrap families across `{f32, f16, bf16}` with `strict_ordered` and
+  `associative_allowed` reductions plus RMSNorm `literal_f32` and
+  `uniform_field` epsilon. Unsupported shapes fail closed with
+  `NotImplemented`.
+- `emit_csl.zig` — mechanical TSIR-to-CSL skeleton emitter (contract
+  serialization; does not yet produce executable kernel bodies).
+- `emit_webgpu.zig` — mechanical TSIR-to-WebGPU skeleton emitter
+  (contract serialization only).
+- `emit_msl.zig` / `emit_dxil.zig` / `emit_spir_v.zig` — portable backend
+  skeleton emitters consuming a shared text skeleton helper.
+- `emit_text_skeleton.zig` — shared contract-text serialization helpers
+  used by the five backend skeleton emitters.
+- `mod.zig` — public module surface.
 
-- `bit_exact_solo`
-- `algorithm_exact`
-- `tolerance_bounded`
+Each of the five backend emitters exposes an `emitterCodeDigest()` that
+SHA-256s its own source text plus the shared skeleton helper source.
+Pairwise distinctness across all five is locked by test so
+manifest-lowering entries cannot silently ambiguate which backend
+produced an artifact.
 
-and:
+Target descriptors under `runtime/zig/src/targets/`:
 
-- `tsir_subgroup_unlowerable`
-- `tsir_pe_budget_exhausted`
-- `tsir_collective_not_representable`
-- `tsir_dependence_unanalyzable`
-- `tsir_source_not_affine`
-- `tsir_target_unfit`
+- `webgpu_generic.zig` and `wse3.zig` — conservative portable WebGPU
+  profile and Cerebras WSE-3 profile. Descriptor fields split into
+  `correctness` (hashed, participates in realization identity) and
+  `planner` (search-quality hints only). Includes
+  `runtime_sized_binding_policy` so runtime-sized storage bindings
+  resolve to `host_copied` (WebGPU) or `fabric_streamed_with_loader`
+  (WSE-3) rather than an implicit choice.
+- `mod.zig` — descriptor hash helpers that participate in realization
+  identity.
 
-The missing work is full kernel-body semantic representation, mechanical
-backend emission, manifest binding, convert-time lowering, and parity receipts
-backed by real backend execution.
+Schema + contract surfaces under `config/`:
+
+- `doe-tsir-semantic.schema.json` — canonical JSON shape for TSIR
+  semantic artifacts including RMSNorm body contract.
+- `doe-tsir-realization.schema.json` — canonical JSON shape for TSIR
+  realization artifacts including residency decisions, tile factors,
+  and reduction tree nodes.
+- `doe-tsir-manifest-lowering.schema.json` — manifest binding entry
+  shape: `(kernelRef, backend, targetDescriptorCorrectnessHash,
+  tsirSemanticDigest, tsirRealizationDigest, emitterDigest,
+  exactness, rejectionReasons)`.
+- `doe-parity-receipt.schema.json` — parity CLI receipt shape.
+
+Bench tooling + fixtures:
+
+- `bench/tools/doe_parity.py` — manual parity CLI gate. Reference
+  interpreter and backend lanes remain stub-only (`not_implemented`)
+  until a subprocess harness to the Zig oracle and executable backend
+  emission land.
+- `bench/tools/tsir_manifest_lowering.py` — schema-backed builder for
+  `integrityExtensions.lowerings[]` entries.
+- `bench/fixtures/tsir-manifest-entries/` — bootstrap manifest-lowering
+  fixtures pairing the three bootstrap families against both
+  `webgpu-generic` and `wse3` target descriptors.
+- `bench/gates/nightly_tsir_parity_canary.py` — advisory nightly canary
+  that drives the bootstrap fixture set through the parity CLI without
+  promoting stub backend lanes to a claim.
+- `runtime/zig/tests/tsir/bootstrap/` — pinned `.wgsl`, hand-sketched
+  `.tsir-semantic.json`, and per-target `.tsir-realization.*.json`
+  plus `.notes.md` for each bootstrap family.
+
+Rejection taxonomy is locked across five surfaces — the Zig canonical
+enum, the Python CLI's `REJECTION_REASONS`, and the three JSON schemas
+that carry rejection enums — by a cross-schema lockstep test; the Zig
+enum is additionally locked by a scaffold test for exhaustiveness.
+
+The missing work is executable kernel-body emission in the backend
+skeleton emitters, the parity CLI subprocess harness that shells into a
+Zig oracle binary, AOT convert-time lowering with a correctness-input
+cache key, Loop 3 per-family parity receipts under `reports/parity/`,
+manifest-binding of those receipts into Doppler's
+`integrityExtensions.lowerings[]`, and the attention phase (Phase B)
+with its sollya transcendental determinism.
 
 ## Design rules
 

@@ -19,6 +19,25 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Plan doc refresh: `docs/tsir-lowering-plan.md` "Current scaffold
+  already in tree" section was drafted before Phase A landed and
+  didn't mention `family_hint.zig`, the five backend skeleton
+  emitters (`emit_csl`, `emit_webgpu`, `emit_msl`, `emit_dxil`,
+  `emit_spir_v`) plus `emit_text_skeleton`, the target descriptors
+  under `runtime/zig/src/targets/`, the four JSON schemas under
+  `config/`, the bench tooling (parity CLI, manifest-lowering
+  builder, nightly canary), the bootstrap manifest fixtures, or the
+  bootstrap test fixture set. Future Loop 2 readers were getting a
+  stale starting picture. Rewrote the section to describe what
+  exists in shape (not counts) with artifact-path references per
+  CLAUDE.md documentation-drift discipline. Also refreshed the
+  "missing work" paragraph to name executable kernel bodies, parity
+  CLI subprocess harness, AOT convert-time cache, Loop 3 per-family
+  parity receipts, manifest binding into Doppler RDRR, and
+  Phase B attention + sollya. Strategy-leak gate verified PASS
+  post-edit. Cites `docs/tsir-lowering-plan.md` §Current scaffold
+  and `docs/loop-protocol.md` Loop 2 protocol (doc-only
+  in-step increment).
 - Private-strategy leak gate: fixed two cross-repo path references to
   the upstream planning repo in `docs/doppler-ingest.md:11` that were
   failing `bench/gates/doe_private_strategy_leak_gate.py` (a hard
