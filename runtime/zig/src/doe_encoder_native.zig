@@ -60,32 +60,31 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return;
     const src = cast(DoeBuffer, src_raw) orelse return;
     const dst = cast(DoeBuffer, dst_raw) orelse return;
-    if (enc.dev.backend == .vulkan) {
-        if (comptime has_vulkan) {
-            const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
-            if (src.vk_id != 0 and dst.vk_id != 0) {
-                if (rt.compute_buffers.get(src.vk_id)) |scb| {
-                    if (rt.compute_buffers.get(dst.vk_id)) |dcb| {
-                        if (scb.mapped) |sptr| {
-                            if (dcb.mapped) |dptr| {
-                                const n: usize = @intCast(size);
-                                const so: usize = @intCast(src_off);
-                                const do: usize = @intCast(dst_off);
-                                const s: [*]const u8 = @ptrCast(sptr);
-                                const d: [*]u8 = @ptrCast(dptr);
-                                @memcpy(d[do .. do + n], s[so .. so + n]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
+    // Record the copy as a deferred .copy_buf command on every backend
+    // (not just Metal). Executing the copy immediately at record-time
+    // is an ordering bug when the same encoder also has pending
+    // compute dispatches: the copy would run before the dispatch, so
+    // the destination reads pre-dispatch (uninitialized) bytes. The
+    // backend-specific submit handlers replay .copy_buf in the order
+    // it was recorded.
+    //
+    // On Vulkan, `src.mtl` and `dst.mtl` are null (Metal handles); the
+    // Vulkan submit replay reads back the DoeBuffer via the encoder's
+    // recorded pointer. Since the .copy_buf payload stores the raw
+    // DoeBuffer pointer, we pass the DoeBuffer itself (cast to the
+    // same `?*anyopaque` slot the Metal path uses).
+    const src_handle: ?*anyopaque = if (enc.dev.backend == .vulkan)
+        @ptrCast(src)
+    else
+        src.mtl;
+    const dst_handle: ?*anyopaque = if (enc.dev.backend == .vulkan)
+        @ptrCast(dst)
+    else
+        dst.mtl;
     enc.cmds.append(alloc, .{ .copy_buf = .{
-        .src = src.mtl,
+        .src = src_handle,
         .src_off = src_off,
-        .dst = dst.mtl,
+        .dst = dst_handle,
         .dst_off = dst_off,
         .size = size,
     } }) catch std.debug.panic("doe_encoder_native: OOM recording copy command", .{});
