@@ -312,6 +312,12 @@ pub const RmsNormEpsilon = struct {
     /// Canonical symbolic source for uniform-backed epsilon values, for
     /// example `uniform:u.eps`. Empty when `source == .literal_f32`.
     path: []const u8 = "",
+    /// Binding index carrying the uniform bytes when
+    /// `source == .uniform_field`; null for literal epsilon values.
+    binding_index: ?u32 = null,
+    /// Byte offset within the uniform binding where the f32 epsilon
+    /// value starts when `source == .uniform_field`; null for literals.
+    byte_offset: ?u32 = null,
     /// Literal epsilon value when `source == .literal_f32`; null for
     /// uniform-backed epsilon values.
     literal_f32: ?f64 = null,

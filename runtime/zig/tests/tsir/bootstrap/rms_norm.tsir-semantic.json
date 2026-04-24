@@ -33,6 +33,14 @@
           "logicalShape": [0],
           "elem": "f32",
           "readWrite": true
+        },
+        {
+          "name": "u",
+          "group": 0,
+          "binding": 3,
+          "logicalShape": [2],
+          "elem": "u32",
+          "readWrite": false
         }
       ],
       "body": {
@@ -50,6 +58,8 @@
           "epsilon": {
             "source": "uniform_field",
             "path": "uniform:u.eps",
+            "bindingIndex": 3,
+            "byteOffset": 4,
             "literalF32": null
           },
           "formula": "sum_squares_mean_epsilon_rsqrt_scale",

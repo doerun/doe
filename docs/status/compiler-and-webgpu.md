@@ -9,6 +9,24 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle / RMSNorm uniform-epsilon increment:
+  `body.rmsNorm.epsilon` now carries `bindingIndex` and `byteOffset` in
+  both Zig and JSON schema, canonical semantic digests include those fields,
+  and the WGSL frontend derives binding `3` / byte offset `4` for the
+  bootstrap `uniform:u.eps` struct field. The reference interpreter now
+  consumes read-only inputs by semantic binding order and executes RMSNorm
+  with explicit uniform epsilon bytes; missing uniform input, mismatched
+  path/binding, NaN/Inf, or malformed offsets still fall through to
+  `NotImplemented`, so there is no hidden epsilon default. The bootstrap
+  RMSNorm semantic fixture and notes now include the `u` binding. This same
+  increment also extends the fused GEMV oracle to honor
+  `associative_allowed` reductions only when the realization declares a
+  matching reduction tree shape, with focused coverage for binomial fold
+  behavior. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`,
+  `env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest bench.tests.test_config_schemas`,
+  and `git diff --check`.
 - TSIR Loop 2 — Step 1 oracle dtype coverage for `rms_norm`: two
   focused tests in `runtime/zig/src/tsir/reference_interpreter.zig`
   exercise the f16 and bf16 upcast/downcast paths for the

@@ -319,7 +319,13 @@ fn emitRmsNormEpsilon(
     value: schema.RmsNormEpsilon,
 ) DigestError!void {
     try buf.append(allocator, '{');
-    // Lex: literalF32, path, source.
+    // Lex: bindingIndex, byteOffset, literalF32, path, source.
+    try emitKey(buf, allocator, "bindingIndex");
+    try emitOptionalU32(buf, allocator, value.binding_index);
+    try buf.append(allocator, ',');
+    try emitKey(buf, allocator, "byteOffset");
+    try emitOptionalU32(buf, allocator, value.byte_offset);
+    try buf.append(allocator, ',');
     try emitKey(buf, allocator, "literalF32");
     try emitOptionalF64(buf, allocator, value.literal_f32);
     try buf.append(allocator, ',');
@@ -928,6 +934,8 @@ test "semantic body canonicalizes RMSNorm contract when present" {
             .epsilon = .{
                 .source = .uniform_field,
                 .path = "uniform:u.eps",
+                .binding_index = 3,
+                .byte_offset = 4,
                 .literal_f32 = null,
             },
             .hidden_extent_axis = 0,
@@ -951,7 +959,7 @@ test "semantic body canonicalizes RMSNorm contract when present" {
             "]," ++
             "\"op\":\"rms_norm\"," ++
             "\"rmsNorm\":{" ++
-            "\"epsilon\":{\"literalF32\":null,\"path\":\"uniform:u.eps\",\"source\":\"uniform_field\"}," ++
+            "\"epsilon\":{\"bindingIndex\":3,\"byteOffset\":4,\"literalF32\":null,\"path\":\"uniform:u.eps\",\"source\":\"uniform_field\"}," ++
             "\"formula\":\"sum_squares_mean_epsilon_rsqrt_scale\"," ++
             "\"hiddenExtentAxis\":0," ++
             "\"reductionTarget\":\"intermediate_scalar\"" ++

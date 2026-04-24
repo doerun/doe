@@ -70,7 +70,7 @@ pub fn run(
     if (trySimpleReduction(allocator, semantic, realization, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
-    if (tryFusedGemv(allocator, semantic, inputs)) |maybe_result| {
+    if (tryFusedGemv(allocator, semantic, realization, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
     if (tryRmsNorm(allocator, semantic, inputs)) |maybe_result| {
@@ -151,6 +151,7 @@ fn tryEmptyKernel(
 fn tryFusedGemv(
     allocator: std.mem.Allocator,
     semantic: schema.Semantic,
+    realization: schema.Realization,
     inputs: []const []const u8,
 ) InterpretError!?Result {
     if (semantic.functions.len != 1) return null;
@@ -216,9 +217,31 @@ fn tryFusedGemv(
     if (reduction.axis != red_axis) return null;
     if (reduction.target_binding != oi) return null;
     if (reduction.contract.accumulation != .f32) return null;
-    // Strict_ordered only this wedge; associative_allowed with a
-    // declared tree shape is future work and must fall through.
-    if (reduction.contract.associativity != .strict_ordered) return null;
+
+    // Associativity dispatch:
+    //   strict_ordered     → left-fold is the only legal order.
+    //   associative_allowed → tree shape is declared on the matching
+    //                        Realization.ReductionRealizationNode. On a
+    //                        single-PE reference, `.ring` is fold-order-
+    //                        identical to `.linear`; `.binomial` is a
+    //                        pairwise-tree fold that can differ bit-for-
+    //                        bit from left-fold. Matches the
+    //                        `trySimpleReduction` precedent. Falls
+    //                        through when the realization does not
+    //                        declare a matching reduction node.
+    var effective_tree_shape: schema.ReductionTreeShape = .linear;
+    switch (reduction.contract.associativity) {
+        .strict_ordered => {},
+        .associative_allowed => {
+            if (realization.functions.len != 1) return null;
+            const rfunc = realization.functions[0];
+            if (rfunc.semantic_index != 0) return null;
+            if (rfunc.reductions.len != 1) return null;
+            const rnode = rfunc.reductions[0];
+            if (rnode.semantic_index != 0) return null;
+            effective_tree_shape = rnode.tree_shape;
+        },
+    }
 
     const mb = func.bindings[mi];
     const vb = func.bindings[vi];
@@ -268,22 +291,65 @@ fn tryFusedGemv(
     const output_bytes = try allocator.alloc(u8, m * out_elem_bytes);
     errdefer allocator.free(output_bytes);
 
+    // Per-output scratch for binomial fold. Allocated once, reused
+    // across output positions so the hot loop is alloc-free. Matches
+    // the trySimpleReduction rank-2 pattern.
+    var scratch: ?[]f32 = null;
+    defer if (scratch) |s| allocator.free(s);
+    if (effective_tree_shape == .binomial and k > 0) {
+        scratch = try allocator.alloc(f32, k);
+    }
+
     // Zero-K edge case: output is the reduction identity for sum (0.0)
-    // written through the declared output dtype.
+    // written through the declared output dtype. Tree shape is
+    // irrelevant when the axis is empty.
     if (k == 0) {
         var i: usize = 0;
         while (i < m) : (i += 1) writeF32AsElem(output_bytes, i, 0.0, ob.elem);
     } else {
         var i: usize = 0;
         while (i < m) : (i += 1) {
-            var acc: f32 = 0.0;
-            var kk: usize = 0;
-            while (kk < k) : (kk += 1) {
-                const w_val = readF32FromBytes(matrix_bytes, mb.elem, i * k + kk);
-                const x_val = readF32FromBytes(vector_bytes, vb.elem, kk);
-                acc += w_val * x_val;
+            switch (effective_tree_shape) {
+                .linear, .ring => {
+                    var acc: f32 = 0.0;
+                    var kk: usize = 0;
+                    while (kk < k) : (kk += 1) {
+                        const w_val = readF32FromBytes(matrix_bytes, mb.elem, i * k + kk);
+                        const x_val = readF32FromBytes(vector_bytes, vb.elem, kk);
+                        acc += w_val * x_val;
+                    }
+                    writeF32AsElem(output_bytes, i, acc, ob.elem);
+                },
+                .binomial => {
+                    // Materialize k products, then pairwise-fold. Result
+                    // can differ from left-fold bit-for-bit on
+                    // non-associative floating-point, which is exactly
+                    // why `algorithm_exact` pins `tree_shape` as a
+                    // declared invariant.
+                    const vals = scratch.?;
+                    var kk: usize = 0;
+                    while (kk < k) : (kk += 1) {
+                        const w_val = readF32FromBytes(matrix_bytes, mb.elem, i * k + kk);
+                        const x_val = readF32FromBytes(vector_bytes, vb.elem, kk);
+                        vals[kk] = w_val * x_val;
+                    }
+                    var count: usize = k;
+                    while (count > 1) {
+                        var new_count: usize = 0;
+                        var idx: usize = 0;
+                        while (idx < count) : (idx += 2) {
+                            if (idx + 1 < count) {
+                                vals[new_count] = vals[idx] + vals[idx + 1];
+                            } else {
+                                vals[new_count] = vals[idx];
+                            }
+                            new_count += 1;
+                        }
+                        count = new_count;
+                    }
+                    writeF32AsElem(output_bytes, i, vals[0], ob.elem);
+                },
             }
-            writeF32AsElem(output_bytes, i, acc, ob.elem);
         }
     }
 
@@ -300,21 +366,18 @@ fn tryFusedGemv(
     };
 }
 
-/// Detect the RMSNorm bootstrap-family case and interpret it for literal
+/// Detect the RMSNorm bootstrap-family case and interpret it for explicit
 /// epsilon contracts.
 ///
 /// Shape this recognizer matches:
 ///   * one function, zero collectives
-///   * exactly three bindings with declared roles: input, scale, output
+///   * at least three bindings with declared roles: input, scale, output
 ///   * exactly two axes with declared roles: hidden, reduction
 ///   * exactly one sum reduction over the reduction axis with f32
 ///     accumulation, strict ordering, and an intermediate scalar target
 ///   * equal `[H]` shapes and equal dtype over {f32, f16, bf16}
-///   * `body.rmsNorm.epsilon.source == literal_f32`
-///
-/// Uniform-field epsilon falls through until TSIR has scalar/uniform input
-/// value plumbing. That keeps the bootstrap frontend contract honest without
-/// inventing a hidden default epsilon in the oracle.
+///   * `body.rmsNorm.epsilon.source` is either a literal f32 or a
+///     uniform-field path with explicit binding index and byte offset.
 fn tryRmsNorm(
     allocator: std.mem.Allocator,
     semantic: schema.Semantic,
@@ -323,7 +386,7 @@ fn tryRmsNorm(
     if (semantic.functions.len != 1) return null;
     const func = semantic.functions[0];
     if (func.collectives.len != 0) return null;
-    if (func.bindings.len != 3) return null;
+    if (func.bindings.len < 3) return null;
     if (func.reductions.len != 1) return null;
     if (func.axes.len != 2) return null;
 
@@ -331,10 +394,8 @@ fn tryRmsNorm(
     const rms_norm = func.body.rms_norm orelse return null;
     if (rms_norm.formula != .sum_squares_mean_epsilon_rsqrt_scale) return null;
     if (rms_norm.reduction_target != .intermediate_scalar) return null;
-    if (rms_norm.epsilon.source != .literal_f32) return null;
-    const epsilon_f64 = rms_norm.epsilon.literal_f32 orelse return null;
-    if (std.math.isNan(epsilon_f64) or std.math.isInf(epsilon_f64)) return null;
-    const epsilon: f32 = @floatCast(epsilon_f64);
+    if (inputs.len != countReadOnlyBindings(func)) return null;
+    const epsilon = resolveRmsNormEpsilon(func, inputs, rms_norm.epsilon) orelse return null;
 
     if (func.body.binding_roles.len != 3) return null;
     if (func.body.axis_roles.len != 2) return null;
@@ -410,10 +471,8 @@ fn tryRmsNorm(
     if (ob.logical_shape[0] != hidden_u64) return null;
     const hidden: usize = std.math.cast(usize, hidden_u64) orelse return null;
 
-    if (inputs.len != 2) return null;
-    const input_first = ii < si;
-    const input_bytes = if (input_first) inputs[0] else inputs[1];
-    const scale_bytes = if (input_first) inputs[1] else inputs[0];
+    const input_bytes = inputBytesForReadOnlyBinding(func, inputs, ii) orelse return null;
+    const scale_bytes = inputBytesForReadOnlyBinding(func, inputs, si) orelse return null;
     const expected_input_bytes = computeExpectedBytes(ib) orelse return null;
     const expected_scale_bytes = computeExpectedBytes(sb) orelse return null;
     if (input_bytes.len != expected_input_bytes) return null;
@@ -453,6 +512,86 @@ fn tryRmsNorm(
         .outputs = outputs,
         .rejections = &[_]schema.RejectionEntry{},
     };
+}
+
+fn resolveRmsNormEpsilon(
+    func: schema.SemanticFunction,
+    inputs: []const []const u8,
+    epsilon: schema.RmsNormEpsilon,
+) ?f32 {
+    return switch (epsilon.source) {
+        .literal_f32 => blk: {
+            if (epsilon.path.len != 0) return null;
+            if (epsilon.binding_index != null or epsilon.byte_offset != null) return null;
+            const epsilon_f64 = epsilon.literal_f32 orelse return null;
+            if (std.math.isNan(epsilon_f64) or std.math.isInf(epsilon_f64)) return null;
+            break :blk @floatCast(epsilon_f64);
+        },
+        .uniform_field => blk: {
+            const path = splitUniformFieldPath(epsilon.path) orelse return null;
+            if (!std.mem.eql(u8, path.field_name, "eps")) return null;
+            if (epsilon.literal_f32 != null) return null;
+            const binding_index = epsilon.binding_index orelse return null;
+            const byte_offset_u32 = epsilon.byte_offset orelse return null;
+            const binding_idx: usize = std.math.cast(usize, binding_index) orelse return null;
+            if (binding_idx >= func.bindings.len) return null;
+            if (func.bindings[binding_idx].read_write) return null;
+            if (!std.mem.eql(u8, path.binding_name, func.bindings[binding_idx].name)) return null;
+            const uniform_bytes = inputBytesForReadOnlyBinding(
+                func,
+                inputs,
+                binding_index,
+            ) orelse return null;
+            const byte_offset: usize = std.math.cast(usize, byte_offset_u32) orelse return null;
+            if (byte_offset > uniform_bytes.len) return null;
+            if (uniform_bytes.len - byte_offset < 4) return null;
+            const bits = std.mem.readInt(u32, uniform_bytes[byte_offset..][0..4], .little);
+            const value: f32 = @bitCast(bits);
+            if (std.math.isNan(value) or std.math.isInf(value)) return null;
+            break :blk value;
+        },
+    };
+}
+
+const UniformFieldPath = struct {
+    binding_name: []const u8,
+    field_name: []const u8,
+};
+
+fn splitUniformFieldPath(path: []const u8) ?UniformFieldPath {
+    const prefix = "uniform:";
+    if (!std.mem.startsWith(u8, path, prefix)) return null;
+    const rest = path[prefix.len..];
+    const dot = std.mem.indexOfScalar(u8, rest, '.') orelse return null;
+    if (dot == 0 or dot + 1 >= rest.len) return null;
+    return .{
+        .binding_name = rest[0..dot],
+        .field_name = rest[dot + 1 ..],
+    };
+}
+
+fn countReadOnlyBindings(func: schema.SemanticFunction) usize {
+    var count: usize = 0;
+    for (func.bindings) |binding| {
+        if (!binding.read_write) count += 1;
+    }
+    return count;
+}
+
+fn inputBytesForReadOnlyBinding(
+    func: schema.SemanticFunction,
+    inputs: []const []const u8,
+    binding_index: u32,
+) ?[]const u8 {
+    const idx: usize = std.math.cast(usize, binding_index) orelse return null;
+    if (idx >= func.bindings.len) return null;
+    if (func.bindings[idx].read_write) return null;
+    var input_slot: usize = 0;
+    for (func.bindings[0..idx]) |binding| {
+        if (!binding.read_write) input_slot += 1;
+    }
+    if (input_slot >= inputs.len) return null;
+    return inputs[input_slot];
 }
 
 /// Detect the gather bootstrap-family case and interpret it.
@@ -3048,6 +3187,109 @@ test "fused_gemv f32 strict_ordered computes y[i] = sum_k W[i,k] * x[k]" {
     try std.testing.expectEqualSlices(u8, &expected, &result.reference_hash);
 }
 
+test "fused_gemv associative_allowed consumes realization tree shape" {
+    const allocator = std.testing.allocator;
+    const matrix_shape = [_]u64{ 1, 4 };
+    const vector_shape = [_]u64{4};
+    const output_shape = [_]u64{1};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &matrix_shape, .elem = .f32, .read_write = false },
+        .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &vector_shape, .elem = .f32, .read_write = false },
+        .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "1", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "4", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{
+                .accumulation = .f32,
+                .associativity = .associative_allowed,
+                .nan_inf = .propagate,
+            },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .matrix },
+        .{ .binding_index = 1, .role = .vector },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .output },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .fused_gemv,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gemv_assoc",
+        .family_hint = .fused_gemv,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+
+    var matrix_bytes: [16]u8 = undefined;
+    writeF32AsElem(&matrix_bytes, 0, 1.0e20, .f32);
+    writeF32AsElem(&matrix_bytes, 1, 3.0, .f32);
+    writeF32AsElem(&matrix_bytes, 2, -1.0e20, .f32);
+    writeF32AsElem(&matrix_bytes, 3, 4.0, .f32);
+    var vector_bytes: [16]u8 = undefined;
+    writeF32AsElem(&vector_bytes, 0, 1.0, .f32);
+    writeF32AsElem(&vector_bytes, 1, 1.0, .f32);
+    writeF32AsElem(&vector_bytes, 2, 1.0, .f32);
+    writeF32AsElem(&vector_bytes, 3, 1.0, .f32);
+    const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
+
+    const missing_realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+    try std.testing.expectError(
+        InterpretError.NotImplemented,
+        run(allocator, semantic, missing_realization, &inputs),
+    );
+
+    const red_nodes = [_]schema.ReductionRealizationNode{
+        .{ .semantic_index = 0, .tree_shape = .binomial },
+    };
+    const rfuncs = [_]schema.RealizationFunction{
+        .{
+            .semantic_index = 0,
+            .tiles = .{ .per_axis = &.{} },
+            .pe_grid = .{ .width = 1, .height = 1 },
+            .residency = &.{},
+            .collectives = &.{},
+            .reductions = &red_nodes,
+            .emitter_params_json = "{}",
+            .target_descriptor_hash = [_]u8{0} ** 32,
+        },
+    };
+    const binomial_realization = schema.Realization{
+        .functions = &rfuncs,
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    var result = try run(allocator, semantic, binomial_realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(f32, 0.0), readF32FromBytes(result.outputs[0], .f32, 0));
+}
+
 test "fused_gemv recognizer falls through on wrong body op" {
     const allocator = std.testing.allocator;
     const matrix_shape = [_]u64{ 2, 3 };
@@ -3314,13 +3556,15 @@ test "rms_norm f32 literal epsilon computes normalized scaled output" {
     try std.testing.expectEqualSlices(u8, &expected_hash, &result.reference_hash);
 }
 
-test "rms_norm uniform epsilon falls through until scalar input plumbing exists" {
+test "rms_norm uniform epsilon reads explicit binding bytes" {
     const allocator = std.testing.allocator;
     const hidden_shape = [_]u64{2};
+    const uniform_shape = [_]u64{2};
     const bindings = [_]schema.BufferBinding{
         .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
         .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &hidden_shape, .elem = .f32, .read_write = false },
         .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &hidden_shape, .elem = .f32, .read_write = true },
+        .{ .name = "u", .group = 0, .binding = 3, .logical_shape = &uniform_shape, .elem = .u32, .read_write = false },
     };
     const axes = [_]schema.IterationAxis{
         .{ .name = "d", .lower_bound = "0", .upper_bound = "2", .step = "1" },
@@ -3349,7 +3593,13 @@ test "rms_norm uniform epsilon falls through until scalar input plumbing exists"
         .axis_roles = &body_axes,
         .rms_norm = .{
             .formula = .sum_squares_mean_epsilon_rsqrt_scale,
-            .epsilon = .{ .source = .uniform_field, .path = "uniform:u.eps", .literal_f32 = null },
+            .epsilon = .{
+                .source = .uniform_field,
+                .path = "uniform:u.eps",
+                .binding_index = 3,
+                .byte_offset = 4,
+                .literal_f32 = null,
+            },
             .hidden_extent_axis = 0,
             .reduction_target = .intermediate_scalar,
         },
@@ -3377,10 +3627,26 @@ test "rms_norm uniform epsilon falls through until scalar input plumbing exists"
     var scale_bytes: [8]u8 = undefined;
     writeF32AsElem(&scale_bytes, 0, 3.0, .f32);
     writeF32AsElem(&scale_bytes, 1, 4.0, .f32);
-    const inputs = [_][]const u8{ &input_bytes, &scale_bytes };
+    var uniform_bytes: [8]u8 = undefined;
+    std.mem.writeInt(u32, uniform_bytes[0..4], 2, .little);
+    writeF32AsElem(&uniform_bytes, 1, 0.0, .f32);
+    const inputs = [_][]const u8{ &input_bytes, &scale_bytes, &uniform_bytes };
 
-    const outcome = run(allocator, semantic, realization, &inputs);
-    try std.testing.expectError(InterpretError.NotImplemented, outcome);
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 8), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.0), readF32FromBytes(result.outputs[0], .f32, 0));
+    try std.testing.expectEqual(@as(f32, 4.0), readF32FromBytes(result.outputs[0], .f32, 1));
+
+    var expected_hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(result.outputs[0], &expected_hash, .{});
+    try std.testing.expectEqualSlices(u8, &expected_hash, &result.reference_hash);
+
+    const missing_uniform_inputs = [_][]const u8{ &input_bytes, &scale_bytes };
+    const missing = run(allocator, semantic, realization, &missing_uniform_inputs);
+    try std.testing.expectError(InterpretError.NotImplemented, missing);
 }
 
 test "fused_gemv f16 strict_ordered exercises upcast/downcast path" {

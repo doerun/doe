@@ -20,6 +20,7 @@
 
 const std = @import("std");
 const ir = @import("../doe_wgsl/ir.zig");
+const layout_utils = @import("../doe_wgsl/layout_utils.zig");
 const family_hint = @import("family_hint.zig");
 const tsir = @import("mod.zig");
 
@@ -71,7 +72,7 @@ pub fn lowerIrToTsir(
         const collectives = try collectCollectives(allocator, module, &ir_func, @intCast(i), &rejections);
         try recoverRejections(allocator, &ir_func, @intCast(i), &rejections);
         const hint = family_hint.infer(&ir_func, axes, reductions);
-        const body = try inferSemanticBody(allocator, hint, axes, per_fn.bindings, reductions);
+        const body = try inferSemanticBody(allocator, module, hint, axes, per_fn.bindings, reductions);
         functions[i] = .{
             .name = name_copy,
             .family_hint = hint,
@@ -96,6 +97,7 @@ pub fn lowerIrToTsir(
 
 fn inferSemanticBody(
     allocator: std.mem.Allocator,
+    module: *const ir.Module,
     hint: tsir.schema.KernelFamilyHint,
     axes: []const tsir.schema.IterationAxis,
     bindings: []const tsir.schema.BufferBinding,
@@ -124,6 +126,12 @@ fn inferSemanticBody(
     }
 
     if (looksLikeRmsNorm(axes, bindings, reductions)) {
+        const epsilon = (try inferRmsNormEpsilon(
+            allocator,
+            module,
+            bindings,
+            axes[0].upper_bound,
+        )) orelse return .{};
         const binding_roles = try allocator.alloc(tsir.schema.SemanticBodyBinding, 3);
         binding_roles[0] = .{ .binding_index = 0, .role = .input };
         binding_roles[1] = .{ .binding_index = 1, .role = .scale };
@@ -131,14 +139,9 @@ fn inferSemanticBody(
         const axis_roles = try allocator.alloc(tsir.schema.SemanticBodyAxis, 2);
         axis_roles[0] = .{ .axis_index = 0, .role = .hidden };
         axis_roles[1] = .{ .axis_index = reductions[0].axis, .role = .reduction };
-        const epsilon_path = try inferRmsNormEpsilonPath(allocator, axes[0].upper_bound);
         const rms_norm = tsir.schema.RmsNormBody{
             .formula = .sum_squares_mean_epsilon_rsqrt_scale,
-            .epsilon = .{
-                .source = .uniform_field,
-                .path = epsilon_path,
-                .literal_f32 = null,
-            },
+            .epsilon = epsilon,
             .hidden_extent_axis = 0,
             .reduction_target = .intermediate_scalar,
         };
@@ -171,6 +174,35 @@ fn bindingNameEquals(binding: tsir.schema.BufferBinding, expected: []const u8) b
     return std.ascii.eqlIgnoreCase(binding.name, expected);
 }
 
+fn inferRmsNormEpsilon(
+    allocator: std.mem.Allocator,
+    module: *const ir.Module,
+    bindings: []const tsir.schema.BufferBinding,
+    hidden_extent_bound: []const u8,
+) FrontendError!?tsir.schema.RmsNormEpsilon {
+    const epsilon_path = try inferRmsNormEpsilonPath(allocator, hidden_extent_bound);
+    const path = splitUniformPath(epsilon_path) orelse {
+        allocator.free(epsilon_path);
+        return null;
+    };
+    const binding_index = findBindingIndexByName(bindings, path.binding_name) orelse {
+        allocator.free(epsilon_path);
+        return null;
+    };
+    const byte_offset = inferUniformFieldOffset(module, path.binding_name, path.field_name) orelse {
+        allocator.free(epsilon_path);
+        return null;
+    };
+
+    return .{
+        .source = .uniform_field,
+        .path = epsilon_path,
+        .binding_index = binding_index,
+        .byte_offset = byte_offset,
+        .literal_f32 = null,
+    };
+}
+
 fn inferRmsNormEpsilonPath(
     allocator: std.mem.Allocator,
     hidden_extent_bound: []const u8,
@@ -181,6 +213,56 @@ fn inferRmsNormEpsilonPath(
         }
     }
     return allocator.dupe(u8, "uniform:u.eps");
+}
+
+const UniformPath = struct {
+    binding_name: []const u8,
+    field_name: []const u8,
+};
+
+fn splitUniformPath(path: []const u8) ?UniformPath {
+    const prefix = "uniform:";
+    if (!std.mem.startsWith(u8, path, prefix)) return null;
+    const rest = path[prefix.len..];
+    const dot = std.mem.indexOfScalar(u8, rest, '.') orelse return null;
+    if (dot == 0 or dot + 1 >= rest.len) return null;
+    return .{
+        .binding_name = rest[0..dot],
+        .field_name = rest[dot + 1 ..],
+    };
+}
+
+fn findBindingIndexByName(
+    bindings: []const tsir.schema.BufferBinding,
+    name: []const u8,
+) ?u32 {
+    for (bindings, 0..) |binding, i| {
+        if (std.mem.eql(u8, binding.name, name)) return @intCast(i);
+    }
+    return null;
+}
+
+fn inferUniformFieldOffset(
+    module: *const ir.Module,
+    global_name: []const u8,
+    field_name: []const u8,
+) ?u32 {
+    for (module.globals.items) |global| {
+        if (!std.mem.eql(u8, global.name, global_name)) continue;
+        var ty = global.ty;
+        const maybe_ref = module.types.get(ty);
+        if (maybe_ref == .ref) ty = maybe_ref.ref.elem;
+        const type_info = module.types.get(ty);
+        if (type_info != .struct_) return null;
+        const struct_def = module.structs.items[type_info.struct_];
+        for (struct_def.fields.items, 0..) |field, i| {
+            if (!std.mem.eql(u8, field.name, field_name)) continue;
+            if (!ir.is_scalar(&module.types, field.ty, .f32)) return null;
+            return layout_utils.struct_field_offset(module, struct_def, @intCast(i));
+        }
+        return null;
+    }
+    return null;
 }
 
 const PerFunctionBindings = struct {

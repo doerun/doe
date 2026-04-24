@@ -136,10 +136,12 @@
     "rmsNormEpsilon": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "path", "literalF32"],
+      "required": ["source", "path", "bindingIndex", "byteOffset", "literalF32"],
       "properties": {
         "source": { "$ref": "#/$defs/rmsNormEpsilonSource" },
         "path": { "type": "string" },
+        "bindingIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "byteOffset": { "type": ["integer", "null"], "minimum": 0 },
         "literalF32": { "type": ["number", "null"] }
       },
       "allOf": [
@@ -150,6 +152,8 @@
           "then": {
             "properties": {
               "path": { "type": "string", "minLength": 1 },
+              "bindingIndex": { "type": "integer", "minimum": 0 },
+              "byteOffset": { "type": "integer", "minimum": 0 },
               "literalF32": { "const": null }
             }
           }
@@ -161,6 +165,8 @@
           "then": {
             "properties": {
               "path": { "const": "" },
+              "bindingIndex": { "const": null },
+              "byteOffset": { "const": null },
               "literalF32": { "type": "number" }
             }
           }

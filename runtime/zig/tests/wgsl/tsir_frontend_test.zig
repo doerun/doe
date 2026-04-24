@@ -1923,6 +1923,12 @@ test "frontend lowers the Phase A rms_norm bootstrap kernel end-to-end" {
         "frontend-0.0.36",
     );
     const func = semantic.functions[0];
+    try std.testing.expectEqual(@as(usize, 4), func.bindings.len);
+    try std.testing.expectEqualStrings("input", func.bindings[0].name);
+    try std.testing.expectEqualStrings("weight", func.bindings[1].name);
+    try std.testing.expectEqualStrings("output", func.bindings[2].name);
+    try std.testing.expectEqualStrings("u", func.bindings[3].name);
+    try std.testing.expect(!func.bindings[3].read_write);
     // dispatch-axis d + for-axis i, both bounded by u.hidden_size.
     try std.testing.expectEqual(@as(usize, 2), func.axes.len);
     try std.testing.expectEqualStrings("d", func.axes[0].name);
@@ -1955,6 +1961,8 @@ test "frontend lowers the Phase A rms_norm bootstrap kernel end-to-end" {
         rms_norm.epsilon.source,
     );
     try std.testing.expectEqualStrings("uniform:u.eps", rms_norm.epsilon.path);
+    try std.testing.expectEqual(@as(?u32, 3), rms_norm.epsilon.binding_index);
+    try std.testing.expectEqual(@as(?u32, 4), rms_norm.epsilon.byte_offset);
     try std.testing.expectEqual(@as(?f64, null), rms_norm.epsilon.literal_f32);
 }
 
