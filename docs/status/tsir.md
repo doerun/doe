@@ -19,6 +19,21 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Docs: refresh `bench/fixtures/tsir-manifest-entries/README.md`. The
+  existing README named only the regeneration command — not the
+  fixture purpose, the downstream consumers that depend on this set
+  as a coherent snapshot (manifest binder, nightly canary, parity
+  CLI's `--manifest-lowering-entry` path), or the uniformity
+  invariants the tests enforce. Rewrote it to name all of those,
+  enumerate the six per-(kernel, backend) entries, and explicitly
+  warn that fixtures must always regenerate together — partial
+  regeneration is exactly what `test_bootstrap_fixtures_share_version_and_descriptor_identity`
+  from tick 14 catches, and a contributor running the generator
+  against one file after a descriptor change would otherwise not
+  know the set now needs full regen. Strategy-leak gate PASS after
+  edit. Doc-only; no runtime or test change. Cites
+  `docs/tsir-lowering-plan.md` Step 10 (manifest binding) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Build: wire `test-wgsl` to `line_limit_check`. The tick-15 follow-up
   is landed: `runtime/zig/build.zig` now makes `wgsl_test_step`
   depend on `line_limit_check.step`, matching what `test`,
