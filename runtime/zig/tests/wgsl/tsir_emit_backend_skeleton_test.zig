@@ -9,16 +9,19 @@ test "tsir backend skeleton emitters expose source-backed code digests" {
         tsir.emit_spir_v.emitterCodeDigest(),
         @embedFile("../../src/tsir/emit_spir_v.zig"),
         @embedFile("../../src/tsir/emit_text_skeleton.zig"),
+        @embedFile("../../src/tsir/emit_kernel_body.zig"),
     );
     try expectDigest(
         tsir.emit_msl.emitterCodeDigest(),
         @embedFile("../../src/tsir/emit_msl.zig"),
         @embedFile("../../src/tsir/emit_text_skeleton.zig"),
+        @embedFile("../../src/tsir/emit_kernel_body.zig"),
     );
     try expectDigest(
         tsir.emit_dxil.emitterCodeDigest(),
         @embedFile("../../src/tsir/emit_dxil.zig"),
         @embedFile("../../src/tsir/emit_text_skeleton.zig"),
+        @embedFile("../../src/tsir/emit_kernel_body.zig"),
     );
 }
 
@@ -145,10 +148,16 @@ fn fixtureFunction(descriptor: targets.TargetDescriptor) tsir.schema.Realization
     };
 }
 
-fn expectDigest(actual: [32]u8, emitter_source: []const u8, common_source: []const u8) !void {
+fn expectDigest(
+    actual: [32]u8,
+    emitter_source: []const u8,
+    common_source: []const u8,
+    body_source: []const u8,
+) !void {
     var h = std.crypto.hash.sha2.Sha256.init(.{});
     h.update(emitter_source);
     h.update(common_source);
+    h.update(body_source);
     var expected: [32]u8 = undefined;
     h.final(&expected);
     try std.testing.expectEqualSlices(u8, &expected, &actual);

@@ -1,20 +1,22 @@
-// Mechanical TSIR-to-WebGPU skeleton emitter.
+// Mechanical TSIR-to-WebGPU emitter.
 //
 // This emitter binds WebGPU-generic lowerings to a deterministic source-backed
-// emitter identity. It is a contract serializer, not executable kernel-body
-// generation; later lowering owns the real WGSL body.
+// emitter identity. Realization-only calls keep emitting the contract skeleton;
+// semantic-aware calls emit executable WGSL for supported TSIR body families.
 
 const std = @import("std");
 const targets = @import("../targets/mod.zig");
 const schema = @import("schema.zig");
+const kernel_body = @import("emit_kernel_body.zig");
 
 const INITIAL_OUTPUT_CAPACITY: usize = 2048;
 const HEX_DIGITS = "0123456789abcdef";
 const NIBBLE_SHIFT: u3 = 4;
 const NIBBLE_MASK: u8 = 0x0f;
 const EMITTER_SOURCE = @embedFile("emit_webgpu.zig");
+const BODY_SOURCE = @embedFile("emit_kernel_body.zig");
 
-pub const EmitError = std.mem.Allocator.Error || error{
+pub const EmitError = std.mem.Allocator.Error || kernel_body.EmitError || error{
     FunctionIndexOutOfRange,
     RejectedRealization,
     TargetDescriptorHashMismatch,
@@ -22,8 +24,11 @@ pub const EmitError = std.mem.Allocator.Error || error{
 
 /// SHA-256 over this emitter's source text.
 pub fn emitterCodeDigest() [32]u8 {
+    var h = std.crypto.hash.sha2.Sha256.init(.{});
+    h.update(EMITTER_SOURCE);
+    h.update(BODY_SOURCE);
     var out: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(EMITTER_SOURCE, &out, .{});
+    h.final(&out);
     return out;
 }
 
@@ -36,6 +41,50 @@ pub fn emit(
     if (realization.rejections.len != 0) return error.RejectedRealization;
     if (function_index >= realization.functions.len) return error.FunctionIndexOutOfRange;
     return emitFunction(allocator, realization.functions[function_index], descriptor);
+}
+
+pub fn emitSemantic(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    realization: schema.Realization,
+    function_index: usize,
+    descriptor: targets.TargetDescriptor,
+) EmitError![]const u8 {
+    if (realization.rejections.len != 0) return error.RejectedRealization;
+    if (function_index >= realization.functions.len) return error.FunctionIndexOutOfRange;
+    const function = realization.functions[function_index];
+    if (function.semantic_index >= semantic.functions.len) return error.FunctionIndexOutOfRange;
+    return emitSemanticFunction(
+        allocator,
+        semantic.functions[@intCast(function.semantic_index)],
+        function,
+        descriptor,
+    );
+}
+
+pub fn emitSemanticFunction(
+    allocator: std.mem.Allocator,
+    semantic_function: schema.SemanticFunction,
+    function: schema.RealizationFunction,
+    descriptor: targets.TargetDescriptor,
+) EmitError![]const u8 {
+    const descriptor_hash = targets.descriptorHash(descriptor);
+    if (!std.mem.eql(u8, &descriptor_hash, &function.target_descriptor_hash)) {
+        return error.TargetDescriptorHashMismatch;
+    }
+
+    var out = try std.ArrayList(u8).initCapacity(allocator, INITIAL_OUTPUT_CAPACITY * 2);
+    errdefer out.deinit(allocator);
+    const writer = out.writer(allocator);
+
+    try writeContractHeader(writer, function, descriptor, descriptor_hash);
+    try writeResidency(writer, function.residency);
+    try writeTiles(writer, function.tiles.per_axis);
+    try writeCollectives(writer, function.collectives);
+    try writeReductions(writer, function.reductions);
+    try kernel_body.emit(writer, semantic_function, .webgpu);
+
+    return out.toOwnedSlice(allocator);
 }
 
 pub fn emitFunction(

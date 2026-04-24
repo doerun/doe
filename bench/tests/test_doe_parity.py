@@ -1,18 +1,12 @@
-"""Unit tests for the Doe parity harness CLI (bench/tools/doe_parity.py).
-
-These lock the fail-closed scaffolding contract. The TSIR reference
-interpreter recognizes the Phase A bootstrap families in-process
-(`runtime/zig/src/tsir/reference_interpreter.zig`); the outstanding
-CLI integration wedge is the subprocess harness that pipes canonical
-TSIR + inputs into that oracle. Backend lanes (webgpu, csl-simfabric)
-remain stub-only pending executable kernel bodies in the backend
-skeleton emitters.
-"""
+"""Unit tests for the Doe parity harness CLI (bench/tools/doe_parity.py)."""
 
 from __future__ import annotations
 
+import hashlib
 import json
+import struct
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -21,6 +15,26 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from bench.tools import doe_parity  # noqa: E402
+
+
+def _write_input_doc(
+    tmp_path: Path,
+    kernel: str,
+    inputs: dict[str, dict[str, object]],
+    parameters: dict[str, object] | None = None,
+) -> Path:
+    path = tmp_path / f"{kernel}.oracle-inputs.json"
+    payload = {
+        "kernel": kernel,
+        "inputs": inputs,
+        "parameters": parameters or {},
+    }
+    path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    return path
+
+
+def _sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 class TestParityScaffolding(unittest.TestCase):
@@ -111,6 +125,197 @@ class TestParityScaffolding(unittest.TestCase):
         self.assertEqual(outcome.backend, "reference")
         self.assertEqual(outcome.status, "not_implemented")
 
+    def test_reference_interpreter_runs_fused_gemv_bootstrap_inputs(self) -> None:
+        semantic = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "fused_gemv.tsir-semantic.json"
+        )
+        realization = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "fused_gemv.tsir-realization.webgpu-generic.json"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs_path = _write_input_doc(
+                Path(tmp),
+                "fused_gemv",
+                {
+                    "W": {
+                        "elem": "f32",
+                        "shape": [2, 2],
+                        "values": [1.0, 2.0, 4.0, 8.0],
+                    },
+                    "x": {
+                        "elem": "f32",
+                        "shape": [2],
+                        "values": [1.0, 2.0],
+                    },
+                },
+            )
+            outcome = doe_parity.run_reference_interpreter(
+                "fused_gemv",
+                "abc",
+                inputs_path=inputs_path,
+                semantic_path=semantic,
+                realization_path=realization,
+            )
+        expected = _sha256_hex(struct.pack("<ff", 5.0, 20.0))
+        self.assertEqual(outcome.backend, "reference")
+        self.assertEqual(outcome.status, "pass")
+        self.assertEqual(outcome.backend_hash, expected)
+
+    def test_reference_interpreter_runs_gather_bootstrap_inputs(self) -> None:
+        semantic = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "gather.tsir-semantic.json"
+        )
+        realization = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "gather.tsir-realization.webgpu-generic.json"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs_path = _write_input_doc(
+                Path(tmp),
+                "gather",
+                {
+                    "indices": {
+                        "elem": "u32",
+                        "shape": [2],
+                        "values": [1, 0],
+                    },
+                    "table": {
+                        "elem": "f32",
+                        "shape": [2, 2],
+                        "values": [1.5, 2.5, 3.5, 4.5],
+                    },
+                },
+            )
+            outcome = doe_parity.run_reference_interpreter(
+                "gather",
+                "abc",
+                inputs_path=inputs_path,
+                semantic_path=semantic,
+                realization_path=realization,
+            )
+        expected = _sha256_hex(struct.pack("<ffff", 3.5, 4.5, 1.5, 2.5))
+        self.assertEqual(outcome.status, "pass")
+        self.assertEqual(outcome.backend_hash, expected)
+
+    def test_reference_interpreter_runs_rms_norm_with_uniform_epsilon(
+        self,
+    ) -> None:
+        semantic = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "rms_norm.tsir-semantic.json"
+        )
+        realization = (
+            REPO_ROOT
+            / "runtime"
+            / "zig"
+            / "tests"
+            / "tsir"
+            / "bootstrap"
+            / "rms_norm.tsir-realization.webgpu-generic.json"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs_path = _write_input_doc(
+                Path(tmp),
+                "rms_norm",
+                {
+                    "input": {
+                        "elem": "f32",
+                        "shape": [2],
+                        "values": [2.0, 2.0],
+                    },
+                    "weight": {
+                        "elem": "f32",
+                        "shape": [2],
+                        "values": [3.0, 4.0],
+                    },
+                    "u": {
+                        "elem": "u32",
+                        "shape": [2],
+                        "bytesHex": "0000000000000000",
+                    },
+                },
+            )
+            outcome = doe_parity.run_reference_interpreter(
+                "rms_norm",
+                "abc",
+                inputs_path=inputs_path,
+                semantic_path=semantic,
+                realization_path=realization,
+            )
+        expected = _sha256_hex(struct.pack("<ff", 3.0, 4.0))
+        self.assertEqual(outcome.status, "pass")
+        self.assertEqual(outcome.backend_hash, expected)
+
+    def test_reference_interpreter_declines_manifest_fixture_inputs(self) -> None:
+        fixture = (
+            REPO_ROOT
+            / "bench"
+            / "fixtures"
+            / "tsir-manifest-entries"
+            / "fused_gemv.webgpu-generic.json"
+        )
+        outcome = doe_parity.run_reference_interpreter(
+            "fused_gemv",
+            "abc",
+            inputs_path=fixture,
+        )
+        self.assertEqual(outcome.status, "not_implemented")
+        self.assertIn("kernel", outcome.detail or "")
+
+    def test_reference_interpreter_declines_gather_oob_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs_path = _write_input_doc(
+                Path(tmp),
+                "gather",
+                {
+                    "indices": {
+                        "elem": "u32",
+                        "shape": [1],
+                        "values": [2],
+                    },
+                    "table": {
+                        "elem": "f32",
+                        "shape": [2, 1],
+                        "values": [1.0, 2.0],
+                    },
+                },
+            )
+            outcome = doe_parity.run_reference_interpreter(
+                "gather",
+                "abc",
+                inputs_path=inputs_path,
+            )
+        self.assertEqual(outcome.status, "not_implemented")
+        self.assertIn("outside the declared table", outcome.detail or "")
+
     def test_reference_interpreter_reports_rejected_tsir(self) -> None:
         outcome = doe_parity.run_reference_interpreter(
             "rmsnorm",
@@ -136,6 +341,19 @@ class TestParityScaffolding(unittest.TestCase):
         )
         result = doe_parity.compare(reference, backend, "bit_exact_solo")
         self.assertEqual(result.status, "deferred")
+
+    def test_compare_defers_when_backend_missing_after_reference_executes(
+        self,
+    ) -> None:
+        reference = doe_parity.ComparisonOutcome(
+            backend="reference", status="pass", backend_hash="abc"
+        )
+        backend = doe_parity.ComparisonOutcome(
+            backend="webgpu", status="not_implemented"
+        )
+        result = doe_parity.compare(reference, backend, "bit_exact_solo")
+        self.assertEqual(result.status, "deferred")
+        self.assertIn("reference=pass", result.detail or "")
 
     def test_compare_marks_backend_rejected_when_reference_rejects(self) -> None:
         reference = doe_parity.ComparisonOutcome(
@@ -202,8 +420,9 @@ class TestParityScaffolding(unittest.TestCase):
             comparisons=[
                 doe_parity.ComparisonOutcome(
                     backend="reference",
-                    status="not_implemented",
-                    detail="oracle pending",
+                    status="pass",
+                    backend_hash="1" * 64,
+                    detail="oracle executed",
                 ),
                 doe_parity.ComparisonOutcome(
                     backend="webgpu",

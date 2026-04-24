@@ -34,18 +34,20 @@ history.
   in `runtime/zig/src/targets/`, schema + canonical digests + family-hint
   inference in `runtime/zig/src/tsir/` (`schema.zig`, `digest.zig`,
   `family_hint.zig`), WGSL frontend lowering (`frontend.zig`),
-  residency/allocation planner (`planner.zig`), scalar reference interpreter
-  (`reference_interpreter.zig`), and mechanical skeleton emitters for five
-  backends (`emit_csl.zig`, `emit_webgpu.zig`, `emit_msl.zig`,
-  `emit_dxil.zig`, `emit_spir_v.zig` + shared `emit_text_skeleton.zig`). The
+  residency/allocation planner (`planner.zig`), dedicated collective pass
+  (`collective_synthesis.zig`), scalar reference interpreter
+  (`reference_interpreter.zig`), semantic-aware bootstrap body emitter
+  (`emit_kernel_body.zig`), and backend emitters for five surfaces
+  (`emit_csl.zig`, `emit_webgpu.zig`, `emit_msl.zig`, `emit_dxil.zig`,
+  `emit_spir_v.zig` + shared `emit_text_skeleton.zig`). The
   plan is [`docs/tsir-lowering-plan.md`](tsir-lowering-plan.md); iteration
   discipline is [`docs/loop-protocol.md`](loop-protocol.md); live TSIR
   status lives in [`docs/status/tsir.md`](status/tsir.md). This is
   compiler-only progress: no parity receipts under `reports/parity/` yet,
   no TSIR-backed manifest `integrityExtensions.lowerings[]` entries bound
-  to Doppler yet, and the skeleton emitters produce contract text rather
-  than executable kernel bodies. The live INT4 PLE CSL lane still routes
-  through the existing classifier/template path per
+  to Doppler yet, and parity backend execution lanes still need WebGPU /
+  CSL simfabric wiring before receipts can pass. The live INT4 PLE CSL
+  lane still routes through the existing classifier/template path per
   [`docs/status/cerebras-csl.md`](status/cerebras-csl.md).
 - Doe now has a backend-agnostic transcript parity report surface for one
   Doppler reference export plus Doe transcript receipts. The new contract is

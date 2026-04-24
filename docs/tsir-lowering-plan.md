@@ -190,19 +190,26 @@ TSIR core under `runtime/zig/src/tsir/`:
   `associative_allowed` reductions plus RMSNorm `literal_f32` and
   `uniform_field` epsilon. Unsupported shapes fail closed with
   `NotImplemented`.
-- `emit_csl.zig` — mechanical TSIR-to-CSL skeleton emitter (contract
-  serialization; does not yet produce executable kernel bodies).
-- `emit_webgpu.zig` — mechanical TSIR-to-WebGPU skeleton emitter
-  (contract serialization only).
+- `emit_kernel_body.zig` — shared semantic-aware executable body writer
+  for the Phase A bootstrap families (`fused_gemv`, `rms_norm`,
+  `gather`) across WebGPU, CSL, MSL, DXIL/HLSL, and SPIR-V/GLSL text
+  surfaces.
+- `emit_csl.zig` — TSIR-to-CSL emitter. Realization-only entry points
+  still serialize contract skeletons; semantic-aware entry points emit
+  executable bootstrap family bodies.
+- `emit_webgpu.zig` — TSIR-to-WebGPU emitter. Realization-only entry
+  points still serialize contract skeletons; semantic-aware entry points
+  emit executable WGSL bootstrap family bodies.
 - `emit_msl.zig` / `emit_dxil.zig` / `emit_spir_v.zig` — portable backend
-  skeleton emitters consuming a shared text skeleton helper.
+  emitters consuming a shared text skeleton helper plus shared executable
+  body writer.
 - `emit_text_skeleton.zig` — shared contract-text serialization helpers
   used by the five backend skeleton emitters.
 - `mod.zig` — public module surface.
 
 Each of the five backend emitters exposes an `emitterCodeDigest()` that
-SHA-256s its own source text plus the shared skeleton helper source.
-Pairwise distinctness across all five is locked by test so
+SHA-256s its own source text plus shared emitter-helper source. Pairwise
+distinctness across all five is locked by test so
 manifest-lowering entries cannot silently ambiguate which backend
 produced an artifact.
 
@@ -233,10 +240,12 @@ Schema + contract surfaces under `config/`:
 
 Bench tooling + fixtures:
 
-- `bench/tools/doe_parity.py` — manual parity CLI gate. Reference
-  interpreter and backend lanes remain stub-only (`not_implemented`)
-  until a subprocess harness to the Zig oracle and executable backend
-  emission land.
+- `bench/tools/doe_parity.py` — manual parity CLI gate. The narrow
+  bootstrap reference lane computes real oracle hashes for fused_gemv,
+  rms_norm, and gather input JSON. Backend execution lanes remain
+  `not_implemented` / `deferred` until WebGPU and CSL simfabric
+  execution harnesses land; the Zig subprocess oracle path is still
+  future work.
 - `bench/tools/tsir_manifest_lowering.py` — schema-backed builder for
   `integrityExtensions.lowerings[]` entries.
 - `bench/fixtures/tsir-manifest-entries/` — bootstrap manifest-lowering
@@ -259,11 +268,10 @@ enum, the Python CLI's `REJECTION_REASONS`, and the three JSON schemas
 that carry rejection enums — by a cross-schema lockstep test; the Zig
 enum is additionally locked by a scaffold test for exhaustiveness.
 
-The missing work is executable kernel-body emission in the backend
-skeleton emitters, the parity CLI subprocess harness that shells into a
-Zig oracle binary, AOT convert-time lowering with a correctness-input
-cache key, Loop 3 per-family parity receipts under `reports/parity/`,
-manifest-binding of those receipts into Doppler's
+The missing work is backend execution wiring in the parity CLI, the
+Zig subprocess oracle binary path, AOT convert-time lowering with a
+correctness-input cache key, Loop 3 per-family parity receipts under
+`reports/parity/`, manifest-binding of those receipts into Doppler's
 `integrityExtensions.lowerings[]`, and the attention phase (Phase B)
 with its sollya transcendental determinism.
 

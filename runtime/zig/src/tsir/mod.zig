@@ -10,6 +10,7 @@ pub const digest = @import("digest.zig");
 pub const reference = @import("reference_interpreter.zig");
 pub const frontend = @import("frontend.zig");
 pub const planner = @import("planner.zig");
+pub const emit_kernel_body = @import("emit_kernel_body.zig");
 pub const emit_csl = @import("emit_csl.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
 pub const emit_msl = @import("emit_msl.zig");

@@ -1,7 +1,7 @@
 {
   "backend": "wse3",
   "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
-  "emitterDigest": "188232ab66631794b27fe20e881357ed22a97f7a21de5402440fc370b13ac5eb",
+  "emitterDigest": "f526ec1dcd265256b1cefd26b19d6563b279047080b8aad5e16dbed297452cba",
   "exactness": {
     "algorithmExactInvariants": [
       "reduction_order",
@@ -15,6 +15,6 @@
   "kernelRef": "doe.tsir.bootstrap.fused_gemv",
   "rejectionReasons": [],
   "targetDescriptorCorrectnessHash": "a3852140d7a2063cb066c02a4e1201a64546e64056a06d93a5ed575bc9620948",
-  "tsirRealizationDigest": "59bafdbb26760d5a25a6a50a417ad78bdb39b8856bd638e097e3cb651a99db7e",
+  "tsirRealizationDigest": "ec14291ff2ce4a5cc3e48c1a254fe4c8e46b923875fea63ee7c41df66eca51d5",
   "tsirSemanticDigest": "4e4f2615efe4534eddd6af24a75345c31b9d87e2c8fedc4cb9900087ee8b0944"
 }

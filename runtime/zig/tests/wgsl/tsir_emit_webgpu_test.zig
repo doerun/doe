@@ -7,11 +7,10 @@ const targets = @import("../../src/targets/mod.zig");
 test "tsir webgpu emitter exposes source-backed code digest" {
     const digest = tsir.emit_webgpu.emitterCodeDigest();
     var expected: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(
-        @embedFile("../../src/tsir/emit_webgpu.zig"),
-        &expected,
-        .{},
-    );
+    var h = std.crypto.hash.sha2.Sha256.init(.{});
+    h.update(@embedFile("../../src/tsir/emit_webgpu.zig"));
+    h.update(@embedFile("../../src/tsir/emit_kernel_body.zig"));
+    h.final(&expected);
     try std.testing.expectEqualSlices(u8, &expected, &digest);
     try std.testing.expect(!allZero(&digest));
 }
