@@ -57,12 +57,12 @@ pub fn emit(
     try W.write(buf, pos, "[@as(u32, p)];\n\n");
 
     try W.write(buf, pos, "        if (interleaved) {\n");
-    try W.write(buf, pos, "            const i0 = @as(u32, p) * 2;\n");
-    try W.write(buf, pos, "            const i1 = i0 + 1;\n");
+    try W.write(buf, pos, "            const dim0 = @as(u32, p) * 2;\n");
+    try W.write(buf, pos, "            const dim1 = dim0 + 1;\n");
     try emitRoPEPair(buf, pos, inp);
     try W.write(buf, pos, "        } else {\n");
-    try W.write(buf, pos, "            const i0 = @as(u32, p);\n");
-    try W.write(buf, pos, "            const i1 = i0 + @as(u32, num_pairs);\n");
+    try W.write(buf, pos, "            const dim0 = @as(u32, p);\n");
+    try W.write(buf, pos, "            const dim1 = dim0 + @as(u32, num_pairs);\n");
     try emitRoPEPair(buf, pos, inp);
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "    }\n");
@@ -80,16 +80,16 @@ pub fn emit(
 fn emitRoPEPair(buf: []u8, pos: *usize, inp: []const u8) EmitError!void {
     try W.write(buf, pos, "            const x0 = ");
     try W.write(buf, pos, inp);
-    try W.write(buf, pos, "[i0];\n");
+    try W.write(buf, pos, "[dim0];\n");
     try W.write(buf, pos, "            const x1 = ");
     try W.write(buf, pos, inp);
-    try W.write(buf, pos, "[i1];\n");
+    try W.write(buf, pos, "[dim1];\n");
     try W.write(buf, pos, "            ");
     try W.write(buf, pos, inp);
-    try W.write(buf, pos, "[i0] = x0 * cos_val - x1 * sin_val;\n");
+    try W.write(buf, pos, "[dim0] = x0 * cos_val - x1 * sin_val;\n");
     try W.write(buf, pos, "            ");
     try W.write(buf, pos, inp);
-    try W.write(buf, pos, "[i1] = x0 * sin_val + x1 * cos_val;\n");
+    try W.write(buf, pos, "[dim1] = x0 * sin_val + x1 * cos_val;\n");
 }
 
 fn emitBuf(buf: []u8, pos: *usize, name: []const u8, ty: []const u8) EmitError!void {

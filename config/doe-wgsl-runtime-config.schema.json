@@ -71,7 +71,7 @@
         "hiddenDim": { "type": "integer", "minimum": 1 },
         "numHeads": { "type": "integer", "minimum": 1 },
         "headDim": { "type": "integer", "minimum": 1 },
-        "globalHeadDim": { "type": "integer", "minimum": 1 },
+        "globalHeadDim": { "type": "integer", "minimum": 0 },
         "numKeyValueHeads": { "type": "integer", "minimum": 1 },
         "numLayers": { "type": "integer", "minimum": 1 },
         "vocabSize": { "type": "integer", "minimum": 1 },
@@ -79,8 +79,8 @@
         "quantFormat": { "type": "string", "enum": ["f16", "q4k", "q8_0"] },
         "ffnExpansionFactor": { "type": "integer", "minimum": 1 },
         "ffnMatrixCount": { "type": "integer", "minimum": 1 },
-        "pleWidth": { "type": "integer", "minimum": 1 },
-        "pleVocabSize": { "type": "integer", "minimum": 1 }
+        "pleWidth": { "type": "integer", "minimum": 0 },
+        "pleVocabSize": { "type": "integer", "minimum": 0 }
       }
     },
     "maxDecodeTokens": { "type": "integer", "minimum": 0 },

@@ -14,6 +14,47 @@ This is a live topical status shard.
 compiler work (shader compiler non-TSIR paths, WebGPU runtime,
 robustness).
 
+## 2026-04-24 — Track C native Vulkan: subgroup/f16 feature chain and queue replay
+
+The Doe native Vulkan C-lane moved past two runtime blockers:
+
+- `vkCreateDevice` now enables the Vulkan feature chain that the
+  WebGPU adapter advertises for f16/subgroup work:
+  `VkPhysicalDevice16BitStorageFeatures.storageBuffer16BitAccess`,
+  `VkPhysicalDeviceVulkan12Features.shaderFloat16`,
+  `subgroupBroadcastDynamicId`, and `shaderSubgroupExtendedTypes` when
+  the physical device supports `subgroups-f16`.
+- Vulkan feature publication now exposes `subgroups-f16` only from the
+  real adapter probe (`subgroups && shader-f16 &&
+  shaderSubgroupExtendedTypes`), rather than treating plain
+  `subgroups` as enough for f16 subgroup kernels.
+- `queue.writeBuffer` no longer writes through cached host pointers
+  after storage-buffer promotion to device-local memory; it resolves
+  the live Vulkan compute buffer and uses the staging upload path.
+- Vulkan `copyBufferToBuffer` replay now uses a real `vkCmdCopyBuffer`
+  + wait when source or destination lacks a CPU mapping, instead of
+  silently skipping device-local copies.
+
+Evidence:
+
+- `zig build test-wgsl` exits 0.
+- `zig build` exits 0.
+- `env HOME=/tmp node bench/repros/doe-runtime-zero-dispatch/repro.mjs`
+  prints `dispatched u32: 42 (expect 42)`.
+- `env HOME=/tmp DOE_DISABLE_SUBGROUPS=0 runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/rmsnorm_subgroup_commands.json --backend native --backend-lane vulkan_doe_release --execute --trace-meta /tmp/rmsnorm_subgroup.meta.json`
+  exits 0.
+- The analogous `matmul_gemv_subgroup_commands.json` run exits 0
+  with the pre-existing prewarm warning.
+
+Gemma 3 1B shared-contract rerun with `DOE_DISABLE_SUBGROUPS=0` now
+advertises `hasF16=true` and `hasSubgroups=true` and gets through
+pipeline creation/execution without the earlier segfault. It is still
+not promotion-ready: the exporter exits with
+`[Sampling] Logits has no finite candidate logits after masking the pad token`,
+and `final_logits.f32` still has the all-zero digest/preview. The
+next C-lane task is a first-zero kernel/output-buffer probe, not more
+capability suppression.
+
 ## 2026-04-24 — Track 1 diagnostic: Doe compute dispatch silently no-ops
 
 After landing WS B1+B2 (if/else termination fix + scalar-op-vector

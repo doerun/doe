@@ -402,9 +402,16 @@ def bind_launch_dataflow(
         elif op_name == "post_attn_norm" and layer_index is not None:
             layer_state["ffn_input"] = output
         set_current(output)
-    elif kernel_name in {"tiled", "gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}:
+    elif kernel_name in {
+        "tiled",
+        "gemv",
+        "lm_head_gemv",
+        "lm_head_gemv_stable",
+        "lm_head_prefill_stable",
+    }:
         is_lm_head = op_name in {"lm_head", "lm_head_prefill"} or (
-            kernel_name in {"lm_head_gemv_stable", "lm_head_prefill_stable"}
+            kernel_name
+            in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
         )
         is_tiled_kernel = kernel_name in {"tiled", "lm_head_prefill_stable"}
         if op_name in {"q_proj", "k_proj", "v_proj"} and layer_index is not None:
@@ -416,9 +423,9 @@ def bind_launch_dataflow(
             if is_lm_head
             else next_buffer(op_name)
         )
-        activation_symbol = "A" if is_tiled_kernel else "activation"
-        weight_symbol = "B" if is_tiled_kernel else "weight"
-        output_symbol = "C" if is_tiled_kernel else "output"
+        activation_symbol = "a" if is_tiled_kernel else "activation"
+        weight_symbol = "b" if is_tiled_kernel else "weight"
+        output_symbol = "c" if is_tiled_kernel else "output"
         inputs.append(
             binding(
                 symbol=activation_symbol,
@@ -810,7 +817,8 @@ def transcript_capture_schedule(
         kernel_name = str(record.get("kernelName") or "")
         operation_name = str(record.get("operationName") or "")
         if phase == "decode" and (
-            kernel_name == "lm_head_gemv_stable" or operation_name == "lm_head"
+            kernel_name in {"lm_head_gemv", "lm_head_gemv_stable"}
+            or operation_name == "lm_head"
         ):
             record_decode_step = record.get("decodeStepIndex")
             if isinstance(record_decode_step, int):

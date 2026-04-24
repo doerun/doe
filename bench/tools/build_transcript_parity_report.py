@@ -31,6 +31,13 @@ TRANSCRIPT_KEYS = (
     "cslTranscript",
 )
 
+READY_TRANSCRIPT_STATUS = "output_ready"
+
+READY_TRANSCRIPT_RECEIPT_STATUSES = {
+    "output_ready",
+    "simulator_success",
+}
+
 SOURCE_REQUIRED_FIELDS = (
     "manifestSha256",
     "graphSha256",
@@ -204,6 +211,9 @@ def require_transcript_container(
     for key in TRANSCRIPT_KEYS:
         value = receipt.get(key)
         if isinstance(value, dict):
+            nested = value.get("decodeTranscript")
+            if isinstance(nested, dict):
+                return f"{key}.decodeTranscript", nested
             return key, value
     raise ValueError(
         "transcript receipt missing transcript payload under one of "
@@ -639,6 +649,25 @@ def comparison_blocker(
     return None
 
 
+def participant_readiness_blocker(participant: Participant) -> str | None:
+    transcript_status = participant.transcript_digest["status"]
+    if transcript_status != READY_TRANSCRIPT_STATUS:
+        return (
+            f"{participant.participant_id} transcript status is "
+            f"{transcript_status!r}, expected {READY_TRANSCRIPT_STATUS!r}"
+        )
+    if (
+        participant.role == "doe_transcript"
+        and participant.status not in READY_TRANSCRIPT_RECEIPT_STATUSES
+    ):
+        ready_values = ", ".join(sorted(READY_TRANSCRIPT_RECEIPT_STATUSES))
+        return (
+            f"{participant.participant_id} receipt status is "
+            f"{participant.status!r}, expected one of: {ready_values}"
+        )
+    return None
+
+
 def compare_participants(
     left: Participant,
     right: Participant,
@@ -651,6 +680,10 @@ def compare_participants(
     )
     transcript, transcript_ok, _ = compare_transcripts(left, right, atol, rtol)
     blocker = comparison_blocker(source_program, transcript)
+    if blocker is None:
+        blocker = participant_readiness_blocker(left)
+    if blocker is None:
+        blocker = participant_readiness_blocker(right)
     if blocker is not None:
         status = "blocked"
     elif source_program_ok and transcript_ok:
@@ -682,6 +715,24 @@ def validate_report(report: dict[str, Any], schema_path: Path) -> None:
             for error in errors
         ]
         raise ValueError("report schema validation failed: " + "; ".join(messages))
+
+
+def source_program_identity_matches(comparison: dict[str, Any]) -> bool:
+    source_program = comparison["sourceProgram"]
+    return (
+        source_program["comparable"]
+        and all(
+            source_program[field] is True
+            for field in (
+                "manifestSha256Match",
+                "graphSha256Match",
+                "weightSha256Match",
+                "inputSetSha256Match",
+            )
+        )
+        and source_program["authoringSurfaceMatch"] is not False
+        and source_program["programBundleIdMatch"] is not False
+    )
 
 
 def build_report(
@@ -752,21 +803,7 @@ def build_report(
             "failedCount": sum(1 for item in comparisons if item["status"] == "failed"),
             "blockedCount": sum(1 for item in comparisons if item["status"] == "blocked"),
             "sameSourceProgramAcrossParticipants": all(
-                item["status"] != "blocked" and all(
-                    item["sourceProgram"][field] is True
-                    for field in (
-                        "manifestSha256Match",
-                        "graphSha256Match",
-                        "weightSha256Match",
-                        "inputSetSha256Match",
-                    )
-                )
-                and (
-                    item["sourceProgram"]["authoringSurfaceMatch"] is not False
-                )
-                and (
-                    item["sourceProgram"]["programBundleIdMatch"] is not False
-                )
+                source_program_identity_matches(item)
                 for item in comparisons
                 if reference_participant.participant_id
                 in (item["leftParticipantId"], item["rightParticipantId"])

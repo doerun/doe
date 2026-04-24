@@ -80,6 +80,7 @@ pub fn emitStreaming(
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
+    try W.write(buf, pos, "param q_len: i16 = 1;\n");
     try W.write(buf, pos, "param kv_len: i16;\n");
     try W.write(buf, pos, "param softcap: f32 = 0.0;\n");
     try W.write(buf, pos, "param scale: f32 = 0.125;\n\n");
@@ -184,7 +185,7 @@ pub fn emitDecode(
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
-    try emitStoragePtrs(buf, pos, module);
+    try emitDecodeStoragePtrs(buf, pos, module);
     try emitDecodeRuntimeState(buf, pos);
 
     // Local accumulators
@@ -212,7 +213,7 @@ pub fn emitDecode(
     // Phase 2: reduce and normalize
     try W.write(buf, pos, "task reduce_recv() void {\n");
     try W.write(buf, pos, "    var incoming: f32 = 0.0;\n");
-    try W.write(buf, pos, "    @fmovs(incoming, reduce_in);\n");
+    try W.write(buf, pos, "    @fmovs(&incoming, reduce_in);\n");
     try W.write(buf, pos, "    if (incoming > global_max) global_max = incoming;\n");
     try W.write(buf, pos, "    if (pe_id == num_pes - 1) @activate(norm_task_id);\n");
     try W.write(buf, pos, "}\n\n");
@@ -257,7 +258,8 @@ pub fn emitDecode(
     try W.write(buf, pos, "        @initialize_queue(reduce_out_q, .{ .color = reduce_color });\n");
     try W.write(buf, pos, "        @initialize_queue(reduce_in_q, .{ .color = reduce_color });\n");
     try W.write(buf, pos, "    }\n");
-    try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
+    // Layout owns reduce_color routing; wse3 rejects a second PE-local
+    // color config for the same color.
     try emitStorageExports(buf, pos, module);
     try emitDecodeRuntimeExports(buf, pos);
     try W.write(buf, pos, "    @export_symbol(compute);\n");
@@ -455,11 +457,11 @@ fn emitSlidingWindowGuard(buf: []u8, pos: *usize, indent: []const u8, loop_var: 
     try W.write(buf, pos, indent);
     try W.write(buf, pos, "if (decode_sliding_window[0] > 0) {\n");
     try W.write(buf, pos, indent);
-    try W.write(buf, pos, "    const current_pos = @as(i32, @intCast(decode_position[0]));\n");
+    try W.write(buf, pos, "    const current_pos = decode_position[0];\n");
     try W.write(buf, pos, indent);
-    try W.write(buf, pos, "    const sliding_window = @as(i32, @intCast(decode_sliding_window[0]));\n");
+    try W.write(buf, pos, "    const sliding_window = decode_sliding_window[0];\n");
     try W.write(buf, pos, indent);
-    try W.write(buf, pos, "    const abs_key = @as(i32, pe_id) * @as(i32, kv_chunk) + @as(i32, ");
+    try W.write(buf, pos, "    const abs_key = @as(u32, pe_id) * @as(u32, kv_chunk) + @as(u32, ");
     try W.write(buf, pos, loop_var);
     try W.write(buf, pos, ");\n");
     try W.write(buf, pos, indent);
@@ -498,6 +500,33 @@ fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!v
             "kv_len * head_dim"
         else
             "q_len * head_dim";
+        try W.write(buf, pos, "var ");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, ": [");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32 = @zeros([");
+        try W.write(buf, pos, size_expr);
+        try W.write(buf, pos, "]f32);\n");
+        try W.write(buf, pos, "var ");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, "_ptr: [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = &");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, ";\n");
+    }
+    try W.write(buf, pos, "\n");
+}
+
+fn emitDecodeStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage) continue;
+        const size_expr: []const u8 = if (isKvStorageName(global.name))
+            "kv_chunk * head_dim"
+        else
+            "head_dim";
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, ": [");

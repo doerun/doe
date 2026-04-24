@@ -216,6 +216,7 @@ pub const Builder = struct {
     pub fn type_f16(self: *Builder) EmitError!u32 {
         if (self.f16_type != 0) return self.f16_type;
         try self.emit_capability(Capability.Float16);
+        try self.emit_capability(Capability.StorageBuffer16BitAccess);
         const id = self.reserve_id();
         try self.append_inst(&self.types_globals, Opcode.TypeFloat, &.{ id, 16 });
         self.f16_type = id;

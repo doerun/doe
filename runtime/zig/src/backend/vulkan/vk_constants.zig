@@ -119,6 +119,7 @@ pub const VkPhysicalDeviceLimits = capability_structs.VkPhysicalDeviceLimits;
 pub const VkPhysicalDeviceProperties = capability_structs.VkPhysicalDeviceProperties;
 pub const VkPhysicalDeviceProperties2 = capability_structs.VkPhysicalDeviceProperties2;
 pub const VkPhysicalDeviceSubgroupProperties = capability_structs.VkPhysicalDeviceSubgroupProperties;
+pub const VkPhysicalDevice16BitStorageFeatures = capability_structs.VkPhysicalDevice16BitStorageFeatures;
 pub const VkPhysicalDeviceVulkan12Features = capability_structs.VkPhysicalDeviceVulkan12Features;
 
 pub const vkCreateInstance = functions.vkCreateInstance;
@@ -262,6 +263,7 @@ pub const VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO: i32 = 42;
 pub const VK_STRUCTURE_TYPE_MEMORY_BARRIER: i32 = 46;
 pub const VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER: i32 = 45;
 pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES: i32 = 1000094000;
+pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES: i32 = 1000083000;
 pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2: i32 = 1000059000;
 pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2: i32 = 1000059001;
 pub const VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES: i32 = 51;

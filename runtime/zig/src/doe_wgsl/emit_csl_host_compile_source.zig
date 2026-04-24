@@ -509,6 +509,39 @@ test "host compile source gather uses layout coordinates" {
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id = pe_y * width + pe_x") == null);
 }
 
+test "host compile source elementwise uses layout coordinates" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "element_wise", &buf);
+
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const layout_mod = @import_module(\"<layout>\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_x_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_y_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".width = width,") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".height = height,") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id = pe_y * width + pe_x") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".num_pes = width * height") == null);
+}
+
+test "host compile source rope avoids CSL builtin names" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "rope", &buf);
+
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const dim0 =") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const dim1 =") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const i0 =") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const i1 =") == null);
+}
+
+test "host compile source decode attention leaves color routing in layout" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "attention_decode", &buf);
+
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_color_config") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@set_local_color_config(reduce_color") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "[kv_chunk * head_dim]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "[q_len * head_dim]f32") == null);
+}
+
 test "host compile source rejects unknown HostPlan pattern" {
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
     try std.testing.expectError(

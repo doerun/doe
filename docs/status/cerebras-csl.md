@@ -7,6 +7,41 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+7) — Gemma 3 transcript parity report normalizes WebGPU receipts
+
+The generic transcript parity report builder now accepts the current Gemma
+3 WebGPU receipt shape, where the comparable transcript is nested under
+`webgpuTranscript.decodeTranscript`. It also treats non-ready transcript
+lanes as blocked execution evidence instead of failed parity, while keeping
+source-program identity independent from readiness state.
+
+Regenerated:
+
+- `bench/out/doppler-reference/gemma-3-1b-transcript-parity-report.json`
+
+Current Gemma 3 1B report state:
+
+- participants: Doppler reference, Doe WebGPU, Doe CSL
+- comparisons: 3
+- passed: 0
+- failed: 1
+- blocked: 2
+- `sameSourceProgramAcrossParticipants=true`
+
+All participants agree on manifest, graph, weights, input set, authoring
+surface, and program bundle identity. The remaining blockers are execution
+evidence, not program drift: the WebGPU lane is `output_ready` but only has
+one actual decode step with `eos_token`, so it fails against the eight-step
+Doppler reference transcript; the CSL lane is still `simulator_failed` with
+`cslTranscript.status=not_produced`, so CSL comparisons are blocked until
+the real simfabric transcript is produced.
+
+Verified:
+
+- `python3 -m unittest bench.tests.test_transcript_parity_report`
+- `python3 bench/tools/build_transcript_parity_report.py --reference-export bench/out/doppler-reference/program-bundle-export/doppler_program_bundle_reference_export.json --lane webgpu:bench/out/doppler-reference/gemma-3-1b-doe-webgpu-transcript.json --lane csl:bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --out bench/out/doppler-reference/gemma-3-1b-transcript-parity-report.json`
+- `python3 bench/gates/schema_gate.py`
+
 ## 2026-04-24 (late+6) — Gemma 3 embed CSL chunking compiles
 
 Gemma 3 1B `embed` no longer fails with PE memory exhaustion or the

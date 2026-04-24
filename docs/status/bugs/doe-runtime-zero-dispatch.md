@@ -1,6 +1,7 @@
 # Doe runtime zero-dispatch bug
 
-**Status:** open, non-critical.
+**Status:** fixed for the minimum repro; Gemma 3 C-lane still has a
+logits correctness blocker.
 **Lane:** bug follow-up from Track 1 (Doe WebGPU execution trace).
 **Does not block:** browser→CSL parity receipt (Track 2 + Track 3 are
 the critical path to the north-star receipt; Track 1 is a portability
@@ -21,71 +22,81 @@ storage buffer:
 Through `doe-gpu`'s compute facade in Node, every intermediate call
 succeeds without error (createShaderModule, createComputePipeline,
 createBuffer, createBindGroup, dispatchWorkgroups, queue.submit,
-copyBufferToBuffer, mapAsync). Readback returns `0` instead of `42`,
-deterministically.
+copyBufferToBuffer, mapAsync). The original failure read back `0`
+instead of `42`.
 
 Run:
 ```
 node bench/repros/doe-runtime-zero-dispatch/repro.mjs
 ```
 
-Exit 0 when the bug is fixed; exit 1 while it persists.
+Exit 0 when the bug is fixed.
 
-## Already fixed in this lane
+## Fixed in this lane
 
 - `packages/doe-gpu/src/vendor/webgpu/compute.js:wrapAdapter` now
   exposes `info` by delegating to the raw Doe Adapter. Previously
   Doppler's `src/config/platforms/loader.js:102` threw
   `Cannot read properties of undefined (reading 'vendor')` and the
   error was swallowed by Doppler's try/catch. Fix was necessary but
-  not sufficient — the zero-dispatch persists after it.
+  not sufficient by itself.
+- Vulkan command-buffer submit replay now executes recorded compute
+  dispatches and replays `copyBufferToBuffer` in command order, so
+  the minimum repro readback observes the shader write.
+- Vulkan `queue.writeBuffer` resolves the live compute-buffer entry
+  before upload. This avoids stale host pointers after storage buffers
+  are promoted to device-local memory.
+- Vulkan copy replay falls back to a real `vkCmdCopyBuffer` + wait
+  when either source or destination is device-local instead of silently
+  skipping copies that lack CPU mappings.
 
-## Still failing
+## Current evidence
 
-Trivial WGSL writes `42u`; readback returns `0`.
+`env HOME=/tmp node bench/repros/doe-runtime-zero-dispatch/repro.mjs`
+now prints:
 
-## Candidate surfaces to investigate
+```text
+dispatched u32: 42 (expect 42)
+```
+
+The Gemma 3 1B Doe WebGPU lane gets past the prior Vulkan crash with
+`DOE_DISABLE_SUBGROUPS=0`, advertises `hasF16=true` and
+`hasSubgroups=true`, and reaches Doppler pipeline execution. It still
+does not produce a promotion-ready C-lane receipt: the exporter exits
+with `[Sampling] Logits has no finite candidate logits after masking
+the pad token`, and the emitted `final_logits.f32` digest still has an
+all-zero preview. That is now a model/kernel correctness issue, not the
+minimum queue-submit no-op.
+
+## Remaining candidate surfaces
 
 Ordered by likelihood of root cause:
 
-1. **`queue.submit` flush** — is the command buffer actually reaching
-   the Vulkan device? Probe by logging command-buffer handle validity
-   at submit time, or by checking whether any Vulkan-side command
-   execution counter moves.
-2. **Device-visible memory backing** — is `storageBuf` allocated on
-   device-local memory, or only CPU-visible? If `read_write` storage
-   buffers land in host-visible memory, the GPU compute dispatch
-   might write to a staging buffer that's never flushed back.
-3. **`copyBufferToBuffer` source synchronization** — is there a
-   memory barrier between the compute dispatch's write and the
-   buffer-to-buffer copy? Without one, the copy might read stale
-   zero-initialized bytes.
-4. **`mapAsync(GPUMapMode.READ)` on device-side-written buffers** —
-   does `mapAsync` correctly synchronize against pending device
-   writes? If it maps before the GPU finishes writing, we see
-   zero-initialized memory.
+1. **First zero-producing Gemma kernel** — identify which Doppler
+   dispatch first leaves logits/KV state invalid despite the simple
+   42u dispatch working.
+2. **Device-local output readback coverage** — copy replay now uses
+   `vkCmdCopyBuffer` for unmapped buffers, but the all-zero logits
+   receipt shows the next failure is still upstream of the final
+   readback or in the producing kernel.
+3. **Subgroup/f16 kernel semantics** — the adapter now honestly reports
+   subgroup and f16 support; any remaining all-zero output needs a
+   kernel-level first-divergence probe instead of a capability
+   suppression workaround.
 
 ## What the fix unblocks
 
-Once fixed, Track 1's "execution green" exit condition (realKvCache
-non-zero, real tokens for Gemma 3 1B) becomes reachable. This is a
-portability-path win — browser already works, this makes Node/Doe
-work too. It is NOT on the critical path to the browser→CSL parity
-receipt; Track 2's CSL simfabric and Track 3's comparator/binding
-work proceed independently.
+The minimum native Doe WebGPU queue path is no longer a silent no-op,
+so Gemma 3 C-lane debugging can move to first-divergence tracing of
+the production kernels and output buffers. This remains a portability
+path; browser→CSL parity still depends on the CSL/simfabric path.
 
 ## Related signals (separate issues, not fixes yet)
 
-- `device.adapterInfo` is `undefined` — same class of bug as
-  `wrapAdapter.info` was. Fix would be analogous:
-  `get adapterInfo() { return raw.adapterInfo; }` on `wrapDevice`.
-- `device.features` exposes `depth-clip-control`,
-  `depth32float-stencil8`, three texture-compression features —
-  graphics features on a compute-only facade — and `shader-f16` /
-  `subgroups` are missing. For Doppler's capability-aware kernel
-  path policy, f16 and subgroup kernels get remapped to f32 /
-  non-subgroup fallbacks. Not a zero-dispatch cause (the repro uses
-  neither), but worth cleaning up.
+- `device.adapterInfo` may still need an explicit compute-facade
+  getter, analogous to the existing `adapter.info` fix.
+- The remaining Gemma 3 C-lane failure should be tracked by a
+  first-zero kernel receipt rather than by this minimum repro.
 
 ## Handoff artifacts
 

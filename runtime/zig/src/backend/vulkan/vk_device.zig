@@ -106,7 +106,8 @@ pub fn create_device_and_queue(self: anytype) !void {
         self.physical_device,
         c.VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
     );
-    const feature_query = vk_feature_caps.query(self.physical_device);
+    var feature_query = vk_feature_caps.query(self.physical_device);
+    feature_query.enabled_vulkan12_features.pNext = @ptrCast(&feature_query.enabled_storage16_features);
 
     var all_exts: [8][*:0]const u8 = undefined;
     var total_ext_count: usize = 0;

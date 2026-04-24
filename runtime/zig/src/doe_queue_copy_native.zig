@@ -3,6 +3,7 @@ const std = @import("std");
 const abi_copy = @import("core/abi/wgpu_copy_descriptor_types.zig");
 const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
 const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
@@ -11,6 +12,7 @@ const error_scope = @import("error_scope.zig");
 const shared = @import("doe_queue_submit_shared.zig");
 
 const has_vulkan = (builtin.os.tag == .linux);
+const vk_resources = if (has_vulkan) resource_ops.vk_resources else struct {};
 const cast = native_helpers.cast;
 const toOpaque = native_helpers.toOpaque;
 const DoeBuffer = native_types.DoeBuffer;
@@ -34,19 +36,16 @@ pub fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offse
     }
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            if (buf.vk_mapped_ptr) |base| {
-                const o: usize = @intCast(offset);
-                @memcpy(base[o .. o + size], data[0..size]);
-                return;
-            }
             if (buf.vk_id != 0) {
                 const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
                 if (rt.compute_buffers.get(buf.vk_id)) |cb| {
-                    if (cb.mapped) |ptr| {
-                        const o: usize = @intCast(offset);
-                        const d: [*]u8 = @ptrCast(ptr);
-                        @memcpy(d[o .. o + size], data[0..size]);
-                    }
+                    vk_resources.stage_compute_buffer_write(rt, cb, offset, data[0..size]) catch |err| {
+                        shared.deliverInternalError(
+                            q.dev,
+                            "doe_queue_write_buffer: vulkan stage buffer write: {s}",
+                            .{@errorName(err)},
+                        );
+                    };
                 }
             }
         }

@@ -30,12 +30,11 @@ pub fn emit(
     try W.write(buf, pos, "// Each PE processes chunk_size elements with no fabric routing.\n\n");
 
     try W.write(buf, pos, "param memcpy_params;\n");
-    // u16 for pe_id/num_pes so 2-D grids up to 65,535 total PEs (covers
-    // 31B's 58,056 PE as 246x236). 1-D layouts (height=1) still fit.
-    try W.write(buf, pos, "param pe_id: u16;\n");
-    try W.write(buf, pos, "param num_pes: u16;\n\n");
+    try W.write(buf, pos, "param width: u16;\n");
+    try W.write(buf, pos, "param height: u16;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try W.write(buf, pos, "const layout_mod = @import_module(\"<layout>\");\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
     try walk.uniformParams(buf, pos, module);
@@ -47,6 +46,10 @@ pub fn emit(
 
 fn emitComputeFunction(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function) EmitError!void {
     try W.write(buf, pos, "fn compute() void {\n");
+    try W.write(buf, pos, "    const pe_x = layout_mod.get_x_coord();\n");
+    try W.write(buf, pos, "    const pe_y = layout_mod.get_y_coord();\n");
+    try W.write(buf, pos, "    const pe_id = @as(u16, pe_y) * width + @as(u16, pe_x);\n");
+    try W.write(buf, pos, "    const num_pes = width * height;\n");
     try W.write(buf, pos, "    for (@range(i16, chunk_size)) |_idx| {\n");
     try W.write(buf, pos, "        const idx = @as(u32, _idx);\n");
     try emitElementWiseBody(buf, pos, module, function);

@@ -74,6 +74,15 @@ pub const VkPhysicalDeviceFeatures2 = extern struct {
     features: VkPhysicalDeviceFeatures,
 };
 
+pub const VkPhysicalDevice16BitStorageFeatures = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*anyopaque,
+    storageBuffer16BitAccess: vk.VkBool32,
+    uniformAndStorageBuffer16BitAccess: vk.VkBool32,
+    storagePushConstant16: vk.VkBool32,
+    storageInputOutput16: vk.VkBool32,
+};
+
 pub const VkPhysicalDeviceLimits = extern struct {
     maxImageDimension1D: u32,
     maxImageDimension2D: u32,

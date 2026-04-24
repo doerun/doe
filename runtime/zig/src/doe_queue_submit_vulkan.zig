@@ -22,6 +22,7 @@ const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const shared = @import("doe_queue_submit_shared.zig");
 const vulkan_compute = @import("doe_vulkan_compute_native.zig");
+const vk_upload = @import("backend/vulkan/vk_upload.zig");
 
 const cast = native_helpers.cast;
 const DoeCommandBuffer = native_types.DoeCommandBuffer;
@@ -60,8 +61,6 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                     if (src_buf.vk_id == 0 or dst_buf.vk_id == 0) continue;
                     const scb = rt.compute_buffers.get(src_buf.vk_id) orelse continue;
                     const dcb = rt.compute_buffers.get(dst_buf.vk_id) orelse continue;
-                    const sptr = scb.mapped orelse continue;
-                    const dptr = dcb.mapped orelse continue;
                     // Flush any pending dispatch writes before the
                     // copy so we see the freshly-written bytes.
                     if (executed_any_dispatch) {
@@ -74,12 +73,32 @@ pub fn submit_vulkan_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*a
                         };
                         executed_any_dispatch = false;
                     }
-                    const n: usize = @intCast(copy_cmd.size);
-                    const so: usize = @intCast(copy_cmd.src_off);
-                    const doff: usize = @intCast(copy_cmd.dst_off);
-                    const s: [*]const u8 = @ptrCast(sptr);
-                    const d: [*]u8 = @ptrCast(dptr);
-                    @memcpy(d[doff .. doff + n], s[so .. so + n]);
+                    const copy_end_src = std.math.add(u64, copy_cmd.src_off, copy_cmd.size) catch continue;
+                    const copy_end_dst = std.math.add(u64, copy_cmd.dst_off, copy_cmd.size) catch continue;
+                    if (copy_end_src > scb.size or copy_end_dst > dcb.size) continue;
+                    if (scb.mapped != null and dcb.mapped != null) {
+                        const n: usize = @intCast(copy_cmd.size);
+                        const so: usize = @intCast(copy_cmd.src_off);
+                        const doff: usize = @intCast(copy_cmd.dst_off);
+                        const s: [*]const u8 = @ptrCast(scb.mapped.?);
+                        const d: [*]u8 = @ptrCast(dcb.mapped.?);
+                        @memcpy(d[doff .. doff + n], s[so .. so + n]);
+                        continue;
+                    }
+                    vk_upload.copy_buffer_region_and_wait(
+                        rt,
+                        scb.buffer,
+                        copy_cmd.src_off,
+                        dcb.buffer,
+                        copy_cmd.dst_off,
+                        copy_cmd.size,
+                    ) catch |err| {
+                        shared.deliverInternalError(
+                            q.dev,
+                            "doe_queue_submit: vulkan copy_buf: {s}",
+                            .{@errorName(err)},
+                        );
+                    };
                 },
                 // Other command kinds (texture copies, clear_buffer,
                 // render passes, timestamps, query resolves) are not

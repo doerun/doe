@@ -5,6 +5,7 @@ const c = @import("vk_constants.zig");
 const FEATURE_SHADER_F16: u32 = abi_feature.WGPUFeatureName_ShaderF16;
 const FEATURE_FLOAT32_BLENDABLE: u32 = abi_feature.WGPUFeatureName_Float32Blendable;
 const FEATURE_SUBGROUPS: u32 = abi_feature.WGPUFeatureName_Subgroups;
+const FEATURE_SUBGROUPS_F16: u32 = abi_feature.WGPUFeatureName_SubgroupsF16;
 const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_feature.WGPUFeatureName_DualSourceBlending;
 const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier1;
 const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier2;
@@ -114,6 +115,7 @@ pub const VulkanFeatureCaps = struct {
     float32_blendable: bool = false,
     dual_source_blending: bool = false,
     subgroups: bool = false,
+    subgroups_f16: bool = false,
     texture_formats_tier1: bool = false,
     texture_formats_tier2: bool = false,
 };
@@ -121,8 +123,16 @@ pub const VulkanFeatureCaps = struct {
 pub const VulkanFeatureQuery = struct {
     caps: VulkanFeatureCaps = .{},
     enabled_features: c.VkPhysicalDeviceFeatures = std.mem.zeroes(c.VkPhysicalDeviceFeatures),
+    enabled_storage16_features: c.VkPhysicalDevice16BitStorageFeatures = init_enabled_storage16_features(),
     enabled_vulkan12_features: c.VkPhysicalDeviceVulkan12Features = init_enabled_vulkan12_features(),
 };
+
+fn init_enabled_storage16_features() c.VkPhysicalDevice16BitStorageFeatures {
+    var features = std.mem.zeroes(c.VkPhysicalDevice16BitStorageFeatures);
+    features.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+    features.pNext = null;
+    return features;
+}
 
 fn init_enabled_vulkan12_features() c.VkPhysicalDeviceVulkan12Features {
     var features = std.mem.zeroes(c.VkPhysicalDeviceVulkan12Features);
@@ -132,7 +142,9 @@ fn init_enabled_vulkan12_features() c.VkPhysicalDeviceVulkan12Features {
 }
 
 pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
+    var raw_storage16_features = init_enabled_storage16_features();
     var raw_vulkan12_features = init_enabled_vulkan12_features();
+    raw_vulkan12_features.pNext = @ptrCast(&raw_storage16_features);
     var raw_features2 = std.mem.zeroes(c.VkPhysicalDeviceFeatures2);
     raw_features2.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     raw_features2.pNext = @ptrCast(&raw_vulkan12_features);
@@ -159,15 +171,21 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
         break :blk first == '1' or first == 't' or first == 'T' or first == 'y' or first == 'Y';
     };
 
+    const has_shader_f16 = raw_vulkan12_features.shaderFloat16 == c.VK_TRUE and
+        raw_storage16_features.storageBuffer16BitAccess == c.VK_TRUE;
+    const has_subgroups = !subgroup_disabled_by_env and
+        subgroup_properties.subgroupSize > 0 and
+        (subgroup_properties.supportedStages & c.VK_SHADER_STAGE_COMPUTE_BIT) != 0 and
+        (subgroup_properties.supportedOperations & VK_SUBGROUP_REQUIRED_OPERATIONS) == VK_SUBGROUP_REQUIRED_OPERATIONS and
+        raw_vulkan12_features.subgroupBroadcastDynamicId == c.VK_TRUE;
+
     const caps = VulkanFeatureCaps{
-        .shader_f16 = raw_vulkan12_features.shaderFloat16 == c.VK_TRUE,
+        .shader_f16 = has_shader_f16,
         .float32_blendable = supports_all_formats(physical_device, &FLOAT32_BLENDABLE_FORMATS, supports_color_attachment_blend),
         .dual_source_blending = raw_features2.features.dualSrcBlend == c.VK_TRUE,
-        .subgroups = !subgroup_disabled_by_env and
-            subgroup_properties.subgroupSize > 0 and
-            (subgroup_properties.supportedStages & c.VK_SHADER_STAGE_COMPUTE_BIT) != 0 and
-            (subgroup_properties.supportedOperations & VK_SUBGROUP_REQUIRED_OPERATIONS) == VK_SUBGROUP_REQUIRED_OPERATIONS and
-            raw_vulkan12_features.subgroupBroadcastDynamicId == c.VK_TRUE,
+        .subgroups = has_subgroups,
+        .subgroups_f16 = has_subgroups and has_shader_f16 and
+            raw_vulkan12_features.shaderSubgroupExtendedTypes == c.VK_TRUE,
         .texture_formats_tier1 = supports_all_formats(physical_device, &TIER1_STORAGE_FORMATS, supports_storage_image),
         .texture_formats_tier2 = false,
     };
@@ -188,9 +206,13 @@ pub fn query(physical_device: c.VkPhysicalDevice) VulkanFeatureQuery {
     }
     if (resolved_caps.shader_f16) {
         query_result.enabled_vulkan12_features.shaderFloat16 = c.VK_TRUE;
+        query_result.enabled_storage16_features.storageBuffer16BitAccess = c.VK_TRUE;
     }
     if (resolved_caps.subgroups) {
         query_result.enabled_vulkan12_features.subgroupBroadcastDynamicId = c.VK_TRUE;
+    }
+    if (resolved_caps.subgroups_f16) {
+        query_result.enabled_vulkan12_features.shaderSubgroupExtendedTypes = c.VK_TRUE;
     }
     return query_result;
 }
@@ -200,6 +222,7 @@ pub fn dynamic_feature_supported(feature: u32, caps: VulkanFeatureCaps) bool {
         FEATURE_SHADER_F16 => caps.shader_f16,
         FEATURE_FLOAT32_BLENDABLE => caps.float32_blendable,
         FEATURE_SUBGROUPS => caps.subgroups,
+        FEATURE_SUBGROUPS_F16 => caps.subgroups_f16,
         FEATURE_DUAL_SOURCE_BLENDING => caps.dual_source_blending,
         FEATURE_TEXTURE_FORMATS_TIER1 => caps.texture_formats_tier1,
         FEATURE_TEXTURE_FORMATS_TIER2 => caps.texture_formats_tier2,

@@ -148,6 +148,27 @@ def generic_transcript_receipt(
     }
 
 
+def nested_webgpu_transcript_receipt(
+    transcript_path: Path,
+    tokens_sha256: str,
+    logits_path: Path,
+    logits_sha256: str,
+) -> dict[str, object]:
+    receipt = generic_transcript_receipt(
+        transcript_path,
+        tokens_sha256,
+        logits_path,
+        logits_sha256,
+    )
+    transcript = receipt.pop("transcript")
+    receipt["artifactKind"] = "doe_webgpu_transcript"
+    receipt["webgpuTranscript"] = {
+        "status": "output_ready",
+        "decodeTranscript": transcript,
+    }
+    return receipt
+
+
 def csl_transcript_receipt(
     transcript_path: Path,
     tokens_sha256: str,
@@ -271,6 +292,60 @@ class TranscriptParityReportTests(unittest.TestCase):
             self.assertEqual(3, report["summary"]["passedCount"])
             self.assertTrue(report["summary"]["sameSourceProgramAcrossParticipants"])
 
+    def test_build_report_accepts_nested_webgpu_decode_transcript(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            reference_logits = root / "reference_logits.f32"
+            webgpu_logits = root / "webgpu_logits.f32"
+            reference_transcript_path = root / "reference_transcript.json"
+            webgpu_transcript_path = root / "webgpu_transcript.json"
+
+            write_f32(reference_logits, [0.1, 0.2, 0.3, 0.4])
+            write_f32(webgpu_logits, [0.1, 0.2, 0.3, 0.4])
+            write_json(reference_transcript_path, {"steps": [7]})
+            write_json(webgpu_transcript_path, {"steps": [7]})
+
+            reference_path = root / "reference.json"
+            webgpu_path = root / "webgpu.json"
+            write_json(
+                reference_path,
+                reference_export(
+                    reference_transcript_path,
+                    "t" * 64,
+                    reference_logits,
+                    sha256_file(reference_logits),
+                ),
+            )
+            write_json(
+                webgpu_path,
+                nested_webgpu_transcript_receipt(
+                    webgpu_transcript_path,
+                    "t" * 64,
+                    webgpu_logits,
+                    sha256_file(webgpu_logits),
+                ),
+            )
+
+            report = build_report(
+                reference_export_path=reference_path,
+                lanes=[("webgpu", webgpu_path)],
+                schema_path=REPO_ROOT
+                / "config"
+                / "doe-transcript-parity-report.schema.json",
+            )
+
+            errors = sorted(
+                self.validator.iter_errors(report),
+                key=lambda item: tuple(str(part) for part in item.absolute_path),
+            )
+            self.assertEqual([], errors)
+            self.assertEqual(1, report["summary"]["comparisonCount"])
+            self.assertEqual(1, report["summary"]["passedCount"])
+            self.assertEqual(
+                "doe_webgpu_transcript",
+                report["participants"][1]["artifactKind"],
+            )
+
     def test_source_program_drift_marks_failed_comparison(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -351,6 +426,59 @@ class TranscriptParityReportTests(unittest.TestCase):
             self.assertEqual("blocked", comparison["status"])
             self.assertFalse(comparison["transcript"]["comparable"])
             self.assertIn("missing_logits.f32", comparison["blocker"])
+
+    def test_unready_transcript_receipt_marks_blocked_not_source_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            reference_logits = root / "reference_logits.f32"
+            csl_logits = root / "csl_logits.f32"
+            reference_transcript_path = root / "reference_transcript.json"
+            csl_transcript_path = root / "csl_transcript.json"
+
+            write_f32(reference_logits, [0.1, 0.2, 0.3, 0.4])
+            write_f32(csl_logits, [0.1, 0.2, 0.3, 0.4])
+            write_json(reference_transcript_path, {"steps": [7]})
+            write_json(csl_transcript_path, {"steps": [7]})
+
+            reference_path = root / "reference.json"
+            csl_path = root / "csl.json"
+            write_json(
+                reference_path,
+                reference_export(
+                    reference_transcript_path,
+                    "t" * 64,
+                    reference_logits,
+                    sha256_file(reference_logits),
+                ),
+            )
+            blocked = csl_transcript_receipt(
+                csl_transcript_path,
+                "t" * 64,
+                csl_logits,
+                sha256_file(csl_logits),
+            )
+            blocked["status"] = "simulator_failed"
+            blocked["cslTranscript"]["status"] = "not_produced"
+            write_json(csl_path, blocked)
+
+            report = build_report(
+                reference_export_path=reference_path,
+                lanes=[("csl", csl_path)],
+                schema_path=REPO_ROOT
+                / "config"
+                / "doe-transcript-parity-report.schema.json",
+            )
+
+            errors = sorted(
+                self.validator.iter_errors(report),
+                key=lambda item: tuple(str(part) for part in item.absolute_path),
+            )
+            self.assertEqual([], errors)
+            self.assertEqual(1, report["summary"]["blockedCount"])
+            self.assertTrue(report["summary"]["sameSourceProgramAcrossParticipants"])
+            comparison = report["comparisons"][0]
+            self.assertEqual("blocked", comparison["status"])
+            self.assertIn("transcript status", comparison["blocker"])
 
 
 if __name__ == "__main__":

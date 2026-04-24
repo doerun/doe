@@ -18,6 +18,7 @@ pub const Capability = struct {
     pub const ClipDistance: u32 = 32;
     pub const Float16: u32 = 9;
     pub const SampleRateShading: u32 = 35;
+    pub const StorageBuffer16BitAccess: u32 = 4433;
     pub const GroupNonUniform: u32 = 61;
     pub const GroupNonUniformArithmetic: u32 = 63;
     pub const GroupNonUniformShuffle: u32 = 65;

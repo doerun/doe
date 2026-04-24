@@ -56,15 +56,17 @@ pub fn emitElementWiseLayout(
     try write(buf, pos, "layout {\n");
     try write(buf, pos, "    @set_rectangle(width, height);\n\n");
 
-    // Assign tile code to each PE (row-major: pe_id = pe_y * width + pe_x).
+    // Assign identical tile code to each PE. The PE program derives its
+    // row-major id from <layout> coordinates so large 2-D element-wise grids
+    // do not instantiate one distinct PE program per tile.
     try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
     try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
     try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
     try write(buf, pos, spec.PE_PROGRAM_FILENAME);
     try write(buf, pos, "\", .{\n");
     try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
-    try write(buf, pos, "                .pe_id = pe_y * width + pe_x,\n");
-    try write(buf, pos, "                .num_pes = width * height,\n");
+    try write(buf, pos, "                .width = width,\n");
+    try write(buf, pos, "                .height = height,\n");
     try write(buf, pos, "            });\n");
     try write(buf, pos, "        }\n");
     try write(buf, pos, "    }\n\n");
