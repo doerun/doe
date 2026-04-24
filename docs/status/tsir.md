@@ -107,6 +107,18 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh stale header comment in
+  `runtime/zig/tests/wgsl/tsir_frontend_test.zig`. Said "Step 4
+  scaffold tests" and "The lowering itself is minimal (names only
+  for now) so this test locks the 'pipeline exists' milestone;
+  richer coverage (bindings, axes, reductions, collectives) lands
+  with future increments." Stale — the frontend now recovers full
+  TSIR semantic including bindings, axes, reduction regions,
+  collective nodes, typed rejections, family hints, and per-family
+  `SemanticBody` payloads. Rewrote to describe what the tests
+  actually lock. 933/933 Zig tests still pass; strategy-leak gate
+  PASS. Cites `docs/tsir-lowering-plan.md` Step 4 (frontend) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Code: refresh module docstring of
   `bench/tests/test_tsir_bootstrap_catalog.py`. Described only
   schema validation ("This test fails closed if any catalog entry

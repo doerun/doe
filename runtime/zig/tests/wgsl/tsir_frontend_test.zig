@@ -1,10 +1,11 @@
-// Step 4 scaffold tests: the WGSL → TSIR frontend exists end-to-end.
+// Step 4 tests: the WGSL → TSIR frontend end-to-end.
 //
-// Parse + analyze + build IR + lower to TSIR, check basic structural
-// invariants. The lowering itself is minimal (names only for now) so
-// this test locks the "pipeline exists" milestone; richer coverage
-// (bindings, axes, reductions, collectives) lands with future
-// increments that extend the frontend.
+// Parse + analyze + build IR + lower to TSIR. The frontend now
+// recovers full TSIR semantic for the Phase A bootstrap families —
+// iteration axes, buffer bindings, reduction regions, collective
+// semantic nodes, typed rejections, kernel-family hints, and
+// per-family `SemanticBody` payloads for fused_gemv / rms_norm /
+// gather. These tests lock those structural invariants.
 
 const std = @import("std");
 const tsir = @import("../../src/tsir/mod.zig");
