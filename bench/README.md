@@ -298,6 +298,30 @@ it does not live in a scratch-only path.
     `flat_2d_storage`; broadening the shader set requires extending the
     reporter invocation list and the mirror schema in lockstep
 
+## TSIR parity tooling
+
+TSIR (Tiled Spatial IR) parity infrastructure lives alongside the benchmark
+tooling in this directory but is a separate verification surface from the
+Doe-vs-Dawn comparisons above.
+
+- `bench/tools/doe_parity.py` — manual parity CLI; three-way compare scaffold
+  (reference interpreter, WebGPU emission, CSL simfabric) with fail-closed
+  exactness classes matching the RDRR taxonomy.
+- `bench/tools/tsir_manifest_lowering.py` — schema-backed builder for
+  `integrityExtensions.lowerings[]` manifest entries.
+- `bench/tools/generate_tsir_manifest_fixtures.py` — bootstrap manifest
+  fixture generator; invokes the Zig `doe-tsir-bootstrap-manifest-inputs` tool.
+- `bench/fixtures/tsir-manifest-entries/` — six pinned manifest fixtures
+  (three bootstrap kernels × two target descriptors).
+- `bench/gates/nightly_tsir_parity_canary.py` — advisory nightly canary that
+  runs the six bootstrap fixtures through the parity CLI and emits a report.
+- `bench/tests/test_{doe_parity,tsir_bootstrap_catalog,tsir_manifest_lowering,nightly_tsir_parity_canary,doc_link_coverage}.py` — invariant tests.
+
+For architecture see
+[`../docs/tsir-lowering-plan.md`](../docs/tsir-lowering-plan.md); for live
+status see [`../docs/status/tsir.md`](../docs/status/tsir.md); for iteration
+discipline see [`../docs/loop-protocol.md`](../docs/loop-protocol.md).
+
 ## Terminology
 
 Use the benchmark taxonomy from `docs/benchmark-taxonomy.md`:

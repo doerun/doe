@@ -107,6 +107,18 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add `## TSIR parity tooling` section to `bench/README.md`.
+  The 2204-line bench README had zero TSIR mentions despite
+  hosting the parity CLI, manifest-lowering builder, fixture
+  generator, six bootstrap manifest fixtures, nightly canary, and
+  five TSIR-related test files. A contributor scanning the bench
+  README for TSIR tooling would have found nothing and had to
+  hunt by filesystem. Added a short section (between §Proof-backed
+  shader metric front door and §Terminology) enumerating the
+  TSIR tools + fixtures + canary + tests, with pointers to plan,
+  status shard, and loop protocol. Strategy-leak gate PASS,
+  doc-link coverage PASS. Cites `docs/loop-protocol.md` Loop 2
+  protocol.
 - Docs: add TSIR entry to top-level `README.md` §Start here. The
   §Start here list enumerated entry points for package consumers,
   runtime, benchmarks, current status, Doppler ingest, project
