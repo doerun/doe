@@ -38,13 +38,17 @@ The Doe-owned lowering of a Doppler Program Bundle is not a single monolithic
 boundary. It splits into two concerns at different levels of the stack:
 
 1. **Kernel-level lowering — the TSIR contract.** `docs/tsir-lowering-plan.md`
-   defines the forward compiler architecture: a Tiled Spatial IR between
+   defines the compiler architecture: a Tiled Spatial IR between
    WGSL IR and backend emitters, with a parity oracle defined against TSIR
    rather than against any backend. TSIR is where tiling, residency,
    collectives, and numerical exactness become explicit once — instead of
-   being rediscovered per-kernel by classifier/template emitters. The current
-   in-tree surface under `runtime/zig/src/tsir/` is scaffolding for that plan,
-   not a completed pipeline.
+   being rediscovered per-kernel by classifier/template emitters. The
+   in-tree surface under `runtime/zig/src/tsir/` is the Phase A compiler
+   surface for this plan (schema, digests, frontend, planner, reference
+   interpreter, and mechanical skeleton emitters for five backends) —
+   see `docs/status/tsir.md` for live status. Skeleton emitters produce
+   contract text, not executable kernel bodies, so the pipeline is not
+   yet a completed replacement for the classifier/template CSL path.
 2. **Runtime orchestration — the HostPlan contract.** HostPlan is the
    runtime-orchestration contract for launches, tensors, streams, and
    receipts. It is NOT the place where kernel meaning, residency strategy,

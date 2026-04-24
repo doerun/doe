@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh TSIR framing in `docs/doppler-ingest.md` §Lowering
+  architecture, item 1 (Kernel-level lowering — the TSIR contract).
+  Same "scaffolding for that plan, not a completed pipeline"
+  language as csl-architecture.md had pre-tick-39. Rewrote to name
+  the Phase A compiler surface explicitly (schema, digests,
+  frontend, planner, reference interpreter, five skeleton emitters)
+  while preserving the honest framing that the pipeline is not yet
+  a completed replacement for the classifier/template CSL path.
+  Added pointer to `docs/status/tsir.md`. Eighth doc in the
+  post-Phase-A landed-state drift class (ticks 27/28/34/35/37/38/39
+  and now this one). Strategy-leak gate PASS, doc-link coverage
+  PASS. Cites `docs/tsir-lowering-plan.md` §Current scaffold and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh `runtime/zig/STYLE.md` file-size section. Bullet at
   line 94 said "a small number of test-only WGSL files currently
   exceed this cap" — factually wrong (no WGSL files exist in
