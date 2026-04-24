@@ -14,6 +14,7 @@ history.
 - Live topical shards:
   - [`docs/status/cerebras-csl.md`](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
   - [`docs/status/compiler-and-webgpu.md`](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
+  - [`docs/status/tsir.md`](/Users/xyz/deco/doe/docs/status/tsir.md)
   - [`docs/status/runtime-backends-and-bench.md`](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
 - Add new status entries to the top of the relevant topical shard.
 - Live topical shards are LOC-capped at 1200 lines. Split by subdomain before a

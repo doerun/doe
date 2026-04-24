@@ -7,6 +7,13 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+**Cap notice:** this shard is currently over the 1200-line cap because
+TSIR Phase A wedges accumulated here before the subdomain split landed.
+**New TSIR entries go in [`tsir.md`](./tsir.md).** Historical TSIR entries
+remain here until a deliberate migration sweep. New non-TSIR entries
+(shader compiler non-TSIR paths, WebGPU runtime, robustness) still go
+here.
+
 ## 2026-04-24
 
 - TSIR Loop 2 - portable backend skeleton increment: added deterministic
