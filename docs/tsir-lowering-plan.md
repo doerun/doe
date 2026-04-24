@@ -295,53 +295,153 @@ The plan keeps five rules fixed:
 
 ## Scope and phasing
 
-Realistic floor for this work is **12–18 months on one compiler engineer**,
-more if attention parity includes flash semantics. The plan is four phases,
-each with a concrete exit criterion:
+This section has been re-scoped to target Cerebras parity for the Gemma
+family specifically, not full cross-backend portability. The original draft
+treated TSIR as a symmetric compiler that emits for five backends and
+validates each against a scalar reference oracle. That scope is not
+wrong architecturally, but it is wider than what the downstream Doe-Doppler
+path actually needs. The five re-scope moves are:
 
-- **Phase A — pipeline proof (4–6 months).** Steps 1 through 9 for the first
-  three kernel families: fused GEMV, RMSNorm, gather. Oracle, descriptors,
-  TSIR schema, frontend, residency, collective synthesis, mechanical emitter,
-  parity CLI, three kernel rewrites with receipts. End state: one program can
-  cross the TSIR path on WSE-3 and WebGPU generic, with parity receipts for
-  non-attention kernels.
+1. **Invert the reference dependency for real kernels.** Doppler's browser
+   WebGPU runtime already emits a `doppler.reference-transcript/v1` per
+   real Gemma run via the `doppler bundle` composition path. That is
+   ground truth for "this is what the model does" and is shipped, not
+   planned. Use the Doppler transcript as the reference for real-kernel
+   parity; the Zig scalar reference interpreter stays authoritative only
+   for the bootstrap catalog (fused_gemv, rms_norm, gather) where the
+   oracle exists as a small self-contained program.
 
-- **Phase B — attention (4–6 months).** Its own phase, not an extension.
-  Flash-style streaming attention, tiled prefill, paged KV residency class,
-  sliding-window dependence analysis, streaming softmax reductions, and the
-  cross-platform transcendental determinism (step 1 sollya polynomials) that
-  attention's softmax needs at scale. Parity class includes flash semantics.
+2. **TSIR → CSL is the critical path; other backends are optional.** The
+   emitters under `runtime/zig/src/tsir/emit_{csl,webgpu,msl,dxil,spir_v}.zig`
+   collectively cover five targets. WS3's downstream consumer is CSL
+   (the Cerebras lane WS4 owns). Doppler already produces WGSL, so
+   TSIR → WebGPU is a consistency check, not a functional requirement.
+   Only TSIR → CSL must reach body-level parity on real kernels. MSL,
+   DXIL, SPIR-V, and `webgpu-generic` stay at their current
+   semantic-aware-where-bootstrap / skeleton-elsewhere level; body
+   parity for those backends is post-WS3 work.
 
-- **Phase C — remaining kernel families (2–4 months).** Rope, dequant,
-  elementwise, linear attention, sample. These are mostly mechanical once
-  Phase A and B have exercised the pipeline; their novelty is narrow and they
-  inherit residency, collective, and parity machinery.
+3. **AOT convert-time lowering (step 11) moves forward of kernel-family
+   rewrites (step 9).** Step 11 is the mechanism that forces TSIR to
+   cover whatever real kernels a real model uses, because convert-time
+   lowering must either emit a receipt per kernel or fail closed with a
+   typed rejection. Pulling it forward collapses steps 9 and 10 into
+   one flow (receipts fall out of convert at the Doppler boundary)
+   and makes frontend coverage model-driven rather than
+   family-sequence-driven.
 
-- **Phase D — autotuning (post-C).** Replaces the Phase A first-fit tile
-  search with search guided by measured throughput. Phase A's planner is
-  correctness-only by design; perf claims need Phase D.
+4. **WS4's per-PE memory blockers drive first-real-kernel selection.**
+   The CSL status shard already characterized `embed`,
+   `lm_head_gemv_stable`, `attn_head256`, and `attn_head512` as the
+   four manifest-scale blockers with per-PE memory overflow. Those are
+   the first non-bootstrap kernel families that go through TSIR. Doing
+   them here solves the residency problem once in the compiler rather
+   than four times in the template emitters, and turns WS3 and WS4
+   into the same piece of work at the critical point.
+
+5. **Phase B (attention) narrows to the one variant the target model
+   uses.** The previous draft framed attention as its own full phase
+   with flash semantics, sliding-window, paged KV, and
+   transcendental-determinism via sollya polynomials. WS3's exit
+   condition only requires the attention variant Gemma 4 E2B actually
+   uses. Ship that first; additional attention variants become
+   follow-on work, not WS3-closing work. Sollya polynomials move to
+   Phase C (when the second attention variant or the second transformer
+   family lands), not Phase B.
+
+Under these five moves, WS3 closure is defined by: Gemma 4 E2B kernels
+(`embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`, plus
+rope / rms_norm / elementwise as they are touched) go through TSIR →
+CSL with parity receipts bound into the live Doppler manifest. Parity is
+CSL-vs-Doppler-transcript, not CSL-vs-Zig-oracle.
+
+### Phases under the re-scope
+
+- **Phase A — bootstrap pipeline proof (largely landed).** Zig scalar
+  reference interpreter, target descriptors, TSIR schema, frontend for
+  the bootstrap catalog, planner, collective synthesis, mechanical
+  emitters (CSL + WebGPU bodies; others skeleton), parity CLI reference
+  lane, manifest binding. Remaining: either wire `webgpu-generic` lane
+  for bootstrap as a CSL-consistency check, or label it
+  "compare-to-Doppler-transcript" and reuse the Doppler reference. The
+  nightly canary remains advisory.
+
+- **Phase A.5 — AOT convert-time lowering at the Doppler boundary.**
+  Step 11 promoted here. Doppler's convert stage invokes TSIR lowering
+  for the manifest's execution graph; emits a lowering entry per
+  `(kernelRef, backend)` plus a parity receipt compared against the
+  Doppler reference transcript. Fails closed with typed rejection
+  reasons when a kernel cannot be lowered. This is the mechanism that
+  forces TSIR frontend coverage to grow with real models.
+
+- **Phase B — first real Gemma kernel family (`embed`, `lm_head`,
+  non-attention).** TSIR frontend + reference interpreter coverage for
+  the non-attention WS4 blockers. CSL emitter bodies that honor WS4's
+  per-PE memory constraints (2D grid sharding for `embed`, `out_dim`
+  sharding for `lm_head_gemv_stable`). Parity receipts bind into the
+  Gemma 4 E2B manifest at convert time.
+
+- **Phase C — attention for Gemma 4 E2B.** The one attention variant
+  Gemma 4 E2B uses, including host-streamed KV tiles to fix the
+  per-PE `attn_head256` / `attn_head512` blockers. No flash-style
+  variants, no sliding-window, no paged KV unless Gemma 4 E2B itself
+  uses them. Exit: Gemma 4 E2B full kernel set has CSL parity receipts
+  against Doppler transcripts.
+
+- **Phase D — follow-on** (post-WS3): additional attention variants,
+  sollya-based cross-platform transcendental determinism, TSIR →
+  WebGPU/MSL/DXIL/SPIR-V body parity, autotuning.
 
 Claims tightened from the previous draft:
 
-- "3–6 months" reads 12–18 months. Named above.
-- "zero local decisions" becomes "no kernel-family pattern-matching; conflict
-  resolution enumerated and hashed". Named in step 7.
+- "3–6 months" / "12–18 months" estimates removed. Scope is defined by
+  exit conditions, not calendar.
+- "zero local decisions" becomes "no kernel-family pattern-matching;
+  conflict resolution enumerated and hashed". Named in step 7.
 - "stable semanticDigest" becomes "stable under pinned frontendVersion".
   Named in step 3.
-- "no CI" becomes "no PR-gating CI; nightly canary parity on a fixed kernel
-  set". Named in step 8.
-- "kernel-family hints bias heuristics" becomes "hints are tiebreakers only;
-  never change feasibility or rejection". Named in step 4.
+- "no CI" becomes "no PR-gating CI; nightly canary parity on a fixed
+  kernel set". Named in step 8.
+- "kernel-family hints bias heuristics" becomes "hints are tiebreakers
+  only; never change feasibility or rejection". Named in step 4.
+- The previous Phase A target "WSE-3 and WebGPU generic, with parity
+  receipts for non-attention kernels" is retained for bootstrap
+  kernels only. Real-kernel parity target narrows to CSL.
 
 ## Step 1: parity oracle before any compiler work
 
-The first load-bearing surface is the scalar reference interpreter. It consumes
-WGSL-derived TSIR, not backend code, and defines what counts as correct before
-any emitter gets a vote. The interpreter executes with declared IEEE-754
-semantics, left-fold reduction order unless a reduction explicitly permits a
-declared tree, and fp32 accumulation for reductions unless the source overrides
-it. The current `runtime/zig/src/tsir/reference_interpreter.zig` file states
-this contract; it still returns `NotImplemented`.
+The parity oracle is split into two regimes under the re-scope:
+
+**Bootstrap regime (this step, as originally written).** The scalar
+reference interpreter at `runtime/zig/src/tsir/reference_interpreter.zig`
+is the oracle for the bootstrap catalog (`fused_gemv`, `rms_norm`,
+`gather`). It consumes WGSL-derived TSIR, not backend code, and defines
+what counts as correct before any emitter gets a vote. The interpreter
+executes with declared IEEE-754 semantics, left-fold reduction order
+unless a reduction explicitly permits a declared tree, and fp32
+accumulation for reductions unless the source overrides it. The
+interpreter stays authoritative for the bootstrap catalog because
+those kernels are small enough for a scalar oracle to re-derive and
+because the oracle-as-a-real-program property is exactly what the
+bootstrap regime is supposed to prove.
+
+**Real-kernel regime (the inversion).** For real Gemma kernels, the
+reference is Doppler's `doppler.reference-transcript/v1` from a
+browser WebGPU run of the same kernel on the same inputs. That
+transcript ships from `doppler bundle` with per-step logits hashes and
+KV identity, executing on the same WGSL the manifest already names.
+Using the transcript as reference removes the requirement that the
+Zig interpreter re-derive correctness for every new kernel family;
+the interpreter does not need to cover `attn_head256` or
+`lm_head_gemv_stable` body arithmetic because Doppler already has.
+The parity CLI (step 8) accepts either oracle source depending on the
+kernel class: bootstrap kernels route to the Zig oracle; real kernels
+route to the Doppler transcript.
+
+The invariant that a backend is never validated by comparing it to
+another backend still holds. Both oracles (Zig scalar for bootstrap,
+Doppler transcript for real) are orthogonal to any backend under
+test. Backends compare to the oracle, not to each other.
 
 **Determinism requirement, named:** the project requires cross-platform
 bit-identity because Doppler WebGPU runs on heterogeneous browser GPUs. The
@@ -561,6 +661,12 @@ the exactness contract declares it.
 
 ## Step 7: one mechanical TSIR-to-CSL emitter
 
+CSL is the critical-path backend under the re-scope. The other four
+emitters (`emit_webgpu.zig`, `emit_msl.zig`, `emit_dxil.zig`,
+`emit_spir_v.zig`) stay at their current level — semantic-aware
+bootstrap bodies where they exist, skeleton-only elsewhere — and do
+not gate WS3 closure. Body parity for those backends is post-WS3 work.
+
 Once planning is explicit, the emitter should stop making decisions. It should
 be mechanical.
 
@@ -590,21 +696,86 @@ The current per-kernel CSL emitters can remain as migration shims while kernels
 move over one family at a time, but the end state is a shared lowering
 pipeline feeding a small number of mechanical backend emitters.
 
+### Per-PE memory constraints for first real kernels
+
+The CSL emitter body for real kernels must honor the per-PE memory
+constraints WS4 characterized (see `docs/status/cerebras-csl.md`). This
+is not an optional optimization — at the ~63 KiB PE budget, the
+bootstrap-style flat allocation pattern overflows `.bss` or
+`.blocked_ut_ival` on every one of the four real-kernel blockers. The
+emitter path for each blocker kernel is:
+
+- **`embed`**: 2D grid with `hidden_per_pe` sharding plus host-chunked
+  dispatch. The 1D flat layout emitted for bootstrap `gather` does not
+  generalize — 192 KiB output + 96 KiB table per PE overflows at
+  `num_tokens=32, hidden_size=1536, rows_per_pe=16`. The emitter reads
+  residency class from the planner, not from a local heuristic.
+
+- **`lm_head_gemv_stable`**: 2D layout with
+  `out_dim_per_pe = ceil(out_dim / height)` so the weight allocation
+  drops from 383 KiB per PE to roughly 4.6 KiB at the 197×84 grid. The
+  planner decides the grid shape based on the target descriptor's
+  `per_pe_working_budget`; the emitter honors it.
+
+- **`attn_head256` / `attn_head512`**: host-streamed K/V tiles replace
+  PE-resident `key`/`val` arrays. The planner declares a
+  `stream_kv_tiles` residency class on the KV tensors; the emitter
+  consumes that class and emits `@fmovs` from host-fabric rather than
+  flat per-PE storage. The .bss budget drops from 147/294 KiB per PE
+  to the tile-sized working set.
+
+These patterns are expressed as residency-class + collective-synthesis
+decisions in steps 5 and 6, not as kernel-specific logic in the
+emitter. The emitter remains mechanical — it just consumes a richer
+residency taxonomy than the bootstrap catalog exercised.
+
 ## Step 8: manual parity CLI as the gate
 
-Parity is a manual CLI gate, not a PR-gating CI policy. The CLI runs the reference
-interpreter first and then compares each backend result against it under a
-declared exactness class. The output is a parity receipt with hashes, exactness
-class, pass/fail status, and explicit rejection reasons.
+Parity is a manual CLI gate, not a PR-gating CI policy. The CLI routes
+each kernel to the oracle its regime declares — the Zig scalar
+reference interpreter for the bootstrap catalog, Doppler's
+`doppler.reference-transcript/v1` for real kernels — and compares each
+backend result under a declared exactness class. The output is a
+parity receipt with hashes, exactness class, pass/fail status, the
+reference-source identity, and explicit rejection reasons.
 
-The important property is asymmetry: a backend is never validated by comparing
-it only to a different backend. Both compare to the oracle. If the oracle does
-not exist for a kernel family yet, that family is not eligible for proof-grade
-promotion.
+The important property is asymmetry: a backend is never validated by
+comparing it only to a different backend. Both compare to the oracle.
+Under the re-scope, "the oracle" has two concrete implementations:
 
-This gate is what keeps compiler migration honest. Every rewrite should land
-with a parity receipt or with an explicit rejection, not with a vague "looks
-reasonable on the simulator" claim.
+- **Zig scalar reference** for bootstrap (`fused_gemv`, `rms_norm`,
+  `gather`). Receipt carries `referenceSource.kind = "zig-tsir-oracle"`
+  plus the oracle binary's commit-bound identity.
+- **Doppler transcript** for real kernels. Receipt carries
+  `referenceSource.kind = "doppler-reference-transcript"` plus the
+  transcript's `executionGraphHash` and `source.hash` so the reference
+  is reproducible from the manifest-bound bundle.
+
+If no oracle exists for a kernel family yet (no bootstrap oracle
+coverage, no Doppler transcript because the kernel is not captured),
+that family is not eligible for proof-grade promotion.
+
+### Backend lane rules under the re-scope
+
+- **`csl-simfabric`** is the critical-path backend lane. Real-kernel
+  parity receipts require it green (or explicitly rejected with a
+  typed reason). Execution runs against the local SDK container (see
+  `docs/status/cerebras-csl.md`; the prior
+  `csl_compile_container_runtime_blocked` classification is stale on
+  current hosts).
+- **`webgpu-generic`** is optional for real kernels under the re-scope.
+  Two acceptable modes: (a) execute through the TSIR → WebGPU emitter
+  and compare to the reference, or (b) declare the webgpu lane as
+  `reference-is-webgpu` and skip the TSIR emission, since Doppler's
+  browser WebGPU run already produced the reference. Mode (b) is valid
+  for real kernels; mode (a) is required for bootstrap kernels where
+  there is no Doppler transcript.
+- **`wse3` / `msl` / `dxil` / `spir-v`** skeleton lanes stay at current
+  state. Their receipts continue to carry `status=deferred,
+  reason=backend=skeleton_only` until a downstream consumer needs body
+  parity.
+
+### Avoiding PR-gating CI
 
 The reason for avoiding PR-gating CI here is practical rather than ideological:
 
@@ -621,32 +792,39 @@ is compatible with this plan and should be preferred over broad PR gating:
 - one fused-GEMV kernel
 - one RMSNorm kernel
 - one gather kernel
-- later, one attention-decode kernel
+- one real Gemma kernel (first WS4 blocker — `embed` once TSIR
+  frontend coverage lands) using the Doppler-transcript reference path
+- later, one attention-decode kernel for Gemma 4 E2B
 
 That gives cheap regression coverage without turning every routine change into a
 full lowering/parity farm run.
 
 ## Step 9: rewrite kernel families in impact order
 
-Migration should follow throughput and architectural leverage, not only surface
-simplicity.
+Migration order under the re-scope is driven by WS4's manifest-scale
+CSL blockers, not by surface simplicity. The first non-bootstrap
+families through TSIR are the four kernels the Cerebras lane cannot
+currently compile at manifest scale:
 
-The first targets should be the families that currently force the biggest
-planning and residency decisions:
+1. **`embed`** — Gemma 4 E2B embedding lookup. Introduces
+   `hidden_per_pe` residency class plus host-chunked dispatch to the
+   CSL emitter. Reference: Doppler browser transcript.
+2. **`lm_head_gemv_stable`** — final projection. Introduces `out_dim`
+   sharding residency class. Reference: Doppler browser transcript.
+3. **`attn_head256` / `attn_head512`** — attention variants. Introduces
+   `stream_kv_tiles` residency class plus host-fabric KV streaming.
+   These land together because they share the same KV-residency
+   problem. Reference: Doppler browser transcript.
 
-- fused GEMV
-- normalization
-- gather and embedding
-- attention decode
-- attention prefill/tiled
+Rope, RMSNorm beyond bootstrap, dequant, elementwise, and sampling
+families follow once the four WS4 blockers are green. Each migrated
+family still crosses the full bar in one move: TSIR lowering,
+mechanical emission, parity receipt, then deletion of the old path
+for that family. Half-migrated kernel families create audit holes and
+should be avoided.
 
-Elementwise, rope, dequant, and sampling families become easier once residency,
-collectives, and parity machinery are already real. Each migrated family should
-cross the full bar in one move: TSIR lowering, mechanical emission, parity
-receipt, then deletion of the old path for that family. Half-migrated kernel
-families create audit holes and should be avoided.
-
-Attention needs to be treated as its own phase, not as a routine extension of
+Attention is still treated as its own phase (Phase C under the
+re-scope), but narrowed to the one variant Gemma 4 E2B uses. Flash
 the first non-GEMM migration wave. Streaming attention, paged KV, sliding
 window policies, and streaming softmax reductions are distinct compiler
 problems. The non-attention phase proves the TSIR pipeline on GEMV, RMSNorm,
@@ -677,6 +855,21 @@ explicit migrations and refreshed lowerings, not silent semantic drift.
 
 ## Step 11: AOT lowering at convert time
 
+Promoted under the re-scope: step 11 runs ahead of the real-kernel
+family rewrites (step 9), not after them. The reasoning is that
+AOT-at-convert is the only mechanism that forces TSIR to cover
+whatever kernels a real model actually uses. Without it, kernel-family
+selection becomes a scheduling decision ("which family do we migrate
+next?") that can drift from what real models need. With it, running
+`doppler convert` (or `doppler bundle`) on a Gemma model produces
+lowering entries per `(kernelRef, backend)` and fails closed with a
+typed rejection on any kernel TSIR cannot yet lower — which is what
+drives frontend/oracle/emitter coverage forward.
+
+Promotion also collapses steps 9 and 10: real-kernel rewrites land
+when their parity receipts fall out of convert, not as a separate
+"rewrite the family" milestone.
+
 Lowering should run ahead of time during conversion or refresh, not at load.
 The bundle should ship with emitted backend artifacts and the receipts that
 justify them. A backend that cannot honor a kernel should record the rejection
@@ -687,6 +880,33 @@ This keeps the runtime boundary small. The runtime becomes a loader and
 executor of predeclared lowerings rather than a place where planning and policy
 quietly happen on first token. It also keeps proof and replay discipline
 aligned with the existing Doppler manifest-first model.
+
+### Doppler convert integration
+
+The concrete wiring: Doppler's `convert` stage (and the `doppler bundle`
+composition that invokes it) calls into Doe's TSIR lowering for each
+kernel declared in `manifest.inference.execution.kernels`. For each
+`(kernelRef, backend)` in the target matrix, convert emits:
+
+- a lowering entry under `integrityExtensions.lowerings.entries[]`
+  with the full identity tuple (target descriptor hash, TSIR semantic
+  digest, TSIR realization digest, emitter digest, compiler version,
+  exactness class, rejection reasons)
+- a parity receipt under `reports/parity/<kernelRef>.<backend>/` with
+  `referenceSource` naming whether this kernel is gated against the
+  Zig oracle (bootstrap) or a Doppler reference transcript (real)
+- a typed rejection when TSIR cannot lower the kernel for that
+  backend (for example, an unsupported op or a target descriptor
+  mismatch), so convert fails-closed rather than shipping a bundle
+  with gaps
+
+The target matrix under the re-scope is:
+
+- `csl-simfabric` (critical path for WS3)
+- `webgpu-generic` in mode (b) from step 8 — the lowering entry names
+  the reference transcript's identity and the TSIR realization for
+  replay, but does not emit WGSL (Doppler's WGSL is authoritative)
+- `wse3` / `msl` / `dxil` / `spir-v` stay skeleton-only receipts
 
 Per-backend AOT emission does increase convert cost, especially for large model
 families and multiple backend variants. That should be handled explicitly with
@@ -703,23 +923,31 @@ and lowering identity have not changed.
 
 ## Step 12: rollout and steady state
 
-The rollout order should be:
+The rollout order under the re-scope is:
 
-1. parity oracle (Phase A bootstrap: pinned-libc determinism; sollya in Phase B)
-2. bootstrap kernel catalog (step 1.5) — one fused-GEMV, one RMSNorm, one gather
+1. parity oracle — dual regime (Zig scalar for bootstrap; Doppler
+   transcript for real kernels)
+2. bootstrap kernel catalog (step 1.5) — one fused-GEMV, one RMSNorm,
+   one gather
 3. target descriptors (correctness + planner field split)
 4. TSIR schema hardening and canonical digests
 5. WGSL frontend lowering
-6. residency/allocation (correctness-only planner; autotuning is Phase D)
+6. residency/allocation (correctness-only planner; richer residency
+   taxonomy for real kernels — `hidden_per_pe`, `out_dim`,
+   `stream_kv_tiles`)
 7. collective synthesis
-8. mechanical emitter (no kernel-family pattern-matching; conflict rules
-   enumerable and hashed)
-9. manual parity CLI (plus nightly canary on the fixed bootstrap set)
-10. kernel family rewrites (Phase A: GEMV, RMSNorm, gather; Phase B: attention;
-    Phase C: remaining families)
-11. manifest binding (includes frontendVersion, descriptor correctness hash)
-12. convert-time lowering (per-kernel lowering cache keyed on correctness
-    inputs)
+8. mechanical CSL emitter (body parity for critical path; other
+   emitters stay semantic-aware-where-bootstrap / skeleton-elsewhere)
+9. manual parity CLI with dual reference source (oracle vs. Doppler
+   transcript) plus nightly canary on a fixed kernel set
+10. manifest binding (includes frontendVersion, descriptor correctness
+    hash, reference-source identity)
+11. AOT convert-time lowering at the Doppler boundary — this drives
+    real-kernel coverage; promoted ahead of the rewrite step
+12. real-kernel family rewrites — driven by step 11 hitting real
+    models. First four: `embed`, `lm_head_gemv_stable`,
+    `attn_head256`, `attn_head512` (WS4 blockers). The Gemma 4 E2B
+    attention variant then completes WS3.
 
 ### Loop 2 subloops
 
@@ -750,15 +978,21 @@ where required, and a dated status entry.
 - **Loop 2G: parity CLI plumbing.** Owns rollout item 9 as infrastructure
   only. Real parity closure remains Loop 3; legacy classifier receipts do not
   satisfy Loop 3.
-- **Loop 2H: Phase A kernel rewrites.** Owns rollout item 10 for fused GEMV,
-  RMSNorm, and gather, with old paths deleted or fenced as legacy-only.
-- **Loop 2I: manifest metadata and AOT plumbing.** Owns rollout items 11-12
-  as Doe-side infrastructure: lowering metadata shape, rejection
-  serialization, cache keys, and convert-time lowering. Production Doppler
-  manifest binding remains Loop 3.
-- **Loop 2J: steady-state cleanup.** Deletes migrated per-kernel CSL emitters
-  and reduces classifier logic to kernel-family hint extraction for migrated
-  families.
+- **Loop 2H: manifest metadata + AOT convert plumbing.** Owns rollout
+  items 10 and 11 as Doe-side infrastructure plus the Doppler-side
+  convert integration: lowering metadata shape, rejection serialization,
+  correctness-input cache keys, Doppler convert invocation of TSIR
+  lowering, and reference-source routing in the parity CLI. This loop
+  lands before real-kernel family rewrites under the re-scope.
+- **Loop 2I: real-kernel family rewrites.** Owns rollout item 12 for
+  `embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`, plus
+  the Gemma 4 E2B attention variant. Driven by Loop 2H's convert-time
+  coverage hitting real models. Each kernel family lands with a CSL
+  body that honors WS4's per-PE memory constraints and a parity
+  receipt against a Doppler reference transcript.
+- **Loop 2J: steady-state cleanup.** Deletes migrated per-kernel CSL
+  emitters and reduces classifier logic to kernel-family hint
+  extraction for migrated families.
 
 Loop 2 has no production Doppler manifest mutation and no live Cerebras SDK
 dependency in its inner loop. It may define `wse3` target descriptors, but
@@ -796,10 +1030,36 @@ The operative current state remains:
 - WGSL -> Doe IR -> backend emission for Metal/Vulkan/D3D12
 - WGSL/Doppler capture -> classifier -> HostPlan -> CSL emitter for Cerebras
 
-The target state defined here is:
+The target state defined here, as re-scoped, is:
 
-- WGSL IR -> TSIR semantic -> TSIR realization -> backend emitters
-- reference-interpreter parity against the same TSIR contract
+- WGSL IR -> TSIR semantic -> TSIR realization -> CSL emitter (critical
+  path for Cerebras parity)
+- dual-regime parity: Zig scalar oracle for bootstrap kernels; Doppler
+  reference transcripts for real kernels
+- AOT convert-time lowering emits receipts + manifest bindings as a
+  side effect of `doppler convert` / `doppler bundle`
+- other backend emitters (webgpu-generic, msl, dxil, spir-v) remain at
+  their current level; body parity for those is post-WS3
 
 Until that target path is wired end to end, current classifier/template
 limitations remain real blockers rather than documentation-only issues.
+
+## WS3 closure condition
+
+WS3 is closed when `doppler bundle` for `gemma-4-e2b-it-q4k-ehf16-af32`
+produces:
+
+- `reports/parity/embed.csl-simfabric/` — pass against Doppler transcript
+- `reports/parity/lm_head_gemv_stable.csl-simfabric/` — pass
+- `reports/parity/attn_head256.csl-simfabric/` — pass (or rejected
+  with typed reason if Gemma 4 E2B does not use this variant)
+- `reports/parity/attn_head512.csl-simfabric/` — pass (or rejected
+  with typed reason if Gemma 4 E2B does not use this variant)
+- `reports/parity/` entries for rope / rmsnorm / elementwise /
+  dequant / sample as `doppler bundle` touches them via AOT lowering
+- `integrityExtensions.lowerings.entries[]` bound into the Gemma 4
+  E2B manifest with full identity tuples
+
+Bootstrap-kernel receipts (`fused_gemv`, `rms_norm`, `gather`) remain
+green under the Zig oracle as a separate regression class; they do
+not close WS3 on their own.

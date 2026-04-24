@@ -18,6 +18,48 @@ live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
 moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
 tick. New TSIR entries go here going forward.
 
+## 2026-04-24 — TSIR plan re-scoped to Gemma-on-Cerebras, reference inverted
+
+`docs/tsir-lowering-plan.md` has been re-scoped. The five moves are
+documented in the updated "Scope and phasing" section of the plan and
+drive the remaining Loop 2 / Loop 3 work:
+
+1. **Reference inversion.** For real kernels, `doppler.reference-transcript/v1`
+   from Doppler's browser WebGPU run is the parity reference, not the
+   Zig scalar interpreter. The Zig oracle stays authoritative for the
+   bootstrap catalog (`fused_gemv`, `rms_norm`, `gather`). The parity
+   CLI will carry a `referenceSource` field naming which regime gated
+   each receipt.
+2. **CSL is the sole critical-path backend.** `emit_csl.zig` must
+   reach body parity for real kernels. `emit_webgpu.zig`,
+   `emit_msl.zig`, `emit_dxil.zig`, `emit_spir_v.zig` stay at their
+   current semantic-aware-where-bootstrap / skeleton-elsewhere level;
+   real-kernel body parity for those is post-WS3.
+3. **AOT convert-time lowering (step 11) promoted ahead of kernel
+   rewrites (step 9).** Doppler's convert stage will invoke TSIR
+   lowering for each declared kernel and emit parity receipts +
+   manifest bindings as convert outputs. This drives frontend coverage
+   off real models instead of off a family-sequencing decision.
+4. **WS4's per-PE blockers drive first real-kernel selection.**
+   `embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`
+   become the first non-bootstrap families through TSIR. The planner
+   gains residency classes for `hidden_per_pe`, `out_dim` sharding,
+   and `stream_kv_tiles`.
+5. **Phase B narrows to the Gemma 4 E2B attention variant.** Sollya
+   polynomials, flash-style streaming attention, sliding-window, and
+   paged KV drop out of Phase B and become post-WS3.
+
+WS3 closure condition is now explicitly defined in the plan's
+"WS3 closure condition" section: `doppler bundle` for
+`gemma-4-e2b-it-q4k-ehf16-af32` produces passing `reports/parity/*`
+against Doppler reference transcripts for the four WS4 blockers, plus
+rope/rmsnorm/elementwise/dequant/sample as they are touched, with
+lowering entries bound into the Gemma 4 E2B manifest.
+
+Current bootstrap state (below) is unchanged; the re-scope is a
+forward-looking plan change, not a retroactive relabeling of the
+bootstrap receipts already landed.
+
 ## 2026-04-24 — reference lane green end-to-end; reports/parity/ populated; first Doppler manifest bound
 
 - Added input-tensor fixtures under
