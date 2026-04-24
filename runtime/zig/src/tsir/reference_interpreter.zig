@@ -3074,3 +3074,300 @@ test "gather rejects out-of-range token index instead of clamping" {
     const outcome = run(allocator, semantic, realization, &inputs);
     try std.testing.expectError(InterpretError.NotImplemented, outcome);
 }
+
+test "fused_gemv f16 strict_ordered exercises upcast/downcast path" {
+    const allocator = std.testing.allocator;
+    const matrix_shape = [_]u64{ 2, 2 };
+    const vector_shape = [_]u64{2};
+    const output_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &matrix_shape, .elem = .f16, .read_write = false },
+        .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &vector_shape, .elem = .f16, .read_write = false },
+        .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .matrix },
+        .{ .binding_index = 1, .role = .vector },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .output },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .fused_gemv,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gemv_f16",
+        .family_hint = .fused_gemv,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // W = [[1,2],[4,8]] f16; x = [1, 2] f16. Values picked to be exactly
+    // representable in f16 so the test pins an exact output, not a
+    // tolerance-bounded one — the intent is to exercise the f16
+    // upcast/downcast path, not test rounding.
+    var matrix_bytes: [8]u8 = undefined;
+    writeF32AsElem(&matrix_bytes, 0, 1.0, .f16);
+    writeF32AsElem(&matrix_bytes, 1, 2.0, .f16);
+    writeF32AsElem(&matrix_bytes, 2, 4.0, .f16);
+    writeF32AsElem(&matrix_bytes, 3, 8.0, .f16);
+    var vector_bytes: [4]u8 = undefined;
+    writeF32AsElem(&vector_bytes, 0, 1.0, .f16);
+    writeF32AsElem(&vector_bytes, 1, 2.0, .f16);
+    const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 4), result.outputs[0].len);
+
+    // y[0] = 1*1 + 2*2 = 5; y[1] = 4*1 + 8*2 = 20.
+    const y0 = readF32FromBytes(result.outputs[0], .f16, 0);
+    const y1 = readF32FromBytes(result.outputs[0], .f16, 1);
+    try std.testing.expectEqual(@as(f32, 5.0), y0);
+    try std.testing.expectEqual(@as(f32, 20.0), y1);
+}
+
+test "fused_gemv bf16 strict_ordered exercises upcast/downcast path" {
+    const allocator = std.testing.allocator;
+    const matrix_shape = [_]u64{ 2, 2 };
+    const vector_shape = [_]u64{2};
+    const output_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &matrix_shape, .elem = .bf16, .read_write = false },
+        .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &vector_shape, .elem = .bf16, .read_write = false },
+        .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .bf16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .matrix },
+        .{ .binding_index = 1, .role = .vector },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .output },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .fused_gemv,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gemv_bf16",
+        .family_hint = .fused_gemv,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Exactly-representable bf16 values (small powers of two × small
+    // odd integers). bf16 has f32's exponent range but only 7 mantissa
+    // bits; values here all have a mantissa that fits.
+    var matrix_bytes: [8]u8 = undefined;
+    writeF32AsElem(&matrix_bytes, 0, 1.0, .bf16);
+    writeF32AsElem(&matrix_bytes, 1, 2.0, .bf16);
+    writeF32AsElem(&matrix_bytes, 2, 4.0, .bf16);
+    writeF32AsElem(&matrix_bytes, 3, 8.0, .bf16);
+    var vector_bytes: [4]u8 = undefined;
+    writeF32AsElem(&vector_bytes, 0, 1.0, .bf16);
+    writeF32AsElem(&vector_bytes, 1, 2.0, .bf16);
+    const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 4), result.outputs[0].len);
+
+    const y0 = readF32FromBytes(result.outputs[0], .bf16, 0);
+    const y1 = readF32FromBytes(result.outputs[0], .bf16, 1);
+    try std.testing.expectEqual(@as(f32, 5.0), y0);
+    try std.testing.expectEqual(@as(f32, 20.0), y1);
+}
+
+test "gather f16 copies table rows in the declared element dtype" {
+    const allocator = std.testing.allocator;
+    const indices_shape = [_]u64{2};
+    const table_shape = [_]u64{ 2, 2 };
+    const output_shape = [_]u64{ 2, 2 };
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "indices", .group = 0, .binding = 0, .logical_shape = &indices_shape, .elem = .u32, .read_write = false },
+        .{ .name = "table", .group = 0, .binding = 1, .logical_shape = &table_shape, .elem = .f16, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "t", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "h", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .indices },
+        .{ .binding_index = 1, .role = .table },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .token },
+        .{ .axis_index = 1, .role = .hidden },
+    };
+    const body = schema.SemanticBody{
+        .op = .gather,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gather_f16",
+        .family_hint = .gather,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Indices = [1, 0]; Table = [[1.5, 2.5], [3.5, 4.5]] f16.
+    // Expected output = [[3.5, 4.5], [1.5, 2.5]] f16.
+    var indices_bytes: [8]u8 = undefined;
+    std.mem.writeInt(u32, indices_bytes[0..4], 1, .little);
+    std.mem.writeInt(u32, indices_bytes[4..8], 0, .little);
+    var table_bytes: [8]u8 = undefined;
+    writeF32AsElem(&table_bytes, 0, 1.5, .f16);
+    writeF32AsElem(&table_bytes, 1, 2.5, .f16);
+    writeF32AsElem(&table_bytes, 2, 3.5, .f16);
+    writeF32AsElem(&table_bytes, 3, 4.5, .f16);
+    const inputs = [_][]const u8{ &indices_bytes, &table_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 8), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.5), readF32FromBytes(result.outputs[0], .f16, 0));
+    try std.testing.expectEqual(@as(f32, 4.5), readF32FromBytes(result.outputs[0], .f16, 1));
+    try std.testing.expectEqual(@as(f32, 1.5), readF32FromBytes(result.outputs[0], .f16, 2));
+    try std.testing.expectEqual(@as(f32, 2.5), readF32FromBytes(result.outputs[0], .f16, 3));
+}
+
+test "gather bf16 copies table rows in the declared element dtype" {
+    const allocator = std.testing.allocator;
+    const indices_shape = [_]u64{2};
+    const table_shape = [_]u64{ 2, 2 };
+    const output_shape = [_]u64{ 2, 2 };
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "indices", .group = 0, .binding = 0, .logical_shape = &indices_shape, .elem = .u32, .read_write = false },
+        .{ .name = "table", .group = 0, .binding = 1, .logical_shape = &table_shape, .elem = .bf16, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .bf16, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "t", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "h", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .indices },
+        .{ .binding_index = 1, .role = .table },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .token },
+        .{ .axis_index = 1, .role = .hidden },
+    };
+    const body = schema.SemanticBody{
+        .op = .gather,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gather_bf16",
+        .family_hint = .gather,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Integer-valued bf16 (exactly representable): 1, 2, 3, 4.
+    var indices_bytes: [8]u8 = undefined;
+    std.mem.writeInt(u32, indices_bytes[0..4], 1, .little);
+    std.mem.writeInt(u32, indices_bytes[4..8], 0, .little);
+    var table_bytes: [8]u8 = undefined;
+    writeF32AsElem(&table_bytes, 0, 1.0, .bf16);
+    writeF32AsElem(&table_bytes, 1, 2.0, .bf16);
+    writeF32AsElem(&table_bytes, 2, 3.0, .bf16);
+    writeF32AsElem(&table_bytes, 3, 4.0, .bf16);
+    const inputs = [_][]const u8{ &indices_bytes, &table_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 8), result.outputs[0].len);
+    try std.testing.expectEqual(@as(f32, 3.0), readF32FromBytes(result.outputs[0], .bf16, 0));
+    try std.testing.expectEqual(@as(f32, 4.0), readF32FromBytes(result.outputs[0], .bf16, 1));
+    try std.testing.expectEqual(@as(f32, 1.0), readF32FromBytes(result.outputs[0], .bf16, 2));
+    try std.testing.expectEqual(@as(f32, 2.0), readF32FromBytes(result.outputs[0], .bf16, 3));
+}

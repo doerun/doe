@@ -9,6 +9,24 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle dtype coverage for `fused_gemv` +
+  `gather`: four focused tests added in
+  `runtime/zig/src/tsir/reference_interpreter.zig` exercising the
+  f16 and bf16 upcast/downcast paths through `readF32FromBytes` /
+  `writeF32AsElem`. fused_gemv f16/bf16 cases use `[1,2]×[2,2]` with
+  exactly-representable small integers so the f32 accumulator plus
+  declared-output-dtype downcast produces a bit-exact expected value.
+  gather f16/bf16 cases confirm row-copy preserves byte-level identity
+  through the declared element dtype. Tick 1 already wired the
+  recognizers to admit all three Phase A dtypes; this tick closes the
+  declared contract by covering the two dtypes tick 1 left untested.
+  `zig build test-wgsl` passes. No recognizer or schema change. Cites
+  `docs/tsir-lowering-plan.md` Step 1 and `docs/loop-protocol.md`
+  Loop 2 protocol (stop-until-green wedge on the existing step). The
+  `rms_norm` bootstrap family remains blocked on Step 3 schema
+  extensions per its own `notes.md`; oracle correctly returns
+  `NotImplemented` for it under the current semantic, which is the
+  fail-closed behavior plan §5 rule 4 requires.
 - TSIR Loop 2 — Step 1 oracle increment for `gather`: new
   `tryGather` dispatch path in
   `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches
