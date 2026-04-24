@@ -89,15 +89,18 @@ def solve_embed_chunked_dispatch(
     still covering the full vocabulary at the given grid width.
 
     Constraints:
-      * rowsPerPe * grid_width >= vocab_size   (every row is held somewhere)
+      * rowsPerPe * grid_width * grid_height >= vocab_size
+        (every row is held somewhere)
       * (rowsPerPe + tokensPerChunk) * hiddenPerPe * 4 <= budget_bytes
       * hiddenPerPe * hiddenShardCount == hidden_size (clean partition)
-      * hiddenShardCount <= grid_height (fits the physical HostPlan grid)
 
-    Strategy: given grid_width, rowsPerPe = ceil(vocab_size / grid_width) is
-    fixed by the coverage constraint. Then for each divisor of hidden_size
-    (largest first), check whether the budget constraint holds at the
-    default tokensPerChunk. Shrink tokensPerChunk only as a fallback.
+    Strategy: given the HostPlan grid, rowsPerPe =
+    ceil(vocab_size / (grid_width * grid_height)) is fixed by the coverage
+    constraint. The PE program reads its X/Y coordinate from CSL's layout
+    module, so row coverage can use the full 2-D grid without producing one
+    distinct PE program per tile. Then for each divisor of hidden_size
+    (largest first), check whether the budget constraint holds at the default
+    tokensPerChunk. Shrink tokensPerChunk only as a fallback.
 
     Returns None only when no tokensPerChunk >= 1 and no divisor of
     hidden_size can satisfy the budget — a truly unrescueable shape. The
@@ -112,7 +115,8 @@ def solve_embed_chunked_dispatch(
         or budget_bytes <= 0
     ):
         return None
-    rows_per_pe = ceil_div(vocab_size, grid_width)
+    pe_count = grid_width * grid_height
+    rows_per_pe = ceil_div(vocab_size, pe_count)
     default_tokens = max(1, min(num_tokens, EMBED_DEFAULT_TOKENS_PER_CHUNK))
     divisors_desc = sorted(divisors_ascending(hidden_size), reverse=True)
     # Outer loop: tokens_per_chunk from default down to 1.
@@ -123,8 +127,6 @@ def solve_embed_chunked_dispatch(
     for tokens_per_chunk in candidate_tokens:
         for hidden_per_pe in divisors_desc:
             hidden_shard_count = hidden_size // hidden_per_pe
-            if hidden_shard_count > grid_height:
-                continue
             footprint = (rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4
             if footprint <= budget_bytes:
                 return {
@@ -135,6 +137,7 @@ def solve_embed_chunked_dispatch(
                     "perPeFootprintBytes": footprint,
                     "budgetBytes": budget_bytes,
                     "gridWidth": grid_width,
+                    "gridHeight": grid_height,
                 }
     return None
 
@@ -352,11 +355,8 @@ def embed_compile_params(
     will still fail with the pre-chunked overflow — that is the honest
     state, not a silently patched one.
     """
-    # The legacy projection computed rows_per_pe across the full grid
-    # (width * height PEs). That assumed a 1-D kernel holding full hidden
-    # per PE. Chunked dispatch lowers width to grid_width and uses a
-    # separate hidden-shard axis: every PE only needs to cover its own
-    # row shard at grid_width, not grid_width × grid_height.
+    # The gather PE program uses CSL layout coordinates to flatten the 2-D
+    # grid into row shards, while hidden/tokens are chunked by host launches.
     tuple_ = solve_embed_chunked_dispatch(
         grid_width=grid_width,
         grid_height=grid_height,
@@ -369,11 +369,8 @@ def embed_compile_params(
         "num_tokens": max_seq_len,
     }
     if tuple_ is not None:
-        # Embed's per-kernel grid is grid_width × hiddenShardCount. The
-        # `height` param is the hidden-shard count, not the global
-        # memory-plan grid_height which sizes other kernels' rectangles.
         params["rows_per_pe"] = tuple_["rowsPerPe"]
-        params["height"] = tuple_["hiddenShardCount"]
+        params["height"] = grid_height
         params["hidden_per_pe"] = tuple_["hiddenPerPe"]
         params["tokens_per_chunk"] = tuple_["tokensPerChunk"]
     else:
@@ -486,7 +483,7 @@ def manifest_compile_param_projection(
         ),
     }
     compile_scale = {
-        "embedDistinctPeProgramCount": pe_count,
+        "embedDistinctPeProgramCount": grid_width,
         "tiledDistinctPeProgramCount": matmul_p * matmul_p,
         "warningThreshold": COMPILE_DISTINCT_PE_WARNING_THRESHOLD,
     }

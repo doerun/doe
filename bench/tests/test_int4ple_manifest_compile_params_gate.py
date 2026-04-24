@@ -142,10 +142,7 @@ class Int4PleManifestCompileParamsGateTests(unittest.TestCase):
         self.assertIn("attn_head512_prefill_kv_len_coverage:", failure_text)
         self.assertIn("lm_head_vocab_logit_coverage:", failure_text)
         self.assertFalse(all(check["passed"] for check in report["checks"]))
-        self.assertEqual(
-            report["projection"]["targetBlockers"]["embed"],
-            "csl_compile_params_infeasible_embed_grid_budget",
-        )
+        self.assertNotIn("embed", report["projection"]["targetBlockers"])
 
     def test_missing_compile_params_is_blocking(self) -> None:
         projection = manifest_compile_param_projection(

@@ -495,6 +495,20 @@ test "host compile source tiled matmul exports WGSL storage names" {
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(C_ptr, \"C\");") == null);
 }
 
+test "host compile source gather uses layout coordinates" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "gather", &buf);
+
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const layout_mod = @import_module(\"<layout>\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_x_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_y_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".width = width,") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".height = height,") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_x = pe_x") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_y = pe_y") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id = pe_y * width + pe_x") == null);
+}
+
 test "host compile source rejects unknown HostPlan pattern" {
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
     try std.testing.expectError(

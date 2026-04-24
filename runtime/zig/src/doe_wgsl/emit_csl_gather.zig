@@ -2,26 +2,25 @@
 //
 // Maps Doppler's gather_f16.wgsl pattern to CSL on a 2-D PE grid:
 //
-//   * width  (pe_x) shards the embedding table by row  — `rows_per_pe` rows
-//     per column PE, as in the pre-chunking 1-D kernel.
-//   * height (pe_y) shards the hidden dimension         — `hidden_per_pe`
-//     columns per row PE. Required to fit the Gemma 4 E2B embed output
-//     (`[num_tokens, hidden_size]f32` = 192 KiB) inside the per-PE
-//     `.data.hi` budget (~63 KiB). The classifier/host picks `height` such
-//     that `(rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4 ≤ 48 KiB`.
+//   * width × height shards the embedding table by row, using the PE's
+//     layout coordinates to compute a flat row-shard id.
+//   * hidden_per_pe chunks the hidden dimension across host launches. This
+//     is required to fit Gemma-family embed table/output slices inside the
+//     per-PE `.data.hi` budget (~63 KiB). The classifier/host picks
+//     hidden_per_pe and tokens_per_chunk such that
+//     `(rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4 ≤ 48 KiB`.
 //
 // Token dispatch is chunked: host broadcasts one `tokens_per_chunk`-sized
-// slice of `indices` at a time. Each PE writes its hidden shard of that
-// chunk into `[tokens_per_chunk, hidden_per_pe]f32`; host concatenates per
-// chunk and across the height axis to reassemble the full
+// slice of `indices` at a time. Each PE writes the current hidden chunk into
+// `[tokens_per_chunk, hidden_per_pe]f32`; host concatenates per token chunk
+// and per hidden chunk to reassemble the full
 // `[num_tokens, hidden_size]f32` output.
 //
 // Defaults preserve today's 1-D single-chunk behavior: with `height=1`,
 // `hidden_per_pe=hidden_size`, and `tokens_per_chunk=num_tokens` the
-// compute loop is identical to the pre-chunking emitter. Real-shape E2B
-// (num_tokens=32, hidden_size=1536) overrides via the layout params the
-// host supplies; those overrides are what moves the compile out of the
-// i16-coercion + `.data.hi` overflow regime.
+// compute loop is identical to the pre-chunking emitter. Real shapes
+// override via the layout params the host supplies; those overrides are what
+// move the compile out of the i16-coercion + `.data.hi` overflow regime.
 //
 // Buffer names are resolved from the IR module, not hardcoded.
 //
@@ -50,22 +49,16 @@ pub fn emit(
     const out = module.globals.items[info.output_global].name;
 
     try W.write(buf, pos, "// PE program: embedding gather (auto-generated from WGSL)\n");
-    try W.write(buf, pos, "// 2-D layout: pe_x shards rows, pe_y shards hidden. Host orchestrates\n");
-    try W.write(buf, pos, "// chunked dispatch across tokens (see emit_csl_gather.zig header).\n\n");
+    try W.write(buf, pos, "// 2-D layout: width x height shards rows. Host orchestrates chunked\n");
+    try W.write(buf, pos, "// dispatch across tokens and hidden slices (see emit_csl_gather.zig header).\n\n");
 
     try W.write(buf, pos, "param memcpy_params;\n");
-    // u16 for 2-D grids up to 65,535 total PEs (covers 31B 58,056 PE as
-    // 246x236). See bench/out/layout-2d-needs/layout-2d-needs.json.
-    try W.write(buf, pos, "param pe_id: u16;\n");
-    try W.write(buf, pos, "param pe_x: u16;\n");
-    try W.write(buf, pos, "param pe_y: u16;\n");
-    try W.write(buf, pos, "param num_pes: u16;\n");
+    try W.write(buf, pos, "param width: u16;\n");
+    try W.write(buf, pos, "param height: u16;\n");
     // Row sharding (unchanged): `rows_per_pe` rows held by each column PE.
     try W.write(buf, pos, "param rows_per_pe: i16;\n");
-    // Hidden sharding (new): `hidden_per_pe` columns held by each row PE.
-    // With height=1 and hidden_per_pe=hidden_size, the kernel collapses to
-    // today's 1-D shape; callers that set height>1 must also partition
-    // weights and output on the host accordingly.
+    // Hidden sharding: `hidden_per_pe` columns held by each PE for the
+    // current host-driven hidden chunk.
     try W.write(buf, pos, "param hidden_size: i16;\n");
     try W.write(buf, pos, "param hidden_per_pe: i16;\n");
     // Chunked token dispatch (new): indices/output sized to one chunk;
@@ -73,7 +66,8 @@ pub fn emit(
     try W.write(buf, pos, "param num_tokens: i16;\n");
     try W.write(buf, pos, "param tokens_per_chunk: i16;\n\n");
 
-    try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n\n");
+    try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try W.write(buf, pos, "const layout_mod = @import_module(\"<layout>\");\n\n");
 
     // Per-PE buffers:
     //   indices: one chunk of tokens (broadcast from host per-chunk)
@@ -92,7 +86,10 @@ pub fn emit(
     // row is in this column-PE's row shard. If so, write this row's
     // hidden shard into the per-chunk output slice.
     try W.write(buf, pos, "fn compute() void {\n");
-    try W.write(buf, pos, "    const row_start = @as(u32, pe_x) * @as(u32, rows_per_pe);\n");
+    try W.write(buf, pos, "    const pe_x = layout_mod.get_x_coord();\n");
+    try W.write(buf, pos, "    const pe_y = layout_mod.get_y_coord();\n");
+    try W.write(buf, pos, "    const flat_pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x);\n");
+    try W.write(buf, pos, "    const row_start = flat_pe_id * @as(u32, rows_per_pe);\n");
     try W.write(buf, pos, "    const row_end = row_start + @as(u32, rows_per_pe);\n\n");
     try W.write(buf, pos, "    for (@range(i16, tokens_per_chunk)) |t| {\n");
     try W.write(buf, pos, "        const token_id = ");

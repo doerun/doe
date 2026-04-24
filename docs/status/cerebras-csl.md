@@ -7,6 +7,37 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+6) — Gemma 3 embed CSL chunking compiles
+
+Gemma 3 1B `embed` no longer fails with PE memory exhaustion or the
+intermediate fail-closed
+`csl_compile_params_infeasible_embed_grid_budget` blocker. The gather PE
+program now reads its CSL layout coordinates from `<layout>` and flattens
+`width x height` into row shards, so row coverage can use the full
+HostPlan grid without generating one distinct PE program per tile. Hidden
+and token chunking remain explicit host-plan params.
+
+The current Gemma 3 1B HostPlan projection emits:
+
+- `rows_per_pe=22`
+- `hidden_per_pe=192`
+- `tokens_per_chunk=16`
+- `height=54`
+
+The rebuilt host-plan tool and transcript rerun produced a driver result
+where `embed`, `tiled`, `attn_head256`, and `lm_head_gemv` all compile
+successfully. The transcript is still not a positive simulator receipt:
+`kernelIsStub=true` remains because non-priority targets still fail the
+overall compile sweep (`rope`, `attn_decode`, `residual`, and `gelu`).
+
+Verified:
+
+- `zig build csl-host-plan-tool`
+- `python3 bench/tools/run_doe_csl_int4ple_transcript.py --program-bundle /home/x/deco/doppler/examples/program-bundles/gemma-3-1b-it-q4k-ehf16-af32.program-bundle.json --out bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --hostplan-bundle-root bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan`
+- `python3 -m unittest bench.tests.test_int4ple_manifest_compile_params_gate bench.tests.test_int4ple_scheduler_readiness bench.tests.test_csl_driver_taxonomy`
+- `zig build test-wgsl`
+- `python3 bench/gates/schema_gate.py`
+
 ## 2026-04-24 (late+5) — Gemma 3 tiled matmul CSL export names fixed
 
 The Gemma 3 hostplan `tiled` target no longer fails with
