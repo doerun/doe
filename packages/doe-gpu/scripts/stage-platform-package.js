@@ -7,11 +7,20 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Repo-relative root of the WGSL compiler source tree whose sha256 the
+// Zig build emits into doe-build-metadata.json. Keep in lockstep with
+// runtime/zig/build.zig hashWgslCompilerSourceTreeAlloc().
+const WGSL_COMPILER_SOURCE_REPO_REL_ROOT = 'runtime/zig/src/doe_wgsl';
+const WGSL_COMPILER_SOURCE_SUFFIX = '.zig';
 
 const LIBRARY_FILENAMES = Object.freeze({
   darwin: 'libwebgpu_doe.dylib',
@@ -40,6 +49,91 @@ function parseBuildMetadata(metadataPath) {
     throw new Error(`doe-gpu: unsupported Doe build metadata at "${metadataPath}".`);
   }
   return parsed;
+}
+
+// Mirror of runtime/zig/build.zig hashSourceTreeAlloc for the WGSL compiler
+// source tree. Must match byte-for-byte: file list is every `.zig` under
+// `runtime/zig/src/doe_wgsl/`, sorted lexicographically by their path
+// relative to that root, then hashed as:
+//   sha256(
+//     for each relPath:
+//       repoRelRoot + '/' + relPath + '\n' + fileContents + '\n'
+//   )
+// If this mirror diverges from the Zig implementation, the freshness
+// guard below will reject a correctly-built .so as stale — so any change
+// to one side must be mirrored on the other in the same commit.
+export function collectWgslCompilerSourceRelPaths(rootPath) {
+  const collected = [];
+  function recurse(currentPath, currentRelPrefix) {
+    const entries = readdirSync(currentPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const nextRel = currentRelPrefix === ''
+        ? entry.name
+        : `${currentRelPrefix}/${entry.name}`;
+      const fullPath = `${currentPath}${sep}${entry.name}`;
+      if (entry.isDirectory()) {
+        recurse(fullPath, nextRel);
+      } else if (entry.isFile() && entry.name.endsWith(WGSL_COMPILER_SOURCE_SUFFIX)) {
+        collected.push(nextRel);
+      }
+    }
+  }
+  recurse(rootPath, '');
+  // Byte-order sort on ASCII paths matches Zig's std.mem.lessThan(u8, ...).
+  collected.sort();
+  return collected;
+}
+
+export function hashWgslCompilerSourceTree(rootPath) {
+  const relPaths = collectWgslCompilerSourceRelPaths(rootPath);
+  const hasher = createHash('sha256');
+  for (const relPath of relPaths) {
+    hasher.update(`${WGSL_COMPILER_SOURCE_REPO_REL_ROOT}/${relPath}`);
+    hasher.update('\n');
+    hasher.update(readFileSync(`${rootPath}${sep}${relPath.split('/').join(sep)}`));
+    hasher.update('\n');
+  }
+  return hasher.digest('hex');
+}
+
+function assertBuildMetadataIsFresh(buildMetadata, workspaceRoot, packageName) {
+  if (process.env.DOE_SKIP_NATIVE_FRESHNESS_CHECK === '1') {
+    console.warn(
+      `doe-gpu: DOE_SKIP_NATIVE_FRESHNESS_CHECK=1 — staging ${packageName} without ` +
+      'verifying libwebgpu_doe was built from the current WGSL compiler source tree. ' +
+      'Use only for out-of-band testing; never for publishing.',
+    );
+    return;
+  }
+  const metadataHash = buildMetadata?.wgslCompilerSourceSha256;
+  if (typeof metadataHash !== 'string' || metadataHash.length !== 64) {
+    throw new Error(
+      `doe-gpu: ${packageName}: doe-build-metadata.json is missing wgslCompilerSourceSha256. ` +
+      'This build predates the publish-time freshness contract. Rebuild with ' +
+      '`cd runtime/zig && zig build dropin -Doptimize=ReleaseFast` and re-stage.',
+    );
+  }
+  const sourceRoot = resolve(
+    workspaceRoot,
+    'runtime',
+    'zig',
+    'src',
+    'doe_wgsl',
+  );
+  if (!existsSync(sourceRoot)) {
+    throw new Error(`doe-gpu: WGSL compiler source tree not found at ${sourceRoot}.`);
+  }
+  const currentHash = hashWgslCompilerSourceTree(sourceRoot);
+  if (currentHash !== metadataHash) {
+    throw new Error(
+      `doe-gpu: ${packageName}: staged libwebgpu_doe predates the current ` +
+      `WGSL compiler source. Expected wgslCompilerSourceSha256=${currentHash} (fresh), ` +
+      `got ${metadataHash} (from doe-build-metadata.json). Rebuild with ` +
+      '`cd runtime/zig && zig build dropin -Doptimize=ReleaseFast` before staging ' +
+      'so downstream consumers do not load a SPIR-V emitter that predates source fixes. ' +
+      'Set DOE_SKIP_NATIVE_FRESHNESS_CHECK=1 only when testing the staging script itself.',
+    );
+  }
 }
 
 function writePrebuildMetadata(sidecar, metadataPath) {
@@ -107,6 +201,7 @@ function main() {
   ], `${packageJson.name} build metadata`);
 
   const buildMetadata = parseBuildMetadata(buildMetadataPath);
+  assertBuildMetadataIsFresh(buildMetadata, workspaceRoot, packageJson.name);
   const binRoot = resolve(targetPackageRoot, 'bin');
   rmSync(binRoot, { recursive: true, force: true });
   mkdirSync(binRoot, { recursive: true });
@@ -119,4 +214,8 @@ function main() {
   console.log(`doe-gpu: staged ${packageJson.name} from workspace artifacts`);
 }
 
-main();
+// Only run main() when invoked directly; imports from tests should not
+// trigger staging.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

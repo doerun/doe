@@ -347,10 +347,13 @@ pub fn build(b: *std.Build) void {
         "null";
     const dropin_build_metadata_json = std.fmt.allocPrint(
         b.allocator,
-        "{{\n  \"schemaVersion\": 1,\n  \"artifact\": \"libwebgpu_doe\",\n  \"leanVerifiedBuild\": {s},\n  \"proofArtifactSha256\": {s}\n}}\n",
+        "{{\n  \"schemaVersion\": 1,\n  \"artifact\": \"libwebgpu_doe\",\n  \"leanVerifiedBuild\": {s},\n  \"proofArtifactSha256\": {s},\n  \"wgslCompilerSourceSha256\": \"{s}\",\n  \"shaderTranslationCacheSourceSha256\": \"{s}\",\n  \"pipelineCacheSourceSha256\": \"{s}\"\n}}\n",
         .{
             if (lean_verified) "true" else "false",
             proof_artifact_sha256_json,
+            shader_translation_provenance.wgsl_compiler_source_sha256,
+            shader_translation_provenance.shader_translation_cache_source_sha256,
+            shader_translation_provenance.pipeline_cache_source_sha256,
         },
     ) catch @panic("failed to format drop-in build metadata");
     const dropin_build_metadata = dropin_build_metadata_files.add(
