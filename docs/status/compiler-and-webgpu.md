@@ -9,6 +9,13 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 - portable backend skeleton increment: added deterministic
+  source-hashed TSIR skeleton emitters for SPIR-V, MSL, and DXIL, backed by a
+  shared contract-text serializer that includes the common serializer source in
+  each backend emitter digest. The emitters serialize realization headers,
+  residency, tiles, collectives, and reductions, and fail closed on realization
+  rejections or target descriptor hash mismatches. They are non-executable
+  backend contract emitters; real backend codegen remains deferred.
 - TSIR Loop 2 — parity receipt lowering-identity increment:
   `bench/tools/doe_parity.py` now accepts a schema-validated
   `--manifest-lowering-entry` fixture and copies only the TSIR lowering

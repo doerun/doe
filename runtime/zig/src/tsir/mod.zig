@@ -11,6 +11,9 @@ pub const reference = @import("reference_interpreter.zig");
 pub const frontend = @import("frontend.zig");
 pub const planner = @import("planner.zig");
 pub const emit_csl = @import("emit_csl.zig");
+pub const emit_dxil = @import("emit_dxil.zig");
+pub const emit_msl = @import("emit_msl.zig");
+pub const emit_spir_v = @import("emit_spir_v.zig");
 pub const emit_webgpu = @import("emit_webgpu.zig");
 
 pub const CONTRACT_VERSION = schema.CONTRACT_VERSION;
