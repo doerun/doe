@@ -107,6 +107,18 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add TSIR parity tooling entry to
+  `docs/internal-tooling.md §Internal operator tooling`. That
+  list enumerated bench/cli, release pipeline runner, blocking
+  gates runner, workload generator, runtime README, and browser
+  scripts — but no pointer to the TSIR parity surface added in
+  bench/ today. One entry pointing at the three main TSIR tools
+  (doe_parity, tsir_manifest_lowering, nightly_tsir_parity_canary)
+  with a deeper pointer to `bench/README.md §TSIR parity tooling`
+  (tick 59) for the full enumeration. Closes a similar
+  discoverability gap to the tick 58/59 README fixes. Strategy
+  leak gate PASS, doc-link coverage PASS. Cites
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: add TSIR row to `docs/doppler-ingest.md §Artifact
   ownership` table. The table enumerated five Doe-owned /
   Doppler-owned / Ouroboros-owned artifact classes (Doppler

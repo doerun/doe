@@ -33,6 +33,11 @@ These are repo-only contributor/operator surfaces:
 - [`bench/runners/run_release_pipeline.py`](../bench/runners/run_release_pipeline.py)
 - [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py)
 - [`bench/tools/generate_backend_workloads.py`](../bench/tools/generate_backend_workloads.py)
+- TSIR parity tooling ([`bench/tools/doe_parity.py`](../bench/tools/doe_parity.py),
+  [`bench/tools/tsir_manifest_lowering.py`](../bench/tools/tsir_manifest_lowering.py),
+  [`bench/gates/nightly_tsir_parity_canary.py`](../bench/gates/nightly_tsir_parity_canary.py));
+  full surface + fixtures enumerated in
+  [`bench/README.md`](../bench/README.md) §TSIR parity tooling
 - [`runtime/zig/README.md`](../runtime/zig/README.md) and `doe-zig-runtime`
 - browser benchmark scripts under [`browser/chromium`](../browser/chromium/README.md)
 
