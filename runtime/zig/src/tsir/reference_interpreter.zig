@@ -73,6 +73,9 @@ pub fn run(
     if (trySimpleReduction(allocator, semantic, realization, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
+    if (tryFusedGemv(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
     if (tryIdentity(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
@@ -116,6 +119,180 @@ fn tryEmptyKernel(
     return Result{
         .reference_hash = hash,
         .outputs = &[_][]const u8{},
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect the fused_gemv bootstrap-family case and interpret it.
+///
+/// Shape this recognizer matches (strict; anything else falls through):
+///   * one function, zero collectives
+///   * exactly three bindings (matrix, vector, output) with declared
+///     `SemanticBody` roles matching binding indices
+///   * exactly two axes (output, reduction) with declared roles
+///   * exactly one reduction region: sum, along the reduction axis,
+///     target = the output binding, accumulation = f32,
+///     associativity = strict_ordered, NaN/Inf = propagate
+///   * matrix shape `[M, K]` row-major, vector shape `[K]`, output
+///     shape `[M]`; element kinds across all three bindings are equal
+///     and one of {f32, f16, bf16}
+///
+/// Computation: `y[i] = Σ_k  W[i, k] · x[k]` with a left-fold f32
+/// accumulator over k (strict_ordered honors the byte-order sum). The
+/// f32 output is then written back through the declared output dtype
+/// via `writeF32AsElem`, which matches the trySimpleReduction path.
+///
+/// `associative_allowed` with a declared tree shape is explicitly out
+/// of scope for this recognizer; it falls through so a future wedge
+/// can add it without retrofitting the strict path.
+fn tryFusedGemv(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.bindings.len != 3) return null;
+    if (func.reductions.len != 1) return null;
+    if (func.axes.len != 2) return null;
+
+    // Body must declare the fused_gemv family with role assignments.
+    if (func.body.op != .fused_gemv) return null;
+    if (func.body.binding_roles.len != 3) return null;
+    if (func.body.axis_roles.len != 2) return null;
+
+    var matrix_index: ?u32 = null;
+    var vector_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .matrix => {
+                if (matrix_index != null) return null;
+                matrix_index = role.binding_index;
+            },
+            .vector => {
+                if (vector_index != null) return null;
+                vector_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            else => return null,
+        }
+    }
+    const mi = matrix_index orelse return null;
+    const vi = vector_index orelse return null;
+    const oi = output_index orelse return null;
+    if (mi >= func.bindings.len or vi >= func.bindings.len or oi >= func.bindings.len) return null;
+    if (mi == vi or vi == oi or mi == oi) return null;
+
+    var output_axis: ?u32 = null;
+    var reduction_axis: ?u32 = null;
+    for (func.body.axis_roles) |role| {
+        switch (role.role) {
+            .output => {
+                if (output_axis != null) return null;
+                output_axis = role.axis_index;
+            },
+            .reduction => {
+                if (reduction_axis != null) return null;
+                reduction_axis = role.axis_index;
+            },
+            else => return null,
+        }
+    }
+    const out_axis = output_axis orelse return null;
+    const red_axis = reduction_axis orelse return null;
+    if (out_axis == red_axis) return null;
+    if (out_axis >= func.axes.len or red_axis >= func.axes.len) return null;
+
+    const reduction = func.reductions[0];
+    if (reduction.op != .sum) return null;
+    if (reduction.axis != red_axis) return null;
+    if (reduction.target_binding != oi) return null;
+    if (reduction.contract.accumulation != .f32) return null;
+    // Strict_ordered only this wedge; associative_allowed with a
+    // declared tree shape is future work and must fall through.
+    if (reduction.contract.associativity != .strict_ordered) return null;
+
+    const mb = func.bindings[mi];
+    const vb = func.bindings[vi];
+    const ob = func.bindings[oi];
+
+    // Dtype must match across all three bindings; one of the Phase A set.
+    if (mb.elem != vb.elem or vb.elem != ob.elem) return null;
+    if (mb.elem != .f32 and mb.elem != .f16 and mb.elem != .bf16) return null;
+
+    // Shape guards: matrix [M, K], vector [K], output [M].
+    if (mb.logical_shape.len != 2) return null;
+    if (vb.logical_shape.len != 1) return null;
+    if (ob.logical_shape.len != 1) return null;
+    const m_u64 = mb.logical_shape[0];
+    const k_u64 = mb.logical_shape[1];
+    if (vb.logical_shape[0] != k_u64) return null;
+    if (ob.logical_shape[0] != m_u64) return null;
+
+    // Read/write flags: matrix + vector read-only, output read_write.
+    if (mb.read_write or vb.read_write) return null;
+    if (!ob.read_write) return null;
+
+    const m: usize = std.math.cast(usize, m_u64) orelse return null;
+    const k: usize = std.math.cast(usize, k_u64) orelse return null;
+
+    // Phase A: matrix is row-major with axes [output, reduction]. The
+    // axis-role declaration must agree with that layout; otherwise the
+    // body doesn't describe the row-major W[M, K] this recognizer
+    // assumes, and we fall through rather than silently reinterpret.
+    if (out_axis != 0 or red_axis != 1) return null;
+
+    // Inputs: [matrix_bytes, vector_bytes] in binding-index order of
+    // the read-only bindings. The oracle contract is that the caller
+    // orders inputs by ascending binding index of the read-only
+    // bindings; with mi < vi that's matrix first, else vector first.
+    if (inputs.len != 2) return null;
+    const matrix_first = mi < vi;
+    const matrix_bytes = if (matrix_first) inputs[0] else inputs[1];
+    const vector_bytes = if (matrix_first) inputs[1] else inputs[0];
+
+    const expected_matrix_bytes = computeExpectedBytes(mb) orelse return null;
+    const expected_vector_bytes = computeExpectedBytes(vb) orelse return null;
+    if (matrix_bytes.len != expected_matrix_bytes) return null;
+    if (vector_bytes.len != expected_vector_bytes) return null;
+
+    const out_elem_bytes: usize = ob.elem.byteSize();
+    const output_bytes = try allocator.alloc(u8, m * out_elem_bytes);
+    errdefer allocator.free(output_bytes);
+
+    // Zero-K edge case: output is the reduction identity for sum (0.0)
+    // written through the declared output dtype.
+    if (k == 0) {
+        var i: usize = 0;
+        while (i < m) : (i += 1) writeF32AsElem(output_bytes, i, 0.0, ob.elem);
+    } else {
+        var i: usize = 0;
+        while (i < m) : (i += 1) {
+            var acc: f32 = 0.0;
+            var kk: usize = 0;
+            while (kk < k) : (kk += 1) {
+                const w_val = readF32FromBytes(matrix_bytes, mb.elem, i * k + kk);
+                const x_val = readF32FromBytes(vector_bytes, vb.elem, kk);
+                acc += w_val * x_val;
+            }
+            writeF32AsElem(output_bytes, i, acc, ob.elem);
+        }
+    }
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
         .rejections = &[_]schema.RejectionEntry{},
     };
 }
@@ -2467,6 +2644,142 @@ test "identity refuses when reductions are present" {
     };
     const payload = [_]u8{0} ** 16;
     const inputs = [_][]const u8{&payload};
+    const outcome = run(allocator, semantic, realization, &inputs);
+    try std.testing.expectError(InterpretError.NotImplemented, outcome);
+}
+
+test "fused_gemv f32 strict_ordered computes y[i] = sum_k W[i,k] * x[k]" {
+    const allocator = std.testing.allocator;
+    const matrix_shape = [_]u64{ 2, 3 };
+    const vector_shape = [_]u64{3};
+    const output_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &matrix_shape, .elem = .f32, .read_write = false },
+        .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &vector_shape, .elem = .f32, .read_write = false },
+        .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "3", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .matrix },
+        .{ .binding_index = 1, .role = .vector },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .output },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const body = schema.SemanticBody{
+        .op = .fused_gemv,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gemv",
+        .family_hint = .fused_gemv,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // W = [[1,2,3],[4,5,6]] row-major; x = [10,100,1000].
+    var matrix_bytes: [24]u8 = undefined;
+    writeF32AsElem(&matrix_bytes, 0, 1.0, .f32);
+    writeF32AsElem(&matrix_bytes, 1, 2.0, .f32);
+    writeF32AsElem(&matrix_bytes, 2, 3.0, .f32);
+    writeF32AsElem(&matrix_bytes, 3, 4.0, .f32);
+    writeF32AsElem(&matrix_bytes, 4, 5.0, .f32);
+    writeF32AsElem(&matrix_bytes, 5, 6.0, .f32);
+    var vector_bytes: [12]u8 = undefined;
+    writeF32AsElem(&vector_bytes, 0, 10.0, .f32);
+    writeF32AsElem(&vector_bytes, 1, 100.0, .f32);
+    writeF32AsElem(&vector_bytes, 2, 1000.0, .f32);
+    // Inputs are ordered by ascending read-only binding index: matrix (0), vector (1).
+    const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
+
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 8), result.outputs[0].len);
+
+    const y0 = readF32FromBytes(result.outputs[0], .f32, 0);
+    const y1 = readF32FromBytes(result.outputs[0], .f32, 1);
+    try std.testing.expectEqual(@as(f32, 3210.0), y0);
+    try std.testing.expectEqual(@as(f32, 6540.0), y1);
+
+    // Reference hash is SHA-256 of the output bytes verbatim.
+    var expected: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(result.outputs[0], &expected, .{});
+    try std.testing.expectEqualSlices(u8, &expected, &result.reference_hash);
+}
+
+test "fused_gemv recognizer falls through on wrong body op" {
+    const allocator = std.testing.allocator;
+    const matrix_shape = [_]u64{ 2, 3 };
+    const vector_shape = [_]u64{3};
+    const output_shape = [_]u64{2};
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &matrix_shape, .elem = .f32, .read_write = false },
+        .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &vector_shape, .elem = .f32, .read_write = false },
+        .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "3", .step = "1" },
+    };
+    const reductions = [_]schema.ReductionRegion{
+        .{
+            .axis = 1,
+            .op = .sum,
+            .contract = .{ .accumulation = .f32, .associativity = .strict_ordered, .nan_inf = .propagate },
+            .target_binding = 2,
+        },
+    };
+    // Body op left at `.unknown`; fused_gemv recognizer must fall
+    // through, and no other dispatch path matches a 3-binding kernel,
+    // so `run` returns NotImplemented rather than silently honoring an
+    // undeclared body.
+    const func = schema.SemanticFunction{
+        .name = "gemv_unlabeled",
+        .family_hint = .fused_gemv,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &reductions,
+        .collectives = &.{},
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    const matrix_bytes = [_]u8{0} ** 24;
+    const vector_bytes = [_]u8{0} ** 12;
+    const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
     const outcome = run(allocator, semantic, realization, &inputs);
     try std.testing.expectError(InterpretError.NotImplemented, outcome);
 }

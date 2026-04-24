@@ -9,6 +9,40 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle increment for `fused_gemv`: new
+  `tryFusedGemv` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches
+  the `SemanticBody{op=fused_gemv}` shape declared by the bootstrap
+  catalog fixture at
+  `runtime/zig/tests/tsir/bootstrap/fused_gemv.tsir-semantic.json` —
+  three bindings with matrix/vector/output roles, two axes with
+  output/reduction roles, one sum reduction with f32 accumulation and
+  `strict_ordered` associativity, equal dtype across {f32, f16, bf16}
+  on all three bindings, `[M, K]` matrix + `[K]` vector + `[M]` output,
+  row-major axes `[output, reduction]`. Computation is the left-fold
+  `y[i] = Σ_k W[i, k] · x[k]` in an f32 accumulator, written through
+  the declared output dtype. `associative_allowed` with a declared
+  tree shape falls through (future wedge). Two focused tests in
+  `reference_interpreter.zig`: positive 2×3 f32 case validating the
+  exact dot-product values and the SHA-256 reference hash, plus a
+  negative fall-through test that leaves `SemanticBody.op` at
+  `.unknown` and confirms `NotImplemented`. `zig build test-wgsl`
+  passes. Cites `docs/tsir-lowering-plan.md` Step 1 + Step 1.5 and
+  `docs/loop-protocol.md` Loop 2 protocol. No schema change; the
+  recognizer consumes the already-landed `SemanticBody`.
+- TSIR Loop 2 — mechanical CSL skeleton emitter: new
+  `runtime/zig/src/tsir/emit_csl.zig` exposes
+  `tsir.emit_csl.emit(...)` for checked realization artifacts and
+  `tsir.emit_csl.emitFunction(...)` for a direct `RealizationFunction`
+  plus target descriptor. The emitter validates the descriptor hash,
+  refuses realization-level rejections, and writes deterministic
+  `layout.csl` / `pe_program.csl` skeleton contract text that records
+  PE grid, tile factors, residency decisions, collectives, reductions,
+  target descriptor hash, and emitter params. This is contract
+  serialization only: it does not inspect kernel-family hints and does
+  not emit executable kernel bodies yet. Focused coverage lives in
+  `runtime/zig/tests/wgsl/tsir_emit_csl_test.zig`; `zig build
+  test-wgsl` passes.
 - TSIR manifest/AOT binding helper: `bench/tools/tsir_manifest_lowering.py`
   now builds and validates a schema-backed manifest lowering entry from
   `tsirSemanticDigest`, `tsirRealizationDigest`, `emitterDigest`,
