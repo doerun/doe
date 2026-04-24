@@ -64,6 +64,10 @@ Outputs:
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
 - Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
+- TSIR (Tiled Spatial IR) compiler work:
+  [`docs/tsir-lowering-plan.md`](docs/tsir-lowering-plan.md),
+  [`docs/loop-protocol.md`](docs/loop-protocol.md), live status at
+  [`docs/status/tsir.md`](docs/status/tsir.md)
 - Project rationale and boundaries: [`docs/thesis.md`](docs/thesis.md),
   [`docs/architecture.md`](docs/architecture.md),
   [`docs/process.md`](docs/process.md)

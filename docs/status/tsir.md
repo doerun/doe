@@ -107,6 +107,16 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add TSIR entry to top-level `README.md` §Start here. The
+  §Start here list enumerated entry points for package consumers,
+  runtime, benchmarks, current status, Doppler ingest, project
+  rationale, and proof/trace pipelines — but had no pointer for
+  contributors interested in TSIR compiler work. Added one bullet
+  naming plan + loop protocol + status shard. First-time visitors
+  who'd be landing on the top-level README can now find TSIR
+  entry points without navigating to `docs/architecture.md` first.
+  Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: add TSIR compiler surface section to
   `runtime/zig/README.md` §Source modules. The README had zero
   TSIR mentions despite Phase A landing substantial source
