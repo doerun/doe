@@ -9,6 +9,21 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Step 1 oracle increment for `gather`: new
+  `tryGather` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches
+  `SemanticBody{op=gather}` with indices/table/output binding roles and
+  token/hidden axis roles. It requires `u32` indices shaped `[T]`, a
+  table shaped `[V, H]`, output shaped `[T, H]`, table/output dtype
+  equality over {f32, f16, bf16}, row-major axes `[token, hidden]`, no
+  reductions, and no collectives. Computation copies
+  `table[indices[t], h]` into `output[t, h]`; out-of-range indices fall
+  through to `NotImplemented` rather than clamping or wrapping. Focused
+  tests cover a positive f32 row-copy case with SHA-256 reference hash
+  validation and a negative out-of-range rejection case. `zig test
+  test_suite_wgsl.zig --test-filter tsir` passes. RMSNorm remains
+  intentionally unexecuted until TSIR body semantics declare epsilon,
+  sum-of-squares formula, and intermediate reduction target semantics.
 - TSIR Loop 2 — Step 1 oracle increment for `fused_gemv`: new
   `tryFusedGemv` dispatch path in
   `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches

@@ -19,16 +19,13 @@
 //   - NaN and Inf propagation as declared per reduction region; the
 //     default is `propagate`.
 //
-// This file is scaffolding. Most paths return `NotImplemented`
-// against the rejection taxonomy so callers see the gap precisely
-// rather than a silent zero. Explicit semantic/realization rejections
-// fail early with `RejectedBySemantic`. The one executable case so far
-// is the identity lowering: a SemanticFunction with exactly one
-// read-only binding and one writable binding of matching shape, no
-// reductions, and no collectives is interpreted as a byte-for-byte
-// copy from the read input to the write output. This is a degenerate
-// case — it proves the plumbing (allocator, output bytes, reference
-// hash, Result struct) works end-to-end before any real dispatch lands.
+// This file is still intentionally narrow. Unsupported paths return
+// `NotImplemented` against the rejection taxonomy so callers see the
+// gap precisely rather than a silent zero. Explicit semantic/realization
+// rejections fail early with `RejectedBySemantic`. Executable bootstrap
+// paths cover empty kernels, simple reductions, fused GEMV, gather, and
+// byte-for-byte identity. Each path is guarded by strict TSIR shape checks
+// so no backend gets an implicit semantic rescue.
 
 const std = @import("std");
 const schema = @import("schema.zig");
@@ -74,6 +71,9 @@ pub fn run(
         if (maybe_result) |result| return result;
     } else |err| return err;
     if (tryFusedGemv(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
+    if (tryGather(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
     if (tryIdentity(allocator, semantic, inputs)) |maybe_result| {
@@ -281,6 +281,162 @@ fn tryFusedGemv(
                 acc += w_val * x_val;
             }
             writeF32AsElem(output_bytes, i, acc, ob.elem);
+        }
+    }
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect the gather bootstrap-family case and interpret it.
+///
+/// Shape this recognizer matches:
+///   * one function, zero reductions, zero collectives
+///   * exactly three bindings with declared roles: indices, table, output
+///   * exactly two axes with declared roles: token, hidden
+///   * indices shape `[T]` with `u32` elements
+///   * table shape `[V, H]`, output shape `[T, H]`
+///   * table/output dtype equal and one of {f32, f16, bf16}
+///
+/// Computation copies `table[indices[t], h]` to `output[t, h]` in row-major
+/// element order. Index bounds are dynamic input facts rather than static
+/// TSIR shape facts; an out-of-vocabulary index falls through so the caller
+/// sees `NotImplemented` instead of a wrapped or clamped result.
+fn tryGather(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.reductions.len != 0) return null;
+    if (func.bindings.len != 3) return null;
+    if (func.axes.len != 2) return null;
+
+    if (func.body.op != .gather) return null;
+    if (func.body.binding_roles.len != 3) return null;
+    if (func.body.axis_roles.len != 2) return null;
+
+    var indices_index: ?u32 = null;
+    var table_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .indices => {
+                if (indices_index != null) return null;
+                indices_index = role.binding_index;
+            },
+            .table => {
+                if (table_index != null) return null;
+                table_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            else => return null,
+        }
+    }
+    const ii = indices_index orelse return null;
+    const ti = table_index orelse return null;
+    const oi = output_index orelse return null;
+    if (ii >= func.bindings.len or ti >= func.bindings.len or oi >= func.bindings.len) return null;
+    if (ii == ti or ti == oi or ii == oi) return null;
+
+    var token_axis: ?u32 = null;
+    var hidden_axis: ?u32 = null;
+    for (func.body.axis_roles) |role| {
+        switch (role.role) {
+            .token => {
+                if (token_axis != null) return null;
+                token_axis = role.axis_index;
+            },
+            .hidden => {
+                if (hidden_axis != null) return null;
+                hidden_axis = role.axis_index;
+            },
+            else => return null,
+        }
+    }
+    const tok_axis = token_axis orelse return null;
+    const hid_axis = hidden_axis orelse return null;
+    if (tok_axis == hid_axis) return null;
+    if (tok_axis >= func.axes.len or hid_axis >= func.axes.len) return null;
+    if (tok_axis != 0 or hid_axis != 1) return null;
+
+    const ib = func.bindings[ii];
+    const tb = func.bindings[ti];
+    const ob = func.bindings[oi];
+
+    if (ib.read_write or tb.read_write) return null;
+    if (!ob.read_write) return null;
+    if (ib.elem != .u32) return null;
+    if (tb.elem != ob.elem) return null;
+    if (tb.elem != .f32 and tb.elem != .f16 and tb.elem != .bf16) return null;
+
+    if (ib.logical_shape.len != 1) return null;
+    if (tb.logical_shape.len != 2) return null;
+    if (ob.logical_shape.len != 2) return null;
+
+    const tokens_u64 = ib.logical_shape[0];
+    const vocab_u64 = tb.logical_shape[0];
+    const hidden_u64 = tb.logical_shape[1];
+    if (ob.logical_shape[0] != tokens_u64) return null;
+    if (ob.logical_shape[1] != hidden_u64) return null;
+
+    const tokens: usize = std.math.cast(usize, tokens_u64) orelse return null;
+    const vocab: usize = std.math.cast(usize, vocab_u64) orelse return null;
+    const hidden: usize = std.math.cast(usize, hidden_u64) orelse return null;
+
+    if (inputs.len != 2) return null;
+    const indices_first = ii < ti;
+    const indices_bytes = if (indices_first) inputs[0] else inputs[1];
+    const table_bytes = if (indices_first) inputs[1] else inputs[0];
+
+    const expected_indices_bytes = computeExpectedBytes(ib) orelse return null;
+    const expected_table_bytes = computeExpectedBytes(tb) orelse return null;
+    if (indices_bytes.len != expected_indices_bytes) return null;
+    if (table_bytes.len != expected_table_bytes) return null;
+
+    var validate_t: usize = 0;
+    while (validate_t < tokens) : (validate_t += 1) {
+        const index_off = std.math.mul(usize, validate_t, 4) catch return null;
+        const row_u32 = std.mem.readInt(u32, indices_bytes[index_off..][0..4], .little);
+        const row: usize = std.math.cast(usize, row_u32) orelse return null;
+        if (row >= vocab) return null;
+    }
+
+    const expected_output_bytes = computeExpectedBytes(ob) orelse return null;
+    const output_len = std.math.cast(usize, expected_output_bytes) orelse return null;
+    const output_bytes = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(output_bytes);
+
+    const elem_bytes: usize = ob.elem.byteSize();
+    var t: usize = 0;
+    while (t < tokens) : (t += 1) {
+        const index_off = std.math.mul(usize, t, 4) catch unreachable;
+        const row_u32 = std.mem.readInt(u32, indices_bytes[index_off..][0..4], .little);
+        const row: usize = std.math.cast(usize, row_u32) orelse unreachable;
+        const table_row = std.math.mul(usize, row, hidden) catch unreachable;
+        const output_row = std.math.mul(usize, t, hidden) catch unreachable;
+
+        var h: usize = 0;
+        while (h < hidden) : (h += 1) {
+            const table_elem = std.math.add(usize, table_row, h) catch unreachable;
+            const output_elem = std.math.add(usize, output_row, h) catch unreachable;
+            const table_off = std.math.mul(usize, table_elem, elem_bytes) catch unreachable;
+            const output_off = std.math.mul(usize, output_elem, elem_bytes) catch unreachable;
+            @memcpy(output_bytes[output_off..][0..elem_bytes], table_bytes[table_off..][0..elem_bytes]);
         }
     }
 
@@ -2780,6 +2936,141 @@ test "fused_gemv recognizer falls through on wrong body op" {
     const matrix_bytes = [_]u8{0} ** 24;
     const vector_bytes = [_]u8{0} ** 12;
     const inputs = [_][]const u8{ &matrix_bytes, &vector_bytes };
+    const outcome = run(allocator, semantic, realization, &inputs);
+    try std.testing.expectError(InterpretError.NotImplemented, outcome);
+}
+
+test "gather f32 copies table rows selected by u32 token indices" {
+    const allocator = std.testing.allocator;
+    const index_shape = [_]u64{3};
+    const table_shape = [_]u64{ 4, 2 };
+    const output_shape = [_]u64{ 3, 2 };
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "indices", .group = 0, .binding = 0, .logical_shape = &index_shape, .elem = .u32, .read_write = false },
+        .{ .name = "table", .group = 0, .binding = 1, .logical_shape = &table_shape, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "t", .lower_bound = "0", .upper_bound = "3", .step = "1" },
+        .{ .name = "h", .lower_bound = "0", .upper_bound = "2", .step = "1" },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .indices },
+        .{ .binding_index = 1, .role = .table },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .token },
+        .{ .axis_index = 1, .role = .hidden },
+    };
+    const body = schema.SemanticBody{
+        .op = .gather,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gather",
+        .family_hint = .gather,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    var indices_bytes: [12]u8 = undefined;
+    std.mem.writeInt(u32, indices_bytes[0..4], 2, .little);
+    std.mem.writeInt(u32, indices_bytes[4..8], 0, .little);
+    std.mem.writeInt(u32, indices_bytes[8..12], 3, .little);
+
+    var table_bytes: [32]u8 = undefined;
+    writeF32AsElem(&table_bytes, 0, 10.0, .f32);
+    writeF32AsElem(&table_bytes, 1, 11.0, .f32);
+    writeF32AsElem(&table_bytes, 2, 20.0, .f32);
+    writeF32AsElem(&table_bytes, 3, 21.0, .f32);
+    writeF32AsElem(&table_bytes, 4, 30.0, .f32);
+    writeF32AsElem(&table_bytes, 5, 31.0, .f32);
+    writeF32AsElem(&table_bytes, 6, 40.0, .f32);
+    writeF32AsElem(&table_bytes, 7, 41.0, .f32);
+
+    const inputs = [_][]const u8{ &indices_bytes, &table_bytes };
+    var result = try run(allocator, semantic, realization, &inputs);
+    defer freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    try std.testing.expectEqual(@as(usize, 24), result.outputs[0].len);
+    const expected = [_]f32{ 30.0, 31.0, 10.0, 11.0, 40.0, 41.0 };
+    for (expected, 0..) |want, i| {
+        const got = readF32FromBytes(result.outputs[0], .f32, i);
+        try std.testing.expectEqual(want, got);
+    }
+
+    var expected_hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(result.outputs[0], &expected_hash, .{});
+    try std.testing.expectEqualSlices(u8, &expected_hash, &result.reference_hash);
+}
+
+test "gather rejects out-of-range token index instead of clamping" {
+    const allocator = std.testing.allocator;
+    const index_shape = [_]u64{1};
+    const table_shape = [_]u64{ 2, 1 };
+    const output_shape = [_]u64{ 1, 1 };
+    const bindings = [_]schema.BufferBinding{
+        .{ .name = "indices", .group = 0, .binding = 0, .logical_shape = &index_shape, .elem = .u32, .read_write = false },
+        .{ .name = "table", .group = 0, .binding = 1, .logical_shape = &table_shape, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &output_shape, .elem = .f32, .read_write = true },
+    };
+    const axes = [_]schema.IterationAxis{
+        .{ .name = "t", .lower_bound = "0", .upper_bound = "1", .step = "1" },
+        .{ .name = "h", .lower_bound = "0", .upper_bound = "1", .step = "1" },
+    };
+    const body_bindings = [_]schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .indices },
+        .{ .binding_index = 1, .role = .table },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .token },
+        .{ .axis_index = 1, .role = .hidden },
+    };
+    const body = schema.SemanticBody{
+        .op = .gather,
+        .binding_roles = &body_bindings,
+        .axis_roles = &body_axes,
+    };
+    const func = schema.SemanticFunction{
+        .name = "gather_oob",
+        .family_hint = .gather,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = body,
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const funcs = [_]schema.SemanticFunction{func};
+    const semantic = schema.Semantic{ .functions = &funcs, .rejections = &.{} };
+    const realization = schema.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    var indices_bytes: [4]u8 = undefined;
+    std.mem.writeInt(u32, indices_bytes[0..4], 2, .little);
+    var table_bytes: [8]u8 = undefined;
+    writeF32AsElem(&table_bytes, 0, 1.0, .f32);
+    writeF32AsElem(&table_bytes, 1, 2.0, .f32);
+    const inputs = [_][]const u8{ &indices_bytes, &table_bytes };
+
     const outcome = run(allocator, semantic, realization, &inputs);
     try std.testing.expectError(InterpretError.NotImplemented, outcome);
 }
