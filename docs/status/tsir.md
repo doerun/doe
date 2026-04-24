@@ -13,9 +13,13 @@ sequenced by [`docs/loop-protocol.md`](../loop-protocol.md).
   is narrative status, not the receipt surface.
 
 This shard exists because `compiler-and-webgpu.md` exceeded its 1200-line
-cap once the TSIR Phase A wedges started landing. Historical TSIR entries
-remain in `compiler-and-webgpu.md` until a deliberate migration sweep
-moves them here; new TSIR entries go here going forward.
+cap once the TSIR Phase A wedges started landing. 2026-04-24 TSIR entries
+were migrated here in a later tick; older TSIR history (2026-04-23 and
+earlier) still lives in `compiler-and-webgpu.md` pending a separate
+migration pass — that content was written in the `## Push:` archive
+convention rather than the date-section + bullet convention used here,
+so it needs either inline conversion or a dedicated archive file.
+New TSIR entries go here going forward.
 
 ## Phase A status at a glance
 
@@ -69,6 +73,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh the cap-notice paragraphs on both shards to match
+  post-migration state. `tsir.md` intro said "historical TSIR
+  entries remain in compiler-and-webgpu.md until a deliberate
+  migration sweep"; after tick 24 the 2026-04-24 entries were
+  migrated, so the sentence now distinguishes migrated-24 from
+  pending-23. `compiler-and-webgpu.md` cap notice correspondingly
+  says what migrated and what still sits pending. Names the
+  specific blocker on the 2026-04-23 archive migration (entries
+  there follow the `## Push:` archive convention rather than the
+  `## YYYY-MM-DD` + bullet convention used in the live shards —
+  needs a separate tick to either convert inline or create a
+  dedicated archive file). Doc-only; no test or runtime change.
+  Cites `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: migrate 2026-04-24 TSIR entries from
   `compiler-and-webgpu.md` to `tsir.md`. Tick 8 created the shard
   split but deferred the historical migration — the 2026-04-24
