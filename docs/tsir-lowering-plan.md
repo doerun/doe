@@ -181,6 +181,10 @@ TSIR core under `runtime/zig/src/tsir/`:
 - `planner.zig` — correctness-first TSIR realization planning for
   residency, tile factors, PE grid, reduction tree choices,
   descriptor-checked collectives, target hashes, and typed rejections.
+- `collective_synthesis.zig` — dedicated Step 6 pass for descriptor-backed
+  collective lowering: native-capability + exactness checks, fabric-color
+  assignment under the descriptor's budget, and typed rejections when a
+  target cannot host the declared collective. Consumed by the planner.
 - `reference_interpreter.zig` — scalar reference oracle covering the three
   bootstrap families across `{f32, f16, bf16}` with `strict_ordered` and
   `associative_allowed` reductions plus RMSNorm `literal_f32` and

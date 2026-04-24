@@ -4,10 +4,16 @@
 // semantics and mechanical emitters. It is deliberately conservative:
 // first-fit tiles, explicit residency decisions, descriptor-declared
 // collective support, and typed rejections instead of template rescue.
+//
+// Collective synthesis itself lives in `collective_synthesis.zig` per
+// `docs/tsir-lowering-plan.md §Step 6`; this planner calls into that
+// pass while owning residency, tiles, reductions, and overall plan
+// assembly.
 
 const std = @import("std");
 const targets = @import("../targets/mod.zig");
 const tsir = @import("mod.zig");
+const collective_synthesis = @import("collective_synthesis.zig");
 
 const FIRST_FIT_TILE_CAP: u32 = 64;
 const FIRST_FIT_PE_GRID_WIDTH_CAP: u32 = 8;
@@ -54,7 +60,7 @@ pub fn planRealization(
             options.loader,
             &rejections,
         );
-        const collectives = try synthesizeCollectives(
+        const collectives = try collective_synthesis.synthesize(
             allocator,
             func,
             @intCast(function_index),
@@ -243,73 +249,6 @@ fn chooseStreamChunkBytes(
     return @min(loader.max_stream_chunk_bytes, budget);
 }
 
-fn synthesizeCollectives(
-    allocator: std.mem.Allocator,
-    func: tsir.schema.SemanticFunction,
-    function_index: u32,
-    descriptor: targets.TargetDescriptor,
-    tiles: []const u32,
-    rejections: *std.ArrayList(tsir.RejectionEntry),
-) PlannerError![]const tsir.schema.CollectiveRealizationNode {
-    var out = std.ArrayList(tsir.schema.CollectiveRealizationNode){};
-    defer out.deinit(allocator);
-
-    var next_color: u32 = 0;
-    for (func.collectives, 0..) |node, collective_index| {
-        if (node.kind != .workgroup_barrier and !supportsNumericalMode(descriptor, node.dtype)) {
-            try appendRejection(
-                allocator,
-                rejections,
-                .tsir_target_unfit,
-                function_index,
-                "collectives",
-                @intCast(collective_index),
-                "collective dtype is not native on target",
-            );
-            continue;
-        }
-        if (!supportsCollective(descriptor, node.kind, node.exactness.class)) {
-            try appendRejection(
-                allocator,
-                rejections,
-                .tsir_collective_not_representable,
-                function_index,
-                "collectives",
-                @intCast(collective_index),
-                "target lacks native collective exactness",
-            );
-            continue;
-        }
-
-        const color = if (needsFabricColor(node.kind)) blk: {
-            if (next_color >= descriptor.correctness.fabric_color_count) {
-                try appendRejection(
-                    allocator,
-                    rejections,
-                    .tsir_collective_not_representable,
-                    function_index,
-                    "collectives",
-                    @intCast(collective_index),
-                    "target fabric color budget exhausted",
-                );
-                continue;
-            }
-            const assigned = next_color;
-            next_color += 1;
-            break :blk assigned;
-        } else null;
-
-        try out.append(allocator, .{
-            .semantic_index = @intCast(collective_index),
-            .tree_shape = .linear,
-            .fabric_color = color,
-            .group_size = chooseCollectiveGroupSize(descriptor, node, tiles),
-        });
-    }
-
-    return out.toOwnedSlice(allocator) catch return error.OutOfMemory;
-}
-
 fn synthesizeReductions(
     allocator: std.mem.Allocator,
     func: tsir.schema.SemanticFunction,
@@ -344,7 +283,7 @@ fn synthesizeReductions(
     return out.toOwnedSlice(allocator) catch return error.OutOfMemory;
 }
 
-fn supportsNumericalMode(
+pub fn supportsNumericalMode(
     descriptor: targets.TargetDescriptor,
     kind: tsir.ScalarKind,
 ) bool {
@@ -364,57 +303,7 @@ fn numericalModeForScalar(kind: tsir.ScalarKind) ?targets.NumericalMode {
     };
 }
 
-fn supportsCollective(
-    descriptor: targets.TargetDescriptor,
-    kind: tsir.schema.CollectiveKind,
-    exactness: tsir.ExactnessClass,
-) bool {
-    const kind_name = @tagName(kind);
-    for (descriptor.correctness.native_collectives) |cap| {
-        if (std.mem.eql(u8, cap.kind_name, kind_name) and
-            collectiveExactnessSatisfies(cap.exactness_name, exactness))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-fn collectiveExactnessSatisfies(
-    capability_name: []const u8,
-    required: tsir.ExactnessClass,
-) bool {
-    if (std.mem.eql(u8, capability_name, @tagName(required))) return true;
-    if (std.mem.eql(u8, capability_name, "bit_exact_solo")) {
-        return required == .algorithm_exact or required == .tolerance_bounded;
-    }
-    return false;
-}
-
-fn needsFabricColor(kind: tsir.schema.CollectiveKind) bool {
-    return switch (kind) {
-        .fabric_reduce,
-        .fabric_broadcast,
-        .fabric_allreduce,
-        => true,
-        else => false,
-    };
-}
-
-fn chooseCollectiveGroupSize(
-    descriptor: targets.TargetDescriptor,
-    node: tsir.schema.CollectiveSemanticNode,
-    tiles: []const u32,
-) u32 {
-    const max_group = @max(@as(u32, 1), descriptor.correctness.max_collective_group_size);
-    if (node.axis >= 0) {
-        const axis: usize = @intCast(node.axis);
-        if (axis < tiles.len) return @min(max_group, @max(@as(u32, 1), tiles[axis]));
-    }
-    return max_group;
-}
-
-fn appendRejection(
+pub fn appendRejection(
     allocator: std.mem.Allocator,
     rejections: *std.ArrayList(tsir.RejectionEntry),
     reason: tsir.RejectionReason,

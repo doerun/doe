@@ -34,9 +34,9 @@ how much. For iteration cadence see
 | Step 3 schema | `runtime/zig/src/tsir/schema.zig` + `config/doe-tsir-*.schema.json` | Semantic/realization split with canonical digests; RMSNorm body contract + uniform-field epsilon with binding/offset plumbing. |
 | Step 4 frontend | `runtime/zig/src/tsir/frontend.zig` | Lowers all three bootstrap families to their declared body ops; axis recovery + reduction recovery + body inference (per family) + epsilon resolution. |
 | Step 5 planner | `runtime/zig/src/tsir/planner.zig` | `planRealization` produces deterministic `RealizationFunction` records for both descriptors; residency / tile factors / PE grid / reduction tree / typed rejection. |
-| Step 6 collectives | (embedded in planner + frontend) | Bootstrap families have no collectives; no dedicated pass file yet. Required before attention (Phase B). |
-| Step 7 emitter | `runtime/zig/src/tsir/emit_{csl,webgpu,msl,dxil,spir_v,text_skeleton}.zig` | Skeleton emitters for five backends with source-hashed `emitterCodeDigest()` pairwise-distinct by test. **Executable kernel bodies not yet emitted** — skeleton contracts only. |
-| Step 8 parity CLI | `bench/tools/doe_parity.py` + `bench/gates/nightly_tsir_parity_canary.py` | Stub contract with lowering-identity binding. Reference interpreter and backend lanes return `not_implemented` / `deferred`; **subprocess harness to the Zig oracle unlanded**. |
+| Step 6 collectives | `runtime/zig/src/tsir/collective_synthesis.zig` (planner calls in); frontend walker still owns semantic collection | Dedicated pass file isolates descriptor-backed native-capability / exactness / fabric-color-budget logic with typed rejections. Bootstrap families still have no collectives to exercise it; attention (Phase B) consumes this pass. |
+| Step 7 emitter | `runtime/zig/src/tsir/emit_{kernel_body,csl,webgpu,msl,dxil,spir_v,text_skeleton}.zig` | Realization-only skeleton entry points remain for contract inspection; semantic-aware entry points emit executable fused_gemv / rms_norm / gather bodies across WebGPU, CSL, MSL, DXIL/HLSL, and SPIR-V/GLSL surfaces. Source-backed `emitterCodeDigest()` includes shared body source and remains pairwise-distinct by test. |
+| Step 8 parity CLI | `bench/tools/doe_parity.py` + `bench/gates/nightly_tsir_parity_canary.py` | Narrow bootstrap oracle executes fused_gemv / rms_norm / gather input JSONs and writes real reference hashes. Backend execution lanes still return `not_implemented` / `deferred`; Zig subprocess oracle + WebGPU/CSL execution wiring remain unlanded. |
 | Step 9 family rewrites | — | **0/3 Loop 3 parity receipts.** Directory `reports/parity/` does not yet exist. Gated on Step 7 executable bodies + Step 8 subprocess harness. |
 | Step 10 manifest binding | `bench/tools/tsir_manifest_lowering.py` + `bench/fixtures/tsir-manifest-entries/*.json` | Schema, builder, six bootstrap fixtures; receipt ↔ fixture identity lockstep + fixture version + descriptor uniformity locked by test. |
 | Step 11 AOT convert | — | Unlanded; cache-key design pending. |
@@ -93,20 +93,56 @@ Gates protecting Phase A artifacts:
 
 - Zig `test "tsir emitter code digests are pairwise distinct across
   all five backends"` — manifest-binding disambiguation.
-- `test_canary_runs_fixture_receipts_without_claiming_pass` — stub
-  backend lanes return `not_implemented` / `deferred` and do not
-  silently promote.
+- `test_canary_runs_fixture_receipts_without_claiming_pass` — backend
+  lanes return `not_implemented` / `deferred` and do not silently
+  promote before execution harnesses exist.
 
-The missing path to proof 1 — in priority order: executable kernel
-bodies in a backend emitter (Step 7), parity CLI subprocess harness to
-the Zig oracle (Step 8), first Loop 3 receipt for fused_gemv against
-both `webgpu-generic` and `wse3` (Step 9 iter 1), manifest binding of
-that receipt into a Doppler manifest (Step 10). Each is a multi-day
-wedge; the Loop 2 hygiene work through today has made every one of
-them safer to attempt.
+The missing path to proof 1 — in priority order: backend execution
+wiring for the parity CLI (Step 8), first Loop 3 receipt for fused_gemv
+against both `webgpu-generic` and `wse3` (Step 9 iter 1), manifest
+binding of that receipt into a Doppler manifest (Step 10), and AOT
+convert-time lowering (Step 11). Each is a multi-day wedge; the Loop 2
+hygiene work through today has made every one of them safer to attempt.
 
 ## 2026-04-24
 
+- TSIR Step 8 — bootstrap parity oracle execution in the CLI:
+  `bench/tools/doe_parity.py` now accepts dedicated bootstrap input
+  JSON and computes real reference hashes for fused_gemv, rms_norm,
+  and gather using deterministic f32/f16/bf16/u32 byte handling plus
+  the existing manifest-lowering identity binding. Backend lanes remain
+  honest `not_implemented` / `deferred` until WebGPU and CSL simfabric
+  execution are wired, so no Loop 3 receipt is promoted by this step.
+- TSIR Step 7 — semantic-aware executable bootstrap bodies: added
+  `runtime/zig/src/tsir/emit_kernel_body.zig` and wired
+  `emitSemantic` / `emitSemanticFunction` through all five TSIR backend
+  emitters. The old realization-only skeleton entry points remain for
+  contract inspection, but the supported semantic path now emits
+  fused_gemv, rms_norm, and gather bodies for WebGPU, CSL, MSL,
+  DXIL/HLSL, and SPIR-V/GLSL surfaces. Emitter digests now bind the
+  shared body source, and `tsir_emit_kernel_body_test.zig` locks the
+  three bootstrap families across the five emitters.
+- TSIR Loop 2 — Step 6 collective-synthesis extraction:
+  `runtime/zig/src/tsir/collective_synthesis.zig` carries the pass
+  (`synthesize` plus `supportsCollective`,
+  `collectiveExactnessSatisfies`, `needsFabricColor`,
+  `chooseCollectiveGroupSize`) previously embedded in `planner.zig`.
+  Behavior is preserved — 933/933 `test-wgsl` tests pass unchanged,
+  including the three existing planner tests that exercise
+  descriptor-supported collectives, absent-native rejection, and
+  fabric-color budget exhaustion. Shared helpers `supportsNumericalMode`
+  and `appendRejection` are now `pub fn` in `planner.zig` so the new
+  file can call them; the planner in turn calls
+  `collective_synthesis.synthesize(...)` from `planRealization`. Plan
+  doc scaffold list and Phase A status-at-a-glance row for Step 6
+  refreshed in the same change. This makes the dedicated Phase B prerequisite
+  (`docs/tsir-lowering-plan.md §Step 6`) a named, isolated surface ready
+  for the numerical-contract extensions (accumulation dtype, declared
+  reduction tree, NaN/Inf policy) rather than code embedded inside the
+  residency planner. Per `docs/loop-protocol.md` Loop 2 protocol: lowest-
+  numbered unlanded step, one committable increment, no phase boundary
+  crossed. Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 6.
 - TSIR Loop 2 — manifest fixture generator build-step alignment:
   `bench/tools/generate_tsir_manifest_fixtures.py` now invokes
   `zig build tsir-bootstrap-manifest-inputs` and then runs the installed
