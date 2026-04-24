@@ -14,6 +14,32 @@ This is a live topical status shard.
 compiler work (shader compiler non-TSIR paths, WebGPU runtime,
 robustness).
 
+## 2026-04-24 — Track C first-zero diagnostic receipt
+
+Added a schema-backed diagnostic front door for the native Doe WebGPU
+C-lane:
+
+- `bench/tools/analyze_doe_webgpu_first_zero.py`
+- `config/doe-webgpu-first-zero-diagnostic.schema.json`
+
+The tool binds the Doe WebGPU runner receipt, exporter receipt,
+stdout/stderr logs, and `final_logits.f32` into a claim-boundary
+receipt. It distinguishes missing tensor, all-zero tensor, non-finite
+logits, and finite non-zero logits without claiming browser, CSL, or
+hardware parity.
+
+The current Gemma 3 1B native Vulkan run classifies as
+`blocked_no_finite_logits`: `hasF16=true` and `hasSubgroups=true` are
+advertised, pipeline creation is not the failing surface, KV/cache
+byte evidence is present in the exporter receipt, and sampling fails
+because the logits tensor has no finite candidates. The receipt carries
+the tensor hash, digest comparison, and finite/non-finite counts.
+
+Verified:
+
+- `python3 -m unittest bench.tests.test_analyze_doe_webgpu_first_zero`
+- `python3 bench/tools/analyze_doe_webgpu_first_zero.py --webgpu-receipt /tmp/gemma-3-1b-doe-webgpu-transcript.json --exporter-receipt /tmp/gemma-3-1b-doe-webgpu-export/doppler_int4ple_reference_export.json --final-logits /tmp/gemma-3-1b-doe-webgpu-export/final_logits.f32 --stdout-log /tmp/doe-webgpu-export.stdout.log --stderr-log /tmp/doe-webgpu-export.stderr.log --out /tmp/gemma-3-1b-doe-webgpu-first-zero-diagnostic.json`
+
 ## 2026-04-24 — Track C native Vulkan: subgroup/f16 feature chain and queue replay
 
 The Doe native Vulkan C-lane moved past two runtime blockers:
@@ -51,9 +77,9 @@ advertises `hasF16=true` and `hasSubgroups=true` and gets through
 pipeline creation/execution without the earlier segfault. It is still
 not promotion-ready: the exporter exits with
 `[Sampling] Logits has no finite candidate logits after masking the pad token`,
-and `final_logits.f32` still has the all-zero digest/preview. The
-next C-lane task is a first-zero kernel/output-buffer probe, not more
-capability suppression.
+and the follow-up diagnostic classifies the output tensor as
+non-finite logits. The next C-lane task is a first-divergence
+kernel/output-buffer probe, not more capability suppression.
 
 ## 2026-04-24 — Track 1 diagnostic: Doe compute dispatch silently no-ops
 

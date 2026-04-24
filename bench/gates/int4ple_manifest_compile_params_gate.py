@@ -262,11 +262,17 @@ def check_manifest_compile_params(
         failures.append(
             f"compile.peGrid={actual_grid!r}, expected {expected_grid!r}"
         )
+    model = runtime_config.get("modelConfig") or {}
+    global_head_dim = int(model.get("globalHeadDim") or 0) if isinstance(model, dict) else 0
+    effective_required_targets: list[str] = []
     for target_name in required_targets:
         target_expected = expected_params.get(target_name)
         if not isinstance(target_expected, dict):
+            if target_name == "attn_head512" and global_head_dim <= 0:
+                continue
             failures.append(f"projection missing target {target_name!r}")
             continue
+        effective_required_targets.append(target_name)
         actual = target_params.get(target_name)
         if actual is None:
             failures.append(f"compile.compileTargets missing target {target_name!r}")
@@ -295,7 +301,7 @@ def check_manifest_compile_params(
     return failures, {
         "projection": projection,
         "checks": checks,
-        "requiredTargets": list(required_targets),
+        "requiredTargets": effective_required_targets,
     }
 
 

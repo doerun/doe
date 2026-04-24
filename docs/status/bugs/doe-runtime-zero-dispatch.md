@@ -64,23 +64,24 @@ The Gemma 3 1B Doe WebGPU lane gets past the prior Vulkan crash with
 `hasSubgroups=true`, and reaches Doppler pipeline execution. It still
 does not produce a promotion-ready C-lane receipt: the exporter exits
 with `[Sampling] Logits has no finite candidate logits after masking
-the pad token`, and the emitted `final_logits.f32` digest still has an
-all-zero preview. That is now a model/kernel correctness issue, not the
-minimum queue-submit no-op.
+the pad token`. The follow-up first-zero diagnostic classifies the
+current tensor as non-finite logits and records the tensor hash and
+finite/non-finite counts. That is now a model/kernel correctness issue,
+not the minimum queue-submit no-op.
 
 ## Remaining candidate surfaces
 
 Ordered by likelihood of root cause:
 
 1. **First zero-producing Gemma kernel** — identify which Doppler
-   dispatch first leaves logits/KV state invalid despite the simple
-   42u dispatch working.
+   dispatch first leaves logits/KV state invalid or non-finite despite
+   the simple 42u dispatch working.
 2. **Device-local output readback coverage** — copy replay now uses
-   `vkCmdCopyBuffer` for unmapped buffers, but the all-zero logits
-   receipt shows the next failure is still upstream of the final
+   `vkCmdCopyBuffer` for unmapped buffers, but the logits diagnostic
+   shows the next failure is still upstream of the final
    readback or in the producing kernel.
 3. **Subgroup/f16 kernel semantics** — the adapter now honestly reports
-   subgroup and f16 support; any remaining all-zero output needs a
+   subgroup and f16 support; any remaining invalid output needs a
    kernel-level first-divergence probe instead of a capability
    suppression workaround.
 

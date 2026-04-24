@@ -7,6 +7,72 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+9) — Gemma 3 HostPlan compile green; real embed launch is the blocker
+
+The Gemma 3 CSL HostPlan now clears the previous compile blockers. The
+current simulator driver artifact records successful compilation for the
+active Gemma 3 targets, including `embed`, `tiled`, `attn_head256`, and
+`lm_head_gemv`, with concrete HostPlan params at
+`bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/simulator-driver-result.json`.
+
+Runtime materialization has advanced far enough to enter the real HostPlan
+executor: the Program Bundle tokenized prompt is hash-matched from the
+Doppler token IDs, runtime weight aliases resolve through the Program Bundle
+tensor inventory, packed Q4 bytes stage as SDK u32 memcpy words, and the
+tiled/lm-head launch symbols resolve against generated CSL exports. The
+current transcript receipt is therefore non-stub
+(`kernelStage=int4ple_hostplan_executor_runtime`) at
+`bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json`.
+
+The remaining simulator blocker is execution, not compilation or artifact
+binding. The latest bounded run fails with `runtime_timeout` after reaching
+`hostplan_launch_start` for launch `embed`, before a comparable
+`cslTranscript` is produced. The next Person A step is to make this first
+real embed launch complete under a bounded runner, either by chunked embed
+execution with output reassembly or an equivalent governed streaming/ROI path
+that still emits receipt-grade token/logit/KV evidence.
+
+Verified:
+
+- `python3 -m unittest bench.tests.test_int4ple_scheduler_readiness`
+- `python3 -m unittest bench.tests.test_csl_driver_taxonomy bench.tests.test_int4ple_manifest_compile_params_gate`
+- `python3 -m py_compile bench/tools/run_doe_csl_int4ple_transcript.py bench/runners/csl-runners/int4ple_hostplan_execution_plan.py bench/runners/csl-runners/int4ple_compile_target_sim_runner.py bench/runners/csl-runners/int4ple_runtime_scheduler.py bench/tests/test_int4ple_scheduler_readiness.py`
+- `python3 bench/gates/schema_gate.py`
+- `zig build csl-host-plan-tool`
+- `zig build test-wgsl`
+
+## 2026-04-24 (late+8) — Track C hardware preflight paths verified pending
+
+The Gemma 3 hardware receipt path is wired for both non-blocking C
+entry points, without claiming hardware execution:
+
+- direct system mode records the `DOE_CSL_CMADDR=$DOE_CSL_CMADDR`
+  command shape for `run_doe_csl_int4ple_transcript.py`
+- WSC appliance mode records the `csl_appliance_driver.py --system`
+  command shape with `%CMADDR%` substitution
+- `verify_cmaddr_propagation.py` confirms endpoint redaction and
+  simfabric/system target classification
+
+The pending hardware receipts gate in both modes with
+`hardwareRun.status=pending_simulator_parity`. Strict hardware success
+still fails, as intended, until simulator parity exists and a real
+endpoint or WSC appliance run emits hardware token/logit/KV evidence.
+
+The Program Bundle reference export schema now admits tokenized prompt
+provenance fields (`source`, `sourcePath`, `tokenIdsSha256`) used by
+the current reference artifact, so the parity bind step is no longer
+blocked by schema drift before the hardware preflight.
+
+Verified:
+
+- `python3 bench/tools/verify_cmaddr_propagation.py --out-json /tmp/cmaddr-propagation-smoke.json`
+- `python3 bench/tools/bind_doppler_int4ple_reference_to_csl_parity.py --reference-export bench/out/doppler-reference/program-bundle-export/doppler_program_bundle_reference_export.json --csl-transcript-receipt bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --out /tmp/gemma-3-1b-doe-csl-reference-parity.pending.json`
+- `python3 bench/tools/prepare_doe_csl_int4ple_hardware_receipt.py --parity-receipt /tmp/gemma-3-1b-doe-csl-reference-parity.pending.json --transcript-receipt bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --out /tmp/gemma-3-1b-doe-csl-hardware-receipt.system.pending.json --program-bundle /home/x/deco/doppler/examples/program-bundles/gemma-3-1b-it-q4k-ehf16-af32.program-bundle.json --execution-target system`
+- `python3 bench/tools/prepare_doe_csl_int4ple_hardware_receipt.py --parity-receipt /tmp/gemma-3-1b-doe-csl-reference-parity.pending.json --transcript-receipt bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --out /tmp/gemma-3-1b-doe-csl-hardware-receipt.wsc.pending.json --program-bundle /home/x/deco/doppler/examples/program-bundles/gemma-3-1b-it-q4k-ehf16-af32.program-bundle.json --execution-target wsc_appliance`
+- `python3 bench/gates/doe_csl_int4ple_hardware_receipt_gate.py --receipt /tmp/gemma-3-1b-doe-csl-hardware-receipt.system.pending.json`
+- `python3 bench/gates/doe_csl_int4ple_hardware_receipt_gate.py --receipt /tmp/gemma-3-1b-doe-csl-hardware-receipt.wsc.pending.json`
+- `python3 -m unittest bench.tests.test_doppler_int4ple_reference_export_schema bench.tests.test_int4ple_hardware_receipt`
+
 ## 2026-04-24 (late+7) — Gemma 3 transcript parity report normalizes WebGPU receipts
 
 The generic transcript parity report builder now accepts the current Gemma

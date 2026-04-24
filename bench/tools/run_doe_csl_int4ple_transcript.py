@@ -35,7 +35,7 @@ FIXTURE_REGISTRY = Path("config/csl-runtime-fixtures.json")
 HOST_PLAN_TOOL = Path("runtime/zig/zig-out/bin/doe-csl-host-plan-tool")
 DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
     "bench/out/doppler-reference/"
-    "gemma-4-e2b-int4ple-doe-csl-hostplan"
+    "gemma-3-1b-doe-csl-hostplan"
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
 MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 600_000
@@ -48,6 +48,7 @@ SHARED_EXECUTION_CONTRACT_TOOL = Path(
 )
 PROGRAM_BUNDLE_SCHEMA = Path("config/doe-doppler-program-bundle.schema.json")
 FLOAT32_BYTES = 4
+UINT32_BYTES = 4
 
 FIXTURE_BY_DOPPLER_KERNEL = {
     "attn_decode": "attention-decode",
@@ -83,19 +84,47 @@ DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
 }
 
 
-def tensor_name_for_weight_key(weight_key: str) -> str:
+def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
     if weight_key == "embed_tokens":
-        return "model.language_model.embed_tokens_per_layer.weight"
+        return [
+            "model.language_model.embed_tokens_per_layer.weight",
+            "model.language_model.embed_tokens.weight",
+            "model.embed_tokens.weight",
+        ]
     if weight_key == "lm_head":
-        return "model.language_model.embed_tokens.weight"
+        return [
+            "model.language_model.lm_head.weight",
+            "language_model.lm_head.weight",
+            "model.lm_head.weight",
+            "lm_head.weight",
+            "model.language_model.embed_tokens.weight",
+            "language_model.model.embed_tokens.weight",
+            "model.embed_tokens.weight",
+            "embed_tokens.weight",
+        ]
     if weight_key.startswith("layer."):
         parts = weight_key.split(".")
         if len(parts) >= 4 and parts[2] == "self_attn":
-            return (
-                "model.language_model.layers."
-                f"{parts[1]}.self_attn.{parts[3]}.weight"
-            )
+            return [
+                (
+                    "model.language_model.layers."
+                    f"{parts[1]}.self_attn.{parts[3]}.weight"
+                ),
+                f"model.layers.{parts[1]}.self_attn.{parts[3]}.weight",
+            ]
+        if len(parts) >= 4 and parts[2] == "mlp":
+            return [
+                (
+                    "model.language_model.layers."
+                    f"{parts[1]}.mlp.{parts[3]}.weight"
+                ),
+                f"model.layers.{parts[1]}.mlp.{parts[3]}.weight",
+            ]
     raise ValueError(f"unsupported HostPlan weight key: {weight_key}")
+
+
+def tensor_name_for_weight_key(weight_key: str) -> str:
+    return tensor_name_candidates_for_weight_key(weight_key)[0]
 
 
 def parse_args() -> argparse.Namespace:
@@ -104,8 +133,8 @@ def parse_args() -> argparse.Namespace:
         "--reference-export",
         default=(
             "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-production-final-logits/"
-            "doppler_int4ple_reference_export.json"
+            "program-bundle-export/"
+            "doppler_program_bundle_reference_export.json"
         ),
     )
     parser.add_argument(
@@ -209,6 +238,11 @@ def sha256_json(value: Any) -> str:
     return hashlib.sha256(data + b"\n").hexdigest()
 
 
+def sha256_compact_json(value: Any) -> str:
+    data = json.dumps(value, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
+
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -282,7 +316,10 @@ def resolve_program_bundle_path(
 
 def write_u32_array(path: Path, values: list[int]) -> dict[str, Any]:
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = b"".join(int(value).to_bytes(4, "little", signed=False) for value in values)
+    data = b"".join(
+        int(value).to_bytes(UINT32_BYTES, "little", signed=False)
+        for value in values
+    )
     path.write_bytes(data)
     return {
         "path": rel(path),
@@ -291,6 +328,56 @@ def write_u32_array(path: Path, values: list[int]) -> dict[str, Any]:
         "tokenCount": len(values),
         "preview": values[:8],
     }
+
+
+def u32_file_to_values(path: Path) -> list[int] | None:
+    if not path.is_file() or path.stat().st_size % UINT32_BYTES != 0:
+        return None
+    data = path.read_bytes()
+    values = []
+    for offset in range(0, len(data), UINT32_BYTES):
+        values.append(
+            int.from_bytes(data[offset : offset + UINT32_BYTES], "little", signed=False)
+        )
+    return values
+
+
+def find_tokenized_prompt_artifact(
+    *,
+    expected_token_ids_sha256: str,
+    expected_token_count: int,
+    out_dir: Path,
+) -> dict[str, Any] | None:
+    if not expected_token_ids_sha256 or expected_token_count <= 0:
+        return None
+    search_root = out_dir.parent
+    candidates = sorted(search_root.glob("**/tokenized_prompt.u32"))
+    candidates.extend(sorted(search_root.glob("**/*tokenized_prompt*.u32")))
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        values = u32_file_to_values(resolved)
+        if values is None or len(values) != expected_token_count:
+            continue
+        if sha256_compact_json(values) != expected_token_ids_sha256:
+            continue
+        materialized_path = out_dir / "program_bundle_tokenized_prompt.u32"
+        if resolved != materialized_path.resolve():
+            shutil.copyfile(resolved, materialized_path)
+        return {
+            "path": rel(materialized_path),
+            "sha256": sha256_file(materialized_path),
+            "dtype": "uint32",
+            "tokenCount": len(values),
+            "preview": values[:8],
+            "source": "hash_matched_program_bundle_tokenIdsHash",
+            "sourcePath": rel(resolved),
+            "tokenIdsSha256": expected_token_ids_sha256,
+        }
+    return None
 
 
 def program_bundle_step_array(step: dict[str, Any]) -> list[str]:
@@ -535,6 +622,19 @@ def export_from_program_bundle(
         or f"{program_bundle.get('modelId', 'unknown')}-declared-shards"
     )
     token_count = int(phase.get("prefillTokens") or 0)
+    token_ids_sha256 = strip_doppler_hash(prompt.get("tokenIdsHash"))
+    tokenized_prompt = find_tokenized_prompt_artifact(
+        expected_token_ids_sha256=token_ids_sha256,
+        expected_token_count=token_count,
+        out_dir=out_dir,
+    ) or {
+        "path": "not_captured_by_doppler_program_bundle",
+        "sha256": "not_captured_by_doppler_program_bundle",
+        "dtype": "uint32",
+        "tokenCount": token_count,
+        "preview": [],
+        "tokenIdsSha256": token_ids_sha256,
+    }
     chat_template = (manifest.get("inference") or {}).get("chatTemplate") or {}
     use_chat_template = (
         bool(chat_template.get("enabled"))
@@ -548,7 +648,7 @@ def export_from_program_bundle(
         "decodeSteps": int(output.get("tokensGenerated") or 0),
         "samplingSha256": sha256_json({"source": "doppler_program_bundle"}),
         "tokenCount": token_count,
-        "tokenizedPromptSha256": strip_doppler_hash(prompt.get("tokenIdsHash")),
+        "tokenizedPromptSha256": token_ids_sha256,
         "useChatTemplate": use_chat_template,
     }
     input_set_sha256 = sha256_json(input_set_components)
@@ -578,13 +678,7 @@ def export_from_program_bundle(
             "sha256": sha256_file(prompt_path),
             "source": "doppler_program_bundle_reference_prompt",
         },
-        "tokenizedPrompt": {
-            "path": "not_captured_by_doppler_program_bundle",
-            "sha256": "not_captured_by_doppler_program_bundle",
-            "dtype": "uint32",
-            "tokenCount": token_count,
-            "preview": [],
-        },
+        "tokenizedPrompt": tokenized_prompt,
         "tensorDigest": {
             "name": "final_logits",
             "status": "pending",
@@ -1451,10 +1545,14 @@ def patch_runtime_weight_mappings(
 
     for weight_key in required_keys:
         try:
-            tensor_name = tensor_name_for_weight_key(weight_key)
+            tensor_names = tensor_name_candidates_for_weight_key(weight_key)
         except ValueError:
             missing.append(weight_key)
             continue
+        tensor_name = next(
+            (name for name in tensor_names if isinstance(tensors.get(name), dict)),
+            "",
+        )
         tensor = tensors.get(tensor_name)
         if not isinstance(tensor, dict):
             missing.append(weight_key)
@@ -1569,12 +1667,21 @@ def patch_simulator_plan_runtime_metadata(
 def run_simulator_driver(bundle_root: Path) -> dict[str, Any]:
     plan_path = bundle_root / "simulator-plan.json"
     result_path = bundle_root / "simulator-driver-result.json"
+    runtime_config = load_json(bundle_root / "runtime-config.json")
+    timeout_ms = runtime_config.get("timeoutMs")
+    timeout_seconds = (
+        max(1, (timeout_ms + 999) // 1000)
+        if isinstance(timeout_ms, int) and timeout_ms > 0
+        else max(1, MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS // 1000)
+    )
     command = [
         sys.executable,
         str(resolve(CSL_SDK_DRIVER)),
         str(plan_path),
         "--out-json",
         str(result_path),
+        "--runtime-timeout-seconds",
+        str(timeout_seconds),
     ]
     proc = subprocess.run(
         command,
@@ -1882,6 +1989,17 @@ def blocked_evidence(
             execution_target = run.get("executionTarget")
             if execution_target is not None:
                 sim_run["executionTarget"] = execution_target
+            reason = run.get("reason")
+            if reason is not None:
+                sim_run["runReason"] = f"{blocker} ({reason})"
+            last_progress_phase = str(run.get("lastProgressPhase") or "")
+            if last_progress_phase in {
+                "hostplan_executor_bootstrap_complete",
+                "hostplan_launch_start",
+                "hostplan_launch_complete",
+            }:
+                sim_run["kernelStage"] = "int4ple_hostplan_executor_runtime"
+                sim_run["kernelIsStub"] = False
             progress_path = run.get("progressPath")
             if isinstance(progress_path, str) and Path(progress_path).is_file():
                 progress_file = Path(progress_path)
@@ -1893,6 +2011,12 @@ def blocked_evidence(
                     progress_text = ""
                 if '"phase": "launch_compute"' in progress_text:
                     sim_run["kernelStage"] = "int4ple_compile_target_runtime_diagnostic"
+                    sim_run["kernelIsStub"] = False
+                elif (
+                    '"phase": "hostplan_executor_bootstrap_complete"' in progress_text
+                    or '"phase": "hostplan_launch_start"' in progress_text
+                ):
+                    sim_run["kernelStage"] = "int4ple_hostplan_executor_runtime"
                     sim_run["kernelIsStub"] = False
     return SimulatorEvidence(
         receipt_status=receipt_status,

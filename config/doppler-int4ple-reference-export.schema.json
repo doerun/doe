@@ -88,6 +88,9 @@
         "sha256": { "type": "string" },
         "dtype": { "const": "uint32" },
         "tokenCount": { "type": "integer", "minimum": 0 },
+        "source": { "type": "string" },
+        "sourcePath": { "type": "string" },
+        "tokenIdsSha256": { "type": "string" },
         "preview": {
           "type": "array",
           "items": { "type": "integer", "minimum": 0 }

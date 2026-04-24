@@ -400,7 +400,12 @@ def manifest_compile_param_projection(
     vocab_size = int(model.get("vocabSize") or model.get("pleVocabSize") or 0)
     hidden_dim = int(model.get("hiddenDim") or 0)
     head_dim = int(model.get("headDim") or 0)
-    global_head_dim = int(model.get("globalHeadDim") or head_dim)
+    raw_global_head_dim = model.get("globalHeadDim")
+    global_head_dim = (
+        int(raw_global_head_dim)
+        if raw_global_head_dim is not None
+        else head_dim
+    )
     max_seq_len = int(
         model.get("maxSeqLen") or reference_prompt_token_count(reference) or 0
     )
@@ -425,6 +430,20 @@ def manifest_compile_param_projection(
     params = {
         "sample": {
             "chunk_size": sample_chunk,
+        },
+        "rmsnorm": {
+            "width": 1,
+            "hidden_size": hidden_dim,
+        },
+        "residual": {
+            "width": 1,
+            "height": 1,
+            "chunk_size": hidden_dim,
+        },
+        "gelu": {
+            "width": 1,
+            "height": 1,
+            "chunk_size": hidden_dim,
         },
         "embed": embed_compile_params(
             grid_width=grid_width,
@@ -475,13 +494,14 @@ def manifest_compile_param_projection(
             q_len=attention_tokens,
             kv_len=attention_tokens,
         ),
-        "attn_head512": attention_compile_params(
+    }
+    if global_head_dim > 0:
+        params["attn_head512"] = attention_compile_params(
             grid_width=grid_width,
             head_dim=global_head_dim,
             q_len=attention_tokens,
             kv_len=attention_tokens,
-        ),
-    }
+        )
     compile_scale = {
         "embedDistinctPeProgramCount": grid_width,
         "tiledDistinctPeProgramCount": matmul_p * matmul_p,
@@ -501,7 +521,7 @@ def manifest_compile_param_projection(
         target_blockers["attn_head256"] = (
             "csl_compile_params_infeasible_attention_grid_budget"
         )
-    if "q_len_per_pe" not in params["attn_head512"]:
+    if "attn_head512" in params and "q_len_per_pe" not in params["attn_head512"]:
         target_blockers["attn_head512"] = (
             "csl_compile_params_infeasible_attention_grid_budget"
         )

@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-webgpu-first-zero-diagnostic.schema.json",
+  "title": "Doe WebGPU first-zero diagnostic",
+  "description": "Diagnostic receipt for the Doe native WebGPU/Vulkan C-lane when shared-contract execution reaches logits but fails before positive parity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "status",
+    "modelId",
+    "sourceProgram",
+    "artifacts",
+    "runtimeSignals",
+    "logitsEvidence",
+    "decodeEvidence",
+    "kvCacheEvidence",
+    "blocker",
+    "nextProbes",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_webgpu_first_zero_diagnostic" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "blocked_all_zero_logits",
+        "blocked_no_finite_logits",
+        "blocked_missing_tensor",
+        "inconclusive",
+        "not_blocked_by_zero_logits"
+      ]
+    },
+    "modelId": { "type": "string", "minLength": 1 },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "webgpuReceipt",
+        "exporterReceipt",
+        "finalLogits",
+        "stdoutLog",
+        "stderrLog"
+      ],
+      "properties": {
+        "webgpuReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+        "exporterReceipt": { "$ref": "#/$defs/hashLinkedPath" },
+        "finalLogits": { "$ref": "#/$defs/hashLinkedPath" },
+        "stdoutLog": { "$ref": "#/$defs/hashLinkedPath" },
+        "stderrLog": { "$ref": "#/$defs/hashLinkedPath" }
+      }
+    },
+    "runtimeSignals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runnerExitCode",
+        "hasF16Advertised",
+        "hasSubgroupsAdvertised",
+        "samplingNoFiniteCandidate",
+        "pipelineCreationFailureMentioned"
+      ],
+      "properties": {
+        "runnerExitCode": { "type": "integer" },
+        "hasF16Advertised": { "type": "boolean" },
+        "hasSubgroupsAdvertised": { "type": "boolean" },
+        "samplingNoFiniteCandidate": { "type": "boolean" },
+        "pipelineCreationFailureMentioned": { "type": "boolean" }
+      }
+    },
+    "logitsEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "path",
+        "sha256",
+        "byteLength",
+        "elementCount",
+        "finiteCount",
+        "nonzeroCount",
+        "nanCount",
+        "infCount",
+        "allZero",
+        "minFinite",
+        "maxFinite",
+        "preview",
+        "exporterDigestMatchesTensor"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["output_ready", "missing", "invalid_float32"]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256OrPending" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "elementCount": { "type": "integer", "minimum": 0 },
+        "finiteCount": { "type": "integer", "minimum": 0 },
+        "nonzeroCount": { "type": "integer", "minimum": 0 },
+        "nanCount": { "type": "integer", "minimum": 0 },
+        "infCount": { "type": "integer", "minimum": 0 },
+        "allZero": { "type": "boolean" },
+        "minFinite": { "type": ["number", "null"] },
+        "maxFinite": { "type": ["number", "null"] },
+        "preview": {
+          "type": "array",
+          "items": {
+            "type": ["number", "string"]
+          }
+        },
+        "exporterDigestMatchesTensor": { "type": ["boolean", "null"] }
+      }
+    },
+    "decodeEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "requestedDecodeSteps",
+        "actualDecodeSteps",
+        "stopReason",
+        "generatedTokenCount",
+        "generatedTokenPreview",
+        "logitsStepCount"
+      ],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "requestedDecodeSteps": { "type": "integer", "minimum": 0 },
+        "actualDecodeSteps": { "type": "integer", "minimum": 0 },
+        "stopReason": { "type": "string", "minLength": 1 },
+        "generatedTokenCount": { "type": "integer", "minimum": 0 },
+        "generatedTokenPreview": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "logitsStepCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "kvCacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "realKvCache",
+        "byteDigest",
+        "layerDigestCount",
+        "seqLen"
+      ],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "realKvCache": { "type": "boolean" },
+        "byteDigest": { "$ref": "#/$defs/digestOrPending" },
+        "layerDigestCount": { "type": "integer", "minimum": 0 },
+        "seqLen": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "blocker": { "type": "string", "minLength": 1 },
+    "nextProbes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "claimBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimable", "scope", "blockedUntil"],
+      "properties": {
+        "claimable": { "const": false },
+        "scope": { "type": "string", "minLength": 1 },
+        "blockedUntil": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256OrPending": {
+      "type": "string",
+      "pattern": "^(pending|[0-9a-f]{64})$"
+    },
+    "digestOrPending": {
+      "type": "string",
+      "pattern": "^(pending|sha256:[0-9a-f]{64}|[0-9a-f]{64})$"
+    },
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "source"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256OrPending" },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

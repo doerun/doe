@@ -29,12 +29,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import common
-from bench.tools.doppler_rdrr_q4k import f16_bytes_to_f32_values
 from bench.tools.int4ple_manifest_compile_params import (
     manifest_compile_param_projection,
     runtime_grid,
 )
 from int4ple_hostplan_execution_plan import build_hostplan_execution_plan
+from int4ple_embed_roi import build_embed_roi_spec
 from int4ple_hostplan_executor_validator import validate_hostplan_executor
 from int4ple_runtime_scheduler import (
     count_by,
@@ -47,6 +47,7 @@ from int4ple_runtime_scheduler import (
 SCHEDULE_PREVIEW_COUNT = 4
 TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
 LAUNCH_STEP_ADAPTER = Path(__file__).with_name("int4ple_launch_step_adapter.py")
+EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -250,6 +251,7 @@ def host_plan_executor_preflight(
     target_names = (
         "embed",
         "tiled",
+        "lm_head_gemv",
         "lm_head_gemv_stable",
         "attn_head256",
         "attn_head512",
@@ -318,9 +320,12 @@ def host_plan_executor_preflight(
     else:
         blockers.append("tiled_target_params_missing")
 
+    global_head_dim = int(model.get("globalHeadDim") or 0)
     for target_name in ("attn_head256", "attn_head512"):
         params = target_params.get(target_name) or {}
         if not params:
+            if target_name == "attn_head512" and global_head_dim <= 0:
+                continue
             blockers.append(f"{target_name}_target_params_missing")
             continue
         require_minimum(
@@ -338,7 +343,11 @@ def host_plan_executor_preflight(
             minimum=prompt_tokens,
         )
 
-    lm_head = target_params.get("lm_head_gemv_stable") or {}
+    lm_head = (
+        target_params.get("lm_head_gemv")
+        or target_params.get("lm_head_gemv_stable")
+        or {}
+    )
     if lm_head:
         logits_coverage = int(lm_head.get("width") or 0) * int(
             lm_head.get("out_dim") or 0
@@ -932,6 +941,7 @@ def execute_hostplan_runtime_bootstrap(
                 "launchIndex": launch_index,
                 "targetName": target_name,
                 "compileDir": launch.get("compileDir"),
+                "compileParams": launch.get("compileParams") or {},
                 "launchFunction": launch.get("launchFunction"),
                 "targetGeometry": launch.get("targetGeometry") or {},
                 "phase": launch.get("phase"),
@@ -973,12 +983,16 @@ def execute_hostplan_runtime_bootstrap(
     return receipt
 
 
-def _load_tokenized_prompt(export: dict[str, Any], expected_per_pe: int, pe_count: int) -> np.ndarray:
+def _tokenized_prompt_path(export: dict[str, Any]) -> Path:
     tokenized = export.get("tokenizedPrompt") or {}
     raw_path = tokenized.get("path")
     if not isinstance(raw_path, str) or not raw_path:
         raise ValueError("tokenized prompt path missing")
-    prompt_path = resolve_artifact_path(Path(__file__), raw_path)
+    return resolve_artifact_path(Path(__file__), raw_path)
+
+
+def _load_tokenized_prompt(export: dict[str, Any], expected_per_pe: int, pe_count: int) -> np.ndarray:
+    prompt_path = _tokenized_prompt_path(export)
     tokens = np.fromfile(prompt_path, dtype=np.uint32)
     padded = np.zeros(expected_per_pe, dtype=np.uint32)
     count = min(tokens.size, expected_per_pe)
@@ -1040,9 +1054,15 @@ def _materialize_weight_input(
     )
     if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:
         raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
-        values = np.array(f16_bytes_to_f32_values(raw), dtype=np.float32)
+        values = np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
         if values.size != total_elements:
             raise ValueError(f"weight_f16_to_f32_size_mismatch:{values.size}!={total_elements}")
+        return values
+    if dtype == "u32" and transform_kind == "u8_bytes_to_u32_words":
+        raw = _read_weight_prefix_bytes(mapping, total_elements * 4)
+        values = np.frombuffer(raw, dtype=np.uint32).copy()
+        if values.size != total_elements:
+            raise ValueError(f"weight_u8_to_u32_size_mismatch:{values.size}!={total_elements}")
         return values
     raise ValueError(
         "unsupported_weight_materialization:"
@@ -1153,6 +1173,93 @@ def _stage_launch_arrays(
     return staged_inputs, staged_outputs
 
 
+def _is_embed_roi_launch(launch: dict[str, Any]) -> bool:
+    if str(launch.get("targetName") or "") != "embed":
+        return False
+    params = launch.get("compileParams") or {}
+    return all(
+        int(params.get(key) or 0) > 0
+        for key in ("rows_per_pe", "hidden_size", "hidden_per_pe", "tokens_per_chunk")
+    )
+
+
+def _execute_embed_roi_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    export: dict[str, Any],
+    progress_path: Path,
+    cmaddr: str | None,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    output_binding = next(
+        (
+            item
+            for item in launch.get("resolvedOutputs") or []
+            if isinstance(item, dict) and item.get("symbol") == "output"
+        ),
+        None,
+    )
+    if not isinstance(output_binding, dict):
+        raise ValueError("embed_roi_output_binding_missing")
+    output_buffer = str(output_binding.get("buffer") or "")
+    if not output_buffer:
+        raise ValueError("embed_roi_output_buffer_missing")
+    roi_dir = runtime_dir / "embed-roi" / f"launch-{launch_index:04d}"
+    output_path = _buffer_path(runtime_dir, output_buffer)
+    prompt_path = _tokenized_prompt_path(export)
+    roi_spec, roi_digest = build_embed_roi_spec(
+        roi_dir=roi_dir,
+        launch=launch,
+        prompt_path=prompt_path,
+        output_buffer_path=output_path,
+    )
+    roi_spec["cmaddr"] = cmaddr or ""
+    spec_path = roi_dir / "launch-spec.json"
+    receipt_path = _launch_receipt_path(runtime_dir, launch_index)
+    write_json(spec_path, roi_spec)
+    append_progress(
+        progress_path,
+        "embed_roi_spec_ready",
+        launchIndex=launch_index,
+        tokenCount=(roi_spec.get("prompt") or {}).get("tokenCount"),
+        sublaunchCount=len(roi_spec.get("sublaunches") or []),
+        specSha256=roi_digest,
+    )
+    command = [
+        cs_python_executable(),
+        str(EMBED_ROI_ADAPTER),
+        "--spec",
+        str(spec_path),
+        "--receipt-out",
+        str(receipt_path),
+        "--progress-out",
+        str(progress_path),
+    ]
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if not receipt_path.is_file():
+        raise ValueError("embed_roi_launch_receipt_missing")
+    receipt = load_json(receipt_path)
+    receipt["stdoutTail"] = (
+        completed.stdout.strip().splitlines()[-3:] if completed.stdout.strip() else []
+    )
+    receipt["stderrTail"] = (
+        completed.stderr.strip().splitlines()[-3:] if completed.stderr.strip() else []
+    )
+    receipt["roiSpecPath"] = str(spec_path)
+    receipt["roiSpecSha256"] = roi_digest
+    if completed.returncode != 0 or receipt.get("status") != "succeeded":
+        raise ValueError("; ".join(receipt.get("blockers") or ["embed_roi_launch_failed"]))
+    buffer_files[output_buffer] = output_path
+    return receipt
+
+
 def execute_hostplan_runtime(
     *,
     bootstrap: dict[str, Any],
@@ -1180,6 +1287,25 @@ def execute_hostplan_runtime(
             target=launch.get("targetName"),
         )
         try:
+            if _is_embed_roi_launch(launch):
+                launch_receipt = _execute_embed_roi_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    buffer_files=buffer_files,
+                    export=export,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                )
+                executed_launches.append(launch_receipt)
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                )
+                continue
             staged_inputs, staged_outputs = _stage_launch_arrays(
                 runtime_dir=runtime_dir,
                 launch=launch,
@@ -1205,6 +1331,8 @@ def execute_hostplan_runtime(
                 str(spec_path),
                 "--receipt-out",
                 str(receipt_path),
+                "--progress-out",
+                str(progress_path),
             ]
             completed = subprocess.run(
                 command,

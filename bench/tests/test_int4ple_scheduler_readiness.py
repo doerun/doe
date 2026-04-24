@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -15,7 +17,10 @@ if str(RUNNER_DIR) not in sys.path:
     sys.path.insert(0, str(RUNNER_DIR))
 
 from bench.tools.run_doe_csl_int4ple_transcript import (  # noqa: E402
+    find_tokenized_prompt_artifact,
     program_bundle_logits_digests,
+    sha256_compact_json,
+    tensor_name_candidates_for_weight_key,
 )
 from bench.tools.int4ple_manifest_compile_params import (  # noqa: E402
     apply_manifest_compile_params,
@@ -25,6 +30,10 @@ from int4ple_hostplan_execution_plan import (  # noqa: E402
 )
 from int4ple_hostplan_executor_validator import (  # noqa: E402
     validate_hostplan_executor,
+)
+from int4ple_embed_roi import (  # noqa: E402
+    active_pe_ids_for_tokens,
+    materialize_f16_embedding_table_slice,
 )
 
 spec = importlib.util.spec_from_file_location(
@@ -55,6 +64,50 @@ def write_layout(path: Path, *, exports: list[tuple[str, str]]) -> None:
 
 def clone_json(value: object) -> object:
     return json.loads(json.dumps(value))
+
+
+class Int4PleEmbedRoiTests(unittest.TestCase):
+    def test_active_pe_ids_follow_row_shards(self) -> None:
+        tokens = np.array([0, 21, 22, 45, 99], dtype=np.uint32)
+
+        self.assertEqual(
+            active_pe_ids_for_tokens(tokens, rows_per_pe=22, pe_count=3),
+            [0, 1, 2],
+        )
+
+    def test_embedding_table_slice_reads_strided_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            values = np.arange(24, dtype=np.float16).reshape(4, 6)
+            raw = values.tobytes(order="C")
+            shard0 = root / "shard0.bin"
+            shard1 = root / "shard1.bin"
+            shard0.write_bytes(raw[:16])
+            shard1.write_bytes(raw[16:])
+            mapping = {
+                "weightKey": "embed_tokens",
+                "shape": [4, 6],
+                "byteSize": len(raw),
+                "spans": [
+                    {"shardPath": str(shard0), "offset": 0, "size": 16},
+                    {"shardPath": str(shard1), "offset": 0, "size": len(raw) - 16},
+                ],
+            }
+
+            table = materialize_f16_embedding_table_slice(
+                mapping,
+                row_start=0,
+                rows_per_pe=2,
+                hidden_offset=3,
+                hidden_per_pe=3,
+                vocab_size=4,
+                hidden_size=6,
+            )
+
+        np.testing.assert_array_equal(
+            table.reshape(2, 3),
+            np.array([[3, 4, 5], [9, 10, 11]], dtype=np.float32),
+        )
 
 
 def make_valid_executor_validator_fixture(
@@ -177,6 +230,41 @@ def make_valid_executor_validator_fixture(
 
 
 class Int4PleSchedulerReadinessTests(unittest.TestCase):
+    def test_tokenized_prompt_artifact_lookup_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "program-bundle-export"
+            out_dir.mkdir(parents=True)
+            token_path = out_dir / "program_bundle_tokenized_prompt.u32"
+            tokens = [2, 105, 2364]
+            token_path.write_bytes(
+                b"".join(
+                    int(token).to_bytes(4, "little", signed=False)
+                    for token in tokens
+                )
+            )
+
+            first = find_tokenized_prompt_artifact(
+                expected_token_ids_sha256=sha256_compact_json(tokens),
+                expected_token_count=len(tokens),
+                out_dir=out_dir,
+            )
+            second = find_tokenized_prompt_artifact(
+                expected_token_ids_sha256=sha256_compact_json(tokens),
+                expected_token_count=len(tokens),
+                out_dir=out_dir,
+            )
+
+        self.assertIsNotNone(first)
+        self.assertEqual(first, second)
+        assert first is not None
+        self.assertEqual(first["tokenCount"], len(tokens))
+
+    def test_lm_head_weight_candidates_prefer_untied_names(self) -> None:
+        candidates = tensor_name_candidates_for_weight_key("lm_head")
+
+        self.assertEqual(candidates[0], "model.language_model.lm_head.weight")
+        self.assertIn("model.embed_tokens.weight", candidates)
+
     def test_program_bundle_logits_projection_preserves_step_digests(self) -> None:
         digests = program_bundle_logits_digests(
             {
@@ -625,9 +713,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                     ("compute", "fn()void"),
                 ],
                 "tiled": [
-                    ("A", "[*]f32, true"),
-                    ("B", "[*]u8, true"),
-                    ("C", "[*]f32, true"),
+                    ("a", "[*]f32, true"),
+                    ("b", "[*]f32, true"),
+                    ("c", "[*]f32, true"),
                     ("compute", "fn()void"),
                 ],
                 "attn_head256": [
@@ -1589,11 +1677,11 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "applied")
-        self.assertEqual(result["patchedTargetCount"], 1)
+        self.assertEqual(result["patchedTargetCount"], 2)
         self.assertEqual(result["blockedTargetCount"], 0)
         self.assertEqual(
             result["unprojectedTargetNames"],
-            ["lm_head_prefill_stable", "residual"],
+            ["lm_head_prefill_stable"],
         )
 
 

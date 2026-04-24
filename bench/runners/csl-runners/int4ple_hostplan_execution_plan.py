@@ -137,6 +137,8 @@ def _memcpy_data_type(elem_type: str) -> str:
 
 
 def _dtype_for_elem_type(elem_type: str) -> str:
+    if elem_type == "u8":
+        return "u32"
     if elem_type == "f16":
         return "f16"
     if elem_type in {"u16", "i16"}:
@@ -150,6 +152,12 @@ def _dtype_byte_width(dtype: str) -> int:
     if dtype in {"f16", "u16"}:
         return 2
     return 4
+
+
+def _memcpy_element_count(elem_type: str, raw_element_count: int) -> int:
+    if elem_type == "u8":
+        return max(1, (raw_element_count + 3) // 4)
+    return raw_element_count
 
 
 def _target_geometry(
@@ -231,8 +239,13 @@ def _binding_materialization(
     compile_time.setdefault("chunk_size", 1024)
     decl = pe_program_arrays.get(symbol)
     if decl is not None:
-        elements_per_pe = _resolve_size_expr(str(decl["sizeExpr"]), compile_time)
+        raw_elements_per_pe = _resolve_size_expr(str(decl["sizeExpr"]), compile_time)
         elem_type = str(decl["elemType"])
+        elements_per_pe = (
+            None
+            if raw_elements_per_pe is None
+            else _memcpy_element_count(elem_type, raw_elements_per_pe)
+        )
     else:
         elements_per_pe = None
         elem_type = "u32" if role in {"tokenized_prompt", "generated_tokens", "position"} else "f32"
@@ -305,6 +318,8 @@ def _binding_materialization(
             "sha256": weight_item.get("sha256"),
             "byteOffset": int(weight_item.get("byteOffset") or weight_item.get("offsetBytes") or 0),
             "byteSize": int(weight_item.get("byteSize") or 0),
+            "dtype": weight_item.get("dtype"),
+            "shape": weight_item.get("shape") or [],
             "spans": weight_item.get("spans") or [],
         }
     if source_transform is not None:
@@ -767,6 +782,7 @@ def build_hostplan_execution_plan(
             target_sessions[target_name] = {
                 "targetName": target_name,
                 "compileDir": str(compile_dir),
+                "compileParams": compile_params,
                 "layoutPath": str(layout_path),
                 "launchFunction": launch_function,
                 "targetGeometry": target_geometry,
