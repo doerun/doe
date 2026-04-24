@@ -107,6 +107,21 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh TSIR framing in `docs/architecture.md` and
+  `docs/shader-compiler-architecture.md`. Both had "planned" TSIR
+  language — accurate when written (pre-Phase-A), but stale after
+  the compiler surface landed. Updated both to say the architecture
+  is landed (while being precise that TSIR is not yet the wired
+  executable compiler path for CSL or WebGPU — skeleton emitters
+  produce contract text, not executable kernel bodies, and the
+  classifier/template CSL lane + Doe IR → MSL/SPIR-V/HLSL WebGPU
+  lanes remain live). Each also gains a pointer to
+  `docs/status/tsir.md` so readers of the architecture docs land
+  on live status. Same post-migration doc-drift class as ticks
+  27/28/34/35, just in architecture-level docs rather than status
+  shards. Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` §Current scaffold and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh `fused_gemv.notes.md` and `gather.notes.md` Status
   paragraphs in the bootstrap catalog. Both described their semantic
   JSONs as "semantically incomplete" / "unrepresentable" — accurate

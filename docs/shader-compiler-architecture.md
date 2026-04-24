@@ -118,19 +118,24 @@ JS / C application
           GPU
 ```
 
-## Planned TSIR path for spatial backends
+## TSIR path for spatial backends
 
 The current compiler pipeline in this document is the operative path for Metal,
 Vulkan, and D3D12. It is also the frontend path that today's CSL classifier
-consumes. The planned general WGSL -> spatial-backend route adds a Tiled
+consumes. The general WGSL -> spatial-backend route adds a Tiled
 Spatial IR (TSIR) between Doe IR and backend emission so residency, tiling,
 collectives, and exactness are declared in one place instead of re-derived by
 per-kernel emitters.
 
-That planned path is documented in
-[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). The in-tree scaffold
-for it lives under `runtime/zig/src/tsir/`, but it is not yet the wired
-compiler path for CSL or WebGPU.
+This path is documented in
+[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). Phase A compiler
+surface (schema, digests, frontend, planner, reference interpreter, and
+mechanical skeleton emitters for five backends) is landed under
+`runtime/zig/src/tsir/`; live status is in
+[`docs/status/tsir.md`](./status/tsir.md). TSIR is not yet the wired
+executable compiler path for CSL or WebGPU — skeleton emitters produce
+contract text, not executable kernel bodies, and the classifier/template
+CSL lane + Doe IR → MSL/SPIR-V/HLSL WebGPU lanes remain live.
 
 ## Comparison with Dawn/Tint
 
@@ -274,8 +279,10 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 
 ## Related docs
 
-- [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md) for the planned
+- [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md) for the
   WGSL -> TSIR -> backend lowering architecture and parity-oracle contract
+  (Phase A compiler surface landed; live status in
+  [`docs/status/tsir.md`](./status/tsir.md))
 
 ## Remaining work (current reality)
 
