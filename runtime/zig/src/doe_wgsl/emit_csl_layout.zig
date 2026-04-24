@@ -475,15 +475,62 @@ pub fn emitFusedGemvLayout(
     info: classify.FusedGemvDequantInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: fused GEMV + Q4K dequant with fabric reduce.\n\n");
+    try write(buf, pos, "// Layout: fused GEMV + Q4K dequant with 2-D grid + per-row fabric reduce.\n");
+    try write(buf, pos, "// width shards in_dim (reduce chain), height shards out_dim. See\n");
+    try write(buf, pos, "// bench/out/cslc-lmhead-2d-probe/probe-result.json for the E2B\n");
+    try write(buf, pos, "// feasibility evidence. Defaults (height=1, out_dim_per_pe=out_dim)\n");
+    try write(buf, pos, "// preserve the pre-shard 1-D behaviour for callers that have not\n");
+    try write(buf, pos, "// plumbed the out_dim_per_pe / height pair through HostPlan.\n\n");
     try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param height: i16 = 1;\n");
     try write(buf, pos, "param out_dim: i16;\n");
+    try write(buf, pos, "param out_dim_per_pe: i16 = out_dim;\n");
     try write(buf, pos, "param in_dim_per_pe: i16;\n");
     try write(buf, pos, "param num_blocks_per_row: i16;\n\n");
-    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n    .height = height,\n});\n\n");
     try emitReduceColor(buf, pos);
-    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitReduceRowTileLoop(buf, pos, ".out_dim = out_dim, .in_dim_per_pe = in_dim_per_pe, .num_blocks_per_row = num_blocks_per_row,\n");
+    try write(buf, pos, "layout {\n    @set_rectangle(width, height);\n\n");
+
+    // 2-D tile loop: each PE(pe_x, pe_y) gets the same compute binding.
+    // pe_id is still the east-west position within its row (pe_x), because
+    // the reduce chain is per-row (east-west only). num_pes is width for the
+    // same reason. Row identity (pe_y) is not surfaced to the PE program
+    // because the per-row out_dim slice is handled on the host: it stages
+    // the pe_y'th out_dim_per_pe rows of weight into this PE's memory, and
+    // at D2H reads back the pe_y'th out_dim_per_pe rows of output.
+    try write(buf, pos, "    for (@range(i16, height)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(i16, width)) |pe_x| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .pe_id = pe_x,\n");
+    try write(buf, pos, "                .num_pes = width,\n");
+    try write(buf, pos, "                .reduce_color = reduce_color,\n");
+    try write(buf, pos, "                .out_dim_per_pe = out_dim_per_pe,\n");
+    try write(buf, pos, "                .in_dim_per_pe = in_dim_per_pe,\n");
+    try write(buf, pos, "                .num_blocks_per_row = num_blocks_per_row,\n");
+    try write(buf, pos, "            });\n\n");
+    // Per-row reduce routing (east-west within the same pe_y).
+    //   pe_x=0:       rx=RAMP,  tx=EAST
+    //   pe_x=width-1: rx=WEST,  tx=RAMP
+    //   middle:       rx=WEST,  tx=EAST
+    try write(buf, pos, "            if (pe_x == 0) {\n");
+    try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
+    try write(buf, pos, "                    .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
+    try write(buf, pos, "                });\n");
+    try write(buf, pos, "            } else if (pe_x == width - 1) {\n");
+    try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
+    try write(buf, pos, "                    .routes = .{ .rx = .{WEST}, .tx = .{RAMP} },\n");
+    try write(buf, pos, "                });\n");
+    try write(buf, pos, "            } else {\n");
+    try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
+    try write(buf, pos, "                    .routes = .{ .rx = .{WEST}, .tx = .{EAST} },\n");
+    try write(buf, pos, "                });\n");
+    try write(buf, pos, "            }\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
     // Same as emitDequantLayout: struct-array globals (the quantized
     // weight blocks) must export as [*]u8 to match the PE program's
     // byte-granularity unpacking. The generic emitStorageExports falls

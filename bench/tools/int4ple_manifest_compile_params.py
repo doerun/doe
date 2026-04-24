@@ -32,6 +32,16 @@ ATTN_PE_DATA_BUDGET_BYTES = 20 * 1024
 # (larger block = fewer host dispatches per kv_len).
 ATTN_BLOCK_SIZE_CANDIDATES = (16, 8, 4, 2, 1)
 
+# lm_head fused-GEMV 2-D sharding budget. Same WSE-3 `.blocked_ut_ival`
+# ceiling; held at half to leave headroom for the per-PE scratch_in /
+# scratch_out DSD reduce buffers (each sized `out_dim_per_pe` floats),
+# partial[out_dim_per_pe], plus PE program code, stack, memcpy framework.
+# (out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES) is the weight
+# footprint per PE; we bound that plus 4× out_dim_per_pe floats for
+# output/partial/scratch_in/scratch_out.
+LMHEAD_PE_DATA_BUDGET_BYTES = 32 * 1024
+Q4K_BLOCK_BYTES = 144
+
 
 def ceil_div(numerator: int, denominator: int) -> int:
     if denominator <= 0:
@@ -121,6 +131,97 @@ def solve_embed_chunked_dispatch(
                     "gridWidth": grid_width,
                 }
     return None
+
+
+def solve_lmhead_gemv_2d(
+    *,
+    grid_width: int,
+    grid_height: int,
+    out_dim_total: int,
+    num_blocks_per_row: int,
+    budget_bytes: int = LMHEAD_PE_DATA_BUDGET_BYTES,
+) -> dict[str, int] | None:
+    """Pick (outDimPerPe, height) for the 2-D fused-GEMV lm_head kernel.
+
+    Constraints:
+      * out_dim_per_pe * height >= out_dim_total      (every logit covered)
+      * out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES
+        + 4 * out_dim_per_pe * 4   (output+partial+scratch_in+scratch_out)
+        ≤ budget_bytes
+      * height ≤ grid_height
+      * width * height fits the PE grid (caller guarantees grid_height)
+
+    Strategy: iterate candidate heights from grid_height down to 1. At each
+    height, pick out_dim_per_pe = ceil(out_dim_total / height), then check
+    whether the budget constraint holds. First feasible (height,
+    out_dim_per_pe) pair wins — larger heights mean smaller per-PE shards
+    and smaller reduce-DSD extents, so preferring larger height is the
+    compile-safest choice.
+    """
+    if (
+        grid_width <= 0
+        or grid_height <= 0
+        or out_dim_total <= 0
+        or num_blocks_per_row <= 0
+        or budget_bytes <= 0
+    ):
+        return None
+    for height in range(grid_height, 0, -1):
+        out_dim_per_pe = ceil_div(out_dim_total, height)
+        if out_dim_per_pe <= 0:
+            continue
+        weight_bytes = out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES
+        scratch_bytes = 4 * out_dim_per_pe * 4
+        footprint = weight_bytes + scratch_bytes
+        if footprint <= budget_bytes:
+            return {
+                "outDimPerPe": out_dim_per_pe,
+                "height": height,
+                "width": grid_width,
+                "perPeFootprintBytes": footprint,
+                "budgetBytes": budget_bytes,
+                "outDimTotal": out_dim_total,
+            }
+    return None
+
+
+def lmhead_gemv_compile_params(
+    *,
+    grid_width: int,
+    grid_height: int,
+    out_dim_total: int,
+    in_dim_per_pe: int,
+    num_blocks_per_row: int,
+) -> dict[str, int]:
+    """Build the compileParams dict for the `lm_head_gemv_stable` kernel.
+
+    Emits the four legacy knobs (`out_dim`, `in_dim_per_pe`,
+    `num_blocks_per_row` — plus `height=1` when the pre-shard shape
+    survives). When the 2-D solver finds a feasible (outDimPerPe, height)
+    pair, also emits `out_dim_per_pe` and `height` for the cslc tile-code
+    to pick up the sharded buffers. If no pair fits, falls back to the
+    legacy knobs; the compile will then fail with the pre-shard i16
+    overflow signature so the unrescueable shape is visible rather than
+    silently patched.
+    """
+    tuple_ = solve_lmhead_gemv_2d(
+        grid_width=grid_width,
+        grid_height=grid_height,
+        out_dim_total=out_dim_total,
+        num_blocks_per_row=num_blocks_per_row,
+    )
+    params: dict[str, int] = {
+        "out_dim": out_dim_total,
+        "in_dim_per_pe": in_dim_per_pe,
+        "num_blocks_per_row": num_blocks_per_row,
+    }
+    if tuple_ is not None:
+        params["height"] = tuple_["height"]
+        params["out_dim_per_pe"] = tuple_["outDimPerPe"]
+        params["width"] = tuple_["width"]
+    else:
+        params["height"] = 1
+    return params
 
 
 def solve_attention_streaming(
@@ -346,11 +447,13 @@ def manifest_compile_param_projection(
             "in_dim_per_pe": gemv_input_per_pe,
             "num_blocks_per_row": gemv_blocks,
         },
-        "lm_head_gemv_stable": {
-            "out_dim": lm_head_out_dim,
-            "in_dim_per_pe": gemv_input_per_pe,
-            "num_blocks_per_row": gemv_blocks,
-        },
+        "lm_head_gemv_stable": lmhead_gemv_compile_params(
+            grid_width=grid_width,
+            grid_height=grid_height,
+            out_dim_total=lm_head_out_dim,
+            in_dim_per_pe=gemv_input_per_pe,
+            num_blocks_per_row=gemv_blocks,
+        ),
         "attn_decode": {
             "head_dim": head_dim,
             "kv_chunk": DEFAULT_DECODE_KV_CHUNK,

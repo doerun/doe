@@ -186,6 +186,120 @@ def run_streaming_tiled_attention(
     return output_padded.reshape(width * q_len_per_pe, head_dim)[:q_len, :].copy()
 
 
+def run_fused_gemv_2d(
+    *,
+    runner: Any,
+    activation: np.ndarray,
+    weight_shards: np.ndarray,
+    width: int,
+    height: int,
+    in_dim_per_pe: int,
+    out_dim_per_pe: int,
+    out_dim_total: int,
+    num_blocks_per_row: int,
+    activation_symbol: str = "activation",
+    weight_symbol: str = "weight",
+    output_symbol: str = "output",
+    compute_symbol: str = "compute",
+    memcpy_data_type: Any | None = None,
+    memcpy_order: Any | None = None,
+    q4k_block_bytes: int = 144,
+) -> np.ndarray:
+    """Drive the 2-D fused-GEMV dispatch from the host.
+
+    Contract (matches emit_csl_fused.zig:emit + emit_csl_layout.zig:emitFusedGemvLayout,
+    verified at bench/out/cslc-lmhead-2d-probe/probe-result.json):
+
+      1. H2D activation once (every PE needs the same in_dim_per_pe slice;
+         host tiles activation across width).
+      2. H2D weight_shards — shape
+         (height, width, out_dim_per_pe * num_blocks_per_row * q4k_block_bytes)
+         flattened row-major so each PE(pe_x, pe_y) receives its
+         (row_shard_y, in_shard_x) slice.
+      3. launch(compute_symbol). Per-row east-west reduce folds partials
+         automatically.
+      4. D2H from every (pe_x=width-1, pe_y) sink PE. Reassemble full
+         out_dim vector by concatenating out_dim_per_pe slices across
+         pe_y rows, trimming the tail when out_dim_per_pe * height >
+         out_dim_total.
+
+    `memcpy_data_type` and `memcpy_order` must be imported from
+    cerebras.sdk.runtime.sdkruntimepybind by the caller (inside
+    cs_python).
+    """
+    if memcpy_data_type is None or memcpy_order is None:
+        raise ValueError(
+            "run_fused_gemv_2d requires MemcpyDataType and MemcpyOrder "
+            "arguments (import from "
+            "cerebras.sdk.runtime.sdkruntimepybind in the caller)"
+        )
+    expected_weight_shape = (
+        height,
+        width,
+        out_dim_per_pe * num_blocks_per_row * q4k_block_bytes,
+    )
+    if weight_shards.shape != expected_weight_shape:
+        raise ValueError(
+            f"weight_shards shape {weight_shards.shape} does not match "
+            f"(height={height}, width={width}, bytesPerPe="
+            f"{expected_weight_shape[2]})"
+        )
+    if out_dim_per_pe * height < out_dim_total:
+        raise ValueError(
+            f"out_dim_per_pe*height ({out_dim_per_pe * height}) "
+            f"< out_dim_total ({out_dim_total})"
+        )
+    if activation.shape != (in_dim_per_pe,) and activation.shape != (width, in_dim_per_pe):
+        raise ValueError(
+            f"activation shape {activation.shape} must be (in_dim_per_pe,) "
+            f"or (width, in_dim_per_pe); host tiles the first form across width"
+        )
+
+    if activation.ndim == 1:
+        activation_per_pe = np.tile(
+            activation.astype(np.float32, copy=False), (width, 1)
+        )
+    else:
+        activation_per_pe = activation.astype(np.float32, copy=False)
+    act_flat = np.tile(
+        activation_per_pe.reshape(-1), height
+    ).astype(np.float32, copy=False)
+
+    act_id = runner.get_id(activation_symbol)
+    wgt_id = runner.get_id(weight_symbol)
+    out_id = runner.get_id(output_symbol)
+
+    runner.memcpy_h2d(
+        act_id, act_flat, 0, 0, width, height, in_dim_per_pe,
+        streaming=False, order=memcpy_order.ROW_MAJOR,
+        data_type=memcpy_data_type.MEMCPY_32BIT, nonblock=False,
+    )
+
+    weight_bytes_flat = weight_shards.reshape(-1).astype(np.uint8, copy=False)
+    bytes_per_pe = expected_weight_shape[2]
+    runner.memcpy_h2d(
+        wgt_id, weight_bytes_flat, 0, 0, width, height, bytes_per_pe,
+        streaming=False, order=memcpy_order.ROW_MAJOR,
+        data_type=memcpy_data_type.MEMCPY_8BIT, nonblock=False,
+    )
+
+    runner.launch(compute_symbol, nonblock=False)
+
+    out_flat = np.zeros(width * height * out_dim_per_pe, dtype=np.float32)
+    runner.memcpy_d2h(
+        out_flat, out_id, 0, 0, width, height, out_dim_per_pe,
+        streaming=False, order=memcpy_order.ROW_MAJOR,
+        data_type=memcpy_data_type.MEMCPY_32BIT, nonblock=False,
+    )
+    # Reduce east-west: host keeps only sink PE (pe_x=width-1) values per
+    # pe_y row. D2H returned shape is (height, width, out_dim_per_pe)
+    # in row-major; slice pe_x=width-1.
+    out_per_pe = out_flat.reshape(height, width, out_dim_per_pe)
+    rows = out_per_pe[:, width - 1, :]  # (height, out_dim_per_pe)
+    full = rows.reshape(-1)[:out_dim_total].astype(np.float32, copy=False)
+    return full.copy()
+
+
 def numpy_tiled_attention_reference(
     *,
     q: np.ndarray,

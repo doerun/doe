@@ -7,6 +7,75 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+2) — lm_head_gemv_stable 2-D sharding lands
+
+Fourth and final WS4 blocker kernel. `emit_csl_fused.zig:emit` +
+`emit_csl_layout.zig:emitFusedGemvLayout` refactored from the 1-D (width
+× 1) reduce chain with PE-resident full out_dim weight to a 2-D (width ×
+height) layout where `width` shards in_dim (east-west reduce chain) and
+`height` shards out_dim. Per-PE weight drops from
+`out_dim * num_blocks_per_row * 144` to
+`out_dim_per_pe * num_blocks_per_row * 144`. At Gemma 4 E2B manifest
+(out_dim=1331, num_blocks_per_row=2, grid=197×84) this is 383 KiB → 4.6 KiB
+per PE. Reduce semantics unchanged: per row independent east-west chain.
+Defaults (`height=1`, `out_dim_per_pe=out_dim`) preserve the pre-shard
+shape when callers have not plumbed the new knobs.
+
+Direct cslc verification (see
+`bench/out/cslc-lmhead-2d-probe/probe-result.json`, `--arch=wse3`):
+
+- E2B `width=197,height=84,out_dim=1331,out_dim_per_pe=16,in_dim_per_pe=512,num_blocks_per_row=2` — **Compilation successful**
+- 1-D backward-compat `width=4,height=1,out_dim=16,out_dim_per_pe=16,in_dim_per_pe=512,num_blocks_per_row=2` — **Compilation successful**
+
+HostPlan compile-param assembly
+(`bench/tools/int4ple_manifest_compile_params.py`) gained
+`solve_lmhead_gemv_2d` + `lmhead_gemv_compile_params`. The solver
+iterates candidate heights from `grid_height` down to 1; first feasible
+(height, out_dim_per_pe) wins. Budget is
+`LMHEAD_PE_DATA_BUDGET_BYTES = 32 KiB` (weight + 4× scratch/output/partial
+floats), conservative vs the ~48 KiB ceiling the probe exercised.
+Solver output at E2B picks `(out_dim_per_pe=16, height=84)` matching the
+probe's hand-verified pair.
+
+Schema
+(`config/csl-operation-graph.schema.json`) gained
+`$defs/hostIoLayoutFusedGemv` with a `dimSharding` block (`outDimPerPe`,
+`width`, `height`, `outDimTotal`), namespaced as peer to `embed` /
+`attention` so the three kernel workstreams don't collide on merge.
+
+Host helper
+(`bench/runners/csl-runners/common.py`) gained `run_fused_gemv_2d`:
+tiles activation across width, stages weight shards per (pe_y, pe_x),
+launches `compute`, reads D2H back from every (pe_x=width-1, pe_y) sink
+PE and concatenates + trims to `out_dim_total`. Matches the existing
+`run_streaming_tiled_attention` pattern.
+
+Verified:
+  - `zig build` + `zig build test-wgsl` green.
+  - `csl-operation-graph` gate green (hostIoLayoutFusedGemv does not
+    break existing validation).
+  - 20/20 `bench/tests/test_int4ple*` green (shape-based assertions
+    from the earlier refactor absorbed the new lm_head params cleanly).
+  - Emitter-generated CSL compiles at both E2B 2-D and tiny 1-D shapes.
+
+All four WS4 kernel blockers (embed, attn_head256/512, lm_head_gemv_stable)
+now have:
+  - emitter refactored off the pre-shard overflow shape
+  - matching layout emitter
+  - HostPlan compile-param solver with empirical-budget bounds
+  - operation-graph schema key
+  - host Python helper for the orchestration contract
+  - direct-cslc probe receipt pinned under `bench/out/cslc-*-probe/`
+
+The remaining step to flip any of the four receipts from
+`executionStatus=not_implemented` to a live simfabric transcript is
+integration: `run_doe_csl_int4ple_transcript.py` imports the
+`run_streaming_tiled_attention` / `run_fused_gemv_2d` / embed helpers
+(and the analogous embed helper when that lands) and invokes them on the
+compile targets, then diffs against numpy references for correctness.
+That integration is one focused session away; it is not another
+multi-week kernel engineering effort.
+
 ## 2026-04-24 (late+1) — attn_head256/512 closure plumbing lands
 
 Follow-on to the streaming-KV emitter refactor earlier today. The schema,

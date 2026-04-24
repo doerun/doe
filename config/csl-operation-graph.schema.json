@@ -85,7 +85,8 @@
       "description": "Per-kernel host I/O layout directives consumed by the Python host runner. Each named entry describes how the host must shard, tile, stream, or chunk the I/O between its flat tensors and the (width, height) PE grid the kernel was compiled for. This is the contract that keeps memcpy_h2d and memcpy_d2h semantically correct when a kernel uses a 2-D grid or chunked token dispatch; the kernel itself cannot enforce host orchestration.",
       "properties": {
         "embed": { "$ref": "#/$defs/hostIoLayoutEmbed" },
-        "attention": { "$ref": "#/$defs/hostIoLayoutAttention" }
+        "attention": { "$ref": "#/$defs/hostIoLayoutAttention" },
+        "fusedGemv": { "$ref": "#/$defs/hostIoLayoutFusedGemv" }
       }
     }
   },
@@ -538,6 +539,46 @@
               "type": "integer",
               "minimum": 1,
               "description": "Number of hidden columns held per PE. Equals hidden_size / hiddenShardCount."
+            }
+          }
+        }
+      }
+    },
+    "hostIoLayoutFusedGemv": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Host I/O layout for the fused GEMV + Q4K dequant kernel (lm_head_gemv_stable and siblings). Describes the 2-D (in_dim-shard x out_dim-shard) PE grid: width shards in_dim and hosts the east-west reduce chain; height shards out_dim so the per-PE weight buffer stays under the ~48 KiB .data.hi budget. Host stages weight/activation per (pe_x, pe_y) shard and reads D2H from the sink PE (pe_x=width-1) of every pe_y row, concatenating along out_dim to reassemble the full output vector. Verified at bench/out/cslc-lmhead-2d-probe/probe-result.json.",
+      "required": ["dimSharding"],
+      "properties": {
+        "dimSharding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outDimPerPe",
+            "width",
+            "height",
+            "outDimTotal"
+          ],
+          "properties": {
+            "outDimPerPe": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of output rows held per PE along the pe_y axis. Equal to ceil(outDimTotal / height)."
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "PE grid width (shards in_dim). Matches the reduce-chain length."
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "PE grid height (shards out_dim). Must satisfy outDimPerPe * height >= outDimTotal."
+            },
+            "outDimTotal": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Full output vector length. Host reassembles the D2H slices from each pe_y back into this length."
             }
           }
         }
