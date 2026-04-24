@@ -60,12 +60,21 @@ DEFAULT_TARGET_MATRIX = ("webgpu-generic", "wse3")
 BOOTSTRAP_FIXTURE_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
 BOOTSTRAP_INPUTS_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-bootstrap-inputs"
 BOOTSTRAP_TSIR_DIR = REPO_ROOT / "runtime" / "zig" / "tests" / "tsir" / "bootstrap"
+REAL_TSIR_DIR = REPO_ROOT / "runtime" / "zig" / "tests" / "tsir" / "real"
 
 # Kernel-ref vocabulary under the TSIR bootstrap pipeline. Real-kernel
 # refs (doe.tsir.real.*) are reserved and will be added incrementally
 # as Move 4 extends the frontend.
 BOOTSTRAP_KERNEL_REF_PREFIX = "doe.tsir.bootstrap."
 REAL_KERNEL_REF_PREFIX = "doe.tsir.real."
+
+# Real-kernel fixtures that document a target TSIR shape. Presence in
+# this set means the fixture directory exists and the WS4 planner
+# decisions are named. Absence means the real-kernel ref is reserved
+# but no fixture has been hand-sketched yet. The orchestrator routes
+# present vs. absent refs to different rejection details so the
+# status is auditable from receipt text alone.
+REAL_KERNEL_FIXTURES: frozenset[str] = frozenset({"embed"})
 
 
 @dataclass
@@ -313,10 +322,64 @@ def lower_bootstrap_pair(
     return outcome
 
 
+def real_kernel_short_name(kernel_ref: str) -> str:
+    assert kernel_ref.startswith(REAL_KERNEL_REF_PREFIX)
+    return kernel_ref[len(REAL_KERNEL_REF_PREFIX):]
+
+
+def real_fixture_paths(kernel: str, backend: str) -> dict[str, Path]:
+    base = REAL_TSIR_DIR / kernel
+    return {
+        "wgsl": base / f"{kernel}.wgsl",
+        "semantic": base / f"{kernel}.tsir-semantic.json",
+        "realization": base / f"{kernel}.tsir-realization.{backend}.json",
+        "notes": base / f"{kernel}.notes.md",
+    }
+
+
 def reject_real_kernel_pair(
     kernel_ref: str,
     backend: str,
 ) -> ConvertLoweringOutcome:
+    kernel = real_kernel_short_name(kernel_ref)
+    if kernel in REAL_KERNEL_FIXTURES:
+        paths = real_fixture_paths(kernel, backend)
+        missing = [
+            str(p.relative_to(REPO_ROOT))
+            for p in paths.values()
+            if not p.is_file()
+        ]
+        if missing:
+            return ConvertLoweringOutcome(
+                kernel_ref=kernel_ref,
+                backend=backend,
+                status="rejected",
+                rejection_reason="tsir_source_not_affine",
+                detail=(
+                    f"real-kernel {kernel_ref!r} is registered in "
+                    "REAL_KERNEL_FIXTURES but the fixture directory is "
+                    f"incomplete: missing {', '.join(missing)}. Fix the "
+                    "fixture or drop the registration."
+                ),
+            )
+        return ConvertLoweringOutcome(
+            kernel_ref=kernel_ref,
+            backend=backend,
+            status="rejected",
+            rejection_reason="tsir_source_not_affine",
+            detail=(
+                f"real-kernel {kernel_ref!r} target shape is documented "
+                f"at {paths['notes'].relative_to(REPO_ROOT)} with "
+                f"hand-sketched semantic/realization JSON under "
+                f"{(REAL_TSIR_DIR / kernel).relative_to(REPO_ROOT)}/. "
+                "Frontend recovery (frontend.zig), planner residency "
+                "selection (planner.zig), and CSL emitter body for "
+                "fabric_streamed table reads (emit_kernel_body.zig) "
+                "are the remaining compiler extensions. The fixture "
+                "names the target realization; the code does not yet "
+                "produce it."
+            ),
+        )
     return ConvertLoweringOutcome(
         kernel_ref=kernel_ref,
         backend=backend,

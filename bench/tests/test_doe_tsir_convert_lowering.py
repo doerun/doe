@@ -116,8 +116,11 @@ class TestManifestKernelLoading(unittest.TestCase):
 
 class TestRejectionPaths(unittest.TestCase):
     def test_real_kernel_rejects_with_typed_reason(self) -> None:
+        # Use an unregistered real-kernel ref so we hit the blanket
+        # rejection path. Registered refs (like doe.tsir.real.embed)
+        # have a fixture-specific detail; see TestRealFixtureRouting.
         outcome = aot.reject_real_kernel_pair(
-            "doe.tsir.real.embed", "wse3"
+            "doe.tsir.real.unregistered_probe", "wse3"
         )
         self.assertEqual(outcome.status, "rejected")
         self.assertEqual(outcome.rejection_reason, "tsir_source_not_affine")
@@ -176,6 +179,71 @@ class TestOrchestrationShape(unittest.TestCase):
         doc = aot.build_lowerings_doc(outcomes)
         self.assertEqual(doc["contractVersion"], 1)
         self.assertEqual(doc["entries"], [])
+
+
+class TestRealFixtureRouting(unittest.TestCase):
+    """Move 4: real-kernel refs with fixtures get a fixture-specific
+    rejection detail that names the fixture path and the remaining
+    compiler-extension surfaces."""
+
+    def test_embed_registered_fixture_points_at_notes(self) -> None:
+        outcome = aot.reject_real_kernel_pair("doe.tsir.real.embed", "wse3")
+        self.assertEqual(outcome.status, "rejected")
+        self.assertEqual(outcome.rejection_reason, "tsir_source_not_affine")
+        self.assertIn("embed.notes.md", outcome.detail or "")
+        self.assertIn("frontend.zig", outcome.detail or "")
+        self.assertIn("planner.zig", outcome.detail or "")
+
+    def test_unregistered_real_kernel_uses_blanket_rejection(self) -> None:
+        outcome = aot.reject_real_kernel_pair(
+            "doe.tsir.real.never_seen", "wse3"
+        )
+        self.assertEqual(outcome.status, "rejected")
+        self.assertIn("Move 4 extends frontend coverage", outcome.detail or "")
+
+    def test_real_kernel_short_name_extraction(self) -> None:
+        self.assertEqual(
+            aot.real_kernel_short_name("doe.tsir.real.embed"), "embed"
+        )
+
+
+class TestRealFixtureAvailability(unittest.TestCase):
+    """Real-kernel fixtures registered in REAL_KERNEL_FIXTURES must be
+    present on disk with a WGSL snapshot, both realization JSONs, a
+    semantic JSON, and a notes file."""
+
+    def test_embed_fixture_complete(self) -> None:
+        paths_wse3 = aot.real_fixture_paths("embed", "wse3")
+        paths_webgpu = aot.real_fixture_paths("embed", "webgpu-generic")
+        for label, path in paths_wse3.items():
+            self.assertTrue(
+                path.is_file(),
+                f"embed wse3 fixture missing {label}: {path}",
+            )
+        self.assertTrue(
+            paths_webgpu["realization"].is_file(),
+            f"embed webgpu-generic realization missing: "
+            f"{paths_webgpu['realization']}",
+        )
+
+    def test_embed_fixture_validates_against_schemas(self) -> None:
+        import jsonschema
+
+        semantic_schema = json.loads(
+            (REPO_ROOT / "config" / "doe-tsir-semantic.schema.json").read_text()
+        )
+        realization_schema = json.loads(
+            (REPO_ROOT / "config" / "doe-tsir-realization.schema.json").read_text()
+        )
+        paths = aot.real_fixture_paths("embed", "wse3")
+        semantic = json.loads(paths["semantic"].read_text())
+        realization = json.loads(paths["realization"].read_text())
+        jsonschema.validate(semantic, semantic_schema)
+        jsonschema.validate(realization, realization_schema)
+        # Webgpu-generic variant
+        wg_path = aot.real_fixture_paths("embed", "webgpu-generic")["realization"]
+        realization_wg = json.loads(wg_path.read_text())
+        jsonschema.validate(realization_wg, realization_schema)
 
 
 class TestBootstrapFixtureAvailability(unittest.TestCase):

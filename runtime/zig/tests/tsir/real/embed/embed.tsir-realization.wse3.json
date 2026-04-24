@@ -1,0 +1,58 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [32, 192]
+      },
+      "peGrid": {
+        "width": 8,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "fabric_streamed",
+          "axis": null,
+          "shards": null,
+          "fabricColor": 0,
+          "chunkBytes": 65536
+        },
+        {
+          "bindingIndex": 3,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 8,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [],
+      "emitterParams": {
+        "sketch": true,
+        "note": "Target realization for Gemma 4 E2B embed (num_tokens=32, hidden_size=1536, vocab_size=262144). Output pe_sliced on token axis avoids WS4's 192 KiB per-PE output overflow: 4 tokens/PE * 1536 * 4 = 24 KiB per PE, fitting the ~63 KiB budget with headroom. Table is fabric_streamed (1.5 GiB total cannot be pe_replicated or pe_sliced); chunk_bytes chosen so the live table slice plus the output slice stays under 48 KiB working budget. Uniform and indices bindings are host_copied per launch; they are O(num_tokens) bytes and do not participate in the PE residency decision. See embed.notes.md for the per-PE budget math and the planner decision rules this realization exercises."
+      },
+      "targetDescriptorHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "rejections": []
+}

@@ -18,6 +18,54 @@ live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
 moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
 tick. New TSIR entries go here going forward.
 
+## 2026-04-24 — Move 4: first real-kernel fixture (`embed`) lands
+
+First real-kernel TSIR fixture under `runtime/zig/tests/tsir/real/embed/`:
+
+- `embed.wgsl` — pinned snapshot of Doppler's production embedding
+  gather (`src/gpu/kernels/gather.wgsl`), independent of the
+  bootstrap catalog's minimal gather.
+- `embed.tsir-semantic.json` — hand-sketched TSIR semantic with
+  `familyHint=embed`, body op `gather`, pinned frontend version.
+  Validates against `config/doe-tsir-semantic.schema.json`.
+- `embed.tsir-realization.wse3.json` — hand-sketched realization
+  for WSE-3 at Gemma 4 E2B scale (num_tokens=32, hidden_size=1536,
+  vocab_size=262144). Output pe_sliced on token axis (shards=8, 4
+  tokens/PE × 1536 × 4 = 24 KiB per PE) avoids the 192 KiB per-PE
+  output overflow WS4 characterized. Table fabric_streamed on color
+  0 (1.5 GiB total cannot pe_replicate or pe_slice). Validates
+  against `config/doe-tsir-realization.schema.json`.
+- `embed.tsir-realization.webgpu-generic.json` — webgpu-generic
+  realization is pe_replicated (adapter memory hosts table).
+  Under Move 2, Doppler's browser WebGPU is authoritative for this
+  lane; Doe does not emit WGSL bodies for real kernels.
+- `embed.notes.md` — per-PE budget math, decision rules, and a
+  validation plan naming the `frontend.zig` / `planner.zig` /
+  `emit_kernel_body.zig` extensions the follow-on engineer must
+  land to produce this realization from the WGSL.
+
+`bench/tools/doe_tsir_convert_lowering.py` gains a
+`REAL_KERNEL_FIXTURES` registry and routing. Registered real-kernel
+refs (currently just `embed`) produce a fixture-specific rejection
+detail that cites the notes.md and names the exact compiler-extension
+surfaces. Unregistered real-kernel refs (e.g.
+`doe.tsir.real.lm_head_gemv_stable`) produce a blanket rejection
+pointing at Move 4. 22 tests total in
+`bench/tests/test_doe_tsir_convert_lowering.py`; 56 across that and
+`test_doe_parity.py`.
+
+**What Move 4 does NOT yet land**: the Zig compiler extensions
+themselves. The fixture is the target shape and the validation plan;
+producing that shape from the WGSL is still open compiler work. The
+orchestrator now routes `doe.tsir.real.embed` to a rejection that
+names the work instead of a generic "not yet covered" message, so the
+remaining gap is audit-visible from receipts alone.
+
+Next real-kernel fixture to sketch: `lm_head_gemv_stable` (reuses
+`fused_gemv` body, adds `out_dim`-sharding residency at Gemma 4 E2B
+vocab scale). Then `attn_head256` / `attn_head512` (Move 5 — adds
+`attn_head` body op with `stream_kv_tiles` residency).
+
 ## 2026-04-24 — TSIR plan re-scoped to Gemma-on-Cerebras, reference inverted
 
 `docs/tsir-lowering-plan.md` has been re-scoped. The five moves are

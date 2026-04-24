@@ -1,0 +1,59 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [32, 192]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 3,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [],
+      "emitterParams": {
+        "sketch": true,
+        "workgroupSize": 256,
+        "note": "WebGPU-generic realization stays pe_replicated because adapter memory hosts the table. The TSIR path for this target is nominal: under Move 2 of the re-scoped plan, Doppler's browser WebGPU runtime is authoritative for real-kernel WGSL. This entry exists so the lowering identity is pairwise-complete across (kernelRef, backend), not because Doe emits WGSL bodies for real-kernel WebGPU. Parity gating for this row is reference=doppler-reference-transcript, backend=webgpu-generic deferred to Doppler's own runtime. See docs/tsir-lowering-plan.md Step 8 'Backend lane rules under the re-scope'."
+      },
+      "targetDescriptorHash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "emitterDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "rejections": []
+}

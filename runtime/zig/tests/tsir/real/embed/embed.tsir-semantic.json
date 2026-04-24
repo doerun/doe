@@ -1,0 +1,64 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "frontend-real-pipeline-v0",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "embed",
+      "axes": [
+        { "name": "t", "lowerBound": "0", "upperBound": "num_tokens", "step": "1" },
+        { "name": "h", "lowerBound": "0", "upperBound": "hidden_size", "step": "1" }
+      ],
+      "bindings": [
+        {
+          "name": "u",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [1],
+          "elem": "u32",
+          "readWrite": false
+        },
+        {
+          "name": "indices",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [0],
+          "elem": "u32",
+          "readWrite": false
+        },
+        {
+          "name": "embeddings",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [0, 0],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "output",
+          "group": 0,
+          "binding": 3,
+          "logicalShape": [0, 0],
+          "elem": "f32",
+          "readWrite": true
+        }
+      ],
+      "body": {
+        "op": "gather",
+        "bindingRoles": [
+          { "bindingIndex": 1, "role": "indices" },
+          { "bindingIndex": 2, "role": "table" },
+          { "bindingIndex": 3, "role": "output" }
+        ],
+        "axisRoles": [
+          { "axisIndex": 0, "role": "token" },
+          { "axisIndex": 1, "role": "hidden" }
+        ]
+      },
+      "reductions": [],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}
