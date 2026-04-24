@@ -107,6 +107,17 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh misleading detail string in
+  `bench/tools/doe_parity.py::run_reference_interpreter`. Said
+  "tsir.reference_interpreter returns NotImplemented; scaffolding
+  only" — accurate when the CLI landed (pre-ticks-1-3 oracle), but
+  the oracle now recognizes all three Phase A bootstrap families
+  across `{f32, f16, bf16}`. The scaffolding-only aspect is that
+  the CLI doesn't shell into the Zig oracle, not that the oracle
+  is stubbed. Rewrote detail to name the real integration gap
+  (CLI subprocess harness). 19/19 parity CLI tests still pass;
+  strategy-leak gate PASS. Cites `docs/tsir-lowering-plan.md`
+  Step 8 (parity CLI) and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh `docs/status/cerebras-csl.md` §Current state first
   bullet. Line said "The TSIR scaffold is in tree, but the live CSL
   lane still uses the existing classifier/template route." Same

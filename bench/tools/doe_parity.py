@@ -265,7 +265,12 @@ def run_reference_interpreter(
     return ComparisonOutcome(
         backend="reference",
         status="not_implemented",
-        detail="tsir.reference_interpreter returns NotImplemented; scaffolding only",
+        detail=(
+            "parity CLI not yet wired to the Zig reference interpreter; "
+            "oracle supports Phase A bootstrap families in-process, but "
+            "the subprocess harness that pipes canonical TSIR + inputs "
+            "into it is the outstanding CLI integration wedge"
+        ),
     )
 
 
