@@ -78,6 +78,50 @@ class TestTsirBootstrapCatalog(unittest.TestCase):
                     "documenting schema-fit",
                 )
 
+    def test_no_orphan_artifacts_without_wgsl_pair(self) -> None:
+        """Every semantic, realization, and notes file must have a matching
+        WGSL source in the bootstrap directory.
+
+        The existing `test_every_wgsl_has_*` tests enforce the forward
+        direction (WGSL → semantic / realization / notes). This reverse
+        direction catches leftover artifacts after a kernel rename or
+        deletion — e.g., `old_kernel.tsir-semantic.json` sitting in the
+        directory with no matching `old_kernel.wgsl`. Without this
+        test, downstream consumers (catalog validators, the nightly
+        canary) would silently pick up the orphan and attribute it to
+        a kernel that no longer exists.
+        """
+        wgsl_stems = {path.stem for path in BOOTSTRAP_DIR.glob("*.wgsl")}
+        self.assertGreaterEqual(
+            len(wgsl_stems),
+            1,
+            "bootstrap catalog must pin at least one WGSL snapshot",
+        )
+
+        def expect_stem(filename: str, stem: str) -> None:
+            self.assertIn(
+                stem,
+                wgsl_stems,
+                f"{filename} is orphaned — no matching "
+                f"{stem}.wgsl in the bootstrap catalog",
+            )
+
+        for path in BOOTSTRAP_DIR.glob("*.tsir-semantic.json"):
+            stem = path.name.removesuffix(".tsir-semantic.json")
+            with self.subTest(file=path.name):
+                expect_stem(path.name, stem)
+
+        for path in BOOTSTRAP_DIR.glob("*.tsir-realization.*.json"):
+            # "<stem>.tsir-realization.<target>.json" → stem
+            stem = path.name.split(".tsir-realization.", 1)[0]
+            with self.subTest(file=path.name):
+                expect_stem(path.name, stem)
+
+        for path in BOOTSTRAP_DIR.glob("*.notes.md"):
+            stem = path.name.removesuffix(".notes.md")
+            with self.subTest(file=path.name):
+                expect_stem(path.name, stem)
+
     def test_every_wgsl_has_realization_per_target(self) -> None:
         """Every bootstrap kernel must have a realization for each Phase A
         target descriptor (`webgpu-generic` and `wse3`).

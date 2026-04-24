@@ -70,6 +70,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Tests: add reverse-direction orphan check
+  `test_no_orphan_artifacts_without_wgsl_pair` to
+  `bench/tests/test_tsir_bootstrap_catalog.py`. Existing tests
+  enforced the forward direction (every WGSL has a semantic + notes
+  + per-target realization). Reverse direction was uncovered — a
+  leftover `*.tsir-semantic.json` / `*.tsir-realization.*.json` /
+  `*.notes.md` after a kernel rename or deletion would sit in the
+  bootstrap dir with no matching WGSL, and downstream consumers
+  (catalog validators, nightly canary) would silently pick up the
+  orphan. Test iterates each artifact kind, derives the stem, and
+  asserts there's a matching WGSL. 6/6 catalog tests pass.
+  Strategy-leak gate PASS. Cites `docs/tsir-lowering-plan.md`
+  Step 1.5 (bootstrap catalog — the artifact set this locks) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Tests: add `test_every_wgsl_has_realization_per_target` to
   `bench/tests/test_tsir_bootstrap_catalog.py`. Existing tests
   verified each WGSL has a matching semantic JSON and notes, and
