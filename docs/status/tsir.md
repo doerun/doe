@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh `runtime/zig/STYLE.md` file-size section. Bullet at
+  line 94 said "a small number of test-only WGSL files currently
+  exceed this cap" — factually wrong (no WGSL files exist in
+  `runtime/zig/src/`; the over-cap files are the three TSIR Phase A
+  Zig modules allowlisted in tick 15). Rewrote to name the actual
+  allowlist mechanism (`ALLOWLIST` in `check_line_limits.py` with
+  sharding follow-ups tracked in `docs/status/tsir.md`), name the
+  three specific TSIR modules currently on the allowlist
+  (reference_interpreter.zig, frontend.zig, digest.zig), and flag
+  allowlist entries as tracked debt rather than precedent.
+  Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 7 (the TSIR modules currently
+  over cap) + `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh TSIR framing in `docs/csl-architecture.md`
   §Planned TSIR generalization. Paragraph said "The current in-tree
   `runtime/zig/src/tsir/` surface is scaffolding for that plan" —

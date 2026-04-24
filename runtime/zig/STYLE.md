@@ -91,8 +91,13 @@ This guide is the Zig style contract for `zig`.
 
 - 999 lines max per source file in `runtime/zig/src/`.
 - Shard before exceeding this limit, not after.
-- A small number of test-only WGSL files currently exceed this cap; treat those
-  as temporary sharding follow-ups, not precedent for new files.
+- Exceptions are tracked in the `ALLOWLIST` in
+  `runtime/zig/tools/check_line_limits.py` and each entry names a specific
+  sharding follow-up in `docs/status/tsir.md`. The TSIR Phase A modules
+  (`tsir/reference_interpreter.zig`, `tsir/frontend.zig`, `tsir/digest.zig`)
+  currently sit on that allowlist while their split-by-feature follow-ups
+  are pending. Treat allowlist entries as tracked debt, not precedent for
+  new files.
 - Split by cohesive functionality (e.g. `pipeline_cache.zig`), not by type (e.g. `helpers.zig`).
 - Keep related code together; splitting must not scatter a single concern.
 
