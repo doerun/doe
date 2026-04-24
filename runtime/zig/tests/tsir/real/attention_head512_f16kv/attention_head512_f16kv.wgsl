@@ -1,27 +1,3 @@
-// Pinned WGSL snapshot for the attention_head512_f16kv real-kernel TSIR fixture
-// (PRELIMINARY — D2 sketch, held pre-B per workstream baseline pin).
-//
-// Gemma-family fixed-shape prefill attention for HEAD_DIM=512, F16 KV cache.
-// Lifted verbatim from Doppler's
-// `src/gpu/kernels/attention_head512_f16kv.wgsl`. This entry is reserved
-// for larger-head Gemma variants; Gemma 3 1B Q4K does not currently bind
-// this kernel (it uses head256). The fixture is authored alongside head256
-// so the pair covers the two fixed-shape prefill head geometries the
-// Doppler kernel registry ships today.
-//
-// The attention body does NOT have a body op in the TSIR semantic schema's
-// bodyOp enum today (enum is `["unknown", "fused_gemv", "rms_norm",
-// "gather"]`). The preliminary semantic JSON in this fixture pins
-// `body.op="unknown"` with empty binding/axis role arrays and documents
-// the schema gap in `attention_head512_f16kv.notes.md`. Registration in
-// `REAL_KERNEL_FIXTURES` is intentionally deferred until workstream B
-// (WGSL→SPIR-V emitter `.if_` termination and scalar/vector coercion fixes)
-// merges and the attention body op + head/sequence axis roles are added to
-// the semantic schema under workstream D3. This file is the full production
-// WGSL, including helper functions and all entry points, so the fixture is a
-// verbatim copy of the production source as pinned against the Doppler
-// kernel source tree.
-
 // Fused Multi-Head Attention Kernel (head_dim 512, f16 KV)
 //
 // Fixed-shape prefill kernel for 512-dim heads. Mirrors attention_head256_f16kv.wgsl

@@ -38,7 +38,11 @@ fn emitWebGpu(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         .fused_gemv => emitWebGpuFusedGemv(writer, func),
         .rms_norm => emitWebGpuRmsNorm(writer, func),
         .gather => emitWebGpuGather(writer, func),
-        .unknown => error.UnsupportedKernelBody,
+        // attention_scores lowering is fixture-only under Move 4 D3;
+        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
+        // Add executable body emission when attention moves out of
+        // the typed-rejection phase.
+        .unknown, .attention_scores => error.UnsupportedKernelBody,
     };
 }
 
@@ -47,7 +51,11 @@ fn emitCsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         .fused_gemv => emitCslFusedGemv(writer, func),
         .rms_norm => emitCslRmsNorm(writer, func),
         .gather => emitCslGather(writer, func),
-        .unknown => error.UnsupportedKernelBody,
+        // attention_scores lowering is fixture-only under Move 4 D3;
+        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
+        // Add executable body emission when attention moves out of
+        // the typed-rejection phase.
+        .unknown, .attention_scores => error.UnsupportedKernelBody,
     };
 }
 
@@ -56,7 +64,11 @@ fn emitMsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         .fused_gemv => emitMslFusedGemv(writer, func),
         .rms_norm => emitMslRmsNorm(writer, func),
         .gather => emitMslGather(writer, func),
-        .unknown => error.UnsupportedKernelBody,
+        // attention_scores lowering is fixture-only under Move 4 D3;
+        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
+        // Add executable body emission when attention moves out of
+        // the typed-rejection phase.
+        .unknown, .attention_scores => error.UnsupportedKernelBody,
     };
 }
 
@@ -65,7 +77,11 @@ fn emitDxil(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         .fused_gemv => emitDxilFusedGemv(writer, func),
         .rms_norm => emitDxilRmsNorm(writer, func),
         .gather => emitDxilGather(writer, func),
-        .unknown => error.UnsupportedKernelBody,
+        // attention_scores lowering is fixture-only under Move 4 D3;
+        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
+        // Add executable body emission when attention moves out of
+        // the typed-rejection phase.
+        .unknown, .attention_scores => error.UnsupportedKernelBody,
     };
 }
 
@@ -74,7 +90,11 @@ fn emitSpirV(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         .fused_gemv => emitSpirVFusedGemv(writer, func),
         .rms_norm => emitSpirVRmsNorm(writer, func),
         .gather => emitSpirVGather(writer, func),
-        .unknown => error.UnsupportedKernelBody,
+        // attention_scores lowering is fixture-only under Move 4 D3;
+        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
+        // Add executable body emission when attention moves out of
+        // the typed-rejection phase.
+        .unknown, .attention_scores => error.UnsupportedKernelBody,
     };
 }
 

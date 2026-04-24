@@ -21,20 +21,50 @@
         { "name": "page_table",     "group": 0, "binding": 6, "logicalShape": [0],    "elem": "u32", "readWrite": false }
       ],
       "body": {
-        "op": "unknown",
-        "bindingRoles": [],
-        "axisRoles": []
+        "op": "attention_scores",
+        "bindingRoles": [
+          { "bindingIndex": 0, "role": "input" },
+          { "bindingIndex": 1, "role": "query" },
+          { "bindingIndex": 2, "role": "key" },
+          { "bindingIndex": 3, "role": "value" },
+          { "bindingIndex": 4, "role": "output" },
+          { "bindingIndex": 5, "role": "kv_len_buffer" },
+          { "bindingIndex": 6, "role": "page_table" }
+        ],
+        "axisRoles": [
+          { "axisIndex": 0, "role": "query_sequence" },
+          { "axisIndex": 1, "role": "head" },
+          { "axisIndex": 2, "role": "key_sequence" },
+          { "axisIndex": 3, "role": "hidden" }
+        ],
+        "attentionScores": {
+          "softmaxMode": "streaming_online",
+          "headDim": 512,
+          "keySequenceAxis": 2,
+          "scaleSource": "uniform_field",
+          "scaleBindingIndex": 0,
+          "scaleByteOffset": 20,
+          "scaleLiteralF32": null,
+          "hasSoftcap": true,
+          "causalMode": "causal",
+          "slidingWindowSize": null
+        }
       },
-      "reductions": [],
+      "reductions": [
+        {
+          "axis": 2,
+          "op": "softmax_stable",
+          "contract": {
+            "accumulation": "f32",
+            "associativity": "strict_ordered",
+            "nanInf": "propagate"
+          },
+          "targetBinding": 4
+        }
+      ],
       "collectives": [],
       "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
     }
   ],
-  "rejections": [
-    {
-      "reason": "tsir_source_not_affine",
-      "nodePath": "functions[0].body",
-      "detail": "Preliminary sketch: attention body op (softmax(Q·Kᵀ/√d)·V with causal mask, sliding-window kv_layout, paged kv_layout, soft-cap) is not yet in the semantic schema bodyOp enum. The kernel also emits workgroup-scoped collectives (shared-memory block loads, workgroupBarrier) and sub-workgroup reductions that are not yet in the collectiveKind enum for sequence-axis softmax. Holding body.op=unknown with empty role arrays until workstream D3 extends the schema post-B merge."
-    }
-  ]
+  "rejections": []
 }

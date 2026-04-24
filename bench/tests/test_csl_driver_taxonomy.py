@@ -22,6 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "runtime" / "zig" / "tools"))
 from csl_sdk_driver import (  # type: ignore[import-not-found]
     check_unblock_cmd_stream,
     classify_cslc_failure,
+    compile_targets,
     materialize_command,
     redact_command_for_receipt,
     run_command,
@@ -80,6 +81,33 @@ class ClassifyCslcFailureTests(unittest.TestCase):
             )
         )
         self.assertEqual(code, "csl_compile_undeclared_identifier")
+
+    def test_layout_undeclared_symbol(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:115:5: error: name 'A' was not declared during layout evaluation\n"
+                "    @export_symbol(A_ptr, \"A\");\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_undeclared_identifier")
+
+    def test_builtin_shadow(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:28:13: error: declaration shadows builtin type\n"
+                "            const i0 = @as(u32, p) * 2;\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_builtin_shadow")
+
+    def test_color_config_conflict(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:108:5: error: config for this color has already been set\n"
+                "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_color_config_conflict")
 
     def test_pe_memory_exhausted(self) -> None:
         code = classify_cslc_failure(
@@ -225,6 +253,55 @@ class RuntimeCommandReceiptTests(unittest.TestCase):
                 "DOE command timed out after 1 seconds",
                 Path(stderr_path).read_text(encoding="utf-8"),
             )
+
+
+class CompileTargetBlockerTests(unittest.TestCase):
+    def test_compile_blocked_reason_skips_cslc(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plan_path = root / "simulator-plan.json"
+            plan = {
+                "target": "wse3",
+                "inputs": {
+                    "compileRootPath": "compile",
+                    "compileTargets": [
+                        {
+                            "name": "embed",
+                            "layout": "embed/layout.csl",
+                            "peProgram": "embed/pe_program.csl",
+                            "compileBlockedReason": (
+                                "csl_compile_params_infeasible_embed_grid_budget"
+                            ),
+                            "compileParams": {
+                                "height": 127,
+                                "hidden_size": 1536,
+                                "num_tokens": 23,
+                                "rows_per_pe": 16,
+                            },
+                        }
+                    ],
+                },
+                "runtime": {
+                    "peGrid": {"width": 130, "height": 127},
+                },
+            }
+
+            summary, targets, _paths = compile_targets(
+                plan_path=plan_path,
+                plan=plan,
+                cslc_executable="/bin/false",
+            )
+
+        self.assertEqual(summary["status"], "blocked")
+        self.assertEqual(
+            summary["reason"],
+            "csl_compile_params_infeasible_embed_grid_budget",
+        )
+        self.assertEqual(targets[0]["status"], "blocked")
+        self.assertEqual(
+            targets[0]["reason"],
+            "csl_compile_params_infeasible_embed_grid_budget",
+        )
 
 
 if __name__ == "__main__":

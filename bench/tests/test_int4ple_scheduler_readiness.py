@@ -1343,8 +1343,12 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         # change must not silently break this gate.
         embed_params = projection["params"]["embed"]
         self.assertGreater(embed_params["rows_per_pe"], 0)
-        self.assertIn("hidden_per_pe", embed_params)
-        self.assertIn("tokens_per_chunk", embed_params)
+        self.assertNotIn("hidden_per_pe", embed_params)
+        self.assertNotIn("tokens_per_chunk", embed_params)
+        self.assertEqual(
+            projection["targetBlockers"]["embed"],
+            "csl_compile_params_infeasible_embed_grid_budget",
+        )
         self.assertEqual(projection["params"]["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
         self.assertEqual(projection["params"]["attn_head256"]["q_len"], 15)
         # attn streaming solver now emits q_len_per_pe + width when it fits.
@@ -1421,22 +1425,27 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "applied")
-        self.assertEqual(result["patchedTargetCount"], 5)
+        self.assertEqual(result["patchedTargetCount"], 4)
+        self.assertEqual(result["blockedTargetCount"], 1)
         self.assertEqual(result["unprojectedTargetNames"], [])
         targets = {
             target["name"]: target["compileParams"]
             for target in simulator_plan["inputs"]["compileTargets"]
         }
-        # Post-solver embed carries hidden_per_pe + tokens_per_chunk; height
-        # is now the hidden-shard count, not the full grid height. Anchor on
-        # the invariants the patch must preserve rather than pre-solver
-        # numeric values.
         embed = targets["embed"]
         self.assertEqual(embed["hidden_size"], 1536)
         self.assertEqual(embed["num_tokens"], 23)
         self.assertGreater(embed["rows_per_pe"], 0)
-        self.assertIn("hidden_per_pe", embed)
-        self.assertIn("tokens_per_chunk", embed)
+        self.assertNotIn("hidden_per_pe", embed)
+        self.assertNotIn("tokens_per_chunk", embed)
+        target_by_name = {
+            target["name"]: target
+            for target in simulator_plan["inputs"]["compileTargets"]
+        }
+        self.assertEqual(
+            target_by_name["embed"]["compileBlockedReason"],
+            "csl_compile_params_infeasible_embed_grid_budget",
+        )
         self.assertEqual(targets["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
         self.assertEqual(targets["attn_head256"]["q_len"], 15)
         self.assertIn("q_len_per_pe", targets["attn_head256"])
@@ -1512,22 +1521,30 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         projected = held[0]["projected"]
         self.assertEqual(projected["hidden_size"], 1536)
         self.assertEqual(projected["num_tokens"], 23)
-        self.assertIn("hidden_per_pe", projected)
-        self.assertIn("tokens_per_chunk", projected)
+        self.assertNotIn("hidden_per_pe", projected)
+        self.assertNotIn("tokens_per_chunk", projected)
         self.assertGreater(projected["rows_per_pe"], 0)
         targets = {
             target["name"]: target["compileParams"]
             for target in simulator_plan["inputs"]["compileTargets"]
         }
-        # embed stays at diagnostic shape when held_unsafe
+        # embed records the governed blocked projection when held_unsafe
         self.assertEqual(
             targets["embed"],
             {
-                "height": 1,
-                "hidden_size": 256,
+                "height": 127,
+                "hidden_size": 1536,
                 "num_tokens": 23,
-                "rows_per_pe": 1,
+                "rows_per_pe": 16,
             },
+        )
+        target_by_name = {
+            target["name"]: target
+            for target in simulator_plan["inputs"]["compileTargets"]
+        }
+        self.assertEqual(
+            target_by_name["embed"]["compileBlockedReason"],
+            "per_pe_table_and_output_exceed_pe_memory_budget",
         )
         # tiled still gets promoted
         self.assertEqual(targets["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
@@ -1579,7 +1596,8 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "applied")
-        self.assertEqual(result["patchedTargetCount"], 1)
+        self.assertEqual(result["patchedTargetCount"], 0)
+        self.assertEqual(result["blockedTargetCount"], 1)
         self.assertEqual(
             result["unprojectedTargetNames"],
             ["lm_head_prefill_stable", "residual"],

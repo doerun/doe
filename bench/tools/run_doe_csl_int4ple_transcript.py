@@ -39,6 +39,7 @@ DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
 MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 600_000
+INT4PLE_COMPILE_TIMEOUT_SECONDS = 60
 INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
 )
@@ -1560,6 +1561,7 @@ def patch_simulator_plan_runtime_metadata(
     timeout_ms = runtime.get("timeoutMs")
     if not isinstance(timeout_ms, int) or timeout_ms < MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS:
         runtime["timeoutMs"] = MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS
+    runtime["compileTimeoutSeconds"] = INT4PLE_COMPILE_TIMEOUT_SECONDS
     write_json(runtime_config_path, runtime_config)
     write_json(simulator_plan_path, simulator_plan)
 

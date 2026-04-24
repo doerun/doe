@@ -33,8 +33,11 @@ pub fn emit(
     info: classify.MatmulInfo,
 ) EmitError!void {
     _ = entry;
-    _ = module;
     _ = info;
+
+    const a_export = storageExportName(module, 0, "A");
+    const b_export = storageExportName(module, 1, "B");
+    const c_export = storageExportName(module, 2, "C");
 
     try write(buf, pos, "// PE program: SUMMA tiled matmul (auto-generated from WGSL)\n");
     try write(buf, pos, "// P×P PE grid, collectives_2d for row/column broadcasts.\n");
@@ -169,9 +172,15 @@ pub fn emit(
     try write(buf, pos, "    @bind_local_task(compute_step, compute_task_id);\n");
     try write(buf, pos, "    @bind_local_task(exit_task, exit_task_id);\n\n");
 
-    try write(buf, pos, "    @export_symbol(A_ptr, \"A\");\n");
-    try write(buf, pos, "    @export_symbol(B_ptr, \"B\");\n");
-    try write(buf, pos, "    @export_symbol(C_ptr, \"C\");\n");
+    try write(buf, pos, "    @export_symbol(A_ptr, \"");
+    try write(buf, pos, a_export);
+    try write(buf, pos, "\");\n");
+    try write(buf, pos, "    @export_symbol(B_ptr, \"");
+    try write(buf, pos, b_export);
+    try write(buf, pos, "\");\n");
+    try write(buf, pos, "    @export_symbol(C_ptr, \"");
+    try write(buf, pos, c_export);
+    try write(buf, pos, "\");\n");
     try write(buf, pos, "    @export_symbol(compute);\n");
     try write(buf, pos, "}\n");
 }
@@ -184,4 +193,16 @@ fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
     if (pos.* + text.len > buf.len) return error.OutputTooLarge;
     @memcpy(buf[pos.*..][0..text.len], text);
     pos.* += text.len;
+}
+
+fn storageExportName(module: *const ir.Module, target_index: usize, fallback: []const u8) []const u8 {
+    var index: usize = 0;
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage) continue;
+        if (index == target_index) return global.name;
+        index += 1;
+    }
+    return fallback;
 }

@@ -160,6 +160,14 @@ pub const ReductionOp = enum {
     product,
     min,
     max,
+    /// Numerically-stable softmax normalizer over the declared axis:
+    /// `exp(x - max(x)) / sum(exp(x - max(x)))`. A single ReductionOp
+    /// because the max pass and the sum-exp pass are load-bearing
+    /// together — splitting them into two ReductionRegion entries
+    /// would require the second to reference the first's output, a
+    /// cross-region dependency the schema does not yet express.
+    /// Consumed by attention body lowering; see `AttentionScoresBody`.
+    softmax_stable,
 };
 
 pub const NumericalContract = struct {
@@ -265,6 +273,12 @@ pub const SemanticBodyOp = enum {
     fused_gemv,
     rms_norm,
     gather,
+    /// Fused attention-scores body:
+    /// `output = softmax_stable((Q · Kᵀ) · scale [+ softcap] [+ mask]) · V`.
+    /// Represents the prefill / decode attention kernel family as a
+    /// single semantic body so TSIR can emit one lowering instead of
+    /// the current per-variant template pile. See `AttentionScoresBody`.
+    attention_scores,
 };
 
 pub const SemanticBindingRole = enum {
@@ -275,6 +289,18 @@ pub const SemanticBindingRole = enum {
     indices,
     table,
     output,
+    // Attention-scores bindings (added for SemanticBodyOp.attention_scores):
+    query,
+    key,
+    value,
+    /// Optional runtime KV-length buffer when the host streams KV in
+    /// chunks whose cumulative length is observed at dispatch time
+    /// instead of baked into a uniform. Maps to Doppler's
+    /// `kv_len_buffer` binding.
+    kv_len_buffer,
+    /// Optional page-table binding for paged-KV layouts. Maps to
+    /// Doppler's `page_table` binding.
+    page_table,
 };
 
 pub const SemanticAxisRole = enum {
@@ -282,6 +308,10 @@ pub const SemanticAxisRole = enum {
     reduction,
     hidden,
     token,
+    // Attention-scores axes (added for SemanticBodyOp.attention_scores):
+    head,
+    query_sequence,
+    key_sequence,
 };
 
 pub const SemanticBodyBinding = struct {
@@ -334,6 +364,76 @@ pub const RmsNormBody = struct {
     reduction_target: RmsNormReductionTarget,
 };
 
+/// Softmax algorithm selector. Both modes end up at the same stable
+/// result; the distinction is load-bearing because it constrains
+/// emitter choices (streaming cannot be naively flash-decomposed
+/// across PEs without a reconciliation pass).
+pub const SoftmaxMode = enum {
+    /// Traditional two-pass numerically-stable softmax:
+    ///   pass 1: max over the reduction axis
+    ///   pass 2: sum(exp(x - max)), then divide
+    /// Cheapest to reason about; requires two full passes over scores.
+    two_pass_stable,
+    /// Online / streaming softmax (flash-attention inner loop):
+    /// updates `(m, l, acc)` per block so K/V can stream in tiles.
+    /// Single pass over scores but carries running state across
+    /// iterations of the reduction axis.
+    streaming_online,
+};
+
+/// Causal/windowing mode for attention score masking.
+pub const CausalMode = enum {
+    /// Full attention; no masking beyond the declared kv-length.
+    none,
+    /// Standard causal mask: key positions after the query position
+    /// are masked out (score = -inf).
+    causal,
+    /// Sliding-window causal: key positions outside
+    /// `[query_pos - window + 1, query_pos]` are masked out.
+    sliding_window,
+};
+
+/// Fused attention-scores kernel body. Represents:
+/// `output[h, q] = softmax_stable((Q[h,q] · Kᵀ[h]) · scale [+ softcap] [+ mask]) · V[h]`
+///
+/// The reduction declared at the enclosing `SemanticFunction.reductions`
+/// must reduce over the key_sequence axis with
+/// `ReductionOp.softmax_stable` and produce the per-(head, query_pos)
+/// normalizer. This body carries the constants (head_dim, scale source,
+/// softcap, causal window) that drive emitter choices.
+pub const AttentionScoresBody = struct {
+    softmax_mode: SoftmaxMode,
+    /// Dimension of each attention head; also the reduction extent for
+    /// the Q·Kᵀ dot product at each (head, q_pos, k_pos) triple.
+    head_dim: u32,
+    /// Axis index of the kv_sequence axis in the enclosing loop nest;
+    /// this is where `ReductionOp.softmax_stable` collapses.
+    key_sequence_axis: u32,
+    /// Scale factor applied to raw scores before softmax. Typically
+    /// `1/sqrt(head_dim)` but the source is declared here so the
+    /// emitter doesn't have to guess.
+    scale_source: AttentionScaleSource,
+    scale_binding_index: ?u32 = null,
+    scale_byte_offset: ?u32 = null,
+    /// Literal scalar scale when `scale_source == .literal_f32`.
+    scale_literal_f32: ?f64 = null,
+    /// Whether an `attn_softcap` (Gemma-style `tanh(s / cap) * cap`)
+    /// is applied to scores before softmax.
+    has_softcap: bool = false,
+    causal_mode: CausalMode = .none,
+    /// Required when `causal_mode == .sliding_window`; bounds the
+    /// visible key range.
+    sliding_window_size: ?u32 = null,
+};
+
+pub const AttentionScaleSource = enum {
+    /// Scale is stored in a uniform field. Path/binding/offset declared
+    /// on the containing `AttentionScoresBody`.
+    uniform_field,
+    /// Scale is a compile-time literal, declared on the containing body.
+    literal_f32,
+};
+
 /// Declares the kernel body family in semantic, digestable form. Family hints
 /// are planner tie-breakers; this body contract is the semantic claim that
 /// parity and backend emitters consume.
@@ -342,6 +442,7 @@ pub const SemanticBody = struct {
     binding_roles: []const SemanticBodyBinding = &.{},
     axis_roles: []const SemanticBodyAxis = &.{},
     rms_norm: ?RmsNormBody = null,
+    attention_scores: ?AttentionScoresBody = null,
 };
 
 // ============================================================

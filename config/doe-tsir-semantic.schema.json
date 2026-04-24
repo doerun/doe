@@ -93,15 +93,36 @@
     },
     "bodyOp": {
       "type": "string",
-      "enum": ["unknown", "fused_gemv", "rms_norm", "gather"]
+      "enum": ["unknown", "fused_gemv", "rms_norm", "gather", "attention_scores"]
     },
     "bindingRole": {
       "type": "string",
-      "enum": ["matrix", "vector", "input", "scale", "indices", "table", "output"]
+      "enum": [
+        "matrix",
+        "vector",
+        "input",
+        "scale",
+        "indices",
+        "table",
+        "output",
+        "query",
+        "key",
+        "value",
+        "kv_len_buffer",
+        "page_table"
+      ]
     },
     "axisRole": {
       "type": "string",
-      "enum": ["output", "reduction", "hidden", "token"]
+      "enum": [
+        "output",
+        "reduction",
+        "hidden",
+        "token",
+        "head",
+        "query_sequence",
+        "key_sequence"
+      ]
     },
     "bodyBindingRole": {
       "type": "object",
@@ -184,6 +205,79 @@
         "reductionTarget": { "$ref": "#/$defs/rmsNormReductionTarget" }
       }
     },
+    "softmaxMode": {
+      "type": "string",
+      "enum": ["two_pass_stable", "streaming_online"]
+    },
+    "causalMode": {
+      "type": "string",
+      "enum": ["none", "causal", "sliding_window"]
+    },
+    "attentionScaleSource": {
+      "type": "string",
+      "enum": ["uniform_field", "literal_f32"]
+    },
+    "attentionScoresBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "softmaxMode",
+        "headDim",
+        "keySequenceAxis",
+        "scaleSource",
+        "scaleBindingIndex",
+        "scaleByteOffset",
+        "scaleLiteralF32",
+        "hasSoftcap",
+        "causalMode",
+        "slidingWindowSize"
+      ],
+      "properties": {
+        "softmaxMode": { "$ref": "#/$defs/softmaxMode" },
+        "headDim": { "type": "integer", "minimum": 1 },
+        "keySequenceAxis": { "type": "integer", "minimum": 0 },
+        "scaleSource": { "$ref": "#/$defs/attentionScaleSource" },
+        "scaleBindingIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "scaleByteOffset": { "type": ["integer", "null"], "minimum": 0 },
+        "scaleLiteralF32": { "type": ["number", "null"] },
+        "hasSoftcap": { "type": "boolean" },
+        "causalMode": { "$ref": "#/$defs/causalMode" },
+        "slidingWindowSize": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "scaleSource": { "const": "uniform_field" } } },
+          "then": {
+            "properties": {
+              "scaleBindingIndex": { "type": "integer", "minimum": 0 },
+              "scaleByteOffset": { "type": "integer", "minimum": 0 },
+              "scaleLiteralF32": { "const": null }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "scaleSource": { "const": "literal_f32" } } },
+          "then": {
+            "properties": {
+              "scaleBindingIndex": { "const": null },
+              "scaleByteOffset": { "const": null },
+              "scaleLiteralF32": { "type": "number" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "causalMode": { "const": "sliding_window" } } },
+          "then": {
+            "properties": {
+              "slidingWindowSize": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "else": {
+            "properties": { "slidingWindowSize": { "const": null } }
+          }
+        }
+      ]
+    },
     "body": {
       "type": "object",
       "additionalProperties": false,
@@ -198,7 +292,8 @@
           "type": "array",
           "items": { "$ref": "#/$defs/bodyAxisRole" }
         },
-        "rmsNorm": { "$ref": "#/$defs/rmsNormBody" }
+        "rmsNorm": { "$ref": "#/$defs/rmsNormBody" },
+        "attentionScores": { "$ref": "#/$defs/attentionScoresBody" }
       },
       "allOf": [
         {
@@ -207,6 +302,13 @@
           },
           "then": { "required": ["rmsNorm"] },
           "else": { "not": { "required": ["rmsNorm"] } }
+        },
+        {
+          "if": {
+            "properties": { "op": { "const": "attention_scores" } }
+          },
+          "then": { "required": ["attentionScores"] },
+          "else": { "not": { "required": ["attentionScores"] } }
         }
       ]
     },
@@ -259,7 +361,7 @@
     },
     "reductionOp": {
       "type": "string",
-      "enum": ["sum", "product", "min", "max"]
+      "enum": ["sum", "product", "min", "max", "softmax_stable"]
     },
     "reduction": {
       "type": "object",

@@ -1283,6 +1283,11 @@ fn reductionIdentityF32(op: schema.ReductionOp) f32 {
         .product => 1.0,
         .min => std.math.inf(f32),
         .max => -std.math.inf(f32),
+        // softmax_stable is a compound (max-then-sum-exp) op; it does
+        // not have a left-fold identity and must not be dispatched
+        // through the scalar simple-fold helpers. Attention semantic
+        // evaluation happens outside this path.
+        .softmax_stable => unreachable,
     };
 }
 
@@ -1295,6 +1300,9 @@ fn combineF32(op: schema.ReductionOp, acc: f32, val: f32) f32 {
         .product => acc * val,
         .min => @min(acc, val),
         .max => @max(acc, val),
+        // See `reductionIdentityF32` — softmax_stable is handled
+        // outside the scalar simple-fold path.
+        .softmax_stable => unreachable,
     };
 }
 

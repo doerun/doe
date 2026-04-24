@@ -78,6 +78,7 @@ def divisors_ascending(n: int) -> list[int]:
 def solve_embed_chunked_dispatch(
     *,
     grid_width: int,
+    grid_height: int,
     hidden_size: int,
     vocab_size: int,
     num_tokens: int,
@@ -91,6 +92,7 @@ def solve_embed_chunked_dispatch(
       * rowsPerPe * grid_width >= vocab_size   (every row is held somewhere)
       * (rowsPerPe + tokensPerChunk) * hiddenPerPe * 4 <= budget_bytes
       * hiddenPerPe * hiddenShardCount == hidden_size (clean partition)
+      * hiddenShardCount <= grid_height (fits the physical HostPlan grid)
 
     Strategy: given grid_width, rowsPerPe = ceil(vocab_size / grid_width) is
     fixed by the coverage constraint. Then for each divisor of hidden_size
@@ -103,6 +105,7 @@ def solve_embed_chunked_dispatch(
     """
     if (
         grid_width <= 0
+        or grid_height <= 0
         or hidden_size <= 0
         or vocab_size <= 0
         or num_tokens <= 0
@@ -119,12 +122,15 @@ def solve_embed_chunked_dispatch(
     candidate_tokens = sorted({default_tokens, *range(default_tokens, 0, -1)}, reverse=True)
     for tokens_per_chunk in candidate_tokens:
         for hidden_per_pe in divisors_desc:
+            hidden_shard_count = hidden_size // hidden_per_pe
+            if hidden_shard_count > grid_height:
+                continue
             footprint = (rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4
             if footprint <= budget_bytes:
                 return {
                     "rowsPerPe": rows_per_pe,
                     "hiddenPerPe": hidden_per_pe,
-                    "hiddenShardCount": hidden_size // hidden_per_pe,
+                    "hiddenShardCount": hidden_shard_count,
                     "tokensPerChunk": tokens_per_chunk,
                     "perPeFootprintBytes": footprint,
                     "budgetBytes": budget_bytes,
@@ -353,6 +359,7 @@ def embed_compile_params(
     # row shard at grid_width, not grid_width × grid_height.
     tuple_ = solve_embed_chunked_dispatch(
         grid_width=grid_width,
+        grid_height=grid_height,
         hidden_size=hidden_dim,
         vocab_size=vocab_size,
         num_tokens=max_seq_len,
@@ -454,6 +461,13 @@ def manifest_compile_param_projection(
             in_dim_per_pe=gemv_input_per_pe,
             num_blocks_per_row=gemv_blocks,
         ),
+        "lm_head_gemv": lmhead_gemv_compile_params(
+            grid_width=grid_width,
+            grid_height=grid_height,
+            out_dim_total=lm_head_out_dim,
+            in_dim_per_pe=gemv_input_per_pe,
+            num_blocks_per_row=gemv_blocks,
+        ),
         "attn_decode": {
             "head_dim": head_dim,
             "kv_chunk": DEFAULT_DECODE_KV_CHUNK,
@@ -481,11 +495,33 @@ def manifest_compile_param_projection(
         for key, value in compile_scale.items()
         if key.endswith("Count") and value > COMPILE_DISTINCT_PE_WARNING_THRESHOLD
     ]
+    target_blockers: dict[str, str] = {}
+    if "hidden_per_pe" not in params["embed"]:
+        target_blockers["embed"] = (
+            "csl_compile_params_infeasible_embed_grid_budget"
+        )
+    if "q_len_per_pe" not in params["attn_head256"]:
+        target_blockers["attn_head256"] = (
+            "csl_compile_params_infeasible_attention_grid_budget"
+        )
+    if "q_len_per_pe" not in params["attn_head512"]:
+        target_blockers["attn_head512"] = (
+            "csl_compile_params_infeasible_attention_grid_budget"
+        )
+    if "out_dim_per_pe" not in params["lm_head_gemv_stable"]:
+        target_blockers["lm_head_gemv_stable"] = (
+            "csl_compile_params_infeasible_lmhead_grid_budget"
+        )
+    if "out_dim_per_pe" not in params["lm_head_gemv"]:
+        target_blockers["lm_head_gemv"] = (
+            "csl_compile_params_infeasible_lmhead_grid_budget"
+        )
     return {
         "status": "projected",
         "source": "runtime_config_model_and_grid",
         "grid": grid,
         "params": params,
+        "targetBlockers": target_blockers,
         "coverage": {
             "embedRows": pe_count * int(params["embed"]["rows_per_pe"]),
             "tiledM": matmul_p * matmul_tile,
@@ -528,9 +564,13 @@ def apply_manifest_compile_params(
             "targets": [],
         }
 
-    unsafe = manifest_unsafe_targets or {}
+    unsafe = {
+        **(projection.get("targetBlockers") or {}),
+        **(manifest_unsafe_targets or {}),
+    }
     patched_targets: list[dict[str, Any]] = []
     held_diagnostic: list[dict[str, Any]] = []
+    blocked_targets: list[dict[str, Any]] = []
     present_names: set[str] = set()
     unprojected_target_names: list[str] = []
     for target in compile_targets:
@@ -545,6 +585,16 @@ def apply_manifest_compile_params(
             continue
         if name in unsafe:
             retained = target.get("compileParams")
+            target["compileParams"] = dict(params)
+            target["compileBlockedReason"] = unsafe[name]
+            blocked_targets.append(
+                {
+                    "name": name,
+                    "reason": unsafe[name],
+                    "projected": dict(params),
+                    "retained": retained if isinstance(retained, dict) else None,
+                }
+            )
             held_diagnostic.append(
                 {
                     "name": name,
@@ -565,12 +615,20 @@ def apply_manifest_compile_params(
         )
 
     return {
-        "status": "applied" if patched_targets else "not_applied",
-        "reason": "matched_targets" if patched_targets else "no_matching_compile_targets",
+        "status": (
+            "applied" if patched_targets or blocked_targets else "not_applied"
+        ),
+        "reason": (
+            "matched_targets"
+            if patched_targets or blocked_targets
+            else "no_matching_compile_targets"
+        ),
         "manifestCompileParamProjection": projection,
         "patchedTargetCount": len(patched_targets),
+        "blockedTargetCount": len(blocked_targets),
         "missingProjectedTargetNames": sorted(set(expected_params) - present_names),
         "unprojectedTargetNames": sorted(set(unprojected_target_names)),
+        "blockedTargets": blocked_targets,
         "heldDiagnosticTargets": held_diagnostic,
         "targets": patched_targets,
     }

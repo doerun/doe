@@ -58,6 +58,11 @@
                 "additionalProperties": { "type": "integer" },
                 "description": "Optional extra `--params key:value` bindings appended to the cslc command for this compileTarget. The default `width:{peGrid.width}` and `height:{peGrid.height}` bindings are always included; these entries extend (and may override) them. Used by kernels that declare additional top-level layout params — e.g., tiled_matmul needs `P:2,Mt:8,Kt:8,Nt:8` — so the governed plan stays the single source of truth for how each kernel is compiled."
               },
+              "compileBlockedReason": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Typed fail-closed reason telling the SDK driver to skip cslc for this target because governed manifest compile-param projection proved the target shape cannot fit the current HostPlan grid/budget. The driver records a blocked compile target with this reason instead of hanging or surfacing a misleading SDK memory diagnostic."
+              },
               "hostIoLayout": {
                 "type": "object",
                 "description": "Optional per-kernel host I/O layout directives. Same shape as csl-operation-graph.schema.json#hostIoLayout entries; embed.chunkedDispatch tells the Python host runner to iterate ceil(num_tokens / tokensPerChunk) launches and concatenate per-column slices across the hiddenShardCount axis of the PE grid. Kernels without a hostIoLayout use single-launch default dispatch."
@@ -97,6 +102,11 @@
         "stateBufferCount": { "type": "integer", "minimum": 0 },
         "maxDecodeTokens": { "type": "integer", "minimum": 0 },
         "timeoutMs": { "type": "integer", "minimum": 0 },
+        "compileTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional per-cslc target timeout used by the SDK driver. This bounds diagnostic compile hangs while preserving the plan as the source of truth for the timeout."
+        },
         "batchSize": { "type": "integer", "minimum": 1 },
         "eosTokenId": { "type": ["integer", "null"], "minimum": 0 }
       }

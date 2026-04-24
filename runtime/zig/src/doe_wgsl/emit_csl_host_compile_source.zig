@@ -480,6 +480,21 @@ test "host compile source emits known HostPlan CSL families" {
     }
 }
 
+test "host compile source tiled matmul exports WGSL storage names" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "tiled_matmul", &buf);
+
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"a\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"b\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"c\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(A_ptr, \"a\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(B_ptr, \"b\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(C_ptr, \"c\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(A_ptr, \"A\");") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(B_ptr, \"B\");") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(C_ptr, \"C\");") == null);
+}
+
 test "host compile source rejects unknown HostPlan pattern" {
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
     try std.testing.expectError(

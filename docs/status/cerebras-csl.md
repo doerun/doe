@@ -7,6 +7,78 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+5) — Gemma 3 tiled matmul CSL export names fixed
+
+The Gemma 3 hostplan `tiled` target no longer fails with
+`csl_compile_undeclared_identifier` for symbol `A`. The tiled matmul PE
+emitter now exports the WGSL storage global names that the layout declares,
+so the generated `pe_program.csl` binds `A_ptr`/`B_ptr`/`C_ptr` to
+`a`/`b`/`c` for the active HostPlan fixture. The rebuilt
+`doe-csl-host-plan-tool` produced a new hostplan bundle where `tiled`
+compiles successfully under the current `P=54`, `Mt=22`, `Kt=22`,
+`Nt=22` params.
+
+The current Gemma 3 1B transcript remains blocked, not positive parity:
+`embed` is still fail-closed before cslc with
+`csl_compile_params_infeasible_embed_grid_budget`, and the simulator
+receipt remains `kernelIsStub=true`. Non-priority compile failures now
+remaining in the driver result are `rope` as
+`csl_compile_builtin_shadow`, `attn_decode` as
+`csl_compile_color_config_conflict`, and timeout-class `residual`/`gelu`.
+
+Verified:
+
+- `zig build csl-host-plan-tool`
+- `zig build test-wgsl`
+- `python3 -m unittest bench.tests.test_int4ple_manifest_compile_params_gate bench.tests.test_int4ple_scheduler_readiness bench.tests.test_csl_driver_taxonomy`
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/tools/run_doe_csl_int4ple_transcript.py --program-bundle /home/x/deco/doppler/examples/program-bundles/gemma-3-1b-it-q4k-ehf16-af32.program-bundle.json --out bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json --hostplan-bundle-root bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan`
+
+## 2026-04-24 (late+4) — Gemma 3 hostplan compile params reach cslc
+
+Gemma 3 1B Program Bundle hostplan generation now applies governed
+manifest compile params to the active simulator-plan path. The stale
+`--contract` transcript entry point is no longer the current interface;
+the current run used the Gemma 3 1B Program Bundle and wrote the
+hostplan bundle under:
+
+- `bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/`
+- `bench/out/doppler-reference/gemma-3-1b-doe-csl-transcript.json`
+
+Priority-kernel state from
+`bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/simulator-driver-result.json`:
+
+- `attn_head256` compiles with streaming params from
+  `solve_attention_streaming`; it no longer reports the previous PE
+  memory-exhausted compile failure.
+- `lm_head_gemv` compiles with the 2-D lm-head params from
+  `lmhead_gemv_compile_params`; it no longer reports
+  `csl_compile_uninitialized_param`.
+- `embed` is now fail-closed before cslc with
+  `csl_compile_params_infeasible_embed_grid_budget`. The 1B vocab row
+  shard plus hidden-shard count cannot fit both the per-PE data budget
+  and the current HostPlan grid height. This replaces the old huge-fabric
+  cslc invocation and preserves the blocker as an explicit receipt.
+- `attn_head512` has projected params but is not present as a compile
+  target in the current Gemma 3 1B hostplan bundle, so there is no
+  simfabric receipt for that target in this run.
+
+`runtime/zig/tools/csl_sdk_driver.py` now records
+`compileBlockedReason` targets as `status=blocked` without invoking cslc,
+and `run_doe_csl_int4ple_transcript.py` writes
+`runtime.compileTimeoutSeconds` into the simulator plan so per-target
+cslc hangs become typed `csl_compile_timeout` failures. At that point,
+non-priority compile failures recorded in the driver result were:
+`tiled` was `csl_compile_undeclared_identifier`, `rope` was
+`csl_compile_builtin_shadow`, and `attn_decode` was
+`csl_compile_color_config_conflict`. Both simulator-plan fields are
+optional, so `schemaVersion` remains unchanged for existing artifacts.
+
+Verified:
+
+- `python3 -m unittest bench.tests.test_int4ple_manifest_compile_params_gate bench.tests.test_int4ple_scheduler_readiness bench.tests.test_csl_driver_taxonomy`
+- `python3 bench/gates/schema_gate.py`
+
 ## 2026-04-24 (late+3) — first WS4 kernel simfabric execution PASS
 
 `attention_tiled_streaming_sim_runner.py` executed end-to-end against a

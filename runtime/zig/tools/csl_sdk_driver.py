@@ -356,8 +356,16 @@ _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "csl_compile_export_type_mismatch",
     ),
     (
-        re.compile(r"use of undeclared identifier"),
+        re.compile(r"use of undeclared identifier|name '[^']+' was not declared"),
         "csl_compile_undeclared_identifier",
+    ),
+    (
+        re.compile(r"declaration shadows builtin type"),
+        "csl_compile_builtin_shadow",
+    ),
+    (
+        re.compile(r"config for this color has already been set"),
+        "csl_compile_color_config_conflict",
     ),
     (
         re.compile(r"ran out of PE memory"),
@@ -446,6 +454,7 @@ def compile_compact_residual_diagnostic(
     use_memcpy: bool,
     width_west_buf: int,
     width_east_buf: int,
+    timeout_seconds: int | None,
 ) -> dict[str, Any]:
     diagnostic_width = COMPACT_DIAGNOSTIC_WIDTH
     diagnostic_height = COMPACT_DIAGNOSTIC_HEIGHT
@@ -489,6 +498,7 @@ def compile_compact_residual_diagnostic(
         command,
         stdout_path,
         stderr_path,
+        timeout_seconds=timeout_seconds,
     )
     result: dict[str, Any] = {
         "purpose": "compact_residual_runtime_diagnostic",
@@ -506,7 +516,11 @@ def compile_compact_residual_diagnostic(
         "fabricOffsets": [fabric_offset_x, fabric_offset_y],
     }
     if return_code != 0:
-        result["failureCode"] = classify_cslc_failure(stderr_written)
+        result["failureCode"] = (
+            "csl_compile_timeout"
+            if _timed_out
+            else classify_cslc_failure(stderr_written)
+        )
     return result
 
 
@@ -584,6 +598,12 @@ def compile_targets(
     # in the future.
     channels = int(runtime.get("channels", 1))
     use_memcpy = bool(runtime.get("memcpy", True))
+    raw_compile_timeout = runtime.get("compileTimeoutSeconds")
+    compile_timeout_seconds = (
+        int(raw_compile_timeout)
+        if isinstance(raw_compile_timeout, int) and raw_compile_timeout > 0
+        else None
+    )
 
     # SDK memcpy-mode compiles require an explicit --fabric-offsets and a
     # --fabric-dims that accounts for memcpy's reserved margin around the PE
@@ -633,6 +653,7 @@ def compile_targets(
         )
 
     overall_failed = False
+    overall_blocked = False
     for target in inputs["compileTargets"]:
         name = str(target["name"])
         layout_path = resolve_relative(compile_root, str(target["layout"]))
@@ -640,6 +661,26 @@ def compile_targets(
         output_dir = (outputs_dir / name).resolve()
         stdout_path = logs_dir / f"{name}.cslc.stdout.log"
         stderr_path = logs_dir / f"{name}.cslc.stderr.log"
+        compile_blocked_reason = target.get("compileBlockedReason")
+        if isinstance(compile_blocked_reason, str) and compile_blocked_reason:
+            overall_blocked = True
+            target_entry = {
+                "name": name,
+                "layoutPath": str(layout_path),
+                "peProgramPath": str(pe_program_path),
+                "outputDir": str(output_dir),
+                "status": "blocked",
+                "reason": compile_blocked_reason,
+                "failureCode": compile_blocked_reason,
+            }
+            extra_compile_params = target.get("compileParams")
+            if isinstance(extra_compile_params, dict):
+                target_entry["compileParams"] = {
+                    str(key): int(value)
+                    for key, value in extra_compile_params.items()
+                }
+            target_results.append(target_entry)
+            continue
         if not layout_path.exists() or not pe_program_path.exists():
             overall_failed = True
             target_results.append(
@@ -701,16 +742,21 @@ def compile_targets(
             command.append(f"--width-east-buf={width_east_buf}")
         if use_memcpy:
             command.append("--memcpy")
-        return_code, stdout_written, stderr_written, _timed_out = run_command(
+        return_code, stdout_written, stderr_written, timed_out = run_command(
             command,
             stdout_path,
             stderr_path,
+            timeout_seconds=compile_timeout_seconds,
         )
         status = "succeeded" if return_code == 0 else "failed"
         target_failure_code: str | None = None
         if return_code != 0:
             overall_failed = True
-            target_failure_code = classify_cslc_failure(stderr_written)
+            target_failure_code = (
+                "csl_compile_timeout"
+                if timed_out
+                else classify_cslc_failure(stderr_written)
+            )
         unblock_status = check_unblock_cmd_stream(pe_program_path, "compute")
         target_entry: dict[str, Any] = {
             "name": name,
@@ -724,6 +770,9 @@ def compile_targets(
             "command": command,
             "unblockCmdStreamCheck": unblock_status,
         }
+        if timed_out:
+            target_entry["timedOut"] = True
+            target_entry["timeoutSeconds"] = compile_timeout_seconds
         if compile_params_payload:
             target_entry["compileParams"] = compile_params_payload
         if target_failure_code is not None:
@@ -740,13 +789,22 @@ def compile_targets(
                 use_memcpy=use_memcpy,
                 width_west_buf=width_west_buf,
                 width_east_buf=width_east_buf,
+                timeout_seconds=compile_timeout_seconds,
             )
         target_results.append(target_entry)
 
+    summary_status = "succeeded"
+    summary_reason = "compiled"
+    if overall_failed:
+        summary_status = "failed"
+        summary_reason = "compile_failed"
+    elif overall_blocked:
+        summary_status = "blocked"
+        summary_reason = "compile_blocked"
     summary: dict[str, Any] = {
         "attempted": True,
-        "status": "failed" if overall_failed else "succeeded",
-        "reason": "compile_failed" if overall_failed else "compiled",
+        "status": summary_status,
+        "reason": summary_reason,
         "compilerExecutable": cslc_executable,
     }
     # Escalate the summary reason from the generic `compile_failed` to the
