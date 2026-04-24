@@ -16,31 +16,11 @@ robustness).
 
 ## Current state
 
-- The forward compiler plan for one-program/many-realizations lowering is now
-  documented in `docs/tsir-lowering-plan.md`. The in-tree
-  `runtime/zig/src/tsir/` scaffold exists, but it is not wired into the real
-  frontend/emitter path yet.
-- The TSIR scaffold now locks the full vocabulary: `schema.zig` declares the
-  two-level `Semantic`/`Realization` types with `contract_version = 1`,
-  `digest.zig` produces split `semanticDigest`/`realizationDigest`/
-  `emitterDigest`, `reference_interpreter.zig` declares the numerical contract
-  (IEEE-754 round-to-nearest-even, fp32 accumulation, left-fold reduction
-  order, sollya-bounded transcendentals), supports the identity bootstrap
-  case, and now distinguishes explicit TSIR rejection from generic
-  `NotImplemented`. Target descriptors live under
-  `runtime/zig/src/targets/` — `wse3.zig` and `webgpu_generic.zig` — and
-  their SHA-256 `descriptorHash` participates in the realization digest.
-- A manual parity CLI lives at `bench/tools/doe_parity.py` with receipts
-  validated by `config/doe-parity-receipt.schema.json`. The CLI runs today
-  but comparisons still fail closed: non-rejected lanes return
-  `not_implemented` / `deferred`, rejected TSIR inputs now surface explicit
-  `rejectionReasons[]`, and the process exit code remains non-zero while the
-  frontend and backend lanes are still to land.
-- TSIR and realization contracts live at
-  `config/doe-tsir-semantic.schema.json` and
-  `config/doe-tsir-realization.schema.json`. Scaffolding invariants are
-  locked by `runtime/zig/tests/wgsl/tsir_scaffold_test.zig` and
-  `bench/tests/test_doe_parity.py`.
+- TSIR (Tiled Spatial IR) current state and contracts live in
+  [`tsir.md`](./tsir.md); that shard owns schema, digests, frontend,
+  planner, reference interpreter, backend skeleton emitters, parity
+  CLI, manifest fixtures, and canary. Do not duplicate those bullets
+  here.
 - Postfix `++` / `--` statements are now supported in the WGSL compiler
   (tokens, lexer, AST `inc_stmt`/`dec_stmt`, parser, sema, IR lowering).
   `ir_transform` / `emit_spirv` errors are surfaced with specific kinds

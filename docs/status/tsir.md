@@ -107,6 +107,19 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: remove four TSIR-specific bullets from
+  `docs/status/compiler-and-webgpu.md` §Current state. Left over
+  from when that shard owned TSIR before the tick-8 split. Per
+  tick 26's scope notice ("this shard stays focused on non-TSIR
+  compiler work"), TSIR current state should live in tsir.md — and
+  does, in the Phase A status-at-a-glance section from tick 22.
+  The four bullets were also materially outdated ("TSIR scaffold
+  exists, but it is not wired into the real frontend/emitter path
+  yet" — Phase A compiler surface is now wired for the bootstrap
+  pipeline test). Replaced with a one-line pointer to tsir.md.
+  Shard drops from 86 to 66 lines. Strategy-leak gate PASS,
+  doc-link coverage PASS. Cites `docs/loop-protocol.md` Loop 2
+  protocol.
 - Docs: refresh TSIR framing in `docs/doppler-ingest.md` §Lowering
   architecture, item 1 (Kernel-level lowering — the TSIR contract).
   Same "scaffolding for that plan, not a completed pipeline"
