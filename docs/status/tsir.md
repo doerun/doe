@@ -107,6 +107,16 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: extend `docs/tsir-lowering-plan.md` §Relationship to
+  current Doe docs with pointers to the two load-bearing docs
+  added today: `docs/loop-protocol.md` (restored in tick 19 —
+  defines Loop 2 / Loop 3 iteration discipline) and
+  `docs/status/tsir.md` (split off in tick 8 — live status per
+  plan step). The section previously listed only the three
+  pre-existing architecture docs and omitted these newer
+  dependencies. Strategy-leak gate PASS, doc-link coverage PASS.
+  Cites `docs/tsir-lowering-plan.md` §Relationship to current Doe
+  docs and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: finish `docs/doppler-ingest.md` TSIR framing refresh. Tick 41
   updated item 1 of §Lowering architecture, but the "operative path
   vs planned migration" framing further down (lines 146–160) still

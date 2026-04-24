@@ -763,6 +763,12 @@ This plan extends, but does not replace, the current architecture docs:
   - current CSL classifier/HostPlan/emitter path
 - `docs/doppler-ingest.md`
   - Doppler-owned program boundary and Doe-owned lowering boundary
+- [`docs/loop-protocol.md`](loop-protocol.md)
+  - Loop 2 / Loop 3 iteration discipline that drives how this plan
+    lands incrementally
+- [`docs/status/tsir.md`](status/tsir.md)
+  - live status for this plan's implementation — what's landed per
+    step and what the remaining proof-1 wedges are
 
 The operative current state remains:
 
