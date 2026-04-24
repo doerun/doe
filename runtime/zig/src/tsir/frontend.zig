@@ -808,12 +808,13 @@ fn scanDirectBodyForReduction(
 /// Resolve the binding index a reduction's accumulator is written
 /// into by scanning top-level statements that come AFTER the
 /// reduction loop. Handles both the direct shape
-/// `output[...] = load(acc)` and chained one-or-more-hop aliases
-/// `let t0 = acc; let t1 = t0; ... output[...] = load(t_n);`. An
-/// alias set starts at `{acc_local}` and grows each time a
-/// post-loop `local_decl` copies one of the current aliases
-/// through `load(local_ref(x))`. The writeback is accepted
-/// whenever its rhs is a load of any alias currently in the set.
+/// `output[...] = load(acc)` and chained post-reduction epilogues
+/// like `let mean = acc / n; let inv = rsqrt(mean + eps);
+/// output[...] = input[...] * inv`. An alias set starts at
+/// `{acc_local}` and grows each time a post-loop `local_decl`
+/// initializer contains a load of an existing alias. The writeback
+/// is accepted whenever its rhs contains a load of any alias
+/// currently in the set.
 ///
 /// Returns `null` when no matching writeback is found. The caller
 /// handles that case by emitting a typed
@@ -843,12 +844,7 @@ fn resolveTargetBinding(
         switch (stmt) {
             .local_decl => |d| {
                 const init_id = d.initializer orelse continue;
-                const init_node = function.exprs.items[init_id];
-                if (init_node.data != .load) continue;
-                const inner = function.exprs.items[init_node.data.load];
-                if (inner.data != .local_ref) continue;
-                const src = inner.data.local_ref;
-                if (!isInAliasSet(alias_buf[0..alias_len], src)) continue;
+                if (!containsAliasLoad(function, init_id, alias_buf[0..alias_len])) continue;
                 if (alias_len < alias_buf.len) {
                     alias_buf[alias_len] = d.local;
                     alias_len += 1;

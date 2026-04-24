@@ -53,6 +53,12 @@ pub const StreamingGemmPrimitive = enum {
     summa,
 };
 
+pub const RuntimeSizedBindingPolicy = enum {
+    reject,
+    host_copied,
+    fabric_streamed_with_loader,
+};
+
 /// Correctness-affecting fields. These determine whether a kernel can
 /// be represented on this target and what byte-for-byte output a
 /// realization must produce. Every field here participates in the
@@ -76,6 +82,11 @@ pub const CorrectnessFields = struct {
     native_collectives: []const CollectiveCapability,
     fused_intrinsics: []const FusedIntrinsic,
     streaming_gemm: StreamingGemmPrimitive,
+    /// How the target can legally realize storage bindings whose WGSL
+    /// type has runtime-sized extents. This is correctness-affecting:
+    /// choosing host-backed buffers versus fabric streaming changes the
+    /// emitted lowering contract.
+    runtime_sized_binding_policy: RuntimeSizedBindingPolicy,
 };
 
 /// Planner-only fields. These inform search quality (which plan is
@@ -116,6 +127,7 @@ pub fn descriptorHash(desc: TargetDescriptor) [32]u8 {
     }
     for (c.fused_intrinsics) |intr| h.update(@tagName(intr));
     h.update(@tagName(c.streaming_gemm));
+    h.update(@tagName(c.runtime_sized_binding_policy));
     var out: [32]u8 = undefined;
     h.final(&out);
     return out;
@@ -175,6 +187,7 @@ test "correctness field change does change descriptor hash" {
             .native_collectives = base.correctness.native_collectives,
             .fused_intrinsics = base.correctness.fused_intrinsics,
             .streaming_gemm = base.correctness.streaming_gemm,
+            .runtime_sized_binding_policy = base.correctness.runtime_sized_binding_policy,
         },
         .planner = base.planner,
     };

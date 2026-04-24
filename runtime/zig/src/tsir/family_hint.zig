@@ -2,6 +2,8 @@ const std = @import("std");
 const ir = @import("../doe_wgsl/ir.zig");
 const schema = @import("schema.zig");
 
+const MAX_INDIRECT_LOCAL_ALIAS_DEPTH: u32 = 8;
+
 /// Infer a coarse `KernelFamilyHint` from the observable TSIR shape of one
 /// function. Hints are tiebreakers only: they must not change feasibility or
 /// rejection. The classifier uses structural IR evidence, not function names.
@@ -133,24 +135,49 @@ fn hasIndirectBufferAccess(function: *const ir.Function) bool {
 }
 
 fn indexFieldContainsBufferIndex(function: *const ir.Function, expr_id: ir.ExprId) bool {
+    return indexFieldContainsBufferIndexDepth(function, expr_id, 0);
+}
+
+fn indexFieldContainsBufferIndexDepth(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    depth: u32,
+) bool {
     const node = function.exprs.items[expr_id];
     switch (node.data) {
         .index => return true,
-        .load => |inner| return indexFieldContainsBufferIndex(function, inner),
-        .binary => |b| return indexFieldContainsBufferIndex(function, b.lhs) or
-            indexFieldContainsBufferIndex(function, b.rhs),
-        .unary => |u| return indexFieldContainsBufferIndex(function, u.operand),
-        .member => |m| return indexFieldContainsBufferIndex(function, m.base),
+        .local_ref => |local| return localInitializerContainsBufferIndex(function, local, depth + 1),
+        .load => |inner| return indexFieldContainsBufferIndexDepth(function, inner, depth),
+        .binary => |b| return indexFieldContainsBufferIndexDepth(function, b.lhs, depth) or
+            indexFieldContainsBufferIndexDepth(function, b.rhs, depth),
+        .unary => |u| return indexFieldContainsBufferIndexDepth(function, u.operand, depth),
+        .member => |m| return indexFieldContainsBufferIndexDepth(function, m.base, depth),
         .call => |c| {
             var ai: u32 = 0;
             while (ai < c.args.len) : (ai += 1) {
                 const arg_id = function.expr_args.items[c.args.start + ai];
-                if (indexFieldContainsBufferIndex(function, arg_id)) return true;
+                if (indexFieldContainsBufferIndexDepth(function, arg_id, depth)) return true;
             }
             return false;
         },
         else => return false,
     }
+}
+
+fn localInitializerContainsBufferIndex(
+    function: *const ir.Function,
+    local_index: u32,
+    depth: u32,
+) bool {
+    if (depth > MAX_INDIRECT_LOCAL_ALIAS_DEPTH) return false;
+    for (function.stmts.items) |stmt| {
+        if (stmt != .local_decl) continue;
+        const decl = stmt.local_decl;
+        if (decl.local != local_index) continue;
+        const init = decl.initializer orelse return false;
+        return indexFieldContainsBufferIndexDepth(function, init, depth);
+    }
+    return false;
 }
 
 fn findGlobalBase(function: *const ir.Function, expr_id: ir.ExprId) ?u32 {

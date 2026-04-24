@@ -158,6 +158,28 @@ fn planResidency(
                     continue;
                 }
             }
+        } else {
+            switch (descriptor.correctness.runtime_sized_binding_policy) {
+                .host_copied => {
+                    try decisions.append(allocator, .{
+                        .binding_index = @intCast(binding_index),
+                        .class = .host_copied,
+                    });
+                    continue;
+                },
+                .fabric_streamed_with_loader => {
+                    if (loader.fabric_streaming and descriptor.correctness.fabric_color_count > 0) {
+                        try decisions.append(allocator, .{
+                            .binding_index = @intCast(binding_index),
+                            .class = .fabric_streamed,
+                            .fabric_color = 0,
+                            .chunk_bytes = chooseStreamChunkBytes(descriptor, loader),
+                        });
+                        continue;
+                    }
+                },
+                .reject => {},
+            }
         }
 
         if (loader.fabric_streaming and descriptor.correctness.fabric_color_count > 0) {

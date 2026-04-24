@@ -46,6 +46,7 @@ pub const descriptor: common.TargetDescriptor = .{
         .native_collectives = native_collectives,
         .fused_intrinsics = fused_intrinsics,
         .streaming_gemm = .none,
+        .runtime_sized_binding_policy = .host_copied,
     },
     .planner = .{
         // WebGPU: workgroup barrier cost is roughly a few hundred ns;

@@ -1771,6 +1771,48 @@ test "frontend resolves target_binding through a let-alias writeback hop" {
     try std.testing.expectEqual(@as(usize, 0), semantic.rejections.len);
 }
 
+test "frontend resolves target_binding through scalar-tail aliases" {
+    const allocator = std.testing.allocator;
+    const wgsl_source =
+        \\@group(0) @binding(0) var<storage, read> input: array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+        \\
+        \\@compute @workgroup_size(1, 1, 1)
+        \\fn main() {
+        \\    var acc: f32 = 0.0;
+        \\    for (var i: u32 = 0u; i < 4u; i = i + 1u) {
+        \\        acc = acc + input[i];
+        \\    }
+        \\    let mean: f32 = acc / 4.0;
+        \\    let shifted: f32 = mean + 1.0;
+        \\    output[0] = shifted * 2.0;
+        \\}
+    ;
+
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const arena_allocator = arena.allocator();
+
+    var tree = try parser.parseSource(arena_allocator, wgsl_source);
+    defer tree.deinit();
+    var semantic_module = try sema.analyze(arena_allocator, &tree);
+    defer semantic_module.deinit();
+    var module = try ir_builder.build(arena_allocator, &tree, &semantic_module);
+    defer module.deinit();
+
+    const semantic = try tsir.frontend.lowerIrToTsir(
+        arena_allocator,
+        &module,
+        [_]u8{0} ** 32,
+        "frontend-0.0.38",
+    );
+
+    const func = semantic.functions[0];
+    try std.testing.expectEqual(@as(usize, 1), func.reductions.len);
+    try std.testing.expectEqual(@as(u32, 1), func.reductions[0].target_binding);
+    try std.testing.expectEqual(@as(usize, 0), semantic.rejections.len);
+}
+
 test "frontend rejects and falls back to target_binding 0 when no writeback is visible" {
     const allocator = std.testing.allocator;
     // No post-loop assign from `acc` to any binding → resolver returns
@@ -1999,6 +2041,8 @@ test "frontend lowers the Phase A gather bootstrap kernel end-to-end" {
     try std.testing.expectEqualStrings("uniform:u.hidden", func.axes[1].upper_bound);
     // No reductions — pure elementwise with indirect lookup.
     try std.testing.expectEqual(@as(usize, 0), func.reductions.len);
+    try std.testing.expectEqual(tsir.KernelFamilyHint.gather, func.family_hint);
+    try std.testing.expectEqual(tsir.schema.SemanticBodyOp.gather, func.body.op);
 }
 
 test "frontend refines reduction hint to fused_gemv for canonical 2-axis shape" {

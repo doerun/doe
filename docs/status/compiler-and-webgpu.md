@@ -9,6 +9,22 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — Phase A bootstrap pipeline identity increment:
+  added a compiler-only pipeline test that lowers the pinned
+  `fused_gemv`, `rms_norm`, and `gather` WGSL bootstrap kernels through
+  Doe IR → TSIR semantic → WebGPU-generic and WSE-3 realization planning →
+  semantic/realization digest computation. The test requires clean semantic
+  and realization rejection lists, stable repeated digests, shared semantic
+  digest across targets, and target-distinct realization digests. To make that
+  honest, the frontend now traces reduction accumulator dependencies through
+  scalar-tail aliases, so RMSNorm's `sum_sq -> mean_sq -> inv_rms -> output`
+  path no longer emits an unresolved-writeback rejection, and gather hinting
+  follows bounded local aliases initialized from indexed buffer reads. Target
+  descriptors now declare a correctness-affecting runtime-sized binding policy:
+  `webgpu-generic` uses `host_copied`, while `wse3` requires loader-backed
+  `fabric_streamed` residency. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and `git diff --check`.
 - TSIR Loop 2 — Step 1 oracle / RMSNorm uniform-epsilon increment:
   `body.rmsNorm.epsilon` now carries `bindingIndex` and `byteOffset` in
   both Zig and JSON schema, canonical semantic digests include those fields,

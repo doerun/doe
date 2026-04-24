@@ -159,6 +159,71 @@ test "planner streams oversized bindings only when loader capabilities allow it"
     try std.testing.expectEqual(@as(usize, 0), realization.rejections.len);
 }
 
+test "planner handles runtime-sized bindings by target policy" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const runtime_shape = [_]u64{0};
+    const bindings = [_]tsir.schema.BufferBinding{
+        .{
+            .name = "runtime_buffer",
+            .group = 0,
+            .binding = 0,
+            .logical_shape = &runtime_shape,
+            .elem = .f32,
+            .read_write = false,
+        },
+    };
+    const functions = [_]tsir.schema.SemanticFunction{semanticFunction(&bindings, &.{}, &.{}, &.{})};
+    const semantic = tsir.Semantic{ .functions = &functions, .rejections = &.{} };
+
+    const webgpu = try tsir.planner.planRealization(
+        allocator,
+        semantic,
+        targets.webgpu_generic.descriptor,
+        .{},
+    );
+    try std.testing.expectEqual(@as(usize, 0), webgpu.rejections.len);
+    try std.testing.expectEqual(@as(usize, 1), webgpu.functions[0].residency.len);
+    try std.testing.expectEqual(
+        tsir.schema.ResidencyClass.host_copied,
+        webgpu.functions[0].residency[0].class,
+    );
+
+    const wse3_without_loader = try tsir.planner.planRealization(
+        allocator,
+        semantic,
+        targets.wse3.descriptor,
+        .{},
+    );
+    try std.testing.expectEqual(@as(usize, 0), wse3_without_loader.functions[0].residency.len);
+    try std.testing.expectEqual(@as(usize, 1), wse3_without_loader.rejections.len);
+    try std.testing.expectEqual(
+        tsir.RejectionReason.tsir_pe_budget_exhausted,
+        wse3_without_loader.rejections[0].reason,
+    );
+
+    const wse3_with_loader = try tsir.planner.planRealization(
+        allocator,
+        semantic,
+        targets.wse3.descriptor,
+        .{
+            .loader = .{
+                .fabric_streaming = true,
+                .max_stream_chunk_bytes = 4096,
+            },
+        },
+    );
+    try std.testing.expectEqual(@as(usize, 0), wse3_with_loader.rejections.len);
+    try std.testing.expectEqual(@as(usize, 1), wse3_with_loader.functions[0].residency.len);
+    try std.testing.expectEqual(
+        tsir.schema.ResidencyClass.fabric_streamed,
+        wse3_with_loader.functions[0].residency[0].class,
+    );
+    try std.testing.expectEqual(@as(?u64, 4096), wse3_with_loader.functions[0].residency[0].chunk_bytes);
+}
+
 test "planner synthesizes descriptor-supported collectives" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();

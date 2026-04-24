@@ -40,6 +40,7 @@ const lean_proof_application_test = @import("tests/core/lean_proof_application_t
 const tsir_scaffold_test = @import("tests/wgsl/tsir_scaffold_test.zig");
 const tsir_frontend_test = @import("tests/wgsl/tsir_frontend_test.zig");
 const tsir_planner_test = @import("tests/wgsl/tsir_planner_test.zig");
+const tsir_pipeline_test = @import("tests/wgsl/tsir_pipeline_test.zig");
 const tsir_emit_csl_test = @import("tests/wgsl/tsir_emit_csl_test.zig");
 
 comptime {
@@ -85,5 +86,6 @@ comptime {
     _ = tsir_scaffold_test;
     _ = tsir_frontend_test;
     _ = tsir_planner_test;
+    _ = tsir_pipeline_test;
     _ = tsir_emit_csl_test;
 }

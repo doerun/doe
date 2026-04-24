@@ -60,6 +60,7 @@ pub const descriptor: common.TargetDescriptor = .{
         .native_collectives = native_collectives,
         .fused_intrinsics = fused_intrinsics,
         .streaming_gemm = .summa,
+        .runtime_sized_binding_policy = .fabric_streamed_with_loader,
     },
     .planner = .{
         .fabric_per_hop_latency_ns = 2,
