@@ -14,12 +14,9 @@ sequenced by [`docs/loop-protocol.md`](../loop-protocol.md).
 
 This shard exists because `compiler-and-webgpu.md` exceeded its 1200-line
 cap once the TSIR Phase A wedges started landing. 2026-04-24 TSIR entries
-were migrated here in a later tick; older TSIR history (2026-04-23 and
-earlier) still lives in `compiler-and-webgpu.md` pending a separate
-migration pass — that content was written in the `## Push:` archive
-convention rather than the date-section + bullet convention used here,
-so it needs either inline conversion or a dedicated archive file.
-New TSIR entries go here going forward.
+live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
+moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
+tick. New TSIR entries go here going forward.
 
 ## Phase A status at a glance
 
@@ -73,6 +70,21 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: migrate 2026-04-23 TSIR Step 4 incremental history from
+  `compiler-and-webgpu.md` to `archive/2026-04.md`. Tick 25
+  deferred this under a design concern (archive file used a
+  different header convention); reconsidered and resolved by
+  wrapping the migrated block with a provenance paragraph that
+  explains the convention mix and preserves the original
+  `## 2026-04-23` section header. Impact: `compiler-and-webgpu.md`
+  drops from 1701 to 86 lines — well under the 1200 cap, cap
+  notice replaced with a scope notice. The archive grows to
+  ~11.7k lines (archives have no cap). Both sibling shards'
+  intro paragraphs updated to reflect new location.
+  Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/loop-protocol.md` Loop 2 protocol (outstanding tick-8
+  migration follow-up now fully closed; the live shards are
+  coherent with their stated scopes).
 - Docs: refresh the cap-notice paragraphs on both shards to match
   post-migration state. `tsir.md` intro said "historical TSIR
   entries remain in compiler-and-webgpu.md until a deliberate
