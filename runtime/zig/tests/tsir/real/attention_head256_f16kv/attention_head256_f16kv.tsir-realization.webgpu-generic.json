@@ -1,0 +1,96 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 3,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 4,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 5,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 6,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [],
+      "emitterParams": {
+        "sketch": true,
+        "preliminary": true,
+        "workgroupSize": 32,
+        "entryPoint": "main",
+        "note": "WebGPU-generic realization stays pe_replicated (adapter memory hosts Q/K/V). Doppler's browser WebGPU runtime is authoritative for real-kernel WGSL execution. This entry exists so the lowering identity is pairwise-complete across (kernelRef, backend), not because Doe emits WGSL bodies for real-kernel WebGPU. Parity gating for this row is reference=doppler-reference-transcript, backend=webgpu-generic deferred to Doppler's own runtime. Held preliminary pre-B merge; digests regenerated under workstream D3."
+      },
+      "targetDescriptorHash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "emitterDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "rejections": [
+    {
+      "reason": "tsir_target_unfit",
+      "nodePath": "functions[0].residency",
+      "detail": "Preliminary realization: held until attention body op lands in semantic schema under workstream D3 post-B merge."
+    }
+  ]
+}

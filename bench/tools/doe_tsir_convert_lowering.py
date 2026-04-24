@@ -74,7 +74,7 @@ REAL_KERNEL_REF_PREFIX = "doe.tsir.real."
 # but no fixture has been hand-sketched yet. The orchestrator routes
 # present vs. absent refs to different rejection details so the
 # status is auditable from receipt text alone.
-REAL_KERNEL_FIXTURES: frozenset[str] = frozenset({"embed"})
+REAL_KERNEL_FIXTURES: frozenset[str] = frozenset({"embed", "lm_head_gemv"})
 
 
 @dataclass

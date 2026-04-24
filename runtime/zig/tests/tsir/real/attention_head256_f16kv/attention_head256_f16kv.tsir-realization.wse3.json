@@ -1,0 +1,94 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "fabric_streamed",
+          "axis": null,
+          "shards": null,
+          "fabricColor": 0,
+          "chunkBytes": 65536
+        },
+        {
+          "bindingIndex": 3,
+          "class": "fabric_streamed",
+          "axis": null,
+          "shards": null,
+          "fabricColor": 1,
+          "chunkBytes": 65536
+        },
+        {
+          "bindingIndex": 4,
+          "class": "pe_sliced",
+          "axis": 0,
+          "shards": 1,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 5,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 6,
+          "class": "host_copied",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [],
+      "emitterParams": {
+        "sketch": true,
+        "preliminary": true,
+        "note": "D2 preliminary realization sketch for attention_head256_f16kv on WSE-3. Numbers are minimum-valid placeholders: peGrid width=1, shards=1, tiles=[1,1,1,1]. Real realization requires (a) attention body op in the semantic schema so residency can be planned per role (Q pe_replicated per head, KV fabric_streamed on separate colors, output pe_sliced on query axis), (b) softmax reduction representation in the reductions array (two-pass max/sum stabilization), (c) streaming KV shape that matches the workgroup-scoped shared_block pattern in the WGSL. Pinning these to placeholders keeps the fixture schema-valid while making the preliminary status obvious. Regeneration is scheduled for D3 post-B merge."
+      },
+      "targetDescriptorHash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "rejections": [
+    {
+      "reason": "tsir_target_unfit",
+      "nodePath": "functions[0].residency",
+      "detail": "Preliminary realization: attention_head256_f16kv residency is placeholder-shaped pending the semantic-schema attention body op extension. Real realization will plan Q pe_replicated per head, K and V fabric_streamed on separate colors with kv_layout-aware (dense/sliding/paged) chunk sizing, output pe_sliced on the query-position axis, and workgroup-scoped softmax reductions mapped to fabric_reduce collectives. Held pre-B merge."
+    }
+  ]
+}

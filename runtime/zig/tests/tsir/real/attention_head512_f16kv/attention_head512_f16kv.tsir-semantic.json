@@ -1,0 +1,40 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "frontend-real-pipeline-v0-preliminary",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "attention_tiled",
+      "axes": [
+        { "name": "q", "lowerBound": "0", "upperBound": "query_len", "step": "1" },
+        { "name": "h", "lowerBound": "0", "upperBound": "num_heads", "step": "1" },
+        { "name": "k", "lowerBound": "0", "upperBound": "kv_len", "step": "1" },
+        { "name": "d", "lowerBound": "0", "upperBound": "head_dim", "step": "1" }
+      ],
+      "bindings": [
+        { "name": "u",              "group": 0, "binding": 0, "logicalShape": [1],    "elem": "u32", "readWrite": false },
+        { "name": "Q",              "group": 0, "binding": 1, "logicalShape": [0, 0], "elem": "f32", "readWrite": false },
+        { "name": "K",              "group": 0, "binding": 2, "logicalShape": [0, 0], "elem": "f16", "readWrite": false },
+        { "name": "V",              "group": 0, "binding": 3, "logicalShape": [0, 0], "elem": "f16", "readWrite": false },
+        { "name": "output",         "group": 0, "binding": 4, "logicalShape": [0, 0], "elem": "f32", "readWrite": true  },
+        { "name": "kv_len_buffer",  "group": 0, "binding": 5, "logicalShape": [1],    "elem": "u32", "readWrite": false },
+        { "name": "page_table",     "group": 0, "binding": 6, "logicalShape": [0],    "elem": "u32", "readWrite": false }
+      ],
+      "body": {
+        "op": "unknown",
+        "bindingRoles": [],
+        "axisRoles": []
+      },
+      "reductions": [],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": [
+    {
+      "reason": "tsir_source_not_affine",
+      "nodePath": "functions[0].body",
+      "detail": "Preliminary sketch: attention body op (softmax(Q·Kᵀ/√d)·V with causal mask, sliding-window kv_layout, paged kv_layout, soft-cap) is not yet in the semantic schema bodyOp enum. The kernel also emits workgroup-scoped collectives (shared-memory block loads, workgroupBarrier) and sub-workgroup reductions that are not yet in the collectiveKind enum for sequence-axis softmax. Holding body.op=unknown with empty role arrays until workstream D3 extends the schema post-B merge."
+    }
+  ]
+}
