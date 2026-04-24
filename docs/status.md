@@ -27,6 +27,23 @@ history.
 
 ## Current status summary
 
+- TSIR (Tiled Spatial IR) is the new lowering contract between WGSL IR and
+  backend emitters. Phase A compiler surface has landed end-to-end for the
+  bootstrap catalog (`fused_gemv`, `rms_norm`, `gather`): target descriptors
+  in `runtime/zig/src/targets/`, schema + canonical digests in
+  `runtime/zig/src/tsir/` (`schema.zig`, `digest.zig`), WGSL frontend lowering
+  (`frontend.zig`), residency/allocation planner (`planner.zig`), scalar
+  reference interpreter (`reference_interpreter.zig`), and a mechanical
+  TSIR-to-CSL skeleton emitter (`emit_csl.zig`). The plan is
+  [`docs/tsir-lowering-plan.md`](docs/tsir-lowering-plan.md); iteration
+  discipline is [`docs/loop-protocol.md`](docs/loop-protocol.md); live status
+  lives in [`docs/status/compiler-and-webgpu.md`](docs/status/compiler-and-webgpu.md).
+  This is compiler-only progress: no parity receipts under `reports/parity/`
+  yet, no TSIR-backed manifest `integrityExtensions.lowerings[]` entries yet,
+  and the mechanical emitter produces contract skeletons rather than
+  executable CSL kernel bodies. The live INT4 PLE CSL lane still routes
+  through the existing classifier/template path per
+  [`docs/status/cerebras-csl.md`](docs/status/cerebras-csl.md).
 - Doe now has a backend-agnostic transcript parity report surface for one
   Doppler reference export plus Doe transcript receipts. The new contract is
   `config/doe-transcript-parity-report.schema.json`, the builder is
