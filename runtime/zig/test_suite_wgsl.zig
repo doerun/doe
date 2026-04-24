@@ -42,6 +42,7 @@ const tsir_frontend_test = @import("tests/wgsl/tsir_frontend_test.zig");
 const tsir_planner_test = @import("tests/wgsl/tsir_planner_test.zig");
 const tsir_pipeline_test = @import("tests/wgsl/tsir_pipeline_test.zig");
 const tsir_emit_csl_test = @import("tests/wgsl/tsir_emit_csl_test.zig");
+const tsir_emit_webgpu_test = @import("tests/wgsl/tsir_emit_webgpu_test.zig");
 
 comptime {
     _ = emit_hlsl_map_test;
@@ -88,4 +89,5 @@ comptime {
     _ = tsir_planner_test;
     _ = tsir_pipeline_test;
     _ = tsir_emit_csl_test;
+    _ = tsir_emit_webgpu_test;
 }

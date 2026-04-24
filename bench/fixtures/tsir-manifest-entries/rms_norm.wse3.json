@@ -1,0 +1,17 @@
+{
+  "backend": "wse3",
+  "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
+  "emitterDigest": "188232ab66631794b27fe20e881357ed22a97f7a21de5402440fc370b13ac5eb",
+  "exactness": {
+    "algorithmExactInvariants": [],
+    "class": "tolerance_bounded",
+    "toleranceEpsilon": 1e-06,
+    "toleranceMetric": "max_abs"
+  },
+  "frontendVersion": "frontend-bootstrap-pipeline-v1",
+  "kernelRef": "doe.tsir.bootstrap.rms_norm",
+  "rejectionReasons": [],
+  "targetDescriptorCorrectnessHash": "a3852140d7a2063cb066c02a4e1201a64546e64056a06d93a5ed575bc9620948",
+  "tsirRealizationDigest": "59bafdbb26760d5a25a6a50a417ad78bdb39b8856bd638e097e3cb651a99db7e",
+  "tsirSemanticDigest": "d97496705eae4ecf3d6feadde826228b767c175fb038ed53762dfa3ffb1b2e49"
+}

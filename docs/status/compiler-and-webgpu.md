@@ -9,6 +9,17 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — bootstrap manifest fixture increment: added a source-hashed
+  WebGPU-generic TSIR skeleton emitter so WebGPU and WSE-3 lowerings no longer
+  share an emitter identity, added a Zig bootstrap manifest-input tool that
+  lowers the pinned `fused_gemv`, `rms_norm`, and `gather` WGSL kernels through
+  frontend + planner for both targets, and added
+  `bench/tools/generate_tsir_manifest_fixtures.py` to pass those digests through
+  the schema-backed manifest lowering builder. The committed
+  `bench/fixtures/tsir-manifest-entries/*.json` fixtures cover the six Phase A
+  kernel/target pairs and validate as `integrityExtensions.lowerings[]` rows.
+  This is still compiler-contract evidence only; executable backend parity
+  remains Loop 3.
 - TSIR Loop 2 — emitter code digest increment: `emit_csl.zig` now exposes
   `emitterCodeDigest()` as SHA-256 over the mechanical CSL emitter source, and
   `digest.zig` has `computeWithEmitterDigest()` for callers that already hold

@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+FIXTURE_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -170,6 +171,38 @@ class TestTsirManifestLowering(unittest.TestCase):
         entry = json.loads(result.stdout)
         tsir_manifest_lowering.validate_entry_doc(entry)
         self.assertIn("manifestLoweringEntryDigest=", result.stderr)
+
+    def test_bootstrap_fixtures_validate_and_bind_distinct_targets(self) -> None:
+        paths = sorted(FIXTURE_DIR.glob("*.json"))
+        self.assertEqual(len(paths), 6)
+
+        seen = set()
+        semantic_by_kernel: dict[str, str] = {}
+        realization_by_pair: dict[tuple[str, str], str] = {}
+        for path in paths:
+            entry = tsir_manifest_lowering.load_entry_doc(path)
+            digest = tsir_manifest_lowering.manifest_lowering_entry_digest(entry)
+            self.assertRegex(digest, r"^[0-9a-f]{64}$")
+            self.assertNotEqual(entry["emitterDigest"], "0" * 64)
+
+            pair = (entry["kernelRef"], entry["backend"])
+            self.assertNotIn(pair, seen)
+            seen.add(pair)
+
+            semantic_by_kernel.setdefault(
+                entry["kernelRef"],
+                entry["tsirSemanticDigest"],
+            )
+            self.assertEqual(
+                semantic_by_kernel[entry["kernelRef"]],
+                entry["tsirSemanticDigest"],
+            )
+            realization_by_pair[pair] = entry["tsirRealizationDigest"]
+
+        for kernel_ref in semantic_by_kernel:
+            webgpu = realization_by_pair[(kernel_ref, "webgpu-generic")]
+            wse3 = realization_by_pair[(kernel_ref, "wse3")]
+            self.assertNotEqual(webgpu, wse3)
 
 
 if __name__ == "__main__":

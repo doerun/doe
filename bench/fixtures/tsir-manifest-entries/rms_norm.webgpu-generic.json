@@ -1,0 +1,17 @@
+{
+  "backend": "webgpu-generic",
+  "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
+  "emitterDigest": "9f4bb6dbd201047ccc847d27e3633922a3a678963a109bc4d3e9dada31b343c0",
+  "exactness": {
+    "algorithmExactInvariants": [],
+    "class": "tolerance_bounded",
+    "toleranceEpsilon": 1e-06,
+    "toleranceMetric": "max_abs"
+  },
+  "frontendVersion": "frontend-bootstrap-pipeline-v1",
+  "kernelRef": "doe.tsir.bootstrap.rms_norm",
+  "rejectionReasons": [],
+  "targetDescriptorCorrectnessHash": "1bb3a7dc6a798e8cc9eae1e660800b9163469cbda67e14c75fe6a10ef342ade9",
+  "tsirRealizationDigest": "4688f07cf37debf64ab044a07eba46ae874220b4b492e1b4310cf3b4665e985b",
+  "tsirSemanticDigest": "d97496705eae4ecf3d6feadde826228b767c175fb038ed53762dfa3ffb1b2e49"
+}
