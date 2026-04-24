@@ -107,6 +107,14 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add `tsir.md` to the bottom-of-front-door "Live topical
+  shards" list. The top-of-file "How to use the status log" section
+  lists four shards including tsir.md, but the `## Live topical
+  shards` section near the bottom was an inconsistent three-item
+  list that omitted tsir.md. Readers navigating to the bottom
+  would miss the TSIR shard entirely. Doc-only one-line addition.
+  Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh the `docs/status.md` front-door TSIR bullet. Tick-6
   version was stale on three axes: (a) only named `emit_csl.zig` as
   the mechanical emitter — five backends now have skeleton emitters

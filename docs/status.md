@@ -304,6 +304,7 @@ history.
 
 - [cerebras-csl.md](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
 - [compiler-and-webgpu.md](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
+- [tsir.md](/Users/xyz/deco/doe/docs/status/tsir.md)
 - [runtime-backends-and-bench.md](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
 
 ## Dated archive shards
