@@ -331,6 +331,43 @@ Promotion candidates:
 2. must include explicit `status` + `statusCode` for required `L1/L2` rows,
 3. must carry approvals from `module_contracts_owner` and `coordinator`.
 
+## ORT WebGPU diagnostic harness
+
+There is now a focused Chromium-side ORT WebGPU benchmark runner at:
+
+- `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`
+
+What it does:
+
+- launches Chromium in `dawn`, `doe`, or `both` runtime modes
+- serves the repo root over the same local HTTP harness used by the browser
+  smoke path
+- loads `onnxruntime-web`'s browser WebGPU bundle from `bench/node_modules`
+- benchmarks a small ORT identity workload and a small ORT matmul workload in
+  the page, capturing session-create, first-run, and steady-state timings
+
+Run from repo root:
+
+```bash
+# diagnostic Dawn-only proof on stock Chrome
+node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
+  --mode dawn \
+  --chrome /usr/bin/google-chrome
+
+# real Dawn-vs-Doe browser comparison requires a Doe-enabled Chromium binary
+node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
+  --mode both \
+  --dawn-chrome /path/to/chrome-or-chromium \
+  --doe-chrome /path/to/fawn-or-doe-enabled-chromium \
+  --doe-lib runtime/zig/zig-out/lib/libwebgpu_doe.so
+```
+
+Guardrail:
+
+- this harness is diagnostic only
+- if `doe` mode uses a stock browser executable that ignores Doe runtime
+  flags, the results are not a valid Doe-vs-Dawn comparison
+
 Rollback triggers:
 
 1. hand-maintained scenario drift from source workloads,
