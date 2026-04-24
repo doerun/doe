@@ -5,7 +5,7 @@
   "sourceProgram": {
     "authoringSurface": "doppler_execution_v1",
     "manifestPath": "doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32/manifest.json",
-    "manifestSha256": "2f930b13ea2a56767911cdbabbbe60f7db64a6b5b711ff273adc654da2f25610",
+    "manifestSha256": "6644e3be29b9db5b714de0ae66c92f41961d8cb58df069bf075b4a2b048084bb",
     "graphPath": "doe/bench/out/doppler-reference/gemma-3-1b-doe-webgpu-export/execution_graph.json",
     "graphSha256": "ae4f822cb525a49127b03d4debb9cd71745aa7845e31557e37c1bad9b7eacd79",
     "weightSetId": "gemma-3-1b-it-q4k-ehf16-af32-wp-catalog-v1",

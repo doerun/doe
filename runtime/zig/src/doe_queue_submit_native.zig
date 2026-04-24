@@ -8,6 +8,7 @@ const lifecycle = @import("doe_queue_lifecycle.zig");
 const shared = @import("doe_queue_submit_shared.zig");
 const d3d12_submit = @import("doe_queue_submit_d3d12.zig");
 const metal_submit = @import("doe_queue_submit_metal.zig");
+const vulkan_submit = @import("doe_queue_submit_vulkan.zig");
 
 const cast = native_helpers.cast;
 const DoeQueue = native_types.DoeQueue;
@@ -24,7 +25,10 @@ pub export fn doeNativeQueueSubmit(
     cmd_bufs: [*]const ?*anyopaque,
 ) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
-    if (q.dev.backend == .vulkan) return;
+    if (q.dev.backend == .vulkan) {
+        vulkan_submit.submit_vulkan_commands(q, count, cmd_bufs);
+        return;
+    }
     if (q.dev.backend == .d3d12) {
         d3d12_submit.submit_d3d12_commands(q, count, cmd_bufs);
         return;
