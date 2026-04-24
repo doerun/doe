@@ -44,21 +44,58 @@ how much. For iteration cadence see
 
 Gates protecting Phase A artifacts:
 
+*Repo-wide hygiene:*
+
 - `bench/gates/doe_private_strategy_leak_gate.py` — private-strategy
   leak guard (Doe docs must not contain upstream-repo path or
   competitive-framing patterns).
 - `runtime/zig/tools/check_line_limits.py` — 999-line Zig source cap;
   three TSIR modules allowlisted with tracked sharding follow-ups.
 - `bench/tests/test_doc_link_coverage.py` — in-repo markdown link
-  integrity.
-- `test_canary_receipts_carry_fixture_lowering_identity` — receipt ↔
-  fixture identity.
-- `test_bootstrap_fixtures_share_version_and_descriptor_identity` —
-  fixture set coherence.
+  integrity across `docs/**` + root-level markdown.
+
+*Rejection / exactness taxonomy:*
+
 - `test_rejection_taxonomy_is_consistent_across_schemas` — rejection
   taxonomy lockstep across the four JSON schemas + Python CLI.
+- Zig `test "rejection taxonomy is exhaustive and enumerable"` —
+  Zig canonical enum.
+
+*Bootstrap catalog ↔ manifest fixture chain:*
+
+- `test_every_wgsl_has_semantic_sketch` + `test_every_wgsl_has_realization_per_target` —
+  catalog forward invariant (every WGSL has semantic/notes + both
+  target realizations).
+- `test_no_orphan_artifacts_without_wgsl_pair` — catalog reverse
+  invariant (no orphan semantic/realization/notes files without a
+  matching WGSL).
+- `test_every_bootstrap_wgsl_has_manifest_fixture` — catalog →
+  fixture cross-layer (every bootstrap WGSL has fixtures for both
+  targets).
+- `test_manifest_fixture_kernelrefs_map_to_bootstrap_wgsl` — fixture
+  → catalog cross-layer (every fixture's kernelRef names a real WGSL).
+- `test_bootstrap_fixtures_validate_and_bind_distinct_targets` —
+  fixture schema + pairwise uniqueness + per-kernel semantic-digest
+  coherence + per-kernel realization distinctness across backends.
+- `test_bootstrap_fixtures_share_version_and_descriptor_identity` —
+  fixture set agreement on `frontendVersion` + `compilerVersion` +
+  per-backend `targetDescriptorCorrectnessHash`.
+
+*Receipt ↔ fixture identity:*
+
+- `test_canary_receipts_carry_fixture_lowering_identity` — every
+  nightly canary receipt's `loweringIdentity` matches the source
+  fixture's digests byte-for-byte.
+- `test_loads_exact_bootstrap_fixture_set` — canary enumerates the
+  expected six (kernel, backend) pairs.
+
+*Emitter identity:*
+
 - Zig `test "tsir emitter code digests are pairwise distinct across
   all five backends"` — manifest-binding disambiguation.
+- `test_canary_runs_fixture_receipts_without_claiming_pass` — stub
+  backend lanes return `not_implemented` / `deferred` and do not
+  silently promote.
 
 The missing path to proof 1 — in priority order: executable kernel
 bodies in a backend emitter (Step 7), parity CLI subprocess harness to
@@ -70,6 +107,17 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh the Phase A status-at-a-glance "Gates" list to
+  reflect the four bootstrap-catalog ↔ manifest-fixture invariant
+  tests added in ticks 29–32. Reorganized the list into four
+  categories (repo-wide hygiene, rejection/exactness taxonomy,
+  bootstrap-catalog ↔ manifest-fixture chain, receipt ↔ fixture
+  identity, emitter identity) so a reader can locate the layer
+  they're editing. Added the Zig canonical-enum taxonomy test
+  and the canary's pair-enumeration test that were live but
+  previously uncatalogued. Doc-only; all tests still pass.
+  Cites `docs/tsir-lowering-plan.md` Step 1.5 + Step 10 and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Tests: add reverse-direction catalog → manifest-fixture check
   `test_every_bootstrap_wgsl_has_manifest_fixture`. Complements tick
   31's manifest → catalog check. Catches "new kernel landed in the
