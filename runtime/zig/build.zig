@@ -868,11 +868,9 @@ pub fn build(b: *std.Build) void {
     b.getInstallStep().dependOn(csl_host_plan_tool_step);
 
     // Bootstrap manifest fixture generator. Invoked by
-    // `bench/tools/generate_tsir_manifest_fixtures.py` via `zig run` on
-    // the source file, so the file is not otherwise type-checked by the
-    // standard `zig build` flow. Adding it as a build step ensures that
-    // schema, target-descriptor, frontend, or planner changes break the
-    // build immediately rather than silently at next fixture regen.
+    // `bench/tools/generate_tsir_manifest_fixtures.py` through this build
+    // step so schema, target-descriptor, frontend, or planner changes break
+    // the build immediately rather than silently at next fixture regen.
     const tsir_bootstrap_manifest_inputs = b.addExecutable(.{
         .name = "doe-tsir-bootstrap-manifest-inputs",
         .root_module = b.createModule(.{

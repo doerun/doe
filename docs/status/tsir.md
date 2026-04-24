@@ -107,6 +107,13 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — manifest fixture generator build-step alignment:
+  `bench/tools/generate_tsir_manifest_fixtures.py` now invokes
+  `zig build tsir-bootstrap-manifest-inputs` and then runs the installed
+  `doe-tsir-bootstrap-manifest-inputs` binary, instead of shelling through
+  `zig run` on the source file. This makes the plan doc's build-step
+  contract true in code and keeps fixture regeneration on the same
+  type-checked build surface as the rest of TSIR.
 - Plan: add `runtime/zig/src/tsir_bootstrap_manifest_inputs.zig` to
   `docs/tsir-lowering-plan.md §Current scaffold already in tree`.
   The `tsir/` subdir enumeration covered all thirteen core compiler

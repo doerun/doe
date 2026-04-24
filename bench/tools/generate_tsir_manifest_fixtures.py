@@ -23,22 +23,27 @@ from bench.tools.tsir_manifest_lowering import (
 
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
-ZIG_INPUT_TOOL = (
-    REPO_ROOT / "runtime" / "zig" / "src" / "tsir_bootstrap_manifest_inputs.zig"
+ZIG_WORKDIR = REPO_ROOT / "runtime" / "zig"
+ZIG_INPUT_BINARY = (
+    ZIG_WORKDIR / "zig-out" / "bin" / "doe-tsir-bootstrap-manifest-inputs"
 )
 
 
 def _run_zig_input_tool(zig: str) -> list[dict[str, Any]]:
-    result = subprocess.run(
+    subprocess.run(
         [
             zig,
-            "run",
-            str(ZIG_INPUT_TOOL),
-            "--cache-dir",
-            "/tmp/doe-tsir-bootstrap-manifest-cache",
-            "--global-cache-dir",
-            "/tmp/doe-tsir-bootstrap-manifest-global",
+            "build",
+            "tsir-bootstrap-manifest-inputs",
         ],
+        cwd=ZIG_WORKDIR,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    result = subprocess.run(
+        [str(ZIG_INPUT_BINARY)],
         cwd=REPO_ROOT,
         check=True,
         text=True,
