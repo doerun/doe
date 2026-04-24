@@ -19,6 +19,22 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- TSIR Loop 2 — canary receipt ↔ fixture identity lockstep: new
+  `test_canary_receipts_carry_fixture_lowering_identity` in
+  `bench/tests/test_nightly_tsir_parity_canary.py` asserts that every
+  receipt the nightly canary emits carries the exact same
+  `loweringIdentity` digests (`tsirSemanticDigest`,
+  `tsirRealizationDigest`, `emitterDigest`,
+  `targetDescriptorCorrectnessHash`) as the source manifest-lowering
+  fixture at `bench/fixtures/tsir-manifest-entries/`. Catches drift
+  where the parity CLI or canary recomputes a digest on its own
+  path and silently produces a receipt bound to a different
+  `(semantic, realization, emitter, target)` tuple than the
+  manifest entry declared — if that drift ever reaches Loop 3
+  promotion, the receipt would attribute artifacts to a lowering
+  that doesn't exist. Strategy-leak gate verified PASS after edit.
+  Cites `docs/tsir-lowering-plan.md` Step 10 (manifest binding) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Plan doc refresh: `docs/tsir-lowering-plan.md` "Current scaffold
   already in tree" section was drafted before Phase A landed and
   didn't mention `family_hint.zig`, the five backend skeleton
