@@ -561,5 +561,167 @@ class TestParityScaffolding(unittest.TestCase):
             )
 
 
+def _write_doppler_transcript(
+    tmp_path: Path,
+    execution_graph_hash: str = "sha256:" + "a" * 64,
+    source_hash: str = "sha256:" + "b" * 64,
+) -> Path:
+    path = tmp_path / "reference-transcript.json"
+    doc = {
+        "schema": doe_parity.REFERENCE_TRANSCRIPT_SCHEMA_ID,
+        "executionGraphHash": execution_graph_hash,
+        "source": {
+            "kind": "browser-report",
+            "path": "inline",
+            "hash": source_hash,
+        },
+        "prompt": {"identity": "The color of the sky is"},
+        "output": {"tokensGenerated": 1, "stopReason": "max_tokens"},
+        "tokens": {"ids": [1]},
+    }
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+class TestReferenceSourceInversion(unittest.TestCase):
+    """Move 1: parity CLI routes real kernels to Doppler transcripts."""
+
+    def test_doppler_transcript_rejects_invalid_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"
+            path.write_text(json.dumps({"schema": "wrong"}), encoding="utf-8")
+            with self.assertRaises(doe_parity.DopplerTranscriptInvalid):
+                doe_parity.load_doppler_transcript(path)
+
+    def test_doppler_transcript_requires_execution_graph_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema": doe_parity.REFERENCE_TRANSCRIPT_SCHEMA_ID,
+                        "source": {"hash": "sha256:" + "0" * 64},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(doe_parity.DopplerTranscriptInvalid):
+                doe_parity.load_doppler_transcript(path)
+
+    def test_doppler_reference_without_probe_defers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = _write_doppler_transcript(Path(tmp))
+            outcome, source = doe_parity.run_doppler_reference(
+                "attn_head256",
+                rejection_reasons=None,
+                transcript_path=transcript,
+                probe_hash=None,
+            )
+        self.assertEqual(outcome.status, "not_implemented")
+        self.assertIsNone(outcome.backend_hash)
+        self.assertEqual(source.kind, doe_parity.REFERENCE_SOURCE_DOPPLER)
+        self.assertEqual(source.execution_graph_hash, "sha256:" + "a" * 64)
+        self.assertEqual(source.source_hash, "sha256:" + "b" * 64)
+
+    def test_doppler_reference_with_probe_passes(self) -> None:
+        probe_hash = "c" * 64
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = _write_doppler_transcript(Path(tmp))
+            outcome, source = doe_parity.run_doppler_reference(
+                "attn_head256",
+                rejection_reasons=None,
+                transcript_path=transcript,
+                probe_hash=probe_hash,
+            )
+        self.assertEqual(outcome.status, "pass")
+        self.assertEqual(outcome.backend_hash, probe_hash)
+        self.assertEqual(source.kind, doe_parity.REFERENCE_SOURCE_DOPPLER)
+
+    def test_doppler_reference_rejects_malformed_probe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            transcript = _write_doppler_transcript(Path(tmp))
+            with self.assertRaises(doe_parity.DopplerTranscriptInvalid):
+                doe_parity.run_doppler_reference(
+                    "attn_head256",
+                    rejection_reasons=None,
+                    transcript_path=transcript,
+                    probe_hash="not-hex",
+                )
+
+    def test_reference_source_zig_serializes_minimally(self) -> None:
+        source = doe_parity.ReferenceSource(
+            kind=doe_parity.REFERENCE_SOURCE_ZIG,
+        )
+        self.assertEqual(source.to_json(), {"kind": "zig-tsir-oracle"})
+
+    def test_reference_source_doppler_requires_identity_fields(self) -> None:
+        source = doe_parity.ReferenceSource(
+            kind=doe_parity.REFERENCE_SOURCE_DOPPLER,
+        )
+        with self.assertRaises(ValueError):
+            source.to_json()
+
+
+class TestReceiptWithReferenceSource(unittest.TestCase):
+    """Receipts carry the reference-source taxonomy per the re-scope."""
+
+    def test_receipt_embeds_doppler_reference_source(self) -> None:
+        source = doe_parity.ReferenceSource(
+            kind=doe_parity.REFERENCE_SOURCE_DOPPLER,
+            execution_graph_hash="sha256:" + "d" * 64,
+            source_hash="sha256:" + "e" * 64,
+            transcript_path="/tmp/t.json",
+        )
+        receipt = doe_parity.ParityReceipt(
+            schema_version=2,
+            artifact_kind="doe_parity_receipt",
+            kernel="attn_head256",
+            exactness_class="tolerance_bounded",
+            reference_hash=None,
+            inputs_digest="0" * 64,
+            comparisons=[
+                doe_parity.ComparisonOutcome(
+                    backend="reference",
+                    status="not_implemented",
+                    detail="per-kernel probe not supplied",
+                ),
+            ],
+            rejection_reasons=[],
+            reference_source=source,
+        )
+        doc = receipt.to_json()
+        self.assertIn("referenceSource", doc)
+        self.assertEqual(doc["referenceSource"]["kind"], "doppler-reference-transcript")
+        self.assertEqual(
+            doc["referenceSource"]["executionGraphHash"], "sha256:" + "d" * 64
+        )
+        # Receipt must still validate against the live schema.
+        doe_parity.validate_receipt_doc(doc)
+
+    def test_receipt_embeds_zig_reference_source(self) -> None:
+        receipt = doe_parity.ParityReceipt(
+            schema_version=2,
+            artifact_kind="doe_parity_receipt",
+            kernel="fused_gemv",
+            exactness_class="algorithm_exact",
+            reference_hash="0" * 64,
+            inputs_digest="1" * 64,
+            comparisons=[
+                doe_parity.ComparisonOutcome(
+                    backend="reference",
+                    status="pass",
+                    backend_hash="0" * 64,
+                ),
+            ],
+            rejection_reasons=[],
+            reference_source=doe_parity.ReferenceSource(
+                kind=doe_parity.REFERENCE_SOURCE_ZIG,
+            ),
+        )
+        doc = receipt.to_json()
+        self.assertEqual(doc["referenceSource"], {"kind": "zig-tsir-oracle"})
+        doe_parity.validate_receipt_doc(doc)
+
+
 if __name__ == "__main__":
     unittest.main()

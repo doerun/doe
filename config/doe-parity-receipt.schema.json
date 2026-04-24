@@ -23,6 +23,13 @@
       "enum": ["bit_exact_solo", "algorithm_exact", "tolerance_bounded"]
     },
     "referenceHash": { "type": ["string", "null"] },
+    "referenceSource": {
+      "description": "Names the oracle regime that produced the reference hash. Bootstrap kernels use the Zig scalar interpreter; real kernels use Doppler's browser reference transcript. Absent receipts pre-date the re-scope.",
+      "oneOf": [
+        { "$ref": "#/$defs/referenceSourceZig" },
+        { "$ref": "#/$defs/referenceSourceDoppler" }
+      ]
+    },
     "inputsDigest": { "type": "string" },
     "loweringIdentity": { "$ref": "#/$defs/loweringIdentity" },
     "comparisons": {
@@ -48,6 +55,33 @@
     "hexDigest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "referenceSourceZig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "const": "zig-tsir-oracle" },
+        "detail": { "type": ["string", "null"] }
+      }
+    },
+    "referenceSourceDoppler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "executionGraphHash", "sourceHash"],
+      "properties": {
+        "kind": { "type": "string", "const": "doppler-reference-transcript" },
+        "executionGraphHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "sourceHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "transcriptPath": { "type": ["string", "null"] },
+        "detail": { "type": ["string", "null"] }
+      }
     },
     "loweringIdentity": {
       "type": "object",

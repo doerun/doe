@@ -59,6 +59,12 @@ KERNEL_ALIASES = {
     "fused-gemv": "fused_gemv",
 }
 
+# Reference-source taxonomy under the re-scope (see docs/tsir-lowering-plan.md
+# Step 1 "Real-kernel regime" and Step 8 "Backend lane rules").
+REFERENCE_SOURCE_ZIG = "zig-tsir-oracle"
+REFERENCE_SOURCE_DOPPLER = "doppler-reference-transcript"
+REFERENCE_TRANSCRIPT_SCHEMA_ID = "doppler.reference-transcript/v1"
+
 REJECTION_REASONS = frozenset(
     {
         "tsir_subgroup_unlowerable",
@@ -81,8 +87,54 @@ class ComparisonOutcome:
     detail: str | None = None
 
 
+@dataclass
+class ReferenceSource:
+    """Names which oracle regime produced the reference hash.
+
+    Bootstrap kernels route to the Zig scalar interpreter
+    (`REFERENCE_SOURCE_ZIG`). Real kernels route to a Doppler
+    `doppler.reference-transcript/v1` captured via `doppler bundle`
+    (`REFERENCE_SOURCE_DOPPLER`). The taxonomy is load-bearing for
+    audit: a receipt must name which oracle it was gated against.
+    """
+
+    kind: str
+    execution_graph_hash: str | None = None
+    source_hash: str | None = None
+    transcript_path: str | None = None
+    detail: str | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        if self.kind == REFERENCE_SOURCE_ZIG:
+            doc: dict[str, Any] = {"kind": REFERENCE_SOURCE_ZIG}
+            if self.detail is not None:
+                doc["detail"] = self.detail
+            return doc
+        if self.kind == REFERENCE_SOURCE_DOPPLER:
+            if self.execution_graph_hash is None or self.source_hash is None:
+                raise ValueError(
+                    "doppler reference source requires executionGraphHash "
+                    "and sourceHash."
+                )
+            doc = {
+                "kind": REFERENCE_SOURCE_DOPPLER,
+                "executionGraphHash": self.execution_graph_hash,
+                "sourceHash": self.source_hash,
+            }
+            if self.transcript_path is not None:
+                doc["transcriptPath"] = self.transcript_path
+            if self.detail is not None:
+                doc["detail"] = self.detail
+            return doc
+        raise ValueError(f"unknown reference source kind: {self.kind!r}")
+
+
 class BootstrapOracleNotImplemented(RuntimeError):
     """Raised when the bootstrap oracle cannot honestly execute a case."""
+
+
+class DopplerTranscriptInvalid(ValueError):
+    """Raised when a supplied Doppler transcript fails validation."""
 
 
 @dataclass(frozen=True)
@@ -114,6 +166,7 @@ class ParityReceipt:
     comparisons: list[ComparisonOutcome] = field(default_factory=list)
     rejection_reasons: list[str] = field(default_factory=list)
     lowering_identity: LoweringIdentity | None = None
+    reference_source: ReferenceSource | None = None
 
     def to_json(self) -> dict[str, Any]:
         doc: dict[str, Any] = {
@@ -134,6 +187,8 @@ class ParityReceipt:
             ],
             "rejectionReasons": self.rejection_reasons,
         }
+        if self.reference_source is not None:
+            doc["referenceSource"] = self.reference_source.to_json()
         if self.lowering_identity is not None:
             doc["loweringIdentity"] = self.lowering_identity.to_json()
         return doc
@@ -178,6 +233,27 @@ def parse_args() -> argparse.Namespace:
         help="Optional integrityExtensions.lowerings[] fixture entry. Copies "
         "TSIR lowering identity digests into the receipt without changing "
         "stub execution status.",
+    )
+    parser.add_argument(
+        "--doppler-transcript",
+        type=Path,
+        help=(
+            "Path to a doppler.reference-transcript/v1 JSON captured via "
+            "`doppler bundle`. Required for real (non-bootstrap) kernels "
+            "under the re-scoped plan. Routes reference to the Doppler "
+            "browser WebGPU run instead of the Zig scalar oracle."
+        ),
+    )
+    parser.add_argument(
+        "--doppler-kernel-probe-hash",
+        type=str,
+        help=(
+            "Optional 64-char hex digest for a per-kernel probe captured "
+            "alongside a Doppler reference transcript. When omitted, the "
+            "reference lane records the transcript identity and marks "
+            "comparison status as deferred pending per-kernel probe "
+            "capture."
+        ),
     )
     return parser.parse_args()
 
@@ -373,6 +449,107 @@ def lowering_identity_from_manifest_entry(
     )
 
 
+def load_doppler_transcript(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DopplerTranscriptInvalid(
+            f"doppler transcript unreadable at {path}: {exc}"
+        ) from exc
+    if not isinstance(doc, dict):
+        raise DopplerTranscriptInvalid(
+            "doppler transcript must be a top-level JSON object"
+        )
+    if doc.get("schema") != REFERENCE_TRANSCRIPT_SCHEMA_ID:
+        raise DopplerTranscriptInvalid(
+            f"doppler transcript schema must be {REFERENCE_TRANSCRIPT_SCHEMA_ID!r}"
+        )
+    execution_graph_hash = doc.get("executionGraphHash")
+    if not isinstance(execution_graph_hash, str) or not execution_graph_hash.startswith("sha256:"):
+        raise DopplerTranscriptInvalid(
+            "doppler transcript executionGraphHash must be a sha256: digest"
+        )
+    source = doc.get("source")
+    if not isinstance(source, dict):
+        raise DopplerTranscriptInvalid(
+            "doppler transcript source must be an object"
+        )
+    source_hash = source.get("hash")
+    if not isinstance(source_hash, str) or not source_hash.startswith("sha256:"):
+        raise DopplerTranscriptInvalid(
+            "doppler transcript source.hash must be a sha256: digest"
+        )
+    return doc
+
+
+def run_doppler_reference(
+    kernel: str,
+    rejection_reasons: list[str] | None,
+    transcript_path: Path,
+    probe_hash: str | None,
+) -> tuple[ComparisonOutcome, ReferenceSource]:
+    """Use a Doppler reference transcript as the oracle for a real kernel.
+
+    The transcript carries end-to-end model identity (tokens, per-step
+    logits hashes, KV identity). Per-kernel probe hashes are a separate
+    capture concern — the Doppler side must emit a probe that hashes
+    the kernel's output under identical inputs. When a probe is not
+    supplied, the reference lane records the transcript identity
+    (executionGraphHash + source.hash) for audit and marks the
+    comparison status `not_implemented` so the receipt does not imply
+    coverage the harness does not have.
+    """
+    doc = load_doppler_transcript(transcript_path)
+    reference_source = ReferenceSource(
+        kind=REFERENCE_SOURCE_DOPPLER,
+        execution_graph_hash=doc["executionGraphHash"],
+        source_hash=doc["source"]["hash"],
+        transcript_path=str(transcript_path),
+    )
+    if rejection_reasons:
+        return (
+            ComparisonOutcome(
+                backend="reference",
+                status="rejected",
+                detail="TSIR rejected before execution: "
+                + ", ".join(rejection_reasons),
+            ),
+            reference_source,
+        )
+    if probe_hash is None:
+        reference_source.detail = (
+            "transcript identity recorded; per-kernel probe not captured."
+        )
+        return (
+            ComparisonOutcome(
+                backend="reference",
+                status="not_implemented",
+                detail=(
+                    f"doppler transcript reference for {kernel!r}: "
+                    "per-kernel probe hash not supplied. Run with "
+                    "--doppler-kernel-probe-hash once Doppler-side per-kernel "
+                    "capture lands."
+                ),
+            ),
+            reference_source,
+        )
+    if len(probe_hash) != 64 or any(
+        ch not in "0123456789abcdef" for ch in probe_hash.lower()
+    ):
+        raise DopplerTranscriptInvalid(
+            "--doppler-kernel-probe-hash must be a 64-char lowercase hex digest"
+        )
+    return (
+        ComparisonOutcome(
+            backend="reference",
+            status="pass",
+            backend_hash=probe_hash.lower(),
+            detail="doppler reference transcript per-kernel probe",
+        ),
+        reference_source,
+    )
+
+
 def run_reference_interpreter(
     kernel: str,
     _inputs_digest: str,
@@ -528,14 +705,44 @@ def main() -> int:
         lowering_identity = lowering_identity_from_manifest_entry(
             args.manifest_lowering_entry, args.exactness
         )
-        reference = run_reference_interpreter(
-            args.kernel,
-            inputs_digest,
-            rejection_reasons,
-            inputs_path=args.inputs,
-            semantic_path=args.semantic_tsir,
-            realization_path=args.realization_tsir,
-        )
+
+        normalized_kernel = KERNEL_ALIASES.get(args.kernel, args.kernel)
+        is_bootstrap_kernel = normalized_kernel in BOOTSTRAP_ORACLE_KERNELS
+        doppler_transcript = args.doppler_transcript
+
+        if is_bootstrap_kernel and doppler_transcript is not None:
+            raise ValueError(
+                f"--doppler-transcript is not valid for bootstrap kernel "
+                f"{normalized_kernel!r}; bootstrap kernels route to the Zig "
+                "scalar oracle by design. See docs/tsir-lowering-plan.md "
+                "Step 1."
+            )
+        if not is_bootstrap_kernel and doppler_transcript is None:
+            raise ValueError(
+                f"real kernel {normalized_kernel!r} requires "
+                "--doppler-transcript under the re-scoped plan (real-kernel "
+                "reference is Doppler's browser WebGPU transcript, not the "
+                "Zig oracle). See docs/tsir-lowering-plan.md Step 1."
+            )
+
+        if doppler_transcript is not None:
+            reference, reference_source = run_doppler_reference(
+                normalized_kernel,
+                rejection_reasons,
+                doppler_transcript,
+                args.doppler_kernel_probe_hash,
+            )
+        else:
+            reference = run_reference_interpreter(
+                normalized_kernel,
+                inputs_digest,
+                rejection_reasons,
+                inputs_path=args.inputs,
+                semantic_path=args.semantic_tsir,
+                realization_path=args.realization_tsir,
+            )
+            reference_source = ReferenceSource(kind=REFERENCE_SOURCE_ZIG)
+
         webgpu_result = run_backend("webgpu")
         csl_result = run_backend("csl-simfabric")
 
@@ -547,13 +754,14 @@ def main() -> int:
         receipt = ParityReceipt(
             schema_version=2,
             artifact_kind="doe_parity_receipt",
-            kernel=args.kernel,
+            kernel=normalized_kernel,
             exactness_class=args.exactness,
             reference_hash=reference.backend_hash,
             inputs_digest=inputs_digest,
             comparisons=[reference] + comparisons,
             rejection_reasons=rejection_reasons,
             lowering_identity=lowering_identity,
+            reference_source=reference_source,
         )
         out_path = write_receipt(receipt, args.receipt_dir)
         try:
