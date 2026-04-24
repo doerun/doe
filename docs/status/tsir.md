@@ -69,6 +69,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: migrate 2026-04-24 TSIR entries from
+  `compiler-and-webgpu.md` to `tsir.md`. Tick 8 created the shard
+  split but deferred the historical migration — the 2026-04-24
+  TSIR content had accumulated in `compiler-and-webgpu.md` before
+  `tsir.md` existed and had been sitting in the wrong shard ever
+  since. Moved all ~260 lines under the existing 2026-04-24
+  section in `tsir.md` with an HTML-comment migration marker.
+  `compiler-and-webgpu.md` drops from 1965 to 1701 lines — still
+  over the 1200 cap but materially closer (older pre-2026-04-24
+  TSIR history remains for a later migration pass). `tsir.md`
+  grows to 586 lines, well under cap. Strategy-leak gate PASS,
+  doc-link coverage test PASS, no content changes — only
+  relocation. Cites `docs/loop-protocol.md` Loop 2 protocol
+  (deferred follow-up from tick 8 closed).
 - Tests: extend `test_doc_link_coverage` to scan root-level markdown
   files (`AGENTS.md`, `README.md`, `CLAUDE.md`, `SKILLS.md`) in
   addition to `docs/**/*.md`. Those root-level files carry
@@ -299,6 +313,272 @@ them safer to attempt.
   traffic here. Cites `docs/loop-protocol.md` Loop 2 protocol
   (no-code subdomain-split increment). No runtime, test, or contract
   change.
+
+<!-- entries below here were migrated from docs/status/compiler-and-webgpu.md on 2026-04-24. -->
+<!-- They predate the tsir.md shard split (tick 8) and were written into compiler-and-webgpu.md before tsir.md existed. -->
+<!-- Ordering within this block reflects their original top-to-bottom layout; commit log is authoritative for strict chronology. -->
+
+- TSIR Loop 2 - portable backend skeleton increment: added deterministic
+  source-hashed TSIR skeleton emitters for SPIR-V, MSL, and DXIL, backed by a
+  shared contract-text serializer that includes the common serializer source in
+  each backend emitter digest. The emitters serialize realization headers,
+  residency, tiles, collectives, and reductions, and fail closed on realization
+  rejections or target descriptor hash mismatches. They are non-executable
+  backend contract emitters; real backend codegen remains deferred.
+- TSIR Loop 2 — parity receipt lowering-identity increment:
+  `bench/tools/doe_parity.py` now accepts a schema-validated
+  `--manifest-lowering-entry` fixture and copies only the TSIR lowering
+  identity digests into the parity receipt:
+  `tsirSemanticDigest`, `tsirRealizationDigest`, `emitterDigest`, and
+  `targetDescriptorCorrectnessHash`. The receipt schema is versioned to
+  `schemaVersion=2` with an optional `loweringIdentity` object. This is still
+  receipt metadata only: the reference and backend lanes remain
+  `not_implemented`/`deferred`, and the CLI still exits nonzero unless real
+  comparisons pass in a future increment.
+- TSIR Loop 2 — rejection taxonomy cross-schema lockstep test: new
+  `test_rejection_taxonomy_is_consistent_across_schemas` in
+  `bench/tests/test_doe_parity.py` walks the four JSON schemas that carry
+  the TSIR rejection enum (`doe-parity-receipt.schema.json`,
+  `doe-tsir-semantic.schema.json`, `doe-tsir-realization.schema.json`,
+  `doe-tsir-manifest-lowering.schema.json`) and asserts each one's enum
+  set equals `doe_parity.REJECTION_REASONS`. Catches drift where someone
+  renames or adds a reason in one schema and forgets another — the
+  taxonomy is a single wire contract shared across all four artifacts
+  plus the Python CLI. The Zig canonical enum at
+  `runtime/zig/src/tsir/schema.zig::RejectionReason` is verified
+  separately by the existing scaffold test "rejection taxonomy is
+  exhaustive and enumerable". 16/16 parity CLI tests pass. Cites
+  `docs/tsir-lowering-plan.md` Step 1 (rejection taxonomy) and
+  `docs/loop-protocol.md` Loop 2 protocol. No runtime, schema, or
+  fixture change.
+- TSIR Loop 2 — bootstrap manifest fixture increment: added a source-hashed
+  WebGPU-generic TSIR skeleton emitter so WebGPU and WSE-3 lowerings no longer
+  share an emitter identity, added a Zig bootstrap manifest-input tool that
+  lowers the pinned `fused_gemv`, `rms_norm`, and `gather` WGSL kernels through
+  frontend + planner for both targets, and added
+  `bench/tools/generate_tsir_manifest_fixtures.py` to pass those digests through
+  the schema-backed manifest lowering builder. The committed
+  `bench/fixtures/tsir-manifest-entries/*.json` fixtures cover the six Phase A
+  kernel/target pairs and validate as `integrityExtensions.lowerings[]` rows.
+  This is still compiler-contract evidence only; executable backend parity
+  remains Loop 3.
+- TSIR Loop 2 — emitter code digest increment: `emit_csl.zig` now exposes
+  `emitterCodeDigest()` as SHA-256 over the mechanical CSL emitter source, and
+  `digest.zig` has `computeWithEmitterDigest()` for callers that already hold
+  a content-addressed emitter identity instead of a version string. The Phase A
+  bootstrap pipeline test now feeds that source-backed digest into WebGPU and
+  WSE-3 realizations and asserts the returned split digest preserves it
+  verbatim. This removes the zero/placeholder emitter identity from the
+  compiler-only bootstrap lowering path. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and `git diff --check`.
+- TSIR Loop 2 — Step 8 parity CLI scaffolding comment refresh:
+  `bench/tools/doe_parity.py` scaffolding comments on
+  `run_reference_interpreter` and `run_backend` were stale — they claimed
+  the Zig oracle returns `NotImplemented` for every kernel, but the
+  oracle now recognizes the three Phase A bootstrap families
+  (`fused_gemv`, `gather`, `rms_norm`) across `{f32, f16, bf16}` with
+  `strict_ordered` + `associative_allowed` reductions plus
+  `literal_f32` / `uniform_field` epsilon. Updated comments to name
+  what the oracle covers, name the remaining CLI subprocess harness
+  that is the real gap, and name the backend-lane gaps (TSIR-to-WGSL
+  re-emission for WebGPU; TSIR-to-CSL executable kernel bodies for
+  simfabric, since `runtime/zig/src/tsir/emit_csl.zig` is a skeleton
+  contract emitter only). Doc-only; all 15 `bench/tests/test_doe_parity.py`
+  cases still pass. The CLI's `not_implemented` stub contract is
+  intentionally preserved — wiring real subprocess calls is a distinct
+  Loop 2 wedge that has not landed. Cites
+  `docs/tsir-lowering-plan.md` Step 8 and `docs/loop-protocol.md`
+  Loop 2 protocol.
+- TSIR Loop 2 — Phase A bootstrap pipeline identity increment:
+  added a compiler-only pipeline test that lowers the pinned
+  `fused_gemv`, `rms_norm`, and `gather` WGSL bootstrap kernels through
+  Doe IR → TSIR semantic → WebGPU-generic and WSE-3 realization planning →
+  semantic/realization digest computation. The test requires clean semantic
+  and realization rejection lists, stable repeated digests, shared semantic
+  digest across targets, and target-distinct realization digests. To make that
+  honest, the frontend now traces reduction accumulator dependencies through
+  scalar-tail aliases, so RMSNorm's `sum_sq -> mean_sq -> inv_rms -> output`
+  path no longer emits an unresolved-writeback rejection, and gather hinting
+  follows bounded local aliases initialized from indexed buffer reads. Target
+  descriptors now declare a correctness-affecting runtime-sized binding policy:
+  `webgpu-generic` uses `host_copied`, while `wse3` requires loader-backed
+  `fabric_streamed` residency. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and `git diff --check`.
+- TSIR Loop 2 — Step 1 oracle / RMSNorm uniform-epsilon increment:
+  `body.rmsNorm.epsilon` now carries `bindingIndex` and `byteOffset` in
+  both Zig and JSON schema, canonical semantic digests include those fields,
+  and the WGSL frontend derives binding `3` / byte offset `4` for the
+  bootstrap `uniform:u.eps` struct field. The reference interpreter now
+  consumes read-only inputs by semantic binding order and executes RMSNorm
+  with explicit uniform epsilon bytes; missing uniform input, mismatched
+  path/binding, NaN/Inf, or malformed offsets still fall through to
+  `NotImplemented`, so there is no hidden epsilon default. The bootstrap
+  RMSNorm semantic fixture and notes now include the `u` binding. This same
+  increment also extends the fused GEMV oracle to honor
+  `associative_allowed` reductions only when the realization declares a
+  matching reduction tree shape, with focused coverage for binomial fold
+  behavior. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`,
+  `env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest bench.tests.test_config_schemas`,
+  and `git diff --check`.
+- TSIR Loop 2 — Step 1 oracle dtype coverage for `rms_norm`: two
+  focused tests in `runtime/zig/src/tsir/reference_interpreter.zig`
+  exercise the f16 and bf16 upcast/downcast paths for the
+  literal-epsilon recognizer committed in `39707259e`. Test values use
+  input=[2,2] and scale=[3,4] so `mean_sq=4.0` and `inv_rms=0.5` are
+  exactly representable and the f32 accumulator + dtype downcast
+  produces bit-exact output={3,4} — this validates the dtype plumbing,
+  not `@sqrt` rounding. `uniform_field` epsilon still falls through
+  until TSIR input plumbing lands for uniform scalars. Mirrors the
+  dtype-closure wedge landed for `fused_gemv`/`gather` earlier today.
+  `zig build test-wgsl` passes. No recognizer or schema change. Cites
+  `docs/tsir-lowering-plan.md` Step 1 and `docs/loop-protocol.md`
+  Loop 2 protocol (stop-until-green; same step, same wedge shape).
+  After this tick all three Phase A bootstrap families (fused_gemv,
+  gather, rms_norm) have positive oracle coverage on every declared
+  Phase A dtype {f32, f16, bf16}.
+- TSIR Loop 2 — Step 1 oracle increment for literal-epsilon `rms_norm`:
+  new `tryRmsNorm` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig` consumes the
+  `SemanticBody.rms_norm` contract, validates input/scale/output roles,
+  hidden/reduction axes, strict f32 sum-of-squares reduction semantics,
+  and equal {f32, f16, bf16} dtypes, then computes
+  `output[d] = input[d] * rsqrt(mean(input^2) + epsilon) * scale[d]`.
+  The executable wedge is deliberately limited to `literal_f32` epsilon;
+  `uniform_field` epsilon still falls through to `NotImplemented` until
+  scalar/uniform value plumbing is represented in TSIR inputs. Focused
+  tests cover the positive f32 literal-epsilon path plus the uniform-eps
+  fail-closed path. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir` and
+  `zig build test-wgsl`.
+- TSIR Loop 2 — RMSNorm semantic-body contract: `SemanticBody` now carries
+  an optional `rms_norm` payload, mirrored in
+  `config/doe-tsir-semantic.schema.json` as `body.rmsNorm` and required
+  when `body.op == "rms_norm"`. The contract names the Phase A formula
+  (`sum_squares_mean_epsilon_rsqrt_scale`), epsilon source
+  (`uniform:u.eps` or a future literal), hidden extent axis, and
+  `intermediate_scalar` reduction target so RMSNorm execution is no longer
+  inferred from operand roles alone. `digest.zig` includes the payload in
+  canonical semantic bytes only when present, preserving non-RMS body
+  digests. The WGSL frontend attaches the payload to the bootstrap
+  RMSNorm shape while keeping the coarse family hint at `.reduction`;
+  `runtime/zig/tests/tsir/bootstrap/rms_norm.tsir-semantic.json` and notes
+  were updated to record the contract. This is not an RMSNorm oracle pass:
+  executable node-level square / scalar-tail / rsqrt / post-scale dataflow
+  is still rejected until a later increment. Verified with
+  `zig test test_suite_wgsl.zig --test-filter tsir`,
+  `zig build test-wgsl`, and
+  `python3 -m unittest bench.tests.test_config_schemas`.
+- TSIR Loop 2 — Step 1 oracle dtype coverage for `fused_gemv` +
+  `gather`: four focused tests added in
+  `runtime/zig/src/tsir/reference_interpreter.zig` exercising the
+  f16 and bf16 upcast/downcast paths through `readF32FromBytes` /
+  `writeF32AsElem`. fused_gemv f16/bf16 cases use `[1,2]×[2,2]` with
+  exactly-representable small integers so the f32 accumulator plus
+  declared-output-dtype downcast produces a bit-exact expected value.
+  gather f16/bf16 cases confirm row-copy preserves byte-level identity
+  through the declared element dtype. Tick 1 already wired the
+  recognizers to admit all three Phase A dtypes; this tick closes the
+  declared contract by covering the two dtypes tick 1 left untested.
+  `zig build test-wgsl` passes. No recognizer or schema change. Cites
+  `docs/tsir-lowering-plan.md` Step 1 and `docs/loop-protocol.md`
+  Loop 2 protocol (stop-until-green wedge on the existing step). The
+  `rms_norm` bootstrap family remains blocked on Step 3 schema
+  extensions per its own `notes.md`; oracle correctly returns
+  `NotImplemented` for it under the current semantic, which is the
+  fail-closed behavior plan §5 rule 4 requires.
+- TSIR Loop 2 — Step 1 oracle increment for `gather`: new
+  `tryGather` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches
+  `SemanticBody{op=gather}` with indices/table/output binding roles and
+  token/hidden axis roles. It requires `u32` indices shaped `[T]`, a
+  table shaped `[V, H]`, output shaped `[T, H]`, table/output dtype
+  equality over {f32, f16, bf16}, row-major axes `[token, hidden]`, no
+  reductions, and no collectives. Computation copies
+  `table[indices[t], h]` into `output[t, h]`; out-of-range indices fall
+  through to `NotImplemented` rather than clamping or wrapping. Focused
+  tests cover a positive f32 row-copy case with SHA-256 reference hash
+  validation and a negative out-of-range rejection case. `zig test
+  test_suite_wgsl.zig --test-filter tsir` passes. RMSNorm remains
+  intentionally unexecuted until TSIR body semantics declare epsilon,
+  sum-of-squares formula, and intermediate reduction target semantics.
+- TSIR Loop 2 — Step 1 oracle increment for `fused_gemv`: new
+  `tryFusedGemv` dispatch path in
+  `runtime/zig/src/tsir/reference_interpreter.zig`. Recognizer matches
+  the `SemanticBody{op=fused_gemv}` shape declared by the bootstrap
+  catalog fixture at
+  `runtime/zig/tests/tsir/bootstrap/fused_gemv.tsir-semantic.json` —
+  three bindings with matrix/vector/output roles, two axes with
+  output/reduction roles, one sum reduction with f32 accumulation and
+  `strict_ordered` associativity, equal dtype across {f32, f16, bf16}
+  on all three bindings, `[M, K]` matrix + `[K]` vector + `[M]` output,
+  row-major axes `[output, reduction]`. Computation is the left-fold
+  `y[i] = Σ_k W[i, k] · x[k]` in an f32 accumulator, written through
+  the declared output dtype. `associative_allowed` with a declared
+  tree shape falls through (future wedge). Two focused tests in
+  `reference_interpreter.zig`: positive 2×3 f32 case validating the
+  exact dot-product values and the SHA-256 reference hash, plus a
+  negative fall-through test that leaves `SemanticBody.op` at
+  `.unknown` and confirms `NotImplemented`. `zig build test-wgsl`
+  passes. Cites `docs/tsir-lowering-plan.md` Step 1 + Step 1.5 and
+  `docs/loop-protocol.md` Loop 2 protocol. No schema change; the
+  recognizer consumes the already-landed `SemanticBody`.
+- TSIR Loop 2 — mechanical CSL skeleton emitter: new
+  `runtime/zig/src/tsir/emit_csl.zig` exposes
+  `tsir.emit_csl.emit(...)` for checked realization artifacts and
+  `tsir.emit_csl.emitFunction(...)` for a direct `RealizationFunction`
+  plus target descriptor. The emitter validates the descriptor hash,
+  refuses realization-level rejections, and writes deterministic
+  `layout.csl` / `pe_program.csl` skeleton contract text that records
+  PE grid, tile factors, residency decisions, collectives, reductions,
+  target descriptor hash, and emitter params. This is contract
+  serialization only: it does not inspect kernel-family hints and does
+  not emit executable kernel bodies yet. Focused coverage lives in
+  `runtime/zig/tests/wgsl/tsir_emit_csl_test.zig`; `zig build
+  test-wgsl` passes.
+- TSIR manifest/AOT binding helper: `bench/tools/tsir_manifest_lowering.py`
+  now builds and validates a schema-backed manifest lowering entry from
+  `tsirSemanticDigest`, `tsirRealizationDigest`, `emitterDigest`,
+  `targetDescriptorCorrectnessHash`, frontend/compiler pins, backend,
+  kernel ref, exactness, and rejection taxonomy inputs. The helper rejects
+  malformed lowercase-hex digests, duplicate rejection reasons, unsupported
+  exactness/taxonomy values, and schema-invalid entries before emitting
+  canonical JSON or a `manifestLoweringEntryDigest`. The
+  `config/doe-tsir-manifest-lowering.schema.json` exactness contract now
+  fail-closes per class and requires unique algorithm invariants and rejection
+  reasons. Focused coverage lives in
+  `bench/tests/test_tsir_manifest_lowering.py`. This is a bench-tool binding
+  increment only: no runtime Zig, backend execution, or manifest loader path
+  changed.
+- TSIR Step 5/6 — first executable planner increment: new
+  `runtime/zig/src/tsir/planner.zig` exports
+  `tsir.planner.planRealization(allocator, semantic, descriptor, options)`.
+  The pass emits deterministic `RealizationFunction` records from TSIR
+  semantic plus a target descriptor: first-fit tile factors, WebGPU/WSE-3
+  PE-grid choice, per-binding residency decisions, target descriptor hashes,
+  reduction tree choices for `associative_allowed` reductions, native
+  collective realization nodes, and typed rejection entries for PE-budget,
+  target-dtype, and missing-collective failures. Loader-owned streaming is an
+  explicit option (`LoaderCapabilities.fabric_streaming` /
+  `max_stream_chunk_bytes`), so `fabric_streamed` is never selected as a hidden
+  fallback when packaging has not declared it. Focused coverage lives in
+  `runtime/zig/tests/wgsl/tsir_planner_test.zig`; `zig build test-wgsl`
+  passes.
+- TSIR parity CLI schema gate: `bench/tools/doe_parity.py` now validates the
+  generated receipt dictionary against
+  `config/doe-parity-receipt.schema.json` before writing it. Invalid receipt
+  state (for example an unknown comparison status) fails closed with a schema
+  path, and `bench/tests/test_doe_parity.py` now locks both a valid generated
+  receipt and the invalid-status rejection. This does not add backend
+  execution, oracle execution, manifest binding, or a parity pass claim.
+- Loop 2 plan doc-only update: `docs/tsir-lowering-plan.md` now splits Loop 2
+  TSIR machinery into explicit compiler-only subloops while preserving the
+  one-committable-increment rule, rollout order, and Loop 2 / Loop 3 boundary.
+  This is process documentation only: no TSIR schema, compiler output, parity
+  receipt, Cerebras SDK run, or Doppler manifest binding changed.
 
 ## Scope
 
