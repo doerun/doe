@@ -81,10 +81,16 @@ WGSL IR -> TSIR semantic -> TSIR realization -> mechanical CSL emitter
 
 with a parity oracle defined against TSIR rather than against any backend.
 
-That planned architecture is documented in
-[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md). The current in-tree
-`runtime/zig/src/tsir/` surface is scaffolding for that plan, not a completed
-replacement for the classifier/template path described in this document.
+That architecture is documented in
+[`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md); live status is in
+[`docs/status/tsir.md`](./status/tsir.md). The in-tree
+`runtime/zig/src/tsir/` surface is the Phase A compiler surface for that
+plan — schema, digests, frontend, residency planner, reference interpreter,
+and mechanical skeleton emitters for five backends (including a TSIR-to-CSL
+skeleton). It is not yet a completed replacement for the classifier/template
+path described in this document: skeleton emitters produce contract text
+rather than executable kernel bodies, and the live CSL lane still routes
+through the classifier.
 
 ## SDK complete-program implication
 

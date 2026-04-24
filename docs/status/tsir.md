@@ -107,6 +107,22 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: refresh TSIR framing in `docs/csl-architecture.md`
+  §Planned TSIR generalization. Paragraph said "The current in-tree
+  `runtime/zig/src/tsir/` surface is scaffolding for that plan" —
+  "scaffolding" understated the Phase A compiler surface that
+  landed (full schema, digests, frontend, planner, reference
+  interpreter, and mechanical skeleton emitters for five backends
+  including the CSL skeleton). Rewrote to name the landed
+  capability while preserving accurate framing that TSIR is not
+  yet a completed replacement for the classifier/template CSL
+  lane (skeleton emitters produce contract text, classifier
+  remains the live CSL path). Added pointer to
+  `docs/status/tsir.md` for live status. Same drift class as
+  ticks 27/28/34/35/37/38; this is now the seventh doc updated in
+  this class. Strategy-leak gate PASS, doc-link coverage PASS.
+  Cites `docs/tsir-lowering-plan.md` §Current scaffold + §Related
+  to current Doe docs, and `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: refresh TSIR framing in `docs/architecture.md` and
   `docs/shader-compiler-architecture.md`. Both had "planned" TSIR
   language — accurate when written (pre-Phase-A), but stale after
