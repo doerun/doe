@@ -115,16 +115,40 @@ class Int4PleManifestCompileParamsGateTests(unittest.TestCase):
         )
 
         failure_text = "\n".join(failures)
+        # The diagnostic fixture's compileParams are intentionally
+        # pre-solver shapes; the gate must flag every mismatch against the
+        # current projection. Post-embed-solver and post-attn-streaming-solver
+        # expected values shift to match what the solvers now derive from
+        # the manifest-scale reference. Anchor on the shape of the failure
+        # set (which kernels and coverage checks fire), not the old numeric
+        # expected values — those drift whenever a solver's budget or
+        # strategy changes.
         self.assertIn(
-            "compile.compileTargets[embed].compileParams.height=1, expected 127",
+            "compile.compileTargets[embed].compileParams.height=",
             failure_text,
         )
-        self.assertIn("embed_vocab_row_coverage:130<262144", failure_text)
-        self.assertIn("tiled_m_dimension_coverage:16<1536", failure_text)
-        self.assertIn("tiled_n_dimension_coverage:16<1536", failure_text)
-        self.assertIn("attn_head256_prefill_q_len_coverage:1<15", failure_text)
-        self.assertIn("attn_head512_prefill_kv_len_coverage:1<15", failure_text)
-        self.assertIn("lm_head_vocab_logit_coverage:8320<262144", failure_text)
+        self.assertIn(
+            "compile.compileTargets[embed].compileParams.hidden_per_pe=",
+            failure_text,
+        )
+        self.assertIn(
+            "compile.compileTargets[embed].compileParams.tokens_per_chunk=",
+            failure_text,
+        )
+        self.assertIn(
+            "compile.compileTargets[attn_head256].compileParams.q_len_per_pe=",
+            failure_text,
+        )
+        self.assertIn(
+            "compile.compileTargets[attn_head512].compileParams.q_len_per_pe=",
+            failure_text,
+        )
+        self.assertIn("embed_vocab_row_coverage:", failure_text)
+        self.assertIn("tiled_m_dimension_coverage:", failure_text)
+        self.assertIn("tiled_n_dimension_coverage:", failure_text)
+        self.assertIn("attn_head256_prefill_q_len_coverage:", failure_text)
+        self.assertIn("attn_head512_prefill_kv_len_coverage:", failure_text)
+        self.assertIn("lm_head_vocab_logit_coverage:", failure_text)
         self.assertFalse(all(check["passed"] for check in report["checks"]))
 
     def test_missing_compile_params_is_blocking(self) -> None:

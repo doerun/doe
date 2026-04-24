@@ -17,6 +17,21 @@ DEFAULT_DECODE_KV_CHUNK = 1
 EMBED_PE_DATA_BUDGET_BYTES = 32 * 1024
 EMBED_DEFAULT_TOKENS_PER_CHUNK = 16
 
+# attn_head{256,512} streaming-KV per-PE budget. Measured empirically from
+# bench/out/cslc-attn-streaming-probe/probe-result.json against WSE-3 SDK
+# 2.10's `.blocked_ut_ival` ceiling (~63 KiB). The probe's failing/working
+# bracket put the real `.data.hi` overflow point for attention between
+# 20 and 24 KiB once you account for the m_state/l_state arrays, stack,
+# memcpy framework overhead, and intermediate registers that 32-KiB-budget
+# solvers do not see. 20 KiB is under the empirical bracket with margin
+# and matches every (block_size, q_len_per_pe) pair the probe reported as
+# compiling clean. The streaming solver picks (qLenPerPe, blockSize) such
+# that (qLenPerPe + blockSize) * head_dim * 4 ≤ ATTN_PE_DATA_BUDGET_BYTES.
+ATTN_PE_DATA_BUDGET_BYTES = 20 * 1024
+# Candidate block sizes the solver considers, in preference order
+# (larger block = fewer host dispatches per kv_len).
+ATTN_BLOCK_SIZE_CANDIDATES = (16, 8, 4, 2, 1)
+
 
 def ceil_div(numerator: int, denominator: int) -> int:
     if denominator <= 0:
@@ -106,6 +121,97 @@ def solve_embed_chunked_dispatch(
                     "gridWidth": grid_width,
                 }
     return None
+
+
+def solve_attention_streaming(
+    *,
+    grid_width: int,
+    head_dim: int,
+    q_len: int,
+    kv_len: int,
+    budget_bytes: int = ATTN_PE_DATA_BUDGET_BYTES,
+) -> dict[str, int] | None:
+    """Pick (qLenPerPe, blockSize) for the streaming-KV tiled attention kernel
+    such that the per-PE footprint fits.
+
+    Constraints:
+      * qLenPerPe = ceil(q_len / grid_width)         (cover full query)
+      * blockSize ≤ kv_len                            (block fits inside the KV)
+      * (qLenPerPe + blockSize) * head_dim * 4 ≤ budget_bytes
+
+    Strategy: qLenPerPe is fixed by the coverage constraint. Pick the largest
+    blockSize from ATTN_BLOCK_SIZE_CANDIDATES that fits the budget; this
+    minimizes host dispatch count (`ceil(kv_len / blockSize)`). If even
+    blockSize=1 overflows, returns None — the pre-streaming shape is
+    genuinely unrescueable at this grid and head_dim.
+    """
+    if (
+        grid_width <= 0
+        or head_dim <= 0
+        or q_len <= 0
+        or kv_len <= 0
+        or budget_bytes <= 0
+    ):
+        return None
+    q_len_per_pe = max(1, ceil_div(q_len, grid_width))
+    max_block = (budget_bytes // (head_dim * 4)) - q_len_per_pe
+    if max_block < 1:
+        return None
+    block_candidates = [
+        bs for bs in ATTN_BLOCK_SIZE_CANDIDATES
+        if bs <= max_block and bs <= kv_len
+    ]
+    if not block_candidates:
+        return None
+    block_size = block_candidates[0]
+    tile_count = ceil_div(kv_len, block_size)
+    footprint = (q_len_per_pe + block_size) * head_dim * 4
+    return {
+        "blockSize": block_size,
+        "qLenPerPe": q_len_per_pe,
+        "width": grid_width,
+        "tileCount": tile_count,
+        "perPeFootprintBytes": footprint,
+        "budgetBytes": budget_bytes,
+    }
+
+
+def attention_compile_params(
+    *,
+    grid_width: int,
+    head_dim: int,
+    q_len: int,
+    kv_len: int,
+) -> dict[str, Any]:
+    """Build the compileParams dict for an `attn_head{256,512}` prefill kernel.
+
+    Emits the legacy `(block_size, head_dim, kv_len, q_len)` knobs so the
+    cslc contract stays stable, and — when the streaming solver finds a
+    feasible `(qLenPerPe, blockSize)` — also emits the streaming knobs the
+    emitter now needs (`q_len_per_pe`, `block_size` bound below the legacy
+    default, plus `width`). When the solver fails, falls back to the legacy
+    knobs only; the compile will then fail with the pre-streaming
+    `.bss`/`.data.hi` overflow signature and the host Python runner's
+    streaming contract will report the unrescueable shape.
+    """
+    tuple_ = solve_attention_streaming(
+        grid_width=grid_width,
+        head_dim=head_dim,
+        q_len=q_len,
+        kv_len=kv_len,
+    )
+    params: dict[str, Any] = {
+        "head_dim": head_dim,
+        "kv_len": kv_len,
+        "q_len": q_len,
+    }
+    if tuple_ is not None:
+        params["block_size"] = tuple_["blockSize"]
+        params["q_len_per_pe"] = tuple_["qLenPerPe"]
+        params["width"] = tuple_["width"]
+    else:
+        params["block_size"] = min(ATTENTION_PREFILL_BLOCK_SIZE, q_len)
+    return params
 
 
 def reference_prompt_token_count(reference: dict[str, Any]) -> int:
@@ -249,18 +355,18 @@ def manifest_compile_param_projection(
             "head_dim": head_dim,
             "kv_chunk": DEFAULT_DECODE_KV_CHUNK,
         },
-        "attn_head256": {
-            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
-            "head_dim": head_dim,
-            "kv_len": attention_tokens,
-            "q_len": attention_tokens,
-        },
-        "attn_head512": {
-            "block_size": min(ATTENTION_PREFILL_BLOCK_SIZE, attention_tokens),
-            "head_dim": global_head_dim,
-            "kv_len": attention_tokens,
-            "q_len": attention_tokens,
-        },
+        "attn_head256": attention_compile_params(
+            grid_width=grid_width,
+            head_dim=head_dim,
+            q_len=attention_tokens,
+            kv_len=attention_tokens,
+        ),
+        "attn_head512": attention_compile_params(
+            grid_width=grid_width,
+            head_dim=global_head_dim,
+            q_len=attention_tokens,
+            kv_len=attention_tokens,
+        ),
     }
     compile_scale = {
         "embedDistinctPeProgramCount": pe_count,

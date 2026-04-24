@@ -21,6 +21,20 @@ robustness).
   The capture tool accepts explicit model labels/capture IDs while preserving
   the Gemma-4 E2B default path, and `config/schema-targets.json` registers the
   Gemma 3 graph against `config/doe-webgpu-capture-graph.schema.json`.
+- Gemma 3 1B Program Bundle -> Doe shared contract -> Doe WebGPU transcript
+  plumbing is now materialized at:
+  `bench/out/doppler-reference/gemma-3-1b-shared-execution-contract.json`,
+  `bench/out/doppler-reference/gemma-3-1b-doe-webgpu-transcript.json`, and
+  `bench/out/doppler-reference/gemma-3-1b-doe-webgpu-shared-execution-parity.json`.
+  The source manifest, execution graph, and input-set hashes match the
+  Program Bundle reference, and the prompt contract preserves Gemma chat
+  templating.
+- Gemma 3 1B is still not green through Doe WebGPU. The current transcript
+  emits token `[1]` and stops after one decode step, while the Program Bundle
+  reference emits eight tokens and stops by `decode_steps_exhausted`. KV/cache
+  byte readback is captured, but all layer key/value digests are zero-buffer
+  digests; receipts now classify that as `realKvCache=false` rather than
+  promotion evidence.
 
 ## Current state
 
@@ -48,7 +62,8 @@ robustness).
 - WGSL semantic-analysis and/or SPIR-V emission gaps still block some real
   Doppler kernels in the shared-contract lane.
 - Mixed subgroup and non-subgroup entrypoints remain a real compiler surface.
-- Real KV/cache evidence is still not emitted in the WebGPU transcript path.
+- Real non-zero KV/cache evidence is still not emitted in the WebGPU transcript
+  path; current Gemma 3 1B readbacks prove zero cache writes on the Doe lane.
 
 ## Landed infrastructure
 

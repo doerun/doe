@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import subprocess
 import sys
@@ -312,12 +313,21 @@ def export_command(
 
 def kv_cache_evidence(exporter_receipt: dict[str, Any]) -> dict[str, Any]:
     evidence = exporter_receipt.get("kvCacheEvidence")
-    if (
-        isinstance(evidence, dict)
-        and evidence.get("status") == "output_ready"
-        and evidence.get("realKvCache") is True
-    ):
-        return evidence
+    if isinstance(evidence, dict):
+        if (
+            evidence.get("status") == "output_ready"
+            and evidence.get("realKvCache") is True
+            and kv_evidence_has_nonzero_bytes(evidence)
+        ):
+            return evidence
+        preserved = dict(evidence)
+        preserved["status"] = "not_captured"
+        preserved["realKvCache"] = False
+        preserved["blocker"] = preserved.get("blocker") or (
+            "KV/cache byte proof contains only zero key/value buffers; "
+            "cache writes were not proven."
+        )
+        return preserved
     return {
         "status": "not_captured",
         "realKvCache": False,
@@ -326,6 +336,47 @@ def kv_cache_evidence(exporter_receipt: dict[str, Any]) -> dict[str, Any]:
             "for the shared execution contract."
         ),
     }
+
+
+def positive_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return parsed if parsed > 0 else 0
+
+
+def normalize_digest(value: Any) -> str:
+    text = str(value or "")
+    return text[7:] if text.startswith("sha256:") else text
+
+
+def zero_digest(byte_length: int) -> str:
+    return hashlib.sha256(bytes(byte_length)).hexdigest()
+
+
+def digest_proves_nonzero(digest: Any, byte_length: Any) -> bool:
+    size = positive_int(byte_length)
+    if size == 0:
+        return False
+    text = normalize_digest(digest)
+    return bool(text) and text != "pending" and text != zero_digest(size)
+
+
+def kv_evidence_has_nonzero_bytes(evidence: dict[str, Any]) -> bool:
+    byte_digests = evidence.get("byteDigests")
+    if not isinstance(byte_digests, list):
+        return False
+    for layer in byte_digests:
+        if not isinstance(layer, dict):
+            continue
+        if digest_proves_nonzero(layer.get("keyDigest"), layer.get("keyBytes")):
+            return True
+        if digest_proves_nonzero(layer.get("valueDigest"), layer.get("valueBytes")):
+            return True
+    return False
 
 
 def failed_receipt(

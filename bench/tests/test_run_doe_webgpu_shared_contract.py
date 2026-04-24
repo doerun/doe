@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +9,7 @@ from bench.tools.run_doe_csl_int4ple_transcript import load_json, schema_failure
 from bench.tools.run_doe_webgpu_shared_contract import (
     build_receipt,
     export_command,
+    kv_cache_evidence,
 )
 
 
@@ -124,6 +126,8 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
                         {
                             "layer": 0,
                             "seqLen": 3,
+                            "keyBytes": 4,
+                            "valueBytes": 4,
                             "keyDigest": "sha256:" + ("3" * 64),
                             "valueDigest": "sha256:" + ("4" * 64),
                         }
@@ -203,6 +207,31 @@ class TestRunDoeWebgpuSharedContract(unittest.TestCase):
             self.assertEqual(receipt["runtimeRun"]["jsExecutable"], "node")
             self.assertEqual(receipt["kvCacheEvidence"]["status"], "output_ready")
             self.assertTrue(receipt["kvCacheEvidence"]["realKvCache"])
+
+    def test_zero_kv_digest_is_not_real_cache_evidence(self) -> None:
+        zero_digest = "sha256:" + hashlib.sha256(bytes(4)).hexdigest()
+        evidence = kv_cache_evidence(
+            {
+                "kvCacheEvidence": {
+                    "status": "output_ready",
+                    "realKvCache": True,
+                    "blocker": "",
+                    "byteDigests": [
+                        {
+                            "layer": 0,
+                            "seqLen": 1,
+                            "keyBytes": 4,
+                            "valueBytes": 4,
+                            "keyDigest": zero_digest,
+                            "valueDigest": zero_digest,
+                        }
+                    ],
+                }
+            }
+        )
+        self.assertEqual(evidence["status"], "not_captured")
+        self.assertFalse(evidence["realKvCache"])
+        self.assertIn("zero", evidence["blocker"])
 
 
 if __name__ == "__main__":

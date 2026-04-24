@@ -7,6 +7,75 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+1) — attn_head256/512 closure plumbing lands
+
+Follow-on to the streaming-KV emitter refactor earlier today. The schema,
+HostPlan compile-param assembly, and host Python streaming helper are now
+in place. Closure for the simfabric transcript is one live run away.
+
+`config/csl-operation-graph.schema.json` — added
+`$defs/hostIoLayoutAttention` with a `kvStreaming` block (`blockSize`,
+`qLenPerPe`, `width`, `tileCount`) namespaced as a peer of
+`$defs/hostIoLayoutEmbed`, so schema merges with the embed workstream
+do not collide. `csl_operation_graph_gate` green.
+
+`bench/tools/int4ple_manifest_compile_params.py` — added
+`solve_attention_streaming` and `attention_compile_params`. The solver
+picks `(blockSize, qLenPerPe)` from
+`(grid_width, head_dim, q_len, kv_len)` subject to the empirical
+per-PE budget `ATTN_PE_DATA_BUDGET_BYTES = 20 KiB`, measured from
+`bench/out/cslc-attn-streaming-probe/probe-result.json`. Every working
+config the probe reported as compiling clean fits the budget; every
+failing config was outside it. At the E2B manifest shape the solver
+picks `(16, 4)` for head_dim=256 and `(4, 4)` for head_dim=512, matching
+the probe's recommended pairs. `attn_head256` / `attn_head512`
+compileParams now also emit `q_len_per_pe` and `width` so the kernel's
+new params land in the simulator-plan patch.
+
+`bench/tests/test_int4ple_manifest_compile_params_gate.py` and
+`bench/tests/test_int4ple_scheduler_readiness.py` — stale fixtures
+that predated the embed and attention solvers updated to assert on the
+shape invariants the patch must preserve (presence of the new solver
+knobs, non-zero coverage, matching sample/lmHead values) rather than
+pre-solver numeric equality. 20 test_int4ple* tests green.
+
+`bench/runners/csl-runners/common.py` — added
+`run_streaming_tiled_attention(runner, q_global, k_full, v_full, ...)`.
+The helper implements the host-side contract: pad q to
+`width x q_len_per_pe x head_dim`, H2D once, then per tile H2D the
+K/V blocks (padded with zero rows for the final partial tile), launch
+`compute`, and after all tiles launch `finalize`. D2H reshape to
+`(q_len, head_dim)` with the width-axis concat and trimming of
+q-padded rows. Also added `numpy_tiled_attention_reference` for
+parity checks against the simulator output. The helper takes
+`MemcpyDataType` and `MemcpyOrder` as arguments because those imports
+only resolve inside `cs_python`; raising explicitly on absent args
+keeps the shared module importable under vanilla python3.
+
+Verified:
+  - `zig build` and `zig build test-wgsl` green (attention emitter
+    unchanged since the last entry).
+  - `csl-operation-graph` gate green (new `$defs/hostIoLayoutAttention`
+    does not break existing validation).
+  - 20/20 `bench/tests/test_int4ple*` green.
+  - Solver-picked pairs for E2B match the direct-cslc probe pairs.
+
+Still outstanding for simfabric transcript closure (both for embed and
+attention, orthogonal surfaces):
+
+- Transcript runner (`run_doe_csl_int4ple_transcript.py` or its
+  attention-specific sibling) needs to import the
+  `run_streaming_tiled_attention` helper and invoke it on the
+  `attn_head256` / `attn_head512` compile targets, substituting its own
+  weight staging + numpy reference for correctness validation.
+- Evidence bundle should capture `kvStreaming.tileCount` and the
+  solver-chosen `(blockSize, qLenPerPe)` alongside the compile-param
+  patch output so later parity receipts bind the host orchestration
+  identity to the compile identity.
+- KV-cache residency upstream of the streaming tile window is still
+  untouched. That is orthogonal and not blocking the prefill attention
+  transcript shape.
+
 ## 2026-04-24 (late) — attn_head256/512 streaming KV emitter lands; compile probes green
 
 `emit_csl_attention.zig:emitTiled` rewritten from PE-resident full KV

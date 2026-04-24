@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any
@@ -135,19 +136,47 @@ def real_kv_cache_used_webgpu(receipt: dict[str, Any]) -> bool:
     kv = receipt.get("kvCacheEvidence") or {}
     if kv.get("status") != "output_ready" or kv.get("realKvCache") is not True:
         return False
-    byte_digest = kv.get("byteDigest")
-    if isinstance(byte_digest, str) and byte_digest not in {"", "pending"}:
-        return True
-    byte_digests = kv.get("byteDigests")
-    if isinstance(byte_digests, list) and byte_digests:
-        return True
-    layer_digest_count = kv.get("layerDigestCount")
-    if (
-        isinstance(layer_digest_count, int)
-        and not isinstance(layer_digest_count, bool)
-        and layer_digest_count > 0
-    ):
-        return True
+    return kv_evidence_has_nonzero_bytes(kv)
+
+
+def positive_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return parsed if parsed > 0 else 0
+
+
+def normalize_digest(value: Any) -> str:
+    text = str(value or "")
+    return text[7:] if text.startswith("sha256:") else text
+
+
+def zero_digest(byte_length: int) -> str:
+    return hashlib.sha256(bytes(byte_length)).hexdigest()
+
+
+def digest_proves_nonzero(digest: Any, byte_length: Any) -> bool:
+    size = positive_int(byte_length)
+    if size == 0:
+        return False
+    text = normalize_digest(digest)
+    return bool(text) and text != "pending" and text != zero_digest(size)
+
+
+def kv_evidence_has_nonzero_bytes(evidence: dict[str, Any]) -> bool:
+    byte_digests = evidence.get("byteDigests")
+    if not isinstance(byte_digests, list):
+        return False
+    for layer in byte_digests:
+        if not isinstance(layer, dict):
+            continue
+        if digest_proves_nonzero(layer.get("keyDigest"), layer.get("keyBytes")):
+            return True
+        if digest_proves_nonzero(layer.get("valueDigest"), layer.get("valueBytes")):
+            return True
     return False
 
 

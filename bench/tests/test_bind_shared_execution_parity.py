@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -62,6 +63,16 @@ class TestBindSharedExecutionParity(unittest.TestCase):
                     "byteDigest": "sha256:" + ("1" * 64),
                     "layerDigestCount": 26,
                     "seqLen": 15,
+                    "byteDigests": [
+                        {
+                            "layer": 0,
+                            "seqLen": 15,
+                            "keyBytes": 4,
+                            "valueBytes": 4,
+                            "keyDigest": "sha256:" + ("2" * 64),
+                            "valueDigest": "sha256:" + ("3" * 64),
+                        }
+                    ],
                 },
             }
             write_json(left_path, reference)
@@ -73,6 +84,35 @@ class TestBindSharedExecutionParity(unittest.TestCase):
             self.assertTrue(promotion["sourceProgramMatched"])
             self.assertTrue(right_run["realKvCacheUsed"])
             self.assertTrue(promotion["realKvCacheUsedOnExecutableLane"])
+
+    def test_webgpu_zero_kv_digest_does_not_count_as_real_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            path = tmp_path / "webgpu.json"
+            zero_digest = "sha256:" + hashlib.sha256(bytes(4)).hexdigest()
+            webgpu = {
+                "status": "output_ready",
+                "sourceProgram": {},
+                "webgpuTranscript": {"decodeTranscript": {}},
+                "kvCacheEvidence": {
+                    "status": "output_ready",
+                    "realKvCache": True,
+                    "blocker": "",
+                    "byteDigests": [
+                        {
+                            "layer": 0,
+                            "seqLen": 1,
+                            "keyBytes": 4,
+                            "valueBytes": 4,
+                            "keyDigest": zero_digest,
+                            "valueDigest": zero_digest,
+                        }
+                    ],
+                },
+            }
+            write_json(path, webgpu)
+            run = normalize_run("doe_webgpu_transcript", path, webgpu)
+            self.assertFalse(run["realKvCacheUsed"])
 
     def test_schema_accepts_normalized_receipt_shape(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -396,6 +396,35 @@ function buildRuntimeConfig(baseRuntimeConfig, args) {
   });
 }
 
+const zeroDigestCache = new Map();
+
+function normalizeDigest(value) {
+  const text = String(value ?? '');
+  return text.startsWith('sha256:') ? text.slice('sha256:'.length) : text;
+}
+
+function zeroDigest(byteLength) {
+  const size = Number(byteLength);
+  if (!Number.isInteger(size) || size < 1) return null;
+  if (!zeroDigestCache.has(size)) {
+    zeroDigestCache.set(size, sha256Bytes(Buffer.alloc(size)));
+  }
+  return zeroDigestCache.get(size);
+}
+
+function digestProvesNonZero(digest, byteLength) {
+  const normalized = normalizeDigest(digest);
+  const zero = zeroDigest(byteLength);
+  return normalized.length > 0 && normalized !== 'pending' && zero !== null && normalized !== zero;
+}
+
+function kvProofHasNonZeroBytes(layers) {
+  return layers.some((layer) => (
+    digestProvesNonZero(layer?.keyDigest, layer?.keyBytes)
+    || digestProvesNonZero(layer?.valueDigest, layer?.valueBytes)
+  ));
+}
+
 function buildKvCacheEvidence(proof) {
   if (!proof || typeof proof !== 'object') {
     return {
@@ -409,10 +438,13 @@ function buildKvCacheEvidence(proof) {
     const value = Number(layer?.seqLen);
     return Number.isFinite(value) ? Math.max(max, Math.floor(value)) : max;
   }, 0);
+  const hasNonZeroBytes = kvProofHasNonZeroBytes(layers);
   return {
-    status: 'output_ready',
-    realKvCache: true,
-    blocker: '',
+    status: hasNonZeroBytes ? 'output_ready' : 'not_captured',
+    realKvCache: hasNonZeroBytes,
+    blocker: hasNonZeroBytes
+      ? ''
+      : 'KV/cache byte proof contains only zero key/value buffers; cache writes were not proven.',
     mode: proof.mode ?? 'sha256-layer-kv-bytes',
     layout: proof.layout ?? null,
     kvDtype: proof.kvDtype ?? null,

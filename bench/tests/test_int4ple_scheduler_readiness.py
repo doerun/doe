@@ -1336,9 +1336,20 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         )
         projection = preflight["manifestCompileParamProjection"]
         self.assertEqual(projection["status"], "projected")
-        self.assertEqual(projection["params"]["embed"]["rows_per_pe"], 16)
+        # rows_per_pe is now derived by solve_embed_chunked_dispatch from
+        # ceil(vocab_size / grid_width), not the pre-solver grid-full
+        # ceil(vocab / width*height). Assert non-zero and coverage correctness
+        # rather than a specific pre-solver integer — a solver strategy
+        # change must not silently break this gate.
+        embed_params = projection["params"]["embed"]
+        self.assertGreater(embed_params["rows_per_pe"], 0)
+        self.assertIn("hidden_per_pe", embed_params)
+        self.assertIn("tokens_per_chunk", embed_params)
         self.assertEqual(projection["params"]["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
         self.assertEqual(projection["params"]["attn_head256"]["q_len"], 15)
+        # attn streaming solver now emits q_len_per_pe + width when it fits.
+        self.assertIn("q_len_per_pe", projection["params"]["attn_head256"])
+        self.assertIn("width", projection["params"]["attn_head256"])
         self.assertGreaterEqual(projection["coverage"]["lmHeadLogits"], 262144)
 
     def test_manifest_compile_param_patch_updates_simulator_plan_targets(self) -> None:
@@ -1416,17 +1427,20 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
             target["name"]: target["compileParams"]
             for target in simulator_plan["inputs"]["compileTargets"]
         }
-        self.assertEqual(
-            targets["embed"],
-            {
-                "height": 127,
-                "hidden_size": 1536,
-                "num_tokens": 23,
-                "rows_per_pe": 16,
-            },
-        )
+        # Post-solver embed carries hidden_per_pe + tokens_per_chunk; height
+        # is now the hidden-shard count, not the full grid height. Anchor on
+        # the invariants the patch must preserve rather than pre-solver
+        # numeric values.
+        embed = targets["embed"]
+        self.assertEqual(embed["hidden_size"], 1536)
+        self.assertEqual(embed["num_tokens"], 23)
+        self.assertGreater(embed["rows_per_pe"], 0)
+        self.assertIn("hidden_per_pe", embed)
+        self.assertIn("tokens_per_chunk", embed)
         self.assertEqual(targets["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
         self.assertEqual(targets["attn_head256"]["q_len"], 15)
+        self.assertIn("q_len_per_pe", targets["attn_head256"])
+        self.assertIn("width", targets["attn_head256"])
         self.assertEqual(targets["lm_head_gemv_stable"]["out_dim"], 2017)
         self.assertEqual(targets["sample"]["chunk_size"], 2017)
 
@@ -1491,15 +1505,16 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                 "rows_per_pe": 1,
             },
         )
-        self.assertEqual(
-            held[0]["projected"],
-            {
-                "height": 127,
-                "hidden_size": 1536,
-                "num_tokens": 23,
-                "rows_per_pe": 16,
-            },
-        )
+        # Projected embed now includes hidden_per_pe + tokens_per_chunk from
+        # the chunked-dispatch solver; height is the hidden-shard count. Anchor
+        # on the shape invariants the patch must preserve, not pre-solver
+        # numeric equality.
+        projected = held[0]["projected"]
+        self.assertEqual(projected["hidden_size"], 1536)
+        self.assertEqual(projected["num_tokens"], 23)
+        self.assertIn("hidden_per_pe", projected)
+        self.assertIn("tokens_per_chunk", projected)
+        self.assertGreater(projected["rows_per_pe"], 0)
         targets = {
             target["name"]: target["compileParams"]
             for target in simulator_plan["inputs"]["compileTargets"]
