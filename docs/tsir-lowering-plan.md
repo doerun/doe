@@ -628,6 +628,49 @@ The rollout order should be:
 12. convert-time lowering (per-kernel lowering cache keyed on correctness
     inputs)
 
+### Loop 2 subloops
+
+The Loop 2 subloops below are scheduling labels for the rollout order above.
+They do not change the ordering, and they do not permit an iteration to skip
+the lowest-numbered unfinished rollout item. Each Loop 2 iteration still lands
+one committable compiler-only increment, with tests, schema or contract updates
+where required, and a dated status entry.
+
+- **Loop 2A: oracle, catalog, and descriptors.** Owns rollout items 1-3:
+  parity oracle, bootstrap kernel catalog, and `webgpu-generic` / `wse3`
+  target descriptors.
+- **Loop 2B: TSIR contract hardening.** Owns rollout item 4: schema
+  hardening, canonical JSON, semantic digest, realization digest, exactness
+  vocabulary, and rejection taxonomy.
+- **Loop 2C: WGSL frontend lowering.** Owns rollout item 5: WGSL IR to TSIR
+  semantic lowering, including binding/shape extraction, axis recovery,
+  reduction detection, family hints, and typed rejection for unanalyzable
+  kernels.
+- **Loop 2D: residency and allocation planning.** Owns rollout item 6:
+  correctness-first residency, allocation, liveness, and bounded tile search.
+- **Loop 2E: collective synthesis and numerical contract.** Owns rollout item
+  7: collective nodes, reduction tree shape, accumulation dtype, and exactness
+  invariants.
+- **Loop 2F: mechanical backend emission.** Owns rollout item 8: backend
+  emission from `tsir.realization`, with no hidden kernel-family semantic
+  rescue logic.
+- **Loop 2G: parity CLI plumbing.** Owns rollout item 9 as infrastructure
+  only. Real parity closure remains Loop 3; legacy classifier receipts do not
+  satisfy Loop 3.
+- **Loop 2H: Phase A kernel rewrites.** Owns rollout item 10 for fused GEMV,
+  RMSNorm, and gather, with old paths deleted or fenced as legacy-only.
+- **Loop 2I: manifest metadata and AOT plumbing.** Owns rollout items 11-12
+  as Doe-side infrastructure: lowering metadata shape, rejection
+  serialization, cache keys, and convert-time lowering. Production Doppler
+  manifest binding remains Loop 3.
+- **Loop 2J: steady-state cleanup.** Deletes migrated per-kernel CSL emitters
+  and reduces classifier logic to kernel-family hint extraction for migrated
+  families.
+
+Loop 2 has no production Doppler manifest mutation and no live Cerebras SDK
+dependency in its inner loop. It may define `wse3` target descriptors, but
+simulator execution belongs to Loop 3 or evidence work.
+
 Steady state is simple:
 
 - a new kernel family means WGSL plus parity-backed lowering support
@@ -648,10 +691,6 @@ This plan extends, but does not replace, the current architecture docs:
   - current CSL classifier/HostPlan/emitter path
 - `docs/doppler-ingest.md`
   - Doppler-owned program boundary and Doe-owned lowering boundary
-- `docs/loop-protocol.md`
-  - iteration discipline for building TSIR (Loop 2) vs. closing per-kernel-family
-    parity (Loop 3); cadence and gating rules that sit on top of this plan's
-    architecture + rollout ordering
 
 The operative current state remains:
 

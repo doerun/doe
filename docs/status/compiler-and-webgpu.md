@@ -7,6 +7,14 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24
+
+- Loop 2 plan doc-only update: `docs/tsir-lowering-plan.md` now splits Loop 2
+  TSIR machinery into explicit compiler-only subloops while preserving the
+  one-committable-increment rule, rollout order, and Loop 2 / Loop 3 boundary.
+  This is process documentation only: no TSIR schema, compiler output, parity
+  receipt, Cerebras SDK run, or Doppler manifest binding changed.
+
 ## 2026-04-23
 
 - TSIR Step 4 — thirty-ninth increment: `.fused_gemv`
