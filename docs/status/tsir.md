@@ -107,6 +107,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh docstring of `bench/tests/test_doe_parity.py`. Said
+  the tests "lock the fail-closed scaffolding contract until the
+  TSIR reference interpreter and backend lanes land in future
+  sessions" — overclaims what's pending. The reference interpreter
+  landed in ticks 1–3 with all three Phase A bootstrap families on
+  all dtypes; the actual outstanding wedge is the CLI subprocess
+  harness to the Zig oracle (the interpreter runs in-process, just
+  not from the Python CLI yet). Rewrote to name both real remaining
+  gaps accurately: CLI subprocess harness + backend executable
+  kernel bodies. 19/19 parity CLI tests still pass; strategy-leak
+  gate PASS. Cites `docs/tsir-lowering-plan.md` Step 1 (oracle) +
+  Step 7 (mechanical emitter executable bodies) + Step 8 (parity
+  CLI subprocess harness), and `docs/loop-protocol.md` Loop 2
+  protocol.
 - Code: refresh two stale comments in
   `runtime/zig/src/tsir/reference_interpreter.zig`:
   (a) `trySimpleReduction` docstring said "Detect the simplest

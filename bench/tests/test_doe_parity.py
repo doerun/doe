@@ -1,7 +1,12 @@
 """Unit tests for the Doe parity harness CLI (bench/tools/doe_parity.py).
 
-These lock the fail-closed scaffolding contract until the TSIR
-reference interpreter and backend lanes land in future sessions.
+These lock the fail-closed scaffolding contract. The TSIR reference
+interpreter recognizes the Phase A bootstrap families in-process
+(`runtime/zig/src/tsir/reference_interpreter.zig`); the outstanding
+CLI integration wedge is the subprocess harness that pipes canonical
+TSIR + inputs into that oracle. Backend lanes (webgpu, csl-simfabric)
+remain stub-only pending executable kernel bodies in the backend
+skeleton emitters.
 """
 
 from __future__ import annotations
