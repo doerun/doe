@@ -242,10 +242,10 @@ Bench tooling + fixtures:
 
 - `bench/tools/doe_parity.py` — manual parity CLI gate. The narrow
   bootstrap reference lane computes real oracle hashes for fused_gemv,
-  rms_norm, and gather input JSON. Backend execution lanes remain
+  rms_norm, and gather input JSON through the built Zig
+  `doe-tsir-bootstrap-oracle` subprocess. Backend execution lanes remain
   `not_implemented` / `deferred` until WebGPU and CSL simfabric
-  execution harnesses land; the Zig subprocess oracle path is still
-  future work.
+  execution harnesses land.
 - `bench/tools/tsir_manifest_lowering.py` — schema-backed builder for
   `integrityExtensions.lowerings[]` entries.
 - `bench/fixtures/tsir-manifest-entries/` — bootstrap manifest-lowering
@@ -262,15 +262,19 @@ Bench tooling + fixtures:
   via `zig build tsir-bootstrap-manifest-inputs` to materialize the
   canonical digest inputs the Python builder pairs with target descriptor
   hashes and emitter-code digests.
+- `runtime/zig/src/tsir_bootstrap_oracle.zig` — build-step entrypoint
+  invoked by `bench/tools/doe_parity.py` via `zig build
+  tsir-bootstrap-oracle` so the parity CLI's bootstrap reference hashes
+  come from Zig `tsir.reference.run` rather than Python-local math.
 
 Rejection taxonomy is locked across five surfaces — the Zig canonical
 enum, the Python CLI's `REJECTION_REASONS`, and the three JSON schemas
 that carry rejection enums — by a cross-schema lockstep test; the Zig
 enum is additionally locked by a scaffold test for exhaustiveness.
 
-The missing work is backend execution wiring in the parity CLI, the
-Zig subprocess oracle binary path, AOT convert-time lowering with a
-correctness-input cache key, Loop 3 per-family parity receipts under
+The missing work is backend execution wiring in the parity CLI, AOT
+convert-time lowering with a correctness-input cache key, Loop 3
+per-family parity receipts under
 `reports/parity/`, manifest-binding of those receipts into Doppler's
 `integrityExtensions.lowerings[]`, and the attention phase (Phase B)
 with its sollya transcendental determinism.

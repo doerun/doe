@@ -6,6 +6,43 @@
 // chunk and outputs the corresponding embedding vector.
 //
 // Buffer names are resolved from the IR module, not hardcoded.
+//
+// Manifest-scale blocker (2026-04-24, verified by direct cslc run):
+// At Gemma 4 E2B (`num_tokens=32, hidden_size=1536, rows_per_pe=16, grid=197x84`),
+// the surface error is the i16-overflow
+//     `[num_tokens * hidden_size]f32 = [49152]f32`  (32*1536=49152 > 32767)
+// but the root cause is per-PE memory. Even with the product split into a
+// 2D `[num_tokens, hidden_size]f32` (verified to compile for i16 purposes),
+// per-PE state at real shape is:
+//     output  32 * 1536 * 4 =  192 KiB  (>> 63 KiB PE .data.hi budget)
+//     table   16 * 1536 * 4 =   96 KiB  (>>    "                    )
+//     indices 32 *    4     = 0.13 KiB
+// and the linker fails `ran out of PE memory for data (section .data.hi)`
+// because `.blocked_ut_ival` starts at 0xFC04 ≈ 63 KiB.
+//
+// Minimal viable fix (~1 day engineering, ~1 day validation):
+//   1. Add params `tokens_per_chunk: i16`, `hidden_per_pe: i16`.
+//      Keep `rows_per_pe` semantics unchanged.
+//   2. Change layout to 2D (width=row_shard, height=hidden_shard). Each PE
+//      holds table slice `[rows_per_pe, hidden_per_pe]f32` and output slice
+//      `[tokens_per_chunk, hidden_per_pe]f32`.
+//   3. Classifier picks `hidden_per_pe = hidden_size / height` and
+//      `tokens_per_chunk` such that per-PE footprint ≤ 48 KiB:
+//        (rows_per_pe + tokens_per_chunk) * hidden_per_pe * 4 ≤ 48 KiB
+//      Verified-feasible region at hidden_size=1536, rows_per_pe=16:
+//        height=8, hidden_per_pe=192, tokens_per_chunk=16 → 16*192*4+16*192*4
+//        = 24 KiB (fits). See bench/out/cslc-embed-memory-probe.json once
+//        landed.
+//   4. Host Python runner dispatches `ceil(num_tokens / tokens_per_chunk)`
+//      chunks, then concatenates per-column slices across height PEs to
+//      reassemble `[num_tokens, hidden_size]f32`. Existing sum-across-width
+//      pattern stays the same for column PEs with the same hidden shard.
+//   5. operation-graph schema adds `hostIoLayout.embed.chunkedDispatch`
+//      with `tokens_per_chunk` and `hidden_shardCount` keys.
+//
+// Partial fixes here will compile but silently drop output on non-first
+// chunks; do not ship the emitter change without the host orchestration
+// change.
 
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");

@@ -18,6 +18,7 @@ from bench.tools import doe_parity, tsir_manifest_lowering  # noqa: E402
 
 
 DEFAULT_FIXTURE_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
+DEFAULT_INPUTS_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-bootstrap-inputs"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "out" / "nightly-tsir-parity-canary"
 PARITY_CLI = REPO_ROOT / "bench" / "tools" / "doe_parity.py"
 EXPECTED_FIXTURE_COUNT = 6
@@ -31,6 +32,13 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_FIXTURE_DIR,
         help="Directory containing TSIR manifest lowering entry fixtures.",
+    )
+    parser.add_argument(
+        "--inputs-dir",
+        type=Path,
+        default=DEFAULT_INPUTS_DIR,
+        help="Directory containing TSIR bootstrap input-tensor fixtures "
+        "(paired with manifest fixtures by kernel name: `<kernel>.json`).",
     )
     parser.add_argument(
         "--output-dir",
@@ -91,14 +99,25 @@ def _expected_identity(entry: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _inputs_path(inputs_dir: Path, entry: dict[str, Any]) -> Path:
+    candidate = inputs_dir / f"{_kernel_name(entry)}.json"
+    if not candidate.is_file():
+        raise FileNotFoundError(
+            f"TSIR bootstrap input fixture missing: {candidate}"
+        )
+    return candidate
+
+
 def run_fixture(
     path: Path,
     entry: dict[str, Any],
     output_dir: Path,
+    inputs_dir: Path,
     python: str,
 ) -> dict[str, Any]:
     kernel = _kernel_name(entry)
     receipt_dir = _receipt_dir(output_dir, entry)
+    inputs_path = _inputs_path(inputs_dir, entry)
     cmd = [
         python,
         str(PARITY_CLI),
@@ -106,7 +125,7 @@ def run_fixture(
         "--class",
         entry["exactness"]["class"],
         "--inputs",
-        str(path),
+        str(inputs_path),
         "--manifest-lowering-entry",
         str(path),
         "--receipt-dir",
@@ -125,6 +144,9 @@ def run_fixture(
         "backend": _entry_backend(entry),
         "cliExitCode": proc.returncode,
         "fixture": path.relative_to(REPO_ROOT).as_posix(),
+        "inputsFixture": inputs_path.relative_to(REPO_ROOT).as_posix()
+        if inputs_path.is_relative_to(REPO_ROOT)
+        else str(inputs_path),
         "kernel": kernel,
         "receiptPath": receipt_path.relative_to(REPO_ROOT).as_posix()
         if receipt_path.is_relative_to(REPO_ROOT)
@@ -162,12 +184,13 @@ def run_fixture(
 
 def build_report(
     fixture_dir: Path,
+    inputs_dir: Path,
     output_dir: Path,
     python: str,
 ) -> dict[str, Any]:
     entries = load_fixture_entries(fixture_dir)
     results = [
-        run_fixture(path, entry, output_dir, python)
+        run_fixture(path, entry, output_dir, inputs_dir, python)
         for path, entry in entries
     ]
     failures = [
@@ -197,7 +220,12 @@ def write_report(report: dict[str, Any], output_dir: Path) -> Path:
 def main() -> int:
     args = parse_args()
     try:
-        report = build_report(args.fixture_dir, args.output_dir, args.python)
+        report = build_report(
+            args.fixture_dir,
+            args.inputs_dir,
+            args.output_dir,
+            args.python,
+        )
         report_path = write_report(report, args.output_dir)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"FAIL: nightly TSIR parity canary: {exc}")

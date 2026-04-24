@@ -6,6 +6,40 @@
 // output vector.
 //
 // Maps from Doppler's fused_matmul_q4.wgsl. Buffer names from IR.
+//
+// Manifest-scale blocker for `lm_head_gemv_stable` at Gemma 4 E2B
+// (out_dim=1331, in_dim_per_pe=512, num_blocks_per_row=2, grid=197x1):
+// The i16 overflow is `[out_dim * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8
+//  = 1331*2*144 = 383328` > 32767. Root cause: out_dim is NOT sharded —
+// each PE stores the *full* vocab-sized weight. 1D reduce-width only shards
+// `in_dim`, leaving `out_dim` fully duplicated per PE.
+//
+// Minimal viable fix (~2 days engineering + validation): add an
+// `out_dim_per_pe` param and change the layout to 2D
+// (width=in_dim_shard, height=out_dim_shard). Classifier sets
+//   out_dim_per_pe = ceil(out_dim / height)
+// At grid 197x84, out_dim_per_pe=ceil(1331/84)=16, weight per PE drops
+// from 383 KiB to 16 * 2 * 144 = 4.6 KiB (fits).
+// Per-row reduce-chain stays the same (east-west across width for the
+// in_dim reduction); rows are independent output slices. Host D2H reads
+// out_dim_per_pe floats from each row's sink PE and concatenates by row
+// to reassemble [out_dim]f32.
+//
+// Touch points:
+//   - this emitter: use `out_dim_per_pe` instead of `out_dim` in every
+//     `var weight/output/partial/scratch_*` declaration and inner loop
+//     bound.
+//   - emit_csl_layout.zig `emitFusedGemvLayout`: add `height: i16` and
+//     `out_dim_per_pe: i16` params, change `@set_rectangle(width, 1)` to
+//     `@set_rectangle(width, height)`, wrap `emitReduceRowTileLoop` in
+//     a height loop that sets a `row_id = pe_y` param per tile.
+//   - emit_csl_classify.zig: plumb `out_dim_per_pe` + `height` through
+//     FusedGemvDequantInfo from manifest-scale out_dim.
+//   - host Python runner: concat D2H shards across pe_y.
+//
+// Partial fixes will compile but produce wrong results (each row would
+// independently reduce against a wrong in_dim slice). Do not ship
+// individually.
 
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");

@@ -12,6 +12,42 @@
 //                 P×P grid, tiles broadcast via collectives_2d.
 //
 // Buffer names are resolved from the IR module via the info struct.
+//
+// Manifest-scale blocker for `attn_head256` / `attn_head512` at Gemma 4 E2B
+// (verified from bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-
+// hostplan/compile/driver-logs/attn_head256.cslc.stderr.log):
+// linker error `ran out of PE memory for data (section .bss)` with .bss
+// spanning 147 KiB (head_dim=256) / 294 KiB (head_dim=512), vs ~63 KiB PE
+// budget. Root cause: full KV-cache is PE-resident at manifest kv_len.
+//
+// Per-PE footprint (attn_head256, kv_len≈128):
+//   query  q_len=32 * head_dim=256 * 4 =  32 KiB
+//   key    kv_len    * head_dim    * 4 = 128 KiB
+//   val    kv_len    * head_dim    * 4 = 128 KiB
+//   K_tile block=32  * head_dim    * 4 =  32 KiB
+//   V_tile block=32  * head_dim    * 4 =  32 KiB
+//   output q_len=32  * head_dim    * 4 =  32 KiB
+// attn_head512 doubles head_dim → all bytes 2× → 294 KiB .bss.
+//
+// Fix requires KV streaming: host streams K/V one `block_size`-rows tile
+// at a time into the already-allocated K_tile/V_tile buffers; the full
+// `key`/`val` PE-resident arrays are removed. Each host-side iteration
+// sends one tile and launches the attention compute step which consumes
+// the tile and updates online-softmax state.
+//
+// Touch points (~1-2 weeks):
+//   - this file (emitTiled): drop `var key: [kv_len*head_dim]f32` and
+//     `var val: [kv_len*head_dim]f32`; keep only `K_tile`/`V_tile` +
+//     `kv_block_idx` counter + a `task_handler` per launched block.
+//   - emit_csl_layout.zig `emitTiledAttentionLayout`: add `tile_rows: i16`
+//     param; remove `kv_len` from per-tile params.
+//   - streaming executor: emit a host-side loop that H2Ds K_tile/V_tile
+//     per block then launches compute_tile.
+//   - operation-graph schema: add `attention.kvStreaming.tileRows` /
+//     `attention.kvStreaming.tileCount`.
+//
+// Do NOT drop the key/val arrays without wiring the host streaming loop —
+// the compute loop silently reads uninitialized data and produces NaNs.
 
 const std = @import("std");
 const ir = @import("ir.zig");

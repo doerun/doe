@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Capture a Gemma-4 E2B WebGPU graph through Doppler's provider bootstrap.
+// Capture a Doppler model WebGPU graph through Doe's provider bootstrap.
 
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -17,11 +17,27 @@ const PARAM_WORD_COUNT = 8;
 
 function parseArgs(argv) {
   const parsed = {
+    captureId: null,
+    modelLabel: null,
     modelDir: DEFAULT_MODEL_DIR,
     outJson: DEFAULT_OUT_JSON,
   };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
+    if (arg === '--capture-id') {
+      const value = argv[i + 1];
+      if (!value) throw new Error('--capture-id requires a value.');
+      parsed.captureId = value;
+      i += 1;
+      continue;
+    }
+    if (arg === '--model-label') {
+      const value = argv[i + 1];
+      if (!value) throw new Error('--model-label requires a value.');
+      parsed.modelLabel = value;
+      i += 1;
+      continue;
+    }
     if (arg === '--model-dir') {
       const value = argv[i + 1];
       if (!value) throw new Error('--model-dir requires a path.');
@@ -39,6 +55,21 @@ function parseArgs(argv) {
     throw new Error(`Unknown argument "${arg}".`);
   }
   return parsed;
+}
+
+function sanitizeLabel(value) {
+  const normalized = String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return normalized || 'doppler-model';
+}
+
+function inferModelLabel(modelId) {
+  const sanitized = sanitizeLabel(modelId);
+  if (sanitized.startsWith('gemma-4-e2b')) return 'gemma4-e2b';
+  if (sanitized.startsWith('gemma-3-1b')) return 'gemma3-1b';
+  return sanitized;
 }
 
 function sha256Bytes(bytes) {
@@ -147,6 +178,9 @@ async function runCapture(args) {
   const modelDir = resolve(REPO_ROOT, args.modelDir);
   const { manifest, manifestPath } = loadManifest(args.modelDir);
   const architecture = architectureFromManifest(manifest);
+  const modelId = manifest.modelId ?? null;
+  const modelLabel = sanitizeLabel(args.modelLabel ?? inferModelLabel(modelId));
+  const captureId = args.captureId ?? `${modelLabel}-doppler-doe-webgpu-capture-smoke`;
   const captureModuleUrl = pathToFileURL(CAPTURE_MODULE_PATH).href;
   process.env.DOPPLER_NODE_WEBGPU_MODULE = captureModuleUrl;
 
@@ -175,27 +209,27 @@ async function runCapture(args) {
   const usage = globalThis.GPUBufferUsage;
 
   const hidden = device.createBuffer({
-    label: 'gemma4-e2b-hidden-state',
+    label: `${modelLabel}-hidden-state`,
     size: hiddenBytes,
     usage: usage.STORAGE | usage.COPY_DST,
   });
   const weights = device.createBuffer({
-    label: 'gemma4-e2b-grouped-kv-projection-smoke',
+    label: `${modelLabel}-grouped-kv-projection-smoke`,
     size: weightBytes,
     usage: usage.STORAGE | usage.COPY_DST,
   });
   const output = device.createBuffer({
-    label: 'gemma4-e2b-capture-output',
+    label: `${modelLabel}-capture-output`,
     size: hiddenBytes,
     usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST,
   });
   const readback = device.createBuffer({
-    label: 'gemma4-e2b-capture-readback',
+    label: `${modelLabel}-capture-readback`,
     size: hiddenBytes,
     usage: usage.MAP_READ | usage.COPY_DST,
   });
   const params = device.createBuffer({
-    label: 'gemma4-e2b-manifest-shape-params',
+    label: `${modelLabel}-manifest-shape-params`,
     size: PARAM_WORD_COUNT * Uint32Array.BYTES_PER_ELEMENT,
     usage: usage.UNIFORM | usage.COPY_DST,
   });
@@ -225,11 +259,11 @@ async function runCapture(args) {
   device.queue.writeBuffer(params, 0, paramsData);
 
   const shader = device.createShaderModule({
-    label: 'gemma4-e2b-manifest-shape-grouped-kv-capture',
+    label: `${modelLabel}-manifest-shape-grouped-kv-capture`,
     code: buildGemmaCaptureWgsl(),
   });
   const bindGroupLayout = device.createBindGroupLayout({
-    label: 'gemma4-e2b-capture-bind-group-layout',
+    label: `${modelLabel}-capture-bind-group-layout`,
     entries: [
       { binding: 0, visibility: globalThis.GPUShaderStage.COMPUTE, buffer: { type: 'read-only-storage' } },
       { binding: 1, visibility: globalThis.GPUShaderStage.COMPUTE, buffer: { type: 'read-only-storage' } },
@@ -238,11 +272,11 @@ async function runCapture(args) {
     ],
   });
   const pipelineLayout = device.createPipelineLayout({
-    label: 'gemma4-e2b-capture-pipeline-layout',
+    label: `${modelLabel}-capture-pipeline-layout`,
     bindGroupLayouts: [bindGroupLayout],
   });
   const pipeline = device.createComputePipeline({
-    label: 'gemma4-e2b-manifest-shape-capture-pipeline',
+    label: `${modelLabel}-manifest-shape-capture-pipeline`,
     layout: pipelineLayout,
     compute: {
       module: shader,
@@ -250,7 +284,7 @@ async function runCapture(args) {
     },
   });
   const bindGroup = device.createBindGroup({
-    label: 'gemma4-e2b-capture-bind-group',
+    label: `${modelLabel}-capture-bind-group`,
     layout: bindGroupLayout,
     entries: [
       { binding: 0, resource: { buffer: hidden } },
@@ -261,10 +295,10 @@ async function runCapture(args) {
   });
 
   const encoder = device.createCommandEncoder({
-    label: 'gemma4-e2b-capture-command-encoder',
+    label: `${modelLabel}-capture-command-encoder`,
   });
   const pass = encoder.beginComputePass({
-    label: 'gemma4-e2b-capture-compute-pass',
+    label: `${modelLabel}-capture-compute-pass`,
   });
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
@@ -272,7 +306,7 @@ async function runCapture(args) {
   pass.end();
   encoder.copyBufferToBuffer(output, 0, readback, 0, hiddenBytes);
   device.queue.submit([encoder.finish({
-    label: 'gemma4-e2b-capture-command-buffer',
+    label: `${modelLabel}-capture-command-buffer`,
   })]);
   await device.queue.onSubmittedWorkDone();
   await readback.mapAsync(globalThis.GPUMapMode.READ, 0, hiddenBytes);
@@ -292,9 +326,10 @@ async function runCapture(args) {
         sourcePath: '../doppler/src/tooling/node-webgpu.js',
         sourceRepo: '../doppler',
       },
-      captureId: 'gemma4-e2b-doppler-doe-webgpu-capture-smoke',
+      captureId,
+      captureLabel: modelLabel,
       captureScope: (
-        'Doppler Node WebGPU provider bootstrap plus a Gemma-4 E2B ' +
+        `Doppler Node WebGPU provider bootstrap plus a ${modelId ?? modelLabel} ` +
         'manifest-shape compute graph captured through doe-gpu/capture.'
       ),
       capturedAt: new Date().toISOString(),
@@ -309,7 +344,7 @@ async function runCapture(args) {
         ],
         proves: [
           'doppler_can_install_doe_capture_as_node_webgpu_provider',
-          'gemma4_e2b_manifest_shape_wgsl_can_be_recorded_as_capture_graph',
+          'doppler_manifest_shape_wgsl_can_be_recorded_as_capture_graph',
         ],
       },
       graphBeforeMetadataSha256,
@@ -324,7 +359,7 @@ async function runCapture(args) {
         manifestPath: rel(manifestPath),
         manifestSha256: sha256File(manifestPath),
         modelDir: rel(modelDir),
-        modelId: manifest.modelId ?? null,
+        modelId,
         modelType: manifest.modelType ?? null,
         quantization: manifest.quantization ?? null,
         shardCount: Array.isArray(manifest.shards) ? manifest.shards.length : 0,

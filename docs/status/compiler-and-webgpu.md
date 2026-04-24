@@ -14,6 +14,14 @@ This is a live topical status shard.
 compiler work (shader compiler non-TSIR paths, WebGPU runtime,
 robustness).
 
+## 2026-04-24
+
+- Gemma 3 1B now has a Doe WebGPU capture graph at
+  `bench/out/doppler-capture/gemma-3-1b-doe-webgpu-capture-graph.json`.
+  The capture tool accepts explicit model labels/capture IDs while preserving
+  the Gemma-4 E2B default path, and `config/schema-targets.json` registers the
+  Gemma 3 graph against `config/doe-webgpu-capture-graph.schema.json`.
+
 ## Current state
 
 - TSIR (Tiled Spatial IR) current state and contracts live in

@@ -7,6 +7,42 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24
+
+Direct cslc verification of the 4 manifest-scale blockers (see stderr logs
+under `bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/
+compile/driver-logs/*.cslc.stderr.log`). The i16 array-dimension error on
+`embed` and `lm_head_gemv_stable` is the surface symptom; the architectural
+blocker for all 4 is per-PE memory. Direct-probe numbers at PE budget
+~63 KiB (`.blocked_ut_ival` at 0xFC04):
+
+- `embed` at `num_tokens=32, hidden_size=1536, rows_per_pe=16`:
+  output 192 KiB + table 96 KiB per PE. Both exceed budget. 2D array
+  syntax fixes the i16 error (confirmed by `/tmp/test-2d-array` probe)
+  but does not help the memory overflow. Fix requires 2D grid with
+  `hidden_per_pe` sharding + host-chunked dispatch.
+
+- `lm_head_gemv_stable` at `width=197,height=1,out_dim=1331,
+  in_dim_per_pe=512, num_blocks_per_row=2`:
+  weight 383 KiB per PE (`out_dim * num_blocks_per_row * 144`). Fix
+  requires 2D layout with `out_dim_per_pe = ceil(out_dim/height)` so
+  weight drops to 4.6 KiB at grid 197×84.
+
+- `attn_head256` / `attn_head512`: .bss 147 KiB / 294 KiB per PE. Full
+  KV cache is PE-resident. Fix requires host-streamed K/V tiles instead
+  of the current PE-resident `key`/`val` arrays.
+
+Architectural fix plans landed as header-level TODOs in the emitters:
+`runtime/zig/src/doe_wgsl/emit_csl_gather.zig`,
+`runtime/zig/src/doe_wgsl/emit_csl_fused.zig`,
+`runtime/zig/src/doe_wgsl/emit_csl_attention.zig`. Each names touch
+points (emitter, layout, classifier, host runner, operation-graph
+schema) and the partial-fix hazard.
+
+Reachable-infrastructure finding: SDK container runs locally and reports
+real cslc diagnostics; prior classification `csl_compile_container_runtime_blocked`
+is stale on this host.
+
 ## 2026-04-23
 
 - `docs/doppler-ingest.md` now explicitly frames TSIR as the planned lowering

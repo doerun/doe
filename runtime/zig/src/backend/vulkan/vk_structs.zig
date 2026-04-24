@@ -322,6 +322,13 @@ pub const VkImageCopy = extern struct {
     extent: VkExtent3D,
 };
 
+pub const VkMemoryBarrier = extern struct {
+    sType: vk.VkStructureType,
+    pNext: ?*const anyopaque,
+    srcAccessMask: vk.VkFlags,
+    dstAccessMask: vk.VkFlags,
+};
+
 pub const VkImageMemoryBarrier = extern struct {
     sType: vk.VkStructureType,
     pNext: ?*const anyopaque,

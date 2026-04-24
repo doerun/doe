@@ -891,6 +891,23 @@ pub fn build(b: *std.Build) void {
     tsir_bootstrap_manifest_inputs_step.dependOn(&install_tsir_bootstrap_manifest_inputs.step);
     b.getInstallStep().dependOn(tsir_bootstrap_manifest_inputs_step);
 
+    const tsir_bootstrap_oracle = b.addExecutable(.{
+        .name = "doe-tsir-bootstrap-oracle",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tsir_bootstrap_oracle.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    tsir_bootstrap_oracle.linkLibC();
+    const install_tsir_bootstrap_oracle = b.addInstallArtifact(tsir_bootstrap_oracle, .{});
+    const tsir_bootstrap_oracle_step = b.step(
+        "tsir-bootstrap-oracle",
+        "Build the TSIR bootstrap reference oracle tool",
+    );
+    tsir_bootstrap_oracle_step.dependOn(&install_tsir_bootstrap_oracle.step);
+    b.getInstallStep().dependOn(tsir_bootstrap_oracle_step);
+
     const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);

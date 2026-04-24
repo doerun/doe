@@ -172,6 +172,7 @@ class TestParityScaffolding(unittest.TestCase):
         self.assertEqual(outcome.backend, "reference")
         self.assertEqual(outcome.status, "pass")
         self.assertEqual(outcome.backend_hash, expected)
+        self.assertEqual(outcome.detail, "zig bootstrap TSIR oracle executed")
 
     def test_reference_interpreter_runs_gather_bootstrap_inputs(self) -> None:
         semantic = (
@@ -288,7 +289,7 @@ class TestParityScaffolding(unittest.TestCase):
             inputs_path=fixture,
         )
         self.assertEqual(outcome.status, "not_implemented")
-        self.assertIn("kernel", outcome.detail or "")
+        self.assertIn("unsupported or missing kernel/inputs", outcome.detail or "")
 
     def test_reference_interpreter_declines_gather_oob_inputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -314,7 +315,7 @@ class TestParityScaffolding(unittest.TestCase):
                 inputs_path=inputs_path,
             )
         self.assertEqual(outcome.status, "not_implemented")
-        self.assertIn("outside the declared table", outcome.detail or "")
+        self.assertIn("cannot execute this input", outcome.detail or "")
 
     def test_reference_interpreter_reports_rejected_tsir(self) -> None:
         outcome = doe_parity.run_reference_interpreter(

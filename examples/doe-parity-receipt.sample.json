@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "doe_parity_receipt",
+  "kernel": "bench/fixtures/tsir-manifest-entries/fused_gemv.webgpu-generic",
+  "exactnessClass": "algorithm_exact",
+  "referenceHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "inputsDigest": "bootstrap-input@v1",
+  "loweringIdentity": {
+    "tsirSemanticDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "tsirRealizationDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "emitterDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "targetDescriptorCorrectnessHash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "comparisons": [
+    {
+      "backend": "reference",
+      "status": "pass",
+      "backendHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "detail": null
+    },
+    {
+      "backend": "webgpu",
+      "status": "not_implemented",
+      "backendHash": null,
+      "detail": "sample receipt shape; not a runtime result"
+    }
+  ],
+  "rejectionReasons": []
+}

@@ -1,0 +1,35 @@
+{
+  "artifactKind": "doe_parity_receipt",
+  "comparisons": [
+    {
+      "backend": "reference",
+      "backendHash": "8ad3e84903b3f0eca62a7ea22ed988839aef0bb554e27a945f34ab6ec682297f",
+      "detail": "zig bootstrap TSIR oracle executed",
+      "status": "pass"
+    },
+    {
+      "backend": "webgpu",
+      "backendHash": null,
+      "detail": "webgpu deferred: reference=pass, backend=not_implemented",
+      "status": "deferred"
+    },
+    {
+      "backend": "csl-simfabric",
+      "backendHash": null,
+      "detail": "csl-simfabric deferred: reference=pass, backend=not_implemented",
+      "status": "deferred"
+    }
+  ],
+  "exactnessClass": "tolerance_bounded",
+  "inputsDigest": "c8a472e6d989f63bb9219aef81559d5b12b6f760b7b767a8531697705e2fc78d",
+  "kernel": "rms_norm",
+  "loweringIdentity": {
+    "emitterDigest": "dd31baaba772c20823c2ca423a8245db21ba74dfc9d1a1530ac528a52621116e",
+    "targetDescriptorCorrectnessHash": "1bb3a7dc6a798e8cc9eae1e660800b9163469cbda67e14c75fe6a10ef342ade9",
+    "tsirRealizationDigest": "646ea4ec5a123e10a4dabedb9d1f40067b9542a8fab255b27ae1758f00f85dbc",
+    "tsirSemanticDigest": "d97496705eae4ecf3d6feadde826228b767c175fb038ed53762dfa3ffb1b2e49"
+  },
+  "referenceHash": "8ad3e84903b3f0eca62a7ea22ed988839aef0bb554e27a945f34ab6ec682297f",
+  "rejectionReasons": [],
+  "schemaVersion": 2
+}

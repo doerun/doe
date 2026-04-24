@@ -298,6 +298,10 @@
       "data": "bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json"
     },
     {
+      "schema": "config/doe-webgpu-capture-graph.schema.json",
+      "data": "bench/out/doppler-capture/gemma-3-1b-doe-webgpu-capture-graph.json"
+    },
+    {
       "schema": "config/doe-doppler-webgpu-capture-lowering.schema.json",
       "data": "bench/out/doppler-capture/gemma-4-e2b-capture-to-csl-attention-core-lowering.json"
     },

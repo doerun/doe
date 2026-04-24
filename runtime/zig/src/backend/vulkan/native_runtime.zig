@@ -368,6 +368,28 @@ pub const NativeVulkanRuntime = struct {
         if (want_timestamps) {
             c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
         }
+        // HOST_COHERENT guarantees CPU sees coherent memory but does not establish
+        // the execution/memory-visibility dependency between a compute shader write
+        // and a subsequent host read. Without this barrier, storage-buffer writes
+        // can be invisible to mapped readback even after queue-fence wait.
+        const post_dispatch_barrier = c.VkMemoryBarrier{
+            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .pNext = null,
+            .srcAccessMask = c.VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = c.VK_ACCESS_HOST_READ_BIT,
+        };
+        c.vkCmdPipelineBarrier(
+            command_buffer,
+            c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            c.VK_PIPELINE_STAGE_HOST_BIT,
+            0,
+            1,
+            @ptrCast(&post_dispatch_barrier),
+            0,
+            null,
+            0,
+            null,
+        );
         if (!replay_deferred) {
             try c.check_vk(c.vkEndCommandBuffer(command_buffer));
         }

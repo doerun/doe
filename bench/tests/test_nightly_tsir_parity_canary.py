@@ -40,10 +40,15 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
             },
         )
 
-    def test_canary_runs_fixture_receipts_without_claiming_pass(self) -> None:
+    def test_canary_runs_fixture_receipts_without_claiming_backend_pass(self) -> None:
+        """Reference lane is expected to be green once input-tensor fixtures
+        exist; backend lanes must still be deferred until WebGPU/CSL
+        execution wiring lands. The CLI must exit 1 while any backend is
+        non-pass, regardless of the reference-lane outcome."""
         with tempfile.TemporaryDirectory() as tmp:
             report = canary.build_report(
                 canary.DEFAULT_FIXTURE_DIR,
+                canary.DEFAULT_INPUTS_DIR,
                 Path(tmp),
                 python=sys.executable,
             )
@@ -52,8 +57,9 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
         self.assertEqual(report["failures"], [])
         for result in report["results"]:
             self.assertIn("loweringIdentity", result)
-            self.assertIn("not_implemented", result["statuses"])
-            self.assertIn("deferred", result["statuses"])
+            self.assertEqual(result["statuses"][0], "pass")
+            self.assertEqual(result["statuses"][1], "deferred")
+            self.assertEqual(result["statuses"][2], "deferred")
             self.assertEqual(result["cliExitCode"], 1)
 
     def test_canary_receipts_carry_fixture_lowering_identity(self) -> None:
@@ -81,6 +87,7 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = canary.build_report(
                 canary.DEFAULT_FIXTURE_DIR,
+                canary.DEFAULT_INPUTS_DIR,
                 Path(tmp),
                 python=sys.executable,
             )

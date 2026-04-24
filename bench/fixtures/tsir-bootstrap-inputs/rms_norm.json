@@ -1,0 +1,20 @@
+{
+  "kernel": "rms_norm",
+  "inputs": {
+    "input": {
+      "elem": "f32",
+      "shape": [4],
+      "values": [1.0, 2.0, -1.0, 0.5]
+    },
+    "weight": {
+      "elem": "f32",
+      "shape": [4],
+      "values": [1.0, 1.0, 1.0, 1.0]
+    },
+    "u": {
+      "elem": "f32",
+      "shape": [2],
+      "values": [0.0, 1.0e-5]
+    }
+  }
+}

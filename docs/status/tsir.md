@@ -18,6 +18,54 @@ live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
 moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
 tick. New TSIR entries go here going forward.
 
+## 2026-04-24 — reference lane green end-to-end; reports/parity/ populated; first Doppler manifest bound
+
+- Added input-tensor fixtures under
+  `bench/fixtures/tsir-bootstrap-inputs/{fused_gemv,rms_norm,gather}.json`.
+  The Zig bootstrap oracle executes against these and emits real
+  reference hashes for all three bootstrap kernels.
+- `bench/gates/nightly_tsir_parity_canary.py` now pairs each
+  `tsir-manifest-entries/*.json` fixture with its matching input-tensor
+  fixture by kernel name. Previously the canary passed the manifest
+  fixture itself as `--inputs`, which the oracle could not parse, so
+  every receipt fell to `reference=not_implemented`.
+- All six receipts under
+  `bench/out/nightly-tsir-parity-canary/receipts/*/` now report
+  `reference=pass` with backend-agnostic reference hashes bound to each
+  fixture's `loweringIdentity`. Backend lanes (`webgpu`,
+  `csl-simfabric`) honestly report `deferred` with
+  `reason=reference=pass, backend=not_implemented` — backend-execution
+  wiring remains unlanded. No lane is claimed to pass that has not
+  actually executed.
+- Populated `reports/parity/{kernel}.{backend}/` with the same six
+  receipts under this session's oracle. This is the first time the
+  Step 9 receipt directory exists with non-stub content.
+- Bound all six bootstrap lowering entries into two live Doppler
+  manifests — `gemma-3-270m-it-q4k-ehf16-af32` and
+  `gemma-3-1b-it-q4k-ehf16-af32` — via
+  `bench/tools/bind_bootstrap_lowerings_to_manifest.mjs`. Doppler's
+  `validateManifest` is clean on both; `listSupportedBackends` returns
+  both `webgpu-generic` and `wse3` for the three bootstrap kernels;
+  `findLoweringOrThrow` returns normalized entries with
+  `sha256:`-prefixed digests and the Doppler-hyphenated exactness
+  class. The binder is safe to re-run on additional manifests in the
+  family without regenerating receipts because the identity digests
+  come from the shared Doe fixtures.
+- Placeholders / follow-ups still tracked:
+  - WebGPU and CSL-simfabric execution lanes in `doe_parity.py`
+    remain `not_implemented` by design. Wiring each lane requires a
+    per-kernel runner that can produce the same `referenceHash` shape
+    for comparison; neither has landed.
+  - Bootstrap-kernel lowerings are the first real entries in a live
+    manifest, but they do not yet cover real Gemma kernels. Real
+    Gemma-kernel TSIR semantics + realizations + target-correctness
+    hashes are needed before a real-Doppler-family parity lane is
+    more than a bootstrap-shape proof.
+  - `targetDescriptorCorrectnessHash` in the Doe fixtures is
+    normalized to `targetDescriptorHash` on the Doppler side; both
+    names resolve to the same value via
+    `normalizeManifestLoweringEntry`.
+
 ## Phase A status at a glance
 
 Compiler surface by plan step (see
@@ -36,9 +84,9 @@ how much. For iteration cadence see
 | Step 5 planner | `runtime/zig/src/tsir/planner.zig` | `planRealization` produces deterministic `RealizationFunction` records for both descriptors; residency / tile factors / PE grid / reduction tree / typed rejection. |
 | Step 6 collectives | `runtime/zig/src/tsir/collective_synthesis.zig` (planner calls in); frontend walker still owns semantic collection | Dedicated pass file isolates descriptor-backed native-capability / exactness / fabric-color-budget logic with typed rejections. Bootstrap families still have no collectives to exercise it; attention (Phase B) consumes this pass. |
 | Step 7 emitter | `runtime/zig/src/tsir/emit_{kernel_body,csl,webgpu,msl,dxil,spir_v,text_skeleton}.zig` | Realization-only skeleton entry points remain for contract inspection; semantic-aware entry points emit executable fused_gemv / rms_norm / gather bodies across WebGPU, CSL, MSL, DXIL/HLSL, and SPIR-V/GLSL surfaces. Source-backed `emitterCodeDigest()` includes shared body source and remains pairwise-distinct by test. |
-| Step 8 parity CLI | `bench/tools/doe_parity.py` + `bench/gates/nightly_tsir_parity_canary.py` | Narrow bootstrap oracle executes fused_gemv / rms_norm / gather input JSONs and writes real reference hashes. Backend execution lanes still return `not_implemented` / `deferred`; Zig subprocess oracle + WebGPU/CSL execution wiring remain unlanded. |
-| Step 9 family rewrites | — | **0/3 Loop 3 parity receipts.** Directory `reports/parity/` does not yet exist. Gated on Step 7 executable bodies + Step 8 subprocess harness. |
-| Step 10 manifest binding | `bench/tools/tsir_manifest_lowering.py` + `bench/fixtures/tsir-manifest-entries/*.json` | Schema, builder, six bootstrap fixtures; receipt ↔ fixture identity lockstep + fixture version + descriptor uniformity locked by test. |
+| Step 8 parity CLI | `bench/tools/doe_parity.py` + `runtime/zig/src/tsir_bootstrap_oracle.zig` + `bench/gates/nightly_tsir_parity_canary.py` + `bench/fixtures/tsir-bootstrap-inputs/*.json` | Narrow bootstrap oracle executes fused_gemv / rms_norm / gather input JSONs through the built Zig reference subprocess and writes real reference hashes. Canary pairs each manifest-entry fixture with its input-tensor fixture by kernel name; all six receipts now carry `reference=pass`. Backend execution lanes still return `not_implemented` / `deferred`; WebGPU/CSL execution wiring remains unlanded. |
+| Step 9 family rewrites | `reports/parity/{fused_gemv,rms_norm,gather}.{webgpu-generic,wse3}/` | **3/3 bootstrap kernels have reference-lane-green receipts at both targets.** Backend-lane `pass` still gated on Step 8 execution wiring. Real Gemma-kernel receipts still unlanded (bootstrap proves plumbing, not family coverage). |
+| Step 10 manifest binding | `bench/tools/tsir_manifest_lowering.py` + `bench/fixtures/tsir-manifest-entries/*.json` + `bench/tools/bind_bootstrap_lowerings_to_manifest.mjs` | Schema, builder, six bootstrap fixtures; receipt ↔ fixture identity lockstep + fixture version + descriptor uniformity locked by test. Live binding shipped to two Doppler manifests — `gemma-3-270m-it-q4k-ehf16-af32` and `gemma-3-1b-it-q4k-ehf16-af32` — each carrying all six bootstrap lowering entries in `integrityExtensions.lowerings[]`; Doppler `validateManifest` and `listSupportedBackends` accept both. |
 | Step 11 AOT convert | — | Unlanded; cache-key design pending. |
 | Step 12 rollout | — | Unlanded. |
 
@@ -97,8 +145,8 @@ Gates protecting Phase A artifacts:
   lanes return `not_implemented` / `deferred` and do not silently
   promote before execution harnesses exist.
 
-The missing path to proof 1 — in priority order: backend execution
-wiring for the parity CLI (Step 8), first Loop 3 receipt for fused_gemv
+The missing path to proof 1 — in priority order: WebGPU/CSL backend
+execution wiring for the parity CLI (Step 8), first Loop 3 receipt for fused_gemv
 against both `webgpu-generic` and `wse3` (Step 9 iter 1), manifest
 binding of that receipt into a Doppler manifest (Step 10), and AOT
 convert-time lowering (Step 11). Each is a multi-day wedge; the Loop 2
@@ -106,6 +154,18 @@ hygiene work through today has made every one of them safer to attempt.
 
 ## 2026-04-24
 
+- TSIR Step 8 — Zig bootstrap oracle subprocess: added
+  `runtime/zig/src/tsir_bootstrap_oracle.zig` plus the
+  `zig build tsir-bootstrap-oracle` build step, and wired
+  `bench/tools/doe_parity.py` to obtain bootstrap reference hashes from
+  the installed `doe-tsir-bootstrap-oracle` subprocess. The supported
+  reference lane remains narrow and honest: fused_gemv / rms_norm /
+  gather dedicated input JSONs pass through Zig `tsir.reference.run`;
+  manifest fixtures, unsupported shapes, and backend lanes still fail
+  closed as `not_implemented` / `deferred`, so no Loop 3 receipt is
+  promoted by this increment. Verified with `zig build
+  tsir-bootstrap-oracle`, focused parity unit tests, and the nightly TSIR
+  parity canary. Cites `docs/tsir-lowering-plan.md` Step 8.
 - TSIR Loop 2 — current-state prose refresh after Step 7 bodies landed:
   five prose docs still described the TSIR backend emitters as
   skeleton-only (`emit_*.zig` produce contract text, not executable
