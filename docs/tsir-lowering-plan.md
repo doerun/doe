@@ -167,6 +167,13 @@ The repo already has a TSIR scaffold under `runtime/zig/src/tsir/`:
   - canonicalization/digest scaffolding
 - `reference_interpreter.zig`
   - parity-oracle scaffold
+- `frontend.zig`
+  - WGSL IR to TSIR semantic lowering for bindings, axes, reductions,
+    collectives, typed rejections, and family hints
+- `planner.zig`
+  - correctness-first TSIR realization planning for residency, reduction tree
+    choices, descriptor-checked collectives, target hashes, and typed
+    rejections
 - `mod.zig`
   - public module surface
 
@@ -185,8 +192,9 @@ and:
 - `tsir_source_not_affine`
 - `tsir_target_unfit`
 
-The missing work is wiring that scaffold into the real frontend, planner,
-emitter, manifest binding, and parity receipts.
+The missing work is full kernel-body semantic representation, mechanical
+backend emission, manifest binding, convert-time lowering, and parity receipts
+backed by real backend execution.
 
 ## Design rules
 
@@ -520,7 +528,9 @@ The reason for avoiding PR-gating CI here is practical rather than ideological:
 - full reference interpretation is expensive on large kernels
 - simfabric-backed runs require provisioned infrastructure
 - most repo changes do not touch lowering
-- convert-time lowering already exercises parity for promoted artifacts
+- existing promoted non-TSIR artifacts already have their own parity gates;
+  TSIR convert-time parity is introduced by this plan, not assumed as current
+  state
 
 That still leaves room for lightweight automation. A fixed nightly canary set
 is compatible with this plan and should be preferred over broad PR gating:

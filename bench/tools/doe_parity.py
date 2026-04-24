@@ -34,6 +34,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import jsonschema
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RECEIPT_DIR = REPO_ROOT / "reports" / "parity"
@@ -261,11 +263,31 @@ def compare(
     )
 
 
+def _format_schema_path(error: jsonschema.ValidationError) -> str:
+    if not error.path:
+        return "<root>"
+    return ".".join(str(part) for part in error.path)
+
+
+def validate_receipt_doc(doc: dict[str, Any]) -> None:
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
+    errors = sorted(validator.iter_errors(doc), key=lambda err: list(err.path))
+    if errors:
+        first = errors[0]
+        path = _format_schema_path(first)
+        raise ValueError(
+            f"parity receipt schema validation failed at {path}: {first.message}"
+        )
+
+
 def write_receipt(receipt: ParityReceipt, receipt_dir: Path) -> Path:
+    doc = receipt.to_json()
+    validate_receipt_doc(doc)
     receipt_dir.mkdir(parents=True, exist_ok=True)
     out_path = receipt_dir / f"{receipt.kernel}.parity.json"
     out_path.write_text(
-        json.dumps(receipt.to_json(), indent=2, sort_keys=True) + "\n",
+        json.dumps(doc, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return out_path

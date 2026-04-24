@@ -9,6 +9,27 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR Step 5/6 — first executable planner increment: new
+  `runtime/zig/src/tsir/planner.zig` exports
+  `tsir.planner.planRealization(allocator, semantic, descriptor, options)`.
+  The pass emits deterministic `RealizationFunction` records from TSIR
+  semantic plus a target descriptor: first-fit tile factors, WebGPU/WSE-3
+  PE-grid choice, per-binding residency decisions, target descriptor hashes,
+  reduction tree choices for `associative_allowed` reductions, native
+  collective realization nodes, and typed rejection entries for PE-budget,
+  target-dtype, and missing-collective failures. Loader-owned streaming is an
+  explicit option (`LoaderCapabilities.fabric_streaming` /
+  `max_stream_chunk_bytes`), so `fabric_streamed` is never selected as a hidden
+  fallback when packaging has not declared it. Focused coverage lives in
+  `runtime/zig/tests/wgsl/tsir_planner_test.zig`; `zig build test-wgsl`
+  passes.
+- TSIR parity CLI schema gate: `bench/tools/doe_parity.py` now validates the
+  generated receipt dictionary against
+  `config/doe-parity-receipt.schema.json` before writing it. Invalid receipt
+  state (for example an unknown comparison status) fails closed with a schema
+  path, and `bench/tests/test_doe_parity.py` now locks both a valid generated
+  receipt and the invalid-status rejection. This does not add backend
+  execution, oracle execution, manifest binding, or a parity pass claim.
 - Loop 2 plan doc-only update: `docs/tsir-lowering-plan.md` now splits Loop 2
   TSIR machinery into explicit compiler-only subloops while preserving the
   one-committable-increment rule, rollout order, and Loop 2 / Loop 3 boundary.

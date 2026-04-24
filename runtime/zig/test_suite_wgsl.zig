@@ -39,6 +39,7 @@ const proof_matching_test = @import("tests/core/proof_matching_test.zig");
 const lean_proof_application_test = @import("tests/core/lean_proof_application_test.zig");
 const tsir_scaffold_test = @import("tests/wgsl/tsir_scaffold_test.zig");
 const tsir_frontend_test = @import("tests/wgsl/tsir_frontend_test.zig");
+const tsir_planner_test = @import("tests/wgsl/tsir_planner_test.zig");
 
 comptime {
     _ = emit_hlsl_map_test;
@@ -82,4 +83,5 @@ comptime {
     _ = lean_proof_application_test;
     _ = tsir_scaffold_test;
     _ = tsir_frontend_test;
+    _ = tsir_planner_test;
 }

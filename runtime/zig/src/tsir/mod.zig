@@ -9,6 +9,7 @@ pub const schema = @import("schema.zig");
 pub const digest = @import("digest.zig");
 pub const reference = @import("reference_interpreter.zig");
 pub const frontend = @import("frontend.zig");
+pub const planner = @import("planner.zig");
 
 pub const CONTRACT_VERSION = schema.CONTRACT_VERSION;
 

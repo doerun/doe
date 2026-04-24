@@ -126,6 +126,51 @@ class TestParityScaffolding(unittest.TestCase):
         self.assertEqual(parsed["$id"], "doe-parity-receipt.schema.json")
         self.assertIn("bit_exact_solo", parsed["properties"]["exactnessClass"]["enum"])
 
+    def test_generated_receipt_validates_against_schema(self) -> None:
+        receipt = doe_parity.ParityReceipt(
+            schema_version=1,
+            artifact_kind="doe_parity_receipt",
+            kernel="rmsnorm",
+            exactness_class="bit_exact_solo",
+            reference_hash=None,
+            inputs_digest="0" * 64,
+            comparisons=[
+                doe_parity.ComparisonOutcome(
+                    backend="reference",
+                    status="not_implemented",
+                    detail="oracle pending",
+                ),
+                doe_parity.ComparisonOutcome(
+                    backend="webgpu",
+                    status="deferred",
+                    detail="backend pending",
+                ),
+            ],
+            rejection_reasons=[],
+        )
+        doe_parity.validate_receipt_doc(receipt.to_json())
+
+    def test_receipt_schema_rejects_invalid_comparison_status(self) -> None:
+        receipt = doe_parity.ParityReceipt(
+            schema_version=1,
+            artifact_kind="doe_parity_receipt",
+            kernel="rmsnorm",
+            exactness_class="bit_exact_solo",
+            reference_hash=None,
+            inputs_digest="0" * 64,
+            comparisons=[
+                doe_parity.ComparisonOutcome(
+                    backend="reference",
+                    status="not_implemented",
+                ),
+            ],
+            rejection_reasons=[],
+        )
+        doc = receipt.to_json()
+        doc["comparisons"][0]["status"] = "looks_green"
+        with self.assertRaisesRegex(ValueError, "schema validation failed"):
+            doe_parity.validate_receipt_doc(doc)
+
     def test_extract_rejection_reasons_deduplicates_and_validates(self) -> None:
         reasons = doe_parity.extract_rejection_reasons(
             {
