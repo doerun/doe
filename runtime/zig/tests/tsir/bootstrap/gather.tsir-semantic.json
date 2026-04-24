@@ -35,6 +35,18 @@
           "readWrite": true
         }
       ],
+      "body": {
+        "op": "gather",
+        "bindingRoles": [
+          { "bindingIndex": 0, "role": "indices" },
+          { "bindingIndex": 1, "role": "table" },
+          { "bindingIndex": 2, "role": "output" }
+        ],
+        "axisRoles": [
+          { "axisIndex": 0, "role": "token" },
+          { "axisIndex": 1, "role": "hidden" }
+        ]
+      },
       "reductions": [],
       "collectives": [],
       "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"

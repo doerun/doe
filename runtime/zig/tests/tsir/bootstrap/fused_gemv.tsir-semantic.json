@@ -35,6 +35,18 @@
           "readWrite": true
         }
       ],
+      "body": {
+        "op": "fused_gemv",
+        "bindingRoles": [
+          { "bindingIndex": 0, "role": "matrix" },
+          { "bindingIndex": 1, "role": "vector" },
+          { "bindingIndex": 2, "role": "output" }
+        ],
+        "axisRoles": [
+          { "axisIndex": 0, "role": "output" },
+          { "axisIndex": 1, "role": "reduction" }
+        ]
+      },
       "reductions": [
         {
           "axis": 1,

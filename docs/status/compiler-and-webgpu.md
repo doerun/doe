@@ -9,6 +9,20 @@ This is a live topical status shard.
 
 ## 2026-04-24
 
+- TSIR manifest/AOT binding helper: `bench/tools/tsir_manifest_lowering.py`
+  now builds and validates a schema-backed manifest lowering entry from
+  `tsirSemanticDigest`, `tsirRealizationDigest`, `emitterDigest`,
+  `targetDescriptorCorrectnessHash`, frontend/compiler pins, backend,
+  kernel ref, exactness, and rejection taxonomy inputs. The helper rejects
+  malformed lowercase-hex digests, duplicate rejection reasons, unsupported
+  exactness/taxonomy values, and schema-invalid entries before emitting
+  canonical JSON or a `manifestLoweringEntryDigest`. The
+  `config/doe-tsir-manifest-lowering.schema.json` exactness contract now
+  fail-closes per class and requires unique algorithm invariants and rejection
+  reasons. Focused coverage lives in
+  `bench/tests/test_tsir_manifest_lowering.py`. This is a bench-tool binding
+  increment only: no runtime Zig, backend execution, or manifest loader path
+  changed.
 - TSIR Step 5/6 — first executable planner increment: new
   `runtime/zig/src/tsir/planner.zig` exports
   `tsir.planner.planRealization(allocator, semantic, descriptor, options)`.
