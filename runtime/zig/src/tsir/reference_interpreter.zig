@@ -815,13 +815,23 @@ fn tryIdentity(
     };
 }
 
-/// Detect the simplest reduction case the oracle can honor in Phase A:
-/// a 1-D `strict_ordered` sum over `f32` that reads one `[N]f32` input
-/// and writes one `[1]f32` output. Accumulation happens in `f32` with
-/// an explicit left-fold over the input's declared byte order, matching
-/// the numerical contract in the module header. Other ops, associativity
-/// modes, and dtypes fall through to `NotImplemented` so the oracle
-/// never silently honors a reduction class it has not yet implemented.
+/// Detect and interpret simple one-binding reductions. Phase A coverage:
+///   * 2 bindings (one read-only input, one read-write output).
+///   * 1 reduction with `f32` accumulation; `sum`, `product`, `min`, or
+///     `max` op; `NaN/Inf = propagate`.
+///   * Associativity: `strict_ordered` (left-fold) or
+///     `associative_allowed` (tree shape from the matching
+///     Realization reduction node; `.linear` / `.ring` single-PE-
+///     identical, `.binomial` pairwise).
+///   * Ranks 1, 2, 3, and 4+ (generic N-D fallback). Binomial fold is
+///     supported for ranks 1, 2, 3; rank 4+ rejects binomial and
+///     returns null so the caller can emit `NotImplemented`.
+///   * Input dtypes `{f32, f16, bf16}` via upcast to f32; output dtypes
+///     `{f32, f16, bf16}` via downcast from the f32 accumulator.
+///
+/// Anything outside this envelope falls through to `NotImplemented` so
+/// the oracle never silently honors a reduction class it has not yet
+/// implemented.
 fn trySimpleReduction(
     allocator: std.mem.Allocator,
     semantic: schema.Semantic,
@@ -846,7 +856,8 @@ fn trySimpleReduction(
     //                        (the distinction is fabric topology,
     //                        which a single-PE interpreter cannot
     //                        exercise). `.binomial` pairwise fold is
-    //                        rank-1-only this phase.
+    //                        supported for ranks 1–3; rank 4+ rejects
+    //                        binomial and falls through.
     var effective_tree_shape: schema.ReductionTreeShape = .linear;
     switch (reduction.contract.associativity) {
         .strict_ordered => {},

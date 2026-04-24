@@ -107,6 +107,20 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Code: refresh two stale comments in
+  `runtime/zig/src/tsir/reference_interpreter.zig`:
+  (a) `trySimpleReduction` docstring said "Detect the simplest
+  reduction case the oracle can honor in Phase A: a 1-D
+  `strict_ordered` sum over `f32` …" — stale; the function now
+  handles ranks 1–4+, all four reduction ops, both associativity
+  modes, and all three Phase A dtypes with upcast/downcast. Wrote
+  a precise Phase A envelope listing what's inside vs. what falls
+  through. (b) Inline associativity-dispatch comment said "`.binomial`
+  pairwise fold is rank-1-only this phase" — rank-2 and rank-3 both
+  support binomial now; only rank-4+ rejects it. Updated.
+  933/933 Zig tests still pass. Strategy-leak gate PASS. Cites
+  `docs/tsir-lowering-plan.md` Step 1 (oracle scope) and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Code: refresh stale module-header comment in
   `runtime/zig/src/tsir/digest.zig`. Said "Realization
   canonicalization is still scaffolding (byte-string summary)
