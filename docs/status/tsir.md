@@ -17,8 +17,72 @@ cap once the TSIR Phase A wedges started landing. Historical TSIR entries
 remain in `compiler-and-webgpu.md` until a deliberate migration sweep
 moves them here; new TSIR entries go here going forward.
 
+## Phase A status at a glance
+
+Compiler surface by plan step (see
+[`docs/tsir-lowering-plan.md`](../tsir-lowering-plan.md) for the full
+plan). This is a shape summary — file paths name what exists, not
+how much. For iteration cadence see
+[`docs/loop-protocol.md`](../loop-protocol.md).
+
+| Step | Artifact | State |
+| --- | --- | --- |
+| Step 1 oracle | `runtime/zig/src/tsir/reference_interpreter.zig` | Recognizes fused_gemv / gather / rms_norm across {f32, f16, bf16} with strict_ordered + associative_allowed reductions + literal/uniform epsilon. Unsupported shapes fail closed with `NotImplemented`. |
+| Step 1.5 bootstrap | `runtime/zig/tests/tsir/bootstrap/` | Pinned WGSL + hand-sketched `.tsir-semantic.json` + per-target realization sketches for fused_gemv, rms_norm, gather. |
+| Step 2 descriptors | `runtime/zig/src/targets/{webgpu_generic,wse3,mod}.zig` | Correctness/planner field split; `RuntimeSizedBindingPolicy`; pairwise-distinct descriptor hashes. |
+| Step 3 schema | `runtime/zig/src/tsir/schema.zig` + `config/doe-tsir-*.schema.json` | Semantic/realization split with canonical digests; RMSNorm body contract + uniform-field epsilon with binding/offset plumbing. |
+| Step 4 frontend | `runtime/zig/src/tsir/frontend.zig` | Lowers all three bootstrap families to their declared body ops; axis recovery + reduction recovery + body inference (per family) + epsilon resolution. |
+| Step 5 planner | `runtime/zig/src/tsir/planner.zig` | `planRealization` produces deterministic `RealizationFunction` records for both descriptors; residency / tile factors / PE grid / reduction tree / typed rejection. |
+| Step 6 collectives | (embedded in planner + frontend) | Bootstrap families have no collectives; no dedicated pass file yet. Required before attention (Phase B). |
+| Step 7 emitter | `runtime/zig/src/tsir/emit_{csl,webgpu,msl,dxil,spir_v,text_skeleton}.zig` | Skeleton emitters for five backends with source-hashed `emitterCodeDigest()` pairwise-distinct by test. **Executable kernel bodies not yet emitted** — skeleton contracts only. |
+| Step 8 parity CLI | `bench/tools/doe_parity.py` + `bench/gates/nightly_tsir_parity_canary.py` | Stub contract with lowering-identity binding. Reference interpreter and backend lanes return `not_implemented` / `deferred`; **subprocess harness to the Zig oracle unlanded**. |
+| Step 9 family rewrites | — | **0/3 Loop 3 parity receipts.** Directory `reports/parity/` does not yet exist. Gated on Step 7 executable bodies + Step 8 subprocess harness. |
+| Step 10 manifest binding | `bench/tools/tsir_manifest_lowering.py` + `bench/fixtures/tsir-manifest-entries/*.json` | Schema, builder, six bootstrap fixtures; receipt ↔ fixture identity lockstep + fixture version + descriptor uniformity locked by test. |
+| Step 11 AOT convert | — | Unlanded; cache-key design pending. |
+| Step 12 rollout | — | Unlanded. |
+
+Gates protecting Phase A artifacts:
+
+- `bench/gates/doe_private_strategy_leak_gate.py` — private-strategy
+  leak guard (Doe docs must not contain upstream-repo path or
+  competitive-framing patterns).
+- `runtime/zig/tools/check_line_limits.py` — 999-line Zig source cap;
+  three TSIR modules allowlisted with tracked sharding follow-ups.
+- `bench/tests/test_doc_link_coverage.py` — in-repo markdown link
+  integrity.
+- `test_canary_receipts_carry_fixture_lowering_identity` — receipt ↔
+  fixture identity.
+- `test_bootstrap_fixtures_share_version_and_descriptor_identity` —
+  fixture set coherence.
+- `test_rejection_taxonomy_is_consistent_across_schemas` — rejection
+  taxonomy lockstep across the four JSON schemas + Python CLI.
+- Zig `test "tsir emitter code digests are pairwise distinct across
+  all five backends"` — manifest-binding disambiguation.
+
+The missing path to proof 1 — in priority order: executable kernel
+bodies in a backend emitter (Step 7), parity CLI subprocess harness to
+the Zig oracle (Step 8), first Loop 3 receipt for fused_gemv against
+both `webgpu-generic` and `wse3` (Step 9 iter 1), manifest binding of
+that receipt into a Doppler manifest (Step 10). Each is a multi-day
+wedge; the Loop 2 hygiene work through today has made every one of
+them safer to attempt.
+
 ## 2026-04-24
 
+- Docs: add a Phase A status-at-a-glance section at the top of this
+  shard. Readers coming fresh were landing on the dated entries
+  immediately, which meant scanning 20+ tick entries to orient on
+  current Phase A state. The new section names what exists by file
+  path for each plan step (per CLAUDE.md doc-drift discipline —
+  shape not counts), lists the gates that protect Phase A artifacts
+  (strategy-leak, line-limit, doc-link, canary-receipt-identity,
+  fixture uniformity, rejection-taxonomy lockstep, emitter-digest
+  distinctness), and closes with the remaining proof-1 work in
+  priority order (executable kernel bodies, parity CLI subprocess
+  harness, Loop 3 fused_gemv receipt, manifest binding). Strategy
+  leak gate and doc-link coverage test both PASS. Cites
+  `docs/tsir-lowering-plan.md` step structure and
+  `docs/loop-protocol.md` Loop 2 / Loop 3 discipline.
 - Gate: fix the third self-referential leak-gate trip of the day.
   The test landed in tick 20 (`bench/tests/test_doc_link_coverage.py`)
   had a code comment quoting the forbidden upstream-path pattern in
