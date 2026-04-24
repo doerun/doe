@@ -451,6 +451,11 @@ Related user-facing entrypoints:
 - [`runtime/zig/README.md`](../runtime/zig/README.md)
 - [`runtime/zig/examples/csl-runtime-smoke.json`](../runtime/zig/examples/csl-runtime-smoke.json)
 - [`docs/tsir-lowering-plan.md`](./tsir-lowering-plan.md)
+- [`docs/status/cerebras-csl.md`](./status/cerebras-csl.md) — live
+  status for the CSL lane (INT4 PLE progress, active blockers,
+  landed infrastructure)
+- [`docs/status/tsir.md`](./status/tsir.md) — live status for the
+  TSIR generalization path described in §TSIR generalization path
 
 ## Fixture mirrors: `examples/` vs `runtime/zig/examples/`
 

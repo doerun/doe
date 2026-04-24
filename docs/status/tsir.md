@@ -107,6 +107,16 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: extend `docs/csl-architecture.md` §Source of truth
+  "Related user-facing entrypoints" list with pointers to the
+  two live-status shards that cover this doc's subject matter:
+  `docs/status/cerebras-csl.md` (CSL lane live status) and
+  `docs/status/tsir.md` (TSIR generalization path live status).
+  Same discoverability pattern as tick 54's plan-doc extension.
+  A reader arriving at csl-architecture.md and looking for
+  current reality would otherwise miss both shards.
+  Strategy-leak gate PASS, doc-link coverage PASS. Cites
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: extend `docs/tsir-lowering-plan.md` §Relationship to
   current Doe docs with pointers to the two load-bearing docs
   added today: `docs/loop-protocol.md` (restored in tick 19 —
