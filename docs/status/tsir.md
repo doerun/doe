@@ -107,6 +107,18 @@ them safer to attempt.
 
 ## 2026-04-24
 
+- Docs: add TSIR compiler surface section to
+  `runtime/zig/README.md` §Source modules. The README had zero
+  TSIR mentions despite Phase A landing substantial source
+  surface (13 Zig files under `src/tsir/` + `src/targets/`). A
+  reader scanning §Source modules for the TSIR surface would find
+  nothing. Added a grouped entry between the WebGPU/render source
+  modules and the §Public surface section, naming the three
+  file groups (TSIR core, skeleton emitters, target descriptors)
+  with pointers to the plan and status docs for detail. Strategy
+  leak gate PASS, doc-link coverage PASS. Cites
+  `docs/tsir-lowering-plan.md` §Current scaffold and
+  `docs/loop-protocol.md` Loop 2 protocol.
 - Docs: extend `docs/shader-compiler-architecture.md` §Related
   docs. The section had a single entry (TSIR plan doc). Added
   pointers to the overall architecture doc, the sibling compiler

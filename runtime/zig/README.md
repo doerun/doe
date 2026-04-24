@@ -156,6 +156,20 @@ WebGPU backend:
 - `src/wgpu_async_procs.zig` — async render-pipeline/error-scope/compilation-info proc surface and wait helpers.
 - `src/core/resource/wgpu_resources.zig` — buffer/texture management, bind group building, shader module and pipeline creation.
 
+TSIR compiler surface (Phase A landed — schema, digests, frontend, planner,
+reference interpreter, and mechanical skeleton emitters for five backends;
+see [`../../docs/status/tsir.md`](../../docs/status/tsir.md) for live status
+and [`../../docs/tsir-lowering-plan.md`](../../docs/tsir-lowering-plan.md)
+for the architecture):
+- `src/tsir/schema.zig`, `src/tsir/digest.zig`, `src/tsir/family_hint.zig`,
+  `src/tsir/frontend.zig`, `src/tsir/planner.zig`,
+  `src/tsir/reference_interpreter.zig`, `src/tsir/mod.zig` — TSIR core.
+- `src/tsir/emit_csl.zig`, `src/tsir/emit_webgpu.zig`, `src/tsir/emit_msl.zig`,
+  `src/tsir/emit_dxil.zig`, `src/tsir/emit_spir_v.zig`,
+  `src/tsir/emit_text_skeleton.zig` — mechanical backend skeleton emitters.
+- `src/targets/webgpu_generic.zig`, `src/targets/wse3.zig`,
+  `src/targets/mod.zig` — target descriptors with correctness/planner split.
+
 Public surface (core/full split):
 - `src/core/surface.zig` — core-only public API surface: validate, accept, coverage ledger for compute/copy/resource/queue commands.
 - `src/full/surface_api.zig` — full public API surface: classify (core vs full-only), accept, combined coverage ledger for all commands.
