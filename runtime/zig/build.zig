@@ -867,6 +867,32 @@ pub fn build(b: *std.Build) void {
     csl_host_plan_tool_step.dependOn(&install_csl_host_plan_tool.step);
     b.getInstallStep().dependOn(csl_host_plan_tool_step);
 
+    // Bootstrap manifest fixture generator. Invoked by
+    // `bench/tools/generate_tsir_manifest_fixtures.py` via `zig run` on
+    // the source file, so the file is not otherwise type-checked by the
+    // standard `zig build` flow. Adding it as a build step ensures that
+    // schema, target-descriptor, frontend, or planner changes break the
+    // build immediately rather than silently at next fixture regen.
+    const tsir_bootstrap_manifest_inputs = b.addExecutable(.{
+        .name = "doe-tsir-bootstrap-manifest-inputs",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tsir_bootstrap_manifest_inputs.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    tsir_bootstrap_manifest_inputs.linkLibC();
+    const install_tsir_bootstrap_manifest_inputs = b.addInstallArtifact(tsir_bootstrap_manifest_inputs, .{});
+    const tsir_bootstrap_manifest_inputs_step = b.step(
+        "tsir-bootstrap-manifest-inputs",
+        "Build the TSIR bootstrap manifest fixture generator tool",
+    );
+    tsir_bootstrap_manifest_inputs_step.dependOn(&install_tsir_bootstrap_manifest_inputs.step);
+    b.getInstallStep().dependOn(tsir_bootstrap_manifest_inputs_step);
+
     const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);

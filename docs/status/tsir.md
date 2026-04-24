@@ -19,6 +19,22 @@ moves them here; new TSIR entries go here going forward.
 
 ## 2026-04-24
 
+- Build: add `tsir-bootstrap-manifest-inputs` build step.
+  `runtime/zig/src/tsir_bootstrap_manifest_inputs.zig` is invoked by
+  the Python fixture generator (`bench/tools/generate_tsir_manifest_fixtures.py`)
+  via `zig run` on the source, so the file was not otherwise
+  type-checked by standard `zig build`. A schema, target-descriptor,
+  frontend, or planner change that broke the generator source would
+  only surface at next fixture regen — potentially days after the
+  breaking change. Added the tool as a build step matching the
+  pattern used for `csl_host_plan_tool` so compile errors surface
+  immediately. Binary installs at
+  `zig-out/bin/doe-tsir-bootstrap-manifest-inputs`. `zig build
+  test-wgsl` still passes 933/933. Cites
+  `docs/tsir-lowering-plan.md` Step 10 (manifest binding — the
+  generator produces these fixtures) + `docs/loop-protocol.md`
+  Loop 2 protocol (harness tightening follows the tick 15/16
+  pattern of wiring gate checks into per-tick build signals).
 - Docs: refresh `bench/fixtures/tsir-manifest-entries/README.md`. The
   existing README named only the regeneration command — not the
   fixture purpose, the downstream consumers that depend on this set
