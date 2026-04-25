@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +20,7 @@ if str(RUNNER_DIR) not in sys.path:
 
 from bench.tools.run_doe_csl_int4ple_transcript import (  # noqa: E402
     find_tokenized_prompt_artifact,
+    materialize_tokenized_prompt_from_doppler_tokenizer,
     program_bundle_logits_digests,
     required_weight_keys,
     sha256_compact_json,
@@ -270,6 +273,68 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         self.assertEqual(first, second)
         assert first is not None
         self.assertEqual(first["tokenCount"], len(tokens))
+
+    def test_materializes_tokenized_prompt_with_doppler_tokenizer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            doppler_root = root / "doppler"
+            (doppler_root / "src/inference/pipelines/text").mkdir(parents=True)
+            (doppler_root / "src/tooling").mkdir(parents=True)
+            (doppler_root / "package.json").write_text("{}", encoding="utf-8")
+            (doppler_root / "src/tooling/program-bundle.js").write_text(
+                "export {};\n",
+                encoding="utf-8",
+            )
+            (doppler_root / "src/inference/tokenizer.js").write_text(
+                "export {};\n",
+                encoding="utf-8",
+            )
+            (
+                doppler_root / "src/inference/pipelines/text/init-chat-templates.js"
+            ).write_text("export {};\n", encoding="utf-8")
+            model_dir = doppler_root / "models/local/test"
+            model_dir.mkdir(parents=True)
+            manifest_path = model_dir / "manifest.json"
+            tokenizer_path = model_dir / "tokenizer.json"
+            manifest = {
+                "tokenizer": {"type": "bundled", "file": "tokenizer.json"},
+                "inference": {"chatTemplate": {"enabled": True, "type": "gemma4"}},
+            }
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            tokenizer_path.write_text("{}", encoding="utf-8")
+            bundle_path = doppler_root / "reports/bundle/program-bundle.json"
+            bundle_path.parent.mkdir(parents=True)
+            bundle_path.write_text("{}", encoding="utf-8")
+            out_dir = root / "out"
+            tokens = [2, 105, 2364]
+            completed = subprocess.CompletedProcess(
+                args=["node"],
+                returncode=0,
+                stdout=json.dumps({"ids": tokens}),
+                stderr="",
+            )
+
+            with mock.patch(
+                "bench.tools.run_doe_csl_int4ple_transcript.subprocess.run",
+                return_value=completed,
+            ) as run:
+                artifact = materialize_tokenized_prompt_from_doppler_tokenizer(
+                    program_bundle_path=bundle_path,
+                    manifest_path=manifest_path,
+                    manifest=manifest,
+                    prompt_text="hello",
+                    expected_token_ids_sha256=sha256_compact_json(tokens),
+                    expected_token_count=len(tokens),
+                    out_dir=out_dir,
+                )
+
+        self.assertIsNotNone(artifact)
+        assert artifact is not None
+        self.assertEqual(artifact["tokenCount"], len(tokens))
+        self.assertEqual(artifact["source"], "materialized_doppler_bundled_tokenizer")
+        self.assertEqual(artifact["tokenIdsSha256"], sha256_compact_json(tokens))
+        run.assert_called_once()
+        self.assertEqual(run.call_args.args[0][:3], ["node", "--input-type=module", "-"])
 
     def test_lm_head_weight_candidates_prefer_untied_names(self) -> None:
         candidates = tensor_name_candidates_for_weight_key("lm_head")

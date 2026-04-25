@@ -365,6 +365,105 @@ def find_tokenized_prompt_artifact(
     return None
 
 
+def materialize_tokenized_prompt_from_doppler_tokenizer(
+    *,
+    program_bundle_path: Path,
+    manifest_path: Path,
+    manifest: dict[str, Any],
+    prompt_text: str,
+    expected_token_ids_sha256: str,
+    expected_token_count: int,
+    out_dir: Path,
+) -> dict[str, Any] | None:
+    if not expected_token_ids_sha256 or expected_token_count <= 0:
+        return None
+    tokenizer_config = manifest.get("tokenizer") or {}
+    tokenizer_file = tokenizer_config.get("file")
+    if not isinstance(tokenizer_file, str) or not tokenizer_file.strip():
+        return None
+    tokenizer_path = (manifest_path.resolve().parent / tokenizer_file).resolve()
+    if not tokenizer_path.is_file():
+        return None
+
+    chat_template = (manifest.get("inference") or {}).get("chatTemplate") or {}
+    use_chat_template = (
+        bool(chat_template.get("enabled")) if isinstance(chat_template, dict) else False
+    )
+    chat_template_type = (
+        str(chat_template.get("type"))
+        if isinstance(chat_template, dict) and chat_template.get("type")
+        else None
+    )
+    doppler_root = program_bundle_repo_root(program_bundle_path)
+    script = f"""
+import fs from 'node:fs/promises';
+import {{ Tokenizer }} from {json.dumps((doppler_root / "src/inference/tokenizer.js").as_posix())};
+import {{ applyChatTemplate }} from {json.dumps((doppler_root / "src/inference/pipelines/text/init-chat-templates.js").as_posix())};
+
+console.log = () => {{}};
+console.info = () => {{}};
+console.warn = () => {{}};
+
+const manifest = JSON.parse(await fs.readFile({json.dumps(manifest_path.as_posix())}, 'utf8'));
+const tokenizerJson = JSON.parse(await fs.readFile({json.dumps(tokenizer_path.as_posix())}, 'utf8'));
+const tokenizer = new Tokenizer();
+await tokenizer.initialize(manifest, {{ loadTokenizerJson: async () => tokenizerJson }});
+const promptText = {json.dumps(prompt_text)};
+const useChatTemplate = {json.dumps(use_chat_template)};
+const chatTemplateType = {json.dumps(chat_template_type)};
+const processedPrompt = useChatTemplate && chatTemplateType
+  ? applyChatTemplate(promptText, chatTemplateType)
+  : promptText;
+const ids = tokenizer.encode(processedPrompt).map((value) => Number(value));
+process.stdout.write(JSON.stringify({{ ids }}));
+"""
+    completed = subprocess.run(
+        ["node", "--input-type=module", "-"],
+        cwd=doppler_root,
+        input=script,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        raise ValueError(
+            "failed to materialize Program Bundle tokenized prompt with "
+            f"Doppler tokenizer: {stderr or 'node exited non-zero'}"
+        )
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Doppler tokenizer materialization emitted invalid JSON"
+        ) from exc
+    ids = payload.get("ids")
+    if not isinstance(ids, list) or not all(isinstance(value, int) for value in ids):
+        raise ValueError("Doppler tokenizer materialization did not emit token IDs")
+    if len(ids) != expected_token_count:
+        raise ValueError(
+            "Doppler tokenizer token-count mismatch: "
+            f"expected {expected_token_count}, got {len(ids)}"
+        )
+    actual_hash = sha256_compact_json(ids)
+    if actual_hash != expected_token_ids_sha256:
+        raise ValueError(
+            "Doppler tokenizer token hash mismatch: "
+            f"expected {expected_token_ids_sha256}, got {actual_hash}"
+        )
+
+    artifact = write_u32_array(out_dir / "program_bundle_tokenized_prompt.u32", ids)
+    artifact.update(
+        {
+            "source": "materialized_doppler_bundled_tokenizer",
+            "sourcePath": rel(tokenizer_path),
+            "tokenIdsSha256": expected_token_ids_sha256,
+        }
+    )
+    return artifact
+
+
 def program_bundle_step_array(step: dict[str, Any]) -> list[str]:
     result = [str(step["op"]), str(step["kernelId"])]
     weights = step.get("weights")
@@ -621,24 +720,31 @@ def export_from_program_bundle(
     )
     token_count = int(phase.get("prefillTokens") or 0)
     token_ids_sha256 = strip_doppler_hash(prompt.get("tokenIdsHash"))
-    tokenized_prompt = find_tokenized_prompt_artifact(
-        expected_token_ids_sha256=token_ids_sha256,
-        expected_token_count=token_count,
-        out_dir=out_dir,
-    ) or {
-        "path": "not_captured_by_doppler_program_bundle",
-        "sha256": "not_captured_by_doppler_program_bundle",
-        "dtype": "uint32",
-        "tokenCount": token_count,
-        "preview": [],
-        "tokenIdsSha256": token_ids_sha256,
-    }
     chat_template = (manifest.get("inference") or {}).get("chatTemplate") or {}
     use_chat_template = (
         bool(chat_template.get("enabled"))
         if isinstance(chat_template, dict)
         else False
     )
+    tokenized_prompt = find_tokenized_prompt_artifact(
+        expected_token_ids_sha256=token_ids_sha256,
+        expected_token_count=token_count,
+        out_dir=out_dir,
+    ) or materialize_tokenized_prompt_from_doppler_tokenizer(
+        program_bundle_path=program_bundle_path,
+        manifest_path=manifest_path,
+        manifest=manifest,
+        prompt_text=prompt_text,
+        expected_token_ids_sha256=token_ids_sha256,
+        expected_token_count=token_count,
+        out_dir=out_dir,
+    )
+    if tokenized_prompt is None:
+        raise ValueError(
+            "Program Bundle tokenized prompt is unavailable: expected "
+            f"tokenIdsHash={token_ids_sha256!r} tokenCount={token_count}. "
+            "Export concrete token IDs or provide a bundled tokenizer artifact."
+        )
     input_set_components = {
         "modelId": program_bundle["modelId"],
         "promptSha256": strip_doppler_hash(prompt.get("hash")),
