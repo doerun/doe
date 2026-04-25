@@ -195,3 +195,17 @@ runtime/zig/examples/**/sim_core.*
 # side effect; runner wrappers should `cd` into a workspace dir, but
 # until then ignore the leftovers anywhere they land.
 wio_flows_tmpdir.*/
+
+# Cerebras SDK scratch files that escape to repo root when runners
+# don't cd into a workspace dir. Same root cause as wio_flows_tmpdir
+# above. Anchored with leading / to avoid hiding legitimate same-named
+# files in subtrees.
+/sim.log
+/sim_stats.json
+/simconfig.json
+/plan.json
+/io_port-*.json
+/transformer_layer_shape-*.json
+/transformer_layer_shape-*-compile-errors.txt
+/gemma4_e2b_manifest_attention_core-*.json
+/stage3_*-compile-errors.txt

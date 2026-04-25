@@ -42,6 +42,11 @@ fi
 
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
+SIM_STATS_WAS_CLEAN=0
+if [[ -f sim_stats.json && -z "$(git status --porcelain -- sim_stats.json 2>/dev/null)" ]]; then
+    SIM_STATS_WAS_CLEAN=1
+fi
+
 step() {
     local name="$1"; shift
     echo
@@ -51,6 +56,10 @@ step() {
 
 step "1/3  gates: run_cerebras_evidence_bundle.py" \
     python3 bench/tools/run_cerebras_evidence_bundle.py
+
+if [[ "$SIM_STATS_WAS_CLEAN" -eq 1 && -n "$(git status --porcelain -- sim_stats.json 2>/dev/null)" ]]; then
+    git restore -- sim_stats.json
+fi
 
 step "2/3  pack: pack_cerebras_validation_archive.py" \
     python3 bench/tools/pack_cerebras_validation_archive.py
