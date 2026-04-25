@@ -82,6 +82,12 @@ pub fn run(
     if (tryIdentity(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
+    if (tryResidualAdd(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
+    if (tryGeluGated(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
     return error.NotImplemented;
 }
 
@@ -801,6 +807,215 @@ fn tryIdentity(
 
     const output_bytes = try allocator.dupe(u8, input_bytes);
     errdefer allocator.free(output_bytes);
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect and interpret the residual-add bootstrap-family case:
+///   `output[i] = summand_a[i] + summand_b[i]` over a single hidden
+///   axis. Shape this recognizer matches:
+///   * one function, zero reductions, zero collectives, one axis
+///   * exactly three bindings with declared roles:
+///     `summand_a`, `summand_b`, `output`
+///   * axis role is `hidden`
+///   * `f32` element type across all three bindings (matches the live
+///     emit_csl_semantic_ops.emitResidualPe wrapper)
+///   * one-dimensional `logical_shape` matching across the three bindings
+fn tryResidualAdd(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.reductions.len != 0) return null;
+    if (func.bindings.len != 3) return null;
+    if (func.axes.len != 1) return null;
+    if (func.body.op != .residual_add) return null;
+    if (func.body.binding_roles.len != 3) return null;
+    if (func.body.axis_roles.len != 1) return null;
+
+    if (func.body.axis_roles[0].role != .hidden) return null;
+
+    var a_index: ?u32 = null;
+    var b_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .summand_a => {
+                if (a_index != null) return null;
+                a_index = role.binding_index;
+            },
+            .summand_b => {
+                if (b_index != null) return null;
+                b_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            else => return null,
+        }
+    }
+    const ai = a_index orelse return null;
+    const bi = b_index orelse return null;
+    const oi = output_index orelse return null;
+    if (ai >= func.bindings.len or bi >= func.bindings.len or oi >= func.bindings.len) return null;
+    if (ai == bi or bi == oi or ai == oi) return null;
+
+    const ab = func.bindings[ai];
+    const bb = func.bindings[bi];
+    const ob = func.bindings[oi];
+    if (ab.read_write or bb.read_write) return null;
+    if (!ob.read_write) return null;
+    if (ab.elem != .f32 or bb.elem != .f32 or ob.elem != .f32) return null;
+    if (ab.logical_shape.len != 1 or bb.logical_shape.len != 1 or ob.logical_shape.len != 1) return null;
+
+    const len_u64 = ab.logical_shape[0];
+    if (bb.logical_shape[0] != len_u64) return null;
+    if (ob.logical_shape[0] != len_u64) return null;
+    const len: usize = std.math.cast(usize, len_u64) orelse return null;
+
+    if (inputs.len != countReadOnlyBindings(func)) return null;
+    const a_bytes = inputBytesForReadOnlyBinding(func, inputs, ai) orelse return null;
+    const b_bytes = inputBytesForReadOnlyBinding(func, inputs, bi) orelse return null;
+    const expected_input_bytes = computeExpectedBytes(ab) orelse return null;
+    if (a_bytes.len != expected_input_bytes) return null;
+    if (b_bytes.len != expected_input_bytes) return null;
+
+    const expected_output_bytes = computeExpectedBytes(ob) orelse return null;
+    const output_len = std.math.cast(usize, expected_output_bytes) orelse return null;
+    const output_bytes = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(output_bytes);
+
+    var i: usize = 0;
+    while (i < len) : (i += 1) {
+        const a = readF32FromBytes(a_bytes, ab.elem, i);
+        const b = readF32FromBytes(b_bytes, bb.elem, i);
+        writeF32AsElem(output_bytes, i, a + b, ob.elem);
+    }
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect and interpret the gated-GELU bootstrap-family case:
+///   `output[i] = gelu(gate[i]) * input[i]` where `gelu` uses the
+///   tanh-approximation form Doppler's MLP block emits:
+///     inner = clamp(GELU_A * (x + GELU_B * x³), -15, 15)
+///     gelu(x) = 0.5 * x * (1 + tanh(inner))
+///   with `GELU_A = sqrt(2/π)` and `GELU_B = 0.044715`. The clamp
+///   matches the live `emit_kernel_body.emitCslGeluGated` body so the
+///   interpreter mirrors live numerical behavior (algorithm-exact).
+///
+/// Shape this recognizer matches:
+///   * one function, zero reductions, zero collectives, one axis
+///   * exactly three bindings with declared roles: `gate`, `input`,
+///     `output`
+///   * axis role is `hidden`
+///   * `f32` element type across all three bindings
+///   * one-dimensional `logical_shape` matching across the three bindings
+fn tryGeluGated(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.reductions.len != 0) return null;
+    if (func.bindings.len != 3) return null;
+    if (func.axes.len != 1) return null;
+    if (func.body.op != .gelu_gated) return null;
+    if (func.body.binding_roles.len != 3) return null;
+    if (func.body.axis_roles.len != 1) return null;
+
+    if (func.body.axis_roles[0].role != .hidden) return null;
+
+    var gate_index: ?u32 = null;
+    var input_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .gate => {
+                if (gate_index != null) return null;
+                gate_index = role.binding_index;
+            },
+            .input => {
+                if (input_index != null) return null;
+                input_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            else => return null,
+        }
+    }
+    const gi = gate_index orelse return null;
+    const ii = input_index orelse return null;
+    const oi = output_index orelse return null;
+    if (gi >= func.bindings.len or ii >= func.bindings.len or oi >= func.bindings.len) return null;
+    if (gi == ii or ii == oi or gi == oi) return null;
+
+    const gb = func.bindings[gi];
+    const ib = func.bindings[ii];
+    const ob = func.bindings[oi];
+    if (gb.read_write or ib.read_write) return null;
+    if (!ob.read_write) return null;
+    if (gb.elem != .f32 or ib.elem != .f32 or ob.elem != .f32) return null;
+    if (gb.logical_shape.len != 1 or ib.logical_shape.len != 1 or ob.logical_shape.len != 1) return null;
+
+    const len_u64 = gb.logical_shape[0];
+    if (ib.logical_shape[0] != len_u64) return null;
+    if (ob.logical_shape[0] != len_u64) return null;
+    const len: usize = std.math.cast(usize, len_u64) orelse return null;
+
+    if (inputs.len != countReadOnlyBindings(func)) return null;
+    const gate_bytes = inputBytesForReadOnlyBinding(func, inputs, gi) orelse return null;
+    const input_bytes = inputBytesForReadOnlyBinding(func, inputs, ii) orelse return null;
+    const expected_input_bytes = computeExpectedBytes(gb) orelse return null;
+    if (gate_bytes.len != expected_input_bytes) return null;
+    if (input_bytes.len != expected_input_bytes) return null;
+
+    const expected_output_bytes = computeExpectedBytes(ob) orelse return null;
+    const output_len = std.math.cast(usize, expected_output_bytes) orelse return null;
+    const output_bytes = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(output_bytes);
+
+    const gelu_a: f32 = 0.7978845608028654;
+    const gelu_b: f32 = 0.044715;
+
+    var i: usize = 0;
+    while (i < len) : (i += 1) {
+        const x = readF32FromBytes(gate_bytes, gb.elem, i);
+        const v = readF32FromBytes(input_bytes, ib.elem, i);
+        var inner = gelu_a * (x + gelu_b * x * x * x);
+        if (inner < -15.0) inner = -15.0;
+        if (inner > 15.0) inner = 15.0;
+        const gelu_x = 0.5 * x * (1.0 + std.math.tanh(inner));
+        writeF32AsElem(output_bytes, i, gelu_x * v, ob.elem);
+    }
 
     var outputs = try allocator.alloc([]const u8, 1);
     outputs[0] = output_bytes;
