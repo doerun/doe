@@ -37,6 +37,11 @@ from bench.tools.doppler_rdrr_q4k import dequantize_q4km_rowwise_bytes
 from int4ple_hostplan_execution_plan import build_hostplan_execution_plan
 from int4ple_embed_roi import build_embed_roi_spec
 from int4ple_hostplan_executor_validator import validate_hostplan_executor
+from int4ple_summa_layout import (
+    a_tiles_from_logical as _summa_a_tiles_from_logical,
+    b_tiles_from_weight_matrix as _summa_b_tiles_from_weight_matrix,
+    required_positive_int as _required_positive_int,
+)
 from int4ple_runtime_scheduler import (
     count_by,
     load_normalized_execution,
@@ -1059,86 +1064,6 @@ def _read_weight_prefix_bytes(weight_mapping: dict[str, Any], byte_count: int) -
             f"{byte_count - remaining}<{byte_count}"
         )
     return bytes(chunks[:byte_count])
-
-
-def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
-    try:
-        value = int(mapping.get(key) or 0)
-    except (TypeError, ValueError):
-        value = 0
-    if value <= 0:
-        raise ValueError(f"transform_field_missing:{key}")
-    return value
-
-
-def _summa_a_tiles_from_logical(
-    host: np.ndarray,
-    transform: dict[str, Any],
-) -> tuple[np.ndarray, int]:
-    source_cols = _required_positive_int(transform, "sourceCols")
-    padded_rows = _required_positive_int(transform, "paddedRows")
-    padded_cols = _required_positive_int(transform, "paddedReduction")
-    grid_height = _required_positive_int(transform, "gridHeight")
-    grid_width = _required_positive_int(transform, "gridWidth")
-    tile_rows = _required_positive_int(transform, "tileRows")
-    tile_cols = _required_positive_int(transform, "tileReduction")
-    if host.size % source_cols != 0:
-        raise ValueError(
-            f"summa_a_logical_size_mismatch:{host.size}%{source_cols}"
-        )
-    rows = host.size // source_cols
-    if rows > padded_rows or source_cols > padded_cols:
-        raise ValueError(
-            "summa_a_logical_shape_exceeds_target:"
-            f"{rows}x{source_cols}>{padded_rows}x{padded_cols}"
-        )
-    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
-    padded[:rows, :source_cols] = host.astype(np.float32, copy=False).reshape(
-        rows, source_cols
-    )
-    tiles = padded.reshape(
-        grid_height,
-        tile_rows,
-        grid_width,
-        tile_cols,
-    ).transpose(0, 2, 3, 1)
-    return tiles.reshape(-1).astype(np.float32, copy=False), rows
-
-
-def _summa_b_tiles_from_weight_matrix(
-    matrix_nk: np.ndarray,
-    transform: dict[str, Any],
-) -> np.ndarray:
-    source_rows = _required_positive_int(transform, "sourceRows")
-    source_cols = _required_positive_int(transform, "sourceCols")
-    padded_rows = _required_positive_int(transform, "paddedCols")
-    padded_cols = _required_positive_int(transform, "paddedReduction")
-    grid_height = _required_positive_int(transform, "gridHeight")
-    grid_width = _required_positive_int(transform, "gridWidth")
-    tile_rows = _required_positive_int(transform, "tileCols")
-    tile_cols = _required_positive_int(transform, "tileReduction")
-    if matrix_nk.size != source_rows * source_cols:
-        raise ValueError(
-            "summa_b_weight_shape_mismatch:"
-            f"{matrix_nk.size}!={source_rows}x{source_cols}"
-        )
-    if source_rows > padded_rows or source_cols > padded_cols:
-        raise ValueError(
-            "summa_b_logical_shape_exceeds_target:"
-            f"{source_rows}x{source_cols}>{padded_rows}x{padded_cols}"
-        )
-    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
-    padded[:source_rows, :source_cols] = matrix_nk.astype(
-        np.float32,
-        copy=False,
-    ).reshape(source_rows, source_cols)
-    tiles = padded.reshape(
-        grid_width,
-        tile_rows,
-        grid_height,
-        tile_cols,
-    ).transpose(2, 0, 1, 3)
-    return tiles.reshape(-1).astype(np.float32, copy=False)
 
 
 def _materialize_weight_matrix_f32(

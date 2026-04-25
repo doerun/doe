@@ -36,7 +36,7 @@ pub fn emitPeProgram(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void
 
 fn emitRmsNormLayout(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "// Layout: RMSNorm, one token per PE.\n\n");
-    try write(buf, pos, "param width: i16;\n\n");
+    try write(buf, pos, "param width: i16 = 1;\n\n");
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n");
     try write(buf, pos, "    .height = 1,\n");
@@ -102,7 +102,7 @@ fn emitElementwiseLayout(buf: []u8, pos: *usize, kind: ElementwiseKind) EmitErro
 fn emitRmsNormPe(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "// PE program: RMSNorm, full hidden vector per token.\n\n");
     try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param hidden_size: i16;\n\n");
+    try write(buf, pos, "param hidden_size: i16 = 1024;\n\n");
     try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try write(buf, pos, "const math = @import_module(\"<math>\");\n");
     try write(buf, pos, "const rms_eps: f32 = ");
@@ -138,7 +138,7 @@ fn emitRmsNormPe(buf: []u8, pos: *usize) EmitError!void {
 fn emitResidualPe(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "// PE program: residual add, full activation vector per PE.\n\n");
     try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param chunk_size: i16;\n\n");
+    try write(buf, pos, "param chunk_size: i16 = 1024;\n\n");
     try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n\n");
     try emitBuf(buf, pos, "a", "[chunk_size]f32");
     try emitBuf(buf, pos, "b", "[chunk_size]f32");
@@ -162,7 +162,7 @@ fn emitResidualPe(buf: []u8, pos: *usize) EmitError!void {
 fn emitGeluPe(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "// PE program: gated GELU, output = gelu(gate) * input.\n\n");
     try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param chunk_size: i16;\n\n");
+    try write(buf, pos, "param chunk_size: i16 = 1024;\n\n");
     try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try write(buf, pos, "const math = @import_module(\"<math>\");\n");
     try write(buf, pos, "const GELU_A: f32 = 0.7978845608028654;\n");

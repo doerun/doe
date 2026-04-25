@@ -7,6 +7,45 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+17) — Python sharding follow-up: SUMMA layout + weight-mapping helpers
+
+The two next-split targets named in late+16 landed.
+
+- `bench/runners/csl-runners/int4ple_summa_layout.py`: new module for the
+  pure SUMMA host transforms. `required_positive_int`,
+  `a_tiles_from_logical`, and `b_tiles_from_weight_matrix` moved out of
+  `int4ple_compile_target_sim_runner.py`. The runner imports them under
+  the previous underscore-prefixed names so its call sites are
+  unchanged. Weight I/O (`_read_weight_prefix_bytes`) and the
+  dequantize-to-f32 weight matrix path stay in the runner because they
+  cross the file-I/O boundary and the dequant path is shared with the
+  non-SUMMA weight materialization.
+- `bench/tools/int4ple_runtime_weight_mappings.py`: new module for the
+  weight-key inference helpers. `tensor_name_candidates_for_weight_key`,
+  `tensor_name_for_weight_key`, `layer_index_from_step_weight_key`,
+  `infer_layer_index_from_steps`, `inferred_rmsnorm_weight_key`, and
+  `required_weight_keys` moved out of
+  `bench/tools/run_doe_csl_int4ple_transcript.py`. The transcript
+  module re-exports the same names so existing importers
+  (`build_doppler_shared_execution_contract.py`,
+  `test_int4ple_scheduler_readiness.py`) keep working without churn.
+
+After the splits the two donor files are still over the 1200-line
+modularity threshold (runner 1934, transcript 2662). The remaining
+overage is mixed I/O / orchestration code that does not have a clean
+single-purpose extraction yet; further sharding needs its own design.
+
+Validation:
+
+- `python3 -m py_compile` on the four edited Python files.
+- `python3 -m unittest discover -s bench/tests -p "test_csl*.py"`: 67
+  tests passed.
+- `python3 -m unittest discover -s bench/tests -p "test_int4ple*.py"`:
+  40 tests passed (including `SummaHostMaterializationTests` and
+  `SemanticKernelDataflowTests`).
+- `python3 bench/gates/schema_gate.py` passed.
+- `git diff --check` passed.
+
 ## 2026-04-24 (late+16) — P7.4 first slice plus tiled host materialization
 
 P7.4 is narrowed from "all HostPlan kernels are stubbed" to the actual
