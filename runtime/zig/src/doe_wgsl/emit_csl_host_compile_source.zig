@@ -15,6 +15,7 @@ const dequant = @import("emit_csl_dequant.zig");
 const sample = @import("emit_csl_sample.zig");
 const fused = @import("emit_csl_fused.zig");
 const fused_ffn = @import("emit_csl_fused_ffn.zig");
+const semantic_ops = @import("emit_csl_semantic_ops.zig");
 const validate = @import("emit_csl_validate.zig");
 const spec = @import("csl_spec.zig");
 const ir = @import("ir.zig");
@@ -49,6 +50,10 @@ pub fn emitPatternSections(
     pattern: []const u8,
     out: []u8,
 ) EmitError!CompileSourceSections {
+    if (semantic_ops.isSemanticPattern(pattern)) {
+        return emitSemanticPatternSections(pattern, out);
+    }
+
     const source = patternSource(pattern) orelse return error.UnsupportedPattern;
     var module_ir = try mod.analyzeToIr(allocator, source);
     defer module_ir.deinit();
@@ -69,6 +74,23 @@ pub fn emitPatternSections(
     const validation_kind = try validationKind(pattern);
     const validation = validate.validatePattern(out[0..pos], validation_kind);
     if (!validation.valid) return error.InvalidIr;
+
+    const combined = out[0..pos];
+    return .{
+        .combined = combined,
+        .layout = sectionBody(combined, spec.LAYOUT_FILENAME) orelse return error.InvalidIr,
+        .pe_program = sectionBody(combined, spec.PE_PROGRAM_FILENAME) orelse return error.InvalidIr,
+    };
+}
+
+fn emitSemanticPatternSections(pattern: []const u8, out: []u8) EmitError!CompileSourceSections {
+    var pos: usize = 0;
+
+    try writeSection(out, &pos, spec.LAYOUT_FILENAME);
+    try semantic_ops.emitLayout(out, &pos, pattern);
+
+    try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
+    try semantic_ops.emitPeProgram(out, &pos, pattern);
 
     const combined = out[0..pos];
     return .{
@@ -254,20 +276,60 @@ const ELEMENT_WISE_WGSL =
     \\}
 ;
 
+// Real RMSNorm: y = (x / sqrt(mean(x^2) + eps)) * scale
+// where scale = (1 + weight) when rms_norm_offset != 0 (Gemma) else weight.
+//
+// Single-barrier shape: 64-lane chunked sum-of-squares pre-barrier; thread 0
+// post-barrier folds the 64 partials, computes inv_rms, then writes the full
+// hidden_size output applying weight per element. Doe's emit_csl_reduction.zig
+// auto-lowers this single-barrier WGSL into single-PE CSL where the
+// pre-barrier work runs as a per-lane for-loop and the post-barrier work runs
+// once with lid.x folded to 0. Each PE handles one token's full hidden vector.
+//
+// Reference: doppler/src/gpu/kernels/rmsnorm.wgsl (main_small entry point);
+// the chunked-sum + per-element output pattern matches this kernel's
+// `for (i in 0..elements_per_thread)` then `for (i in 0..size)` shape.
 const REDUCTION_WGSL =
-    \\@group(0) @binding(0) var<storage, read> input: array<f32>;
-    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+    \\struct Uniforms {
+    \\    size: u32,
+    \\    eps: f32,
+    \\    rms_norm_offset: u32,
+    \\    _pad: u32,
+    \\}
+    \\@group(0) @binding(0) var<uniform> u: Uniforms;
+    \\@group(0) @binding(1) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(2) var<storage, read> weight: array<f32>;
+    \\@group(0) @binding(3) var<storage, read_write> output: array<f32>;
     \\var<workgroup> partial: array<f32, 64>;
     \\@compute @workgroup_size(64)
     \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(global_invocation_id) gid: vec3u) {
-    \\    partial[lid.x] = input[gid.x] * input[gid.x];
+    \\    let size = u.size;
+    \\    let elements_per_lane = (size + 63u) / 64u;
+    \\    let lane_start = lid.x * elements_per_lane;
+    \\    var lane_end: u32 = lane_start + elements_per_lane;
+    \\    if (lane_end > size) { lane_end = size; }
+    \\    var local_sum: f32 = 0.0;
+    \\    for (var i: u32 = lane_start; i < lane_end; i = i + 1u) {
+    \\        let x = input[i];
+    \\        local_sum = local_sum + x * x;
+    \\    }
+    \\    partial[lid.x] = local_sum;
     \\    workgroupBarrier();
     \\    if (lid.x == 0u) {
     \\        var sum: f32 = 0.0;
     \\        for (var i: u32 = 0u; i < 64u; i = i + 1u) {
     \\            sum = sum + partial[i];
     \\        }
-    \\        output[gid.x] = sum;
+    \\        let mean_sq = sum / f32(size);
+    \\        let inv_rms = 1.0 / sqrt(mean_sq + u.eps);
+    \\        let use_offset: bool = u.rms_norm_offset != 0u;
+    \\        for (var i: u32 = 0u; i < size; i = i + 1u) {
+    \\            let x = input[i];
+    \\            let w = weight[i];
+    \\            var scale: f32 = w;
+    \\            if (use_offset) { scale = 1.0 + w; }
+    \\            output[i] = x * inv_rms * scale;
+    \\        }
     \\    }
     \\}
 ;
@@ -467,6 +529,9 @@ test "host compile source emits known HostPlan CSL families" {
         "kv_write",
         "kv_read",
         "fused_ffn",
+        "rms_norm",
+        "residual_add",
+        "gelu_gated",
     };
 
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
@@ -478,6 +543,27 @@ test "host compile source emits known HostPlan CSL families" {
         try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_rectangle") != null);
         try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(compute)") != null);
     }
+}
+
+test "host compile source emits semantic Gemma elementwise bodies" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+
+    const rms = try emitPatternSections(std.testing.allocator, "rms_norm", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"weight\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "sum_sq += x * x;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "math.sqrt(mean_sq + rms_eps)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "1.0 + weight[idx]") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "partial") == null);
+
+    const residual = try emitPatternSections(std.testing.allocator, "residual_add", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"a\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"b\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "output[idx] = a[idx] + b[idx];") != null);
+
+    const gelu = try emitPatternSections(std.testing.allocator, "gelu_gated", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.layout, "@export_name(\"gate\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "math.tanh(inner)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "output[idx] = gelu(gate[idx]) * input[idx];") != null);
 }
 
 test "host compile source tiled matmul exports WGSL storage names" {
@@ -548,4 +634,32 @@ test "host compile source rejects unknown HostPlan pattern" {
         error.UnsupportedPattern,
         emitPatternSections(std.testing.allocator, "not_a_pattern", &buf),
     );
+}
+
+test "reduction pattern emits real rmsnorm: chunked sum, sqrt, per-element output with weight" {
+    // The toy REDUCTION_WGSL it replaced wrote one scalar per PE. The real
+    // rmsnorm shape: chunked sum-of-squares pre-barrier, single workgroup
+    // barrier, post-barrier per-element output with weight scaling and
+    // optional Gemma `1+w` offset. Lock the lowering signal so any future
+    // regression to a scalar-per-PE shape fails this test.
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+    const sections = try emitPatternSections(std.testing.allocator, "reduction", &buf);
+
+    // Inverse RMS computation must be present (sqrt + division).
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "math.sqrt") != null);
+
+    // Weight binding must be threaded through to the per-element output.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "weight") != null);
+
+    // Per-element output loop bounded by hidden_size, not by workgroup_size 64.
+    // A scalar-per-PE regression would write `output[...] = sum;` once and skip
+    // the size-bounded loop.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "i < hidden_size") != null);
+
+    // Gemma offset path must be reachable.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "rms_norm_offset") != null);
+
+    // Single-barrier shape preserved (pre/post barrier zones).
+    // The lane-loop wrap is the existing reduction emitter contract.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@range(u32, 64)") != null);
 }

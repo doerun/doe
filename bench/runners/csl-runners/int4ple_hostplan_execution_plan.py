@@ -24,6 +24,15 @@ _PE_PROGRAM_VAR_RE = re.compile(
     re.VERBOSE,
 )
 
+_PE_PROGRAM_ZEROS_RE = re.compile(
+    r"""var\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*
+        @zeros\(\s*
+        \[\s*(?P<size_expr>[^\]]+?)\s*\]
+        \s*(?P<elem_type>[A-Za-z_][A-Za-z0-9_]*)\s*
+        \)""",
+    re.VERBOSE,
+)
+
 _PE_PROGRAM_CONST_OR_PARAM_RE = re.compile(
     r"""(?P<kind>const|param)\s+
         (?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*
@@ -31,6 +40,62 @@ _PE_PROGRAM_CONST_OR_PARAM_RE = re.compile(
         (?P<expr>[^;\n]+?)\s*;""",
     re.VERBOSE,
 )
+
+_PE_PROGRAM_PTR_RE = re.compile(
+    r"""var\s+(?P<ptr>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*
+        \[\s*\*\s*\]\s*(?P<elem_type>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*
+        &(?P<backing>[A-Za-z_][A-Za-z0-9_]*)\s*;""",
+    re.VERBOSE,
+)
+
+_PE_PROGRAM_EXPORT_SYMBOL_RE = re.compile(
+    r"""@export_symbol\(\s*
+        (?P<ptr>[A-Za-z_][A-Za-z0-9_]*)\s*,\s*
+        "(?P<symbol>[A-Za-z_][A-Za-z0-9_]*)"\s*
+        \)""",
+    re.VERBOSE,
+)
+
+
+_ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({"rmsnorm", "residual", "gelu"})
+_SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
+_SUMMA_TARGETS = frozenset({"tiled", "lm_head_prefill_stable"})
+
+
+def _resolve_phase_variant_target(
+    *,
+    kernel_name: str,
+    phase: str,
+    available_targets: dict[str, Any],
+    launch_index: int,
+    blockers: list[str],
+) -> str | None:
+    """Remap an elementwise launch to its phase-specific compile target.
+
+    rmsnorm/residual/gelu are compiled once per phase: the `_prefill` variant
+    carries `width=attention_tokens` and the `_decode` variant carries
+    `width=1`. Legacy elementwise launches without a phase pass through to the
+    base target; launches with a phase must resolve to the matching variant.
+
+    Non-elementwise kernels pass through unchanged.
+    """
+    if kernel_name not in _ELEMENTWISE_PHASE_VARIANT_KERNELS:
+        return kernel_name
+    if not phase:
+        return kernel_name
+    if phase not in _SUPPORTED_ELEMENTWISE_PHASES:
+        blockers.append(
+            f"launch[{launch_index}].phase_variant_unsupported:"
+            f"{kernel_name}:{phase}"
+        )
+        return None
+    variant = f"{kernel_name}_{phase}"
+    if variant not in available_targets:
+        blockers.append(
+            f"launch[{launch_index}].phase_variant_target_missing:{variant}"
+        )
+        return None
+    return variant
 
 
 def _target_by_name(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -114,14 +179,28 @@ def _parse_pe_program_arrays(pe_program_path: Path) -> tuple[dict[str, dict[str,
     except (OSError, UnicodeError):
         return {}, {}
     decls: dict[str, dict[str, Any]] = {}
-    for match in _PE_PROGRAM_VAR_RE.finditer(source):
-        name = match.group("name")
-        if name in decls:
-            continue
-        decls[name] = {
-            "sizeExpr": match.group("size_expr").strip(),
-            "elemType": match.group("elem_type"),
-        }
+    for pattern in (_PE_PROGRAM_VAR_RE, _PE_PROGRAM_ZEROS_RE):
+        for match in pattern.finditer(source):
+            name = match.group("name")
+            if name in decls:
+                continue
+            decls[name] = {
+                "sizeExpr": match.group("size_expr").strip(),
+                "elemType": match.group("elem_type"),
+            }
+    pointers: dict[str, str] = {}
+    for match in _PE_PROGRAM_PTR_RE.finditer(source):
+        pointers[match.group("ptr")] = match.group("backing")
+    for match in _PE_PROGRAM_EXPORT_SYMBOL_RE.finditer(source):
+        symbol = match.group("symbol")
+        backing = pointers.get(match.group("ptr"), "")
+        backing_decl = decls.get(backing)
+        if backing_decl is not None and symbol not in decls:
+            decls[symbol] = {
+                **backing_decl,
+                "backingVariable": backing,
+                "exportPointer": match.group("ptr"),
+            }
     compile_time: dict[str, int] = {}
     for match in _PE_PROGRAM_CONST_OR_PARAM_RE.finditer(source):
         resolved = _resolve_size_expr(match.group("expr").strip(), compile_time)
@@ -154,6 +233,114 @@ def _dtype_byte_width(dtype: str) -> int:
     return 4
 
 
+def _model_hidden_dim(runtime_config: dict[str, Any]) -> int:
+    model = runtime_config.get("modelConfig") or {}
+    try:
+        return int(model.get("hiddenDim") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _int_field(value: Any) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _summa_params(compile_params: dict[str, int]) -> dict[str, int] | None:
+    p = _int_field(compile_params.get("P"))
+    mt = _int_field(compile_params.get("Mt"))
+    kt = _int_field(compile_params.get("Kt"))
+    nt = _int_field(compile_params.get("Nt"))
+    if p is None or mt is None or kt is None or nt is None:
+        return None
+    return {
+        "gridWidth": p,
+        "gridHeight": p,
+        "tileRows": mt,
+        "tileReduction": kt,
+        "tileCols": nt,
+        "paddedRows": p * mt,
+        "paddedReduction": p * kt,
+        "paddedCols": p * nt,
+    }
+
+
+def _summa_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    runtime_config: dict[str, Any],
+    item: dict[str, Any],
+    weight_item: dict[str, Any] | None,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if target_name not in _SUMMA_TARGETS:
+        return source_transform
+    params = _summa_params(compile_params)
+    if params is None:
+        return source_transform
+    symbol_key = symbol.lower()
+    if symbol_key == "a" and role == "activation":
+        source_cols = _int_field(item.get("matrixCols")) or _model_hidden_dim(runtime_config)
+        if source_cols is None or source_cols <= 0:
+            return source_transform
+        return {
+            "kind": "logical_matrix_to_summa_tiles",
+            "matrixRole": "a",
+            "sourceDtype": "f32",
+            "targetDtype": "f32",
+            "sourceCols": source_cols,
+            **params,
+        }
+    if symbol_key == "b" and role == "weight" and weight_item is not None:
+        shape = _normalized_shape(weight_item.get("shape") or [])
+        if len(shape) < 2:
+            return source_transform
+        nested = source_transform or {
+            "kind": "none",
+            "sourceDtype": str(weight_item.get("dtype") or ""),
+            "targetDtype": "f32",
+        }
+        return {
+            "kind": "weight_matrix_to_summa_tiles",
+            "matrixRole": "b",
+            "sourceRows": shape[0],
+            "sourceCols": shape[1],
+            "sourceTransform": nested,
+            **params,
+        }
+    return source_transform
+
+
+def _summa_output_transform(
+    *,
+    symbol: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+) -> dict[str, Any] | None:
+    if target_name not in _SUMMA_TARGETS or symbol.lower() != "c":
+        return None
+    params = _summa_params(compile_params)
+    output_cols = _int_field(item.get("matrixCols"))
+    if params is None or output_cols is None:
+        return None
+    return {
+        "kind": "summa_tiles_to_logical_matrix",
+        "matrixRole": "c",
+        "rowsFromInput": "a",
+        "cols": output_cols,
+        "sourceDtype": "f32",
+        "targetDtype": "f32",
+        **params,
+    }
+
+
 def _memcpy_element_count(elem_type: str, raw_element_count: int) -> int:
     if elem_type == "u8":
         return max(1, (raw_element_count + 3) // 4)
@@ -171,6 +358,8 @@ def _target_geometry(
     if target_name in {
         "rope",
         "rmsnorm",
+        "rmsnorm_prefill",
+        "rmsnorm_decode",
         "final_norm_stable",
         "attn_head256",
         "attn_head512",
@@ -268,11 +457,22 @@ def _binding_materialization(
             elements_per_pe = 1
     dtype = _dtype_for_elem_type(elem_type)
     if weight_item is not None:
-        source_transform = weight_item.get("sourceTransform")
+        raw_source_transform = weight_item.get("sourceTransform")
+        source_transform = (
+            raw_source_transform
+            if isinstance(raw_source_transform, dict)
+            else None
+        )
         if dtype == "f32" and str(weight_item.get("dtype") or "") == "f16":
             source_transform = {
                 "kind": "f16_to_f32",
                 "sourceDtype": "f16",
+                "targetDtype": "f32",
+            }
+        elif dtype == "f32" and str(weight_item.get("dtype") or "") == "bf16":
+            source_transform = {
+                "kind": "bf16_to_f32",
+                "sourceDtype": "bf16",
                 "targetDtype": "f32",
             }
         elif dtype == "f32" and str(weight_item.get("dtype") or "") == "u8_q4k":
@@ -291,6 +491,22 @@ def _binding_materialization(
     else:
         source_transform = None
         span_byte_length = None
+    source_transform = _summa_source_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        runtime_config=runtime_config,
+        item=item,
+        weight_item=weight_item,
+        source_transform=source_transform,
+    )
+    output_transform = _summa_output_transform(
+        symbol=symbol,
+        target_name=target_name,
+        compile_params=compile_params,
+        item=item,
+    )
     element_byte_width = _dtype_byte_width(dtype)
     planned_elements = elements_per_pe * target_geometry["peCount"]
     planned_bytes = planned_elements * element_byte_width
@@ -324,6 +540,8 @@ def _binding_materialization(
         }
     if source_transform is not None:
         materialization["sourceTransform"] = source_transform
+    if output_transform is not None:
+        materialization["outputTransform"] = output_transform
     if state_item is not None:
         materialization["stateOwnership"] = {
             "stateRoot": state_item.get("name"),
@@ -748,7 +966,16 @@ def build_hostplan_execution_plan(
         if not isinstance(launch, dict):
             continue
         launch_index = int(launch.get("launchIndex") or len(launch_records))
-        target_name = str(launch.get("kernelName") or "")
+        base_kernel_name = str(launch.get("kernelName") or "")
+        target_name = _resolve_phase_variant_target(
+            kernel_name=base_kernel_name,
+            phase=str(launch.get("phase") or ""),
+            available_targets=targets,
+            launch_index=launch_index,
+            blockers=blockers,
+        )
+        if target_name is None:
+            continue
         target = targets.get(target_name)
         if target is None:
             blockers.append(f"launch[{launch_index}].target_missing:{target_name}")
@@ -862,6 +1089,7 @@ def build_hostplan_execution_plan(
                 "runtimeLaunchIndex": launch.get("runtimeLaunchIndex"),
                 "phase": launch.get("phase"),
                 "decodeStepIndex": launch.get("decodeStepIndex"),
+                "kernelName": base_kernel_name,
                 "targetName": target_name,
                 "compileDir": str(compile_dir),
                 "compileParams": compile_params,

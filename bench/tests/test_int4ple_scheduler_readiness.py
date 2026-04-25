@@ -19,6 +19,7 @@ if str(RUNNER_DIR) not in sys.path:
 from bench.tools.run_doe_csl_int4ple_transcript import (  # noqa: E402
     find_tokenized_prompt_artifact,
     program_bundle_logits_digests,
+    required_weight_keys,
     sha256_compact_json,
     tensor_name_candidates_for_weight_key,
 )
@@ -26,6 +27,7 @@ from bench.tools.int4ple_manifest_compile_params import (  # noqa: E402
     apply_manifest_compile_params,
 )
 from int4ple_hostplan_execution_plan import (  # noqa: E402
+    _parse_pe_program_arrays,
     build_hostplan_execution_plan,
 )
 from int4ple_hostplan_executor_validator import (  # noqa: E402
@@ -44,6 +46,15 @@ assert spec is not None
 assert spec.loader is not None
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
+
+scheduler_spec = importlib.util.spec_from_file_location(
+    "int4ple_runtime_scheduler",
+    RUNNER_DIR / "int4ple_runtime_scheduler.py",
+)
+assert scheduler_spec is not None
+assert scheduler_spec.loader is not None
+runtime_scheduler = importlib.util.module_from_spec(scheduler_spec)
+scheduler_spec.loader.exec_module(runtime_scheduler)
 
 
 def write_json(path: Path, value: object) -> None:
@@ -264,6 +275,45 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
 
         self.assertEqual(candidates[0], "model.language_model.lm_head.weight")
         self.assertIn("model.embed_tokens.weight", candidates)
+
+    def test_norm_weight_candidates_cover_gemma_rdrr_names(self) -> None:
+        self.assertIn(
+            "model.layers.0.input_layernorm.weight",
+            tensor_name_candidates_for_weight_key("layer.0.input_layernorm"),
+        )
+        self.assertIn(
+            "model.layers.0.post_attention_layernorm.weight",
+            tensor_name_candidates_for_weight_key("layer.0.post_attention_layernorm"),
+        )
+        self.assertIn(
+            "model.norm.weight",
+            tensor_name_candidates_for_weight_key("norm"),
+        )
+
+    def test_required_weight_keys_infers_rmsnorm_weights(self) -> None:
+        required = required_weight_keys(
+            {
+                "steps": [
+                    {"phase": "prefill", "name": "input_norm", "kernelKey": "rmsnorm"},
+                    {
+                        "phase": "prefill",
+                        "name": "q_proj",
+                        "kernelKey": "gemv",
+                        "weightsKey": "layer.0.self_attn.q_proj",
+                    },
+                    {
+                        "phase": "prefill",
+                        "name": "post_attn_norm",
+                        "kernelKey": "rmsnorm",
+                    },
+                    {"phase": "decode", "name": "final_norm", "kernelKey": "rmsnorm"},
+                ]
+            }
+        )
+
+        self.assertIn("layer.0.input_layernorm", required)
+        self.assertIn("layer.0.post_attention_layernorm", required)
+        self.assertIn("norm", required)
 
     def test_program_bundle_logits_projection_preserves_step_digests(self) -> None:
         digests = program_bundle_logits_digests(
@@ -1683,6 +1733,397 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
             result["unprojectedTargetNames"],
             ["lm_head_prefill_stable"],
         )
+
+
+class PhaseVariantTargetResolverTests(unittest.TestCase):
+    """Covers _resolve_phase_variant_target in int4ple_hostplan_execution_plan.
+
+    The resolver remaps elementwise launches to their phase-specific compile
+    targets so prefill and decode each dispatch to a correctly-dimensioned
+    binary. Non-elementwise kernels and launches without a phase pass
+    through unchanged; missing phase variants produce explicit blockers
+    rather than silent fallback. These assertions lock the Python half of
+    the Path A routing contract; they will catch name drift when the Zig
+    host-plan emitter gains the matching `_prefill` / `_decode` targets.
+    """
+
+    def _resolve(self):
+        from int4ple_hostplan_execution_plan import (  # noqa: E402
+            _resolve_phase_variant_target,
+        )
+
+        return _resolve_phase_variant_target
+
+    def test_non_elementwise_kernel_passes_through(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        out = resolve(
+            kernel_name="tiled",
+            phase="prefill",
+            available_targets={"tiled": object()},
+            launch_index=0,
+            blockers=blockers,
+        )
+        self.assertEqual(out, "tiled")
+        self.assertEqual(blockers, [])
+
+    def test_legacy_launch_without_phase_passes_through(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        out = resolve(
+            kernel_name="rmsnorm",
+            phase="",
+            available_targets={"rmsnorm": object()},
+            launch_index=7,
+            blockers=blockers,
+        )
+        self.assertEqual(out, "rmsnorm")
+        self.assertEqual(blockers, [])
+
+    def test_prefill_launch_resolves_to_prefill_variant(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        available = {
+            "rmsnorm": object(),
+            "rmsnorm_prefill": object(),
+            "rmsnorm_decode": object(),
+        }
+        out = resolve(
+            kernel_name="rmsnorm",
+            phase="prefill",
+            available_targets=available,
+            launch_index=3,
+            blockers=blockers,
+        )
+        self.assertEqual(out, "rmsnorm_prefill")
+        self.assertEqual(blockers, [])
+
+    def test_decode_launch_resolves_to_decode_variant(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        available = {
+            "residual": object(),
+            "residual_prefill": object(),
+            "residual_decode": object(),
+        }
+        out = resolve(
+            kernel_name="residual",
+            phase="decode",
+            available_targets=available,
+            launch_index=42,
+            blockers=blockers,
+        )
+        self.assertEqual(out, "residual_decode")
+        self.assertEqual(blockers, [])
+
+    def test_all_three_elementwise_kernels_route_per_phase(self) -> None:
+        resolve = self._resolve()
+        available = {}
+        for base in ("rmsnorm", "residual", "gelu"):
+            available[base] = object()
+            available[f"{base}_prefill"] = object()
+            available[f"{base}_decode"] = object()
+        for base in ("rmsnorm", "residual", "gelu"):
+            for phase in ("prefill", "decode"):
+                blockers: list[str] = []
+                out = resolve(
+                    kernel_name=base,
+                    phase=phase,
+                    available_targets=available,
+                    launch_index=0,
+                    blockers=blockers,
+                )
+                self.assertEqual(out, f"{base}_{phase}")
+                self.assertEqual(blockers, [])
+
+    def test_missing_phase_variant_blocks_without_silent_fallback(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        available = {"rmsnorm": object()}
+        out = resolve(
+            kernel_name="rmsnorm",
+            phase="decode",
+            available_targets=available,
+            launch_index=11,
+            blockers=blockers,
+        )
+        self.assertIsNone(out)
+        self.assertEqual(len(blockers), 1)
+        self.assertIn("phase_variant_target_missing", blockers[0])
+        self.assertIn("rmsnorm_decode", blockers[0])
+        self.assertIn("launch[11]", blockers[0])
+
+    def test_unsupported_phase_emits_blocker(self) -> None:
+        resolve = self._resolve()
+        blockers: list[str] = []
+        out = resolve(
+            kernel_name="gelu",
+            phase="pretrain",
+            available_targets={"gelu": object(), "gelu_prefill": object()},
+            launch_index=5,
+            blockers=blockers,
+        )
+        self.assertIsNone(out)
+        self.assertEqual(len(blockers), 1)
+        self.assertIn("phase_variant_unsupported", blockers[0])
+        self.assertIn("gelu:pretrain", blockers[0])
+
+    def test_compile_params_projection_emits_matching_variant_names(self) -> None:
+        """Drift guard: the names the resolver remaps to must exist as keys
+        in the compile-params projection. Fails before a simulator run
+        wastes cycles on missing binaries."""
+        from bench.tools.int4ple_manifest_compile_params import (
+            manifest_compile_param_projection,
+        )
+
+        runtime_config = {
+            "modelConfig": {
+                "hiddenDim": 1152,
+                "headDim": 256,
+                "globalHeadDim": 0,
+                "vocabSize": 262144,
+                "maxSeqLen": 23,
+                "numHeads": 4,
+                "numKeyValueHeads": 1,
+            },
+            "memoryPlan": {"grid": {"width": 229, "height": 54}},
+            "target": "wse3",
+        }
+        proj = manifest_compile_param_projection(
+            runtime_config=runtime_config,
+            reference={"promptTokenCount": 15},
+        )
+        params = proj.get("params") or {}
+        for base in ("rmsnorm", "residual", "gelu"):
+            for phase in ("prefill", "decode"):
+                key = f"{base}_{phase}"
+                self.assertIn(
+                    key,
+                    params,
+                    msg=f"compile-params projection missing phase variant key {key!r}",
+                )
+                expected_width = 15 if phase == "prefill" else 1
+                self.assertEqual(
+                    params[key].get("width"),
+                    expected_width,
+                    msg=(
+                        f"{key} width should be {expected_width} "
+                        f"(got {params[key].get('width')})"
+                    ),
+                )
+
+
+class SemanticKernelDataflowTests(unittest.TestCase):
+    def _weight(self, key: str) -> dict[str, object]:
+        return {
+            "buffer": f"weight:{key}",
+            "weightKey": key,
+            "tensor": f"tensor:{key}",
+            "dtype": "bf16" if "layernorm" in key or key == "norm" else "u8_q4k",
+            "shape": [1152],
+            "byteSize": 2304,
+            "sha256": "0" * 64,
+        }
+
+    def test_rmsnorm_binds_inferred_norm_weight_and_residual_base(self) -> None:
+        scheduler_state: dict[str, object] = {}
+        key = "layer.0.input_layernorm"
+        bindings, blockers = runtime_scheduler.bind_launch_dataflow(
+            record={"phase": "prefill", "launchIndex": 0, "kernelName": "rmsnorm"},
+            normalized_step={"name": "input_norm", "op": "rmsnorm"},
+            layer_index=0,
+            weights={key: self._weight(key)},
+            states=set(),
+            scheduler_state=scheduler_state,
+        )
+
+        self.assertEqual(blockers, [])
+        self.assertEqual(bindings["symbols"]["weight"]["buffer"], f"weight:{key}")
+        layers = scheduler_state["prefill"]["layers"]  # type: ignore[index]
+        self.assertIn("residual_base", layers["0"])
+
+    def test_residual_binds_two_activation_inputs(self) -> None:
+        scheduler_state: dict[str, object] = {
+            "prefill": {
+                "current": "activation:prefill:0008:layer0:o_proj",
+                "layers": {"0": {"residual_base": "activation:prefill:0000:global:embed"}},
+                "last_logits": "",
+            }
+        }
+        bindings, blockers = runtime_scheduler.bind_launch_dataflow(
+            record={"phase": "prefill", "launchIndex": 9, "kernelName": "residual"},
+            normalized_step={"name": "attn_residual", "op": "residual"},
+            layer_index=0,
+            weights={},
+            states=set(),
+            scheduler_state=scheduler_state,
+        )
+
+        self.assertEqual(blockers, [])
+        self.assertEqual(bindings["symbols"]["a"]["buffer"], "activation:prefill:0008:layer0:o_proj")
+        self.assertEqual(bindings["symbols"]["b"]["buffer"], "activation:prefill:0000:global:embed")
+
+    def test_gelu_binds_gate_and_up_projection_outputs(self) -> None:
+        scheduler_state: dict[str, object] = {
+            "prefill": {
+                "current": "activation:prefill:0011:layer0:up_proj",
+                "layers": {
+                    "0": {
+                        "gate_proj": "activation:prefill:0010:layer0:gate_proj",
+                        "up_proj": "activation:prefill:0011:layer0:up_proj",
+                    }
+                },
+                "last_logits": "",
+            }
+        }
+        bindings, blockers = runtime_scheduler.bind_launch_dataflow(
+            record={"phase": "prefill", "launchIndex": 12, "kernelName": "gelu"},
+            normalized_step={"name": "gelu", "op": "gelu"},
+            layer_index=0,
+            weights={},
+            states=set(),
+            scheduler_state=scheduler_state,
+        )
+
+        self.assertEqual(blockers, [])
+        self.assertEqual(bindings["symbols"]["input"]["buffer"], "activation:prefill:0011:layer0:up_proj")
+        self.assertEqual(bindings["symbols"]["gate"]["buffer"], "activation:prefill:0010:layer0:gate_proj")
+
+
+class SummaHostMaterializationTests(unittest.TestCase):
+    def _summa_transform(self) -> dict[str, object]:
+        return {
+            "kind": "logical_matrix_to_summa_tiles",
+            "matrixRole": "a",
+            "sourceCols": 4,
+            "gridWidth": 2,
+            "gridHeight": 2,
+            "tileRows": 2,
+            "tileReduction": 2,
+            "tileCols": 3,
+            "paddedRows": 4,
+            "paddedReduction": 4,
+            "paddedCols": 6,
+        }
+
+    def test_pe_program_array_parser_resolves_exported_pointer_backing_arrays(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pe_program = Path(tmpdir) / "pe_program.csl"
+            pe_program.write_text(
+                "\n".join(
+                    [
+                        "param Mt: i16;",
+                        "param Kt: i16;",
+                        "var A_tile = @zeros([Mt * Kt]f32);",
+                        "var A_ptr: [*]f32 = &A_tile;",
+                        "comptime {",
+                        '    @export_symbol(A_ptr, "a");',
+                        "}",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            arrays, _ = _parse_pe_program_arrays(pe_program)
+
+        self.assertEqual(arrays["a"]["sizeExpr"], "Mt * Kt")
+        self.assertEqual(arrays["a"]["elemType"], "f32")
+        self.assertEqual(arrays["a"]["backingVariable"], "A_tile")
+
+    def test_stage_launch_arrays_tiles_logical_activation_without_overwriting_buffer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = Path(tmpdir)
+            logical_path = runtime_dir / "logical.npy"
+            logical = np.arange(12, dtype=np.float32)
+            np.save(logical_path, logical)
+            buffer_files = {"activation:prev": logical_path}
+            transform = self._summa_transform()
+            launch = {
+                "launchIndex": 2,
+                "resolvedInputs": [
+                    {
+                        "symbol": "a",
+                        "buffer": "activation:prev",
+                        "role": "activation",
+                        "materialization": {
+                            "dtype": "f32",
+                            "elementsPerPe": 4,
+                            "plannedElementCount": 16,
+                            "sourceTransform": transform,
+                        },
+                    }
+                ],
+                "resolvedOutputs": [
+                    {
+                        "symbol": "c",
+                        "buffer": "activation:next",
+                        "role": "activation",
+                        "materialization": {
+                            "dtype": "f32",
+                            "elementsPerPe": 6,
+                            "plannedElementCount": 24,
+                            "outputTransform": {
+                                **transform,
+                                "kind": "summa_tiles_to_logical_matrix",
+                                "matrixRole": "c",
+                                "rowsFromInput": "a",
+                                "cols": 5,
+                            },
+                        },
+                    }
+                ],
+            }
+
+            staged_inputs, staged_outputs = runner._stage_launch_arrays(
+                runtime_dir=runtime_dir,
+                launch=launch,
+                buffer_files=buffer_files,
+                export={},
+            )
+            tiled = np.load(staged_inputs[0]["path"], allow_pickle=False)
+
+        self.assertEqual(tiled.size, 16)
+        self.assertEqual(buffer_files["activation:prev"], logical_path)
+        self.assertEqual(staged_outputs[0]["outputTransform"]["rows"], 3)
+        self.assertEqual(staged_outputs[0]["outputTransform"]["cols"], 5)
+
+    def test_weight_matrix_materialization_tiles_summa_b_input(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "weight.bin"
+            matrix_nk = np.arange(20, dtype=np.float32).reshape(5, 4)
+            path.write_bytes(matrix_nk.tobytes(order="C"))
+            materialization = {
+                "dtype": "f32",
+                "plannedElementCount": 24,
+                "weightMapping": {
+                    "weightKey": "layer.0.self_attn.q_proj",
+                    "path": str(path),
+                    "byteOffset": 0,
+                    "byteSize": path.stat().st_size,
+                    "dtype": "f32",
+                },
+                "sourceTransform": {
+                    "kind": "weight_matrix_to_summa_tiles",
+                    "matrixRole": "b",
+                    "sourceRows": 5,
+                    "sourceCols": 4,
+                    "gridWidth": 2,
+                    "gridHeight": 2,
+                    "tileRows": 2,
+                    "tileReduction": 2,
+                    "tileCols": 3,
+                    "paddedRows": 4,
+                    "paddedReduction": 4,
+                    "paddedCols": 6,
+                    "sourceTransform": {"kind": "none"},
+                },
+            }
+
+            tiled = runner._materialize_weight_input(materialization)
+
+        self.assertEqual(tiled.dtype, np.float32)
+        self.assertEqual(tiled.size, 24)
 
 
 if __name__ == "__main__":

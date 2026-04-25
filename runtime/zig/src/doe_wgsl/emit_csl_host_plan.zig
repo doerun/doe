@@ -8,6 +8,9 @@ const std = @import("std");
 const host = @import("emit_csl_host.zig");
 const spec = @import("csl_spec.zig");
 
+const PHASE_TARGET_SUFFIXES = [_][]const u8{ "_prefill", "_decode" };
+const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu" };
+
 pub const EmitError = error{
     OutputTooLarge,
     InvalidIr,
@@ -328,7 +331,7 @@ fn validateHostPlan(
         if (target.kernel_name.len == 0 or target.layout_path.len == 0 or target.pe_program_path.len == 0) {
             return error.InvalidIr;
         }
-        if (!hasKernel(plan.kernels, target.kernel_name)) return error.InvalidIr;
+        if (!hasKernel(plan.kernels, kernelNameForTarget(target.kernel_name))) return error.InvalidIr;
     }
 
     if (cslc_plan) |plan_cslc| {
@@ -339,6 +342,23 @@ fn validateHostPlan(
 fn hasKernel(kernels: []const host.KernelSpec, kernel_name: []const u8) bool {
     for (kernels) |kernel| {
         if (std.mem.eql(u8, kernel.name, kernel_name)) return true;
+    }
+    return false;
+}
+
+fn kernelNameForTarget(target_name: []const u8) []const u8 {
+    for (PHASE_TARGET_SUFFIXES) |suffix| {
+        if (std.mem.endsWith(u8, target_name, suffix)) {
+            const base_name = target_name[0 .. target_name.len - suffix.len];
+            if (isPhaseSpecializedKernel(base_name)) return base_name;
+        }
+    }
+    return target_name;
+}
+
+fn isPhaseSpecializedKernel(name: []const u8) bool {
+    for (PHASE_SPECIALIZED_KERNELS) |kernel_name| {
+        if (std.mem.eql(u8, name, kernel_name)) return true;
     }
     return false;
 }
@@ -543,6 +563,47 @@ test "host plan accepts decode position state on kv writes" {
     var pos: usize = 0;
     try emitHostPlanArtifactJson(&buf, &pos, plan, &targets, null);
     try validateHostPlanArtifactJson(std.testing.allocator, buf[0..pos]);
+}
+
+test "host plan accepts phase-specific compile targets backed by base kernel" {
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "rmsnorm", .pattern = "element_wise", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{
+            .{ .kernel_name = "rmsnorm", .repeat = 1 },
+        },
+        .decode_launches = &[_]host.LaunchSpec{
+            .{ .kernel_name = "rmsnorm", .repeat = 1 },
+        },
+    };
+    const targets = [_]CompileTarget{
+        .{ .kernel_name = "rmsnorm", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+        .{ .kernel_name = "rmsnorm_prefill", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+        .{ .kernel_name = "rmsnorm_decode", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+    };
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emitHostPlanArtifactJson(&buf, &pos, plan, &targets, null);
+    try validateHostPlanArtifactJson(std.testing.allocator, buf[0..pos]);
+}
+
+test "host plan rejects phase suffixes for unspecialized kernels" {
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "sample", .pattern = "sample", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    const targets = [_]CompileTarget{
+        .{ .kernel_name = "sample_decode", .layout_path = "sample/layout.csl", .pe_program_path = "sample/pe_program.csl" },
+    };
+    try std.testing.expectError(error.InvalidIr, validateHostPlan(plan, &targets, null));
 }
 
 test "host plan rejects sliding attention in prefill" {

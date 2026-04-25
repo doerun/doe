@@ -85,6 +85,12 @@ DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
 
 
 def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
+    if weight_key == "norm":
+        return [
+            "model.language_model.norm.weight",
+            "model.norm.weight",
+            "norm.weight",
+        ]
     if weight_key == "embed_tokens":
         return [
             "model.language_model.embed_tokens_per_layer.weight",
@@ -104,6 +110,16 @@ def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
         ]
     if weight_key.startswith("layer."):
         parts = weight_key.split(".")
+        if len(parts) >= 3 and parts[2] in {
+            "input_layernorm",
+            "post_attention_layernorm",
+            "pre_feedforward_layernorm",
+            "post_feedforward_layernorm",
+        }:
+            return [
+                "model.language_model.layers." f"{parts[1]}.{parts[2]}.weight",
+                f"model.layers.{parts[1]}.{parts[2]}.weight",
+            ]
         if len(parts) >= 4 and parts[2] == "self_attn":
             return [
                 (
@@ -125,6 +141,81 @@ def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
 
 def tensor_name_for_weight_key(weight_key: str) -> str:
     return tensor_name_candidates_for_weight_key(weight_key)[0]
+
+
+def layer_index_from_step_weight_key(weight_key: Any) -> int | None:
+    if not isinstance(weight_key, str):
+        return None
+    parts = weight_key.split(".")
+    if len(parts) < 2 or parts[0] != "layer":
+        return None
+    try:
+        return int(parts[1])
+    except ValueError:
+        return None
+
+
+def infer_layer_index_from_steps(steps: list[dict[str, Any]], index: int) -> int | None:
+    current = steps[index]
+    direct = layer_index_from_step_weight_key(current.get("weightsKey"))
+    if direct is not None:
+        return direct
+    for offset in range(1, 9):
+        prev_index = index - offset
+        if prev_index >= 0:
+            candidate = layer_index_from_step_weight_key(steps[prev_index].get("weightsKey"))
+            if candidate is not None:
+                return candidate
+        next_index = index + offset
+        if next_index < len(steps):
+            name = str(steps[next_index].get("name") or "")
+            if name in {"final_norm", "lm_head", "lm_head_prefill", "sample"}:
+                continue
+            candidate = layer_index_from_step_weight_key(steps[next_index].get("weightsKey"))
+            if candidate is not None:
+                return candidate
+    return None
+
+
+def inferred_rmsnorm_weight_key(step_name: str, layer_index: int | None) -> str | None:
+    if step_name == "final_norm":
+        return "norm"
+    if layer_index is None:
+        return None
+    suffix_by_step = {
+        "input_norm": "input_layernorm",
+        "post_attn_norm": "post_attention_layernorm",
+        "pre_ffn_norm": "pre_feedforward_layernorm",
+        "post_ffn_norm": "post_feedforward_layernorm",
+    }
+    suffix = suffix_by_step.get(step_name)
+    if suffix is None:
+        return None
+    return f"layer.{layer_index}.{suffix}"
+
+
+def required_weight_keys(normalized_execution: dict[str, Any]) -> list[str]:
+    steps = [
+        step
+        for step in normalized_execution.get("steps") or []
+        if isinstance(step, dict)
+    ]
+    keys: set[str] = set()
+    for index, step in enumerate(steps):
+        raw_key = step.get("weightsKey")
+        if isinstance(raw_key, str) and raw_key:
+            keys.add(raw_key)
+            continue
+        kernel_key = str(step.get("kernelKey") or "")
+        op = str(step.get("op") or "")
+        if kernel_key == "rmsnorm" or op == "rmsnorm":
+            inferred = inferred_rmsnorm_weight_key(
+                str(step.get("name") or ""),
+                infer_layer_index_from_steps(steps, index),
+            )
+            if inferred:
+                keys.add(inferred)
+    return sorted(keys)
 
 
 def parse_args() -> argparse.Namespace:
@@ -1396,6 +1487,8 @@ def compile_input_coverage(
 
 
 def runtime_dtype(manifest_dtype: str) -> str:
+    if manifest_dtype == "BF16":
+        return "bf16"
     if manifest_dtype == "F16":
         return "f16"
     if manifest_dtype == "Q4_K_M":
@@ -1406,6 +1499,12 @@ def runtime_dtype(manifest_dtype: str) -> str:
 
 
 def runtime_quant(manifest_dtype: str) -> dict[str, Any]:
+    if manifest_dtype == "BF16":
+        return {
+            "format": "BF16",
+            "storageDtype": "bfloat16",
+            "sourceDtype": "bfloat16",
+        }
     if manifest_dtype == "F16":
         return {
             "format": "F16",
@@ -1530,13 +1629,7 @@ def patch_runtime_weight_mappings(
     if not isinstance(tensors, dict):
         raise ValueError("Doppler manifest is missing tensor table")
 
-    required_keys = sorted(
-        {
-            str(step["weightsKey"])
-            for step in normalized_execution.get("steps") or []
-            if isinstance(step, dict) and isinstance(step.get("weightsKey"), str)
-        }
-    )
+    required_keys = required_weight_keys(normalized_execution)
     grid = runtime_config.get("memoryPlan", {}).get("grid", {})
     pe_count = int(grid.get("width", 1)) * int(grid.get("height", 1))
     shard_identities = shard_identities_by_index(export)

@@ -7,6 +7,379 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+## 2026-04-24 (late+16) — P7.4 first slice plus tiled host materialization
+
+P7.4 is narrowed from "all HostPlan kernels are stubbed" to the actual
+stub path: `rmsnorm`, `residual`, and `gelu` were still inheriting toy
+WGSL through the generic reduction/elementwise lowerers. The specialized
+emitters for tiled matmul, fused GEMV/dequant, sample, attention, rope,
+and gather remain separate generated CSL paths and are not the launch[2]
+body blocker.
+
+Landed in this entry:
+
+- `runtime/zig/src/doe_wgsl/emit_csl_semantic_ops.zig`: new direct
+  semantic CSL emitter for `rms_norm`, `residual_add`, and `gelu_gated`.
+  RMSNorm now emits full-hidden-vector math with Gemma's `1.0 + weight`
+  offset; residual emits binary activation add; GELU emits gated tanh
+  approximation over `gate` and `input`.
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` and
+  `emit_csl_host_compile_source.zig`: route Doppler `rmsnorm`,
+  `residual`, and `gelu` to the semantic patterns instead of the toy
+  `reduction` / `element_wise` fixtures. The WGSL fixture path remains
+  available for non-Gemma generic patterns.
+- `bench/runners/csl-runners/int4ple_runtime_scheduler.py`: bind
+  RMSNorm weight tensors, residual `a`/`b` activation inputs, and gated
+  GELU `input`/`gate` inputs explicitly. Tiled matmul bindings now carry
+  matrix column metadata inferred from the weight shape.
+- `bench/runners/csl-runners/int4ple_hostplan_execution_plan.py`: parse
+  generated CSL `@zeros([...])` arrays and follow
+  `@export_symbol(A_ptr, "a")` style pointer exports back to their
+  backing arrays, so tiled `a` / `b` / `c` no longer collapse to
+  `elementsPerPe=1`. The plan also attaches explicit SUMMA host
+  transforms for logical activation/weight matrices and C-tile outputs.
+- `bench/runners/csl-runners/int4ple_compile_target_sim_runner.py` and
+  `int4ple_launch_step_adapter.py`: materialize logical activations into
+  SUMMA A tiles, dequantize/tile rowwise Q4_K_M weights into SUMMA B
+  tiles, and detile C outputs back to logical downstream buffers.
+- `bench/tools/run_doe_csl_int4ple_transcript.py`: runtime weight mapping
+  now includes inferred layer/final RMSNorm weights, including BF16 norm
+  tensors.
+
+Validation:
+
+- `python3 -m py_compile` on the edited Python runner/tool files.
+- `python3 -m unittest` across the eight CSL-focused test modules: 88
+  tests passed.
+- `zig build test-wgsl` passed; only existing TSIR line-limit allowlist
+  warnings were printed.
+- `zig build csl-host-plan-tool` passed.
+- `python3 bench/gates/schema_gate.py` passed.
+- `git diff --check` passed.
+
+Still not claimed:
+
+- No regenerated full HostPlan simulator run has been executed against
+  these changes yet. The expected next validation is that launch[2]
+  stages `tiled.a` as `P*P*Mt*Kt` device elements and writes a logical
+  `[tokens, out_dim]` activation for the next launch.
+- `kv_cache` and `fused_ffn` are still audit items: they have dedicated
+  emitters, but their exact parity against the Doppler reference still
+  needs source-level verification or simulator evidence.
+- Python sharding follow-up: `int4ple_compile_target_sim_runner.py` and
+  `bench/tools/run_doe_csl_int4ple_transcript.py` remain over the 1200
+  line modularity threshold. Owner: CSL lane. Next split target:
+  move SUMMA host transforms into `bench/runners/csl-runners/int4ple_summa_layout.py`
+  and runtime weight mapping/RMSNorm inference helpers into a dedicated
+  `bench/tools/int4ple_runtime_weight_mappings.py`.
+
+## 2026-04-24 (late+15) — Path A Zig target emission wired
+
+Path A routing is now connected through the Zig host-plan target emitter.
+This supersedes late+14's "Zig target emission owed" note.
+
+Landed in this entry:
+
+- `runtime/zig/src/csl_host_plan_tool.zig`: `buildCompileTargets`
+  now emits base targets plus `_prefill` / `_decode` compile targets
+  for `rmsnorm`, `residual`, and `gelu`. The variant targets use
+  unique target names while pointing at the base kernel source files
+  (`<base>/layout.csl` and `<base>/pe_program.csl`) so cslc builds
+  separate binaries with the phase-specific compile params already
+  emitted by `bench/tools/int4ple_manifest_compile_params.py`.
+- `runtime/zig/src/csl_host_plan_tool.zig`: compile-source
+  materialization now writes sources once from `plan.kernels` rather
+  than assuming a strict one target per kernel pairing. This means
+  `plan.kernels` and launches can remain base-name stable while the
+  compile-target list grows by the six phase variants.
+- `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig`: host-plan
+  validation now accepts only the explicit phase variants backed by
+  base kernels (`rmsnorm`, `residual`, `gelu`) and rejects phase
+  suffixes on unrelated kernels.
+- `runtime/zig/tools/csl_sdk_driver.py`: `rmsnorm_prefill` and
+  `rmsnorm_decode` are treated as row-kernel compile targets so their
+  SDK fabric height stays at one. Residual and gelu phase variants
+  carry `height: 1` in compile params already.
+- `bench/tests/test_csl_driver_taxonomy.py`: assertion added for the
+  rmsnorm phase target row-kernel classification.
+
+Correction to late+14: no matching phase `KernelSpec` entries are needed
+in `plan.kernels`, and `plan.prefill_launches` / `plan.decode_launches`
+do not need to rewrite `kernelName` to the variant. The intended shape is:
+Zig emits phase compile targets, Python execution planning remaps
+base-name launches with `launch.phase` to the resolved `targetName`, and
+legacy no-phase launches keep using the base target.
+
+Validation:
+
+- `zig fmt runtime/zig/src/csl_host_plan_tool.zig runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig`
+- `zig build csl-host-plan-tool`
+- `zig test --dep build_options -Mroot=src/csl_host_plan_tool.zig -Mbuild_options=.zig-cache/c/c2462405c3bf55dcb3c6284318814a0c/options.zig`
+  passed 76 tests, including the new phase-target emission and
+  host-plan validation tests.
+- `python3 -m py_compile bench/runners/csl-runners/int4ple_hostplan_execution_plan.py runtime/zig/tools/csl_sdk_driver.py`
+- 80 Python tests passed across:
+  `test_csl_governed_lane_gate`,
+  `test_csl_source_wgsl_regeneration`,
+  `test_csl_wgsl_role_integration`,
+  `test_csl_driver_taxonomy`,
+  `test_csl_host_plan_kernel_patterns`,
+  `test_int4ple_manifest_compile_params_gate`,
+  `test_int4ple_scheduler_readiness`,
+  `test_csl_governed_lane_receipt`.
+- Host-plan artifact smoke: `doe-csl-host-plan-tool --mode steps` against
+  the existing Gemma 3 1B normalized execution emitted 17 compile targets
+  under `/tmp/doe-path-a-hostplan-check`, including all six phase variants
+  with base source paths.
+
+Still open before a positive Gemma 3 1B CSL parity receipt:
+
+- Regenerate the CSL hostplan artifacts and confirm the generated
+  compile target list contains the six phase variants with matching
+  compile params.
+- Run the full simulator through prefill plus 8 decode cycles and
+  confirm no `phase_variant_target_missing`, `target_missing`, or
+  input-buffer-size mismatch blockers.
+- Implement P7.4 real kernel bodies for rmsnorm, residual, gelu, and
+  the remaining stubbed math kernels before expecting numerical parity.
+- Bind the new CSL transcript to the bundle-derived reference export
+  only after routing, full execution, and kernel math are green.
+
+## 2026-04-24 (late+14) — Path A Python half landed; Zig target emission owed
+
+The iter-15 runner-side override (late+13) is reverted. Path A replaces
+it: upstream Zig compile-target registration + Python hostplan dispatch
+remap + drift-guard tests, with base kernel names preserved for
+back-compat.
+
+Landed in this entry:
+
+- `bench/runners/csl-runners/int4ple_compile_target_sim_runner.py`:
+  removed `_ELEMENTWISE_DECODE_TARGETS`, `_is_elementwise_decode_launch`,
+  `_compile_elementwise_decode_override`,
+  `_apply_elementwise_decode_override`, and the dispatch block that
+  applied the override before `_stage_launch_arrays`. The runner is
+  back to its pre-iter-15 shape plus the embed-ROI pattern.
+- `bench/runners/csl-runners/int4ple_hostplan_execution_plan.py`:
+  `_resolve_phase_variant_target` added. Called at the launch resolution
+  loop (formerly `target_name = launch["kernelName"]`). For rmsnorm /
+  residual / gelu launches with `launch.phase` set to `prefill` or
+  `decode`, the resolver remaps to `<kernel>_<phase>`. Missing phase
+  variants or unsupported phases emit explicit blockers
+  (`phase_variant_target_missing:<name>` or
+  `phase_variant_unsupported:<kernel>:<phase>`) rather than silently
+  falling back to the base binary. Legacy launches without a phase
+  pass through unchanged. Launch records now carry both `kernelName`
+  (base) and `targetName` (resolved) for auditability.
+- `bench/tests/test_int4ple_scheduler_readiness.py`:
+  `PhaseVariantTargetResolverTests` class with 8 focused cases:
+  non-elementwise pass-through, legacy launch pass-through, prefill
+  and decode variant resolution, all three elementwise kernels with
+  both phases, missing-variant blocker, unsupported-phase blocker, and
+  a drift guard asserting the compile-params projection emits every
+  `<kernel>_<phase>` key the resolver may remap to. 26 total tests
+  pass in this file.
+- `bench/tools/int4ple_manifest_compile_params.py` unchanged from
+  iter-12 — already emits the `_prefill` / `_decode` keys the resolver
+  and drift-guard depend on.
+
+Tests green across 8 CSL-related test files (82 tests total):
+`test_int4ple_manifest_compile_params_gate`,
+`test_int4ple_scheduler_readiness` (includes the 8 new phase-routing
+cases), `test_csl_host_plan_kernel_patterns`, `test_csl_driver_taxonomy`,
+`test_csl_governed_lane_gate`, `test_csl_governed_lane_receipt`,
+`test_csl_source_wgsl_regeneration`, `test_csl_sdk_210_migration`.
+
+Zig-side work NOT landed in this entry — scope beyond what can be
+validated without a full pipeline regen:
+
+- `runtime/zig/src/csl_host_plan_tool.zig:buildCompileTargets` needs
+  to emit 6 additional compile targets (`rmsnorm_prefill`,
+  `rmsnorm_decode`, `residual_prefill`, `residual_decode`,
+  `gelu_prefill`, `gelu_decode`) pointing at the base kernels'
+  `layout.csl` / `pe_program.csl` source files. Strict 1:1 pairing at
+  `materializeCompileSources:443` (`plan.kernels.len != targets.len`)
+  means the upstream planner that builds `plan.kernels` must also
+  gain matching `KernelSpec` entries. Launches in
+  `plan.prefill_launches` must reference `<kernel>_prefill` and
+  `plan.decode_launches` must reference `<kernel>_decode` so the
+  `validateLaunch` pairing at `emit_csl_host_plan.zig:317-332` holds.
+- A compile-sources materialization pass that accepts phase-variant
+  kernel specs by reusing the base kernel's CSL sources (both
+  variants share `rmsnorm/layout.csl`).
+- `zig build csl-host-plan-tool` must stay green.
+
+Until the Zig emitter lands the variants, any plan regen that feeds
+launches with `launch.phase` set into the Python execution planner
+will emit `phase_variant_target_missing:<kernel>_<phase>` blockers.
+That is the intended behavior per the explicit-over-implicit
+discipline and surfaces the staging bug directly — no silent
+fallback to the wrong-width binary. Legacy plans without `phase`
+fields on launches continue to work unchanged.
+
+Stub-kernel caveat remains (punch-list P7.4): rmsnorm, residual, gelu,
+attn_head256, and lm_head_gemv `pe_program.csl` bodies must emit
+full normalized tensors rather than scalar-at-pe_id before CSL
+digests can match the bundle-derived reference transcript. This is
+independent of routing and can proceed in parallel with the Zig
+emission work; keep it separate from the routing patch so failure
+classification stays clean.
+
+## 2026-04-24 (late+13) — Decode-phase elementwise override wired in runner
+
+`bench/runners/csl-runners/int4ple_compile_target_sim_runner.py` now
+intercepts decode-phase launches of `rmsnorm`/`residual`/`gelu` and runs
+each against a width=1 binary compiled at runtime. Mirrors the existing
+`_compile_embed_roi_target` pattern. Four new symbols:
+
+- `_ELEMENTWISE_DECODE_TARGETS = {"rmsnorm", "residual", "gelu"}`
+- `_is_elementwise_decode_launch(launch)` — true iff `launch.phase` is
+  `"decode"` and `launch.targetName` is an elementwise target compiled
+  with `width > 1`.
+- `_compile_elementwise_decode_override(launch, runtime_dir)` — invokes
+  `cslc_executable()` against the base kernel's `layout.csl` with
+  `width:1,hidden_size:<N>` (rmsnorm) or `width:1,height:1,chunk_size:<N>`
+  (residual/gelu). Output at `<runtime_dir>/decode-override/<target>/compiled/`,
+  cached per kernel name.
+- `_apply_elementwise_decode_override(launch, runtime_dir)` — returns a
+  launch copy with `compileDir` repointed, `compileParams.width=1`,
+  `targetGeometry` rebuilt, and `resolvedInputs/resolvedOutputs[*]
+  .materialization.plannedElementCount` narrowed from
+  `attention_tokens * elementsPerPe` to `1 * elementsPerPe`.
+
+Dispatch in `execute_hostplan_runtime` applies the override before
+`_stage_launch_arrays`. Emits `hostplan_decode_override_applied` progress
+event for traceability (explicit, not a hidden fallback).
+
+Test coverage unchanged — 68 tests green across
+`test_int4ple_manifest_compile_params_gate`,
+`test_int4ple_scheduler_readiness`, `test_csl_host_plan_kernel_patterns`,
+`test_csl_driver_taxonomy`, `test_csl_governed_lane_gate`,
+`test_csl_governed_lane_receipt`.
+
+End-to-end validation still owed:
+
+- A full CSL HostPlan regen + simulator run is needed to verify the
+  override binary loads, its input/output buffer sizes match at the SDK
+  level, and decode launch[0] (`rmsnorm` post-sample) does not fail.
+- The width=1 compile invocation uses fabric-dims 8,3 — matching the
+  base compile's fabric for rmsnorm/residual/gelu. If the base compile
+  uses different fabric geometry at width=N, that assumption may need
+  adjusting.
+- Stub kernel caveat unchanged: P7.4 kernel bodies still need real
+  normalization logic before digests can match the reference.
+
+Remaining path to positive receipt (unchanged):
+
+1. Verify the override via CSL pipeline regen (not done).
+2. Real kernel bodies (P7.4) so digests match reference.
+3. Re-run binder with CSL transcript receipt → positive parity artifact.
+
+## 2026-04-24 (late+12) — Phase-aware compile-params variants emitted (additive)
+
+`bench/tools/int4ple_manifest_compile_params.py` now emits six additional
+keys alongside the existing `rmsnorm`/`residual`/`gelu` entries:
+
+- `rmsnorm_prefill` (`width=attention_tokens`), `rmsnorm_decode` (`width=1`)
+- `residual_prefill`, `residual_decode`
+- `gelu_prefill`, `gelu_decode`
+
+All nine entries emit with Gemma 3 1B parameters under a 15-token prompt
+reference. The original three keys are preserved for back-compat; new
+consumers can opt into the `_<phase>` variants.
+
+Test coverage unchanged — 56 tests green (`test_int4ple_manifest_compile_params_gate`,
+`test_int4ple_scheduler_readiness`, `test_csl_host_plan_kernel_patterns`,
+`test_csl_driver_taxonomy`).
+
+Remaining downstream wiring (pending):
+
+- Operation graph emitter: register `<kernel>_<phase>` compile targets so
+  `cslc` compiles the same CSL source twice, once per phase.
+- HostPlan emitter (`int4ple_hostplan_execution_plan.py`): dispatch launches
+  to `<kernel>_<phase>` based on `launch.phase`, mirroring the existing
+  `lm_head_prefill_stable` pattern at line 183.
+- Scheduler tests: update `test_int4ple_scheduler_readiness.py` to assert
+  the `_prefill`/`_decode` routing exists when emitted.
+
+Without downstream consumers, the new keys are inert. With them wired,
+prefill launches stage 17280-elem activations into the `_prefill` binary
+(width=N) and decode launches stage 1152-elem activations into the
+`_decode` binary (width=1), resolving the current staging mismatch that
+would hit on the first decode launch once prefill clears.
+
+## 2026-04-24 (late+11) — Bundle-derived reference export lands; #11 decode-width surgery scoped
+
+Reference side is now wired. The Doppler program bundle embedded at
+`bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/doppler-program-bundle.json`
+(2026-04-24 17:01) carries a non-synthetic `referenceTranscript` with 8 real
+per-step logit digests (`logits.perStepDigests`, `logits.steps[]`), 8 real
+generated token IDs (`tokens.ids`), KV cache state hash (`kvCache.stateHash`),
+and matching `execution.graphHash = 7b8152f81712...` — which is the identity
+the CSL HostPlan is pinned against.
+
+Landed:
+
+- `bench/tools/merge_bundle_into_reference_export.py` — adapter that fuses the
+  iter-6 node-webgpu export's identity fields (manifest/weight/shard/producer)
+  with the CSL-side program bundle's `referenceTranscript`. Output validates
+  clean against `config/doppler-int4ple-reference-export.schema.json`.
+- `bench/out/doppler-reference/gemma-3-1b-doe-webgpu-export-bundle-derived/doppler_int4ple_reference_export.json`
+  — the bundle-derived export. Graph hash 7b8152f81712 (matches CSL),
+  manifest hash 6644e3be29b9db5b (matches current manifest), 8 real decode
+  steps, stopReason `decode_steps_exhausted`.
+- `examples/doe-csl-reference-parity.gemma-3-1b-reference-ready-csl-pending.sample.json`
+  — the parity artifact when the binder is run against the bundle-derived
+  export with no CSL-side trace. Fields that are now TRUE:
+  `sameManifestHash`, `sameGraphHash`, `externalReferenceOutputBound`,
+  `syntheticInputsAbsent`, `syntheticWeightsAbsent`, `manifestHashMatched`,
+  `graphHashMatched`. Fields that remain FALSE (all CSL-side pending):
+  `tokenIdsMatch`, `perStepLogitsParityPassed`, `realKvCacheUsed`,
+  `cslOutputHashBound`, `decodeTranscriptBound`, `outputParityPassed`,
+  `fullModelDepthExecuted`, `stubStagesAbsent`, `weightHashMatched`.
+- Invocation: `python3 bench/tools/bind_doppler_int4ple_reference_to_csl_parity.py
+  --reference-export bench/out/doppler-reference/gemma-3-1b-doe-webgpu-export-bundle-derived/doppler_int4ple_reference_export.json
+  --out <out> --kernel-stage pending_full_int4ple_csl_transcript_lowering --kernel-is-stub true`
+  PASSED schema validation end-to-end.
+
+Follow-up for decode-phase width (not landed, design scoped):
+
+With the late+10 width=attention_tokens fix in place, prefill launch[1]
+(rmsnorm) will stage correctly, but decode phase will fail the inverse
+direction: kernel expects 17280-elem input per launch but decode produces
+only 1*1152 per step. Two implementation options:
+
+- **Runner-side override** (mirrors `_compile_embed_roi_target`). Add
+  `_is_elementwise_decode_launch` + `_compile_elementwise_decode_override` at
+  `bench/runners/csl-runners/int4ple_compile_target_sim_runner.py:~1208`.
+  Compiles width=1 variant to `<runtime_dir>/decode-override/<kernel>/`;
+  rewrites `launch.compileDir` and must ALSO rewrite
+  `resolvedInputs/resolvedOutputs.materialization.plannedElementCount` from
+  `attention_tokens * hidden_size` to `1 * hidden_size` for decode-phase
+  elementwise launches. The plannedElementCount rewrite is the step easy to
+  miss; without it the override compile is still rejected at the staging size
+  check (`int4ple_compile_target_sim_runner.py:1166-1170`).
+- **Phase-aware compile params** (cleaner, more files). In
+  `bench/tools/int4ple_manifest_compile_params.py` emit both
+  `rmsnorm_prefill` (width=attention_tokens) and `rmsnorm_decode` (width=1);
+  same for residual/gelu. Hostplan emitter dispatches on `launch.phase` to
+  `<kernel>_<phase>` (the pattern `lm_head_prefill_stable` already uses at
+  `int4ple_hostplan_execution_plan.py:183`). Adds 3 compile targets and
+  updates `test_int4ple_scheduler_readiness.py` expectations.
+
+Stub-kernel caveat: even once #11 unblocks decode staging, rmsnorm
+`pe_program.csl` currently writes a single scalar sum at `output[pe_id]`
+rather than the full normalized hidden-dim vector. That's punch-list Step
+7 (P7.4 real kernel body). Unblocking #11 gets the pipe flowing
+end-to-end; real parity-passing digests need #11 AND real kernel bodies.
+
+Independent finding — WebGPU non-determinism: same model + prompt + greedy
+across three adapters (CSL-side bundle via unknown adapter at 17:01,
+Playwright Chromium/Vulkan, Mesa software llvmpipe) produces three
+different 8-token sequences. The CSL-side bundle's embedded
+`referenceTranscript` is the authoritative anchor; don't regenerate the
+reference on each side and expect parity.
+
 ## 2026-04-24 (late+10) — Embed runs clean, rmsnorm width=1 blocks prefill launch[1]
 
 The embed launch now completes under the real HostPlan executor on Gemma 3

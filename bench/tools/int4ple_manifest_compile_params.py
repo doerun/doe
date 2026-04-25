@@ -435,13 +435,41 @@ def manifest_compile_param_projection(
             "width": attention_tokens,
             "hidden_size": hidden_dim,
         },
+        "rmsnorm_prefill": {
+            "width": attention_tokens,
+            "hidden_size": hidden_dim,
+        },
+        "rmsnorm_decode": {
+            "width": 1,
+            "hidden_size": hidden_dim,
+        },
         "residual": {
             "width": attention_tokens,
             "height": 1,
             "chunk_size": hidden_dim,
         },
+        "residual_prefill": {
+            "width": attention_tokens,
+            "height": 1,
+            "chunk_size": hidden_dim,
+        },
+        "residual_decode": {
+            "width": 1,
+            "height": 1,
+            "chunk_size": hidden_dim,
+        },
         "gelu": {
             "width": attention_tokens,
+            "height": 1,
+            "chunk_size": hidden_dim,
+        },
+        "gelu_prefill": {
+            "width": attention_tokens,
+            "height": 1,
+            "chunk_size": hidden_dim,
+        },
+        "gelu_decode": {
+            "width": 1,
             "height": 1,
             "chunk_size": hidden_dim,
         },

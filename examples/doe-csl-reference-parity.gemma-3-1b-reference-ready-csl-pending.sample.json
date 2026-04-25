@@ -1,0 +1,84 @@
+{
+  "artifactKind": "doe_csl_reference_parity",
+  "comparison": {
+    "atol": 0.001,
+    "blocker": "Doe CSL simfabric bounded prefill+decode transcript has not been produced for the production Doppler INT4 PLE source program.",
+    "outputHashMatch": false,
+    "perStepLogitsParityPassed": false,
+    "realKvCacheUsed": false,
+    "sameGraphHash": true,
+    "sameManifestHash": true,
+    "status": "pending_csl_output_hash",
+    "tokenIdsMatch": false
+  },
+  "cslRun": {
+    "kernelIsStub": true,
+    "kernelStage": "pending_full_int4ple_csl_transcript_lowering",
+    "status": "pending_csl_output",
+    "tracePath": "pending",
+    "traceSha256": "pending"
+  },
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "promotionCriteria": {
+    "cslOutputHashBound": false,
+    "decodeTranscriptBound": false,
+    "externalReferenceOutputBound": true,
+    "fullModelDepthExecuted": false,
+    "graphHashMatched": true,
+    "hardwareReceiptRequiredForHardwareClaim": true,
+    "manifestHashMatched": true,
+    "outputParityPassed": false,
+    "perStepLogitsParityPassed": false,
+    "realKvCacheUsed": false,
+    "stubStagesAbsent": false,
+    "syntheticInputsAbsent": true,
+    "syntheticWeightsAbsent": true,
+    "tokenIdsMatched": false,
+    "weightHashMatched": false
+  },
+  "referenceRun": {
+    "decodeTranscript": {
+      "actualDecodeSteps": 8,
+      "decodeStepsProduced": 8,
+      "generatedTokenIdsSha256": "11b2ac0b00f414090110c7bbc10e98e401e783f89a6db965e646af741eeafc71",
+      "logitsDigestSha256": "cb017c5120aedef8e77a528e54745acd86a25278e5b2c17bf6bfe5c47d606bd2",
+      "path": "digest-only",
+      "requestedDecodeSteps": 8,
+      "sha256": "2d459171f8a69b12f48b3a2a95f7d276cf8ccc18534f6417f02f727256609c44",
+      "stopReason": "decode_steps_exhausted"
+    },
+    "inputSetSha256": "d7c21b4535f9bf860f8d53dad3497ddac380373d78883df4e98b255f31d38b58",
+    "inputsSynthetic": false,
+    "output": {
+      "dtype": "float32",
+      "path": "bench/out/doppler-reference/gemma-3-1b-doe-webgpu-export-real/final_logits.f32",
+      "preview": [
+        -10.296695709228516,
+        -7.872030735015869,
+        4.747320175170898,
+        -10.999112129211426,
+        -1.6316072940826416,
+        -17.416522979736328,
+        -11.822927474975586,
+        -9.425775527954102
+      ],
+      "sha256": "6db37a87cea8557f678e6b9c5fbfc03d2b49b642e8321b1933b1beddfd767e7e",
+      "shape": [
+        262144
+      ]
+    },
+    "producer": "doppler_browser_webgpu",
+    "status": "output_ready",
+    "weightsSynthetic": false
+  },
+  "schemaVersion": 1,
+  "sourceProgram": {
+    "authoringSurface": "doppler_execution_v1",
+    "graphPath": "bench/out/doppler-reference/gemma-3-1b-doe-webgpu-export-real/execution_graph.json",
+    "graphSha256": "7b8152f81712758a6b3caabae24f466be19a4431e77bf85f4fbb3e34577014ba",
+    "manifestPath": "/home/x/deco/doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32/manifest.json",
+    "manifestSha256": "6644e3be29b9db5b714de0ae66c92f41961d8cb58df069bf075b4a2b048084bb",
+    "weightSetId": "gemma-3-1b-it-q4k-ehf16-af32-wp-catalog-v1",
+    "weightSha256": "06547744fc714e919e5d7d479346610dfb7ae8d9871f68731c0c4147363aaf8f"
+  }
+}

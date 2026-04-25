@@ -33,6 +33,7 @@ from bench.tools.int4ple_manifest_compile_params import (
     manifest_compile_param_projection,
     runtime_grid,
 )
+from bench.tools.doppler_rdrr_q4k import dequantize_q4km_rowwise_bytes
 from int4ple_hostplan_execution_plan import build_hostplan_execution_plan
 from int4ple_embed_roi import build_embed_roi_spec
 from int4ple_hostplan_executor_validator import validate_hostplan_executor
@@ -1060,6 +1061,118 @@ def _read_weight_prefix_bytes(weight_mapping: dict[str, Any], byte_count: int) -
     return bytes(chunks[:byte_count])
 
 
+def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
+    try:
+        value = int(mapping.get(key) or 0)
+    except (TypeError, ValueError):
+        value = 0
+    if value <= 0:
+        raise ValueError(f"transform_field_missing:{key}")
+    return value
+
+
+def _summa_a_tiles_from_logical(
+    host: np.ndarray,
+    transform: dict[str, Any],
+) -> tuple[np.ndarray, int]:
+    source_cols = _required_positive_int(transform, "sourceCols")
+    padded_rows = _required_positive_int(transform, "paddedRows")
+    padded_cols = _required_positive_int(transform, "paddedReduction")
+    grid_height = _required_positive_int(transform, "gridHeight")
+    grid_width = _required_positive_int(transform, "gridWidth")
+    tile_rows = _required_positive_int(transform, "tileRows")
+    tile_cols = _required_positive_int(transform, "tileReduction")
+    if host.size % source_cols != 0:
+        raise ValueError(
+            f"summa_a_logical_size_mismatch:{host.size}%{source_cols}"
+        )
+    rows = host.size // source_cols
+    if rows > padded_rows or source_cols > padded_cols:
+        raise ValueError(
+            "summa_a_logical_shape_exceeds_target:"
+            f"{rows}x{source_cols}>{padded_rows}x{padded_cols}"
+        )
+    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
+    padded[:rows, :source_cols] = host.astype(np.float32, copy=False).reshape(
+        rows, source_cols
+    )
+    tiles = padded.reshape(
+        grid_height,
+        tile_rows,
+        grid_width,
+        tile_cols,
+    ).transpose(0, 2, 3, 1)
+    return tiles.reshape(-1).astype(np.float32, copy=False), rows
+
+
+def _summa_b_tiles_from_weight_matrix(
+    matrix_nk: np.ndarray,
+    transform: dict[str, Any],
+) -> np.ndarray:
+    source_rows = _required_positive_int(transform, "sourceRows")
+    source_cols = _required_positive_int(transform, "sourceCols")
+    padded_rows = _required_positive_int(transform, "paddedCols")
+    padded_cols = _required_positive_int(transform, "paddedReduction")
+    grid_height = _required_positive_int(transform, "gridHeight")
+    grid_width = _required_positive_int(transform, "gridWidth")
+    tile_rows = _required_positive_int(transform, "tileCols")
+    tile_cols = _required_positive_int(transform, "tileReduction")
+    if matrix_nk.size != source_rows * source_cols:
+        raise ValueError(
+            "summa_b_weight_shape_mismatch:"
+            f"{matrix_nk.size}!={source_rows}x{source_cols}"
+        )
+    if source_rows > padded_rows or source_cols > padded_cols:
+        raise ValueError(
+            "summa_b_logical_shape_exceeds_target:"
+            f"{source_rows}x{source_cols}>{padded_rows}x{padded_cols}"
+        )
+    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
+    padded[:source_rows, :source_cols] = matrix_nk.astype(
+        np.float32,
+        copy=False,
+    ).reshape(source_rows, source_cols)
+    tiles = padded.reshape(
+        grid_width,
+        tile_rows,
+        grid_height,
+        tile_cols,
+    ).transpose(2, 0, 1, 3)
+    return tiles.reshape(-1).astype(np.float32, copy=False)
+
+
+def _materialize_weight_matrix_f32(
+    mapping: dict[str, Any],
+    transform: dict[str, Any],
+) -> np.ndarray:
+    nested = transform.get("sourceTransform") or {}
+    if not isinstance(nested, dict):
+        nested = {}
+    nested_kind = str(nested.get("kind") or "")
+    source_rows = _required_positive_int(transform, "sourceRows")
+    source_cols = _required_positive_int(transform, "sourceCols")
+    element_count = source_rows * source_cols
+    if nested_kind == "q4km_rowwise_to_f32":
+        byte_count = int(mapping.get("byteSize") or 0)
+        raw = _read_weight_prefix_bytes(mapping, byte_count)
+        values = dequantize_q4km_rowwise_bytes(raw, [source_rows, source_cols])
+        return np.asarray(values, dtype=np.float32)
+    if nested_kind in {"f16_to_f32", "litert_axis_dequant"}:
+        raw = _read_weight_prefix_bytes(mapping, element_count * 2)
+        return np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
+    if nested_kind == "bf16_to_f32":
+        raw = _read_weight_prefix_bytes(mapping, element_count * 2)
+        bf16_words = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32, copy=False)
+        return (bf16_words << 16).view(np.float32).copy()
+    if nested_kind in {"", "none"} and str(mapping.get("dtype") or "") == "f32":
+        raw = _read_weight_prefix_bytes(mapping, element_count * 4)
+        return np.frombuffer(raw, dtype=np.float32).copy()
+    raise ValueError(
+        "unsupported_summa_weight_source_transform:"
+        f"{mapping.get('weightKey') or mapping.get('tensor')}:{nested_kind or 'none'}"
+    )
+
+
 def _materialize_weight_input(
     materialization: dict[str, Any],
 ) -> np.ndarray:
@@ -1074,11 +1187,26 @@ def _materialize_weight_input(
         if isinstance(source_transform, dict)
         else ""
     )
+    if dtype == "f32" and transform_kind == "weight_matrix_to_summa_tiles":
+        matrix = _materialize_weight_matrix_f32(mapping, source_transform)
+        values = _summa_b_tiles_from_weight_matrix(matrix, source_transform)
+        if values.size != total_elements:
+            raise ValueError(
+                f"weight_summa_tile_size_mismatch:{values.size}!={total_elements}"
+            )
+        return values
     if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:
         raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
         values = np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
         if values.size != total_elements:
             raise ValueError(f"weight_f16_to_f32_size_mismatch:{values.size}!={total_elements}")
+        return values
+    if dtype == "f32" and transform_kind == "bf16_to_f32":
+        raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
+        bf16_words = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32, copy=False)
+        values = (bf16_words << 16).view(np.float32).copy()
+        if values.size != total_elements:
+            raise ValueError(f"weight_bf16_to_f32_size_mismatch:{values.size}!={total_elements}")
         return values
     if dtype == "u32" and transform_kind == "u8_bytes_to_u32_words":
         raw = _read_weight_prefix_bytes(mapping, total_elements * 4)
@@ -1122,6 +1250,23 @@ def _materialize_constant_input(
     raise ValueError(f"unsupported_constant_input:{role}:{buffer}:{dtype}")
 
 
+def _transform_existing_input(
+    host: np.ndarray,
+    materialization: dict[str, Any],
+) -> tuple[np.ndarray, dict[str, int]]:
+    source_transform = materialization.get("sourceTransform") or {}
+    if not isinstance(source_transform, dict):
+        return host, {}
+    transform_kind = str(source_transform.get("kind") or "")
+    if transform_kind == "logical_matrix_to_summa_tiles":
+        values, rows = _summa_a_tiles_from_logical(host, source_transform)
+        return values, {
+            "rows": rows,
+            "cols": _required_positive_int(source_transform, "sourceCols"),
+        }
+    return host, {}
+
+
 def _launch_spec_path(runtime_dir: Path, launch_index: int) -> Path:
     return runtime_dir / "launch-specs" / f"launch-{launch_index:04d}.json"
 
@@ -1135,6 +1280,16 @@ def _buffer_path(runtime_dir: Path, buffer_name: str) -> Path:
     return runtime_dir / "buffers" / f"{safe}.npy"
 
 
+def _staged_input_path(
+    runtime_dir: Path,
+    launch_index: int,
+    symbol: str,
+    buffer_name: str,
+) -> Path:
+    safe = hashlib.sha256(f"{launch_index}:{symbol}:{buffer_name}".encode("utf-8")).hexdigest()
+    return runtime_dir / "staged-inputs" / f"{safe}.npy"
+
+
 def _stage_launch_arrays(
     *,
     runtime_dir: Path,
@@ -1144,6 +1299,7 @@ def _stage_launch_arrays(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     staged_inputs: list[dict[str, Any]] = []
     staged_outputs: list[dict[str, Any]] = []
+    matrix_shapes: dict[str, dict[str, int]] = {}
     for side, source_items, staged in (
         ("input", launch.get("resolvedInputs") or [], staged_inputs),
         ("output", launch.get("resolvedOutputs") or [], staged_outputs),
@@ -1157,18 +1313,44 @@ def _stage_launch_arrays(
                     f"launch[{launch.get('launchIndex')}].{side}_materialization_missing"
                 )
             buffer_name = str(item.get("buffer") or "")
+            role = str(item.get("role") or "")
+            symbol = str(item.get("symbol") or "")
             path = _buffer_path(runtime_dir, buffer_name)
             if side == "input":
                 existing = buffer_files.get(buffer_name)
                 total_elements = int(materialization.get("plannedElementCount") or 0)
+                source_transform = materialization.get("sourceTransform") or {}
+                transform_kind = (
+                    str(source_transform.get("kind") or "")
+                    if isinstance(source_transform, dict)
+                    else ""
+                )
+                cache_buffer_file = role != "weight" and transform_kind not in {
+                    "logical_matrix_to_summa_tiles",
+                    "weight_matrix_to_summa_tiles",
+                }
+                if not cache_buffer_file:
+                    path = _staged_input_path(
+                        runtime_dir,
+                        int(launch.get("launchIndex") or 0),
+                        symbol,
+                        buffer_name,
+                    )
                 if existing is not None:
                     host = np.load(existing, allow_pickle=False).ravel()
+                    host, matrix_shape = _transform_existing_input(
+                        host,
+                        materialization,
+                    )
+                    if matrix_shape:
+                        matrix_role = str(source_transform.get("matrixRole") or symbol)
+                        matrix_shapes[matrix_role] = matrix_shape
                     if int(host.size) != total_elements:
                         raise ValueError(
                             f"launch[{launch.get('launchIndex')}].input_buffer_size_mismatch:"
                             f"{buffer_name}:{host.size}!={total_elements}"
                         )
-                elif str(item.get("role") or "") == "weight":
+                elif role == "weight":
                     host = _materialize_weight_input(materialization)
                 else:
                     host = _materialize_constant_input(
@@ -1182,16 +1364,30 @@ def _stage_launch_arrays(
                         )
                 path.parent.mkdir(parents=True, exist_ok=True)
                 np.save(path, host)
-                buffer_files[buffer_name] = path
-            staged.append(
-                {
-                    "symbol": str(item.get("symbol") or ""),
-                    "buffer": buffer_name,
-                    "path": str(path),
-                    "dtype": str(materialization.get("dtype") or ""),
-                    "elementsPerPe": int(materialization.get("elementsPerPe") or 0),
-                }
-            )
+                if cache_buffer_file:
+                    buffer_files[buffer_name] = path
+            staged_item = {
+                "symbol": symbol,
+                "buffer": buffer_name,
+                "path": str(path),
+                "dtype": str(materialization.get("dtype") or ""),
+                "elementsPerPe": int(materialization.get("elementsPerPe") or 0),
+            }
+            if side == "input" and isinstance(materialization.get("sourceTransform"), dict):
+                staged_item["sourceTransform"] = materialization["sourceTransform"]
+            if side == "output" and isinstance(materialization.get("outputTransform"), dict):
+                output_transform = dict(materialization["outputTransform"])
+                rows_from_input = str(output_transform.get("rowsFromInput") or "")
+                if rows_from_input and not output_transform.get("rows"):
+                    input_shape = matrix_shapes.get(rows_from_input)
+                    if input_shape is None:
+                        raise ValueError(
+                            f"launch[{launch.get('launchIndex')}].output_rows_unresolved:"
+                            f"{symbol}:{rows_from_input}"
+                        )
+                    output_transform["rows"] = input_shape["rows"]
+                staged_item["outputTransform"] = output_transform
+            staged.append(staged_item)
     return staged_inputs, staged_outputs
 
 

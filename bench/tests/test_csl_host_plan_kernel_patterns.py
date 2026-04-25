@@ -408,7 +408,10 @@ class SynthesizeOperationGraphKernelPatternsTests(unittest.TestCase):
                     "attention_tiled",
                     "attention_decode",
                     "element_wise",
+                    "gelu_gated",
                     "fused_gemv_dequant",
+                    "residual_add",
+                    "rms_norm",
                     "rope",
                     "sample",
                 }

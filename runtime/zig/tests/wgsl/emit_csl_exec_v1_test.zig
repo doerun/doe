@@ -8,8 +8,9 @@ const TEST_ARTIFACT_CAPACITY: usize = 32 * 1024;
 test "opToPattern maps known ops" {
     try std.testing.expectEqualStrings("gather", exec_v1.opToPattern("embed").?);
     try std.testing.expectEqualStrings("attention_decode", exec_v1.opToPattern("attention").?);
-    try std.testing.expectEqualStrings("element_wise", exec_v1.opToPattern("gelu").?);
-    try std.testing.expectEqualStrings("reduction", exec_v1.opToPattern("rmsnorm").?);
+    try std.testing.expectEqualStrings("gelu_gated", exec_v1.opToPattern("gelu").?);
+    try std.testing.expectEqualStrings("rms_norm", exec_v1.opToPattern("rmsnorm").?);
+    try std.testing.expectEqualStrings("residual_add", exec_v1.opToPattern("residual").?);
     try std.testing.expectEqualStrings("fused_ffn", exec_v1.opToPattern("ffn").?);
     try std.testing.expectEqualStrings("kv_write", exec_v1.opToPattern("kv_write").?);
     try std.testing.expect(exec_v1.opToPattern("unknown_op") == null);

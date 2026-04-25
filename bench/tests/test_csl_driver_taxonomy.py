@@ -20,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "runtime" / "zig" / "tools"))
 
 from csl_sdk_driver import (  # type: ignore[import-not-found]
+    ROW_KERNEL_TARGETS,
     check_unblock_cmd_stream,
     classify_cslc_failure,
     compile_targets,
@@ -256,6 +257,10 @@ class RuntimeCommandReceiptTests(unittest.TestCase):
 
 
 class CompileTargetBlockerTests(unittest.TestCase):
+    def test_phase_rmsnorm_targets_compile_as_row_kernels(self) -> None:
+        self.assertIn("rmsnorm_prefill", ROW_KERNEL_TARGETS)
+        self.assertIn("rmsnorm_decode", ROW_KERNEL_TARGETS)
+
     def test_compile_blocked_reason_skips_cslc(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -282,6 +282,53 @@ def weight_binding(
     )
 
 
+def weight_binding_candidates(
+    symbol: str,
+    weight_keys: list[str],
+    weights: dict[str, dict[str, Any]],
+) -> tuple[dict[str, Any], str | None]:
+    candidates = [key for key in dict.fromkeys(weight_keys) if key]
+    for key in candidates:
+        if key in weights:
+            return weight_binding(symbol, key, weights)
+    missing_key = candidates[0] if candidates else ""
+    item, blocker = weight_binding(symbol, missing_key, weights)
+    item["weightCandidates"] = candidates
+    if blocker is None:
+        blocker = f"runtime config is missing weight mapping from candidates {candidates!r}"
+    return item, blocker
+
+
+def rmsnorm_weight_key_candidates(op_name: str, layer_index: int | None, raw_key: Any) -> list[str]:
+    keys: list[str] = []
+    if isinstance(raw_key, str) and raw_key:
+        keys.append(raw_key)
+    if layer_index is None:
+        if op_name == "final_norm":
+            keys.extend(["norm", "model.norm", "model.norm.weight"])
+        return keys
+    layer_prefix = f"layer.{layer_index}"
+    model_prefix = f"model.layers.{layer_index}"
+    suffix_by_step = {
+        "input_norm": "input_layernorm",
+        "post_attn_norm": "post_attention_layernorm",
+        "pre_ffn_norm": "pre_feedforward_layernorm",
+        "post_ffn_norm": "post_feedforward_layernorm",
+    }
+    suffix = suffix_by_step.get(op_name)
+    if suffix is None:
+        return keys
+    keys.extend(
+        [
+            f"{layer_prefix}.{suffix}",
+            f"{layer_prefix}.{suffix}.weight",
+            f"{model_prefix}.{suffix}",
+            f"{model_prefix}.{suffix}.weight",
+        ]
+    )
+    return keys
+
+
 def state_buffer_names(runtime_config: dict[str, Any]) -> set[str]:
     names: set[str] = set()
     for item in runtime_config.get("stateBuffers") or []:
@@ -350,6 +397,20 @@ def bind_launch_dataflow(
         if blocker is not None:
             blockers.append(blocker)
 
+    def add_rmsnorm_weight() -> None:
+        item, blocker = weight_binding_candidates(
+            "weight",
+            rmsnorm_weight_key_candidates(
+                op_name,
+                layer_index,
+                normalized_step.get("weightsKey"),
+            ),
+            weights,
+        )
+        inputs.append(item)
+        if blocker is not None:
+            blockers.append(blocker)
+
     if kernel_name == "embed":
         output = next_buffer(op_name)
         inputs.append(
@@ -388,6 +449,7 @@ def bind_launch_dataflow(
                 source="activation_router",
             )
         )
+        add_rmsnorm_weight()
         outputs.append(
             binding(
                 symbol="output",
@@ -423,8 +485,22 @@ def bind_launch_dataflow(
             if is_lm_head
             else next_buffer(op_name)
         )
+        weight_item, weight_blocker = weight_binding(
+            "b" if is_tiled_kernel else "weight",
+            normalized_step.get("weightsKey"),
+            weights,
+        )
+        weight_shape = weight_item.get("shape") if isinstance(weight_item, dict) else []
+        matrix_n = None
+        matrix_k = None
+        if isinstance(weight_shape, list) and len(weight_shape) >= 2:
+            try:
+                matrix_n = int(weight_shape[0])
+                matrix_k = int(weight_shape[1])
+            except (TypeError, ValueError):
+                matrix_n = None
+                matrix_k = None
         activation_symbol = "a" if is_tiled_kernel else "activation"
-        weight_symbol = "b" if is_tiled_kernel else "weight"
         output_symbol = "c" if is_tiled_kernel else "output"
         inputs.append(
             binding(
@@ -433,9 +509,13 @@ def bind_launch_dataflow(
                 role="activation",
                 access="read",
                 source="activation_router",
+                matrixCols=matrix_k,
+                opName=op_name,
             )
         )
-        add_weight(weight_symbol)
+        inputs.append(weight_item)
+        if weight_blocker is not None:
+            blockers.append(weight_blocker)
         outputs.append(
             binding(
                 symbol=output_symbol,
@@ -443,12 +523,21 @@ def bind_launch_dataflow(
                 role="logits" if is_lm_head else "activation",
                 access="write",
                 source=f"{kernel_name}.output",
+                matrixCols=matrix_n,
+                opName=op_name,
+                producerWeightShape=weight_shape,
             )
         )
         if layer_index is not None and op_name in {"q_proj", "k_proj", "v_proj"}:
             layer_state[op_name[0]] = output
         elif layer_index is not None and op_name == "o_proj":
             layer_state["attention_projected"] = output
+            set_current(output)
+        elif layer_index is not None and op_name == "gate_proj":
+            layer_state["gate_proj"] = output
+            set_current(output)
+        elif layer_index is not None and op_name == "up_proj":
+            layer_state["up_proj"] = output
             set_current(output)
         elif is_lm_head:
             phase_state["last_logits"] = output
@@ -566,32 +655,61 @@ def bind_launch_dataflow(
         source = current_buffer()
         output = next_buffer(op_name)
         if kernel_name == "gelu":
+            gate = str(layer_state.get("gate_proj") or "")
+            if not gate:
+                blockers.append(f"gate_proj_activation_missing:{op_name}")
+                gate = "activation:missing:gate_proj"
+            up = str(layer_state.get("up_proj") or source)
             inputs.append(
                 binding(
-                    symbol="u",
-                    buffer=f"uniform:{op_name}",
-                    role="uniform",
+                    symbol="input",
+                    buffer=up,
+                    role="activation",
                     access="read",
-                    source="runtime_constant",
+                    source="activation_router",
                 )
             )
             inputs.append(
                 binding(
-                    symbol="input",
-                    buffer=source,
+                    symbol="gate",
+                    buffer=gate,
                     role="activation",
                     access="read",
                     source="activation_router",
+                    status="missing" if gate.startswith("activation:missing:") else None,
                 )
             )
         else:
+            base_key = (
+                "residual_base"
+                if op_name == "attn_residual"
+                else "ffn_residual_base"
+            )
+            residual_source = str(layer_state.get(base_key) or "")
+            if not residual_source:
+                blockers.append(f"{base_key}_activation_missing:{op_name}")
+                residual_source = f"activation:missing:{base_key}"
             inputs.append(
                 binding(
-                    symbol="input",
+                    symbol="a",
                     buffer=source,
                     role="activation",
                     access="read",
                     source="activation_router",
+                )
+            )
+            inputs.append(
+                binding(
+                    symbol="b",
+                    buffer=residual_source,
+                    role="activation",
+                    access="read",
+                    source="activation_router",
+                    status=(
+                        "missing"
+                        if residual_source.startswith("activation:missing:")
+                        else None
+                    ),
                 )
             )
         outputs.append(

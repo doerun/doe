@@ -47,6 +47,8 @@ RESIDUAL_DIAGNOSTIC_TARGET = "residual"
 ROW_KERNEL_TARGETS: frozenset[str] = frozenset(
     {
         "rmsnorm",
+        "rmsnorm_prefill",
+        "rmsnorm_decode",
         "final_norm_stable",
         "gemv",
         "lm_head_gemv_stable",
@@ -1154,7 +1156,10 @@ _HOST_PLAN_KERNEL_PATTERNS: frozenset[str] = frozenset(
         "attention_tiled",
         "attention_decode",
         "element_wise",
+        "gelu_gated",
         "fused_gemv_dequant",
+        "residual_add",
+        "rms_norm",
         "rope",
         "sample",
     }

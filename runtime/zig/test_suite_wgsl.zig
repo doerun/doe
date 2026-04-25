@@ -31,6 +31,7 @@ const emit_csl_classify_reduction_test = @import("tests/wgsl/emit_csl_classify_r
 const emit_csl_ir_walk_loop_test = @import("tests/wgsl/emit_csl_ir_walk_loop_test.zig");
 const emit_csl_builtin_shim_test = @import("tests/wgsl/emit_csl_builtin_shim_test.zig");
 const emit_csl_reduction_layout_test = @import("tests/wgsl/emit_csl_reduction_layout_test.zig");
+const emit_csl_host_compile_source_test = @import("src/doe_wgsl/emit_csl_host_compile_source.zig");
 const dxil_validate_test = @import("src/doe_wgsl/dxil_validate.zig");
 const wgsl_cross_backend_test = @import("tests/core/wgsl_cross_backend_test.zig");
 const msl_subsystem_test = @import("tests/core/msl_subsystem_test.zig");
@@ -82,6 +83,7 @@ comptime {
     _ = emit_csl_ir_walk_loop_test;
     _ = emit_csl_builtin_shim_test;
     _ = emit_csl_reduction_layout_test;
+    _ = emit_csl_host_compile_source_test;
     _ = dxil_validate_test;
     _ = wgsl_cross_backend_test;
     _ = msl_subsystem_test;

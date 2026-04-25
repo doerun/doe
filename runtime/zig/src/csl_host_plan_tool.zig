@@ -43,6 +43,10 @@ const BundleConfigJson = struct {
 };
 
 const MAX_KERNELS: usize = 64;
+const PHASE_TARGET_SUFFIXES = [_][]const u8{ "prefill", "decode" };
+const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu" };
+const PHASE_COMPILE_TARGET_COUNT: usize = PHASE_TARGET_SUFFIXES.len * PHASE_SPECIALIZED_KERNELS.len;
+const MAX_COMPILE_TARGETS: usize = MAX_KERNELS + PHASE_COMPILE_TARGET_COUNT;
 const MAX_LAUNCHES: usize = 1024;
 const MAX_STATE_BUFFERS: usize = 16;
 const SHA256_HEX_LEN: usize = 64;
@@ -341,19 +345,42 @@ fn parseBundleWeightMappings(
 fn buildCompileTargets(
     allocator: std.mem.Allocator,
     plan: host.HostPlan,
-    out: *[MAX_KERNELS]host_plan.CompileTarget,
+    out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
-        if (count >= out.len) @panic("too many CSL compile targets");
-        out[count] = .{
-            .kernel_name = kernel.name,
-            .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{kernel.name}),
-            .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{kernel.name}),
-        };
-        count += 1;
+        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name);
+        if (isPhaseSpecializedKernel(kernel.name)) {
+            for (PHASE_TARGET_SUFFIXES) |suffix| {
+                const phase_name = try std.fmt.allocPrint(allocator, "{s}_{s}", .{ kernel.name, suffix });
+                try appendCompileTarget(allocator, out, &count, phase_name, kernel.name);
+            }
+        }
     }
     return out[0..count];
+}
+
+fn appendCompileTarget(
+    allocator: std.mem.Allocator,
+    out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
+    count: *usize,
+    target_name: []const u8,
+    source_name: []const u8,
+) !void {
+    if (count.* >= out.len) @panic("too many CSL compile targets");
+    out[count.*] = .{
+        .kernel_name = target_name,
+        .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
+        .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
+    };
+    count.* += 1;
+}
+
+fn isPhaseSpecializedKernel(name: []const u8) bool {
+    for (PHASE_SPECIALIZED_KERNELS) |kernel_name| {
+        if (std.mem.eql(u8, name, kernel_name)) return true;
+    }
+    return false;
 }
 
 fn buildStateBuffers(memory_plan: mem_plan.MemoryPlan, out: *[MAX_STATE_BUFFERS]host_runtime.StateBuffer) []const host_runtime.StateBuffer {
@@ -438,22 +465,18 @@ fn materializeCompileSources(
     allocator: std.mem.Allocator,
     bundle_root: []const u8,
     plan: host.HostPlan,
-    targets: []const host_plan.CompileTarget,
 ) !void {
-    if (plan.kernels.len != targets.len) return error.InvalidIr;
-
     var csl_buf: [wgsl.MAX_CSL_OUTPUT]u8 = undefined;
-    for (plan.kernels, targets) |kernel, target| {
-        if (!std.mem.eql(u8, kernel.name, target.kernel_name)) return error.InvalidIr;
+    for (plan.kernels) |kernel| {
         const sections = try compile_source.emitPatternSections(allocator, kernel.pattern, &csl_buf);
 
         const layout_path = try std.fs.path.join(
             allocator,
-            &.{ bundle_root, COMPILE_ROOT_NAME, target.layout_path },
+            &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "layout.csl" },
         );
         const pe_program_path = try std.fs.path.join(
             allocator,
-            &.{ bundle_root, COMPILE_ROOT_NAME, target.pe_program_path },
+            &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "pe_program.csl" },
         );
 
         try writeFile(layout_path, sections.layout);
@@ -497,7 +520,7 @@ pub fn main() !void {
         ),
     };
 
-    var target_buf: [MAX_KERNELS]host_plan.CompileTarget = undefined;
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
     const targets = try buildCompileTargets(allocator, plan, &target_buf);
     const cslc_plan = try host_plan.makeCslcPlan(args.cslc_executable);
 
@@ -522,7 +545,7 @@ pub fn main() !void {
         const simulator_plan_path = try std.fs.path.join(allocator, &.{ bundle_root, "simulator-plan.json" });
         const launcher_path = try std.fs.path.join(allocator, &.{ bundle_root, "launch-simulator.sh" });
 
-        try materializeCompileSources(allocator, bundle_root, plan, targets);
+        try materializeCompileSources(allocator, bundle_root, plan);
         try emitHostPlanFile(host_plan_path, plan, targets, cslc_plan);
         try emitMemoryPlanFile(memory_plan_path, memory);
         try emitRuntimeConfigFile(runtime_config_path, runtime);
@@ -581,6 +604,34 @@ test "parseBundleWeightMappings preserves artifact-backed RDRR tensor metadata" 
     try std.testing.expectEqual(@as(u64, 1536), mappings[0].tensor_shape[1]);
     try std.testing.expectEqualStrings("Q4_K_M", mappings[0].quant.format);
     try std.testing.expectEqualStrings("rdrr_int4ple", mappings[0].quant.encoding.?);
+}
+
+test "buildCompileTargets emits phase variants for elementwise kernels" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "rmsnorm", .pattern = "element_wise", .count = 1 },
+            .{ .name = "sample", .pattern = "sample", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+
+    const targets = try buildCompileTargets(arena.allocator(), plan, &target_buf);
+
+    try std.testing.expectEqual(@as(usize, 4), targets.len);
+    try std.testing.expectEqualStrings("rmsnorm", targets[0].kernel_name);
+    try std.testing.expectEqualStrings("rmsnorm/layout.csl", targets[0].layout_path);
+    try std.testing.expectEqualStrings("rmsnorm_prefill", targets[1].kernel_name);
+    try std.testing.expectEqualStrings("rmsnorm/layout.csl", targets[1].layout_path);
+    try std.testing.expectEqualStrings("rmsnorm_decode", targets[2].kernel_name);
+    try std.testing.expectEqualStrings("rmsnorm/pe_program.csl", targets[2].pe_program_path);
+    try std.testing.expectEqualStrings("sample", targets[3].kernel_name);
 }
 
 test "parseBundleWeightMappings leaves absent mapping input empty" {

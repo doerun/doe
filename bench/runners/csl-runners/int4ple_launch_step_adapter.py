@@ -73,6 +73,45 @@ def _load_array(path: Path, dtype: str, expected_size: int) -> np.ndarray:
     return array
 
 
+def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
+    try:
+        value = int(mapping.get(key) or 0)
+    except (TypeError, ValueError):
+        value = 0
+    if value <= 0:
+        raise ValueError(f"transform_field_missing:{key}")
+    return value
+
+
+def _summa_c_tiles_to_logical(
+    host: np.ndarray,
+    transform: dict[str, Any],
+) -> np.ndarray:
+    rows = _required_positive_int(transform, "rows")
+    cols = _required_positive_int(transform, "cols")
+    padded_rows = _required_positive_int(transform, "paddedRows")
+    padded_cols = _required_positive_int(transform, "paddedCols")
+    grid_height = _required_positive_int(transform, "gridHeight")
+    grid_width = _required_positive_int(transform, "gridWidth")
+    tile_rows = _required_positive_int(transform, "tileRows")
+    tile_cols = _required_positive_int(transform, "tileCols")
+    if rows > padded_rows or cols > padded_cols:
+        raise ValueError(
+            "summa_c_logical_shape_exceeds_target:"
+            f"{rows}x{cols}>{padded_rows}x{padded_cols}"
+        )
+    expected = grid_height * grid_width * tile_rows * tile_cols
+    if host.size != expected:
+        raise ValueError(f"summa_c_tile_size_mismatch:{host.size}!={expected}")
+    logical = host.reshape(
+        grid_height,
+        grid_width,
+        tile_cols,
+        tile_rows,
+    ).transpose(0, 3, 1, 2).reshape(padded_rows, padded_cols)
+    return logical[:rows, :cols].reshape(-1).astype(host.dtype, copy=False)
+
+
 def main() -> int:
     args = parse_args()
     spec_path = Path(args.spec)
@@ -189,17 +228,26 @@ def main() -> int:
                 data_type=memcpy_dtype,
                 nonblock=False,
             )
+            output_transform = item.get("outputTransform") or {}
+            saved_host = host
+            if isinstance(output_transform, dict):
+                transform_kind = str(output_transform.get("kind") or "")
+                if transform_kind == "summa_tiles_to_logical_matrix":
+                    saved_host = _summa_c_tiles_to_logical(host, output_transform)
             path.parent.mkdir(parents=True, exist_ok=True)
-            np.save(path, host)
+            np.save(path, saved_host)
             outputs.append(
                 {
                     "symbol": symbol,
                     "dtype": dtype,
                     "path": str(path),
                     "elementsPerPe": elements_per_pe,
-                    "totalElements": total_elements,
+                    "totalElements": int(saved_host.size),
+                    "deviceTotalElements": total_elements,
                 }
             )
+            if isinstance(output_transform, dict) and output_transform:
+                outputs[-1]["outputTransform"] = output_transform
         receipt["outputs"] = outputs
     except Exception as exc:  # pragma: no cover - SDK subprocess evidence
         blockers.append(f"launch_failed:{type(exc).__name__}:{str(exc)[:200]}")
