@@ -22,6 +22,15 @@ This is a plan document, not a landed-claim document. Current code still uses
 the classifier/template path for CSL. The in-tree `runtime/zig/src/tsir/`
 surface is scaffolding for this plan, not a completed pipeline.
 
+Status note, 2026-04-25: the older "WS4 memory blockers choose the first real
+kernels" framing is partly stale. After the current HostPlan and BF16
+broadcast fixes, `embed`, `lm_head_gemv_stable`, `attn_head256`, and
+`attn_head512` compile at Gemma 3 1B scale. The active simfabric blocker is the
+tiled SUMMA `launchIndex=2` host D2H stall tracked in
+`docs/cerebras-north-star.md`. Bounded residency remains important for 31B and
+for TSIR correctness, but it is no longer the immediate 3 1B execution proof
+blocker.
+
 ## What TSIR means
 
 TSIR means **Tiled Spatial IR**.
@@ -330,14 +339,15 @@ path actually needs. The five re-scope moves are:
    and makes frontend coverage model-driven rather than
    family-sequence-driven.
 
-4. **WS4's per-PE memory blockers drive first-real-kernel selection.**
-   The CSL status shard already characterized `embed`,
-   `lm_head_gemv_stable`, `attn_head256`, and `attn_head512` as the
-   four manifest-scale blockers with per-PE memory overflow. Those are
-   the first non-bootstrap kernel families that go through TSIR. Doing
-   them here solves the residency problem once in the compiler rather
-   than four times in the template emitters, and turns WS3 and WS4
-   into the same piece of work at the critical point.
+4. **Live HostPlan coverage drives real-kernel selection.** Earlier
+   drafts treated `embed`, `lm_head_gemv_stable`, `attn_head256`, and
+   `attn_head512` as the immediate 3 1B blockers because they overflowed
+   per-PE memory. That evidence is stale for 3 1B: those kernels now
+   compile at the current manifest scale. The real-kernel TSIR order
+   should follow the kernels still hand-maintained in the live HostPlan
+   and the failures surfaced by the simulator loop, with bounded
+   residency kept as the 31B scale constraint rather than the first 3 1B
+   unblock.
 
 5. **Phase B (attention) narrows to the one variant the target model
    uses.** The previous draft framed attention as its own full phase
@@ -349,11 +359,9 @@ path actually needs. The five re-scope moves are:
    Phase C (when the second attention variant or the second transformer
    family lands), not Phase B.
 
-Under these five moves, WS3 closure is defined by: Gemma 4 E2B kernels
-(`embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`, plus
-rope / rms_norm / elementwise as they are touched) go through TSIR →
-CSL with parity receipts bound into the live Doppler manifest. Parity is
-CSL-vs-Doppler-transcript, not CSL-vs-Zig-oracle.
+Under these five moves, WS3 closure is defined by the live model kernels going
+through TSIR -> CSL with parity receipts bound into the live Doppler manifest.
+Parity is CSL-vs-Doppler-transcript, not CSL-vs-Zig-oracle.
 
 ### Phases under the re-scope
 
@@ -374,19 +382,18 @@ CSL-vs-Doppler-transcript, not CSL-vs-Zig-oracle.
   reasons when a kernel cannot be lowered. This is the mechanism that
   forces TSIR frontend coverage to grow with real models.
 
-- **Phase B — first real Gemma kernel family (`embed`, `lm_head`,
-  non-attention).** TSIR frontend + reference interpreter coverage for
-  the non-attention WS4 blockers. CSL emitter bodies that honor WS4's
-  per-PE memory constraints (2D grid sharding for `embed`, `out_dim`
-  sharding for `lm_head_gemv_stable`). Parity receipts bind into the
-  Gemma 4 E2B manifest at convert time.
+- **Phase B — hand-maintained Gemma kernel migration.** TSIR frontend +
+  reference interpreter coverage for kernels still maintained through
+  special CSL emitters in the live HostPlan, including tiled matmul,
+  rope, GEMV/lm-head, attention, sample, fused FFN, and embed/gather as
+  needed. Parity receipts bind into the Gemma manifest at convert time.
 
-- **Phase C — attention for Gemma 4 E2B.** The one attention variant
-  Gemma 4 E2B uses, including host-streamed KV tiles to fix the
-  per-PE `attn_head256` / `attn_head512` blockers. No flash-style
-  variants, no sliding-window, no paged KV unless Gemma 4 E2B itself
-  uses them. Exit: Gemma 4 E2B full kernel set has CSL parity receipts
-  against Doppler transcripts.
+- **Phase C — bounded residency and scale.** Apply the TSIR residency
+  model to the kernels that become memory-shaped at E2B/31B scale,
+  especially embed, lm-head, and attention. No flash-style variants, no
+  sliding-window, no paged KV unless the target model itself uses them.
+  Exit: the full kernel set has CSL parity receipts against Doppler
+  transcripts at the target scale.
 
 - **Phase D — follow-on** (post-WS3): additional attention variants,
   sollya-based cross-platform transcendental determinism, TSIR →
@@ -696,33 +703,29 @@ The current per-kernel CSL emitters can remain as migration shims while kernels
 move over one family at a time, but the end state is a shared lowering
 pipeline feeding a small number of mechanical backend emitters.
 
-### Per-PE memory constraints for first real kernels
+### Per-PE memory constraints for scale kernels
 
-The CSL emitter body for real kernels must honor the per-PE memory
-constraints WS4 characterized (see `docs/status/cerebras-csl.md`). This
-is not an optional optimization — at the ~63 KiB PE budget, the
-bootstrap-style flat allocation pattern overflows `.bss` or
-`.blocked_ut_ival` on every one of the four real-kernel blockers. The
-emitter path for each blocker kernel is:
+The CSL emitter body for scale kernels must honor per-PE memory constraints
+(see `docs/status/cerebras-csl.md`). This is not an optional optimization, but
+the immediate evidence has changed: these kernels compile at Gemma 3 1B scale
+after the current HostPlan fixes, while 31B still needs the residency model to
+be explicit and compiler-owned. The emitter path for each scale-sensitive
+kernel is:
 
 - **`embed`**: 2D grid with `hidden_per_pe` sharding plus host-chunked
-  dispatch. The 1D flat layout emitted for bootstrap `gather` does not
-  generalize — 192 KiB output + 96 KiB table per PE overflows at
-  `num_tokens=32, hidden_size=1536, rows_per_pe=16`. The emitter reads
-  residency class from the planner, not from a local heuristic.
+  dispatch. The emitter reads residency class from the planner, not
+  from a local heuristic.
 
 - **`lm_head_gemv_stable`**: 2D layout with
-  `out_dim_per_pe = ceil(out_dim / height)` so the weight allocation
-  drops from 383 KiB per PE to roughly 4.6 KiB at the 197×84 grid. The
-  planner decides the grid shape based on the target descriptor's
-  `per_pe_working_budget`; the emitter honors it.
+  `out_dim_per_pe = ceil(out_dim / height)`. The planner decides the
+  grid shape based on the target descriptor's `per_pe_working_budget`;
+  the emitter honors it.
 
 - **`attn_head256` / `attn_head512`**: host-streamed K/V tiles replace
   PE-resident `key`/`val` arrays. The planner declares a
   `stream_kv_tiles` residency class on the KV tensors; the emitter
   consumes that class and emits `@fmovs` from host-fabric rather than
-  flat per-PE storage. The .bss budget drops from 147/294 KiB per PE
-  to the tile-sized working set.
+  flat per-PE storage.
 
 These patterns are expressed as residency-class + collective-synthesis
 decisions in steps 5 and 6, not as kernel-specific logic in the
@@ -792,8 +795,8 @@ is compatible with this plan and should be preferred over broad PR gating:
 - one fused-GEMV kernel
 - one RMSNorm kernel
 - one gather kernel
-- one real Gemma kernel (first WS4 blocker — `embed` once TSIR
-  frontend coverage lands) using the Doppler-transcript reference path
+- one real Gemma kernel from the live HostPlan using the
+  Doppler-transcript reference path
 - later, one attention-decode kernel for Gemma 4 E2B
 
 That gives cheap regression coverage without turning every routine change into a
@@ -801,23 +804,20 @@ full lowering/parity farm run.
 
 ## Step 9: rewrite kernel families in impact order
 
-Migration order under the re-scope is driven by WS4's manifest-scale
-CSL blockers, not by surface simplicity. The first non-bootstrap
-families through TSIR are the four kernels the Cerebras lane cannot
-currently compile at manifest scale:
+Migration order under the re-scope is driven by the live HostPlan and
+simulator evidence, not by the stale 3 1B memory-blocker list. The
+remaining hand-maintained families to move through TSIR are:
 
-1. **`embed`** — Gemma 4 E2B embedding lookup. Introduces
-   `hidden_per_pe` residency class plus host-chunked dispatch to the
-   CSL emitter. Reference: Doppler browser transcript.
-2. **`lm_head_gemv_stable`** — final projection. Introduces `out_dim`
-   sharding residency class. Reference: Doppler browser transcript.
-3. **`attn_head256` / `attn_head512`** — attention variants. Introduces
-   `stream_kv_tiles` residency class plus host-fabric KV streaming.
-   These land together because they share the same KV-residency
-   problem. Reference: Doppler browser transcript.
+1. tiled matmul
+2. `attn_head256`
+3. `attn_decode`
+4. GEMV / `lm_head_gemv`
+5. rope
+6. `fused_ffn`
+7. sample
+8. embed/gather
 
-Rope, RMSNorm beyond bootstrap, dequant, elementwise, and sampling
-families follow once the four WS4 blockers are green. Each migrated
+Each migrated
 family still crosses the full bar in one move: TSIR lowering,
 mechanical emission, parity receipt, then deletion of the old path
 for that family. Half-migrated kernel families create audit holes and
@@ -945,9 +945,10 @@ The rollout order under the re-scope is:
 11. AOT convert-time lowering at the Doppler boundary — this drives
     real-kernel coverage; promoted ahead of the rewrite step
 12. real-kernel family rewrites — driven by step 11 hitting real
-    models. First four: `embed`, `lm_head_gemv_stable`,
-    `attn_head256`, `attn_head512` (WS4 blockers). The Gemma 4 E2B
-    attention variant then completes WS3.
+    models and by the simulator failure loop. The remaining
+    hand-maintained live HostPlan kernels move through TSIR first; the
+    bounded-residency kernels become scale work when E2B/31B requires
+    them.
 
 ### Loop 2 subloops
 
@@ -985,11 +986,11 @@ where required, and a dated status entry.
   lowering, and reference-source routing in the parity CLI. This loop
   lands before real-kernel family rewrites under the re-scope.
 - **Loop 2I: real-kernel family rewrites.** Owns rollout item 12 for
-  `embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`, plus
-  the Gemma 4 E2B attention variant. Driven by Loop 2H's convert-time
-  coverage hitting real models. Each kernel family lands with a CSL
-  body that honors WS4's per-PE memory constraints and a parity
-  receipt against a Doppler reference transcript.
+  live HostPlan kernels that still depend on hand-maintained CSL
+  emitters. Driven by Loop 2H's convert-time coverage and the simulator
+  failure loop. Each kernel family lands with a CSL body that honors
+  declared TSIR residency constraints and a parity receipt against a
+  Doppler reference transcript.
 - **Loop 2J: steady-state cleanup.** Deletes migrated per-kernel CSL
   emitters and reduces classifier logic to kernel-family hint
   extraction for migrated families.

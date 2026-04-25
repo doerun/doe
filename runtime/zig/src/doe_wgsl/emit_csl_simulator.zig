@@ -148,6 +148,10 @@ pub fn emitSimulatorPlanArtifactJson(
         try writeJsonString(buf, pos, target.layout_path);
         try write(buf, pos, ", \"peProgram\": ");
         try writeJsonString(buf, pos, target.pe_program_path);
+        if (target.metadata) |metadata| {
+            try write(buf, pos, ", ");
+            try host_plan.emitCompileTargetMetadataJson(buf, pos, metadata);
+        }
         try write(buf, pos, " }");
         if (idx + 1 < targets.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");
@@ -509,7 +513,7 @@ test "simulator plan artifact emits and validates" {
             .pe_grid_width = 16,
             .pe_grid_height = 1,
             .kernels = &[_]@import("emit_csl_host.zig").KernelSpec{
-                .{ .name = "gelu", .pattern = "element_wise", .count = 1 },
+                .{ .name = "gelu", .pattern = "gelu", .count = 1 },
             },
             .prefill_launches = &[_]@import("emit_csl_host.zig").LaunchSpec{
                 .{ .kernel_name = "gelu", .repeat = 1 },

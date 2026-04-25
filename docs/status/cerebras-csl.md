@@ -7,6 +7,62 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
+Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
+below are historical status, including the WS4 memory-blocker framing that was
+later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
+the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
+attention compile blockers.
+
+## 2026-04-25 — Structured compile-target metadata first slice
+
+The HostPlan executor now has a structured metadata path for compile-target
+bindings, so fresh Zig-emitted simulator plans no longer require Python to
+reparse `layout.csl` and `pe_program.csl` text for the kernels covered by the
+metadata contract.
+
+Landed in this entry:
+
+- `config/doe-wgsl-simulator-plan.schema.json`: `compileTargets[]` now accepts
+  `metadata` with target phase, binding shape, per-PE shape,
+  staging/detile transforms, and weight-source hints.
+- `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig`,
+  `runtime/zig/src/doe_wgsl/emit_csl_simulator.zig`, and
+  `runtime/zig/src/csl_host_plan_tool.zig`: Zig compile targets can carry
+  structured binding metadata, and simulator-plan emission writes it for
+  `reduction`/`rms_norm`, `residual`, `gelu`, and `tiled_matmul`.
+- `bench/runners/csl-runners/int4ple_binding_metadata.py` plus
+  `int4ple_hostplan_execution_plan.py`: Python materialization consumes the
+  structured metadata first and falls back to CSL text parsing only for legacy
+  targets. The tiled path still enriches metadata with concrete SUMMA
+  dimensions and preserves nested q4k/f16/bf16 staging transforms.
+- `bench/runners/csl-runners/int4ple_runtime_scheduler.py`: residual and GELU
+  dataflow symbols now match the real WGSL bodies (`input`/`residual`/`output`
+  for residual, `input`/`output` for GELU) instead of the previous shared
+  elementwise stub symbols.
+
+Validation:
+
+- `python3 -m unittest bench.tests.test_int4ple_binding_metadata
+  bench.tests.test_int4ple_scheduler_readiness
+  bench.tests.test_csl_host_plan_kernel_patterns` passed.
+- `python3 -m unittest bench.tests.test_csl_gelu_wgsl_backed_fixture` passed.
+- `python3 -m unittest bench.tests.test_config_schemas` passed.
+- `zig build test-wgsl` passed; only existing TSIR line-limit allowlist notices
+  were printed.
+- `python3 bench/gates/csl_operation_graph_gate.py` passed.
+- `git diff --check` passed.
+
+Still not claimed:
+
+- `python3 bench/gates/schema_gate.py` is blocked on this checkout by missing
+  local `bench/out/...` evidence artifacts, not by the metadata schema; the
+  focused schema/unit coverage above is the current local validation.
+- Full simulator evidence still needs regeneration before this becomes a
+  numeric-parity claim. The permanent evidence gate still needs to distinguish
+  HostPlan plumbing success from transcript/logit parity success.
+- The next CSL status update should split this shard by subdomain before it
+  approaches the 1200-line live shard cap.
+
 ## 2026-04-24 (late+16) — P7.4 first slice plus tiled host materialization
 
 P7.4 is narrowed from "all HostPlan kernels are stubbed" to the actual

@@ -75,7 +75,7 @@
     },
     "kernelPatterns": {
       "type": "array",
-      "description": "Optional per-compile-target HostPlan kernel-pattern binding. Each entry names a compile target (matching an entry in compile.compileTargets) and carries the HostPlan's pattern taxonomy (gather, reduction, rms_norm, residual_add, gelu_gated, tiled_matmul, attention_tiled, attention_decode, element_wise, fused_gemv_dequant, rope, sample, ...) plus the HostPlan-declared launch count. Surfaces Doppler's HostPlan taxonomy as a first-class op-graph receipt so heterogeneous multi-kernel plans (E2B, Gemma 4 31B) are not collapsed to the single rpc_launch that the top-level operations[] array currently describes.",
+      "description": "Optional per-compile-target HostPlan kernel-pattern binding. Each entry names a compile target (matching an entry in compile.compileTargets) and carries the HostPlan's pattern taxonomy (gather, reduction, rms_norm, residual, gelu, tiled_matmul, attention_tiled, attention_decode, element_wise, fused_gemv_dequant, rope, sample, ...) plus the HostPlan-declared launch count. Surfaces Doppler's HostPlan taxonomy as a first-class op-graph receipt so heterogeneous multi-kernel plans (E2B, Gemma 4 31B) are not collapsed to the single rpc_launch that the top-level operations[] array currently describes.",
       "items": { "$ref": "#/$defs/kernelPattern" },
       "uniqueItems": true
     },
@@ -496,8 +496,10 @@
             "attention_tiled",
             "attention_decode",
             "element_wise",
+            "gelu",
             "gelu_gated",
             "fused_gemv_dequant",
+            "residual",
             "residual_add",
             "rms_norm",
             "rope",

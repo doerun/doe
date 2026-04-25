@@ -88,14 +88,10 @@ CLAIM_SCAN_SKIP_ARCHIVE_PATHS = {
     "CEREBRAS_ASK.md",                        # enumerates what we will NOT publish
     "LOCAL_INSPECTION.md",                    # references deny-listed artifact types
     "docs/claim-discipline.md",
-    "docs/cerebras-evidence-bundle-claim-scope.md",
-    "docs/cerebras-evidence-bundle-readme.md",
-    "docs/cerebras-evidence-bundle-model-access.md",
-    "docs/cerebras-evidence-bundle-ask.md",
-    "docs/cerebras-evidence-bundle-local-inspection.md",
+    "docs/cerebras-evidence-bundle.md",
     "docs/cerebras-evidence-bundle-pointer.md",
     "docs/hardware-validation-appendix.md",   # enumerates what we will NOT publish
-    "docs/numeric-stability-claim-ladder.md",
+    "docs/numeric-stability.md",
     "bench/out/26b-moe-lane/lane-status.json",
 }
 

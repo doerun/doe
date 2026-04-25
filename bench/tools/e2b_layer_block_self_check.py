@@ -2042,7 +2042,8 @@ def main() -> int:
             )
 
     # C28: three-way sync for bundle-doc skip lists. The packer
-    # promotes 4 repo docs to archive-root names. Both the repo
+    # promotes marked sections from the source doc to archive-root
+    # names. Both the repo
     # claim-discipline gate (source paths) and the archive verifier
     # (archive-root paths) must skip these — they are rule-enumerating
     # by design and name the forbidden phrases the gate rejects. If
@@ -2087,11 +2088,12 @@ def main() -> int:
                         _include_files_tuples.append(
                             (_elt.elts[0].value, _elt.elts[1].value)
                         )
-        _bundle_doc_pairs = [
-            (src, dst) for (src, dst) in _include_files_tuples
-            if src.startswith("docs/cerebras-evidence-bundle-")
-            and src.endswith(".md")
-        ]
+        _bundle_doc_pairs = []
+        for _src, _dst in _include_files_tuples:
+            _src_doc = _src.split("#", 1)[0]
+            if (_src_doc.startswith("docs/cerebras-evidence-bundle")
+                    and _src_doc.endswith(".md")):
+                _bundle_doc_pairs.append((_src_doc, _dst))
         if not _bundle_doc_pairs:
             _c28_fails.append(
                 "packer INCLUDE_FILES has no cerebras-evidence-bundle "
@@ -2143,7 +2145,7 @@ def main() -> int:
                 "could not extract CLAIM_SCAN_SKIP_ARCHIVE_PATHS "
                 "literals from verifier"
             )
-        for _src, _dst in _bundle_doc_pairs:
+        for _src, _dst in sorted(set(_bundle_doc_pairs)):
             if _gate_skip_paths and _src not in _gate_skip_paths:
                 _c28_fails.append(
                     f"gate SKIP_PREFIXES missing bundle doc "
@@ -2160,7 +2162,7 @@ def main() -> int:
     else:
         print(
             f"  C28 PASS: bundle-doc skip-lists in sync across packer + "
-            f"gate + verifier ({len(_bundle_doc_pairs)} docs)"
+            f"gate + verifier ({len(set(_bundle_doc_pairs))} archive docs)"
         )
 
     # C29: negative contract. docs/cerebras-evidence-bundle-pointer.md
@@ -2546,16 +2548,14 @@ def main() -> int:
         except (OSError, ImportError, AttributeError) as _e23:
             failures.append(f"C23 FAIL: cannot import packer/verifier: {_e23}")
 
-    # C34: four governance docs name both hardware-validation paths
+    # C34: governance docs name both hardware-validation paths
     # (Path A = endpoint access, Path B = Cerebras-assisted bundle run).
     # Matches the ask in the external email so the bundle's story
     # doesn't drift from what we told Cerebras. Each doc is checked
     # independently — if any one silently drops Path B, C34 fires with
     # a distinct message pointing at the specific doc.
     _two_path_docs = [
-        "docs/cerebras-evidence-bundle-ask.md",
-        "docs/cerebras-evidence-bundle-readme.md",
-        "docs/cerebras-evidence-bundle-claim-scope.md",
+        "docs/cerebras-evidence-bundle.md",
         "docs/hardware-validation-appendix.md",
     ]
     _c34_fails: list[str] = []

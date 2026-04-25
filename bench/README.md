@@ -15,7 +15,7 @@ Canonical front doors:
 
 Canonical compare taxonomy:
 
-- `docs/compare-taxonomy.md`
+- `docs/benchmark-taxonomy.md`
 - `config/compare-taxonomy.json`
 - `config/generated/compare-taxonomy-expanded.jsonl`
 
@@ -2224,5 +2224,5 @@ Regression surface that protects the pipeline:
 The bundle is scoped to **evidence + hashes + commands only** — no SDK
 binaries, weight bytes, or simulator logs. See
 `docs/hardware-validation-appendix.md` for the parent ask and
-`docs/cerebras-evidence-bundle-readme.md` for the bundle's own
-reviewer workflow.
+`docs/cerebras-evidence-bundle.md` for the bundle's own reviewer
+workflow.

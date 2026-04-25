@@ -12,7 +12,33 @@ Use it when you need to answer:
 - how do isolated runs and compare reports relate?
 
 For the canonical axis language that powers promoted compare profiles, use
-`docs/compare-taxonomy.md` and `config/compare-taxonomy.json`.
+this document and `config/compare-taxonomy.json`.
+
+## Canonical source of truth
+
+The single source of truth for compare axis values is:
+
+- `config/compare-taxonomy.json`
+
+The schema that validates that source of truth is:
+
+- `config/compare-taxonomy.schema.json`
+
+The generated machine-readable expansion lives in:
+
+- `config/generated/compare-taxonomy-expanded.jsonl`
+- `config/compare-taxonomy-expanded-entry.schema.json`
+
+Those generated files are derived artifacts, not parallel taxonomy
+sources. The promoted catalog and governed benchmark catalog are
+downstream consumers, not independent definitions:
+
+- `config/promoted-compare-catalog.json`
+- `config/governed-lanes.json`
+
+If any of those disagree with `config/compare-taxonomy.json`, the
+taxonomy file is authoritative and the derived wiring must be updated
+to match it.
 
 ## 30-second mental model
 
@@ -44,6 +70,34 @@ post-hoc analysis over those artifacts.
   - The output of joining two or more run artifacts for the same workload.
 - **Cohort**
   - A named subset of workloads such as `smoke`, `regression`, or `governed`.
+
+## Canonical axes
+
+| # | Axis | Values | What it names |
+|---|------|--------|---------------|
+| 1 | `platform` | `apple-metal`, `amd-vulkan`, `local-d3d12` | Hardware/driver target |
+| 2 | `surface` | `backend`, `plan`, `package`, `dropin`, `browser`, `compiler` | Execution boundary |
+| 3 | `product` | `doe`, `dawn`, `tint`, `node_webgpu_package`, `bun_webgpu_package`, `deno_webgpu_package` | Implementation under test |
+| 4 | `runtimeHost` | `none`, `node`, `bun`, `deno`, `chromium` | JS host runtime; `none` for backend/plan/dropin/browser/compiler surfaces |
+| 5 | `temperature` | `default`, `cold`, `warm` | Session warmth |
+| +1 | `targetKind` | `preset`, `workload` | Target selection mode |
+
+Key distinctions:
+
+- `surface` names the benchmark boundary, not the product.
+- `product` names what is being benchmarked.
+- `runtimeHost` names the JS host.
+- Comparison is derived from choosing which products to compare over
+  the same axes. It is not an axis itself.
+
+The taxonomy records alias maps for user-facing vocabularies:
+
+- surface names used by `bench/cli.py compare`
+- repo surface names used by governed benchmark subsets and workload registry
+- lower-level executor boundaries such as `backend_native`,
+  `direct_plan`, `package_surface`, and `abi_dropin`
+
+That mapping lives under `aliases` in `config/compare-taxonomy.json`.
 
 ## Terms to avoid in benchmark docs
 

@@ -41,9 +41,11 @@ bundle" for the prose workflow; this file is the tool-reference.
   Allow-list + deny-list construction excludes SDK binaries
   (`.elf`/`.lst`/`.map`/`.symbols`/`.viz`), weight bytes (`.f32`),
   simulator logs, and scratch dirs. Top-level files: `README.md`,
-  `CLAIM_SCOPE.md`, `CEREBRAS_ASK.md`, `LOCAL_INSPECTION.md`,
-  `BUNDLE_META.json`, `MANIFEST.txt`. Every file in MANIFEST has
-  a sha256 + claim-role.
+  `CLAIM_SCOPE.md`, `MODEL_ACCESS.md`, `CEREBRAS_ASK.md`,
+  `LOCAL_INSPECTION.md`, `BUNDLE_META.json`, `MANIFEST.txt`. The
+  archive-root governance files are extracted from marked sections in
+  `docs/cerebras-evidence-bundle.md`. Every file in MANIFEST has a
+  sha256 + claim-role.
 - **`verify_cerebras_validation_archive.py`** — extracts the
   archive to a temp dir, re-hashes every manifest entry, validates
   BUNDLE_META required fields + claim-role taxonomy, runs the
@@ -71,7 +73,7 @@ bench/tools/prepare_cerebras_validation_bundle.sh
   │     └── bench/out/doe-cerebras-evidence-<stamp>.tar.gz       (archive)
   │           ├── BUNDLE_META.json
   │           ├── MANIFEST.txt
-  │           ├── README.md, CLAIM_SCOPE.md, CEREBRAS_ASK.md, LOCAL_INSPECTION.md
+  │           ├── README.md, CLAIM_SCOPE.md, MODEL_ACCESS.md, CEREBRAS_ASK.md, LOCAL_INSPECTION.md
   │           ├── docs/hardware-validation-appendix.md
   │           ├── docs/claim-discipline.md
   │           ├── config/gemma-4-e2b-real-weight-fixture.json
@@ -117,13 +119,13 @@ locks most of this pipeline via numbered contracts:
 | C25 | every `data-copy-for` in SDK-GUI viewer HTML resolves to real element id |
 | C26 | `summarize_cerebras_evidence_archive.sh` runs cleanly on the newest archive |
 | C27 | emulator lane soft-fails CSL contract check structurally (WGSL-before-try + unchecked branch + `cslContract` field) |
-| C28 | bundle-doc skip-lists in sync across packer `INCLUDE_FILES` ↔ gate `SKIP_PREFIXES` ↔ verifier `CLAIM_SCAN_SKIP_ARCHIVE_PATHS` (AST-based) |
+| C28 | bundle-doc section skip-lists in sync across packer `INCLUDE_FILES` ↔ gate `SKIP_PREFIXES` ↔ verifier `CLAIM_SCAN_SKIP_ARCHIVE_PATHS` (AST-based) |
 | C29 | `docs/cerebras-evidence-bundle-pointer.md` is NOT in packer `INCLUDE_FILES` (stale-lag guard) |
 | C30 | prep-script stage ordering: gates → pack → verify → pointer-write |
 | C31 | `cerebras-evidence-bundle-tools.md` lists every on-disk `bench/tools/*cerebras*` tool |
 | C32 | packer path-substring deny-list ↔ verifier `FORBIDDEN_PATH_SUBSTRINGS` in sync (non-extension deny-list defense-in-depth) |
 | C33 | E2B demo error-to-preview paths all pipe through `stripAnsi()` (no ANSI leak into browser preview panes) |
-| C34 | four governance docs (ASK, README, CLAIM_SCOPE, appendix) all name both hardware-validation paths (A endpoint access / B Cerebras-assisted bundle run) |
+| C34 | bundle governance doc + appendix both name both hardware-validation paths (A endpoint access / B Cerebras-assisted bundle run) |
 | C35 | declared depth list stays synchronized between the depth matrix generator and E2B cockpit |
 | C36 | Doppler RDRR/int4ple structural probe validates manifest, selected shard hash, target spans, and keeps Q4 dequant explicitly blocked |
 | C37 | Doppler RDRR Q4_K_M L1 smoke parity verdict stays scoped to smoke-contract parity and blocks full-model / hardware claims |

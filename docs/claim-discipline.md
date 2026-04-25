@@ -4,8 +4,8 @@ This document codifies what the repository can honestly claim today for
 the Doppler→Doe→Cerebras Gemma-4 lane, keyed to artifacts, and names
 the gates that unlock each stronger claim.
 
-It is narrower than `docs/numeric-stability-claim-ladder.md`. That doc
-covers Doe's numeric-fragility story. This doc covers the E2B/31B
+It is narrower than `docs/numeric-stability.md`. That doc covers
+Doe's numeric-fragility story. This doc covers the E2B/31B
 Cerebras-execution story: what the simulator and WebGPU evidence
 supports, and what still needs external input.
 
@@ -434,4 +434,4 @@ Each rejected claim has a single-command unlock path in the repo.
 - Cross-runtime evidence: `bench/out/doppler-reference/`
 - Self-check: `python3 bench/tools/e2b_layer_block_self_check.py`
 - Status shard: `docs/status/cerebras-csl.md`
-- Broader numeric-stability ladder: `docs/numeric-stability-claim-ladder.md`
+- Broader numeric-stability boundary: `docs/numeric-stability.md`

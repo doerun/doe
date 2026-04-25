@@ -57,6 +57,57 @@ const SIMULATOR_PLAN_CAPACITY: usize = 64 * 1024;
 const LAUNCHER_CAPACITY: usize = 8 * 1024;
 const COMPILE_ROOT_NAME: []const u8 = "compile";
 
+const CHUNK_SHAPE = host_plan.BindingShape{ .elements = "chunk_size" };
+const HIDDEN_SHAPE = host_plan.BindingShape{ .elements = "hidden_size" };
+const SUMMA_A_SHAPE = host_plan.BindingShape{ .elements = "Mt * Kt" };
+const SUMMA_B_SHAPE = host_plan.BindingShape{ .elements = "Kt * Nt" };
+const SUMMA_C_SHAPE = host_plan.BindingShape{ .elements = "Mt * Nt" };
+
+const RMSNORM_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE },
+    .{ .symbol = "weight", .access = "read", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE, .weight_source = "runtime_weight_mapping" },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE },
+};
+
+const RESIDUAL_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+    .{ .symbol = "residual", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+};
+
+const GELU_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+};
+
+const TILED_BINDINGS = [_]host_plan.BindingMetadata{
+    .{
+        .symbol = "a",
+        .access = "read",
+        .elem_type = "f32",
+        .binding_shape = SUMMA_A_SHAPE,
+        .per_pe_shape = SUMMA_A_SHAPE,
+        .staging_transform = .{ .kind = "logical_matrix_to_summa_tiles", .matrix_role = "a" },
+    },
+    .{
+        .symbol = "b",
+        .access = "read",
+        .elem_type = "f32",
+        .binding_shape = SUMMA_B_SHAPE,
+        .per_pe_shape = SUMMA_B_SHAPE,
+        .staging_transform = .{ .kind = "weight_matrix_to_summa_tiles", .matrix_role = "b" },
+        .weight_source = "runtime_weight_mapping",
+    },
+    .{
+        .symbol = "c",
+        .access = "read_write",
+        .elem_type = "f32",
+        .binding_shape = SUMMA_C_SHAPE,
+        .per_pe_shape = SUMMA_C_SHAPE,
+        .detile_transform = .{ .kind = "summa_tiles_to_logical_matrix", .matrix_role = "c", .rows_from_input = "a" },
+    },
+};
+
 fn printUsage() void {
     std.debug.print(
         "usage: doe-csl-host-plan-tool --input <execution.json> (--output <host-plan.json> | --bundle-root <dir>) [--mode manifest|steps] [--cslc-executable <path>] [--driver-executable-path <path>]\n",
@@ -349,11 +400,11 @@ fn buildCompileTargets(
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
-        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name);
+        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name, kernel.pattern, "base");
         if (isPhaseSpecializedKernel(kernel.name)) {
             for (PHASE_TARGET_SUFFIXES) |suffix| {
                 const phase_name = try std.fmt.allocPrint(allocator, "{s}_{s}", .{ kernel.name, suffix });
-                try appendCompileTarget(allocator, out, &count, phase_name, kernel.name);
+                try appendCompileTarget(allocator, out, &count, phase_name, kernel.name, kernel.pattern, suffix);
             }
         }
     }
@@ -366,14 +417,33 @@ fn appendCompileTarget(
     count: *usize,
     target_name: []const u8,
     source_name: []const u8,
+    pattern: []const u8,
+    target_phase: []const u8,
 ) !void {
     if (count.* >= out.len) @panic("too many CSL compile targets");
     out[count.*] = .{
         .kernel_name = target_name,
         .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
         .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
+        .metadata = compileTargetMetadata(pattern, target_phase),
     };
     count.* += 1;
+}
+
+fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_plan.CompileTargetMetadata {
+    if (std.mem.eql(u8, pattern, "rms_norm") or std.mem.eql(u8, pattern, "reduction")) {
+        return .{ .target_phase = target_phase, .bindings = &RMSNORM_BINDINGS };
+    }
+    if (std.mem.eql(u8, pattern, "residual")) {
+        return .{ .target_phase = target_phase, .bindings = &RESIDUAL_BINDINGS };
+    }
+    if (std.mem.eql(u8, pattern, "gelu")) {
+        return .{ .target_phase = target_phase, .bindings = &GELU_BINDINGS };
+    }
+    if (std.mem.eql(u8, pattern, "tiled_matmul")) {
+        return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
+    }
+    return null;
 }
 
 fn isPhaseSpecializedKernel(name: []const u8) bool {
@@ -632,6 +702,45 @@ test "buildCompileTargets emits phase variants for elementwise kernels" {
     try std.testing.expectEqualStrings("rmsnorm_decode", targets[2].kernel_name);
     try std.testing.expectEqualStrings("rmsnorm/pe_program.csl", targets[2].pe_program_path);
     try std.testing.expectEqualStrings("sample", targets[3].kernel_name);
+}
+
+test "buildCompileTargets attaches structured binding metadata" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "residual", .pattern = "residual", .count = 1 },
+            .{ .name = "tiled", .pattern = "tiled_matmul", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+
+    const targets = try buildCompileTargets(arena.allocator(), plan, &target_buf);
+
+    try std.testing.expectEqual(@as(usize, 4), targets.len);
+    const residual_metadata = targets[0].metadata.?;
+    try std.testing.expectEqualStrings("base", residual_metadata.target_phase);
+    try std.testing.expectEqual(@as(usize, 3), residual_metadata.bindings.len);
+    try std.testing.expectEqualStrings("residual", residual_metadata.bindings[1].symbol);
+    try std.testing.expectEqualStrings("prefill", targets[1].metadata.?.target_phase);
+    try std.testing.expectEqualStrings("decode", targets[2].metadata.?.target_phase);
+
+    const tiled_metadata = targets[3].metadata.?;
+    try std.testing.expectEqual(@as(usize, 3), tiled_metadata.bindings.len);
+    try std.testing.expectEqualStrings("b", tiled_metadata.bindings[1].symbol);
+    try std.testing.expectEqualStrings(
+        "runtime_weight_mapping",
+        tiled_metadata.bindings[1].weight_source.?,
+    );
+    try std.testing.expectEqualStrings(
+        "summa_tiles_to_logical_matrix",
+        tiled_metadata.bindings[2].detile_transform.?.kind,
+    );
 }
 
 test "parseBundleWeightMappings leaves absent mapping input empty" {

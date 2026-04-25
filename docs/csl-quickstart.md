@@ -11,7 +11,8 @@ Exit 0 iff every gate passes. Structured summary at
 
 ## Read next
 
-- `docs/csl-evidence-status.md` — full artifact-by-artifact map.
+- `docs/cerebras-north-star.md` — current North Star checklist and
+  active blocker order.
 - `docs/csl-architecture.md` — the abstraction stack Doe uses to
   retarget Cerebras CSL.
 

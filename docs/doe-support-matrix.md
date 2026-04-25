@@ -346,6 +346,26 @@ All doe-core claims, plus:
 
 Managed Chromium distribution with Doe as the WebGPU runtime. Deployable as an enterprise/regulated browser product.
 
+### Consumer hardware coverage plan
+
+Chromium-tier validation must cover real Chrome/WebGPU behavior, not just OS
+availability. The practical first-pass matrix is:
+
+| Lane | Host type | GPU class | Why it matters |
+|------|-----------|-----------|----------------|
+| macOS baseline | physical Mac mini or MacBook | Apple Silicon integrated GPU | Mainstream Chrome/macOS consumer path |
+| Windows Intel baseline | physical laptop or mini PC | Intel integrated GPU | Common laptop path and low-power adapter behavior |
+| Windows AMD baseline | physical laptop or mini PC | AMD integrated GPU | Common APU path with different driver behavior |
+| Windows high tier | physical desktop/laptop or cloud | NVIDIA discrete GPU | Main high-end Windows/perf lane |
+| Linux baseline | physical mini PC or laptop | AMD integrated GPU | Best practical Linux consumer lane with fewer vendor-specific surprises |
+| Linux high tier | physical desktop or cloud | NVIDIA discrete GPU | Add when Linux performance is a serious support surface |
+
+Use physical machines for integrated-GPU consumer coverage. Use cloud for
+repeatable NVIDIA Windows/Linux automation and burst reruns. Do not make every
+machine a performance lane: most of the Chromium matrix should answer
+compatibility and regression questions before it answers benchmarking
+questions.
+
 ### Deployment surface
 
 - Chromium fork binary (macOS, Linux, Windows)

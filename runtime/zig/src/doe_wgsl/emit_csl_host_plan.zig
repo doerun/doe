@@ -22,6 +22,34 @@ pub const CompileTarget = struct {
     kernel_name: []const u8,
     layout_path: []const u8,
     pe_program_path: []const u8,
+    metadata: ?CompileTargetMetadata = null,
+};
+
+pub const CompileTargetMetadata = struct {
+    target_phase: []const u8,
+    bindings: []const BindingMetadata,
+};
+
+pub const BindingMetadata = struct {
+    symbol: []const u8,
+    access: []const u8,
+    elem_type: []const u8,
+    binding_shape: BindingShape,
+    per_pe_shape: BindingShape,
+    staging_transform: ?BindingTransform = null,
+    detile_transform: ?BindingTransform = null,
+    weight_source: ?[]const u8 = null,
+};
+
+pub const BindingShape = struct {
+    kind: []const u8 = "csl_array",
+    elements: []const u8,
+};
+
+pub const BindingTransform = struct {
+    kind: []const u8,
+    matrix_role: ?[]const u8 = null,
+    rows_from_input: ?[]const u8 = null,
 };
 
 pub const DiscoveryMode = enum {
@@ -55,6 +83,73 @@ pub fn discoveryLabel(discovery: DiscoveryMode) []const u8 {
         .explicit_config => spec.HOST_PLAN_DISCOVERY_EXPLICIT_CONFIG,
         .implicit_path_lookup => spec.HOST_PLAN_DISCOVERY_IMPLICIT_PATH_LOOKUP,
     };
+}
+
+pub fn emitCompileTargetMetadataJson(
+    buf: []u8,
+    pos: *usize,
+    metadata: CompileTargetMetadata,
+) EmitError!void {
+    try write(buf, pos, "\"metadata\": {\n");
+    try write(buf, pos, "        \"targetPhase\": ");
+    try writeJsonString(buf, pos, metadata.target_phase);
+    try write(buf, pos, ",\n        \"bindings\": [\n");
+    for (metadata.bindings, 0..) |binding, idx| {
+        try write(buf, pos, "          { \"symbol\": ");
+        try writeJsonString(buf, pos, binding.symbol);
+        try write(buf, pos, ", \"access\": ");
+        try writeJsonString(buf, pos, binding.access);
+        try write(buf, pos, ", \"elemType\": ");
+        try writeJsonString(buf, pos, binding.elem_type);
+        try write(buf, pos, ", \"bindingShape\": ");
+        try emitBindingShapeJson(buf, pos, binding.binding_shape);
+        try write(buf, pos, ", \"perPeShape\": ");
+        try emitBindingShapeJson(buf, pos, binding.per_pe_shape);
+        try write(buf, pos, ", \"stagingTransform\": ");
+        try emitBindingTransformJson(buf, pos, binding.staging_transform);
+        try write(buf, pos, ", \"detileTransform\": ");
+        try emitBindingTransformJson(buf, pos, binding.detile_transform);
+        try write(buf, pos, ", \"weightSource\": ");
+        if (binding.weight_source) |weight_source| {
+            try writeJsonString(buf, pos, weight_source);
+        } else {
+            try write(buf, pos, "null");
+        }
+        try write(buf, pos, " }");
+        if (idx + 1 < metadata.bindings.len) try write(buf, pos, ",");
+        try write(buf, pos, "\n");
+    }
+    try write(buf, pos, "        ]\n      }");
+}
+
+fn emitBindingShapeJson(buf: []u8, pos: *usize, shape: BindingShape) EmitError!void {
+    try write(buf, pos, "{ \"kind\": ");
+    try writeJsonString(buf, pos, shape.kind);
+    try write(buf, pos, ", \"elements\": ");
+    try writeJsonString(buf, pos, shape.elements);
+    try write(buf, pos, " }");
+}
+
+fn emitBindingTransformJson(
+    buf: []u8,
+    pos: *usize,
+    transform: ?BindingTransform,
+) EmitError!void {
+    if (transform) |value| {
+        try write(buf, pos, "{ \"kind\": ");
+        try writeJsonString(buf, pos, value.kind);
+        if (value.matrix_role) |matrix_role| {
+            try write(buf, pos, ", \"matrixRole\": ");
+            try writeJsonString(buf, pos, matrix_role);
+        }
+        if (value.rows_from_input) |rows_from_input| {
+            try write(buf, pos, ", \"rowsFromInput\": ");
+            try writeJsonString(buf, pos, rows_from_input);
+        }
+        try write(buf, pos, " }");
+    } else {
+        try write(buf, pos, "null");
+    }
 }
 
 /// Emits the explicit HostPlan artifact schema used by the CSL toolchain.

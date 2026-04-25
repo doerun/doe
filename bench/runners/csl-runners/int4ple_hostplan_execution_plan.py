@@ -8,6 +8,13 @@ import re
 from pathlib import Path
 from typing import Any
 
+from int4ple_binding_metadata import (
+    binding_metadata_by_symbol,
+    compile_params_from_target,
+    pe_arrays_from_metadata,
+    target_phase,
+)
+
 _EXPORT_NAME_RE = re.compile(
     r"""@export_name\(
         \s*"(?P<name>[A-Za-z_][A-Za-z0-9_]*)"\s*,\s*
@@ -301,6 +308,8 @@ def _summa_source_transform(
         shape = _normalized_shape(weight_item.get("shape") or [])
         if len(shape) < 2:
             return source_transform
+        if (source_transform or {}).get("kind") == "weight_matrix_to_summa_tiles":
+            source_transform = source_transform.get("sourceTransform")
         nested = source_transform or {
             "kind": "none",
             "sourceDtype": str(weight_item.get("dtype") or ""),
@@ -417,6 +426,8 @@ def _binding_materialization(
     pe_program_compile_time: dict[str, int],
     target_geometry: dict[str, int],
     runtime_config: dict[str, Any],
+    binding_metadata: dict[str, Any] | None = None,
+    target_phase_name: str = "base",
 ) -> dict[str, Any]:
     symbol = str(item.get("symbol") or "")
     role = str(item.get("role") or "")
@@ -491,6 +502,7 @@ def _binding_materialization(
     else:
         source_transform = None
         span_byte_length = None
+    metadata_staging = (binding_metadata or {}).get("stagingTransform")
     source_transform = _summa_source_transform(
         symbol=symbol,
         role=role,
@@ -501,12 +513,17 @@ def _binding_materialization(
         weight_item=weight_item,
         source_transform=source_transform,
     )
+    if source_transform is None and isinstance(metadata_staging, dict):
+        source_transform = metadata_staging
     output_transform = _summa_output_transform(
         symbol=symbol,
         target_name=target_name,
         compile_params=compile_params,
         item=item,
     )
+    metadata_detile = (binding_metadata or {}).get("detileTransform")
+    if output_transform is None and isinstance(metadata_detile, dict):
+        output_transform = metadata_detile
     element_byte_width = _dtype_byte_width(dtype)
     planned_elements = elements_per_pe * target_geometry["peCount"]
     planned_bytes = planned_elements * element_byte_width
@@ -526,7 +543,15 @@ def _binding_materialization(
         "plannedElementCount": planned_elements,
         "plannedByteLength": planned_bytes,
         "storageClass": _buffer_storage_class(buffer, role),
+        "targetPhase": target_phase_name,
     }
+    if binding_metadata:
+        if isinstance(binding_metadata.get("bindingShape"), dict):
+            materialization["bindingShape"] = binding_metadata["bindingShape"]
+        if isinstance(binding_metadata.get("perPeShape"), dict):
+            materialization["perPeShape"] = binding_metadata["perPeShape"]
+        if binding_metadata.get("weightSource") is not None:
+            materialization["weightSource"] = binding_metadata.get("weightSource")
     if weight_item is not None:
         materialization["weightMapping"] = {
             "weightKey": weight_item.get("weightKey") or weight_item.get("tensor"),
@@ -540,8 +565,10 @@ def _binding_materialization(
         }
     if source_transform is not None:
         materialization["sourceTransform"] = source_transform
+        materialization["stagingTransform"] = source_transform
     if output_transform is not None:
         materialization["outputTransform"] = output_transform
+        materialization["detileTransform"] = output_transform
     if state_item is not None:
         materialization["stateOwnership"] = {
             "stateRoot": state_item.get("name"),
@@ -984,23 +1011,32 @@ def build_hostplan_execution_plan(
         compile_dir = _compile_dir(compile_root, target_name)
         pe_program_path = _pe_program_path(compile_root, target)
         compile_params = _compile_params(compile_dir)
-        exports = _parse_layout_exports(layout_path)
-        pe_program_arrays, pe_program_compile_time = _parse_pe_program_arrays(
-            pe_program_path
-        )
-        variable_exports = {
-            str(item["name"])
-            for item in exports
-            if item.get("kind") == "device_variable"
-        }
-        function_exports = {
-            str(item["name"])
-            for item in exports
-            if item.get("kind") == "device_function"
-        }
+        compile_params.update(compile_params_from_target(target))
+        binding_metadata = binding_metadata_by_symbol(target)
+        target_phase_name = target_phase(target)
+        if binding_metadata:
+            variable_exports = set(binding_metadata)
+            function_exports = {"compute"}
+            pe_program_arrays = pe_arrays_from_metadata(binding_metadata)
+            pe_program_compile_time = {}
+        else:
+            exports = _parse_layout_exports(layout_path)
+            pe_program_arrays, pe_program_compile_time = _parse_pe_program_arrays(
+                pe_program_path
+            )
+            variable_exports = {
+                str(item["name"])
+                for item in exports
+                if item.get("kind") == "device_variable"
+            }
+            function_exports = {
+                str(item["name"])
+                for item in exports
+                if item.get("kind") == "device_function"
+            }
         launch_function = _choose_launch_function(function_exports)
         target_geometry = _target_geometry(target_name, compile_params, runtime_config)
-        if not exports:
+        if not variable_exports:
             blockers.append(f"target[{target_name}].layout_exports_missing")
         if launch_function == "pending_runtime_function_resolution":
             blockers.append(f"target[{target_name}].launch_function_unresolved")
@@ -1050,6 +1086,8 @@ def build_hostplan_execution_plan(
                         pe_program_compile_time=pe_program_compile_time,
                         target_geometry=target_geometry,
                         runtime_config=runtime_config,
+                        binding_metadata=binding_metadata.get(symbol),
+                        target_phase_name=target_phase_name,
                     ),
                 }
             )
@@ -1076,6 +1114,8 @@ def build_hostplan_execution_plan(
                         pe_program_compile_time=pe_program_compile_time,
                         target_geometry=target_geometry,
                         runtime_config=runtime_config,
+                        binding_metadata=binding_metadata.get(symbol),
+                        target_phase_name=target_phase_name,
                     ),
                 }
             )

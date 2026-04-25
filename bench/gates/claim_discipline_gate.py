@@ -56,7 +56,7 @@ SKIP_PREFIXES: tuple[str, ...] = (
     "bench/gates/claim_discipline_gate.py",
     "bench/gates/doe_private_strategy_leak_gate.py",
     "docs/claim-discipline.md",
-    "docs/numeric-stability-claim-ladder.md",
+    "docs/numeric-stability.md",
     # docs/performance-strategy.md is methodology discussion, not
     # claim-making. It's allowed to name the tokens the gate rejects.
     "docs/performance-strategy.md",
@@ -64,16 +64,12 @@ SKIP_PREFIXES: tuple[str, ...] = (
     # rejected phrase. Treat them the same as the claim-discipline
     # doc itself: rule-enumerating prose, not claim-making.
     "docs/status/",
-    # Cerebras-evidence-bundle source docs are rule-enumerating by
+    # The Cerebras evidence-bundle source doc is rule-enumerating by
     # design (they list what the bundle does NOT back). Their archive-
     # root names (CLAIM_SCOPE.md, CEREBRAS_ASK.md, etc.) are already
     # skip-listed in the archive verifier; mirror the same policy at
-    # the repo level for their source paths.
-    "docs/cerebras-evidence-bundle-claim-scope.md",
-    "docs/cerebras-evidence-bundle-readme.md",
-    "docs/cerebras-evidence-bundle-model-access.md",
-    "docs/cerebras-evidence-bundle-ask.md",
-    "docs/cerebras-evidence-bundle-local-inspection.md",
+    # the repo level for the source path.
+    "docs/cerebras-evidence-bundle.md",
     "docs/hardware-validation-appendix.md",
 )
 

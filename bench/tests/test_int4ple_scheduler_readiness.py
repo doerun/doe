@@ -395,7 +395,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                             "decode": [{"kernelName": "sample", "repeat": 1}],
                         },
                         "kernels": [
-                            {"name": "residual", "pattern": "element_wise", "count": 1},
+                            {"name": "residual", "pattern": "residual", "count": 1},
                             {"name": "sample", "pattern": "sample", "count": 1},
                         ],
                     }
@@ -1960,10 +1960,10 @@ class SemanticKernelDataflowTests(unittest.TestCase):
         )
 
         self.assertEqual(blockers, [])
-        self.assertEqual(bindings["symbols"]["a"]["buffer"], "activation:prefill:0008:layer0:o_proj")
-        self.assertEqual(bindings["symbols"]["b"]["buffer"], "activation:prefill:0000:global:embed")
+        self.assertEqual(bindings["symbols"]["input"]["buffer"], "activation:prefill:0008:layer0:o_proj")
+        self.assertEqual(bindings["symbols"]["residual"]["buffer"], "activation:prefill:0000:global:embed")
 
-    def test_gelu_binds_gate_and_up_projection_outputs(self) -> None:
+    def test_gelu_binds_up_projection_output(self) -> None:
         scheduler_state: dict[str, object] = {
             "prefill": {
                 "current": "activation:prefill:0011:layer0:up_proj",
@@ -1987,7 +1987,7 @@ class SemanticKernelDataflowTests(unittest.TestCase):
 
         self.assertEqual(blockers, [])
         self.assertEqual(bindings["symbols"]["input"]["buffer"], "activation:prefill:0011:layer0:up_proj")
-        self.assertEqual(bindings["symbols"]["gate"]["buffer"], "activation:prefill:0010:layer0:gate_proj")
+        self.assertNotIn("gate", bindings["symbols"])
 
 
 class SummaHostMaterializationTests(unittest.TestCase):

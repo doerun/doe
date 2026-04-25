@@ -55,12 +55,15 @@ DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
 # Use the tuple form when the bundled file should sit at a different
 # path inside the tarball than in the repo (e.g. surfacing a claim-
 # scope doc at the archive root rather than under docs/).
+# Tuple sources may use `path.md#ARCHIVE_NAME.md`; the packer extracts
+# the matching `<!-- archive:ARCHIVE_NAME.md:start -->` section from
+# that source doc.
 INCLUDE_FILES: tuple = (
-    ("docs/cerebras-evidence-bundle-readme.md", "README.md"),
-    ("docs/cerebras-evidence-bundle-claim-scope.md", "CLAIM_SCOPE.md"),
-    ("docs/cerebras-evidence-bundle-model-access.md", "MODEL_ACCESS.md"),
-    ("docs/cerebras-evidence-bundle-ask.md", "CEREBRAS_ASK.md"),
-    ("docs/cerebras-evidence-bundle-local-inspection.md", "LOCAL_INSPECTION.md"),
+    ("docs/cerebras-evidence-bundle.md#README.md", "README.md"),
+    ("docs/cerebras-evidence-bundle.md#CLAIM_SCOPE.md", "CLAIM_SCOPE.md"),
+    ("docs/cerebras-evidence-bundle.md#MODEL_ACCESS.md", "MODEL_ACCESS.md"),
+    ("docs/cerebras-evidence-bundle.md#CEREBRAS_ASK.md", "CEREBRAS_ASK.md"),
+    ("docs/cerebras-evidence-bundle.md#LOCAL_INSPECTION.md", "LOCAL_INSPECTION.md"),
     # NOTE: docs/cerebras-evidence-bundle-pointer.md is intentionally
     # NOT bundled. The prep script writes it AFTER pack, so bundling
     # it would always ship stale values. BUNDLE_META.json inside the
@@ -334,6 +337,33 @@ def should_exclude(relpath: str) -> str | None:
     return None
 
 
+def split_section_source(raw: str) -> tuple[str, str | None]:
+    if "#" not in raw:
+        return raw, None
+    path, section = raw.split("#", 1)
+    return path, section
+
+
+def read_include_bytes(source_rel: str) -> bytes:
+    source_path, section = split_section_source(source_rel)
+    src = REPO_ROOT / source_path
+    if section is None:
+        return src.read_bytes()
+
+    text = src.read_text(encoding="utf-8")
+    start = f"<!-- archive:{section}:start -->"
+    end = f"<!-- archive:{section}:end -->"
+    start_idx = text.find(start)
+    end_idx = text.find(end)
+    if start_idx < 0 or end_idx < 0 or end_idx <= start_idx:
+        raise ValueError(
+            f"missing or invalid section markers for {section} in "
+            f"{source_path}"
+        )
+    body = text[start_idx + len(start):end_idx].strip() + "\n"
+    return body.encode("utf-8")
+
+
 def main() -> int:
     args = parse_args()
 
@@ -391,15 +421,20 @@ def main() -> int:
             source_rel, archive_rel = entry
         else:
             source_rel = archive_rel = entry
-        reason = should_exclude(source_rel) or should_exclude(archive_rel)
+        source_path, _section = split_section_source(source_rel)
+        reason = should_exclude(source_path) or should_exclude(archive_rel)
         if reason:
             excluded.append((archive_rel, f"deny-list token: {reason}"))
             continue
-        src = REPO_ROOT / source_rel
+        src = REPO_ROOT / source_path
         if not src.is_file():
             missing.append(source_rel)
             continue
-        data = src.read_bytes()
+        try:
+            data = read_include_bytes(source_rel)
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
+            missing.append(f"{source_rel} ({exc})")
+            continue
         included.append((archive_rel, data))
         sha = sha256_bytes(data)
         role = CLAIM_ROLE.get(archive_rel, "UNLABELED")

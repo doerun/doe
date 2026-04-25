@@ -124,7 +124,7 @@ fn resolvePattern(pattern: []const u8, module_ir: *const ir.Module, entry: ir.En
     if (!classify.patternContractValid(detected)) return error.UnsupportedPattern;
 
     switch (detected) {
-        .element_wise => if (std.mem.eql(u8, pattern, "element_wise")) return detected,
+        .element_wise => if (isElementWisePattern(pattern)) return detected,
         .reduction => if (std.mem.eql(u8, pattern, "reduction")) return detected,
         .tiled_matmul => if (std.mem.eql(u8, pattern, "tiled_matmul")) return detected,
         .gather => if (std.mem.eql(u8, pattern, "gather")) return detected,
@@ -198,7 +198,7 @@ fn emitPeProgram(
 }
 
 fn validationKind(pattern: []const u8) EmitError!validate.PatternKind {
-    if (std.mem.eql(u8, pattern, "element_wise")) return .element_wise;
+    if (isElementWisePattern(pattern)) return .element_wise;
     if (std.mem.eql(u8, pattern, "reduction")) return .reduction;
     if (std.mem.eql(u8, pattern, "tiled_matmul")) return .tiled_matmul;
     if (std.mem.eql(u8, pattern, "gather")) return .gather;
@@ -218,6 +218,8 @@ fn validationKind(pattern: []const u8) EmitError!validate.PatternKind {
 
 pub fn patternSource(pattern: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, pattern, "element_wise")) return ELEMENT_WISE_WGSL;
+    if (std.mem.eql(u8, pattern, "residual")) return RESIDUAL_WGSL;
+    if (std.mem.eql(u8, pattern, "gelu")) return GELU_WGSL;
     if (std.mem.eql(u8, pattern, "reduction")) return REDUCTION_WGSL;
     if (std.mem.eql(u8, pattern, "tiled_matmul")) return TILED_MATMUL_WGSL;
     if (std.mem.eql(u8, pattern, "gather")) return GATHER_WGSL;
@@ -233,6 +235,12 @@ pub fn patternSource(pattern: []const u8) ?[]const u8 {
     if (std.mem.eql(u8, pattern, "kv_read")) return KV_READ_WGSL;
     if (std.mem.eql(u8, pattern, "fused_ffn")) return FUSED_FFN_WGSL;
     return null;
+}
+
+fn isElementWisePattern(pattern: []const u8) bool {
+    return std.mem.eql(u8, pattern, "element_wise") or
+        std.mem.eql(u8, pattern, "residual") or
+        std.mem.eql(u8, pattern, "gelu");
 }
 
 pub fn sectionBody(csl: []const u8, filename: []const u8) ?[]const u8 {
@@ -273,6 +281,29 @@ const ELEMENT_WISE_WGSL =
     \\    let idx = gid.x;
     \\    if (idx >= u.size) { return; }
     \\    output[idx] = input[idx] * 1.0;
+    \\}
+;
+
+const RESIDUAL_WGSL =
+    \\@group(0) @binding(0) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(1) var<storage, read> residual: array<f32>;
+    \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(256)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let idx = gid.x;
+    \\    output[idx] = input[idx] + residual[idx];
+    \\}
+;
+
+const GELU_WGSL =
+    \\@group(0) @binding(0) var<storage, read> input: array<f32>;
+    \\@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+    \\@compute @workgroup_size(256)
+    \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+    \\    let idx = gid.x;
+    \\    let x = input[idx];
+    \\    let t = 0.7978845608 * (x + 0.044715 * x * x * x);
+    \\    output[idx] = 0.5 * x * (1.0 + tanh(t));
     \\}
 ;
 
@@ -529,6 +560,8 @@ test "host compile source emits known HostPlan CSL families" {
         "kv_write",
         "kv_read",
         "fused_ffn",
+        "residual",
+        "gelu",
         "rms_norm",
         "residual_add",
         "gelu_gated",
@@ -555,15 +588,16 @@ test "host compile source emits semantic Gemma elementwise bodies" {
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "1.0 + weight[idx]") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "partial") == null);
 
-    const residual = try emitPatternSections(std.testing.allocator, "residual_add", &buf);
-    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"a\", [*]f32, true);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"b\", [*]f32, true);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "output[idx] = a[idx] + b[idx];") != null);
+    const residual = try emitPatternSections(std.testing.allocator, "residual", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"input\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"residual\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "+ residual[") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "* 1.0") == null);
 
-    const gelu = try emitPatternSections(std.testing.allocator, "gelu_gated", &buf);
-    try std.testing.expect(std.mem.indexOf(u8, gelu.layout, "@export_name(\"gate\", [*]f32, true);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "math.tanh(inner)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "output[idx] = gelu(gate[idx]) * input[idx];") != null);
+    const gelu = try emitPatternSections(std.testing.allocator, "gelu", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.layout, "@export_name(\"input\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "math.tanh(t)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "0.5 * x") != null);
 }
 
 test "host compile source tiled matmul exports WGSL storage names" {
@@ -651,10 +685,10 @@ test "reduction pattern emits real rmsnorm: chunked sum, sqrt, per-element outpu
     // Weight binding must be threaded through to the per-element output.
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "weight") != null);
 
-    // Per-element output loop bounded by hidden_size, not by workgroup_size 64.
+    // Per-element output loop bounded by the runtime size, not by workgroup_size 64.
     // A scalar-per-PE regression would write `output[...] = sum;` once and skip
     // the size-bounded loop.
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "i < hidden_size") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "i < size") != null);
 
     // Gemma offset path must be reachable.
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "rms_norm_offset") != null);

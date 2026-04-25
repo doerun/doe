@@ -655,10 +655,6 @@ def bind_launch_dataflow(
         source = current_buffer()
         output = next_buffer(op_name)
         if kernel_name == "gelu":
-            gate = str(layer_state.get("gate_proj") or "")
-            if not gate:
-                blockers.append(f"gate_proj_activation_missing:{op_name}")
-                gate = "activation:missing:gate_proj"
             up = str(layer_state.get("up_proj") or source)
             inputs.append(
                 binding(
@@ -667,16 +663,6 @@ def bind_launch_dataflow(
                     role="activation",
                     access="read",
                     source="activation_router",
-                )
-            )
-            inputs.append(
-                binding(
-                    symbol="gate",
-                    buffer=gate,
-                    role="activation",
-                    access="read",
-                    source="activation_router",
-                    status="missing" if gate.startswith("activation:missing:") else None,
                 )
             )
         else:
@@ -691,7 +677,7 @@ def bind_launch_dataflow(
                 residual_source = f"activation:missing:{base_key}"
             inputs.append(
                 binding(
-                    symbol="a",
+                    symbol="input",
                     buffer=source,
                     role="activation",
                     access="read",
@@ -700,7 +686,7 @@ def bind_launch_dataflow(
             )
             inputs.append(
                 binding(
-                    symbol="b",
+                    symbol="residual",
                     buffer=residual_source,
                     role="activation",
                     access="read",

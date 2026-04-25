@@ -28,6 +28,9 @@ history.
 
 ## Current status summary
 
+- The current Doe-local checklist for the Doppler -> Doe -> Cerebras path lives
+  in [`docs/cerebras-north-star.md`](cerebras-north-star.md). It is the single
+  place for "what is left" line items, active blocker order, and done criteria.
 - TSIR (Tiled Spatial IR) is the new lowering contract between WGSL IR and
   backend emitters. Phase A compiler surface has landed end-to-end for the
   bootstrap catalog (`fused_gemv`, `rms_norm`, `gather`): target descriptors
@@ -239,7 +242,7 @@ history.
   and
   `bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json`.
 - Current status terminology refers to the numeric stability surface as
-  `numeric-stability-strategy.md`.
+  `numeric-stability.md`.
 - Shader proof-backed robustness now covers additional 3D storage and texture
   coord families in the native Zig runtime path.
 - Lean artifact regeneration and `-Dlean-verified=true` WGSL builds are green

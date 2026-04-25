@@ -66,6 +66,10 @@
               "hostIoLayout": {
                 "type": "object",
                 "description": "Optional per-kernel host I/O layout directives. Same shape as csl-operation-graph.schema.json#hostIoLayout entries; embed.chunkedDispatch tells the Python host runner to iterate ceil(num_tokens / tokensPerChunk) launches and concatenate per-column slices across the hiddenShardCount axis of the PE grid. Kernels without a hostIoLayout use single-launch default dispatch."
+              },
+              "metadata": {
+                "$ref": "#/$defs/compileTargetMetadata",
+                "description": "Structured Zig-emitted binding metadata used by Python host-plan materialization instead of reparsing layout.csl/pe_program.csl text. Carries target phase, symbol shapes, staging/detile transforms, and weight-source hints."
               }
             }
           }
@@ -119,6 +123,83 @@
         "stdoutPath": { "type": "string", "minLength": 1 },
         "stderrPath": { "type": "string", "minLength": 1 },
         "tracePath": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "compileTargetMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPhase", "bindings"],
+      "properties": {
+        "targetPhase": {
+          "type": "string",
+          "enum": ["base", "prefill", "decode"]
+        },
+        "bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bindingMetadata" }
+        }
+      }
+    },
+    "bindingMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbol",
+        "access",
+        "elemType",
+        "bindingShape",
+        "perPeShape",
+        "stagingTransform",
+        "detileTransform",
+        "weightSource"
+      ],
+      "properties": {
+        "symbol": { "type": "string", "minLength": 1 },
+        "access": {
+          "type": "string",
+          "enum": ["read", "write", "read_write"]
+        },
+        "elemType": { "type": "string", "minLength": 1 },
+        "bindingShape": { "$ref": "#/$defs/bindingShape" },
+        "perPeShape": { "$ref": "#/$defs/bindingShape" },
+        "stagingTransform": {
+          "anyOf": [{ "$ref": "#/$defs/bindingTransform" }, { "type": "null" }]
+        },
+        "detileTransform": {
+          "anyOf": [{ "$ref": "#/$defs/bindingTransform" }, { "type": "null" }]
+        },
+        "weightSource": {
+          "type": ["string", "null"],
+          "enum": ["runtime_weight_mapping", null]
+        }
+      }
+    },
+    "bindingShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "elements"],
+      "properties": {
+        "kind": { "type": "string", "const": "csl_array" },
+        "elements": { "type": "string", "minLength": 1 }
+      }
+    },
+    "bindingTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "logical_matrix_to_summa_tiles",
+            "weight_matrix_to_summa_tiles",
+            "summa_tiles_to_logical_matrix"
+          ]
+        },
+        "matrixRole": { "type": "string", "minLength": 1 },
+        "rowsFromInput": { "type": "string", "minLength": 1 }
       }
     }
   }

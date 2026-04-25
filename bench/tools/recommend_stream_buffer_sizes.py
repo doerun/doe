@@ -134,8 +134,8 @@ def main() -> int:
         "runtimeImpact": (
             "Recommendation is evidence-only. Runtime behavior is unchanged "
             "until SdkLayout exposes backpressure and queue-depth telemetry "
-            "that confirms these minimums are safe — see gap 4 residual in "
-            "docs/sdklayout-streaming-hardening-gaps.md."
+            "that confirms these minimums are safe; see R3-2 in "
+            "docs/cerebras-north-star.md."
         ),
     }
 

@@ -142,10 +142,7 @@ when they are tied back to those emitted contracts.
   parity-oracle-first WGSL -> TSIR -> multi-backend lowering architecture
   (Phase A compiler surface landed; live status in
   [`docs/status/tsir.md`](./status/tsir.md))
-- [`docs/numeric-stability-runtime-roadmap.md`](./numeric-stability-runtime-roadmap.md) for the numeric-stability integration path from bench evidence to live runtime contract
-- [`docs/numeric-stability-claim-ladder.md`](./numeric-stability-claim-ladder.md) for the current and target claim boundary around numeric stability
-- [`docs/numeric-stability-demo-ladder.md`](./numeric-stability-demo-ladder.md) for the first live demo set and promotion rules
-- [`docs/numeric-stability-strategy.md`](./numeric-stability-strategy.md) for the route-effect boundary between a runtime feature and the broader strategy claim
+- [`docs/numeric-stability.md`](./numeric-stability.md) for the numeric-stability integration path, claim boundary, demo bar, semantic envelope, and live runtime contract roadmap
 - [`pipeline/lean/README.md`](../pipeline/lean/README.md) for Lean proof categories and the artifact boundary
 - [`bench/README.md`](../bench/README.md) for compare and claim workflows
 - [`runtime/zig/README.md`](../runtime/zig/README.md) for runtime details

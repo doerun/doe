@@ -59,15 +59,15 @@
   This runs `run_cerebras_evidence_bundle.py` (local evidence gates),
   `pack_cerebras_validation_archive.py` (produces
   `doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz`
-  with top-level README/CLAIM_SCOPE/CEREBRAS_ASK/LOCAL_INSPECTION
+  with top-level README/CLAIM_SCOPE/MODEL_ACCESS/CEREBRAS_ASK/LOCAL_INSPECTION
   plus the evidence manifest), and
   `verify_cerebras_validation_archive.py` against the packed
   archive (manifest sha integrity, claim-role taxonomy,
   BUNDLE_META completeness, live claim-discipline scan). All
   three must pass before the archive is attached to an external
   ask. See `docs/hardware-validation-appendix.md` for the parent
-  ask and `docs/cerebras-evidence-bundle-readme.md` for the
-  bundle's own workflow.
+  ask and `docs/cerebras-evidence-bundle.md` for the bundle's own
+  workflow.
 - run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):
   `python3 bench/gates/spec_diff_gate.py`
 - run comparability parity verification gate (advisory unless explicitly enabled in gate orchestration):

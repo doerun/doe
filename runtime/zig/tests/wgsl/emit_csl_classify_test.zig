@@ -36,6 +36,29 @@ const FMA_WGSL =
     "    }\n" ++
     "}\n";
 
+const RESIDUAL_WGSL =
+    "@group(0) @binding(0) var<storage, read> input: array<f32>;\n" ++
+    "@group(0) @binding(1) var<storage, read> residual: array<f32>;\n" ++
+    "@group(0) @binding(2) var<storage, read_write> output: array<f32>;\n" ++
+    "\n" ++
+    "@compute @workgroup_size(256)\n" ++
+    "fn main(@builtin(global_invocation_id) gid: vec3u) {\n" ++
+    "    let idx = gid.x;\n" ++
+    "    output[idx] = input[idx] + residual[idx];\n" ++
+    "}\n";
+
+const GELU_WGSL =
+    "@group(0) @binding(0) var<storage, read> input: array<f32>;\n" ++
+    "@group(0) @binding(1) var<storage, read_write> output: array<f32>;\n" ++
+    "\n" ++
+    "@compute @workgroup_size(256)\n" ++
+    "fn main(@builtin(global_invocation_id) gid: vec3u) {\n" ++
+    "    let idx = gid.x;\n" ++
+    "    let x = input[idx];\n" ++
+    "    let t = 0.7978845608 * (x + 0.044715 * x * x * x);\n" ++
+    "    output[idx] = 0.5 * x * (1.0 + tanh(t));\n" ++
+    "}\n";
+
 test "classify: 3-input FMA is element_wise, not attention_linear" {
     const pattern = try classifyWgsl(FMA_WGSL);
     // The prior bug: this kernel returned .attention_linear because
@@ -53,6 +76,42 @@ test "classify: 3-input FMA is element_wise, not attention_linear" {
         else => {
             std.debug.print("unexpected pattern for FMA kernel: {}\n", .{@as(std.meta.Tag(classify.KernelPattern), pattern)});
             return error.FmaUnexpectedPattern;
+        },
+    }
+}
+
+test "classify: residual add is element_wise, not fused_ffn" {
+    const pattern = try classifyWgsl(RESIDUAL_WGSL);
+    switch (pattern) {
+        .fused_ffn => {
+            std.debug.print("unexpected fused_ffn classification for residual kernel\n", .{});
+            return error.ResidualMisclassifiedAsFusedFfn;
+        },
+        .element_wise => |info| {
+            try std.testing.expectEqual(@as(u32, 2), info.input_count);
+            try std.testing.expectEqual(@as(u32, 1), info.output_count);
+        },
+        else => {
+            std.debug.print("unexpected pattern for residual kernel: {}\n", .{@as(std.meta.Tag(classify.KernelPattern), pattern)});
+            return error.ResidualUnexpectedPattern;
+        },
+    }
+}
+
+test "classify: gelu tanh approximation is element_wise, not attention" {
+    const pattern = try classifyWgsl(GELU_WGSL);
+    switch (pattern) {
+        .attention_linear, .attention_streaming, .attention_tiled, .attention_decode => {
+            std.debug.print("unexpected attention classification for gelu kernel: {}\n", .{@as(std.meta.Tag(classify.KernelPattern), pattern)});
+            return error.GeluMisclassifiedAsAttention;
+        },
+        .element_wise => |info| {
+            try std.testing.expectEqual(@as(u32, 1), info.input_count);
+            try std.testing.expectEqual(@as(u32, 1), info.output_count);
+        },
+        else => {
+            std.debug.print("unexpected pattern for gelu kernel: {}\n", .{@as(std.meta.Tag(classify.KernelPattern), pattern)});
+            return error.GeluUnexpectedPattern;
         },
     }
 }
