@@ -23,6 +23,12 @@ pub const CompileTarget = struct {
     layout_path: []const u8,
     pe_program_path: []const u8,
     metadata: ?CompileTargetMetadata = null,
+    /// "prefill" / "decode" when the target was produced as a phase variant
+    /// of a phase-specialized kernel; null for base targets.
+    phase: ?[]const u8 = null,
+    /// Base kernel name when this target is a phase variant; equal to
+    /// `kernel_name` for base targets.
+    base_kernel: ?[]const u8 = null,
 };
 
 pub const CompileTargetMetadata = struct {

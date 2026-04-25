@@ -7,6 +7,7 @@ const host_runtime = wgsl.emit_csl_host_runtime;
 const mem_plan = wgsl.emit_csl_mem_plan;
 const simulator = wgsl.emit_csl_simulator;
 const compile_source = @import("doe_wgsl/emit_csl_host_compile_source.zig");
+const pe_program_metadata = @import("csl_pe_program_metadata.zig");
 
 const Mode = enum {
     steps,
@@ -55,6 +56,7 @@ const RUNTIME_CONFIG_CAPACITY: usize = 128 * 1024;
 const MEMORY_PLAN_CAPACITY: usize = 64 * 1024;
 const SIMULATOR_PLAN_CAPACITY: usize = 64 * 1024;
 const LAUNCHER_CAPACITY: usize = 8 * 1024;
+const PE_PROGRAM_METADATA_CAPACITY: usize = 16 * 1024;
 const COMPILE_ROOT_NAME: []const u8 = "compile";
 
 const CHUNK_SHAPE = host_plan.BindingShape{ .elements = "chunk_size" };
@@ -400,7 +402,7 @@ fn buildCompileTargets(
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
-        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name, kernel.pattern, "base");
+        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name, kernel.pattern, null);
         if (isPhaseSpecializedKernel(kernel.name)) {
             for (PHASE_TARGET_SUFFIXES) |suffix| {
                 const phase_name = try std.fmt.allocPrint(allocator, "{s}_{s}", .{ kernel.name, suffix });
@@ -418,14 +420,16 @@ fn appendCompileTarget(
     target_name: []const u8,
     source_name: []const u8,
     pattern: []const u8,
-    target_phase: []const u8,
+    phase: ?[]const u8,
 ) !void {
     if (count.* >= out.len) @panic("too many CSL compile targets");
     out[count.*] = .{
         .kernel_name = target_name,
         .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
         .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
-        .metadata = compileTargetMetadata(pattern, target_phase),
+        .metadata = compileTargetMetadata(pattern, phase orelse "base"),
+        .phase = phase,
+        .base_kernel = if (phase != null) source_name else null,
     };
     count.* += 1;
 }
@@ -531,6 +535,33 @@ fn defaultDriverPath(allocator: std.mem.Allocator, bundle_root: []const u8) ![]c
     return driver_abs;
 }
 
+fn materializeTargetsMetadata(
+    allocator: std.mem.Allocator,
+    bundle_root: []const u8,
+    targets: []const host_plan.CompileTarget,
+) !void {
+    var descriptors: [MAX_COMPILE_TARGETS]pe_program_metadata.TargetDescriptor = undefined;
+    var idx: usize = 0;
+    for (targets) |target| {
+        descriptors[idx] = .{
+            .name = target.kernel_name,
+            .base_kernel = target.base_kernel orelse target.kernel_name,
+            .phase = target.phase,
+            .layout = target.layout_path,
+            .pe_program = target.pe_program_path,
+        };
+        idx += 1;
+    }
+    const path = try std.fs.path.join(
+        allocator,
+        &.{ bundle_root, COMPILE_ROOT_NAME, "targets.metadata.json" },
+    );
+    var buf: [PE_PROGRAM_METADATA_CAPACITY]u8 = undefined;
+    var stream = std.io.fixedBufferStream(&buf);
+    try pe_program_metadata.emitTargetsJson(descriptors[0..idx], stream.writer());
+    try writeFile(path, stream.getWritten());
+}
+
 fn materializeCompileSources(
     allocator: std.mem.Allocator,
     bundle_root: []const u8,
@@ -548,10 +579,34 @@ fn materializeCompileSources(
             allocator,
             &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "pe_program.csl" },
         );
+        const metadata_path = try std.fs.path.join(
+            allocator,
+            &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "pe_program.metadata.json" },
+        );
+        const layout_metadata_path = try std.fs.path.join(
+            allocator,
+            &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "layout.metadata.json" },
+        );
 
         try writeFile(layout_path, sections.layout);
         try writeFile(pe_program_path, sections.pe_program);
+        try emitPeProgramMetadataFile(metadata_path, sections.pe_program);
+        try emitLayoutMetadataFile(layout_metadata_path, sections.layout);
     }
+}
+
+fn emitPeProgramMetadataFile(path: []const u8, pe_program_source: []const u8) !void {
+    var buf: [PE_PROGRAM_METADATA_CAPACITY]u8 = undefined;
+    var stream = std.io.fixedBufferStream(&buf);
+    try pe_program_metadata.emitJson(pe_program_source, stream.writer());
+    try writeFile(path, stream.getWritten());
+}
+
+fn emitLayoutMetadataFile(path: []const u8, layout_source: []const u8) !void {
+    var buf: [PE_PROGRAM_METADATA_CAPACITY]u8 = undefined;
+    var stream = std.io.fixedBufferStream(&buf);
+    try pe_program_metadata.emitLayoutJson(layout_source, stream.writer());
+    try writeFile(path, stream.getWritten());
 }
 
 pub fn main() !void {
@@ -616,6 +671,7 @@ pub fn main() !void {
         const launcher_path = try std.fs.path.join(allocator, &.{ bundle_root, "launch-simulator.sh" });
 
         try materializeCompileSources(allocator, bundle_root, plan);
+        try materializeTargetsMetadata(allocator, bundle_root, targets);
         try emitHostPlanFile(host_plan_path, plan, targets, cslc_plan);
         try emitMemoryPlanFile(memory_plan_path, memory);
         try emitRuntimeConfigFile(runtime_config_path, runtime);

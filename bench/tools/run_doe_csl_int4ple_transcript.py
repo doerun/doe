@@ -30,6 +30,14 @@ from bench.tools.int4ple_manifest_compile_params import (
     apply_manifest_compile_params,
     manifest_compile_param_projection,
 )
+from bench.tools.int4ple_runtime_weight_mappings import (
+    infer_layer_index_from_steps,
+    inferred_rmsnorm_weight_key,
+    layer_index_from_step_weight_key,
+    required_weight_keys,
+    tensor_name_candidates_for_weight_key,
+    tensor_name_for_weight_key,
+)
 
 FIXTURE_REGISTRY = Path("config/csl-runtime-fixtures.json")
 HOST_PLAN_TOOL = Path("runtime/zig/zig-out/bin/doe-csl-host-plan-tool")
@@ -38,7 +46,7 @@ DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
     "gemma-3-1b-doe-csl-hostplan"
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
-MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 600_000
+MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 3_600_000
 INT4PLE_COMPILE_TIMEOUT_SECONDS = 60
 INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"
@@ -82,140 +90,6 @@ DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
     "sample": "sample",
     "tiled": "matmul",
 }
-
-
-def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
-    if weight_key == "norm":
-        return [
-            "model.language_model.norm.weight",
-            "model.norm.weight",
-            "norm.weight",
-        ]
-    if weight_key == "embed_tokens":
-        return [
-            "model.language_model.embed_tokens_per_layer.weight",
-            "model.language_model.embed_tokens.weight",
-            "model.embed_tokens.weight",
-        ]
-    if weight_key == "lm_head":
-        return [
-            "model.language_model.lm_head.weight",
-            "language_model.lm_head.weight",
-            "model.lm_head.weight",
-            "lm_head.weight",
-            "model.language_model.embed_tokens.weight",
-            "language_model.model.embed_tokens.weight",
-            "model.embed_tokens.weight",
-            "embed_tokens.weight",
-        ]
-    if weight_key.startswith("layer."):
-        parts = weight_key.split(".")
-        if len(parts) >= 3 and parts[2] in {
-            "input_layernorm",
-            "post_attention_layernorm",
-            "pre_feedforward_layernorm",
-            "post_feedforward_layernorm",
-        }:
-            return [
-                "model.language_model.layers." f"{parts[1]}.{parts[2]}.weight",
-                f"model.layers.{parts[1]}.{parts[2]}.weight",
-            ]
-        if len(parts) >= 4 and parts[2] == "self_attn":
-            return [
-                (
-                    "model.language_model.layers."
-                    f"{parts[1]}.self_attn.{parts[3]}.weight"
-                ),
-                f"model.layers.{parts[1]}.self_attn.{parts[3]}.weight",
-            ]
-        if len(parts) >= 4 and parts[2] == "mlp":
-            return [
-                (
-                    "model.language_model.layers."
-                    f"{parts[1]}.mlp.{parts[3]}.weight"
-                ),
-                f"model.layers.{parts[1]}.mlp.{parts[3]}.weight",
-            ]
-    raise ValueError(f"unsupported HostPlan weight key: {weight_key}")
-
-
-def tensor_name_for_weight_key(weight_key: str) -> str:
-    return tensor_name_candidates_for_weight_key(weight_key)[0]
-
-
-def layer_index_from_step_weight_key(weight_key: Any) -> int | None:
-    if not isinstance(weight_key, str):
-        return None
-    parts = weight_key.split(".")
-    if len(parts) < 2 or parts[0] != "layer":
-        return None
-    try:
-        return int(parts[1])
-    except ValueError:
-        return None
-
-
-def infer_layer_index_from_steps(steps: list[dict[str, Any]], index: int) -> int | None:
-    current = steps[index]
-    direct = layer_index_from_step_weight_key(current.get("weightsKey"))
-    if direct is not None:
-        return direct
-    for offset in range(1, 9):
-        prev_index = index - offset
-        if prev_index >= 0:
-            candidate = layer_index_from_step_weight_key(steps[prev_index].get("weightsKey"))
-            if candidate is not None:
-                return candidate
-        next_index = index + offset
-        if next_index < len(steps):
-            name = str(steps[next_index].get("name") or "")
-            if name in {"final_norm", "lm_head", "lm_head_prefill", "sample"}:
-                continue
-            candidate = layer_index_from_step_weight_key(steps[next_index].get("weightsKey"))
-            if candidate is not None:
-                return candidate
-    return None
-
-
-def inferred_rmsnorm_weight_key(step_name: str, layer_index: int | None) -> str | None:
-    if step_name == "final_norm":
-        return "norm"
-    if layer_index is None:
-        return None
-    suffix_by_step = {
-        "input_norm": "input_layernorm",
-        "post_attn_norm": "post_attention_layernorm",
-        "pre_ffn_norm": "pre_feedforward_layernorm",
-        "post_ffn_norm": "post_feedforward_layernorm",
-    }
-    suffix = suffix_by_step.get(step_name)
-    if suffix is None:
-        return None
-    return f"layer.{layer_index}.{suffix}"
-
-
-def required_weight_keys(normalized_execution: dict[str, Any]) -> list[str]:
-    steps = [
-        step
-        for step in normalized_execution.get("steps") or []
-        if isinstance(step, dict)
-    ]
-    keys: set[str] = set()
-    for index, step in enumerate(steps):
-        raw_key = step.get("weightsKey")
-        if isinstance(raw_key, str) and raw_key:
-            keys.add(raw_key)
-            continue
-        kernel_key = str(step.get("kernelKey") or "")
-        op = str(step.get("op") or "")
-        if kernel_key == "rmsnorm" or op == "rmsnorm":
-            inferred = inferred_rmsnorm_weight_key(
-                str(step.get("name") or ""),
-                infer_layer_index_from_steps(steps, index),
-            )
-            if inferred:
-                keys.add(inferred)
-    return sorted(keys)
 
 
 def parse_args() -> argparse.Namespace:

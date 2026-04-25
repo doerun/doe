@@ -273,6 +273,29 @@ pub const SemanticBodyOp = enum {
     fused_gemv,
     rms_norm,
     gather,
+    /// Element-wise residual add: `output[i] = summand_a[i] + summand_b[i]`.
+    /// Bindings: two `summand_*` inputs and one `output`. No body-specific
+    /// parameters today — the op kind plus the binding roles fully specify
+    /// the kernel.
+    residual_add,
+    /// Gated GELU activation: `output[i] = gelu(gate[i]) * input[i]`.
+    /// Bindings: `gate`, `input`, `output`. The `gelu` here is the
+    /// standard tanh-approximation form used by Doppler's MLP block;
+    /// downstream emitters inline the polynomial.
+    gelu_gated,
+    /// KV-cache write: append per-token K/V projections at the
+    /// runtime-supplied `decode_position` slot. Bindings:
+    /// `key_projection`, `value_projection`, `key_cache`,
+    /// `value_cache`, `decode_position`. No body-specific
+    /// parameters — the `head_dim` extent comes from the binding
+    /// shape and the position from the state buffer.
+    kv_write,
+    /// KV-cache read: copy `read_len` cached K/V rows starting at
+    /// `read_start` into per-output buffers. Bindings:
+    /// `key_cache`, `value_cache`, `key_output`, `value_output`.
+    /// `read_start` defaults to zero so prefill paths can pass the
+    /// param through without explicit offset.
+    kv_read,
     /// Fused attention-scores body:
     /// `output = softmax_stable((Q · Kᵀ) · scale [+ softcap] [+ mask]) · V`.
     /// Represents the prefill / decode attention kernel family as a
@@ -301,6 +324,30 @@ pub const SemanticBindingRole = enum {
     /// Optional page-table binding for paged-KV layouts. Maps to
     /// Doppler's `page_table` binding.
     page_table,
+    // Residual-add bindings (added for SemanticBodyOp.residual_add).
+    // Two distinct summand roles because `bindingForRole` returns one
+    // binding per role; positional `a`/`b` would be ambiguous.
+    summand_a,
+    summand_b,
+    // Gated-GELU binding (added for SemanticBodyOp.gelu_gated). Pairs
+    // with the existing `.input` role; `.input` carries the activation
+    // value, `.gate` carries the value the gelu non-linearity is
+    // applied to, and `.output` is the per-element product.
+    gate,
+    // KV-cache write bindings (added for SemanticBodyOp.kv_write).
+    // The cache pair are `read_write` storage; the position is a
+    // single-element `u32` state buffer the runtime updates each
+    // decode step.
+    key_projection,
+    value_projection,
+    key_cache,
+    value_cache,
+    decode_position,
+    // KV-cache read outputs (added for SemanticBodyOp.kv_read). The
+    // cache inputs reuse `.key_cache` / `.value_cache` from kv_write;
+    // these are the destination buffers the read copies into.
+    key_output,
+    value_output,
 };
 
 pub const SemanticAxisRole = enum {

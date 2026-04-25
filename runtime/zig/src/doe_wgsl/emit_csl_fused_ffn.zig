@@ -30,9 +30,9 @@ pub fn emit(
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param reduce_color: color;\n\n");
-    try W.write(buf, pos, "param in_dim: i16;\n");
-    try W.write(buf, pos, "param out_dim: i16;\n");
-    try W.write(buf, pos, "param in_per_pe: i16;\n\n");
+    try W.write(buf, pos, "param in_dim: i16 = 1152;\n");
+    try W.write(buf, pos, "param out_dim: i16 = 1152;\n");
+    try W.write(buf, pos, "param in_per_pe: i16 = 1152;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");

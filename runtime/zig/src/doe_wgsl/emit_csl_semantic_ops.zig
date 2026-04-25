@@ -6,6 +6,8 @@
 
 const std = @import("std");
 const spec = @import("csl_spec.zig");
+const tsir_kernel_body = @import("../tsir/emit_kernel_body.zig");
+const tsir_schema = @import("../tsir/schema.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -36,7 +38,7 @@ pub fn emitPeProgram(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void
 
 fn emitRmsNormLayout(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "// Layout: RMSNorm, one token per PE.\n\n");
-    try write(buf, pos, "param width: i16;\n\n");
+    try write(buf, pos, "param width: i16 = 1;\n\n");
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n");
     try write(buf, pos, "    .height = 1,\n");
@@ -100,96 +102,207 @@ fn emitElementwiseLayout(buf: []u8, pos: *usize, kind: ElementwiseKind) EmitErro
 }
 
 fn emitRmsNormPe(buf: []u8, pos: *usize) EmitError!void {
-    try write(buf, pos, "// PE program: RMSNorm, full hidden vector per token.\n\n");
-    try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param hidden_size: i16;\n\n");
-    try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try write(buf, pos, "const math = @import_module(\"<math>\");\n");
-    try write(buf, pos, "const rms_eps: f32 = ");
-    try write(buf, pos, RMS_EPS);
-    try write(buf, pos, ";\n\n");
-    try emitBuf(buf, pos, "input", "[hidden_size]f32");
-    try emitBuf(buf, pos, "weight", "[hidden_size]f32");
-    try emitBuf(buf, pos, "output", "[hidden_size]f32");
-    try write(buf, pos, "\n");
-    try emitPtr(buf, pos, "input", "f32");
-    try emitPtr(buf, pos, "weight", "f32");
-    try emitPtr(buf, pos, "output", "f32");
-    try write(buf, pos, "\n");
-    try write(buf, pos, "fn compute() void {\n");
-    try write(buf, pos, "    var sum_sq: f32 = 0.0;\n");
-    try write(buf, pos, "    for (@range(i16, hidden_size)) |i| {\n");
-    try write(buf, pos, "        const idx = @as(u32, i);\n");
-    try write(buf, pos, "        const x = input[idx];\n");
-    try write(buf, pos, "        sum_sq += x * x;\n");
-    try write(buf, pos, "    }\n\n");
-    try write(buf, pos, "    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
-    try write(buf, pos, "    const inv_rms = 1.0 / math.sqrt(mean_sq + rms_eps);\n");
-    try write(buf, pos, "    for (@range(i16, hidden_size)) |i| {\n");
-    try write(buf, pos, "        const idx = @as(u32, i);\n");
-    try write(buf, pos, "        output[idx] = input[idx] * inv_rms * (1.0 + weight[idx]);\n");
-    try write(buf, pos, "    }\n");
-    try write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
-    try write(buf, pos, "}\n\n");
-    const exports = [_][]const u8{ "input", "weight", "output" };
-    try emitComptime(buf, pos, &exports);
+    // Delegate to TSIR. Same wrapper recipe as residual / gelu, with
+    // two extra Config knobs the rmsnorm kernel needs:
+    //   - hidden_size_default: 1024 (the live elementwise layout doesn't
+    //     forward hidden_size through @set_tile_code, same reason
+    //     residual needs chunk_size_default).
+    //   - gemma_one_plus_weight_offset: true (Doppler's reference
+    //     rmsnorm emits `output[d] = input[d] * inv_rms * (1.0 + weight[d])`
+    //     instead of the standard `inv_rms * scale[d]`).
+    // The literal epsilon value (RMS_EPS = 0.000001) is supplied via
+    // the SemanticFunction's RmsNormBody.epsilon.literal_f32 path, so
+    // TSIR emits `+ 0.000001` inline rather than the live's named
+    // `const rms_eps: f32 = 0.000001;` const. Both compute the same
+    // value; cslc accepts both.
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .scale },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]tsir_schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+        .{ .axis_index = 1, .role = .reduction },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .rms_norm,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .rms_norm,
+            .binding_roles = &body_bindings,
+            .axis_roles = &body_axes,
+            .rms_norm = .{
+                .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+                .epsilon = .{
+                    .source = .literal_f32,
+                    .literal_f32 = 0.000001,
+                },
+                .hidden_extent_axis = 0,
+                .reduction_target = .intermediate_scalar,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        .hidden_size_default = 1024,
+        .gemma_one_plus_weight_offset = true,
+    };
+    var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
 }
 
 fn emitResidualPe(buf: []u8, pos: *usize) EmitError!void {
-    try write(buf, pos, "// PE program: residual add, full activation vector per PE.\n\n");
-    try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param chunk_size: i16;\n\n");
-    try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n\n");
-    try emitBuf(buf, pos, "a", "[chunk_size]f32");
-    try emitBuf(buf, pos, "b", "[chunk_size]f32");
-    try emitBuf(buf, pos, "output", "[chunk_size]f32");
-    try write(buf, pos, "\n");
-    try emitPtr(buf, pos, "a", "f32");
-    try emitPtr(buf, pos, "b", "f32");
-    try emitPtr(buf, pos, "output", "f32");
-    try write(buf, pos, "\n");
-    try write(buf, pos, "fn compute() void {\n");
-    try write(buf, pos, "    for (@range(i16, chunk_size)) |i| {\n");
-    try write(buf, pos, "        const idx = @as(u32, i);\n");
-    try write(buf, pos, "        output[idx] = a[idx] + b[idx];\n");
-    try write(buf, pos, "    }\n");
-    try write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
-    try write(buf, pos, "}\n\n");
-    const exports = [_][]const u8{ "a", "b", "output" };
-    try emitComptime(buf, pos, &exports);
+    // Delegate to TSIR. The semantic kernel truth lives in the
+    // tsir/emit_kernel_body emitCslResidualAdd path; this wrapper
+    // builds the SemanticFunction with bindings named to match the
+    // symbols the live HostPlan binding map already expects
+    // (`a`, `b`, `output`) and asks TSIR to emit with no `tsir_`
+    // var prefix so the output is byte-equivalent in the
+    // load-bearing places (`output[idx] = a[idx] + b[idx];` and
+    // `@export_symbol(a_ptr, "a");` etc.).
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "a", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "b", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .summand_a },
+        .{ .binding_index = 1, .role = .summand_b },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]tsir_schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .residual_add,
+            .binding_roles = &body_bindings,
+            .axis_roles = &body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        // The live elementwise layout doesn't forward chunk_size through
+        // `@set_tile_code`, so the pe_program needs a compile-time default
+        // or cslc raises csl_compile_uninitialized_param. 1024 mirrors
+        // the prior hand-written value.
+        .chunk_size_default = 1024,
+    };
+    // The TSIR emitter's helpers (`writer.print`) return only
+    // `Allocator.Error`-shaped errors; that means we need an
+    // `ArrayList` writer (OutOfMemory) rather than a fixed-buffer
+    // writer (NoSpaceLeft). A small stack-fallback allocator keeps
+    // this off the heap for the typical kernel.
+    var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        // Buffer overflow surfaces the existing OutputTooLarge code so
+        // the caller doesn't have to learn TSIR's allocator failures.
+        error.OutOfMemory => return error.OutputTooLarge,
+        // The other TSIR errors signal a malformed SemanticFunction —
+        // a bug in this wrapper, not a runtime input. Map them to
+        // UnsupportedPattern so the existing caller surface stays
+        // unchanged; the build will catch the wrapper bug at test time.
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
 }
 
 fn emitGeluPe(buf: []u8, pos: *usize) EmitError!void {
-    try write(buf, pos, "// PE program: gated GELU, output = gelu(gate) * input.\n\n");
-    try write(buf, pos, "param memcpy_params;\n");
-    try write(buf, pos, "param chunk_size: i16;\n\n");
-    try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try write(buf, pos, "const math = @import_module(\"<math>\");\n");
-    try write(buf, pos, "const GELU_A: f32 = 0.7978845608028654;\n");
-    try write(buf, pos, "const GELU_B: f32 = 0.044715;\n\n");
-    try emitBuf(buf, pos, "input", "[chunk_size]f32");
-    try emitBuf(buf, pos, "gate", "[chunk_size]f32");
-    try emitBuf(buf, pos, "output", "[chunk_size]f32");
-    try write(buf, pos, "\n");
-    try emitPtr(buf, pos, "input", "f32");
-    try emitPtr(buf, pos, "gate", "f32");
-    try emitPtr(buf, pos, "output", "f32");
-    try write(buf, pos, "\n");
-    try write(buf, pos, "fn gelu(x: f32) f32 {\n");
-    try write(buf, pos, "    var inner = GELU_A * (x + GELU_B * x * x * x);\n");
-    try write(buf, pos, "    if (inner < -15.0) inner = -15.0;\n");
-    try write(buf, pos, "    if (inner > 15.0) inner = 15.0;\n");
-    try write(buf, pos, "    return 0.5 * x * (1.0 + math.tanh(inner));\n");
-    try write(buf, pos, "}\n\n");
-    try write(buf, pos, "fn compute() void {\n");
-    try write(buf, pos, "    for (@range(i16, chunk_size)) |i| {\n");
-    try write(buf, pos, "        const idx = @as(u32, i);\n");
-    try write(buf, pos, "        output[idx] = gelu(gate[idx]) * input[idx];\n");
-    try write(buf, pos, "    }\n");
-    try write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
-    try write(buf, pos, "}\n\n");
-    const exports = [_][]const u8{ "input", "gate", "output" };
-    try emitComptime(buf, pos, &exports);
+    // Delegate to TSIR. Same wrapper recipe as `emitResidualPe`
+    // (cycle 16): build a SemanticFunction with bindings named to
+    // match the symbols the live HostPlan binding map expects, ask
+    // TSIR to emit with no `tsir_` var prefix and a chunk_size
+    // default. TSIR's `emitCslGeluGated` carries the saturation
+    // clamping that matches the prior hand-written body byte-for-byte.
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "gate", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "input", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .gate },
+        .{ .binding_index = 1, .role = .input },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]tsir_schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .gelu_gated,
+            .binding_roles = &body_bindings,
+            .axis_roles = &body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        .chunk_size_default = 1024,
+    };
+    var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
 }
 
 fn emitBuf(buf: []u8, pos: *usize, name: []const u8, ty: []const u8) EmitError!void {

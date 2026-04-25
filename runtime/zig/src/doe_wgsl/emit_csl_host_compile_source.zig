@@ -583,9 +583,15 @@ test "host compile source emits semantic Gemma elementwise bodies" {
 
     const rms = try emitPatternSections(std.testing.allocator, "rms_norm", &buf);
     try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"weight\", [*]f32, true);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "sum_sq += x * x;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "math.sqrt(mean_sq + rms_eps)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "1.0 + weight[idx]") != null);
+    // The TSIR-driven body uses `v` as the loop temporary and `@sqrt`
+    // builtin with the literal epsilon inline; the load-bearing
+    // semantic invariants are: a sum-of-squares accumulator, a
+    // sqrt-with-epsilon, the Gemma `1.0 + weight` offset on the
+    // per-element output, and no toy-WGSL `partial` workgroup
+    // accumulator leaking through.
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "sum_sq +=") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "math.sqrt(mean_sq + 0.000001)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "1.0 + weight[") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "partial") == null);
 
     const residual = try emitPatternSections(std.testing.allocator, "residual", &buf);

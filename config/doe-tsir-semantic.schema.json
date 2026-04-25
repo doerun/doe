@@ -93,7 +93,7 @@
     },
     "bodyOp": {
       "type": "string",
-      "enum": ["unknown", "fused_gemv", "rms_norm", "gather", "attention_scores"]
+      "enum": ["unknown", "fused_gemv", "rms_norm", "gather", "residual_add", "gelu_gated", "kv_write", "kv_read", "attention_scores"]
     },
     "bindingRole": {
       "type": "string",
@@ -109,7 +109,17 @@
         "key",
         "value",
         "kv_len_buffer",
-        "page_table"
+        "page_table",
+        "summand_a",
+        "summand_b",
+        "gate",
+        "key_projection",
+        "value_projection",
+        "key_cache",
+        "value_cache",
+        "decode_position",
+        "key_output",
+        "value_output"
       ]
     },
     "axisRole": {

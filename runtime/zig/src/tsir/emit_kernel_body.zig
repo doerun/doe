@@ -23,10 +23,67 @@ pub const EmitError = std.mem.Allocator.Error || error{
     UnsupportedScalarKind,
 };
 
+/// Emitter configuration knobs the live HostPlan path needs to control
+/// when delegating through TSIR. The defaults preserve the prior behavior
+/// (var prefix `tsir_`, no param defaults, no Gemma offset), so existing
+/// callers and tests are unchanged.
+///
+/// `var_prefix` controls the TSIR-internal variable name prefix. For the
+/// live `emit_csl_semantic_ops` path the prefix is empty, which produces
+/// bare `a` / `b` / `output` var names matching the symbols downstream
+/// host plans expect to bind.
+///
+/// `chunk_size_default` controls whether the emitted `param chunk_size`
+/// declaration carries a default value. The live elementwise layout
+/// invokes `pe_program.csl` without forwarding `chunk_size` through the
+/// `@set_tile_code` struct, so cslc raises
+/// `csl_compile_uninitialized_param` unless the param has a default.
+/// The live wrapper sets `chunk_size_default = 1024` to mirror the
+/// prior hand-written behavior; TSIR-only callers that route through
+/// the layout pass-through can leave it null.
+///
+/// `hidden_size_default` is the rms_norm analog of `chunk_size_default`
+/// — the live rmsnorm layout doesn't forward `hidden_size` either, so
+/// the live wrapper sets `hidden_size_default = 1024` to match the
+/// prior hand-written body. The TSIR-only path leaves it null.
+///
+/// `gemma_one_plus_weight_offset` switches the rms_norm per-element
+/// output from the standard `inv_rms * scale[d]` to Gemma's
+/// `inv_rms * (1.0 + scale[d])` form. Doppler's RMSNorm reference
+/// (`rmsnorm.wgsl`) uses the offset; non-Gemma callers leave it false.
+///
+/// `head_dim_default`, `max_seq_len_default`, and `read_len_default`
+/// are the kv_write / kv_read analogs of `hidden_size_default`. The
+/// live kv_cache layout doesn't forward these params through
+/// `@set_tile_code`, so cslc raises `csl_compile_uninitialized_param`
+/// unless they carry source-level defaults. The live wrapper sets
+/// them; TSIR-only callers leave them null to preserve the
+/// "no defaults" test expectation.
+pub const Config = struct {
+    var_prefix: []const u8 = "tsir_",
+    chunk_size_default: ?u32 = null,
+    hidden_size_default: ?u32 = null,
+    gemma_one_plus_weight_offset: bool = false,
+    head_dim_default: ?u32 = null,
+    max_seq_len_default: ?u32 = null,
+    read_len_default: ?u32 = null,
+};
+
+const default_config: Config = .{};
+
 pub fn emit(writer: anytype, func: schema.SemanticFunction, backend: Backend) EmitError!void {
+    return emitWithConfig(writer, func, backend, &default_config);
+}
+
+pub fn emitWithConfig(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    backend: Backend,
+    config: *const Config,
+) EmitError!void {
     return switch (backend) {
         .webgpu => emitWebGpu(writer, func),
-        .csl => emitCsl(writer, func),
+        .csl => emitCsl(writer, func, config),
         .msl => emitMsl(writer, func),
         .dxil => emitDxil(writer, func),
         .spir_v => emitSpirV(writer, func),
@@ -42,15 +99,19 @@ fn emitWebGpu(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
     };
 }
 
-fn emitCsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
+fn emitCsl(writer: anytype, func: schema.SemanticFunction, config: *const Config) EmitError!void {
     return switch (func.body.op) {
         .fused_gemv => emitCslFusedGemv(writer, func),
-        .rms_norm => emitCslRmsNorm(writer, func),
+        .rms_norm => emitCslRmsNorm(writer, func, config),
         .gather => emitCslGather(writer, func),
+        .residual_add => emitCslResidualAdd(writer, func, config),
+        .gelu_gated => emitCslGeluGated(writer, func, config),
+        .kv_write => emitCslKvWrite(writer, func, config),
+        .kv_read => emitCslKvRead(writer, func, config),
         // attention_scores lowering is fixture-only under Move 4 D3;
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
@@ -68,7 +129,7 @@ fn emitMsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
     };
 }
 
@@ -81,7 +142,7 @@ fn emitDxil(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
     };
 }
 
@@ -94,7 +155,7 @@ fn emitSpirV(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
     };
 }
 
@@ -239,7 +300,11 @@ fn emitCslFusedGemv(writer: anytype, func: schema.SemanticFunction) EmitError!vo
     try writeCslFusedGemvExports(writer);
 }
 
-fn emitCslRmsNorm(writer: anytype, func: schema.SemanticFunction) EmitError!void {
+fn emitCslRmsNorm(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    config: *const Config,
+) EmitError!void {
     const input = try bindingForRole(func, .input);
     const scale = try bindingForRole(func, .scale);
     const output = try bindingForRole(func, .output);
@@ -248,35 +313,67 @@ fn emitCslRmsNorm(writer: anytype, func: schema.SemanticFunction) EmitError!void
     try requireElem(output, .f32);
     const rms = try rmsNormBody(func);
 
+    const p = config.var_prefix;
     try writer.writeAll("param memcpy_params;\n");
-    try writer.writeAll("param hidden_size: i16;\n");
+    try writeCslHiddenSizeParam(writer, config);
     if (rms.epsilon.source == .uniform_field) {
         if (rms.epsilon.byte_offset != 4) return error.InvalidBodyContract;
         try writer.writeAll("param epsilon: f32;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try writer.writeAll("var tsir_input: [hidden_size]f32 = @zeros([hidden_size]f32);\n");
-    try writer.writeAll("var tsir_scale: [hidden_size]f32 = @zeros([hidden_size]f32);\n");
-    try writer.writeAll("var tsir_output: [hidden_size]f32 = @zeros([hidden_size]f32);\n");
-    try writer.writeAll("var tsir_input_ptr: [*]f32 = &tsir_input;\n");
-    try writer.writeAll("var tsir_scale_ptr: [*]f32 = &tsir_scale;\n");
-    try writer.writeAll("var tsir_output_ptr: [*]f32 = &tsir_output;\n\n");
+    // CSL has no `@sqrt` builtin; reach for the `<math>` module's
+    // `math.sqrt` instead. The previous TSIR test that asserted on
+    // `@sqrt(` predates this — updated alongside.
+    try writer.writeAll("const math = @import_module(\"<math>\");\n");
+    try writeCslBufferArray(writer, p, input.name, "hidden_size", "f32");
+    try writeCslBufferArray(writer, p, scale.name, "hidden_size", "f32");
+    try writeCslBufferArray(writer, p, output.name, "hidden_size", "f32");
+    try writeCslBufferPointer(writer, p, input.name, "f32");
+    try writeCslBufferPointer(writer, p, scale.name, "f32");
+    try writeCslBufferPointer(writer, p, output.name, "f32");
+    try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    var sum_sq: f32 = 0.0;\n");
     try writer.writeAll("    for (@range(i16, hidden_size)) |i| {\n");
-    try writer.writeAll("        const v = tsir_input[@as(u32, i)];\n");
+    try writer.print(
+        "        const v = {s}{s}[@as(u32, i)];\n",
+        .{ p, input.name },
+    );
     try writer.writeAll("        sum_sq += v * v;\n");
     try writer.writeAll("    }\n");
     try writer.writeAll("    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
-    try writer.writeAll("    const inv_rms = 1.0 / @sqrt(mean_sq + ");
+    try writer.writeAll("    const inv_rms = 1.0 / math.sqrt(mean_sq + ");
     try writeCslEpsilon(writer, rms.epsilon);
     try writer.writeAll(");\n");
     try writer.writeAll("    for (@range(i16, hidden_size)) |d| {\n");
-    try writer.writeAll("        tsir_output[@as(u32, d)] = tsir_input[@as(u32, d)] * inv_rms * tsir_scale[@as(u32, d)];\n");
+    if (config.gemma_one_plus_weight_offset) {
+        try writer.print(
+            "        {s}{s}[@as(u32, d)] = {s}{s}[@as(u32, d)] * inv_rms * (1.0 + {s}{s}[@as(u32, d)]);\n",
+            .{ p, output.name, p, input.name, p, scale.name },
+        );
+    } else {
+        try writer.print(
+            "        {s}{s}[@as(u32, d)] = {s}{s}[@as(u32, d)] * inv_rms * {s}{s}[@as(u32, d)];\n",
+            .{ p, output.name, p, input.name, p, scale.name },
+        );
+    }
     try writer.writeAll("    }\n");
     try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
     try writer.writeAll("}\n\n");
-    try writeCslRmsNormExports(writer);
+    try writer.writeAll("comptime {\n");
+    try writeCslExportSymbol(writer, p, input.name);
+    try writeCslExportSymbol(writer, p, scale.name);
+    try writeCslExportSymbol(writer, p, output.name);
+    try writer.writeAll("    @export_symbol(compute);\n");
+    try writer.writeAll("}\n");
+}
+
+fn writeCslHiddenSizeParam(writer: anytype, config: *const Config) !void {
+    if (config.hidden_size_default) |value| {
+        try writer.print("param hidden_size: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param hidden_size: i16;\n");
+    }
 }
 
 fn emitCslGather(writer: anytype, func: schema.SemanticFunction) EmitError!void {
@@ -313,6 +410,277 @@ fn emitCslGather(writer: anytype, func: schema.SemanticFunction) EmitError!void 
     try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
     try writer.writeAll("}\n\n");
     try writeCslGatherExports(writer);
+}
+
+fn emitCslResidualAdd(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    config: *const Config,
+) EmitError!void {
+    const summand_a = try bindingForRole(func, .summand_a);
+    const summand_b = try bindingForRole(func, .summand_b);
+    const output = try bindingForRole(func, .output);
+    try requireElem(summand_a, .f32);
+    try requireElem(summand_b, .f32);
+    try requireElem(output, .f32);
+
+    const p = config.var_prefix;
+    try writer.writeAll("param memcpy_params;\n");
+    try writeCslChunkSizeParam(writer, config);
+    try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try writeCslBufferArray(writer, p, summand_a.name, "chunk_size", "f32");
+    try writeCslBufferArray(writer, p, summand_b.name, "chunk_size", "f32");
+    try writeCslBufferArray(writer, p, output.name, "chunk_size", "f32");
+    try writeCslBufferPointer(writer, p, summand_a.name, "f32");
+    try writeCslBufferPointer(writer, p, summand_b.name, "f32");
+    try writeCslBufferPointer(writer, p, output.name, "f32");
+    try writer.writeAll("\n");
+    try writer.writeAll("fn compute() void {\n");
+    try writer.writeAll("    for (@range(i16, chunk_size)) |i| {\n");
+    try writer.writeAll("        const idx = @as(u32, i);\n");
+    try writer.print(
+        "        {s}{s}[idx] = {s}{s}[idx] + {s}{s}[idx];\n",
+        .{ p, output.name, p, summand_a.name, p, summand_b.name },
+    );
+    try writer.writeAll("    }\n");
+    try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
+    try writer.writeAll("}\n\n");
+    try writer.writeAll("comptime {\n");
+    try writeCslExportSymbol(writer, p, summand_a.name);
+    try writeCslExportSymbol(writer, p, summand_b.name);
+    try writeCslExportSymbol(writer, p, output.name);
+    try writer.writeAll("    @export_symbol(compute);\n");
+    try writer.writeAll("}\n");
+}
+
+fn writeCslBufferArray(
+    writer: anytype,
+    prefix: []const u8,
+    name: []const u8,
+    extent: []const u8,
+    elem_type: []const u8,
+) !void {
+    try writer.print(
+        "var {s}{s}: [{s}]{s} = @zeros([{s}]{s});\n",
+        .{ prefix, name, extent, elem_type, extent, elem_type },
+    );
+}
+
+fn writeCslBufferPointer(
+    writer: anytype,
+    prefix: []const u8,
+    name: []const u8,
+    elem_type: []const u8,
+) !void {
+    try writer.print(
+        "var {s}{s}_ptr: [*]{s} = &{s}{s};\n",
+        .{ prefix, name, elem_type, prefix, name },
+    );
+}
+
+fn writeCslExportSymbol(writer: anytype, prefix: []const u8, name: []const u8) !void {
+    try writer.print(
+        "    @export_symbol({s}{s}_ptr, \"{s}\");\n",
+        .{ prefix, name, name },
+    );
+}
+
+fn writeCslChunkSizeParam(writer: anytype, config: *const Config) !void {
+    if (config.chunk_size_default) |value| {
+        try writer.print("param chunk_size: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param chunk_size: i16;\n");
+    }
+}
+
+fn emitCslGeluGated(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    config: *const Config,
+) EmitError!void {
+    const gate = try bindingForRole(func, .gate);
+    const input = try bindingForRole(func, .input);
+    const output = try bindingForRole(func, .output);
+    try requireElem(gate, .f32);
+    try requireElem(input, .f32);
+    try requireElem(output, .f32);
+
+    const p = config.var_prefix;
+    try writer.writeAll("param memcpy_params;\n");
+    try writeCslChunkSizeParam(writer, config);
+    try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try writer.writeAll("const math = @import_module(\"<math>\");\n");
+    try writer.writeAll("const GELU_A: f32 = 0.7978845608028654;\n");
+    try writer.writeAll("const GELU_B: f32 = 0.044715;\n");
+    try writeCslBufferArray(writer, p, gate.name, "chunk_size", "f32");
+    try writeCslBufferArray(writer, p, input.name, "chunk_size", "f32");
+    try writeCslBufferArray(writer, p, output.name, "chunk_size", "f32");
+    try writeCslBufferPointer(writer, p, gate.name, "f32");
+    try writeCslBufferPointer(writer, p, input.name, "f32");
+    try writeCslBufferPointer(writer, p, output.name, "f32");
+    try writer.writeAll("\n");
+    try writer.writeAll("fn gelu(x: f32) f32 {\n");
+    try writer.writeAll("    var inner = GELU_A * (x + GELU_B * x * x * x);\n");
+    // Saturation clamping matches the hand-written
+    // `emit_csl_semantic_ops.emitGeluPe` body so live HostPlan
+    // numerical behavior is preserved when delegating through TSIR.
+    // tanh saturates well before ±15, so the bound is conservative.
+    try writer.writeAll("    if (inner < -15.0) inner = -15.0;\n");
+    try writer.writeAll("    if (inner > 15.0) inner = 15.0;\n");
+    try writer.writeAll("    return 0.5 * x * (1.0 + math.tanh(inner));\n");
+    try writer.writeAll("}\n\n");
+    try writer.writeAll("fn compute() void {\n");
+    try writer.writeAll("    for (@range(i16, chunk_size)) |i| {\n");
+    try writer.writeAll("        const idx = @as(u32, i);\n");
+    try writer.print(
+        "        {s}{s}[idx] = gelu({s}{s}[idx]) * {s}{s}[idx];\n",
+        .{ p, output.name, p, gate.name, p, input.name },
+    );
+    try writer.writeAll("    }\n");
+    try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
+    try writer.writeAll("}\n\n");
+    try writer.writeAll("comptime {\n");
+    try writeCslExportSymbol(writer, p, gate.name);
+    try writeCslExportSymbol(writer, p, input.name);
+    try writeCslExportSymbol(writer, p, output.name);
+    try writer.writeAll("    @export_symbol(compute);\n");
+    try writer.writeAll("}\n");
+}
+
+fn emitCslKvWrite(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    config: *const Config,
+) EmitError!void {
+    const key_proj = try bindingForRole(func, .key_projection);
+    const val_proj = try bindingForRole(func, .value_projection);
+    const key_cache = try bindingForRole(func, .key_cache);
+    const val_cache = try bindingForRole(func, .value_cache);
+    const position = try bindingForRole(func, .decode_position);
+    try requireElem(key_proj, .f32);
+    try requireElem(val_proj, .f32);
+    try requireElem(key_cache, .f32);
+    try requireElem(val_cache, .f32);
+    try requireElem(position, .u32);
+
+    const p = config.var_prefix;
+    try writer.writeAll("param memcpy_params;\n");
+    if (config.head_dim_default) |value| {
+        try writer.print("param head_dim: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param head_dim: i16;\n");
+    }
+    if (config.max_seq_len_default) |value| {
+        try writer.print("param max_seq_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param max_seq_len: i16;\n");
+    }
+    try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try writeCslBufferArray(writer, p, key_proj.name, "head_dim", "f32");
+    try writeCslBufferArray(writer, p, val_proj.name, "head_dim", "f32");
+    try writeCslBufferArray(writer, p, key_cache.name, "max_seq_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, val_cache.name, "max_seq_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, position.name, "1", "u32");
+    try writeCslBufferPointer(writer, p, key_proj.name, "f32");
+    try writeCslBufferPointer(writer, p, val_proj.name, "f32");
+    try writeCslBufferPointer(writer, p, key_cache.name, "f32");
+    try writeCslBufferPointer(writer, p, val_cache.name, "f32");
+    try writeCslBufferPointer(writer, p, position.name, "u32");
+    try writer.writeAll("\n");
+    try writer.writeAll("fn compute() void {\n");
+    try writer.print(
+        "    const base = {s}{s}[0] * @as(u32, head_dim);\n",
+        .{ p, position.name },
+    );
+    try writer.writeAll("    for (@range(i16, head_dim)) |d| {\n");
+    try writer.writeAll("        const idx = base + @as(u32, d);\n");
+    try writer.print(
+        "        {s}{s}[idx] = {s}{s}[@as(u32, d)];\n",
+        .{ p, key_cache.name, p, key_proj.name },
+    );
+    try writer.print(
+        "        {s}{s}[idx] = {s}{s}[@as(u32, d)];\n",
+        .{ p, val_cache.name, p, val_proj.name },
+    );
+    try writer.writeAll("    }\n");
+    try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
+    try writer.writeAll("}\n\n");
+    try writer.writeAll("comptime {\n");
+    try writeCslExportSymbol(writer, p, key_proj.name);
+    try writeCslExportSymbol(writer, p, val_proj.name);
+    try writeCslExportSymbol(writer, p, key_cache.name);
+    try writeCslExportSymbol(writer, p, val_cache.name);
+    try writeCslExportSymbol(writer, p, position.name);
+    try writer.writeAll("    @export_symbol(compute);\n");
+    try writer.writeAll("}\n");
+}
+
+fn emitCslKvRead(
+    writer: anytype,
+    func: schema.SemanticFunction,
+    config: *const Config,
+) EmitError!void {
+    const key_cache = try bindingForRole(func, .key_cache);
+    const val_cache = try bindingForRole(func, .value_cache);
+    const key_output = try bindingForRole(func, .key_output);
+    const val_output = try bindingForRole(func, .value_output);
+    try requireElem(key_cache, .f32);
+    try requireElem(val_cache, .f32);
+    try requireElem(key_output, .f32);
+    try requireElem(val_output, .f32);
+
+    const p = config.var_prefix;
+    try writer.writeAll("param memcpy_params;\n");
+    if (config.head_dim_default) |value| {
+        try writer.print("param head_dim: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param head_dim: i16;\n");
+    }
+    if (config.max_seq_len_default) |value| {
+        try writer.print("param max_seq_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param max_seq_len: i16;\n");
+    }
+    try writer.writeAll("param read_start: i16 = 0;\n");
+    if (config.read_len_default) |value| {
+        try writer.print("param read_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param read_len: i16;\n");
+    }
+    try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try writeCslBufferArray(writer, p, key_cache.name, "max_seq_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, val_cache.name, "max_seq_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, key_output.name, "read_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, val_output.name, "read_len * head_dim", "f32");
+    try writeCslBufferPointer(writer, p, key_cache.name, "f32");
+    try writeCslBufferPointer(writer, p, val_cache.name, "f32");
+    try writeCslBufferPointer(writer, p, key_output.name, "f32");
+    try writeCslBufferPointer(writer, p, val_output.name, "f32");
+    try writer.writeAll("\n");
+    try writer.writeAll("fn compute() void {\n");
+    try writer.writeAll("    for (@range(i16, read_len)) |i| {\n");
+    try writer.writeAll("        const src_base = @as(u32, read_start + i) * @as(u32, head_dim);\n");
+    try writer.writeAll("        const dst_base = @as(u32, i) * @as(u32, head_dim);\n");
+    try writer.writeAll("        for (@range(i16, head_dim)) |d| {\n");
+    try writer.print(
+        "            {s}{s}[dst_base + @as(u32, d)] = {s}{s}[src_base + @as(u32, d)];\n",
+        .{ p, key_output.name, p, key_cache.name },
+    );
+    try writer.print(
+        "            {s}{s}[dst_base + @as(u32, d)] = {s}{s}[src_base + @as(u32, d)];\n",
+        .{ p, val_output.name, p, val_cache.name },
+    );
+    try writer.writeAll("        }\n");
+    try writer.writeAll("    }\n");
+    try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
+    try writer.writeAll("}\n\n");
+    try writer.writeAll("comptime {\n");
+    try writeCslExportSymbol(writer, p, key_cache.name);
+    try writeCslExportSymbol(writer, p, val_cache.name);
+    try writeCslExportSymbol(writer, p, key_output.name);
+    try writeCslExportSymbol(writer, p, val_output.name);
+    try writer.writeAll("    @export_symbol(compute);\n");
+    try writer.writeAll("}\n");
 }
 
 fn emitMslFusedGemv(writer: anytype, func: schema.SemanticFunction) EmitError!void {
