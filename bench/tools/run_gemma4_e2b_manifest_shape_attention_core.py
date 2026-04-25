@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -96,6 +97,20 @@ def select_cs_python(args: argparse.Namespace) -> Path | str:
     if args.cs_python:
         selected = Path(args.cs_python)
         return selected if args.cs_python != "cs_python" else "cs_python"
+    # Prefer the Doe-local singularity wrapper when both singularity (or
+    # apptainer) and a SIF adjacent to the SDK are available. The SDK's
+    # own cs_python wrapper picks --direct-rootfs first, which does NOT
+    # bind /cbcore for cslc subprocesses and breaks the paint flow with
+    # "Could not find source code for /cbcore/src/sdk/ucode/io_port.csl".
+    # The wrapper falls back to the SDK default when singularity is not
+    # available, so this branch is safe on hosts without singularity.
+    singularity_wrapper = (
+        REPO_ROOT / "runtime" / "zig" / "tools" / "cs_python_singularity.sh"
+    )
+    if singularity_wrapper.is_file() and (
+        shutil.which("singularity") or shutil.which("apptainer")
+    ):
+        return singularity_wrapper
     if args.sdk_root:
         return Path(args.sdk_root) / "cs_python"
     sdk210 = Path("/home/x/cerebras-sdk-2.10.0/cs_python")

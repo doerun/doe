@@ -19,7 +19,9 @@ bundled.
 
 You are holding a packed software-only evidence bundle for Doe's
 Gemma-4-on-Cerebras lane. This file is the front door. Read it first,
-then follow the run order below.
+then follow the run order below. The current external ask leads with
+Gemma 4 31B dense hardware smoke evidence; the E2B artifacts remain
+substantive control evidence and smaller repro fixtures.
 
 ## What's at the archive root
 
@@ -30,7 +32,8 @@ then follow the run order below.
 - `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
   it does not. Read before drawing any conclusions.
 - `MODEL_ACCESS.md` — cache roots, canonical Gemma 4 E2B artifact
-  identities, download commands, validation commands, and demo scope.
+  identities, 31B fixture contracts where present, download commands,
+  validation commands, and demo scope.
 - `CEREBRAS_ASK.md` — operator-facing distillation: exact endpoint
   access needed, exact command to run, exact receipt fields to
   return, publication boundaries.
@@ -73,8 +76,9 @@ cross-references inside the receipts resolve as written.
    in the repo when preparing a fresh host.
 
 5. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
-   the external ask. Enumerates two paths — endpoint access (we run
-   the runner) or Cerebras-assisted bundle run (Cerebras runs the
+   the external ask. The first requested run is the Gemma 4 31B dense
+   L1 smoke runner. It also enumerates two paths — endpoint access (we
+   run the runner) or Cerebras-assisted bundle run (Cerebras runs the
    bundle internally, returns the receipt) — plus the exact command,
    receipt fields, and publication boundaries for either.
    `docs/hardware-validation-appendix.md` is its parent document with
@@ -512,7 +516,10 @@ Enter on the hardware.
 Before running, read `MODEL_ACCESS.md` in the bundle. It pins the raw
 BF16 Hugging Face snapshot, the local Doppler RDRR/Q4_K_M artifact,
 writable Hugging Face cache env vars, and the first-demo claim
-boundary.
+boundary. The primary hardware ask is Gemma 4 31B dense L1 smoke
+execution; E2B remains the smaller control lane and should not be
+treated as a prerequisite for the 31B hardware receipt unless the
+failure is clearly shared.
 
 ## Two paths — either works
 
@@ -543,11 +550,12 @@ bundle internally on their cluster and returns the receipt:
 
 ## What to run
 
-Minimum viable:
+Minimum viable primary run:
 
 ```bash
-cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py \
-  --num-layers 35 \
+cs_python bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py \
+  --num-layers 1 \
+  --size 1024 \
   --compile-out bench/out/hardware-run/compile \
   --trace-out  bench/out/hardware-run/trace.json \
   --cmaddr <operator-supplied>
@@ -561,7 +569,7 @@ python3 runtime/zig/tools/csl_appliance_driver.py \
   --layout layout.csl \
   --compiler-args "<operator-supplied cslc args>" \
   --compile-output bench/out/hardware-run/compile \
-  --runner-command "cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py --num-layers 35 --compile-out bench/out/hardware-run/compile --trace-out bench/out/hardware-run/trace.json --cmaddr %CMADDR%" \
+  --runner-command "cs_python bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1 --size 1024 --compile-out bench/out/hardware-run/compile --trace-out bench/out/hardware-run/trace.json --cmaddr %CMADDR%" \
   --download "bench/out/hardware-run/trace.json:bench/out/hardware-run/trace.json" \
   --receipt-out bench/out/hardware-run/appliance-receipt.json \
   --system
@@ -572,37 +580,59 @@ command. The returned receipt redacts that to `$DOE_CSL_CMADDR`; do not
 paste raw endpoint addresses into checked-in artifacts. The deprecated
 appliance `SdkRuntime` binding is not part of this ask.
 
-Run with the bundle's pinned kernel at
+Run with the bundle's pinned smoke kernel at
 `bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl`.
+The same generated CSL source is intentionally used by the E2B and 31B
+smoke runners; the 31B runner supplies the 61-layer model shape and
+31B-specific stream contract.
 
-For BF16-derived real-weight smoke runs, first materialize and validate
-the weights described in `MODEL_ACCESS.md`, then add:
+If the 31B L1 run succeeds, the next conditional run is the same command
+with `--num-layers 61`. That is still smoke-shape 31B evidence, not
+manifest-shape 31B execution.
+
+E2B control run, if the operator wants the smaller existing lane too:
+
+```bash
+cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py \
+  --num-layers 35 \
+  --compile-out bench/out/hardware-run/e2b-control-compile \
+  --trace-out  bench/out/hardware-run/e2b-control-trace.json \
+  --cmaddr <operator-supplied>
+```
+
+For BF16-derived E2B real-weight smoke runs, first materialize and
+validate the weights described in `MODEL_ACCESS.md`, then add:
 
 ```bash
 --weights-dir bench/out/gemma-4-e2b-real-weights
 ```
 
 Without `--weights-dir`, the hardware run remains a synthetic/smoke
-tensor run and must not be described as real-weight evidence.
+tensor run and must not be described as real-weight evidence. 31B
+real-weight evidence remains blocked until
+`bench/out/gemma-4-31b-real-weights/` is materialized under its fixture
+contract.
 
-Parity check after the run:
+The 31B runner writes a trace whose `executedRun` section includes the
+host numpy comparison for the same smoke-shape layer-block chain. For
+the E2B control run, this additional parity check can be run after the
+hardware trace returns:
 
 ```bash
 python3 bench/tools/compare_runner_vs_synthetic.py \
-  --runner-trace bench/out/hardware-run/trace.json \
+  --runner-trace bench/out/hardware-run/e2b-control-trace.json \
   --synthetic-trace bench/out/streaming-executor/e2b-layer-block-synthetic-trace.json
 ```
 
-This should report `promotionEligible=true` with six of six
+For E2B, this should report `promotionEligible=true` with six of six
 preconditions met, matching the simfabric run recorded in this bundle.
 
 Stretch, if time permits:
 
-- Re-run with `--num-layers 61` against the 31B runner
-  (`bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py`).
-- When real weight slices are available, re-run with
-  `--weights-dir <path>` to promote `syntheticWeightsAbsent` /
-  `weightHashMatched` to true on the receipt.
+- Re-run the 31B smoke command with `--num-layers 61`.
+- When 31B real-weight slices are available, re-run with
+  `--weights-dir <path>` to promote the corresponding real-weight
+  fields on the receipt.
 
 ## What to return
 
@@ -619,8 +649,10 @@ fields are explicit; anything redacted should be filled with the string
   disclosure; otherwise `"redacted"`
 - `executedRun.elapsedMs`: same
 - `executedRun.status`: `"succeeded"` or `"failed:<taxonomy>"`
-- `executedRun.output.sha256`: sha256 of `activation_out.f32`,
-  compared against the simfabric trace's recorded digest
+- `executedRun.output.sha256`: sha256 of `activation_out.f32`; for 31B
+  L1 this is compared against the runner's host numpy reference, while
+  E2B control runs can also compare against the pinned simfabric smoke
+  trace
 - `executedRun.numericalParity.maxAbsErr`: max |csl - numpy| across
   all positions of the output tensor
 - `executedRun.numericalParity.perLayerMaxAbsErr`: per-layer same
@@ -635,8 +667,8 @@ fields are explicit; anything redacted should be filled with the string
 - Any hardware timing beyond what the operator authorizes
 - Endpoint identity (IP, physical location, rack/appliance IDs)
 - Queue-depth, fabric-level, or operator-internal telemetry in SDK logs
-- Any performance claim beyond "matches simfabric reference within
-  tolerance", which is what the receipt explicitly states
+- Any performance claim beyond the receipt's own local numerical
+  comparison fields
 - Comparisons against other hardware unless the methodology is jointly
   signed off
 

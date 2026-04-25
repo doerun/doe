@@ -28,6 +28,7 @@ from bench.tools.int4ple_manifest_compile_params import (  # noqa: E402
 )
 from int4ple_hostplan_execution_plan import (  # noqa: E402
     _parse_pe_program_arrays,
+    _target_geometry,
     build_hostplan_execution_plan,
 )
 from int4ple_hostplan_executor_validator import (  # noqa: E402
@@ -1511,6 +1512,21 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                         "compileParams": {"P": 2, "Mt": 8, "Kt": 8, "Nt": 8},
                     },
                     {
+                        "name": "lm_head_prefill_stable",
+                        "layout": "lm_head_prefill_stable/layout.csl",
+                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                    },
+                    {
+                        "name": "q4_widetile",
+                        "layout": "q4_widetile/layout.csl",
+                        "peProgram": "q4_widetile/pe_program.csl",
+                    },
+                    {
+                        "name": "q4_decode_gemv",
+                        "layout": "q4_decode_gemv/layout.csl",
+                        "peProgram": "q4_decode_gemv/pe_program.csl",
+                    },
+                    {
                         "name": "attn_head256",
                         "layout": "attn_head256/layout.csl",
                         "peProgram": "attn_head256/pe_program.csl",
@@ -1558,7 +1574,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         )
 
         self.assertEqual(result["status"], "applied")
-        self.assertEqual(result["patchedTargetCount"], 5)
+        self.assertEqual(result["patchedTargetCount"], 8)
         self.assertEqual(result["blockedTargetCount"], 0)
         self.assertEqual(result["unprojectedTargetNames"], [])
         targets = {
@@ -1577,6 +1593,14 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         }
         self.assertNotIn("compileBlockedReason", target_by_name["embed"])
         self.assertEqual(targets["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
+        self.assertEqual(targets["lm_head_prefill_stable"], targets["tiled"])
+        expected_q4_gemv = {
+            "out_dim": 16,
+            "in_dim_per_pe": 512,
+            "num_blocks_per_row": 2,
+        }
+        self.assertEqual(targets["q4_widetile"], expected_q4_gemv)
+        self.assertEqual(targets["q4_decode_gemv"], expected_q4_gemv)
         self.assertEqual(targets["attn_head256"]["q_len"], 15)
         self.assertIn("q_len_per_pe", targets["attn_head256"])
         self.assertIn("width", targets["attn_head256"])
@@ -1696,9 +1720,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                         },
                     },
                     {
-                        "name": "lm_head_prefill_stable",
-                        "layout": "lm_head_prefill_stable/layout.csl",
-                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "name": "unknown_projection_target",
+                        "layout": "unknown_projection_target/layout.csl",
+                        "peProgram": "unknown_projection_target/pe_program.csl",
                         "compileParams": {"P": 2, "Mt": 8, "Kt": 8, "Nt": 8},
                     },
                     {
@@ -1731,8 +1755,38 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         self.assertEqual(result["blockedTargetCount"], 0)
         self.assertEqual(
             result["unprojectedTargetNames"],
-            ["lm_head_prefill_stable"],
+            ["unknown_projection_target"],
         )
+
+
+class HostPlanTargetGeometryTests(unittest.TestCase):
+    def test_lm_head_gemv_stable_keeps_projected_2d_height(self) -> None:
+        geometry = _target_geometry(
+            "lm_head_gemv_stable",
+            {
+                "width": 302,
+                "height": 190,
+                "out_dim": 869,
+                "out_dim_per_pe": 5,
+                "in_dim_per_pe": 512,
+                "num_blocks_per_row": 2,
+            },
+            {"memoryPlan": {"grid": {"width": 302, "height": 190}}},
+        )
+
+        self.assertEqual(geometry["width"], 302)
+        self.assertEqual(geometry["height"], 190)
+        self.assertEqual(geometry["peCount"], 302 * 190)
+
+    def test_q4_alias_targets_are_row_geometry(self) -> None:
+        for target_name in ("q4_widetile", "q4_decode_gemv"):
+            geometry = _target_geometry(
+                target_name,
+                {"width": 302, "height": 190, "out_dim": 18},
+                {"memoryPlan": {"grid": {"width": 302, "height": 190}}},
+            )
+            self.assertEqual(geometry["width"], 302)
+            self.assertEqual(geometry["height"], 1)
 
 
 class PhaseVariantTargetResolverTests(unittest.TestCase):
@@ -1911,6 +1965,35 @@ class PhaseVariantTargetResolverTests(unittest.TestCase):
                         f"(got {params[key].get('width')})"
                     ),
                 )
+
+    def test_compile_params_projection_uses_memory_safe_31b_summa_tile(self) -> None:
+        from bench.tools.int4ple_manifest_compile_params import (
+            manifest_compile_param_projection,
+        )
+
+        proj = manifest_compile_param_projection(
+            runtime_config={
+                "modelConfig": {
+                    "hiddenDim": 5376,
+                    "headDim": 256,
+                    "globalHeadDim": 512,
+                    "vocabSize": 262144,
+                    "maxSeqLen": 27,
+                },
+                "memoryPlan": {"grid": {"width": 302, "height": 190}},
+            },
+            reference={"promptTokenCount": 27},
+        )
+
+        params = proj["params"]
+        tiled = params["tiled"]
+        self.assertGreater(tiled["P"], 100)
+        self.assertLessEqual(
+            proj["compileScale"]["tiledPerPeFootprintBytes"],
+            proj["compileScale"]["tiledBudgetBytes"],
+        )
+        self.assertEqual(params["lm_head_prefill_stable"], tiled)
+        self.assertIn("tiledDistinctPeProgramCount", "\n".join(proj["warnings"]))
 
 
 class SemanticKernelDataflowTests(unittest.TestCase):

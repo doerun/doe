@@ -1,0 +1,56 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [256, 256]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [
+        {
+          "semanticIndex": 0,
+          "treeShape": "linear"
+        }
+      ],
+      "emitterParams": {
+        "sketch": true,
+        "workgroupSize": 256,
+        "note": "mean-of-squares reduction is workgroup-local; subgroup tree is hardware-chosen, schema records linear at the TSIR layer"
+      },
+      "targetDescriptorHash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "emitterDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "rejections": []
+}

@@ -364,20 +364,19 @@ No fourth path: no Cerebras-only fork of a Doppler operator, no silent
 fallback onto a non-governed backend, and no directional promotion of a CSL
 result that has not cleared the governed-lane gate.
 
-## Scale-up direction: E2B first, 31B as streaming add-on
+## Scale-up direction: 31B first, E2B as control
 
-The near-term execution target is Gemma 4 E2B, whose host-plan / memory-plan /
-runtime-config / simulator-plan fixtures already exist under
-`examples/doe-wgsl-*.gemma-4-e2b-smoke.json`. Gemma 3 270M is the smaller
-graduation target used to debug the SDK driver seam before repointing the
-governed lane at E2B fixtures.
+The primary hardware target is Gemma 4 31B dense. E2B and Gemma 3 control lanes
+remain important, but their job is to reproduce failures cheaply, validate
+bundle plumbing, and keep small bounded simfabric checks alive. They are not a
+required proof order before asking Cerebras to run the 31B bundle.
 
-The first scale-up hardware target after E2B is Gemma 4 31B dense. Dense 31B
-keeps the execution contract uniform while Doe proves the WSE path: every token
-uses the same attention, dense FFN, residual, norm, and logits stages. That is
-the right shape for validating streamed weights, layout placement, stream
-ordering, full-grid compile behavior, and parity receipts without adding MoE
-routing variables.
+Dense 31B keeps the execution contract uniform while Doe proves the WSE path:
+every token uses the same attention, dense FFN, residual, norm, and logits
+stages. It is also the more compelling real-world inference target. That is the
+right shape for validating streamed weights, layout placement, stream ordering,
+full-grid compile behavior, and parity receipts without adding MoE routing
+variables.
 
 Gemma 4 26B/A4B MoE is a later efficiency lane, not the bring-up lane. It needs
 additional contracts for router logits, top-k expert selection, token-to-expert

@@ -59,6 +59,8 @@ SUPPORTED_BACKENDS: tuple[str, ...] = ("webgpu-generic", "wse3")
 #   lm_head_gemv             -> fused_gemv body, strict-ordered sum -> algorithm_exact
 #   attention_head256_f16kv  -> attention_scores, softmax/exp/tanh  -> tolerance_bounded
 #   attention_head512_f16kv  -> attention_scores, softmax/exp/tanh  -> tolerance_bounded
+#   rmsnorm                  -> rms_norm body, strict-ordered sum   -> algorithm_exact
+#   fused_gemv               -> fused_gemv body, strict-ordered sum -> algorithm_exact
 KERNEL_EXACTNESS: dict[
     str, tuple[str, tuple[str, ...], str, float]
 ] = {
@@ -80,6 +82,18 @@ KERNEL_EXACTNESS: dict[
         (),
         "per_element_relative_error",
         1e-5,
+    ),
+    "rmsnorm": (
+        "algorithm_exact",
+        ("reduction_order", "accum_dtype"),
+        "",
+        0.0,
+    ),
+    "fused_gemv": (
+        "algorithm_exact",
+        ("reduction_order", "accum_dtype"),
+        "",
+        0.0,
     ),
 }
 

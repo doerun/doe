@@ -2,8 +2,8 @@
 
 One-page companion to the hardware-access request. Every claim below
 is keyed to an on-disk artifact; no marketing language, no performance
-claims. Scope: E2B layer-block first; 31B layer-block is also present
-as the scale-target scaffold.
+claims. Scope: Gemma 4 31B dense first for hardware validation; E2B remains
+the smaller control fixture and regression lane.
 
 ## Attached bundle
 
@@ -37,12 +37,33 @@ source of truth for any bundle in hand.
 
 ## Target order
 
-The first hardware validation target is Gemma 4 E2B because it is the current
-correctness lane with L1 synthetic and BF16-derived real-weight smoke-contract
-parity receipts. The next scale target is Gemma 4 31B dense, not Gemma 4
-26B/A4B MoE. Dense 31B keeps the execution shape uniform while Doe validates
-streamed weights, SdkLayout ports, host I/O ordering, full-grid compile
-behavior, and parity receipts on WSE.
+The first hardware validation target is Gemma 4 31B dense. It is the
+highest-value inference target, it has a uniform dense transformer execution
+shape, and it maps better to a first Cerebras proof than Gemma 4 26B/A4B MoE.
+The 31B lane should start with hardware receipts for the existing smoke-shape
+layer-block path, then climb toward real-weight and manifest-shape execution.
+
+The concrete 31B ladder is:
+
+1. Run the 31B layer-block smoke at one layer on Cerebras hardware with
+   `bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1`
+   and a small smoke shape. Capture the hardware receipt, compile metadata,
+   and d2h output hash.
+2. Run the same smoke shape through all 61 layers to validate launch ordering,
+   buffer reuse, host I/O, and receipt chaining at 31B depth.
+3. After `bench/out/gemma-4-31b-real-weights/` exists per
+   `config/gemma-4-31b-real-weight-fixture.json`, rerun the smoke-shape chain
+   with real 31B weights instead of synthetic fixtures.
+4. Promote to manifest-shape 31B execution: `headDim=160`, `numHeads=32`,
+   `hiddenDim=5120`, streaming weight residency, explicit KV policy, compile
+   artifact reuse, and bounded host memory.
+5. Bind the resulting 31B CSL hardware transcript to the Doppler reference
+   export for the same bundle identity and input contract.
+
+Gemma 4 E2B remains a control lane. It is useful for cheap failure
+reproduction, smaller bundle checks, bounded simfabric diagnostics, and
+regression isolation. It should not block the 31B hardware ask unless a failure
+is clearly shared by both model families.
 
 Gemma 4 26B/A4B MoE remains a later efficiency lane. It needs separate
 Gemma-specific receipts for router logits, top-k expert selection,
@@ -50,15 +71,10 @@ token-to-expert dispatch, shared expert execution, expert output combine, and
 per-expert batching. It should not borrow the E2B or dense-31B receipts, and it
 is not part of the first hardware-access ask.
 
-The preferred next hardware lane is the production Doppler INT4 PLE RDRR
-reference receipt for Gemma 4 E2B. That lane starts from the local Doppler
-artifact under
-`/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple/`,
-exports a bounded Doppler WebGPU prefill+decode transcript, binds the same
-manifest, execution graph, weights, and input set into Doe CSL simfabric
-transcript parity, and only then asks Cerebras hardware to run the same source
-program. Until those receipts exist and pass gates, this is only the preferred
-path to evidence.
+Do not claim full 31B parity from smoke-shape or synthetic receipts. Those
+receipts only prove the rung they execute. Full 31B parity requires a
+manifest-shape hardware transcript plus a Doppler reference export bound to the
+same manifest, execution graph, weights, and input set.
 
 ## 1. Current artifact paths and hashes
 

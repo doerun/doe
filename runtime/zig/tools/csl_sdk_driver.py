@@ -51,7 +51,8 @@ ROW_KERNEL_TARGETS: frozenset[str] = frozenset(
         "rmsnorm_decode",
         "final_norm_stable",
         "gemv",
-        "lm_head_gemv_stable",
+        "q4_widetile",
+        "q4_decode_gemv",
         "sample",
         "rope",
         "attn_head256",
@@ -260,6 +261,18 @@ def env_or_which(explicit: str | None, env_var: str, default: str) -> str | None
 
 
 def infer_cs_python_from_cslc(cslc_executable: str | None) -> str | None:
+    # Prefer the Doe-local singularity wrapper when both singularity (or
+    # apptainer) and a SIF adjacent to the SDK are available. The SDK's
+    # own cs_python wrapper picks --direct-rootfs first, which does NOT
+    # bind /cbcore for cslc subprocesses and breaks the paint flow with
+    # "Could not find source code for /cbcore/src/sdk/ucode/io_port.csl".
+    # The wrapper falls back to the SDK default when singularity is not
+    # available, so this branch is safe on hosts without singularity.
+    singularity_wrapper = REPO_ROOT / "runtime" / "zig" / "tools" / "cs_python_singularity.sh"
+    if singularity_wrapper.is_file() and (
+        shutil.which("singularity") or shutil.which("apptainer")
+    ):
+        return str(singularity_wrapper)
     if not cslc_executable:
         return discover_csl_sdk_tool("cs_python")
     sibling = Path(cslc_executable).resolve().with_name("cs_python")

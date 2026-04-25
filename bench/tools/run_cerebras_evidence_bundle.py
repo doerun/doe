@@ -402,7 +402,12 @@ def main() -> int:
     # source-side bounded transcript, not Doe CSL parity by itself.
     steps.append(run(
         "doppler-int4ple-reference-export",
-        ["node", "bench/tools/export_doppler_int4ple_reference.mjs"],
+        [
+            "node",
+            "bench/tools/export_doppler_int4ple_reference.mjs",
+            "--runtime-profile",
+            "profiles/gemma4-e2b-int4ple-reference-export",
+        ],
         timeout=300,
     ))
 
@@ -563,7 +568,7 @@ def main() -> int:
 
     # Aggregate verdict.
     failed = [s for s in steps if s["status"] == "failed"]
-    skipped = [s for s in steps if s["status"] == "skipped"]
+    skipped_steps = [s for s in steps if s["status"] == "skipped"]
     summary = {
         "schemaVersion": 1,
         "artifactKind": "doe_cerebras_evidence_bundle_summary",
@@ -571,7 +576,7 @@ def main() -> int:
         "totalSteps": len(steps),
         "passedSteps": sum(1 for s in steps if s["status"] == "passed"),
         "failedSteps": len(failed),
-        "skippedSteps": len(skipped),
+        "skippedSteps": len(skipped_steps),
         "verdict": "passed" if not failed else "failed",
     }
 

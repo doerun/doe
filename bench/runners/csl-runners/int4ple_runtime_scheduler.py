@@ -470,6 +470,8 @@ def bind_launch_dataflow(
         "lm_head_gemv",
         "lm_head_gemv_stable",
         "lm_head_prefill_stable",
+        "q4_widetile",
+        "q4_decode_gemv",
     }:
         is_lm_head = op_name in {"lm_head", "lm_head_prefill"} or (
             kernel_name

@@ -88,8 +88,8 @@ fn emitElementwiseLayout(buf: []u8, pos: *usize, kind: ElementwiseKind) EmitErro
     try write(buf, pos, "    }\n\n");
     switch (kind) {
         .residual => {
-            try write(buf, pos, "    @export_name(\"a\", [*]f32, true);\n");
-            try write(buf, pos, "    @export_name(\"b\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"residual\", [*]f32, true);\n");
         },
         .gelu => {
             try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
@@ -181,16 +181,16 @@ fn emitResidualPe(buf: []u8, pos: *usize) EmitError!void {
     // tsir/emit_kernel_body emitCslResidualAdd path; this wrapper
     // builds the SemanticFunction with bindings named to match the
     // symbols the live HostPlan binding map already expects
-    // (`a`, `b`, `output`) and asks TSIR to emit with no `tsir_`
+    // (`input`, `residual`, `output`) and asks TSIR to emit with no `tsir_`
     // var prefix so the output is byte-equivalent in the
-    // load-bearing places (`output[idx] = a[idx] + b[idx];` and
-    // `@export_symbol(a_ptr, "a");` etc.).
+    // load-bearing places (`output[idx] = input[idx] + residual[idx];` and
+    // `@export_symbol(input_ptr, "input");` etc.).
     const axes = [_]tsir_schema.IterationAxis{
         .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
     };
     const bindings = [_]tsir_schema.BufferBinding{
-        .{ .name = "a", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
-        .{ .name = "b", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "residual", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
         .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
     };
     const body_bindings = [_]tsir_schema.SemanticBodyBinding{

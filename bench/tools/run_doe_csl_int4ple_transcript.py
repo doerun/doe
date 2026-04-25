@@ -68,6 +68,8 @@ FIXTURE_BY_DOPPLER_KERNEL = {
     "lm_head_gemv": "fused-gemv-dequant",
     "lm_head_gemv_stable": "fused-gemv-dequant",
     "lm_head_prefill_stable": "tiled-matmul",
+    "q4_decode_gemv": "fused-gemv-dequant",
+    "q4_widetile": "fused-gemv-dequant",
     "rope": "rope",
     "sample": "sample",
     "tiled": "tiled-matmul",
@@ -84,6 +86,8 @@ DOPPLER_KERNEL_TO_HOSTPLAN_OP = {
     "lm_head_gemv": "matmul_q4k",
     "lm_head_gemv_stable": "matmul_q4k",
     "lm_head_prefill_stable": "matmul",
+    "q4_decode_gemv": "matmul_q4k",
+    "q4_widetile": "matmul_q4k",
     "residual": "residual",
     "rmsnorm": "rmsnorm",
     "rope": "rope",
@@ -151,6 +155,22 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Optional simulator trace. Defaults to the trace path declared by "
             "the HostPlan bundle simulator plan."
+        ),
+    )
+    parser.add_argument(
+        "--max-layers",
+        type=int,
+        default=-1,
+        help=(
+            "Optional layer-count override (>=1). When set, the HostPlan "
+            "projection truncates prefill+decode to this many layers instead "
+            "of using manifest.architecture.numLayers. The host-plan bundle "
+            "records both the effective numLayers and the original "
+            "manifestNumLayers under modelConfig, so the override is "
+            "auditable from existing artifacts without rewriting the manifest. "
+            "Use to produce bounded-depth simfabric receipts that exercise "
+            "the full prefill+decode launch chain (including kv_write, "
+            "kv_read, sample) at tractable wallclock."
         ),
     )
     return parser.parse_args()
@@ -357,6 +377,8 @@ def program_bundle_execution_graph_projection(
     program_bundle: dict[str, Any],
     export: dict[str, Any],
     manifest: dict[str, Any] | None = None,
+    *,
+    num_layers_override: int | None = None,
 ) -> dict[str, Any]:
     graph_hash = export["executionGraphSha256"]
     execution = program_bundle.get("execution") or {}
@@ -367,6 +389,17 @@ def program_bundle_execution_graph_projection(
         raw = arch.get("numLayers")
         if isinstance(raw, int) and raw > 0:
             num_layers = raw
+    if num_layers_override is not None:
+        if num_layers_override < 1:
+            raise ValueError(
+                f"num_layers_override must be >=1, got {num_layers_override}"
+            )
+        if num_layers is not None and num_layers_override > num_layers:
+            raise ValueError(
+                f"num_layers_override={num_layers_override} exceeds "
+                f"manifest.architecture.numLayers={num_layers}"
+            )
+        num_layers = num_layers_override
     for module in program_bundle.get("wgslModules") or []:
         if not isinstance(module, dict):
             continue
@@ -1065,6 +1098,8 @@ def kernel_metadata(
 def manifest_model_config(
     export: dict[str, Any],
     bounded_max_seq_len: int,
+    *,
+    num_layers_override: int | None = None,
 ) -> dict[str, Any]:
     manifest = load_json(resolve(export["manifestPath"]))
     arch = manifest.get("architecture")
@@ -1080,13 +1115,28 @@ def manifest_model_config(
     ple_width = int(raw_ple_width) if isinstance(raw_ple_width, int) else 0
     raw_ple_vocab = arch.get("vocabSizePerLayerInput")
     ple_vocab = int(raw_ple_vocab) if isinstance(raw_ple_vocab, int) else 0
+    manifest_num_layers = int(arch["numLayers"])
+    if num_layers_override is not None:
+        if num_layers_override < 1:
+            raise ValueError(
+                f"num_layers_override must be >=1, got {num_layers_override}"
+            )
+        if num_layers_override > manifest_num_layers:
+            raise ValueError(
+                f"num_layers_override={num_layers_override} exceeds "
+                f"manifest.architecture.numLayers={manifest_num_layers}"
+            )
+        effective_num_layers = num_layers_override
+    else:
+        effective_num_layers = manifest_num_layers
     return {
         "hiddenDim": int(arch["hiddenSize"]),
         "numHeads": int(arch["numAttentionHeads"]),
         "headDim": int(arch["headDim"]),
         "globalHeadDim": global_head_dim,
         "numKeyValueHeads": int(arch["numKeyValueHeads"]),
-        "numLayers": int(arch["numLayers"]),
+        "numLayers": effective_num_layers,
+        "manifestNumLayers": manifest_num_layers,
         "vocabSize": int(arch["vocabSize"]),
         "maxSeqLen": bounded_max_seq_len,
         "quantFormat": "q4k",
@@ -1155,8 +1205,14 @@ def find_prefill_group_for_layer(
 def normalized_hostplan_execution(
     export: dict[str, Any],
     graph: dict[str, Any],
+    *,
+    num_layers_override: int | None = None,
 ) -> dict[str, Any]:
-    model_config = manifest_model_config(export, transcript_seq_len_bound(export))
+    model_config = manifest_model_config(
+        export,
+        transcript_seq_len_bound(export),
+        num_layers_override=num_layers_override,
+    )
     execution = graph.get("execution")
     if not isinstance(execution, dict):
         raise ValueError("execution graph is missing execution object")
@@ -1749,6 +1805,8 @@ def build_hostplan_bundle(
     reference_export_path: Path,
     bundle_root: Path,
     hostplan_tool: Path,
+    *,
+    num_layers_override: int | None = None,
 ) -> dict[str, Any]:
     graph_path = graph_path_from_export(export)
     graph = load_json(graph_path)
@@ -1764,7 +1822,11 @@ def build_hostplan_bundle(
     bundle_root.mkdir(parents=True, exist_ok=True)
     clean_directory(bundle_root)
     normalized_path = bundle_root / "normalized-execution-v1.json"
-    normalized = normalized_hostplan_execution(export, graph)
+    normalized = normalized_hostplan_execution(
+        export,
+        graph,
+        num_layers_override=num_layers_override,
+    )
     write_json(normalized_path, normalized)
 
     command = [
@@ -2616,11 +2678,15 @@ def main() -> int:
             export = load_json(reference_export_path)
         schema = load_json(resolve(args.schema))
         fixture_ids = load_fixture_ids(resolve(args.fixture_registry))
+        num_layers_override: int | None = None
+        if args.max_layers > 0:
+            num_layers_override = int(args.max_layers)
         hostplan_bundle = build_hostplan_bundle(
             export,
             reference_export_path,
             resolve(args.hostplan_bundle_root),
             resolve(args.hostplan_tool),
+            num_layers_override=num_layers_override,
         )
         simulator_evidence = load_simulator_evidence(
             export,

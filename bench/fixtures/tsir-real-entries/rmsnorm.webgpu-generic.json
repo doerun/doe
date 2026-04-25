@@ -1,0 +1,20 @@
+{
+  "backend": "webgpu-generic",
+  "compilerVersion": "doe-tsir-real-2026-04-24",
+  "emitterDigest": "dd31baaba772c20823c2ca423a8245db21ba74dfc9d1a1530ac528a52621116e",
+  "exactness": {
+    "algorithmExactInvariants": [
+      "reduction_order",
+      "accum_dtype"
+    ],
+    "class": "algorithm_exact",
+    "toleranceEpsilon": 0,
+    "toleranceMetric": ""
+  },
+  "frontendVersion": "frontend-real-pipeline-v0",
+  "kernelRef": "doe.tsir.real.rmsnorm",
+  "rejectionReasons": [],
+  "targetDescriptorCorrectnessHash": "1bb3a7dc6a798e8cc9eae1e660800b9163469cbda67e14c75fe6a10ef342ade9",
+  "tsirRealizationDigest": "fe24c46be3a72582537bc6eb2a238b256dc5fb9e7667f0b2393ad743a38698cd",
+  "tsirSemanticDigest": "2f92c45f737946a5e19ba2a1144a3ec18a084e63d7f3ed86a052499e245907af"
+}

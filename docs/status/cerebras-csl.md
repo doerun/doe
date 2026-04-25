@@ -13,6 +13,130 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-25 (afternoon) — 31B-primary pivot, R2 verdict closure, singularity wrapper, L1+L61 receipts, overnight matrix
+
+A multi-decision turn. Pinning here so tomorrow's session does not re-derive.
+
+### Strategic reframe
+
+- **31B is the product target; E2B is the test fixture.** Existing E2B claims
+  (real-weight smoke, manifest-shape evidence, attention-core diagnostic) stay
+  valid in CLAIM_SCOPE — the demotion is in narrative ordering, not in claim
+  substance. Recorded in `docs/cerebras-north-star.md` Queue + 31B-first
+  execution plan sections.
+- **Bundle path (b) breaks the simfabric-vs-hardware chicken-and-egg.** Path
+  (b) (Cerebras-assisted bundle run) does NOT require simfabric parity to
+  unlock; the existing bundle is sufficient to circulate. R2-6 does NOT gate
+  R2-10; R2-7 parity bind is execution-target-agnostic. The 14-failure bundle
+  gate regression is real but not load-bearing for the 31B hardware ask.
+
+### R2 closure verdicts
+
+R2-4 SDK 2.10 D2H sweep against canonical
+`csl-extras-202604101435-6/examples/benchmarks/gemm-collectives_2d/`
+(`bench/runners/r2_4_summa_sweep.py`):
+
+| Cell | P | Mt | Total C | Run sec | Result |
+|------|---|----|---------|---------|--------|
+| baseline | 4 | 14 | 12.5KB | 3.9 | success |
+| tile-up | 4 | 22 | 30KB | 9.7 | success |
+| count-up-1 | 8 | 14 | 50KB | 15.1 | success |
+| count-up-2 | 16 | 14 | 197KB | 92.2 | success |
+| count-up-3 | 32 | 14 | 787KB | 948.1 | success (20-min timeout) |
+| doe-exact | 54 | 22 | 5.6MB | extrapolated ~110min | timed out |
+
+Findings: trigger axis is PE-count P; per-PE bytes scale linearly when P held
+constant; scaling is ~O(P^3) per doubling (P=8→16: 6.1×; P=16→32: 10.3×). NOT
+a deadlock; just simfabric superlinear scaling. R2-1's earlier "kernel
+completed compute, host D2H hangs" framing was wrong; both compute and d2h
+are gated on simfabric throughput. R2-2 (timeout probe) closed insufficient,
+not failed. R2-3 (SUMMA fence audit) closed: Doe matches canonical
+structurally. R2-4 closed with the sweep above. R2-5/R2-6/R2-7 relabeled to
+"Control-lane diagnostic" so the Queue (R2 demoted) and per-item sections
+agree.
+
+### Singularity wrapper landed
+
+Root-caused a class of bundle-gate failures to `cs_python` on this host
+preferring `--direct-rootfs` mode, which does NOT bind `/cbcore` for cslc
+subprocesses. Paint flow then fails with `Could not find source code for
+"/cbcore/src/sdk/ucode/io_port.csl"`. Fix:
+
+- `runtime/zig/tools/cs_python_singularity.sh`: Doe-local wrapper that
+  invokes `singularity exec` with the canonical SIF binds. Falls back to
+  the SDK default cs_python when singularity is not available.
+- `runtime/zig/tools/csl_sdk_driver.py`: `infer_cs_python_from_cslc` prefers
+  the wrapper when both singularity (or apptainer) and a SIF are available.
+- `bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py`: same
+  preference inside its `select_cs_python`.
+
+Validation: `gemma4-e2b-manifest-shape-attention-core` flipped FAIL → PASS
+under the wrapper. The 14-failure bundle gate cluster splits into two:
+paint-flow (singularity-fixable, attention-core type) and stale-fixtures
+(regen-fixable, int4ple-blocked-transcript type with missing
+`gemma-3-1b-doe-csl-hostplan/host-plan.json` and
+`doppler-program-bundle.json`). The patch addresses the first cluster, not
+the second.
+
+### 31B simfabric receipts: L1 and L61 landed
+
+First-ever full Gemma 4 31B 61-layer execution end-to-end on simfabric.
+
+| Cell | numLayersChained | Compile | Run | numericalParity | Receipt |
+|------|------------------|---------|-----|-----------------|---------|
+| L1 | 1 | 262.2ms | 7167.9ms | passed=True, max_abs_err=0 | `bench/out/r3-1-31b-l1-dry/trace.json` |
+| L61 | 61 | 237.5ms | 395310.3ms | passed=True, max_abs_err=0 (all 61 layers) | `bench/out/r3-1-31b-l61-smoke/trace.json` |
+
+Per-layer L61 timing flat-consistent: min 4.8s, mean 6.5s, max 7.9s. No
+SUMMA-style scaling pathology in the smoke shape — the smoke's bounded
+per-PE byte count keeps simfabric viable at L61 / 61 layers. Captured under
+R3-1 done-when in `docs/cerebras-north-star.md`; hardware-side equivalents
+remain pending R2-10 / endpoint access.
+
+### Overnight matrix infrastructure landed
+
+User-authored `bench/runners/overnight_evidence_matrix.py` (289 LOC):
+bounded-concurrency, lane-aware (webgpu_heavy=1, csl_heavy=2, light=8),
+per-cell isolation, resume that skips already-succeeded cells, JSON-driven
+matrix, 5-state status taxonomy including `missing_receipt` (catches "exit 0
+but no receipt written"), full test coverage. Agent-authored
+`bench/tools/generate_overnight_31b_matrix.py` templates the standard 31B
+sweep into the orchestrator's matrix shape with stable zero-padded IDs and
+per-cell `expectSuccessReceiptPath` paths under `cells/<id>/`.
+
+### TSIR-as-truth incremental progress
+
+Commit `212a46868` adds `tryResidualAdd` and `tryGeluGated` to the reference
+interpreter (`runtime/zig/src/tsir/reference_interpreter.zig`). 7 of 11
+transcript bodyOps now have a host-side parity oracle (was 5). `kv_write` /
+`kv_read` deferred — the read-write binding semantics need a convention pick
+for whether `inputs[]` extends to read-write slots or a separate
+`prior_state[]` parameter is added to `run()`. R1-1 done-when updated.
+
+### WebGPU re-run finding (separate thread)
+
+`bench/tools/run_doe_webgpu_shared_contract.py` re-run for Gemma 3 1B today
+flipped to `status=failed` with blocker `Logits has no finite candidate
+logits after masking the pad token` — NaN/Inf upstream in decode, NOT the
+SPIR-V emitter issue B1/B2 fixed earlier this cycle. The `-real` path
+(Apr 24 18:19, post-B2) still succeeds with full 8-step decode, so the
+divergence is in HOW the shared-contract wrapper invokes the exporter
+(`--runtime-profile profiles/production` + capability-aware policy).
+Distinct triage thread, not blocking 31B work.
+
+### What landed in tonight's overnight sweep
+
+`bench/out/overnight/20260425T175736Z/` — 12 cells (8 csl_heavy + 4 light),
+Lane A intentionally deferred behind `--include-lane-a` flag pending Doppler
+31B workflow verification (now resolved in the generator with the canonical
+`run-program-bundle-reference.js --manifest --model-dir --conversion-config
+--surface node --prompt --max-tokens --report-out --out` invocation;
+re-runnable tomorrow with `--include-lane-a`). Critical evidence pieces:
+`csl-31b-L061-size1024` (independent receipt for L61 bundle citation),
+`csl-3-1b-L001-decode-truncated-size1024` (first ever exercise of
+`kv_write`/`kv_read` in any Doe receipt via `--max-layers 1` truncation in
+`bench/tools/run_doe_csl_int4ple_transcript.py`).
+
 ## 2026-04-25 — Structured compile-target metadata first slice
 
 The HostPlan executor now has a structured metadata path for compile-target

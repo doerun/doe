@@ -49,6 +49,15 @@ from int4ple_runtime_scheduler import (
     sha256_json,
     synthesize_runtime_scheduler,
 )
+from int4ple_checkpoint import (
+    CheckpointError,
+    CheckpointMissingError,
+    compute_identity as _compute_checkpoint_identity,
+    compute_launch_identity as _compute_launch_identity,
+    init_checkpoint as _init_checkpoint,
+    load_checkpoint as _load_checkpoint,
+    persist_launch_checkpoint as _persist_launch_checkpoint,
+)
 
 SCHEDULE_PREVIEW_COUNT = 4
 TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
@@ -74,7 +83,43 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--progress-out", required=True)
     parser.add_argument("--diagnostic-compile-dir", default="")
     parser.add_argument("--cmaddr", default="")
+    parser.add_argument(
+        "--checkpoint-dir",
+        default="",
+        help="Persist per-launch HostPlan checkpoints under this directory.",
+    )
+    parser.add_argument(
+        "--resume-from-checkpoint",
+        default="",
+        help="Validate the manifest under this directory and skip launches "
+        "already recorded as succeeded. May share a path with --checkpoint-dir.",
+    )
+    parser.add_argument(
+        "--stop-after-launch",
+        type=int,
+        default=-1,
+        help="If >=0, break the launch loop after persisting the checkpoint "
+        "for this launch index.",
+    )
+    parser.add_argument(
+        "--ignore-checkpoint",
+        action="store_true",
+        help="Run from launch 0 even if --resume-from-checkpoint points at a "
+        "valid checkpoint. Disables identity validation.",
+    )
     return parser.parse_args()
+
+
+def _runner_version() -> str:
+    """Best-effort runner identity tag.
+
+    Uses the runner file's sha256 so any logic edit invalidates the
+    checkpoint. Falls back to a literal constant if the file is unreadable.
+    """
+    try:
+        return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:16]
+    except OSError:
+        return "unknown"
 
 
 def load_json(path: Path) -> Any:
@@ -1520,6 +1565,9 @@ def execute_hostplan_runtime(
     progress_path: Path,
     cmaddr: str | None,
     trace_path: Path,
+    checkpoint_dir: Path | None = None,
+    resume_state: Any = None,
+    stop_after_launch: int = -1,
 ) -> dict[str, Any]:
     runtime_dir = trace_path.parent / "hostplan-runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -1528,11 +1576,32 @@ def execute_hostplan_runtime(
     buffer_files: dict[str, Path] = {}
     executed_launches: list[dict[str, Any]] = []
     executed_count = 0
+    start_index = 0
+    if resume_state is not None:
+        buffer_files.update(resume_state.buffer_files)
+        start_index = int(resume_state.start_index)
+        append_progress(
+            progress_path,
+            "hostplan_resume_loaded",
+            startIndex=start_index,
+            bufferCount=len(buffer_files),
+        )
+    stopped_at_checkpoint = False
     for launch in launches:
         if not isinstance(launch, dict):
             blockers.append("launch_not_object")
             break
         launch_index = int(launch.get("launchIndex") or executed_count)
+        if launch_index < start_index:
+            append_progress(
+                progress_path,
+                "hostplan_launch_skipped_resume",
+                launchIndex=launch_index,
+                target=launch.get("targetName"),
+            )
+            executed_count += 1
+            continue
+        launch_started_at = time.time()
         append_progress(
             progress_path,
             "hostplan_launch_start",
@@ -1541,6 +1610,7 @@ def execute_hostplan_runtime(
         )
         try:
             if _is_embed_roi_launch(launch):
+                buffer_keys_before = set(buffer_files.keys())
                 launch_receipt = _execute_embed_roi_launch(
                     runtime_dir=runtime_dir,
                     launch=launch,
@@ -1558,6 +1628,29 @@ def execute_hostplan_runtime(
                     target=launch.get("targetName"),
                     status="succeeded",
                 )
+                if checkpoint_dir is not None:
+                    new_keys = sorted(set(buffer_files.keys()) - buffer_keys_before)
+                    embed_outputs = [
+                        {
+                            "buffer": key,
+                            "path": str(buffer_files[key]),
+                            "dtype": "unknown",
+                            "shape": [],
+                        }
+                        for key in new_keys
+                    ]
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=embed_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
                 continue
             staged_inputs, staged_outputs = _stage_launch_arrays(
                 runtime_dir=runtime_dir,
@@ -1613,6 +1706,19 @@ def execute_hostplan_runtime(
                 target=launch.get("targetName"),
                 status="succeeded",
             )
+            if checkpoint_dir is not None:
+                _persist_launch_checkpoint(
+                    checkpoint_dir=checkpoint_dir,
+                    launch_index=launch_index,
+                    launch=launch,
+                    launch_receipt=launch_receipt,
+                    staged_outputs=staged_outputs,
+                    launch_identity=_compute_launch_identity(launch, {}),
+                    started_at_unix=launch_started_at,
+                )
+            if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                stopped_at_checkpoint = True
+                break
         except Exception as exc:
             blockers.append(f"launch[{launch_index}]_blocked:{exc}")
             append_progress(
@@ -1623,7 +1729,12 @@ def execute_hostplan_runtime(
                 error=str(exc),
             )
             break
-    status = "succeeded" if not blockers else "blocked"
+    if blockers:
+        status = "blocked"
+    elif stopped_at_checkpoint:
+        status = "stopped_at_checkpoint"
+    else:
+        status = "succeeded"
     return {
         "schemaVersion": 1,
         "artifactKind": "int4ple_hostplan_executor_runtime",
@@ -1634,6 +1745,7 @@ def execute_hostplan_runtime(
         "bufferDir": str(runtime_dir / "buffers"),
         "launches": executed_launches,
         "targetSessions": bootstrap.get("targetSessions") or [],
+        "stoppedAtCheckpoint": stopped_at_checkpoint,
     }
 
 
@@ -1864,6 +1976,13 @@ def main() -> int:
     append_progress(progress_path, "runner_start")
     hostplan_executor_runtime: dict[str, Any] | None = None
 
+    checkpoint_dir = Path(args.checkpoint_dir) if args.checkpoint_dir.strip() else None
+    resume_dir = (
+        Path(args.resume_from_checkpoint)
+        if args.resume_from_checkpoint.strip() and not args.ignore_checkpoint
+        else None
+    )
+
     try:
         plan = load_json(Path(args.plan))
         runtime_config = load_json(Path(args.runtime_config))
@@ -1877,6 +1996,41 @@ def main() -> int:
             reference_export_path=Path(args.reference_export),
             compile_root=Path(args.compile_root),
         )
+        identity = _compute_checkpoint_identity(
+            plan=plan,
+            plan_path=Path(args.plan),
+            runtime_config=runtime_config,
+            runtime_config_path=Path(args.runtime_config),
+            export=export,
+            reference_export_path=Path(args.reference_export),
+            runner_version=_runner_version(),
+        )
+        resume_state = None
+        if resume_dir is not None:
+            try:
+                resume_state = _load_checkpoint(
+                    checkpoint_dir=resume_dir,
+                    identity=identity,
+                )
+                append_progress(
+                    progress_path,
+                    "checkpoint_resume_validated",
+                    startIndex=resume_state.start_index,
+                    bufferCount=len(resume_state.buffer_files),
+                )
+            except CheckpointMissingError:
+                # Fresh resume directory: treat as empty checkpoint.
+                resume_state = None
+            except CheckpointError as exc:
+                append_progress(
+                    progress_path,
+                    "checkpoint_resume_rejected",
+                    code=getattr(exc, "code", "checkpoint_error"),
+                    error=str(exc),
+                )
+                raise
+        if checkpoint_dir is not None:
+            _init_checkpoint(checkpoint_dir, identity)
         append_progress(
             progress_path,
             "scheduler_readiness",
@@ -1904,8 +2058,12 @@ def main() -> int:
                 progress_path=progress_path,
                 cmaddr=cmaddr,
                 trace_path=trace_path,
+                checkpoint_dir=checkpoint_dir,
+                resume_state=resume_state,
+                stop_after_launch=args.stop_after_launch,
             )
-            if hostplan_executor_runtime.get("status") != "succeeded":
+            runtime_status = hostplan_executor_runtime.get("status")
+            if runtime_status not in ("succeeded", "stopped_at_checkpoint"):
                 raise ValueError(
                     "hostplan executor runtime blocked: "
                     + ", ".join(hostplan_executor_runtime.get("blockers") or ["unknown"])

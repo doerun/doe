@@ -8,6 +8,7 @@ TARGET_MATMUL_TILE = 16
 ATTENTION_PREFILL_BLOCK_SIZE = 32
 DEFAULT_GEMV_INPUT_PER_PE = 512
 DEFAULT_DECODE_KV_CHUNK = 1
+SUMMA_PE_DATA_BUDGET_BYTES = 32 * 1024
 
 # embed chunked-dispatch per-PE budget. Measured against `.blocked_ut_ival`
 # at 0xFC04 (~63 KiB) on WSE-3 SDK 2.10; half that (~31 KiB) leaves headroom
@@ -73,6 +74,59 @@ def divisors_ascending(n: int) -> list[int]:
         d += 1
     out.sort()
     return out
+
+
+def summa_tile_footprint_bytes(*, mt: int, kt: int, nt: int) -> int:
+    if mt <= 0 or kt <= 0 or nt <= 0:
+        return 0
+    # emit_csl_matmul's PE program allocates A_tile/B_tile/C_tile plus
+    # double-buffers for A and B.
+    element_count = (2 * mt * kt) + (2 * kt * nt) + (mt * nt)
+    return element_count * 4
+
+
+def solve_summa_tiled_matmul(
+    *,
+    grid_width: int,
+    grid_height: int,
+    hidden_dim: int,
+    target_tile: int = TARGET_MATMUL_TILE,
+    budget_bytes: int = SUMMA_PE_DATA_BUDGET_BYTES,
+) -> dict[str, int]:
+    max_p = max(1, min(grid_width, grid_height))
+    preferred_p = min(
+        max_p,
+        int(COMPILE_DISTINCT_PE_WARNING_THRESHOLD**0.5),
+        max(1, ceil_div(hidden_dim, target_tile)),
+    )
+    for p in range(preferred_p, max_p + 1):
+        tile = ceil_div(hidden_dim, p)
+        if summa_tile_footprint_bytes(mt=tile, kt=tile, nt=tile) <= budget_bytes:
+            return {
+                "P": p,
+                "Mt": tile,
+                "Kt": tile,
+                "Nt": tile,
+                "perPeFootprintBytes": summa_tile_footprint_bytes(
+                    mt=tile,
+                    kt=tile,
+                    nt=tile,
+                ),
+                "budgetBytes": budget_bytes,
+            }
+    tile = ceil_div(hidden_dim, max_p)
+    return {
+        "P": max_p,
+        "Mt": tile,
+        "Kt": tile,
+        "Nt": tile,
+        "perPeFootprintBytes": summa_tile_footprint_bytes(
+            mt=tile,
+            kt=tile,
+            nt=tile,
+        ),
+        "budgetBytes": budget_bytes,
+    }
 
 
 def solve_embed_chunked_dispatch(
@@ -411,13 +465,13 @@ def manifest_compile_param_projection(
     )
     prompt_tokens = int(reference_prompt_token_count(reference) or max_seq_len or 0)
     pe_count = grid_width * grid_height
-    matmul_p = min(
-        grid_width,
-        grid_height,
-        int(COMPILE_DISTINCT_PE_WARNING_THRESHOLD**0.5),
-        max(1, ceil_div(hidden_dim, TARGET_MATMUL_TILE)),
+    matmul_params = solve_summa_tiled_matmul(
+        grid_width=grid_width,
+        grid_height=grid_height,
+        hidden_dim=hidden_dim,
     )
-    matmul_tile = ceil_div(hidden_dim, matmul_p)
+    matmul_p = matmul_params["P"]
+    matmul_tile = matmul_params["Mt"]
     gemv_input_per_pe = max(
         DEFAULT_GEMV_INPUT_PER_PE,
         ceil_div(hidden_dim, max(1, grid_width)),
@@ -523,6 +577,12 @@ def manifest_compile_param_projection(
             kv_len=attention_tokens,
         ),
     }
+    # Program Bundle v1 emits specific target names for the same CSL bodies.
+    # Keep these aliases explicit so drift shows up in the projection report
+    # instead of falling through to width/height-only cslc invocations.
+    params["lm_head_prefill_stable"] = dict(params["tiled"])
+    params["q4_widetile"] = dict(params["gemv"])
+    params["q4_decode_gemv"] = dict(params["gemv"])
     if global_head_dim > 0:
         params["attn_head512"] = attention_compile_params(
             grid_width=grid_width,
@@ -533,6 +593,8 @@ def manifest_compile_param_projection(
     compile_scale = {
         "embedDistinctPeProgramCount": grid_width,
         "tiledDistinctPeProgramCount": matmul_p * matmul_p,
+        "tiledPerPeFootprintBytes": matmul_params["perPeFootprintBytes"],
+        "tiledBudgetBytes": matmul_params["budgetBytes"],
         "warningThreshold": COMPILE_DISTINCT_PE_WARNING_THRESHOLD,
     }
     warnings = [

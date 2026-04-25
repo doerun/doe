@@ -1,0 +1,120 @@
+{
+  "contractVersion": 1,
+  "frontendVersion": "frontend-real-pipeline-v0",
+  "functions": [
+    {
+      "name": "main",
+      "familyHint": "rms_norm",
+      "axes": [
+        {
+          "name": "d",
+          "lowerBound": "0",
+          "upperBound": "hidden_size",
+          "step": "1"
+        },
+        {
+          "name": "i",
+          "lowerBound": "0",
+          "upperBound": "hidden_size",
+          "step": "1"
+        }
+      ],
+      "bindings": [
+        {
+          "name": "input",
+          "group": 0,
+          "binding": 0,
+          "logicalShape": [
+            0
+          ],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "weight",
+          "group": 0,
+          "binding": 1,
+          "logicalShape": [
+            0
+          ],
+          "elem": "f32",
+          "readWrite": false
+        },
+        {
+          "name": "output",
+          "group": 0,
+          "binding": 2,
+          "logicalShape": [
+            0
+          ],
+          "elem": "f32",
+          "readWrite": true
+        },
+        {
+          "name": "u",
+          "group": 0,
+          "binding": 3,
+          "logicalShape": [
+            2
+          ],
+          "elem": "u32",
+          "readWrite": false
+        }
+      ],
+      "body": {
+        "op": "rms_norm",
+        "bindingRoles": [
+          {
+            "bindingIndex": 0,
+            "role": "input"
+          },
+          {
+            "bindingIndex": 1,
+            "role": "scale"
+          },
+          {
+            "bindingIndex": 2,
+            "role": "output"
+          }
+        ],
+        "axisRoles": [
+          {
+            "axisIndex": 0,
+            "role": "hidden"
+          },
+          {
+            "axisIndex": 1,
+            "role": "reduction"
+          }
+        ],
+        "rmsNorm": {
+          "epsilon": {
+            "source": "uniform_field",
+            "path": "uniform:u.eps",
+            "bindingIndex": 3,
+            "byteOffset": 4,
+            "literalF32": null
+          },
+          "formula": "sum_squares_mean_epsilon_rsqrt_scale",
+          "hiddenExtentAxis": 0,
+          "reductionTarget": "intermediate_scalar"
+        }
+      },
+      "reductions": [
+        {
+          "axis": 1,
+          "op": "sum",
+          "contract": {
+            "accumulation": "f32",
+            "associativity": "strict_ordered",
+            "nanInf": "propagate"
+          },
+          "targetBinding": 2
+        }
+      ],
+      "collectives": [],
+      "sourceDigest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "rejections": []
+}

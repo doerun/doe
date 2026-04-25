@@ -517,7 +517,8 @@ def _target_geometry(
         "attn_head512",
         "attn_decode",
         "gemv",
-        "lm_head_gemv_stable",
+        "q4_widetile",
+        "q4_decode_gemv",
         "sample",
     }:
         height = 1
