@@ -302,7 +302,15 @@ ordering, not in claim substance.
 - Work left: Circulate the evidence bundle or request direct endpoint access.
   The bundle path is not blocked by full-grid simfabric parity: Cerebras can run
   the pinned bundle internally and return a hardware receipt, or provide
-  `DOE_CSL_CMADDR` / WSC access so Doe runs the governed runner.
+  `DOE_CSL_CMADDR` / WSC access so Doe runs the governed runner. The
+  singularity-wrapper fix landed 2026-04-25
+  (`runtime/zig/tools/cs_python_singularity.sh` plus
+  `runtime/zig/tools/csl_sdk_driver.py` discovery patch and per-tool
+  `select_cs_python` updates) flips the paint-flow Cluster A bundle gates
+  from FAIL to PASS — verified for
+  `gemma4-e2b-manifest-shape-attention-core`. Cluster B (stale fixture)
+  gates still need `gemma-3-1b-doe-csl-hostplan/{host-plan,doppler-program-bundle}.json`
+  regen before a clean-tree bundle gate hits 31/31.
 - Done when: A returned receipt binds manifest, graph, weights, prompt/input,
   compile artifacts, execution target, and either `hardware_success` or a typed
   hardware/runtime blocker.
@@ -398,7 +406,14 @@ ordering, not in claim substance.
   transcript bodyOps now have a host-side parity oracle). `kv_write` /
   `kv_read` deferred — read-write binding semantics need a convention pick
   for whether `inputs[]` extends to read-write slots or a separate
-  `prior_state[]` parameter is added to `run()`.
+  `prior_state[]` parameter is added to `run()`. Real-pipeline-v0 fixture
+  coverage extended same day to include `runtime/zig/tests/tsir/real/rmsnorm/`
+  and `runtime/zig/tests/tsir/real/fused_gemv/` (promoted from bootstrap with
+  `frontendVersion="frontend-real-pipeline-v0"`); manifest entries
+  regenerated under `bench/fixtures/tsir-real-entries/` for both
+  `webgpu-generic` and `wse3` backends. Six real-pipeline-v0 kernel
+  fixtures total (rmsnorm, fused_gemv, embed, lm_head_gemv,
+  attention_head256_f16kv, attention_head512_f16kv).
 - Done when: Every kernel in the live HostPlan is sourced from a TSIR semantic
   function through `tsir.emit_kernel_body`, and no hand-maintained CSL bodies
   remain for the live path.
