@@ -345,18 +345,17 @@ ordering, not in claim substance.
   the live blocker in the next bullet.
 - Live blocker for KV-side evidence at 31B: the truncated CSL prefill+decode
   path (`run_doe_csl_int4ple_transcript.py --max-layers 1` against the new
-  31B bundle) reaches `executor_bootstrap_complete` with all 162 launches
-  resolved after the residual-symbol fix landed, but fails at embed
-  `launch[0]` with `[Errno 2] No such file or directory:
-  'not_captured_by_doppler_program_bundle'`. The string is a sentinel emitted
-  at `bench/tools/run_doe_csl_int4ple_transcript.py:629` when
-  `find_tokenized_prompt_artifact()` cannot locate a captured tokenized
-  prompt in the program bundle; the HostPlan generator then propagates the
-  sentinel as a real path. Fix direction: sentinel-aware HostPlan generator
-  that skips the prompt-tokenize launch (or substitutes a synthetic-prompt
-  path) when the bundle does not carry a captured artifact. Until that
-  lands, slide 16's "structurally enabled but not yet executed" row for
-  `kv_write` / `kv_read` stays unbacked.
+  31B bundle) now clears the earlier tokenized-prompt sentinel and sibling
+  workspace-bind failures. The 2026-04-25 late A3 partial run completed
+  `launch[0] target=embed` and reached `launch[1] target=rmsnorm_prefill`,
+  including h2d for `input` and `weight`, kernel launch, and d2h for
+  `output` with `elements=102144`. The run was stopped there because the
+  d2h event stalled for several minutes, matching the R2-1/R2-4 local
+  simfabric scaling verdict. Evidence path:
+  `bench/out/overnight/20260425T175736Z/cells/csl-31b-L001-decode-truncated-size1024/hostplan-after-script-location-bind-fix/trace.json.progress.jsonl`.
+  Until hardware or a smaller bounded receipt records `cacheWriteCount > 0`,
+  slide 16's "structurally enabled but not yet executed" row for `kv_write` /
+  `kv_read` stays unbacked.
 
 ### R3-2 - 31B residency and streaming mechanics
 

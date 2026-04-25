@@ -1,75 +1,45 @@
-# 03 — The stack at a glance: "Doppler → Doe → CSL"
+# 03 - Names and boundaries: "Doppler, Doe, Cerebras"
 
-## Goals
+## Purpose
 
-Show the macro architecture before any per-component detail. Establish
-what each box does, what flows between them, and what is preserved at
-each boundary.
+Make the deck self-contained. A reviewer should know who owns the source
+contract, who owns the lowering/evidence path, and where Cerebras begins.
 
-## What it shows
+## Slide content
 
-- Three vertical columns left-to-right:
-  1. **Doppler** — JS orchestration + WGSL kernels, running in a
-     browser context.
-  2. **Doe** — TSIR semantic functions + per-backend emitters +
-     HostPlan generator.
-  3. **CSL execution** — PE grid layout + per-PE program + runtime
-     executor + receipt.
-- Two cross-column arrows, each annotated with what is preserved:
-  - JS → HostPlan: **identity preserved** (manifest sha + graph sha +
-    compile-target hashes).
-  - WGSL → TSIR → CSL: **body preserved** (axes + binding roles +
-    reduction + body op tag).
+- **Doppler:** raw JS orchestration + raw WGSL kernels + manifest + weights +
+  tokenizer/input contract + reference transcript.
+- **Doe:** consumes that Doppler contract and emits evidence artifacts. For
+  normal GPU targets Doe also lowers through WebGPU/Vulkan/SPIR-V, Metal/MSL,
+  DXIL, and native runtime paths. This deck shows only the Cerebras slice:
+  TSIR where applicable, HostPlan, CSL, SDK execution, receipts.
+- **Cerebras:** WSE/SDK execution target. Doe emits `layout.csl`,
+  `pe_program.csl`, compile/runtime config, and receipts for Cerebras tools.
+- Two preservation labels:
+  - **source identity preserved:** same Doppler contract.
+  - **kernel body preserved:** axes, bindings, reductions, body ops, and
+    symbol bindings survive lowering where TSIR/HostPlan covers the kernel.
 
-## What it might look like
+## Visual spec
 
-Three columns, each a vertical stack of two-to-three boxes labeled by
-component. Arrows between columns are thick and labeled with the
-preservation property (italic text, not the column components). A thin
-horizontal label band below the diagram reads "browser-runnable →
-backend-agnostic IR → spatial-compute target." No icon legend; that's
-slide 04.
+- Layout: three equal columns.
+- Doppler column uses `doppler.red`; Doe column uses `doe.blue` with
+  `doe.purple` for receipt/parity plumbing; Cerebras column uses
+  `cerebras.orange` and `cerebras.charcoal`.
+- Draw two thick arrows:
+  - Doppler -> Doe: label `same raw JS/WGSL + manifest identity`.
+  - Doe -> Cerebras: label `same program lowered to CSL + receipts`.
+- Add a small side note in the Doe column: `Other Doe backends continue through
+  WGSL IR -> MSL/SPIR-V/DXIL/native. Not this slice.`
 
-### Visual spec (per design tokens)
+## Scope guard
 
-- **Layout pattern:** `three-columns-flow`.
-- **Left column ("Doppler"):** `blue.preserve` boxes — top: "JS model
-  program" (medium-block), bottom: "WGSL kernels" (medium-block).
-- **Middle column ("Doe"):** `blue.preserve` boxes — top: "TSIR
-  semantic functions" (medium-block, reuse 4-slot icon from slide
-  05), middle: "per-backend emitters" (medium-block), bottom:
-  "HostPlan generator" (medium-block, reuse vertical-strip icon
-  from slide 06 at medium scale).
-- **Right column ("CSL execution"):** `purple.spatial` boxes — top:
-  "PE grid layout" (medium-block, reuse PE-grid icon from slide
-  04), middle: "per-PE program" (medium-block), bottom: "runtime
-  executor + receipt" (medium-block).
-- **Cross-column arrows:** thick (4-6 px) bands. Left → middle band
-  is `blue.preserve`, label *"identity preserved (manifest sha +
-  graph sha + compile-target hashes)"*. Middle → right band is
-  `blue.preserve` fading into `purple.spatial`, label *"body
-  preserved (axes + binding roles + reduction + body op tag)"*.
-- **Footer label band:** sans-serif 500, `neutral.body`,
-  *"browser-runnable → backend-agnostic IR → spatial-compute
-  target"*.
-- **Persistent elements reused:** TSIR semantic-function box (05),
-  HostPlan vertical strip (06), PE grid (04).
+- Do not imply TSIR is Doe's only IR.
+- Do not imply Cerebras is a WebGPU backend. This is a retargeting path.
+- Do not imply Doe authors the model. Doppler owns the source contract.
 
-## What it doesn't claim
+## Evidence sources
 
-- The diagram is not a build-system flow chart. Compile-time vs
-  runtime distinctions are deferred to slides 11–12.
-- Not a performance pipeline. Latency / throughput annotations are
-  out of scope.
-- Not implying every backend is equally mature. The deck keeps
-  claim-discipline by deferring evidence to slide 16.
-
-## Source artifacts to cite
-
-- `runtime/zig/src/doe_wgsl/emit_csl_*.zig` — the CSL emitter family.
-- `bench/runners/csl-runners/int4ple_compile_target_sim_runner.py` —
-  the runtime executor that walks the HostPlan.
-- `docs/architecture.md` — the parent architecture doc this slide
-  visualizes one layer of.
-- `docs/cerebras-north-star.md` NS-0 — the proof-chain framing whose
-  "portability via TSIR" rung this slide depicts.
+- `docs/csl-architecture.md` - source contract and CSL slice boundary.
+- `runtime/zig/README.md` - Doe GPU backend and DXIL/MSL/SPIR-V context.
+- `docs/doppler-ingest.md` - Doppler ingest boundary.

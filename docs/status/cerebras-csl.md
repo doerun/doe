@@ -13,6 +13,43 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-25 (late) — 31B truncated HostPlan clears prompt/wrapper blockers, stops at expected simfabric D2H wall
+
+A3 31B truncated HostPlan now reaches real CSL execution instead of failing on
+artifact plumbing. Two concrete blockers cleared:
+
+- `bench/tools/run_doe_csl_int4ple_transcript.py` now materializes the Program
+  Bundle tokenized prompt from Doppler's bundled tokenizer when the bundle did
+  not capture a `tokenizedPrompt` artifact. The emitted
+  `program_bundle_tokenized_prompt.u32` is checked against Program Bundle
+  `prefillTokens` and `prompt.tokenIdsHash` before the HostPlan is built.
+- `runtime/zig/tools/cs_python_singularity.sh` now binds the workspace root
+  derived from the wrapper's script location, not the transient SDK workdir.
+  This makes sibling Program Bundle shards under `/home/x/deco/doppler/...`
+  visible inside `cs_python` / Singularity subprocesses.
+
+Partial A3 evidence:
+
+- Output dir:
+  `bench/out/overnight/20260425T175736Z/cells/csl-31b-L001-decode-truncated-size1024/hostplan-after-script-location-bind-fix/`
+- Progress log:
+  `bench/out/overnight/20260425T175736Z/cells/csl-31b-L001-decode-truncated-size1024/hostplan-after-script-location-bind-fix/trace.json.progress.jsonl`
+- Observed boundary: `launchIndex=0 target=embed` completed successfully after
+  all 28 embed ROI sublaunches. `launchIndex=1 target=rmsnorm_prefill` then
+  completed constructor/load/run, copied `input` and `weight` h2d, launched the
+  kernel, and entered d2h for `output` with `elements=102144`.
+- The run was stopped deliberately after the progress log stayed at that d2h
+  event for several minutes. This matches the R2-1/R2-4 simfabric
+  superlinear-throughput finding; continuing A3 on local simfabric would not be
+  a credible way to reach decode/KV evidence.
+
+Claim discipline: this backs 31B Program Bundle tokenization, SDK wrapper
+binding, embed execution, and the first post-embed 31B HostPlan launch reaching
+real I/O. It does **not** back full 31B prefill+decode, `kv_write`/`kv_read`,
+sample, per-step logits, token-id sequence capture, or positive parity. Slide
+16's KV row remains "structurally enabled but not yet executed" until a
+hardware run or smaller bounded receipt records `cacheWriteCount > 0`.
+
 ## 2026-04-25 (afternoon) — 31B-primary pivot, R2 verdict closure, singularity wrapper, L1+L61 receipts, overnight matrix
 
 A multi-decision turn. Pinning here so tomorrow's session does not re-derive.

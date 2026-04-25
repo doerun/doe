@@ -1,4 +1,4 @@
-# Index — Doppler → Doe → CSL slide deck
+# Index — Doppler -> Doe -> Cerebras slide deck
 
 This document is the design-system source-of-truth for the deck under
 `docs/diagrams/`. Per-slide files reference design tokens by name; this
@@ -8,50 +8,53 @@ file defines them.
 
 | # | Title | File | Persistent example |
 |---|---|---|---|
-| 01 | Cover — Two preservation properties, one author identity | [`01-cover.md`](01-cover.md) | — |
-| 02 | The problem — Spatial compute needs exposed axes | [`02-problem.md`](02-problem.md) | — |
-| 03 | The stack at a glance — Doppler → Doe → CSL | [`03-stack-overview.md`](03-stack-overview.md) | — |
-| 04 | Hardware primer — three execution models, one author | [`04-hardware-primer.md`](04-hardware-primer.md) | — |
-| 05 | TSIR semantic function — the body-preserving IR | [`05-tsir-semantic-function.md`](05-tsir-semantic-function.md) | rms_norm |
-| 06 | HostPlan — the identity-preserving orchestration | [`06-hostplan-identity.md`](06-hostplan-identity.md) | Gemma 3 1B |
+| 01 | Cover - One contract, one lowering path, one receipt | [`01-cover.md`](01-cover.md) | Gemma 4 31B |
+| 02 | Problem - Cerebras needs the body | [`02-problem.md`](02-problem.md) | — |
+| 03 | Names and boundaries - Doppler, Doe, Cerebras | [`03-stack-overview.md`](03-stack-overview.md) | — |
+| 04 | Execution surfaces - browser, simfabric, wafer | [`04-hardware-primer.md`](04-hardware-primer.md) | — |
+| 05 | TSIR - body shape where semantic | [`05-tsir-semantic-function.md`](05-tsir-semantic-function.md) | rms_norm |
+| 06 | HostPlan - identity through execution | [`06-hostplan-identity.md`](06-hostplan-identity.md) | Gemma 4 31B |
 | 07 | Walkthrough: rms_norm | [`07-walkthrough-rmsnorm.md`](07-walkthrough-rmsnorm.md) | rms_norm |
 | 08 | Walkthrough: fused_gemv | [`08-walkthrough-fused-gemv.md`](08-walkthrough-fused-gemv.md) | fused_gemv |
-| 09 | Walkthrough: kv_write — the stateful case | [`09-walkthrough-kv-write.md`](09-walkthrough-kv-write.md) | kv_write |
-| 10 | Walkthrough: attention_decode — multi-axis reduction | [`10-walkthrough-attention-decode.md`](10-walkthrough-attention-decode.md) | attention_head256_f16kv |
-| 11 | JS orchestration → HostPlan | [`11-js-to-hostplan.md`](11-js-to-hostplan.md) | Gemma 3 1B |
-| 12 | HostPlan → per-PE programs | [`12-hostplan-to-per-pe.md`](12-hostplan-to-per-pe.md) | Gemma 3 1B |
-| 13 | The bundle — one artifact, three execution surfaces | [`13-bundle-distribution.md`](13-bundle-distribution.md) | Gemma 4 31B |
+| 09 | Walkthrough: kv_write - stateful cache | [`09-walkthrough-kv-write.md`](09-walkthrough-kv-write.md) | kv_write |
+| 10 | Walkthrough: attention_decode - multi-axis decode | [`10-walkthrough-attention-decode.md`](10-walkthrough-attention-decode.md) | attention_head256_f16kv |
+| 11 | Doppler JS to HostPlan | [`11-js-to-hostplan.md`](11-js-to-hostplan.md) | Gemma 4 31B |
+| 12 | HostPlan to per-PE execution | [`12-hostplan-to-per-pe.md`](12-hostplan-to-per-pe.md) | Gemma 4 31B |
+| 13 | Bundle - one contract, three receipts | [`13-bundle-distribution.md`](13-bundle-distribution.md) | Gemma 4 31B |
 | 14 | Why ONNX-shaped pipelines hit a wall | [`14-onnx-comparison.md`](14-onnx-comparison.md) | — |
-| 15 | Where the analogy breaks down — honesty | [`15-honesty-limits.md`](15-honesty-limits.md) | — |
-| 16 | Evidence ledger — receipt-backed claims today | [`16-evidence-ledger.md`](16-evidence-ledger.md) | — |
-| 17 | Forward path — hardware verification | [`17-forward-path.md`](17-forward-path.md) | — |
+| 15 | Limits - what this does not prove | [`15-honesty-limits.md`](15-honesty-limits.md) | — |
+| 16 | Evidence ledger - what backs the story | [`16-evidence-ledger.md`](16-evidence-ledger.md) | Gemma 4 31B |
+| 17 | Forward path - refreshable evidence | [`17-forward-path.md`](17-forward-path.md) | Gemma 4 31B |
 
 ## Design theme
 
 ### Color palette
 
-Three named hues plus neutral. Hex values are reference; designers may
-substitute palette-equivalent shades but the *semantic* assignment of
-each hue to its meaning is fixed.
+Colors encode ownership. Hex values are references; final design may use
+brand-equivalent shades, but the semantic assignment is fixed.
 
 | Token | Hex (reference) | Semantic assignment |
 |---|---|---|
-| `red.opaque` | `#C73E3E` | The path we're contrasting against. Opaque-body operators, ONNX-shaped IRs, hidden state, "we don't compose with this." |
-| `red.dim` | `#E89090` | Faded variant for de-emphasized red elements (e.g., per-op kernel boxes in slide 14's left column). |
-| `blue.preserve` | `#2B6CB0` | The Doe preservation chain. WGSL authoring, TSIR semantic functions, per-backend emitters, HostPlan identity. |
-| `blue.dim` | `#90B8DC` | Faded variant for supporting blue elements. |
-| `purple.spatial` | `#6B46C1` | Spatial compute. Cerebras WSE, PE grid, fabric routes, wafer ROI, hardware execution. |
-| `purple.dim` | `#B8A0E0` | Faded variant for supporting purple elements. |
+| `doppler.red` | `#C73E3E` | Doppler-owned source contract: raw JS, raw WGSL, manifest, tokenizer, weights, reference transcript. |
+| `doe.blue` | `#2B6CB0` | Doe compiler/lowering surfaces: WGSL IR, TSIR, emitters, HostPlan identity. |
+| `doe.lightBlue` | `#90B8DC` | Faded variant for supporting blue elements. |
+| `doe.purple` | `#6B46C1` | Doe runtime/evidence surfaces: simfabric runner, bundle plumbing, parity binding. |
+| `doe.lightPurple` | `#B8A0E0` | Faded variant for supporting Doe runtime elements. |
+| `cerebras.orange` | `#F05A28` | Cerebras-owned execution concepts: WSE, PE grid, fabric routes, SDK run, hardware receipt. |
+| `cerebras.light` | `#FDBA8C` | Faded variant for supporting Cerebras elements. |
+| `cerebras.charcoal` | `#252525` | Cerebras labels, wafer outlines, and hardware boundary text where orange would over-dominate. |
+| `contrast.gray` | `#64748B` | Opaque-body/operator-graph contrast such as ONNX-shaped IRs. Not Doppler. |
+| `contrast.light` | `#CBD5E1` | Faded variant for contrast elements. |
 | `neutral.body` | `#4A5568` | Body text, most labels, neutral infrastructure. |
 | `neutral.bg` | `#F7FAFC` | Slide background. |
 | `neutral.line` | `#CBD5E0` | Light separators, grid guides. |
 | `accent.gold` | `#D69E2E` | Identity / hash badges. Used sparingly — only on content-addressable identity elements. |
 
-**Rule of thumb:** if an element is part of the preservation chain
-(WGSL → TSIR → CSL emitter), it's `blue.preserve`. If it executes on
-a PE grid or wafer, it's `purple.spatial`. If it's the operator-graph
-contrast, it's `red.opaque`. Identity hashes and bundle pointers get
-`accent.gold`. Everything else is `neutral.body`.
+**Rule of thumb:** Doppler source is `doppler.red`; Doe lowering is
+`doe.blue`; Doe runtime/evidence plumbing is `doe.purple`; Cerebras hardware,
+PE grids, fabric, SDK, and wafer elements are `cerebras.orange` or
+`cerebras.charcoal`; opaque-op contrast is `contrast.gray`; identity hashes and
+bundle pointers are `accent.gold`.
 
 ### Shape vocabulary
 
@@ -98,7 +101,7 @@ contrast, it's `red.opaque`. Identity hashes and bundle pointers get
 
 ### Layout patterns
 
-Every slide's `What it might look like` section maps to one of these
+Every slide's `Visual spec` section maps to one of these
 named patterns. Designers should match the pattern's structural
 proportions; specific element placement is then per-slide.
 
@@ -123,18 +126,18 @@ each time. Designed once, reused everywhere.
 
 | Element | Color | Shape | Source slide |
 |---|---|---|---|
-| Browser tab + workgroup grid | `blue.preserve` outline, `neutral.bg` fill, blue grid cells | Browser-tab outline + 4×4 inner grid of small squares | 04 |
-| PE grid + fabric routes | `purple.spatial` outline + `purple.dim` fill, `neutral.line` route lines | 8×8 hexagons (PEs) connected by thin lines | 04 |
-| Wafer outline + ROI | `purple.spatial` outline (corner radius 16), `purple.dim` ROI rectangle | Large rounded rectangle with smaller inner rectangle | 04 |
-| TSIR semantic-function box | `blue.preserve` border, four horizontal slot bands separated by `neutral.line` | Sharp-corner rectangle with internal divisions | 05 |
-| HostPlan vertical strip | `blue.preserve` boxes connected by `blue.preserve` arrows | 5-8 stacked rectangles with downward arrows | 06 |
+| Browser tab + workgroup grid | `doe.blue` outline, `neutral.bg` fill, blue grid cells | Browser-tab outline + 4×4 inner grid of small squares | 04 |
+| PE grid + fabric routes | `cerebras.orange` outline + `cerebras.light` fill, `neutral.line` route lines | 8×8 hexagons (PEs) connected by thin lines | 04 |
+| Wafer outline + ROI | `cerebras.charcoal` outline, `cerebras.orange` ROI rectangle | Large rounded rectangle with smaller inner rectangle | 04 |
+| TSIR semantic-function box | `doe.blue` border, four horizontal slot bands separated by `neutral.line` | Sharp-corner rectangle with internal divisions | 05 |
+| HostPlan vertical strip | `doe.blue` boxes connected by `doe.blue` arrows | 5-8 stacked rectangles with downward arrows | 06 |
 | Bundle tarball | `accent.gold` cylinder shape with `neutral.body` band labels | Cylinder with hash strings as labels | 13 |
 | Identity hash badge | `accent.gold` fill, `neutral.body` text (monospace) | Rounded-rectangle pill | 06 |
-| Body-op diamond | `blue.preserve` fill, `neutral.bg` text | Diamond, 80×80 px | 05 |
+| Body-op diamond | `doe.blue` fill, `neutral.bg` text | Diamond, 80×80 px | 05 |
 
 ### Per-slide visual spec checklist
 
-Each slide's `What it might look like` section must specify:
+Each slide's `Visual spec` section must specify:
 
 1. **Layout pattern** (one from the named list above).
 2. **Color assignments** for the slide's main elements (using token names, not raw hex).
@@ -147,16 +150,22 @@ If a slide's spec doesn't include all six, it's not yet
 graphic-generatable; flag with a `<!-- TODO: visual spec -->` comment
 inline in the markdown.
 
-## Snapshot assumption (deck-level)
+## Slice boundary
 
-The deck is written as if every component of the simfabric + WebGPU
-evidence chain is in hand: TSIR coverage complete, WebGPU references
-frozen, 31B program bundle in tree, decode mechanism exercised
-including kv_write / kv_read, smoke ladder L1-L61 receipts landed,
-bundle ready to circulate. **The single outstanding gate is execution
-on Cerebras hardware (R2-10).** Slides 13, 15, 16, and 17 carry this
-distinction explicitly; everything else is structural and unaffected
-by the hardware leg.
+This is not a deck about all of Doe. Doe also has ordinary GPU compiler and
+runtime paths for WebGPU/Vulkan/SPIR-V, Metal/MSL, DXIL, and native backends.
+This deck carves out the Cerebras path only: Doppler raw JS/WGSL contract ->
+Doe TSIR/HostPlan/CSL lowering where applicable -> Cerebras SDK/hardware
+receipt.
+
+## Snapshot assumption
+
+The deck may be rendered as a forward-looking Cerebras ask. It may assume Gemma
+4 31B evidence exists by presentation time, but slide 16 must name which rows
+are already in hand and which rows are expected before sending. The central
+claim is still structural: evidence is easy to refresh because a new run needs
+only the Doppler contract (raw JS, raw WGSL, manifest, weights, tokenizer, and
+prompt), then Doe re-emits HostPlan/CSL/receipts from that identity.
 
 ## Generation pipeline (implied)
 
