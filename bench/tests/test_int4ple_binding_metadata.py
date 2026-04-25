@@ -306,6 +306,193 @@ class StructuredBindingMetadataTests(unittest.TestCase):
         )
         self.assertEqual(c_mat["detileTransform"]["rowsFromInput"], "a")
 
+    def test_plan_uses_structured_sidecars_without_reading_csl_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            compile_root = Path(tmpdir) / "compile"
+            target_dir = compile_root / "source_agnostic"
+            target_dir.mkdir(parents=True)
+            (target_dir / "layout.metadata.json").write_text(
+                json.dumps(
+                    {
+                        "exports": [
+                            {
+                                "name": "a",
+                                "type": "[*]f32",
+                                "kind": "device_variable",
+                                "mutable": True,
+                            },
+                            {
+                                "name": "c",
+                                "type": "[*]f32",
+                                "kind": "device_variable",
+                                "mutable": True,
+                            },
+                            {
+                                "name": "compute",
+                                "type": "fn()void",
+                                "kind": "device_function",
+                            },
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (target_dir / "pe_program.metadata.json").write_text(
+                json.dumps(
+                    {
+                        "variables": [
+                            {"name": "a", "sizeExpr": "chunk_size", "elemType": "f32"},
+                            {"name": "c", "sizeExpr": "chunk_size", "elemType": "f32"},
+                        ],
+                        "compileTimeConstants": [
+                            {"name": "chunk_size", "expr": "8"},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            execution_plan = build_hostplan_execution_plan(
+                plan={
+                    "inputs": {
+                        "compileTargets": [
+                            {
+                                "name": "source_agnostic",
+                                "layout": "source_agnostic/layout.csl",
+                                "peProgram": "source_agnostic/pe_program.csl",
+                                "compileParams": {"width": 2, "height": 1},
+                            }
+                        ]
+                    }
+                },
+                compile_root=compile_root,
+                runtime_config={
+                    "modelConfig": {"hiddenDim": 8, "vocabSize": 8, "maxSeqLen": 4},
+                    "memoryPlan": {"grid": {"width": 2, "height": 1}},
+                },
+                scheduler={
+                    "hostPlan": {
+                        "runtimeScheduler": {
+                            "status": "bound",
+                            "launches": [
+                                {
+                                    "launchIndex": 0,
+                                    "kernelName": "source_agnostic",
+                                    "inputs": [
+                                        {
+                                            "symbol": "a",
+                                            "buffer": "activation:prev",
+                                            "role": "activation",
+                                            "access": "read",
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "symbol": "c",
+                                            "buffer": "activation:next",
+                                            "role": "activation",
+                                            "access": "write",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    }
+                },
+                executor_validator={"status": "passed", "producedBufferCount": 1},
+            )
+
+        self.assertEqual(
+            execution_plan["status"],
+            "planned",
+            execution_plan["blockers"],
+        )
+        launch = execution_plan["launches"][0]
+        self.assertEqual(launch["launchFunction"], "compute")
+        inputs = {item["symbol"]: item for item in launch["inputBindings"]}
+        self.assertEqual(inputs["a"]["materialization"]["elementsPerPe"], 8)
+
+    def test_plan_rejects_source_only_exports_without_structured_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            compile_root = Path(tmpdir) / "compile"
+            target_dir = compile_root / "source_only"
+            target_dir.mkdir(parents=True)
+            (target_dir / "layout.csl").write_text(
+                '@export_name("a", [*]f32, true);\n'
+                '@export_name("c", [*]f32, true);\n'
+                '@export_name("compute", fn()void);\n',
+                encoding="utf-8",
+            )
+            (target_dir / "pe_program.csl").write_text(
+                "const chunk_size: u32 = 8;\n"
+                "var A: [chunk_size]f32;\n"
+                "var A_ptr: [*]f32 = &A;\n"
+                '@export_symbol(A_ptr, "a");\n'
+                "@export_symbol(compute);\n",
+                encoding="utf-8",
+            )
+
+            execution_plan = build_hostplan_execution_plan(
+                plan={
+                    "inputs": {
+                        "compileTargets": [
+                            {
+                                "name": "source_only",
+                                "layout": "source_only/layout.csl",
+                                "peProgram": "source_only/pe_program.csl",
+                                "compileParams": {"width": 1, "height": 1},
+                            }
+                        ]
+                    }
+                },
+                compile_root=compile_root,
+                runtime_config={
+                    "modelConfig": {"hiddenDim": 8, "vocabSize": 8, "maxSeqLen": 4},
+                    "memoryPlan": {"grid": {"width": 1, "height": 1}},
+                },
+                scheduler={
+                    "hostPlan": {
+                        "runtimeScheduler": {
+                            "status": "bound",
+                            "launches": [
+                                {
+                                    "launchIndex": 0,
+                                    "kernelName": "source_only",
+                                    "inputs": [
+                                        {
+                                            "symbol": "a",
+                                            "buffer": "activation:prev",
+                                            "role": "activation",
+                                            "access": "read",
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "symbol": "c",
+                                            "buffer": "activation:next",
+                                            "role": "activation",
+                                            "access": "write",
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    }
+                },
+                executor_validator={"status": "passed", "producedBufferCount": 1},
+            )
+
+        self.assertEqual(execution_plan["status"], "blocked")
+        self.assertIn("target[source_only].layout_exports_missing", execution_plan["blockers"])
+        self.assertIn(
+            "launch[0].input_symbol_not_exported:source_only.a",
+            execution_plan["blockers"],
+        )
+        self.assertIn(
+            "launch[0].output_symbol_not_exported:source_only.c",
+            execution_plan["blockers"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

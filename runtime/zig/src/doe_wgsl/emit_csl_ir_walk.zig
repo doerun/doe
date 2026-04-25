@@ -35,6 +35,7 @@ pub const WalkConfig = struct {
     // still matches on the single-lane semantic that actually runs the
     // block once per PE.
     lane_mode: bool = false,
+    sqrt_function: ?[]const u8 = null,
 };
 
 // ---------------------------------------------------------------------------
@@ -411,7 +412,18 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                         return;
                     }
                     if (call.kind == .builtin) {
-                        if (maps.cslMathBuiltin(call.name)) |csl_name| {
+                        if (cfg.sqrt_function) |sqrt_name| {
+                            if (std.mem.eql(u8, call.name, "sqrt")) {
+                                try write(buf, pos, sqrt_name);
+                            } else if (maps.cslMathBuiltin(call.name)) |csl_name| {
+                                try write(buf, pos, csl_name);
+                            } else if (maps.needsInlineExpansion(call.name)) {
+                                try inlineBuiltin(buf, pos, module, function, call.name, call.args, expr_id);
+                                return;
+                            } else {
+                                try write(buf, pos, call.name);
+                            }
+                        } else if (maps.cslMathBuiltin(call.name)) |csl_name| {
                             try write(buf, pos, csl_name);
                         } else if (maps.needsInlineExpansion(call.name)) {
                             try inlineBuiltin(buf, pos, module, function, call.name, call.args, expr_id);

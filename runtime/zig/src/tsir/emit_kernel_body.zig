@@ -321,10 +321,8 @@ fn emitCslRmsNorm(
         try writer.writeAll("param epsilon: f32;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    // CSL has no `@sqrt` builtin; reach for the `<math>` module's
-    // `math.sqrt` instead. The previous TSIR test that asserted on
-    // `@sqrt(` predates this — updated alongside.
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
+    try writeCslSqrtNr(writer);
     try writeCslBufferArray(writer, p, input.name, "hidden_size", "f32");
     try writeCslBufferArray(writer, p, scale.name, "hidden_size", "f32");
     try writeCslBufferArray(writer, p, output.name, "hidden_size", "f32");
@@ -342,7 +340,7 @@ fn emitCslRmsNorm(
     try writer.writeAll("        sum_sq += v * v;\n");
     try writer.writeAll("    }\n");
     try writer.writeAll("    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
-    try writer.writeAll("    const inv_rms = 1.0 / math.sqrt(mean_sq + ");
+    try writer.writeAll("    const inv_rms = 1.0 / sqrt_nr(mean_sq + ");
     try writeCslEpsilon(writer, rms.epsilon);
     try writer.writeAll(");\n");
     try writer.writeAll("    for (@range(i16, hidden_size)) |d| {\n");
@@ -374,6 +372,13 @@ fn writeCslHiddenSizeParam(writer: anytype, config: *const Config) !void {
     } else {
         try writer.writeAll("param hidden_size: i16;\n");
     }
+}
+
+fn writeCslSqrtNr(writer: anytype) !void {
+    try writer.writeAll("fn sqrt_nr(x: f32) f32 {\n");
+    try writer.writeAll("    const y0: f32 = math.sqrt(x);\n");
+    try writer.writeAll("    return 0.5 * (y0 + x / y0);\n");
+    try writer.writeAll("}\n\n");
 }
 
 fn emitCslGather(writer: anytype, func: schema.SemanticFunction) EmitError!void {

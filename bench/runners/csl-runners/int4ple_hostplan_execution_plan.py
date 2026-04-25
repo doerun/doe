@@ -15,55 +15,6 @@ from int4ple_binding_metadata import (
     target_phase,
 )
 
-_EXPORT_NAME_RE = re.compile(
-    r"""@export_name\(
-        \s*"(?P<name>[A-Za-z_][A-Za-z0-9_]*)"\s*,\s*
-        (?P<type>[^,\)]+(?:\([^\)]*\)[^,\)]*)?)
-        (?:\s*,\s*(?P<mutable>true|false))?
-        \s*\)""",
-    re.VERBOSE,
-)
-
-_PE_PROGRAM_VAR_RE = re.compile(
-    r"""var\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*
-        \[\s*(?P<size_expr>[^\]]+?)\s*\]
-        \s*(?P<elem_type>[A-Za-z_][A-Za-z0-9_]*)""",
-    re.VERBOSE,
-)
-
-_PE_PROGRAM_ZEROS_RE = re.compile(
-    r"""var\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*
-        @zeros\(\s*
-        \[\s*(?P<size_expr>[^\]]+?)\s*\]
-        \s*(?P<elem_type>[A-Za-z_][A-Za-z0-9_]*)\s*
-        \)""",
-    re.VERBOSE,
-)
-
-_PE_PROGRAM_CONST_OR_PARAM_RE = re.compile(
-    r"""(?P<kind>const|param)\s+
-        (?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*
-        [A-Za-z_][A-Za-z0-9_]*\s*=\s*
-        (?P<expr>[^;\n]+?)\s*;""",
-    re.VERBOSE,
-)
-
-_PE_PROGRAM_PTR_RE = re.compile(
-    r"""var\s+(?P<ptr>[A-Za-z_][A-Za-z0-9_]*)\s*:\s*
-        \[\s*\*\s*\]\s*(?P<elem_type>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*
-        &(?P<backing>[A-Za-z_][A-Za-z0-9_]*)\s*;""",
-    re.VERBOSE,
-)
-
-_PE_PROGRAM_EXPORT_SYMBOL_RE = re.compile(
-    r"""@export_symbol\(\s*
-        (?P<ptr>[A-Za-z_][A-Za-z0-9_]*)\s*,\s*
-        "(?P<symbol>[A-Za-z_][A-Za-z0-9_]*)"\s*
-        \)""",
-    re.VERBOSE,
-)
-
-
 _ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({"rmsnorm", "residual", "gelu"})
 _SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
 _SUMMA_TARGETS = frozenset({"tiled", "lm_head_prefill_stable"})
@@ -175,26 +126,8 @@ def _pe_program_path(compile_root: Path, target: dict[str, Any]) -> Path:
 def _parse_layout_exports(layout_path: Path) -> list[dict[str, Any]]:
     metadata_path = layout_path.with_suffix(".metadata.json")
     if metadata_path.is_file():
-        exports = _layout_exports_from_metadata(metadata_path)
-        if exports:
-            return exports
-    try:
-        source = layout_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
-        return []
-    exports: list[dict[str, Any]] = []
-    for match in _EXPORT_NAME_RE.finditer(source):
-        raw_type = match.group("type").strip()
-        is_function = raw_type.startswith("fn") or "fn(" in raw_type
-        exports.append(
-            {
-                "name": match.group("name"),
-                "type": raw_type,
-                "kind": "device_function" if is_function else "device_variable",
-                "mutable": (match.group("mutable") == "true"),
-            }
-        )
-    return exports
+        return _layout_exports_from_metadata(metadata_path)
+    return []
 
 
 def _layout_exports_from_metadata(metadata_path: Path) -> list[dict[str, Any]]:
@@ -249,44 +182,8 @@ def _parse_pe_program_arrays(pe_program_path: Path) -> tuple[dict[str, dict[str,
     metadata_path = pe_program_path.with_suffix(".metadata.json")
     if metadata_path.is_file():
         decls = _decls_from_metadata(metadata_path)
-        if decls:
-            compile_time = _compile_time_from_metadata(metadata_path)
-            if not compile_time:
-                compile_time = _compile_time_from_source(pe_program_path)
-            return decls, compile_time
-    try:
-        source = pe_program_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
-        return {}, {}
-    decls: dict[str, dict[str, Any]] = {}
-    for pattern in (_PE_PROGRAM_VAR_RE, _PE_PROGRAM_ZEROS_RE):
-        for match in pattern.finditer(source):
-            name = match.group("name")
-            if name in decls:
-                continue
-            decls[name] = {
-                "sizeExpr": match.group("size_expr").strip(),
-                "elemType": match.group("elem_type"),
-            }
-    pointers: dict[str, str] = {}
-    for match in _PE_PROGRAM_PTR_RE.finditer(source):
-        pointers[match.group("ptr")] = match.group("backing")
-    for match in _PE_PROGRAM_EXPORT_SYMBOL_RE.finditer(source):
-        symbol = match.group("symbol")
-        backing = pointers.get(match.group("ptr"), "")
-        backing_decl = decls.get(backing)
-        if backing_decl is not None and symbol not in decls:
-            decls[symbol] = {
-                **backing_decl,
-                "backingVariable": backing,
-                "exportPointer": match.group("ptr"),
-            }
-    compile_time: dict[str, int] = {}
-    for match in _PE_PROGRAM_CONST_OR_PARAM_RE.finditer(source):
-        resolved = _resolve_size_expr(match.group("expr").strip(), compile_time)
-        if resolved is not None:
-            compile_time[match.group("name")] = resolved
-    return decls, compile_time
+        return decls, _compile_time_from_metadata(metadata_path)
+    return {}, {}
 
 
 def _decls_from_metadata(metadata_path: Path) -> dict[str, dict[str, Any]]:
@@ -343,19 +240,6 @@ def _compile_time_from_metadata(metadata_path: Path) -> dict[str, int]:
         resolved = _resolve_size_expr(expr, compile_time)
         if resolved is not None:
             compile_time[name] = resolved
-    return compile_time
-
-
-def _compile_time_from_source(pe_program_path: Path) -> dict[str, int]:
-    try:
-        source = pe_program_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError):
-        return {}
-    compile_time: dict[str, int] = {}
-    for match in _PE_PROGRAM_CONST_OR_PARAM_RE.finditer(source):
-        resolved = _resolve_size_expr(match.group("expr").strip(), compile_time)
-        if resolved is not None:
-            compile_time[match.group("name")] = resolved
     return compile_time
 
 

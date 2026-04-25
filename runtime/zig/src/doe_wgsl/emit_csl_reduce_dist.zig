@@ -136,6 +136,10 @@ pub fn emitDistributed(
     // Imports
     try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
+    try write(buf, pos, "fn sqrt_nr(x: f32) f32 {\n");
+    try write(buf, pos, "    const y0: f32 = math.sqrt(x);\n");
+    try write(buf, pos, "    return 0.5 * (y0 + x / y0);\n");
+    try write(buf, pos, "}\n\n");
 
     // Buffers
     for (module.globals.items) |global| {
@@ -226,7 +230,7 @@ pub fn emitDistributed(
     try write(buf, pos, "task normalize() void {\n");
     try write(buf, pos, "    const total_size = @as(f32, num_pes) * @as(f32, slice_size);\n");
     try write(buf, pos, "    const mean_sq = global_sum / total_size;\n");
-    try write(buf, pos, "    const inv_rms = 1.0 / math.sqrt(mean_sq + eps);\n\n");
+    try write(buf, pos, "    const inv_rms = 1.0 / sqrt_nr(mean_sq + eps);\n\n");
     try write(buf, pos, "    for (@range(i16, slice_size)) |i| {\n");
     try write(buf, pos, "        const idx = @as(u32, i);\n");
     try write(buf, pos, "        output[idx] = input[idx] * inv_rms * weight[idx];\n");

@@ -500,6 +500,10 @@ def main() -> int:
     )
     csl_audit_skip_prefixes = (
         "bench/out/scratch/csl-sdk-tmp/",
+        # Dated/deprecated generated runs are provenance, not the live
+        # production kernel contract this self-check gates.
+        "bench/out/overnight/",
+        "bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/",
     )
     audit_fails = []
     audit_scanned = 0

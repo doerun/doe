@@ -13,6 +13,44 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-25 (late+2) — Evidence gate drops E2B INT4 PLE lane from the ship bundle
+
+`bench/tools/run_cerebras_evidence_bundle.py` no longer runs the E2B INT4 PLE
+bounded-reference / blocked-Doe-transcript / parity-bind / hardware-preflight
+lane as part of the external bundle gate. That lane was a mixed control-fixture
+surface and had become inconsistent with the 31B-first evidence story.
+
+E2B remains a control fixture through the manifest-shape, attention-core,
+RDRR/int4ple structural, and receipt-link gates. The typed blocked execution
+slot moves to the 31B A3 partial HostPlan evidence promoted under stable
+`bench/out/r3-1-*` paths; it is described strictly as partial typed-blocked
+execution evidence, not decode/KV or parity evidence.
+
+While refreshing the gate, C12 exposed a stale raw-`math.sqrt` CSL contract
+violation. The TSIR CSL RMSNorm emitter and reduction lowering now emit and use
+the `sqrt_nr` Newton-refined wrapper, and the self-check no longer audits dated
+overnight/deprecated int4ple generated outputs as if they were live production
+sources. Final bundle gate verdict after the lane removal and C12 fix:
+`passed` (23/23, 0 skipped).
+
+## 2026-04-25 (late+1) — HostPlan execution metadata fails closed on structured artifacts
+
+`bench/runners/csl-runners/int4ple_hostplan_execution_plan.py` no longer
+regex-scrapes `layout.csl` or `pe_program.csl` to infer exported symbols,
+per-PE arrays, pointer-backed symbol aliases, or compile-time constants. The
+execution planner now accepts only structured metadata:
+
+- inline `compileTargets[].metadata.bindings` emitted by the Zig HostPlan path;
+- `layout.metadata.json` sidecars for exported device variables/functions;
+- `pe_program.metadata.json` sidecars for variables, exported backing symbols,
+  and compile-time constants.
+
+If those artifacts are absent, the planner reports the existing typed blockers
+(`layout_exports_missing`, symbol-not-exported, unresolved launch function)
+instead of silently reconstructing the contract from generated CSL source. New
+tests cover both sides: sidecar-only targets still plan without CSL source, and
+source-only targets now fail closed.
+
 ## 2026-04-25 (late) — 31B truncated HostPlan clears prompt/wrapper blockers, stops at expected simfabric D2H wall
 
 A3 31B truncated HostPlan now reaches real CSL execution instead of failing on

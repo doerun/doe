@@ -71,10 +71,27 @@ def write_layout(path: Path, *, exports: list[tuple[str, str]]) -> None:
         "layout {",
         "    @set_rectangle(1, 1);",
     ]
+    metadata_exports: list[dict[str, object]] = []
     for name, export_type in exports:
         lines.append(f'    @export_name("{name}", {export_type});')
+        raw_type = export_type
+        mutable = False
+        if "," in raw_type:
+            type_part, mutable_part = raw_type.rsplit(",", 1)
+            raw_type = type_part.strip()
+            mutable = mutable_part.strip() == "true"
+        kind = "device_function" if raw_type.startswith("fn") else "device_variable"
+        metadata_exports.append(
+            {
+                "name": name,
+                "type": raw_type,
+                "kind": kind,
+                "mutable": mutable,
+            }
+        )
     lines.append("}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    write_json(path.with_suffix(".metadata.json"), {"exports": metadata_exports})
 
 
 def clone_json(value: object) -> object:
@@ -2154,22 +2171,28 @@ class SummaHostMaterializationTests(unittest.TestCase):
             "paddedCols": 6,
         }
 
-    def test_pe_program_array_parser_resolves_exported_pointer_backing_arrays(self) -> None:
+    def test_pe_program_array_parser_uses_structured_exported_backing_arrays(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             pe_program = Path(tmpdir) / "pe_program.csl"
+            write_json(
+                pe_program.with_suffix(".metadata.json"),
+                {
+                    "variables": [
+                        {"name": "A_tile", "sizeExpr": "Mt * Kt", "elemType": "f32"},
+                    ],
+                    "exports": [
+                        {
+                            "symbol": "a",
+                            "backing": "A_tile",
+                            "pointer": "A_ptr",
+                            "sizeExpr": "Mt * Kt",
+                            "elemType": "f32",
+                        }
+                    ],
+                },
+            )
             pe_program.write_text(
-                "\n".join(
-                    [
-                        "param Mt: i16;",
-                        "param Kt: i16;",
-                        "var A_tile = @zeros([Mt * Kt]f32);",
-                        "var A_ptr: [*]f32 = &A_tile;",
-                        "comptime {",
-                        '    @export_symbol(A_ptr, "a");',
-                        "}",
-                    ]
-                )
-                + "\n",
+                "this source must not be parsed for arrays\n",
                 encoding="utf-8",
             )
 

@@ -16,8 +16,8 @@ const std = @import("std");
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
 const W = @import("emit_csl_ir_walk.zig");
-const walk_normal = W.Emit(.{ .skip_barriers = true, .runtime_array_size = "hidden_size" });
-const walk_lane = W.Emit(.{ .skip_barriers = true, .runtime_array_size = "hidden_size", .lane_mode = true });
+const walk_normal = W.Emit(.{ .skip_barriers = true, .runtime_array_size = "hidden_size", .sqrt_function = "sqrt_nr" });
+const walk_lane = W.Emit(.{ .skip_barriers = true, .runtime_array_size = "hidden_size", .lane_mode = true, .sqrt_function = "sqrt_nr" });
 
 pub const EmitError = W.EmitError;
 
@@ -47,6 +47,10 @@ pub fn emit(
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
+    try W.write(buf, pos, "fn sqrt_nr(x: f32) f32 {\n");
+    try W.write(buf, pos, "    const y0: f32 = math.sqrt(x);\n");
+    try W.write(buf, pos, "    return 0.5 * (y0 + x / y0);\n");
+    try W.write(buf, pos, "}\n\n");
 
     // WGSL workgroup size x-dim. Used by the lane-preserving lowering:
     // gid.x inside the pre-barrier for-loop resolves to

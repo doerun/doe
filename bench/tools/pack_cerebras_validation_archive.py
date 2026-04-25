@@ -135,9 +135,17 @@ INCLUDE_FILES: tuple = (
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json",
+    # 31B-led evidence (Step 1 of the Cerebras bundle drive plan).
+    # Sources are promoted from dated overnight-matrix cells to stable
+    # paths so the packer's static allow-list stays deterministic; the
+    # PROVENANCE.json files name the original source paths and hashes.
+    "bench/out/r3-1-31b-doppler-reference/gemma-4-31b-program-bundle.json",
+    "bench/out/r3-1-31b-doppler-reference/reference.json",
+    "bench/out/r3-1-31b-doppler-reference/PROVENANCE.json",
+    "bench/out/r3-1-31b-a3-partial/trace.json.progress.jsonl",
+    "bench/out/r3-1-31b-a3-partial/PROVENANCE.json",
+    "bench/out/r3-1-31b-l1-dry/trace.json",
+    "bench/out/r3-1-31b-l61-smoke/trace.json",
     "bench/out/cerebras-evidence-bundle/summary.json",
 )
 
@@ -231,9 +239,13 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32": "doppler-int4ple-reference-output-tokens",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json": "doppler-int4ple-reference-transcript",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json": "doppler-int4ple-reference-export",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json": "doe-csl-int4ple-blocked-transcript",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json": "doppler-int4ple-pending-parity",
-    "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json": "doe-csl-int4ple-pending-hardware",
+    "bench/out/r3-1-31b-doppler-reference/gemma-4-31b-program-bundle.json": "doppler-31b-program-bundle",
+    "bench/out/r3-1-31b-doppler-reference/reference.json": "doppler-31b-webgpu-prefill-decode-reference",
+    "bench/out/r3-1-31b-doppler-reference/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-a3-partial/trace.json.progress.jsonl": "doe-csl-31b-a3-partial-typed-blocked",
+    "bench/out/r3-1-31b-a3-partial/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-l1-dry/trace.json": "simfabric-31b-l1-smoke-receipt",
+    "bench/out/r3-1-31b-l61-smoke/trace.json": "simfabric-31b-l61-smoke-receipt",
     "bench/out/cerebras-evidence-bundle/summary.json": "rollup",
 }
 

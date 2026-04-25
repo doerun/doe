@@ -18,6 +18,32 @@ live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
 moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
 tick. New TSIR entries go here going forward.
 
+## 2026-04-25 — CSL RMSNorm emitters use sqrt_nr wrapper
+
+TSIR CSL RMSNorm emission no longer writes raw `math.sqrt(mean_sq + eps)` into
+the production PE body. `runtime/zig/src/tsir/emit_kernel_body.zig` now emits a
+`sqrt_nr` helper (`math.sqrt` seed plus one Newton refinement) and computes
+`inv_rms` through that helper. The shared WGSL-to-CSL reduction walker also has
+a configurable sqrt target; `emit_csl_reduction.zig` sets it to `sqrt_nr`, and
+the distributed reduction emitter uses the same wrapper.
+
+This keeps future generated RMSNorm CSL inside the C12 self-check contract that
+WSE production kernels must not call raw `math.sqrt` except inside the
+NR-refined wrapper.
+
+## 2026-04-25 — KV cache CSL wrapper narrowed to TSIR body emission
+
+`runtime/zig/src/doe_wgsl/emit_csl_kv_cache.zig` is now just the WGSL-name
+adapter for TSIR `kv_write` / `kv_read` body ops. The unused hand-maintained
+storage-pointer / compile-time export helpers were removed so the live body
+path has a single source: `runtime/zig/src/tsir/emit_kernel_body.zig`.
+
+Coverage added in `emit_csl_host_compile_source.zig` locks the HostPlan compile
+source output for both KV patterns: `kv_write` must use the TSIR decode-position
+loop and export `position`; `kv_read` must use the TSIR read window loop. Both
+tests assert the legacy toy `gid.x` WGSL body does not leak into the CSL PE
+program.
+
 ## 2026-04-24 — Move 4: first real-kernel fixture (`embed`) lands
 
 First real-kernel TSIR fixture under `runtime/zig/tests/tsir/real/embed/`:

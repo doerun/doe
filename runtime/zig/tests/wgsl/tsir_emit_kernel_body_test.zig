@@ -83,7 +83,9 @@ test "tsir emitters produce executable rms_norm bodies" {
         targets.wse3.descriptor,
     );
     defer allocator.free(csl);
-    try expectContains(csl, "const inv_rms = 1.0 / math.sqrt(mean_sq + epsilon);");
+    try expectContains(csl, "fn sqrt_nr(x: f32) f32");
+    try expectContains(csl, "const y0: f32 = math.sqrt(x);");
+    try expectContains(csl, "const inv_rms = 1.0 / sqrt_nr(mean_sq + epsilon);");
 
     const msl = try tsir.emit_msl.emitSemanticFunction(
         allocator,

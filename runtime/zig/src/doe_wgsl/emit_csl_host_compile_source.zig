@@ -583,14 +583,15 @@ test "host compile source emits semantic Gemma elementwise bodies" {
 
     const rms = try emitPatternSections(std.testing.allocator, "rms_norm", &buf);
     try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"weight\", [*]f32, true);") != null);
-    // The TSIR-driven body uses `v` as the loop temporary and `@sqrt`
-    // builtin with the literal epsilon inline; the load-bearing
-    // semantic invariants are: a sum-of-squares accumulator, a
-    // sqrt-with-epsilon, the Gemma `1.0 + weight` offset on the
-    // per-element output, and no toy-WGSL `partial` workgroup
-    // accumulator leaking through.
+    // The TSIR-driven body uses `v` as the loop temporary and the
+    // NR-refined `sqrt_nr` wrapper with the literal epsilon inline;
+    // the load-bearing semantic invariants are: a sum-of-squares
+    // accumulator, a sqrt-with-epsilon, the Gemma `1.0 + weight`
+    // offset on the per-element output, and no toy-WGSL `partial`
+    // workgroup accumulator leaking through.
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "sum_sq +=") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "math.sqrt(mean_sq + 0.000001)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "fn sqrt_nr(x: f32) f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "sqrt_nr(mean_sq + 0.000001)") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "1.0 + weight[") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "partial") == null);
 
@@ -604,6 +605,26 @@ test "host compile source emits semantic Gemma elementwise bodies" {
     try std.testing.expect(std.mem.indexOf(u8, gelu.layout, "@export_name(\"input\", [*]f32, true);") != null);
     try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "math.tanh(t)") != null);
     try std.testing.expect(std.mem.indexOf(u8, gelu.pe_program, "0.5 * x") != null);
+}
+
+test "host compile source emits TSIR KV cache bodies" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+
+    const kv_write = try emitPatternSections(std.testing.allocator, "kv_write", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param max_seq_len: i16 = 4096;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const base = position[0] * @as(u32, head_dim);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "key_cache[idx] = key_proj[@as(u32, d)];") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "val_cache[idx] = val_proj[@as(u32, d)];") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "@export_symbol(position_ptr, \"position\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "gid.x") == null);
+
+    const read = try emitPatternSections(std.testing.allocator, "kv_read", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param read_len: i16 = 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const src_base = @as(u32, read_start + i) * @as(u32, head_dim);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "key_out[dst_base + @as(u32, d)] = key_cache[src_base + @as(u32, d)];") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "val_out[dst_base + @as(u32, d)] = val_cache[src_base + @as(u32, d)];") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "@export_symbol(key_out_ptr, \"key_out\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "gid.x") == null);
 }
 
 test "host compile source tiled matmul exports WGSL storage names" {
@@ -685,8 +706,8 @@ test "reduction pattern emits real rmsnorm: chunked sum, sqrt, per-element outpu
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
     const sections = try emitPatternSections(std.testing.allocator, "reduction", &buf);
 
-    // Inverse RMS computation must be present (sqrt + division).
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "math.sqrt") != null);
+    // Inverse RMS computation must be present (NR-refined sqrt + division).
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "sqrt_nr") != null);
 
     // Weight binding must be threaded through to the per-element output.
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "weight") != null);

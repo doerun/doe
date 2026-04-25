@@ -23,14 +23,10 @@ Steps (in order):
  12. Doppler capture graph to CSL attention-core lowering receipt
  13. E2B model receipt refresh after attention-core/lowering restamp
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
- 15. Doppler INT4 PLE bounded reference export and gate
- 16. Doe CSL INT4 PLE blocked transcript receipt from the current
-     Doppler-owned Program Bundle, gate, parity bind, and metadata
-     parity gate; optional manifest compile-param promotion preflight
- 17. claim-discipline gate (hardware + MoE fronts)
- 18. SdkLayout streaming hardening gate (against any available live
+ 15. claim-discipline gate (hardware + MoE fronts)
+ 16. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 19. schema validation of 31B receipt and receipt-link integrity for
+ 17. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -64,15 +60,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BUNDLE_DIR = REPO_ROOT / "bench/out/cerebras-evidence-bundle"
 DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
-DEFAULT_DOPPLER_PROGRAM_BUNDLE = (
-    "/home/x/deco/doppler/examples/program-bundles/"
-    "gemma-4-e2b-it-q4k-ehf16-af32-int4ple.program-bundle.json"
-)
-PROGRAM_BUNDLE_REFERENCE_EXPORT = (
-    "bench/out/doppler-reference/"
-    "gemma-4-e2b-int4ple-production-final-logits/"
-    "doppler_program_bundle_reference_export.json"
-)
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,24 +72,6 @@ def parse_args() -> argparse.Namespace:
         "--fail-fast",
         action="store_true",
         help="Stop at first failing step (default: run all, report all).",
-    )
-    p.add_argument(
-        "--program-bundle",
-        default=DEFAULT_DOPPLER_PROGRAM_BUNDLE,
-        help=(
-            "Doppler-owned Program Bundle source for the Doe CSL INT4 PLE "
-            "transcript/parity lane."
-        ),
-    )
-    p.add_argument(
-        "--require-int4ple-manifest-compile-params",
-        action="store_true",
-        help=(
-            "Run the promotion-only INT4 PLE manifest compile-param gate "
-            "against the Doe CSL simulator driver result. Default skips this "
-            "preflight so blocked metadata evidence can still pass while "
-            "current compile targets are diagnostic-shaped or stale."
-        ),
     )
     return p.parse_args()
 
@@ -398,149 +367,13 @@ def main() -> int:
         ],
     ))
 
-    # 15. Production Doppler INT4 PLE reference export. This is the
-    # source-side bounded transcript, not Doe CSL parity by itself.
-    steps.append(run(
-        "doppler-int4ple-reference-export",
-        [
-            "node",
-            "bench/tools/export_doppler_int4ple_reference.mjs",
-            "--runtime-profile",
-            "profiles/gemma4-e2b-int4ple-reference-export",
-        ],
-        timeout=300,
-    ))
-
-    steps.append(run(
-        "doppler-int4ple-reference-gate",
-        [
-            "python3",
-            "bench/gates/doppler_int4ple_reference_export_gate.py",
-            "--receipt",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-production-final-logits/"
-            "doppler_int4ple_reference_export.json",
-            "--require-output-ready",
-            "--require-decode-transcript",
-        ],
-    ))
-
-    # 16. Doe CSL INT4 PLE transcript receipt. Today this is an
-    # explicit blocked receipt; the metadata gate should pass, while
-    # strict promotion remains blocked until simfabric emits the real
-    # transcript.
-    steps.append(run(
-        "doe-csl-int4ple-blocked-transcript",
-        [
-            "python3",
-            "bench/tools/run_doe_csl_int4ple_transcript.py",
-            "--program-bundle",
-            args.program_bundle,
-        ],
-    ))
-
-    steps.append(run(
-        "doe-csl-int4ple-blocked-transcript-gate",
-        [
-            "python3",
-            "bench/gates/doe_csl_int4ple_transcript_gate.py",
-            "--receipt",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
-            "--reference-export",
-            PROGRAM_BUNDLE_REFERENCE_EXPORT,
-        ],
-    ))
-
-    manifest_compile_params_gate_command = [
-        "python3",
-        "bench/gates/int4ple_manifest_compile_params_gate.py",
-        "--operation-graph",
-        "bench/out/doppler-reference/"
-        "gemma-4-e2b-int4ple-doe-csl-hostplan/"
-        "simulator-driver-result.json",
-        "--runtime-config",
-        "bench/out/doppler-reference/"
-        "gemma-4-e2b-int4ple-doe-csl-hostplan/"
-        "runtime-config.json",
-        "--reference-export",
-        PROGRAM_BUNDLE_REFERENCE_EXPORT,
-    ]
-    if args.require_int4ple_manifest_compile_params:
-        steps.append(run(
-            "doe-csl-int4ple-manifest-compile-params-gate",
-            manifest_compile_params_gate_command,
-        ))
-    else:
-        steps.append(skipped(
-            "doe-csl-int4ple-manifest-compile-params-gate",
-            (
-                "skipped: promotion-only gate. Pass "
-                "--require-int4ple-manifest-compile-params after refreshing "
-                "the operation graph with manifest-scale per-target "
-                "compileParams."
-            ),
-            manifest_compile_params_gate_command,
-        ))
-
-    steps.append(run(
-        "doe-csl-int4ple-parity-bind",
-        [
-            "python3",
-            "bench/tools/bind_doppler_int4ple_reference_to_csl_parity.py",
-            "--reference-export",
-            PROGRAM_BUNDLE_REFERENCE_EXPORT,
-            "--csl-transcript-receipt",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-doe-csl-transcript.blocked.json",
-            "--out",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
-        ],
-    ))
-
-    steps.append(run(
-        "doe-csl-int4ple-parity-gate",
-        [
-            "python3",
-            "bench/gates/csl_reference_parity_gate.py",
-            "--receipt",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-doe-csl-reference-parity.pending.json",
-        ],
-    ))
-
-    # 17. Doe CSL INT4 PLE hardware receipt preflight. This is an access
-    # request surface only: the gate accepts pending_simulator_parity, while
-    # --require-hardware-success remains reserved for a real appliance/system run.
-    steps.append(run(
-        "doe-csl-int4ple-hardware-preflight",
-        [
-            "python3",
-            "bench/tools/prepare_doe_csl_int4ple_hardware_receipt.py",
-            "--program-bundle",
-            args.program_bundle,
-        ],
-    ))
-
-    steps.append(run(
-        "doe-csl-int4ple-hardware-preflight-gate",
-        [
-            "python3",
-            "bench/gates/doe_csl_int4ple_hardware_receipt_gate.py",
-            "--receipt",
-            "bench/out/doppler-reference/"
-            "gemma-4-e2b-int4ple-doe-csl-hardware-receipt.pending.json",
-        ],
-    ))
-
-    # 18. claim-discipline gate (hardware + MoE fronts).
+    # 15. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 19. SdkLayout streaming hardening gate against the freshest live
+    # 16. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -559,7 +392,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 20. receipt link integrity (already invoked by self-check STEP 5,
+    # 17. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

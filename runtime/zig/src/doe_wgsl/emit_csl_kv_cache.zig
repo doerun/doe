@@ -9,7 +9,6 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
-const spec = @import("csl_spec.zig");
 const W = @import("emit_csl_ir_walk.zig");
 const tsir_kernel_body = @import("../tsir/emit_kernel_body.zig");
 const tsir_schema = @import("../tsir/schema.zig");
@@ -155,58 +154,4 @@ pub fn emitRead(
         => return error.InvalidIr,
     };
     try W.write(buf, pos, sink.items);
-}
-
-fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
-    for (module.globals.items) |global| {
-        if (global.binding == null) continue;
-        const space = global.addr_space orelse continue;
-        if (space != .storage) continue;
-        try W.write(buf, pos, "var ");
-        try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ": [*]");
-        try writeScalarType(buf, pos, module, global.ty);
-        try W.write(buf, pos, " = undefined;\n");
-        try W.write(buf, pos, "var ");
-        try W.write(buf, pos, global.name);
-        try W.write(buf, pos, "_ptr: [*]");
-        try writeScalarType(buf, pos, module, global.ty);
-        try W.write(buf, pos, " = &");
-        try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ";\n");
-    }
-    try W.write(buf, pos, "\n");
-}
-
-fn emitDecodePositionState(buf: []u8, pos: *usize) EmitError!void {
-    try W.write(buf, pos, "var decode_position: [1]u32 = @zeros([1]u32);\n");
-    try W.write(buf, pos, "var decode_position_ptr: [*]u32 = &decode_position;\n\n");
-}
-
-fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module, include_position: bool) EmitError!void {
-    try W.write(buf, pos, "comptime {\n");
-    for (module.globals.items) |global| {
-        if (global.binding == null) continue;
-        const space = global.addr_space orelse continue;
-        if (space != .storage) continue;
-        try W.write(buf, pos, "    @export_symbol(");
-        try W.write(buf, pos, global.name);
-        try W.write(buf, pos, "_ptr, \"");
-        try W.write(buf, pos, global.name);
-        try W.write(buf, pos, "\");\n");
-    }
-    if (include_position) {
-        try W.write(buf, pos, "    @export_symbol(decode_position_ptr, \"position\");\n");
-    }
-    try W.write(buf, pos, "    @export_symbol(compute);\n");
-    try W.write(buf, pos, "}\n");
-}
-
-fn writeScalarType(buf: []u8, pos: *usize, module: *const ir.Module, ty: ir.TypeId) EmitError!void {
-    const resolved = module.types.get(ty);
-    switch (resolved) {
-        .scalar => |scalar| try W.write(buf, pos, spec.scalarTypeName(scalar)),
-        .array => |array| try writeScalarType(buf, pos, module, array.elem),
-        else => try W.write(buf, pos, "u32"),
-    }
 }
