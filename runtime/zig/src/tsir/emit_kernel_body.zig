@@ -51,11 +51,22 @@ pub const EmitError = std.mem.Allocator.Error || error{
 /// output from the standard `inv_rms * scale[d]` to Gemma's
 /// `inv_rms * (1.0 + scale[d])` form. Doppler's RMSNorm reference
 /// (`rmsnorm.wgsl`) uses the offset; non-Gemma callers leave it false.
+///
+/// `head_dim_default`, `max_seq_len_default`, and `read_len_default`
+/// are the kv_write / kv_read analogs of `hidden_size_default`. The
+/// live kv_cache layout doesn't forward these params through
+/// `@set_tile_code`, so cslc raises `csl_compile_uninitialized_param`
+/// unless they carry source-level defaults. The live wrapper sets
+/// them; TSIR-only callers leave them null to preserve the
+/// "no defaults" test expectation.
 pub const Config = struct {
     var_prefix: []const u8 = "tsir_",
     chunk_size_default: ?u32 = null,
     hidden_size_default: ?u32 = null,
     gemma_one_plus_weight_offset: bool = false,
+    head_dim_default: ?u32 = null,
+    max_seq_len_default: ?u32 = null,
+    read_len_default: ?u32 = null,
 };
 
 const default_config: Config = .{};
@@ -310,6 +321,10 @@ fn emitCslRmsNorm(
         try writer.writeAll("param epsilon: f32;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    // CSL has no `@sqrt` builtin; reach for the `<math>` module's
+    // `math.sqrt` instead. The previous TSIR test that asserted on
+    // `@sqrt(` predates this — updated alongside.
+    try writer.writeAll("const math = @import_module(\"<math>\");\n");
     try writeCslBufferArray(writer, p, input.name, "hidden_size", "f32");
     try writeCslBufferArray(writer, p, scale.name, "hidden_size", "f32");
     try writeCslBufferArray(writer, p, output.name, "hidden_size", "f32");
@@ -327,7 +342,7 @@ fn emitCslRmsNorm(
     try writer.writeAll("        sum_sq += v * v;\n");
     try writer.writeAll("    }\n");
     try writer.writeAll("    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
-    try writer.writeAll("    const inv_rms = 1.0 / @sqrt(mean_sq + ");
+    try writer.writeAll("    const inv_rms = 1.0 / math.sqrt(mean_sq + ");
     try writeCslEpsilon(writer, rms.epsilon);
     try writer.writeAll(");\n");
     try writer.writeAll("    for (@range(i16, hidden_size)) |d| {\n");
@@ -550,8 +565,16 @@ fn emitCslKvWrite(
 
     const p = config.var_prefix;
     try writer.writeAll("param memcpy_params;\n");
-    try writer.writeAll("param head_dim: i16;\n");
-    try writer.writeAll("param max_seq_len: i16;\n");
+    if (config.head_dim_default) |value| {
+        try writer.print("param head_dim: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param head_dim: i16;\n");
+    }
+    if (config.max_seq_len_default) |value| {
+        try writer.print("param max_seq_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param max_seq_len: i16;\n");
+    }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writeCslBufferArray(writer, p, key_proj.name, "head_dim", "f32");
     try writeCslBufferArray(writer, p, val_proj.name, "head_dim", "f32");
@@ -608,10 +631,22 @@ fn emitCslKvRead(
 
     const p = config.var_prefix;
     try writer.writeAll("param memcpy_params;\n");
-    try writer.writeAll("param head_dim: i16;\n");
-    try writer.writeAll("param max_seq_len: i16;\n");
+    if (config.head_dim_default) |value| {
+        try writer.print("param head_dim: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param head_dim: i16;\n");
+    }
+    if (config.max_seq_len_default) |value| {
+        try writer.print("param max_seq_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param max_seq_len: i16;\n");
+    }
     try writer.writeAll("param read_start: i16 = 0;\n");
-    try writer.writeAll("param read_len: i16;\n");
+    if (config.read_len_default) |value| {
+        try writer.print("param read_len: i16 = {d};\n", .{value});
+    } else {
+        try writer.writeAll("param read_len: i16;\n");
+    }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writeCslBufferArray(writer, p, key_cache.name, "max_seq_len * head_dim", "f32");
     try writeCslBufferArray(writer, p, val_cache.name, "max_seq_len * head_dim", "f32");

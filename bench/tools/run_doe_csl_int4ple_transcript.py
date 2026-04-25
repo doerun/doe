@@ -46,7 +46,7 @@ DEFAULT_HOSTPLAN_BUNDLE_ROOT = Path(
     "gemma-3-1b-doe-csl-hostplan"
 )
 CSL_SDK_DRIVER = Path("runtime/zig/tools/csl_sdk_driver.py")
-MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 600_000
+MIN_REAL_INT4PLE_RUNTIME_TIMEOUT_MS = 3_600_000
 INT4PLE_COMPILE_TIMEOUT_SECONDS = 60
 INT4PLE_RUNTIME_RUNNER = Path(
     "bench/runners/csl-runners/int4ple_compile_target_sim_runner.py"

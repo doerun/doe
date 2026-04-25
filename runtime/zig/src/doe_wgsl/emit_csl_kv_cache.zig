@@ -68,7 +68,11 @@ pub fn emitWrite(
         },
         .source_digest = [_]u8{0} ** 32,
     };
-    const config = tsir_kernel_body.Config{ .var_prefix = "" };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        .head_dim_default = 256,
+        .max_seq_len_default = 4096,
+    };
     var fixed: [4096]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);
     var sink = std.ArrayList(u8){};
@@ -132,7 +136,12 @@ pub fn emitRead(
         },
         .source_digest = [_]u8{0} ** 32,
     };
-    const config = tsir_kernel_body.Config{ .var_prefix = "" };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        .head_dim_default = 256,
+        .max_seq_len_default = 4096,
+        .read_len_default = 1,
+    };
     var fixed: [4096]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);
     var sink = std.ArrayList(u8){};
