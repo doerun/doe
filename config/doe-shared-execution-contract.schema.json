@@ -459,7 +459,7 @@
         "hostAction": { "const": "allocate_device" },
         "dtype": {
           "type": "string",
-          "enum": ["bytes", "f16", "float32", "u8_q4k", "u8_q8", "uint32"]
+          "enum": ["bf16", "bytes", "f16", "float32", "u8_q4k", "u8_q8", "uint32"]
         },
         "peGrid": {
           "type": "object",

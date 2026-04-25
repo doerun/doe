@@ -137,7 +137,7 @@
             "minItems": 2,
             "maxItems": 2
           },
-          "dtype": { "type": "string", "enum": ["f16", "u8_q4k", "u8_q8"] },
+          "dtype": { "type": "string", "enum": ["bf16", "f16", "u8_q4k", "u8_q8"] },
           "weightKey": { "type": "string", "minLength": 1 },
           "tensorName": { "type": "string", "minLength": 1 },
           "tensor": { "type": "string", "minLength": 1 },
@@ -316,7 +316,7 @@
         },
         "dtype": {
           "type": "string",
-          "enum": ["bytes", "f16", "float32", "u8_q4k", "u8_q8", "uint32"]
+          "enum": ["bf16", "bytes", "f16", "float32", "u8_q4k", "u8_q8", "uint32"]
         },
         "peGrid": { "$ref": "#/$defs/peGrid" },
         "roi": { "$ref": "#/$defs/peRoi" },

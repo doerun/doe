@@ -113,6 +113,266 @@ test "tsir emitters produce executable rms_norm bodies" {
     try expectContains(spir_v, "inversesqrt");
 }
 
+test "tsir csl residual_add emitWithConfig var_prefix='' produces bare names" {
+    // The live emit_csl_semantic_ops.emitResidualPe path expects bare
+    // `a` / `b` / `output` var names (no `tsir_` prefix). The Config
+    // hook lets a TSIR-driven swap of that path strip the prefix while
+    // existing default-prefix callers keep their output unchanged.
+    const allocator = std.testing.allocator;
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "a", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "b", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .summand_a },
+            .{ .binding_index = 1, .role = .summand_b },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    const semantic = tsir.schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .residual_add,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const config = tsir.emit_kernel_body.Config{ .var_prefix = "" };
+    try tsir.emit_kernel_body.emitWithConfig(buf.writer(allocator), semantic, .csl, &config);
+    const csl = buf.items;
+    // Bare var names — exactly what the live emit_csl_semantic_ops path
+    // emits today (`var a: ...`, `var b: ...`, `var output: ...`).
+    try expectContains(csl, "var a: [chunk_size]f32 = @zeros([chunk_size]f32);");
+    try expectContains(csl, "var b: [chunk_size]f32 = @zeros([chunk_size]f32);");
+    try expectContains(csl, "var output: [chunk_size]f32 = @zeros([chunk_size]f32);");
+    try expectContains(csl, "output[idx] = a[idx] + b[idx];");
+    try expectContains(csl, "@export_symbol(a_ptr, \"a\");");
+    try expectContains(csl, "@export_symbol(b_ptr, \"b\");");
+    try expectContains(csl, "@export_symbol(output_ptr, \"output\");");
+    // No `tsir_` leakage in the bare-prefix path.
+    try expectNotContains(csl, "tsir_a");
+    try expectNotContains(csl, "tsir_output");
+}
+
+test "tsir csl residual_add honors binding.name for var + export naming" {
+    // The TSIR emitter parameterizes variable / export names via
+    // `binding.name` rather than hardcoding the role string. This is the
+    // hook the live HostPlan path needs to swap through TSIR without
+    // changing downstream symbol bindings — bindings can be named to
+    // match whatever the live emitter exports today (e.g. `a`, `b`,
+    // `output`) and the TSIR output will use those names.
+    const allocator = std.testing.allocator;
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "a", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "b", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .summand_a },
+            .{ .binding_index = 1, .role = .summand_b },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    const semantic = tsir.schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .residual_add,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    // Custom binding.name flows through to var declarations.
+    try expectContains(csl, "tsir_a: [chunk_size]f32");
+    try expectContains(csl, "tsir_b: [chunk_size]f32");
+    try expectContains(csl, "tsir_output: [chunk_size]f32");
+    // And to the loop body.
+    try expectContains(csl, "tsir_output[idx] = tsir_a[idx] + tsir_b[idx];");
+    // And — the load-bearing piece — to the exported symbol names.
+    try expectContains(csl, "@export_symbol(tsir_a_ptr, \"a\");");
+    try expectContains(csl, "@export_symbol(tsir_b_ptr, \"b\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    // Default role-named symbols must NOT appear (proves the emitter is
+    // not falling back to hardcoded role strings).
+    try expectNotContains(csl, "summand_a");
+    try expectNotContains(csl, "summand_b");
+}
+
+test "tsir csl emitter produces executable residual_add body" {
+    const allocator = std.testing.allocator;
+    const semantic = residualAddSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_summand_a: [chunk_size]f32");
+    try expectContains(csl, "tsir_summand_b: [chunk_size]f32");
+    try expectContains(csl, "tsir_output[idx] = tsir_summand_a[idx] + tsir_summand_b[idx];");
+    try expectContains(csl, "@export_symbol(tsir_summand_a_ptr, \"summand_a\");");
+    try expectContains(csl, "@export_symbol(tsir_summand_b_ptr, \"summand_b\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+
+    // Other backends remain typed-rejection until residual_add lowering
+    // is wired through them; mirrors the attention_scores precedent.
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl emitter produces executable gelu_gated body" {
+    const allocator = std.testing.allocator;
+    const semantic = geluGatedSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_gate: [chunk_size]f32");
+    try expectContains(csl, "tsir_input: [chunk_size]f32");
+    try expectContains(csl, "fn gelu(x: f32) f32");
+    try expectContains(csl, "if (inner < -15.0) inner = -15.0;");
+    try expectContains(csl, "if (inner > 15.0) inner = 15.0;");
+    try expectContains(csl, "math.tanh(inner)");
+    try expectContains(csl, "tsir_output[idx] = gelu(tsir_gate[idx]) * tsir_input[idx];");
+    try expectContains(csl, "@export_symbol(tsir_gate_ptr, \"gate\");");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr, \"input\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+
+    // Other backends: typed rejection (matches attention_scores precedent).
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl emitter produces executable kv_write body" {
+    const allocator = std.testing.allocator;
+    const semantic = kvWriteSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param head_dim: i16;");
+    try expectContains(csl, "param max_seq_len: i16;");
+    try expectContains(csl, "tsir_key_cache: [max_seq_len * head_dim]f32");
+    try expectContains(csl, "tsir_value_cache: [max_seq_len * head_dim]f32");
+    try expectContains(csl, "const base = tsir_decode_position[0] * @as(u32, head_dim);");
+    try expectContains(csl, "tsir_key_cache[idx] = tsir_key_projection[@as(u32, d)];");
+    try expectContains(csl, "tsir_value_cache[idx] = tsir_value_projection[@as(u32, d)];");
+    try expectContains(csl, "@export_symbol(tsir_decode_position_ptr, \"decode_position\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+
+    // Other backends: typed rejection.
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl emitter produces executable kv_read body" {
+    const allocator = std.testing.allocator;
+    const semantic = kvReadSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param read_start: i16 = 0;");
+    try expectContains(csl, "param read_len: i16;");
+    try expectContains(csl, "tsir_key_output: [read_len * head_dim]f32");
+    try expectContains(csl, "tsir_value_output: [read_len * head_dim]f32");
+    try expectContains(csl, "const src_base = @as(u32, read_start + i) * @as(u32, head_dim);");
+    try expectContains(csl, "tsir_key_output[dst_base + @as(u32, d)] = tsir_key_cache[src_base + @as(u32, d)];");
+    try expectContains(csl, "@export_symbol(tsir_key_output_ptr, \"key_output\");");
+    try expectContains(csl, "@export_symbol(tsir_value_output_ptr, \"value_output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
 test "tsir emitters produce executable gather bodies" {
     const allocator = std.testing.allocator;
     const semantic = gatherSemantic();
@@ -242,6 +502,154 @@ fn rmsNormSemantic() tsir.schema.SemanticFunction {
                 .hidden_extent_axis = 0,
                 .reduction_target = .intermediate_scalar,
             },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn residualAddSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "summand_a", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "summand_b", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .summand_a },
+            .{ .binding_index = 1, .role = .summand_b },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .residual_add,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn geluGatedSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "gate", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "input", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .gate },
+            .{ .binding_index = 1, .role = .input },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .gelu_gated,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn kvWriteSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "head_dim", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "key_projection", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "value_projection", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "key_cache", .group = 0, .binding = 2, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+            .{ .name = "value_cache", .group = 0, .binding = 3, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+            .{ .name = "decode_position", .group = 0, .binding = 4, .logical_shape = &.{1}, .elem = .u32, .read_write = false },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .key_projection },
+            .{ .binding_index = 1, .role = .value_projection },
+            .{ .binding_index = 2, .role = .key_cache },
+            .{ .binding_index = 3, .role = .value_cache },
+            .{ .binding_index = 4, .role = .decode_position },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .kv_write,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn kvReadSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "read_len", .step = "1" },
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "head_dim", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "key_cache", .group = 0, .binding = 0, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "value_cache", .group = 0, .binding = 1, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "key_output", .group = 0, .binding = 2, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+            .{ .name = "value_output", .group = 0, .binding = 3, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .key_cache },
+            .{ .binding_index = 1, .role = .value_cache },
+            .{ .binding_index = 2, .role = .key_output },
+            .{ .binding_index = 3, .role = .value_output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .token },
+            .{ .axis_index = 1, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .gather,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .kv_read,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
         },
         .source_digest = [_]u8{0} ** 32,
     };

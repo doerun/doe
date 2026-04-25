@@ -69,6 +69,7 @@ def _resolve_phase_variant_target(
     available_targets: dict[str, Any],
     launch_index: int,
     blockers: list[str],
+    targets_metadata: dict[tuple[str, str], str] | None = None,
 ) -> str | None:
     """Remap an elementwise launch to its phase-specific compile target.
 
@@ -78,6 +79,11 @@ def _resolve_phase_variant_target(
     base target; launches with a phase must resolve to the matching variant.
 
     Non-elementwise kernels pass through unchanged.
+
+    When `targets_metadata` (loaded from `compile/targets.metadata.json`) is
+    provided, the (baseKernel, phase) → target name lookup uses the
+    Zig-emitted truth instead of the legacy `f"{kernel_name}_{phase}"`
+    suffix convention.
     """
     if kernel_name not in _ELEMENTWISE_PHASE_VARIANT_KERNELS:
         return kernel_name
@@ -89,13 +95,40 @@ def _resolve_phase_variant_target(
             f"{kernel_name}:{phase}"
         )
         return None
-    variant = f"{kernel_name}_{phase}"
+    variant: str | None = None
+    if targets_metadata is not None:
+        variant = targets_metadata.get((kernel_name, phase))
+    if variant is None:
+        variant = f"{kernel_name}_{phase}"
     if variant not in available_targets:
         blockers.append(
             f"launch[{launch_index}].phase_variant_target_missing:{variant}"
         )
         return None
     return variant
+
+
+def _load_targets_metadata(compile_root: Path) -> dict[tuple[str, str], str]:
+    metadata_path = compile_root / "targets.metadata.json"
+    if not metadata_path.is_file():
+        return {}
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    by_base_phase: dict[tuple[str, str], str] = {}
+    for entry in payload.get("targets") or []:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "")
+        base = str(entry.get("baseKernel") or "")
+        phase = entry.get("phase")
+        if not name or not base or not isinstance(phase, str) or not phase:
+            continue
+        by_base_phase[(base, phase)] = name
+    return by_base_phase
 
 
 def _target_by_name(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -133,6 +166,11 @@ def _pe_program_path(compile_root: Path, target: dict[str, Any]) -> Path:
 
 
 def _parse_layout_exports(layout_path: Path) -> list[dict[str, Any]]:
+    metadata_path = layout_path.with_suffix(".metadata.json")
+    if metadata_path.is_file():
+        exports = _layout_exports_from_metadata(metadata_path)
+        if exports:
+            return exports
     try:
         source = layout_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError):
@@ -147,6 +185,33 @@ def _parse_layout_exports(layout_path: Path) -> list[dict[str, Any]]:
                 "type": raw_type,
                 "kind": "device_function" if is_function else "device_variable",
                 "mutable": (match.group("mutable") == "true"),
+            }
+        )
+    return exports
+
+
+def _layout_exports_from_metadata(metadata_path: Path) -> list[dict[str, Any]]:
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return []
+    if not isinstance(payload, dict):
+        return []
+    exports: list[dict[str, Any]] = []
+    for entry in payload.get("exports") or []:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "")
+        type_str = str(entry.get("type") or "")
+        kind = str(entry.get("kind") or "")
+        if not name or not type_str or kind not in {"device_variable", "device_function"}:
+            continue
+        exports.append(
+            {
+                "name": name,
+                "type": type_str,
+                "kind": kind,
+                "mutable": bool(entry.get("mutable") or False),
             }
         )
     return exports
@@ -174,6 +239,14 @@ def _resolve_size_expr(size_expr: str, params: dict[str, int]) -> int | None:
 
 
 def _parse_pe_program_arrays(pe_program_path: Path) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
+    metadata_path = pe_program_path.with_suffix(".metadata.json")
+    if metadata_path.is_file():
+        decls = _decls_from_metadata(metadata_path)
+        if decls:
+            compile_time = _compile_time_from_metadata(metadata_path)
+            if not compile_time:
+                compile_time = _compile_time_from_source(pe_program_path)
+            return decls, compile_time
     try:
         source = pe_program_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError):
@@ -207,6 +280,76 @@ def _parse_pe_program_arrays(pe_program_path: Path) -> tuple[dict[str, dict[str,
         if resolved is not None:
             compile_time[match.group("name")] = resolved
     return decls, compile_time
+
+
+def _decls_from_metadata(metadata_path: Path) -> dict[str, dict[str, Any]]:
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    decls: dict[str, dict[str, Any]] = {}
+    for entry in payload.get("variables") or []:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "")
+        size_expr = str(entry.get("sizeExpr") or "")
+        elem_type = str(entry.get("elemType") or "")
+        if not name or not size_expr or not elem_type:
+            continue
+        decls[name] = {"sizeExpr": size_expr, "elemType": elem_type}
+    for entry in payload.get("exports") or []:
+        if not isinstance(entry, dict):
+            continue
+        symbol = str(entry.get("symbol") or "")
+        backing = str(entry.get("backing") or "")
+        size_expr = str(entry.get("sizeExpr") or "")
+        elem_type = str(entry.get("elemType") or "")
+        pointer = str(entry.get("pointer") or "")
+        if not symbol or not size_expr or not elem_type or symbol in decls:
+            continue
+        decls[symbol] = {
+            "sizeExpr": size_expr,
+            "elemType": elem_type,
+            "backingVariable": backing,
+            "exportPointer": pointer,
+        }
+    return decls
+
+
+def _compile_time_from_metadata(metadata_path: Path) -> dict[str, int]:
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    compile_time: dict[str, int] = {}
+    for entry in payload.get("compileTimeConstants") or []:
+        if not isinstance(entry, dict):
+            continue
+        name = str(entry.get("name") or "")
+        expr = str(entry.get("expr") or "")
+        if not name or not expr:
+            continue
+        resolved = _resolve_size_expr(expr, compile_time)
+        if resolved is not None:
+            compile_time[name] = resolved
+    return compile_time
+
+
+def _compile_time_from_source(pe_program_path: Path) -> dict[str, int]:
+    try:
+        source = pe_program_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return {}
+    compile_time: dict[str, int] = {}
+    for match in _PE_PROGRAM_CONST_OR_PARAM_RE.finditer(source):
+        resolved = _resolve_size_expr(match.group("expr").strip(), compile_time)
+        if resolved is not None:
+            compile_time[match.group("name")] = resolved
+    return compile_time
 
 
 def _memcpy_data_type(elem_type: str) -> str:
@@ -959,6 +1102,7 @@ def build_hostplan_execution_plan(
         "launchIndex",
     )
 
+    targets_metadata = _load_targets_metadata(compile_root)
     target_sessions: dict[str, dict[str, Any]] = {}
     launch_records: list[dict[str, Any]] = []
 
@@ -973,6 +1117,7 @@ def build_hostplan_execution_plan(
             available_targets=targets,
             launch_index=launch_index,
             blockers=blockers,
+            targets_metadata=targets_metadata,
         )
         if target_name is None:
             continue

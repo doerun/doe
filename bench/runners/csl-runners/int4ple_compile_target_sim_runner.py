@@ -1098,6 +1098,38 @@ def _materialize_weight_matrix_f32(
     )
 
 
+def _broadcast_factor_or_one(
+    *,
+    mapping: dict[str, Any],
+    materialization: dict[str, Any],
+    source_byte_width: int,
+    total_elements: int,
+) -> int:
+    """Detect broadcast weights (e.g. layernorm scale vectors) where the source
+    tensor holds one PE's worth of bytes and is meant to be replicated across
+    every PE in the target grid. Returns the replication factor when the shape
+    fits exactly; returns 1 (no broadcast) otherwise.
+
+    A match requires: source byteSize == elementsPerPe * source_byte_width,
+    AND elementsPerPe * peCount == total_elements. This avoids false positives
+    on truncated or malformed weight mappings.
+    """
+    elements_per_pe = int(materialization.get("elementsPerPe") or 0)
+    geometry = materialization.get("targetGeometry") or {}
+    pe_count = int(geometry.get("peCount") or 0)
+    if elements_per_pe <= 0 or pe_count <= 1:
+        return 1
+    try:
+        source_bytes = int(mapping.get("byteSize") or 0)
+    except (TypeError, ValueError):
+        return 1
+    if source_bytes != elements_per_pe * source_byte_width:
+        return 1
+    if elements_per_pe * pe_count != total_elements:
+        return 1
+    return pe_count
+
+
 def _materialize_weight_input(
     materialization: dict[str, Any],
 ) -> np.ndarray:
@@ -1121,15 +1153,31 @@ def _materialize_weight_input(
             )
         return values
     if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:
-        raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
-        values = np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
+        broadcast = _broadcast_factor_or_one(
+            mapping=mapping,
+            materialization=materialization,
+            source_byte_width=2,
+            total_elements=total_elements,
+        )
+        per_pe_elements = total_elements // broadcast
+        raw = _read_weight_prefix_bytes(mapping, per_pe_elements * 2)
+        per_pe = np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
+        values = np.tile(per_pe, broadcast) if broadcast > 1 else per_pe
         if values.size != total_elements:
             raise ValueError(f"weight_f16_to_f32_size_mismatch:{values.size}!={total_elements}")
         return values
     if dtype == "f32" and transform_kind == "bf16_to_f32":
-        raw = _read_weight_prefix_bytes(mapping, total_elements * 2)
+        broadcast = _broadcast_factor_or_one(
+            mapping=mapping,
+            materialization=materialization,
+            source_byte_width=2,
+            total_elements=total_elements,
+        )
+        per_pe_elements = total_elements // broadcast
+        raw = _read_weight_prefix_bytes(mapping, per_pe_elements * 2)
         bf16_words = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32, copy=False)
-        values = (bf16_words << 16).view(np.float32).copy()
+        per_pe = (bf16_words << 16).view(np.float32).copy()
+        values = np.tile(per_pe, broadcast) if broadcast > 1 else per_pe
         if values.size != total_elements:
             raise ValueError(f"weight_bf16_to_f32_size_mismatch:{values.size}!={total_elements}")
         return values
