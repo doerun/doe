@@ -189,3 +189,9 @@ runtime/zig/examples/simulator/*/stderr.log
 runtime/zig/examples/simulator/*/stdout.log
 runtime/zig/examples/simulator/*/sim.log
 runtime/zig/examples/**/sim_core.*
+
+# Cerebras SDK fabric-routing tmpdirs — `cs_python` / `cslc` write
+# `wio_flows_tmpdir.<rand>/wio_flows.json` into the process CWD as a
+# side effect; runner wrappers should `cd` into a workspace dir, but
+# until then ignore the leftovers anywhere they land.
+wio_flows_tmpdir.*/

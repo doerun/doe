@@ -4,15 +4,31 @@
   <img src="https://raw.githubusercontent.com/doe-gpu/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
 </p>
 
-Doe is a Zig-first WebGPU runtime for places where you cannot or do not want to
-ship Dawn.
+Doe is a source-preserving accelerator runtime and compiler system: it keeps
+shader/program bodies visible, lowers them across execution targets, and
+produces receipts that prove what ran.
 
-It is built to be lean, explicit, and fast. The repo combines the runtime, the
-`doe-gpu` package surface, artifact-backed benchmark workflows, and the proof
-and trace pipeline used to keep claims narrow and auditable.
+In practice that means embedding where Dawn is too heavy, lowering kernels to
+multiple GPU and spatial backends from the same IR, and emitting artifact-
+backed receipts that bind every claim to a specific build.
 
 If you want the published npm surface, start with
 [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
+
+## Tenants
+
+The repo carries five tenants under that umbrella:
+
+| Tenant | Role |
+|---|---|
+| Dawn replacement (Zig WebGPU runtime) | runtime tenant — the embeddable WebGPU runtime story; see [`docs/thesis.md`](docs/thesis.md). |
+| Vulkan / Metal / D3D12 emitters | backend tenant — multi-target lowering from the WGSL compiler (`runtime/zig/src/doe_wgsl/`). |
+| Cerebras (TSIR / HostPlan / CSL) | spatial retargeting tenant — Tiled Spatial IR plus host-plan and CSL emit (`runtime/zig/src/tsir/`, `runtime/zig/src/doe_wgsl/emit_csl_*`). |
+| Lean proof pipeline | verification tenant — proof-eliminated runtime branches and verified artifacts (`pipeline/lean/`). |
+| Benchmarks and evidence bundles | proof tenant — claim-discipline gates, parity receipts, hardware-validation bundles (`bench/`). |
+
+Same discipline applied to different targets: shader/program bodies stay
+visible, lowering preserves identity, and every claim has a receipt path.
 
 ## Why Doe
 

@@ -27,9 +27,19 @@ historical docs.
 
 ## Prime directive
 
-Doe is the WebGPU runtime you embed when you can't ship Dawn.
+Doe is a source-preserving accelerator runtime and compiler system: it keeps shader/program bodies visible, lowers them across execution targets, and produces receipts that prove what ran.
 
-Doe is the Zig WebGPU runtime (`doe-zig-runtime`, `libwebgpu_doe.so`) built in this workspace. The objective is a full, performance-first, maintainable replacement for Dawn: Lean correctness proof support, Zig runtime execution, lighter binaries, easier development, and materially better per-command performance without sacrificing stage discipline.
+The repo carries five tenants under that umbrella:
+
+| Tenant | Role |
+|---|---|
+| Dawn replacement (Zig WebGPU runtime: `doe-zig-runtime`, `libwebgpu_doe.so`) | runtime tenant — embeddable WebGPU runtime; full Dawn-replacement thesis in [`docs/thesis.md`](docs/thesis.md) |
+| Vulkan / Metal / D3D12 / DXIL emitters | backend tenant — multi-target lowering from the WGSL compiler (`runtime/zig/src/doe_wgsl/`) |
+| Cerebras (TSIR / HostPlan / CSL) | spatial retargeting tenant — Tiled Spatial IR plus host-plan and CSL emit (`runtime/zig/src/tsir/`, `runtime/zig/src/doe_wgsl/emit_csl_*`) |
+| Lean proof pipeline | verification tenant — proof-eliminated runtime branches and verified artifacts (`pipeline/lean/`) |
+| Benchmarks and evidence bundles | proof tenant — claim-discipline gates, parity receipts, hardware-validation bundles (`bench/`) |
+
+Same discipline applied to different targets: shader/program bodies stay visible, lowering preserves identity, every claim has a receipt path.
 
 This repo drives Doe development: quirk ingestion, verification, specialization, and benchmarking with explicit contracts.
 
