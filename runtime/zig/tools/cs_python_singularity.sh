@@ -59,6 +59,9 @@ if [[ -z "$SINGULARITY_BIN" || ${#SIFS[@]} -eq 0 ]]; then
 fi
 
 PWD_REAL=$(realpath "$(pwd)")
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+DOE_REPO_REAL=$(realpath "$SCRIPT_DIR/../../..")
+WORKSPACE_REAL=$(realpath "$DOE_REPO_REAL/..")
 TMP_BIND="${TMPDIR:-/tmp}"
 
 # Singularity's `-C` (containall) flag strips parent env vars from the
@@ -95,6 +98,8 @@ done
 export SINGULARITYENV_DOE_CSL_RUNTIME_EXECUTABLE=/python/python-x86_64/bin/python
 
 exec "$SINGULARITY_BIN" exec \
+    "--bind=${WORKSPACE_REAL}" \
+    "--bind=${DOE_REPO_REAL}" \
     "--bind=${PWD_REAL}" \
     "--pwd=${PWD_REAL}" \
     -C \
