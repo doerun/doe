@@ -30,10 +30,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools._receipt_hash_guard import (  # noqa: E402
+    ReceiptHashSpineError,
+    enforce_receipt_hash_spine,
+)
 
 MANIFEST_PATH = "runtime/zig/examples/execution-v1/gemma-4-e2b-smoke.json"
 GRAPH_PATH = "bench/out/e2b-full-graph/gemma-4-e2b-stream-execution-plan.json"
@@ -351,6 +359,15 @@ def main() -> int:
             "hardwareReceiptRequiredForHardwareClaim": True,
         },
     }
+
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        sys.stderr.write(
+            "emit_csl_reference_parity_sample: receipt hash spine "
+            f"rejected emit:\n  {err}\n"
+        )
+        return 2
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(

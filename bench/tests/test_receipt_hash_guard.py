@@ -135,6 +135,58 @@ class ReceiptHashGuardTest(unittest.TestCase):
         with self.assertRaises(ReceiptHashSpineError):
             enforce_receipt_hash_spine(receipt)
 
+    def test_nested_source_program_manifest_match(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            manifest = root / "manifest.json"
+            payload = b'{"schemaVersion": 1}'
+            manifest.write_bytes(payload)
+            receipt = {
+                "sourceProgram": {
+                    "manifestPath": "manifest.json",
+                    "manifestSha256": _sha256_bytes(payload),
+                }
+            }
+            report = evaluate_receipt_hash_spine(receipt, repo_root=root)
+            self.assertTrue(report.bound, msg=report.violations)
+
+    def test_nested_source_program_manifest_drift_caught(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            manifest = root / "manifest.json"
+            manifest.write_bytes(b"actual")
+            receipt = {
+                "sourceProgram": {
+                    "manifestPath": "manifest.json",
+                    "manifestSha256": "0" * 64,
+                }
+            }
+            report = evaluate_receipt_hash_spine(receipt, repo_root=root)
+            self.assertFalse(report.bound)
+            self.assertTrue(
+                any("manifestSha256 drift" in v for v in report.violations)
+            )
+
+    def test_root_field_takes_precedence_over_nested(self) -> None:
+        # If both root and sourceProgram cite manifestSha256, the root
+        # value wins (the guard's lookup is root-first).
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            manifest = root / "manifest.json"
+            payload = b"x"
+            manifest.write_bytes(payload)
+            real_hash = _sha256_bytes(payload)
+            receipt = {
+                "manifestPath": "manifest.json",
+                "manifestSha256": real_hash,
+                "sourceProgram": {
+                    "manifestPath": "manifest.json",
+                    "manifestSha256": "0" * 64,
+                },
+            }
+            report = evaluate_receipt_hash_spine(receipt, repo_root=root)
+            self.assertTrue(report.bound, msg=report.violations)
+
     def test_report_to_dict_round_trip(self) -> None:
         receipt = {
             "receiptClass": "manifest_shape_layout_receipt",

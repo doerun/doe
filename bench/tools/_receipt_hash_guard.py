@@ -82,12 +82,32 @@ def _resolve(repo_root: Path, raw: str | None) -> Path | None:
     return p if p.is_absolute() else (repo_root / p).resolve()
 
 
+def _lookup_field(
+    receipt: dict[str, Any],
+    field: str,
+) -> Any:
+    """Look up `field` either at receipt root or under `sourceProgram`.
+
+    Doe receipts come in two shapes: rung-1 receipts (this guard's
+    native shape) put `manifestSha256` / `hostPlanHash` at the root;
+    older receipts (e.g. doe_csl_reference_parity) nest them inside a
+    `sourceProgram` block. Look in both places so the guard can wire
+    into both shapes without forcing a schema migration.
+    """
+    if field in receipt:
+        return receipt[field]
+    src = receipt.get("sourceProgram")
+    if isinstance(src, dict) and field in src:
+        return src[field]
+    return None
+
+
 def _check_manifest_hash(
     receipt: dict[str, Any],
     repo_root: Path,
 ) -> list[str]:
-    cited = receipt.get("manifestSha256")
-    manifest_path = receipt.get("manifestPath")
+    cited = _lookup_field(receipt, "manifestSha256")
+    manifest_path = _lookup_field(receipt, "manifestPath")
     if not cited or cited in PENDING_TOKENS:
         return []
     if not manifest_path:
@@ -114,8 +134,8 @@ def _check_host_plan_hash(
     receipt: dict[str, Any],
     repo_root: Path,
 ) -> list[str]:
-    cited = receipt.get("hostPlanHash")
-    host_plan_path = receipt.get("hostPlanPath")
+    cited = _lookup_field(receipt, "hostPlanHash")
+    host_plan_path = _lookup_field(receipt, "hostPlanPath")
     if not cited or cited in PENDING_TOKENS:
         return []
     if not host_plan_path:
