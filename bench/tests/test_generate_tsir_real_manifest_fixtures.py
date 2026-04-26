@@ -29,6 +29,8 @@ class TestRealManifestFixtureGenerator(unittest.TestCase):
                         "lm_head_gemv.",
                         "attention_head256_f16kv.",
                         "attention_head512_f16kv.",
+                        "rmsnorm.",
+                        "fused_gemv.",
                     )),
                     f"unexpected fixture name: {name}",
                 )

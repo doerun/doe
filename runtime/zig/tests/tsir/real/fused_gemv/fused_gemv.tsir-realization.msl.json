@@ -1,0 +1,59 @@
+{
+  "contractVersion": 1,
+  "functions": [
+    {
+      "semanticIndex": 0,
+      "tiles": {
+        "perAxis": [
+          8,
+          16
+        ]
+      },
+      "peGrid": {
+        "width": 1,
+        "height": 1
+      },
+      "residency": [
+        {
+          "bindingIndex": 0,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 1,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        },
+        {
+          "bindingIndex": 2,
+          "class": "pe_replicated",
+          "axis": null,
+          "shards": null,
+          "fabricColor": null,
+          "chunkBytes": null
+        }
+      ],
+      "collectives": [],
+      "reductions": [
+        {
+          "semanticIndex": 0,
+          "treeShape": "linear"
+        }
+      ],
+      "emitterParams": {
+        "sketch": true,
+        "workgroupSize": 64,
+        "note": "MSL realization mirrors webgpu-generic: the GPU compute residency for this kernel is pe_replicated within a threadgroup with host-copied bindings. The TSIR path for this target is nominal under Move 2 of the re-scoped plan; real-kernel MSL bodies are deferred to a future Metal compute-pipeline emitter. This entry exists so the lowering identity is pairwise-complete across (kernelRef, backend = msl), not because Doe emits MSL bodies for real-kernel runs. Parity gating for this row is reference=doppler-reference-transcript, backend=msl deferred. See docs/tsir-lowering-plan.md Step 8 'Backend lane rules under the re-scope'."
+      },
+      "targetDescriptorHash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "emitterDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "rejections": []
+}

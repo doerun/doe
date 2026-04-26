@@ -1,7 +1,7 @@
 {
-  "backend": "wse3",
+  "backend": "msl",
   "compilerVersion": "doe-tsir-real-2026-04-24",
-  "emitterDigest": "5c48d5d86564cb2d50547136e4ebbb89e63d69180a8ddbcfa7389f3e87d3311f",
+  "emitterDigest": "a377ffe5e665ac2bbb12f41fe87940ad20583e616f5f9e2f1ec7f79e2cbd5145",
   "exactness": {
     "algorithmExactInvariants": [
       "reduction_order",
@@ -14,7 +14,7 @@
   "frontendVersion": "frontend-real-pipeline-v0",
   "kernelRef": "doe.tsir.real.fused_gemv",
   "rejectionReasons": [],
-  "targetDescriptorCorrectnessHash": "a3852140d7a2063cb066c02a4e1201a64546e64056a06d93a5ed575bc9620948",
-  "tsirRealizationDigest": "32bdc2d059cf62900d1d2f7d04130f739e0c6a776b3f47d9e966d5de23a3da9e",
+  "targetDescriptorCorrectnessHash": "4c9fff2b7ad274f8364cc2d57e68583011948992b865731d15b917c9c08cff2b",
+  "tsirRealizationDigest": "b368f704cfd11e9ff073a46792eb524b7378453d40769e0da5922b9c352e93bc",
   "tsirSemanticDigest": "8f74941226076150ca0505ccd1aec253ed265dc5132ae689b87424d904a9d970"
 }

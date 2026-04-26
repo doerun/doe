@@ -45,7 +45,7 @@ DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-real-entries"
 
 REAL_KERNEL_REF_PREFIX = "doe.tsir.real."
 REAL_COMPILER_VERSION = "doe-tsir-real-2026-04-24"
-SUPPORTED_BACKENDS: tuple[str, ...] = ("webgpu-generic", "wse3")
+SUPPORTED_BACKENDS: tuple[str, ...] = ("webgpu-generic", "wse3", "msl", "spir-v")
 
 # Exactness policy per real kernel. Keyed to the body op and reduction
 # contract in the TSIR semantic JSON — the registry is narrow so the

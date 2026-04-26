@@ -1,7 +1,7 @@
 {
-  "backend": "webgpu-generic",
+  "backend": "spir-v",
   "compilerVersion": "doe-tsir-real-2026-04-24",
-  "emitterDigest": "9c442c18c73f144d33a3fb76ab3a2fdfed56c4ed85cd267032e9f255617bf8cc",
+  "emitterDigest": "ae06f0d5f41d46d14e096dc5dceda5d71e8761da4ecec2cce6034983b6b45ff0",
   "exactness": {
     "algorithmExactInvariants": [],
     "class": "bit_exact_solo",
@@ -11,7 +11,7 @@
   "frontendVersion": "frontend-real-pipeline-v0",
   "kernelRef": "doe.tsir.real.embed",
   "rejectionReasons": [],
-  "targetDescriptorCorrectnessHash": "1bb3a7dc6a798e8cc9eae1e660800b9163469cbda67e14c75fe6a10ef342ade9",
-  "tsirRealizationDigest": "948a1c55b483d0a3761406fc962c77fac434e8c0a80b13ff397fef8452b6b4eb",
+  "targetDescriptorCorrectnessHash": "401c8879b3e684854fe5052127aba26f626846fe005df5e144a3d88e4be14ec3",
+  "tsirRealizationDigest": "017aa98376998f49b2793001074bbbdec9775df6c6cf5921de19cccda7b6cd64",
   "tsirSemanticDigest": "f64a4454bae6b01d180c2b0e48ca653079d79eeaee37e8912a49f71aadf718a3"
 }
