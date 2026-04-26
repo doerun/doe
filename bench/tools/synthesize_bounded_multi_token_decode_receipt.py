@@ -38,6 +38,13 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools._receipt_hash_guard import (  # noqa: E402
+    ReceiptHashSpineError,
+    enforce_receipt_hash_spine,
+)
 DEFAULT_SOURCE_RECEIPT = (
     REPO_ROOT / "bench/out/r3-1-31b-bounded-decode-integrated/receipt.json"
 )
@@ -185,6 +192,15 @@ def main() -> int:
             ),
         },
     }
+
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        sys.stderr.write(
+            "synthesize_bounded_multi_token_decode_receipt: receipt hash "
+            f"spine rejected emit:\n  {err}\n"
+        )
+        return 2
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(

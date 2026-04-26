@@ -34,6 +34,7 @@ Outputs:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -237,8 +238,16 @@ def predict_wallclock(
     host_plan: dict[str, Any],
     compile_root: Path,
     throughput: dict[str, Any] | None,
+    *,
+    host_plan_path: str | None = None,
+    host_plan_hash: str | None = None,
 ) -> dict[str, Any]:
-    """Build the wallclock budget receipt body."""
+    """Build the wallclock budget receipt body.
+
+    `host_plan_path` and `host_plan_hash` (when provided) are recorded
+    on the receipt so the rung-1 hash spine guard can validate the
+    chain back to the live host plan file.
+    """
     targets = {
         t["name"]: t for t in (host_plan.get("compileTargets") or [])
     }
@@ -327,7 +336,7 @@ def predict_wallclock(
         else None
     )
 
-    return {
+    receipt: dict[str, Any] = {
         "schemaVersion": 1,
         "artifactKind": "doe_simfabric_wallclock_budget",
         "calibrated": calibrated,
@@ -356,6 +365,11 @@ def predict_wallclock(
             ),
         },
     }
+    if host_plan_path:
+        receipt["hostPlanPath"] = host_plan_path
+    if host_plan_hash:
+        receipt["hostPlanHash"] = host_plan_hash
+    return receipt
 
 
 def main() -> int:
@@ -378,9 +392,38 @@ def main() -> int:
         throughput = json.loads(
             args.throughput_config.read_text(encoding="utf-8")
         )
+
+    host_plan_hash = hashlib.sha256(
+        args.host_plan.read_bytes()
+    ).hexdigest()
+    try:
+        host_plan_rel = str(args.host_plan.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        host_plan_rel = str(args.host_plan)
+
     receipt = predict_wallclock(
-        host_plan, args.compile_root, throughput
+        host_plan,
+        args.compile_root,
+        throughput,
+        host_plan_path=host_plan_rel,
+        host_plan_hash=host_plan_hash,
     )
+
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from bench.tools._receipt_hash_guard import (
+        ReceiptHashSpineError,
+        enforce_receipt_hash_spine,
+    )
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        sys.stderr.write(
+            "predict_simfabric_wallclock: receipt hash spine rejected emit:\n"
+            f"  {err}\n"
+        )
+        return 2
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(receipt, indent=2, sort_keys=True) + "\n",

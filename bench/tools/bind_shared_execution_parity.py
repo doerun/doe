@@ -13,6 +13,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from bench.tools._receipt_hash_guard import (  # noqa: E402
+    ReceiptHashSpineError,
+    enforce_receipt_hash_spine,
+)
 from bench.tools.run_doe_csl_int4ple_transcript import (
     load_json,
     rel,
@@ -361,6 +365,12 @@ def main() -> int:
             "shared execution parity schema validation failed: "
             + "; ".join(failures[:4])
         )
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        raise ValueError(
+            f"shared execution parity hash-spine guard rejected emit: {err}"
+        ) from err
     out_path = resolve(args.out)
     write_json(out_path, receipt)
     return 0 if comparison["status"] == "passed" else 1

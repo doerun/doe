@@ -1946,6 +1946,21 @@ def main() -> int:
         "chainCoverageTotal": len(host_plan_patterns),
     }
 
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from bench.tools._receipt_hash_guard import (
+        ReceiptHashSpineError,
+        enforce_receipt_hash_spine,
+    )
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        sys.stderr.write(
+            "build_model_runtime_receipt: receipt hash spine rejected emit:\n"
+            f"  {err}\n"
+        )
+        return 2
+
     out_path = resolve(args.out_json)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
