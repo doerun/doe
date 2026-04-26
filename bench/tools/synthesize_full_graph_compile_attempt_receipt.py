@@ -60,7 +60,7 @@ DEFAULT_HOSTPLAN = (
 )
 DEFAULT_DRIVER_RESULT = (
     REPO_ROOT
-    / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/driver-result.json"
+    / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/trace.json.driver-result.json"
 )
 DEFAULT_SWEEP_SUMMARY = (
     REPO_ROOT / "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json"
