@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.github.io/doe/schemas/manifest-shape-intra-block-probe-map.schema.json",
+  "title": "Doe manifest-shape intra-block probe-point map",
+  "description": "Schema for probe-map configs consumed by `bench/tools/run_intra_block_probe_receipt.py` (rung 7). Maps each of the four TSIR boundary probe points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`) to the per-kernel dispatch output that lands at that boundary. The recorder uses the map to select which `.npy` snapshots from the per-kernel dispatch scratch dir constitute the four-probe set for one layer, hashes them, and emits a receipt the rung-5 frozen-Doppler fixture comparator can score against.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "probePoints"],
+  "properties": {
+    "schemaVersion": {
+      "description": "Semantic version of this schema. Currently 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "description": "Receipt class identifier; used by aggregation tooling.",
+      "type": "string",
+      "const": "doe_intra_block_probe_map"
+    },
+    "rationale": {
+      "description": "Free-form note documenting how the kernel→probe binding was decided (which kernel emits the activation at each boundary, which output symbol carries it).",
+      "type": "string"
+    },
+    "probePoints": {
+      "description": "Map from one of the four canonical probe points to the kernel + output symbol that materializes that boundary's activation tensor.",
+      "type": "object",
+      "additionalProperties": false,
+      "propertyNames": {
+        "enum": ["post_rmsnorm", "post_qkv", "post_attn", "post_ffn"]
+      },
+      "patternProperties": {
+        "^(post_rmsnorm|post_qkv|post_attn|post_ffn)$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kernel", "outputSymbol"],
+          "properties": {
+            "kernel": {
+              "description": "compileTargets[].name — the kernel whose output tensor is the probe-point activation.",
+              "type": "string",
+              "minLength": 1
+            },
+            "outputSymbol": {
+              "description": "Symbol name in the kernel's pe_program.metadata.json exports whose post-dispatch buffer is the probe activation.",
+              "type": "string",
+              "minLength": 1
+            },
+            "note": {
+              "description": "Optional free-form note (e.g. why this kernel/symbol pair was chosen for this probe point).",
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

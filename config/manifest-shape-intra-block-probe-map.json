@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_intra_block_probe_map",
+  "rationale": "Maps the four canonical TSIR boundary probe points to the per-kernel dispatch outputs that materialize each boundary's activation tensor in the steps-mode 31B host plan (bench/out/r3-1-31b-manifest-fullgraph-compile-steps/host-plan.json). Choices: (a) post_rmsnorm → ple_rmsnorm.output (the layer's pre-attention RMS-normalized hidden state); (b) post_qkv → ple_proj.output (Q/K/V projection output before split); (c) post_attn → attn_decode.output (attention out before residual+output projection — the decode-time attention kernel; sliding/full variants share the same output symbol); (d) post_ffn → gelu_decode.output (gated MLP output after activation, before final residual). The kernel names follow the steps-mode 31B compileTargets list. If the host plan introduces alternate kernels for a probe point, override via --probe-map at the call site.",
+  "probePoints": {
+    "post_rmsnorm": {
+      "kernel": "ple_rmsnorm",
+      "outputSymbol": "output",
+      "note": "Pre-attention RMS-normalized hidden state."
+    },
+    "post_qkv": {
+      "kernel": "ple_proj",
+      "outputSymbol": "output",
+      "note": "Q/K/V projection output before per-head split."
+    },
+    "post_attn": {
+      "kernel": "attn_decode",
+      "outputSymbol": "output",
+      "note": "Attention-block output before residual + output projection."
+    },
+    "post_ffn": {
+      "kernel": "gelu_decode",
+      "outputSymbol": "output",
+      "note": "Gated-MLP output after activation, before final residual."
+    }
+  }
+}

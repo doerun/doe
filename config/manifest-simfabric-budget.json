@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_simfabric_wallclock_ceiling",
+  "calibrationStatus": "<bootstrap-pending-rung-3>",
+  "ceilings": {
+    "grandPredictedCycles": 0,
+    "perPhase": {
+      "prefill": 0,
+      "decode": 0
+    }
+  },
+  "rationale": "Bootstrap entry. The numeric ceilings are placeholders (set to 0 so the gate denies launch on numeric grounds even if an unrelated path bypasses the calibration check) and are not load-bearing until rung 3 lands. Rung 3 (per-kernel manifest-shape dispatch) will produce a single-kernel cycle measurement; that becomes the calibration constant `bytesPerCycle` consumed by `bench/tools/predict_simfabric_wallclock.py`. Once rung 3 receipt lands at bench/out/r3-1-31b-manifest-simfabric-per-kernel/, set calibrationStatus to its sha256, calibrationSourcePath to its repo-relative path, and replace the placeholder ceilings with values backed by the simfabric runner timeout (R2-1 captured the d2h O(P^3) throughput pattern; the ceiling must keep the manifest-shape full-graph dispatch under that timeout)."
+}

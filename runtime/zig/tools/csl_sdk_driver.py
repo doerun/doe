@@ -26,6 +26,10 @@ from typing import Any
 import jsonschema
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+from bench.tools import compile_cache_manager  # noqa: E402
+
 SIM_PLAN_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-plan.schema.json"
 DRIVER_RESULT_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-driver-result.schema.json"
 RUNTIME_CONFIG_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-runtime-config.schema.json"
@@ -597,6 +601,7 @@ def compile_targets(
     plan_path: Path,
     plan: dict[str, Any],
     cslc_executable: str | None,
+    compile_cache_root: Path | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Path]]:
     plan_dir = plan_path.parent
     inputs = plan["inputs"]
@@ -764,12 +769,83 @@ def compile_targets(
             command.append(f"--width-east-buf={width_east_buf}")
         if use_memcpy:
             command.append("--memcpy")
-        return_code, stdout_written, stderr_written, timed_out = run_command(
-            command,
-            stdout_path,
-            stderr_path,
-            timeout_seconds=compile_timeout_seconds,
+
+        # Cache lookup. The key hashes layout.csl + pe_program.csl bytes
+        # plus every cslc-flag-affecting input (arch, channels, fabric
+        # geometry, params, memcpy, west/east buffers). Any change to
+        # those invalidates the entry; the cache cannot return a stale
+        # binary for a real lowering or flag change.
+        cache_key: str | None = None
+        cache_hit = False
+        cache_stored = False
+        cache_compile_params: dict[str, Any] = {
+            "arch": arch,
+            "channels": channels,
+            "fabricDims": [target_fabric_width, target_fabric_height],
+            "fabricOffsets": [
+                target_fabric_offset_x,
+                target_fabric_offset_y,
+            ],
+            "memcpy": use_memcpy,
+            "widthWestBuf": width_west_buf,
+            "widthEastBuf": width_east_buf,
+            "params": {
+                **{
+                    str(k): int(v) for k, v in compile_params_payload.items()
+                },
+                "width": target_width,
+                "height": target_height,
+            },
+        }
+        cache_source_dir = layout_path.parent
+        cache_eligible = (
+            compile_cache_root is not None
+            and cache_source_dir.is_dir()
+            and (cache_source_dir / "layout.csl").is_file()
+            and (cache_source_dir / "pe_program.csl").is_file()
         )
+        if cache_eligible:
+            assert compile_cache_root is not None
+            try:
+                cache_key = compile_cache_manager.target_cache_key(
+                    cache_source_dir,
+                    compile_params=cache_compile_params,
+                )
+            except FileNotFoundError:
+                cache_key = None
+            if cache_key is not None and compile_cache_manager.is_hit(
+                compile_cache_root, cache_key
+            ):
+                output_dir.mkdir(parents=True, exist_ok=True)
+                # Wipe stale outputs first so restore is byte-exact.
+                for stale in list(output_dir.iterdir()):
+                    if stale.is_dir():
+                        shutil.rmtree(stale)
+                    else:
+                        stale.unlink()
+                compile_cache_manager.restore(
+                    compile_cache_root, cache_key, output_dir
+                )
+                cache_hit = True
+                # Synthesize the same outcome the cslc invocation would
+                # produce so the post-compile bookkeeping is uniform.
+                stdout_path.write_text(
+                    f"compile_cache_hit key={cache_key}\n",
+                    encoding="utf-8",
+                )
+                stderr_path.write_text("", encoding="utf-8")
+                return_code = 0
+                stdout_written = str(stdout_path)
+                stderr_written = str(stderr_path)
+                timed_out = False
+
+        if not cache_hit:
+            return_code, stdout_written, stderr_written, timed_out = run_command(
+                command,
+                stdout_path,
+                stderr_path,
+                timeout_seconds=compile_timeout_seconds,
+            )
         status = "succeeded" if return_code == 0 else "failed"
         target_failure_code: str | None = None
         if return_code != 0:
@@ -799,20 +875,56 @@ def compile_targets(
             target_entry["compileParams"] = compile_params_payload
         if target_failure_code is not None:
             target_entry["failureCode"] = target_failure_code
+        # Store on a successful fresh compile so the next run hits the
+        # cache. Storing before the diagnostic compile is intentional:
+        # the diagnostic is a separate cslc invocation that does not
+        # affect the cached binary's identity.
+        if (
+            cache_eligible
+            and not cache_hit
+            and cache_key is not None
+            and status == "succeeded"
+        ):
+            assert compile_cache_root is not None
+            try:
+                compile_cache_manager.store(
+                    compile_cache_root,
+                    cache_key,
+                    target_compile_dir=output_dir,
+                    source_target_dir=cache_source_dir,
+                    compile_params=cache_compile_params,
+                )
+                cache_stored = True
+            except (FileNotFoundError, OSError):
+                # Cache write is best-effort; a failure here must not
+                # poison the compile receipt. Surface via cacheStored=false.
+                cache_stored = False
+        if cache_eligible and cache_key is not None:
+            target_entry["cacheKey"] = cache_key
+            target_entry["cacheHit"] = cache_hit
+            target_entry["cacheStored"] = cache_stored
         if name == RESIDUAL_DIAGNOSTIC_TARGET and return_code == 0:
-            target_entry["diagnosticCompile"] = compile_compact_residual_diagnostic(
-                cslc_executable=cslc_executable,
-                layout_path=layout_path,
-                pe_program_path=pe_program_path,
-                output_dir=outputs_dir,
-                logs_dir=logs_dir,
-                arch=arch,
-                channels=channels,
-                use_memcpy=use_memcpy,
-                width_west_buf=width_west_buf,
-                width_east_buf=width_east_buf,
-                timeout_seconds=compile_timeout_seconds,
-            )
+            if cache_hit:
+                target_entry["diagnosticCompile"] = {
+                    "status": "skipped",
+                    "reason": "compile_cache_hit",
+                }
+            else:
+                target_entry["diagnosticCompile"] = (
+                    compile_compact_residual_diagnostic(
+                        cslc_executable=cslc_executable,
+                        layout_path=layout_path,
+                        pe_program_path=pe_program_path,
+                        output_dir=outputs_dir,
+                        logs_dir=logs_dir,
+                        arch=arch,
+                        channels=channels,
+                        use_memcpy=use_memcpy,
+                        width_west_buf=width_west_buf,
+                        width_east_buf=width_east_buf,
+                        timeout_seconds=compile_timeout_seconds,
+                    )
+                )
         target_results.append(target_entry)
 
     summary_status = "succeeded"
@@ -1605,6 +1717,25 @@ def parse_args() -> argparse.Namespace:
             "timeoutMs."
         ),
     )
+    parser.add_argument(
+        "--compile-cache-root",
+        default="",
+        help=(
+            "Optional content-addressed compile-cache root (per-target "
+            "layout.csl + pe_program.csl + cslc flags). Defaults to "
+            "$DOE_CSL_COMPILE_CACHE_ROOT or "
+            "bench/out/scratch/compile-cache. Pass --no-compile-cache to "
+            "disable."
+        ),
+    )
+    parser.add_argument(
+        "--no-compile-cache",
+        action="store_true",
+        help=(
+            "Disable the per-target compile cache. cslc runs every time "
+            "regardless of cached entries."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1652,11 +1783,25 @@ def main() -> int:
     csl_cmaddr = args.cmaddr.strip() or os.environ.get("DOE_CSL_CMADDR", "").strip()
     runtime_timeout_seconds = env_timeout_seconds(args.runtime_timeout_seconds)
 
+    if args.no_compile_cache:
+        compile_cache_root: Path | None = None
+    else:
+        explicit_cache = (
+            args.compile_cache_root.strip()
+            or os.environ.get("DOE_CSL_COMPILE_CACHE_ROOT", "").strip()
+        )
+        compile_cache_root = (
+            Path(explicit_cache).resolve()
+            if explicit_cache
+            else compile_cache_manager.DEFAULT_CACHE_ROOT
+        )
+
     try:
         compile_summary, compile_targets_payload, working_paths = compile_targets(
             plan_path=plan_path,
             plan=plan,
             cslc_executable=cslc_executable,
+            compile_cache_root=compile_cache_root,
         )
         run_summary = run_simulation(
             plan_path=plan_path,

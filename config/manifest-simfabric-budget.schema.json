@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.github.io/doe/schemas/manifest-simfabric-budget.schema.json",
+  "title": "Doe manifest-shape simfabric wall-clock ceiling",
+  "description": "Schema for `config/manifest-simfabric-budget.json`. The ceiling file is consumed by `bench/tools/check_simfabric_budget_gate.py` as the rung-8 launch precondition: the predicted simfabric wall-clock budget (rung 2 receipt at `bench/out/r3-1-31b-manifest-simfabric-predicted-wallclock/budget.json`) must be calibrated AND under the ceiling before the manifest-shape full-graph dispatch is allowed. Until rung 3 supplies the throughput calibration constant, `calibrationStatus` is `<bootstrap-pending-rung-3>` and the gate refuses launch regardless of numeric ceiling.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "calibrationStatus",
+    "ceilings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Semantic version of this schema. Currently 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "description": "Receipt class identifier; used by aggregation tooling.",
+      "type": "string",
+      "const": "doe_simfabric_wallclock_ceiling"
+    },
+    "calibrationStatus": {
+      "description": "State of the throughput calibration that backs the numeric ceilings. `<bootstrap-pending-rung-3>` means the values were chosen before any rung-3 calibration receipt landed; the gate denies launch in this state. Once rung 3 produces a calibration constant, set to a sha256 hex digest of the rung-3 receipt that supplied it.",
+      "oneOf": [
+        { "type": "string", "const": "<bootstrap-pending-rung-3>" },
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      ]
+    },
+    "calibrationSourcePath": {
+      "description": "Optional repo-relative path to the rung-3 receipt that produced the calibration constant. Recorded once `calibrationStatus` is a sha256.",
+      "type": "string"
+    },
+    "ceilings": {
+      "description": "Per-aggregate cycle ceilings. The gate compares the rung-2 receipt's `grandPredictedCycles` against `grandPredictedCycles` here, and (when both sides are present) each phase's `predictedCycles` against `perPhase[phase]`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grandPredictedCycles"],
+      "properties": {
+        "grandPredictedCycles": {
+          "description": "Hard ceiling on `grandPredictedCycles` from the rung-2 budget receipt. The receipt's value must be ≤ this number for the gate to allow launch.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "perPhase": {
+          "description": "Optional per-phase ceiling map (e.g. `{ \"prefill\": ..., \"decode\": ... }`). When present, each phase's `predictedCycles` is compared against the corresponding entry; unknown phases fall through to the grand-total ceiling.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "rationale": {
+      "description": "Free-form note explaining how the ceiling was derived (which simfabric runner timeout it tracks, what calibration receipt set it).",
+      "type": "string"
+    }
+  }
+}
