@@ -32,6 +32,7 @@ function parseArgs(argv) {
     outputHashOutPath: null,
     entryPoint: 'main',
     workgroupSizeX: 64,
+    expectedOutputElements: null,
   };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -57,6 +58,15 @@ function parseArgs(argv) {
         args.workgroupSizeX = Number(next);
         i += 1;
         break;
+      case '--expected-output-elements': {
+        const n = Number(next);
+        if (!Number.isInteger(n) || n < 1) {
+          throw new Error('--expected-output-elements must be a positive integer');
+        }
+        args.expectedOutputElements = n;
+        i += 1;
+        break;
+      }
       default:
         throw new Error(`unrecognized argument: ${arg}`);
     }
@@ -382,7 +392,16 @@ async function main() {
 
   for (const b of bindings) {
     if (b.name === outBinding.name) {
-      outputBytes = outputByteLength(kernel, inputs);
+      // Caller (e.g. doe_parity reading the transcript's
+      // kernelProbe.outputElementCount) overrides the inferred output
+      // size. Inference falls back to the kernel-specific path when
+      // the override is absent. This decouples the dispatcher from
+      // having to learn every new kernel's output-shape rule — the
+      // transcript already declares it.
+      const overrideElements = args.expectedOutputElements;
+      outputBytes = overrideElements != null
+        ? Math.max(BYTES_PER_SCALAR, overrideElements * BYTES_PER_SCALAR)
+        : outputByteLength(kernel, inputs);
       outputBuffer = device.createBuffer({
         size: outputBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,

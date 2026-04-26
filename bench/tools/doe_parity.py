@@ -708,7 +708,11 @@ def _csl_channel_locked() -> bool:
     return CSL_CHANNEL_LOCK_FILE.is_file()
 
 
-def _run_webgpu_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
+def _run_webgpu_backend(
+    kernel: str,
+    inputs_path: Path,
+    expected_output_elements: int | None = None,
+) -> ComparisonOutcome:
     if not WEBGPU_DISPATCH_HELPER.is_file():
         return ComparisonOutcome(
             backend="webgpu",
@@ -733,18 +737,21 @@ def _run_webgpu_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
     output_hash_path = cache_dir / f"{kernel}.webgpu.hash"
     if output_hash_path.is_file():
         output_hash_path.unlink()
+    cmd = [
+        "node",
+        str(WEBGPU_DISPATCH_HELPER),
+        "--wgsl",
+        str(wgsl_path),
+        "--inputs",
+        str(inputs_path),
+        "--output-hash-out",
+        str(output_hash_path),
+    ]
+    if expected_output_elements is not None:
+        cmd.extend(["--expected-output-elements", str(expected_output_elements)])
     try:
         proc = subprocess.run(
-            [
-                "node",
-                str(WEBGPU_DISPATCH_HELPER),
-                "--wgsl",
-                str(wgsl_path),
-                "--inputs",
-                str(inputs_path),
-                "--output-hash-out",
-                str(output_hash_path),
-            ],
+            cmd,
             capture_output=True,
             text=True,
             timeout=120,
@@ -837,6 +844,7 @@ def run_backend(
     backend: str,
     kernel: str | None = None,
     inputs_path: Path | None = None,
+    expected_output_elements: int | None = None,
 ) -> ComparisonOutcome:
     """Run a backend emission path and return its hash.
 
@@ -860,7 +868,9 @@ def run_backend(
             ),
         )
     if backend == "webgpu":
-        return _run_webgpu_backend(kernel, inputs_path)
+        return _run_webgpu_backend(
+            kernel, inputs_path, expected_output_elements=expected_output_elements
+        )
     if backend == "csl-simfabric":
         return _run_csl_simfabric_backend(kernel, inputs_path)
     return ComparisonOutcome(
@@ -1074,6 +1084,7 @@ def main() -> int:
                 "Zig oracle). See docs/tsir-lowering-plan.md Step 1."
             )
 
+        expected_output_elements: int | None = None
         if doppler_transcript is not None:
             reference, reference_source = run_doppler_reference(
                 normalized_kernel,
@@ -1081,6 +1092,23 @@ def main() -> int:
                 doppler_transcript,
                 args.doppler_kernel_probe_hash,
             )
+            # Transcript-as-output-shape-source: the kernelProbe.outputElementCount
+            # field declares how many f32 elements the probe-hash was computed
+            # over. Threading it into the WebGPU dispatcher avoids the
+            # dispatcher having to re-derive output shape from the bootstrap
+            # input fixture (which the dispatcher only knows for fused_gemv /
+            # gather / rms_norm; for embed / lm_head_gemv / real-kernel rmsnorm
+            # the dispatcher's max-input-shape fallback over-allocates and
+            # produces a different sha256 even when bytes are zero).
+            try:
+                _transcript_doc = load_doppler_transcript(doppler_transcript)
+                _kp = _transcript_doc.get("kernelProbe")
+                if isinstance(_kp, dict):
+                    _oec = _kp.get("outputElementCount")
+                    if isinstance(_oec, int) and _oec > 0:
+                        expected_output_elements = _oec
+            except DopplerTranscriptInvalid:
+                pass
         else:
             reference = run_reference_interpreter(
                 normalized_kernel,
@@ -1092,7 +1120,12 @@ def main() -> int:
             )
             reference_source = ReferenceSource(kind=REFERENCE_SOURCE_ZIG)
 
-        webgpu_result = run_backend("webgpu", normalized_kernel, args.inputs)
+        webgpu_result = run_backend(
+            "webgpu",
+            normalized_kernel,
+            args.inputs,
+            expected_output_elements=expected_output_elements,
+        )
         csl_result = run_backend("csl-simfabric", normalized_kernel, args.inputs)
 
         comparisons = [
