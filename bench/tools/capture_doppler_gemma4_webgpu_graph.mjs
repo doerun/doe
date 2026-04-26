@@ -7,10 +7,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const DOPPLER_ROOT = resolve(REPO_ROOT, '../doppler');
 const DEFAULT_MODEL_DIR = '../doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32';
 const DEFAULT_OUT_JSON = 'bench/out/doppler-capture/gemma-4-e2b-doe-webgpu-capture-graph.json';
 const CAPTURE_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/capture.js');
+const DOE_NODE_WEBGPU_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/node-webgpu.js');
 const WORKGROUP_SIZE = 64;
 const BYTES_PER_F32 = 4;
 const PARAM_WORD_COUNT = 8;
@@ -182,16 +182,15 @@ async function runCapture(args) {
   const modelLabel = sanitizeLabel(args.modelLabel ?? inferModelLabel(modelId));
   const captureId = args.captureId ?? `${modelLabel}-doppler-doe-webgpu-capture-smoke`;
   const captureModuleUrl = pathToFileURL(CAPTURE_MODULE_PATH).href;
-  process.env.DOPPLER_NODE_WEBGPU_MODULE = captureModuleUrl;
 
-  const [{ bootstrapNodeWebGPU }, capture] = await Promise.all([
-    import(pathToFileURL(resolve(DOPPLER_ROOT, 'src/tooling/node-webgpu.js')).href),
+  const [{ bootstrapNodeWebGPUProvider }, capture] = await Promise.all([
+    import(pathToFileURL(DOE_NODE_WEBGPU_PATH).href),
     import(captureModuleUrl),
   ]);
 
-  const bootstrap = await bootstrapNodeWebGPU();
+  const bootstrap = await bootstrapNodeWebGPUProvider(captureModuleUrl, { force: true });
   if (!bootstrap?.ok) {
-    throw new Error(`Doppler WebGPU bootstrap failed: ${bootstrap?.detail ?? 'unknown error'}`);
+    throw new Error(`Doe capture WebGPU bootstrap failed: ${bootstrap?.detail ?? 'unknown error'}`);
   }
 
   const adapter = await globalThis.navigator.gpu.requestAdapter({
@@ -323,8 +322,8 @@ async function runCapture(args) {
         provider: bootstrap.provider,
         providerInstalled: bootstrap.ok === true,
         providerModule: rel(CAPTURE_MODULE_PATH),
-        sourcePath: '../doppler/src/tooling/node-webgpu.js',
-        sourceRepo: '../doppler',
+        sourcePath: rel(DOE_NODE_WEBGPU_PATH),
+        sourceRepo: '.',
       },
       captureId,
       captureLabel: modelLabel,

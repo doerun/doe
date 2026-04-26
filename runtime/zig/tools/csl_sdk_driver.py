@@ -387,6 +387,13 @@ _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "csl_compile_pe_memory_exhausted",
     ),
     (
+        re.compile(
+            r"cannot be coerced to type 'i16'|"
+            r"failed to evaluate expression for array dimension"
+        ),
+        "csl_compile_param_range_exceeded",
+    ),
+    (
         re.compile(r"expected type '[^']+', got: '[^']+'"),
         "csl_compile_type_mismatch",
     ),
@@ -721,7 +728,7 @@ def compile_targets(
                 compile_params_payload[str(key)] = parsed_value
         target_width = int(compile_params_payload.get("width") or width)
         target_height = int(compile_params_payload.get("height") or height)
-        if name in ROW_KERNEL_TARGETS:
+        if name in ROW_KERNEL_TARGETS and "height" not in compile_params_payload:
             target_height = 1
         elif name in TILED_KERNEL_TARGETS:
             target_p = int(compile_params_payload.get("P") or 0)

@@ -148,6 +148,7 @@ pub fn emitSimulatorPlanArtifactJson(
         try writeJsonString(buf, pos, target.layout_path);
         try write(buf, pos, ", \"peProgram\": ");
         try writeJsonString(buf, pos, target.pe_program_path);
+        try host_plan.emitCompileParamsFieldJson(buf, pos, target.compile_params);
         if (target.metadata) |metadata| {
             try write(buf, pos, ", ");
             try host_plan.emitCompileTargetMetadataJson(buf, pos, metadata);

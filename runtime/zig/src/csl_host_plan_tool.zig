@@ -398,15 +398,16 @@ fn parseBundleWeightMappings(
 fn buildCompileTargets(
     allocator: std.mem.Allocator,
     plan: host.HostPlan,
+    model_config: ?host.ModelConfig,
     out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
-        try appendCompileTarget(allocator, out, &count, kernel.name, kernel.name, kernel.pattern, null);
+        try appendCompileTarget(allocator, plan, model_config, out, &count, kernel.name, kernel.name, kernel.pattern, null);
         if (isPhaseSpecializedKernel(kernel.name)) {
             for (PHASE_TARGET_SUFFIXES) |suffix| {
                 const phase_name = try std.fmt.allocPrint(allocator, "{s}_{s}", .{ kernel.name, suffix });
-                try appendCompileTarget(allocator, out, &count, phase_name, kernel.name, kernel.pattern, suffix);
+                try appendCompileTarget(allocator, plan, model_config, out, &count, phase_name, kernel.name, kernel.pattern, suffix);
             }
         }
     }
@@ -415,6 +416,8 @@ fn buildCompileTargets(
 
 fn appendCompileTarget(
     allocator: std.mem.Allocator,
+    plan: host.HostPlan,
+    model_config: ?host.ModelConfig,
     out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
     count: *usize,
     target_name: []const u8,
@@ -428,6 +431,7 @@ fn appendCompileTarget(
         .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
         .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
         .metadata = compileTargetMetadata(pattern, phase orelse "base"),
+        .compile_params = try compileTargetParams(allocator, plan, model_config, target_name, pattern, phase),
         .phase = phase,
         .base_kernel = if (phase != null) source_name else null,
     };
@@ -448,6 +452,111 @@ fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_pl
         return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
     }
     return null;
+}
+
+fn compileTargetParams(
+    allocator: std.mem.Allocator,
+    plan: host.HostPlan,
+    model_config: ?host.ModelConfig,
+    target_name: []const u8,
+    pattern: []const u8,
+    phase: ?[]const u8,
+) ![]const host_plan.CompileParam {
+    const config = model_config orelse return &.{};
+    var params = try std.ArrayList(host_plan.CompileParam).initCapacity(allocator, 0);
+    const is_decode = phase != null and std.mem.eql(u8, phase.?, "decode");
+    const row_width = if (is_decode) @as(u32, 1) else plan.pe_grid_width;
+    const row_height: u32 = 1;
+
+    if (std.mem.eql(u8, pattern, "gather")) {
+        const vocab = if (std.mem.startsWith(u8, target_name, "ple_"))
+            config.ple_vocab_size orelse config.vocab_size
+        else
+            config.vocab_size;
+        const hidden = if (std.mem.startsWith(u8, target_name, "ple_"))
+            config.ple_width orelse config.hidden_dim
+        else
+            config.hidden_dim;
+        const pe_count = @max(@as(u32, 1), plan.pe_grid_width * plan.pe_grid_height);
+        try appendParam(allocator, &params, "width", plan.pe_grid_width);
+        try appendParam(allocator, &params, "height", plan.pe_grid_height);
+        try appendParam(allocator, &params, "hidden_size", hidden);
+        try appendParam(allocator, &params, "hidden_per_pe", ceilDivU32(hidden, plan.pe_grid_height));
+        try appendParam(allocator, &params, "rows_per_pe", ceilDivU32(vocab, pe_count));
+        try appendParam(allocator, &params, "num_tokens", @min(config.max_seq_len, @as(u32, 16)));
+        try appendParam(allocator, &params, "tokens_per_chunk", @min(config.max_seq_len, @as(u32, 16)));
+    } else if (std.mem.eql(u8, pattern, "tiled_matmul")) {
+        const is_ple = std.mem.startsWith(u8, target_name, "ple_");
+        const tile = if (is_ple) @as(u32, 16) else ceilDivU32(config.hidden_dim, 64);
+        const block = if (is_ple) @as(u32, 16) else @as(u32, 64);
+        try appendParam(allocator, &params, "width", tile);
+        try appendParam(allocator, &params, "height", tile);
+        try appendParam(allocator, &params, "P", tile);
+        try appendParam(allocator, &params, "Mt", block);
+        try appendParam(allocator, &params, "Kt", block);
+        try appendParam(allocator, &params, "Nt", block);
+    } else if (std.mem.eql(u8, pattern, "rms_norm") or
+        std.mem.eql(u8, pattern, "reduction"))
+    {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "hidden_size", config.hidden_dim);
+    } else if (std.mem.eql(u8, pattern, "residual") or
+        std.mem.eql(u8, pattern, "gelu") or
+        std.mem.eql(u8, pattern, "element_wise"))
+    {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "chunk_size", config.hidden_dim);
+    } else if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) {
+        const out_dim_per_pe = ceilDivU32(config.hidden_dim, plan.pe_grid_height);
+        try appendParam(allocator, &params, "width", plan.pe_grid_width);
+        try appendParam(allocator, &params, "height", plan.pe_grid_height);
+        try appendParam(allocator, &params, "out_dim", config.hidden_dim);
+        try appendParam(allocator, &params, "out_dim_per_pe", out_dim_per_pe);
+        try appendParam(allocator, &params, "in_dim_per_pe", @min(config.hidden_dim, @as(u32, 512)));
+        try appendParam(allocator, &params, "num_blocks_per_row", 2);
+    } else if (std.mem.eql(u8, pattern, "kv_write")) {
+        try appendParam(allocator, &params, "width", config.num_heads);
+        try appendParam(allocator, &params, "height", 1);
+        try appendParam(allocator, &params, "head_dim", config.head_dim);
+        try appendParam(allocator, &params, "max_seq_len", config.max_seq_len);
+    } else if (std.mem.eql(u8, pattern, "attention_tiled")) {
+        const q_len_per_pe = ceilDivU32(config.max_seq_len, plan.pe_grid_width);
+        try appendParam(allocator, &params, "width", plan.pe_grid_width);
+        try appendParam(allocator, &params, "height", 1);
+        try appendParam(allocator, &params, "head_dim", config.head_dim);
+        try appendParam(allocator, &params, "q_len", config.max_seq_len);
+        try appendParam(allocator, &params, "q_len_per_pe", q_len_per_pe);
+        try appendParam(allocator, &params, "block_size", @min(config.max_seq_len, @as(u32, 16)));
+    } else if (std.mem.eql(u8, pattern, "attention_decode")) {
+        try appendParam(allocator, &params, "width", plan.pe_grid_width);
+        try appendParam(allocator, &params, "height", 1);
+        try appendParam(allocator, &params, "head_dim", config.head_dim);
+        try appendParam(allocator, &params, "kv_chunk", ceilDivU32(config.max_seq_len, plan.pe_grid_width));
+    } else if (std.mem.eql(u8, pattern, "sample")) {
+        const width = ceilDivU32(config.vocab_size, 1024);
+        try appendParam(allocator, &params, "width", width);
+        try appendParam(allocator, &params, "height", 1);
+        try appendParam(allocator, &params, "chunk_size", ceilDivU32(config.vocab_size, width));
+    }
+    return try params.toOwnedSlice(allocator);
+}
+
+fn appendParam(
+    allocator: std.mem.Allocator,
+    params: *std.ArrayList(host_plan.CompileParam),
+    name: []const u8,
+    value: u32,
+) !void {
+    try params.append(allocator, .{
+        .name = name,
+        .value = @max(@as(u32, 1), value),
+    });
+}
+
+fn ceilDivU32(lhs: u32, rhs: u32) u32 {
+    return (lhs + rhs - 1) / rhs;
 }
 
 fn isPhaseSpecializedKernel(name: []const u8) bool {
@@ -645,19 +754,20 @@ pub fn main() !void {
         ),
     };
 
+    const model_config = (try parseBundleModelConfig(allocator, input_bytes));
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(allocator, plan, &target_buf);
+    const targets = try buildCompileTargets(allocator, plan, model_config, &target_buf);
     const cslc_plan = try host_plan.makeCslcPlan(args.cslc_executable);
 
     if (args.bundle_root) |bundle_root| {
-        const model_config = (try parseBundleModelConfig(allocator, input_bytes)) orelse return error.InvalidArgument;
+        const resolved_model_config = model_config orelse return error.InvalidArgument;
         const weight_mappings = try parseBundleWeightMappings(allocator, input_bytes);
-        const memory = mem_plan.planMemory(model_config, plan, .{});
+        const memory = mem_plan.planMemory(resolved_model_config, plan, .{});
         var state_buffer_buf: [MAX_STATE_BUFFERS]host_runtime.StateBuffer = undefined;
         const state_buffers = buildStateBuffers(memory, &state_buffer_buf);
         const runtime = host_runtime.RuntimeConfig{
             .plan = plan,
-            .config = model_config,
+            .config = resolved_model_config,
             .weight_mappings = weight_mappings,
             .weight_mapping_count = @as(u32, @intCast(weight_mappings.len)),
             .state_buffers = state_buffers,
@@ -748,7 +858,7 @@ test "buildCompileTargets emits phase variants for elementwise kernels" {
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
 
-    const targets = try buildCompileTargets(arena.allocator(), plan, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, null, &target_buf);
 
     try std.testing.expectEqual(@as(usize, 4), targets.len);
     try std.testing.expectEqualStrings("rmsnorm", targets[0].kernel_name);
@@ -776,7 +886,7 @@ test "buildCompileTargets attaches structured binding metadata" {
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
 
-    const targets = try buildCompileTargets(arena.allocator(), plan, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, null, &target_buf);
 
     try std.testing.expectEqual(@as(usize, 4), targets.len);
     const residual_metadata = targets[0].metadata.?;

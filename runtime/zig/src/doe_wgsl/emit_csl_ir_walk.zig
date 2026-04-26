@@ -93,6 +93,70 @@ pub fn isUniformGlobalBase(module: *const ir.Module, function: *const ir.Functio
     };
 }
 
+fn uniformGlobalIndex(module: *const ir.Module, function: *const ir.Function, expr_id: ir.ExprId) ?u32 {
+    if (expr_id >= function.exprs.items.len) return null;
+    return switch (function.exprs.items[expr_id].data) {
+        .global_ref => |idx| blk: {
+            if (idx >= module.globals.items.len) break :blk null;
+            if ((module.globals.items[idx].addr_space orelse break :blk null) != .uniform) break :blk null;
+            break :blk idx;
+        },
+        .load => |inner| uniformGlobalIndex(module, function, inner),
+        else => null,
+    };
+}
+
+fn emitUniformMemberAccess(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    function: *const ir.Function,
+    member: @FieldType(ir.Expr, "member"),
+) EmitError!bool {
+    const global_index = uniformGlobalIndex(module, function, member.base) orelse return false;
+    if (global_index >= module.globals.items.len) return false;
+    const global = module.globals.items[global_index];
+    const struct_id = switch (module.types.get(global.ty)) {
+        .struct_ => |struct_id| struct_id,
+        .ref => |ref_ty| switch (module.types.get(ref_ty.elem)) {
+            .struct_ => |struct_id| struct_id,
+            else => return false,
+        },
+        else => return false,
+    };
+    if (struct_id >= module.structs.items.len) return false;
+    const fields = module.structs.items[struct_id].fields.items;
+    if (member.field_index >= fields.len) return false;
+    const field = fields[member.field_index];
+    switch (module.types.get(field.ty)) {
+        .scalar => |scalar| switch (scalar) {
+            .f32 => {
+                try write(buf, pos, "@bitcast(f32, ");
+                try write(buf, pos, global.name);
+                try write(buf, pos, "[");
+                try writeInt(buf, pos, member.field_index);
+                try write(buf, pos, "])");
+            },
+            .i32 => {
+                try write(buf, pos, "@bitcast(i32, ");
+                try write(buf, pos, global.name);
+                try write(buf, pos, "[");
+                try writeInt(buf, pos, member.field_index);
+                try write(buf, pos, "])");
+            },
+            .u32, .bool => {
+                try write(buf, pos, global.name);
+                try write(buf, pos, "[");
+                try writeInt(buf, pos, member.field_index);
+                try write(buf, pos, "]");
+            },
+            else => return false,
+        },
+        else => return false,
+    }
+    return true;
+}
+
 pub fn arrayElemType(module: *const ir.Module, ty: ir.TypeId) ir.TypeId {
     return switch (module.types.get(ty)) {
         .array => |arr| arr.elem,
@@ -263,7 +327,9 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                 },
                 .loop_ => |loop_stmt| {
                     try writeIndent(buf, pos, indent);
-                    if (loop_stmt.init) |init_id| try stmt(buf, pos, module, function, init_id, indent);
+                    try write(buf, pos, "{\n");
+                    if (loop_stmt.init) |init_id| try stmt(buf, pos, module, function, init_id, indent + 1);
+                    try writeIndent(buf, pos, indent + 1);
                     try write(buf, pos, "while (");
                     if (loop_stmt.cond) |cond| {
                         try expr(buf, pos, module, function, cond);
@@ -277,7 +343,9 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                         try write(buf, pos, ") ");
                     }
                     try write(buf, pos, "{\n");
-                    try stmt(buf, pos, module, function, loop_stmt.body, indent + 1);
+                    try stmt(buf, pos, module, function, loop_stmt.body, indent + 2);
+                    try writeIndent(buf, pos, indent + 1);
+                    try write(buf, pos, "}\n");
                     try writeIndent(buf, pos, indent);
                     try write(buf, pos, "}\n");
                 },
@@ -371,7 +439,16 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     if (idx < function.params.items.len) try write(buf, pos, function.params.items[idx].name);
                 },
                 .local_ref => |idx| {
-                    if (idx < function.locals.items.len) try write(buf, pos, function.locals.items[idx].name);
+                    if (idx < function.locals.items.len) {
+                        const name = function.locals.items[idx].name;
+                        if (std.mem.eql(u8, cfg.runtime_array_size, "hidden_size") and
+                            std.mem.eql(u8, name, "size"))
+                        {
+                            try write(buf, pos, "@as(u32, hidden_size)");
+                        } else {
+                            try write(buf, pos, name);
+                        }
+                    }
                 },
                 .global_ref => |idx| {
                     if (idx < module.globals.items.len) try write(buf, pos, module.globals.items[idx].name);
@@ -455,8 +532,9 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     }
                 },
                 .member => |m| {
-                    if (isUniformGlobalBase(module, function, m.base)) {
-                        try write(buf, pos, m.field_name);
+                    if (try emitUniformMemberAccess(buf, pos, module, function, m)) {
+                        // Uniform structs are exported as one u32 buffer; field
+                        // access lowers to the matching slot.
                     } else if (try emitBuiltinMemberShim(
                         buf,
                         pos,

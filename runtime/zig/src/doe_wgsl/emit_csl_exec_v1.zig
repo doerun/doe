@@ -711,43 +711,60 @@ pub fn lowerManifestExecutionToHostPlan(
     defer parsed.deinit();
 
     const root = try expectObject(parsed.value);
-    if (root.get("layerPattern") != null or
-        root.get("numKvSharedLayers") != null or
-        root.get("slidingWindowSize") != null or
-        root.get("modelConfig") != null or
-        root.get("placementPolicy") != null)
-    {
-        return error.MalformedStep;
+    const grid = try parseOptionalGrid(root.get("grid"));
+    const model_config = try parseModelConfig(root.get("modelConfig"));
+    const placement_policy = try parsePlacementPolicy(root.get("placementPolicy"));
+    const metadata = LowerMetadata{
+        .layer_pattern = try parseLayerPattern(root.get("layerPattern")),
+        .num_kv_shared_layers = try parseOptionalU32(root.get("numKvSharedLayers")),
+        .sliding_window_size = try parseOptionalU32(root.get("slidingWindowSize")),
+    };
+
+    var manifest_phase_steps = try std.ArrayList(ExecStep).initCapacity(allocator, 0);
+    defer manifest_phase_steps.deinit(allocator);
+    if (root.get("execution")) |execution_value| {
+        const execution = try expectObject(execution_value);
+        const kernels = try expectObject(execution.get("kernels") orelse return error.InvalidJson);
+        var kernel_ops = try parseKernelOpMap(allocator, kernels);
+        defer kernel_ops.deinit();
+
+        var prefill_steps = try std.ArrayList(ExecStep).initCapacity(allocator, 0);
+        defer prefill_steps.deinit(allocator);
+        var decode_steps = try std.ArrayList(ExecStep).initCapacity(allocator, 0);
+        defer decode_steps.deinit(allocator);
+
+        try parseManifestPhaseSteps(allocator, .prefill, &kernel_ops, execution.get("preLayer") orelse return error.InvalidJson, &prefill_steps);
+        try parseManifestPhaseSteps(allocator, .prefill, &kernel_ops, execution.get("prefill") orelse return error.InvalidJson, &prefill_steps);
+        try parseManifestPhaseSteps(allocator, .decode, &kernel_ops, execution.get("decode") orelse return error.InvalidJson, &decode_steps);
+        try appendManifestPostLayerSteps(
+            allocator,
+            &kernel_ops,
+            execution.get("postLayer") orelse return error.InvalidJson,
+            &prefill_steps,
+            &decode_steps,
+        );
+
+        try manifest_phase_steps.ensureUnusedCapacity(allocator, prefill_steps.items.len + decode_steps.items.len);
+        manifest_phase_steps.appendSliceAssumeCapacity(prefill_steps.items);
+        manifest_phase_steps.appendSliceAssumeCapacity(decode_steps.items);
+    } else if (root.get("steps")) |steps_value| {
+        const steps_array = try expectArray(steps_value);
+        try manifest_phase_steps.ensureUnusedCapacity(allocator, steps_array.items.len);
+        for (steps_array.items) |step_value| {
+            manifest_phase_steps.appendAssumeCapacity(try parseStepValue(allocator, step_value));
+        }
+    } else {
+        return error.InvalidJson;
     }
-    const grid = try parseGrid(root.get("grid") orelse return error.InvalidJson);
-    const execution = try expectObject(root.get("execution") orelse return error.InvalidJson);
-    const kernels = try expectObject(execution.get("kernels") orelse return error.InvalidJson);
-    var kernel_ops = try parseKernelOpMap(allocator, kernels);
-    defer kernel_ops.deinit();
 
-    var prefill_steps = try std.ArrayList(ExecStep).initCapacity(allocator, 0);
-    defer prefill_steps.deinit(allocator);
-    var decode_steps = try std.ArrayList(ExecStep).initCapacity(allocator, 0);
-    defer decode_steps.deinit(allocator);
-
-    try parseManifestPhaseSteps(allocator, .prefill, &kernel_ops, execution.get("preLayer") orelse return error.InvalidJson, &prefill_steps);
-    try parseManifestPhaseSteps(allocator, .prefill, &kernel_ops, execution.get("prefill") orelse return error.InvalidJson, &prefill_steps);
-    try parseManifestPhaseSteps(allocator, .decode, &kernel_ops, execution.get("decode") orelse return error.InvalidJson, &decode_steps);
-    try appendManifestPostLayerSteps(
-        allocator,
-        &kernel_ops,
-        execution.get("postLayer") orelse return error.InvalidJson,
-        &prefill_steps,
-        &decode_steps,
-    );
-
-    const total_steps = prefill_steps.items.len + decode_steps.items.len;
-    var steps = try allocator.alloc(ExecStep, total_steps);
-    defer allocator.free(steps);
-    @memcpy(steps[0..prefill_steps.items.len], prefill_steps.items);
-    @memcpy(steps[prefill_steps.items.len..], decode_steps.items);
-
-    var plan = try lowerToHostPlanWithMetadata(steps, grid, .{}, kernel_buf, prefill_buf, decode_buf);
+    const initial_grid: GridDims = grid orelse .{ .width = 1, .height = 1 };
+    var plan = try lowerToHostPlanWithMetadata(manifest_phase_steps.items, initial_grid, metadata, kernel_buf, prefill_buf, decode_buf);
+    if (grid == null) {
+        const resolved_model_config = model_config orelse return error.InvalidJson;
+        const derived_grid = try mem_plan.deriveGrid(resolved_model_config, plan, placement_policy);
+        plan.pe_grid_width = derived_grid.width;
+        plan.pe_grid_height = derived_grid.height;
+    }
     if (root.get("eosTokenId")) |eos_value| {
         plan.eos_token_id = switch (eos_value) {
             .null => null,

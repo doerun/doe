@@ -7,34 +7,26 @@ docs/cerebras-north-star.md (Remaining no-hardware evidence gaps).
 The existing manifest-shape compile-attempt receipt
 (`bench/out/r3-1-31b-manifest-compile-attempt/`) and the threshold
 sweep (`bench/out/r3-1-31b-manifest-compile-sweep/`) test only the
-transformer_layer_shape kernel. The 31B host-plan
-(`bench/out/31b-full-graph/host-plan.json`) names 17 distinct
-compile targets — embed, ple_embed, ple_proj, ple_rmsnorm,
-ple_residual, rmsnorm, tiled, rope, attn_small, residual, gelu, gemv,
-kv_write, attn_decode_sliding, kv_write_shared, attn_decode, sample.
-A "full inference graph compile attempt" means: attempt cslc on each
-of those 17 targets at manifest shape and aggregate.
+transformer_layer_shape kernel. The steps-mode 31B host-plan
+(`bench/out/r3-1-31b-manifest-fullgraph-compile-steps/host-plan.json`)
+names the distinct compile targets and phase variants that make up the
+manifest-shaped graph. A "full inference graph compile attempt" means:
+materialize that steps-mode bundle root, attempt cslc on every emitted
+target, and aggregate the per-target results.
 
 This synthesizer reads the host-plan, enumerates compileTargets, and
 emits a typed-blocker receipt that:
   - lists every compile target by name with its layout + pe_program
     paths (relative to the bundle compile root),
   - binds to the layer-block sweep's known threshold so reviewers can
-    see which targets *probably* fail at manifest shape (those whose
+    see which targets were expected to fail at manifest shape (those whose
     per-PE residency mirrors the layer-block kernel),
-  - names the operational blocker — the bundle compile root with the
-    materialized layout sources for all 17 kernels does not yet exist
-    in repo state, and producing it requires
-    `runtime/zig/zig-out/bin/doe-csl-host-plan-tool` to emit fresh
-    layouts at manifest shape. That is doable but is a multi-minute
-    operation per kernel; doing all 17 sequentially is ~10-30 minutes
-    of cslc work.
+  - records actual cslc verdicts when the driver-result exists, and
+    otherwise falls back to an explicit not-attempted preflight.
 
-The receipt does not invent compile verdicts. It records the structural
-attempt-readiness state + the named runner extension that closes the
-gap. When the host-plan-tool materializes the 17 layouts and a follow-up
-script iterates cslc per target, this receipt's `compileTargets[].verdict`
-fields can be filled in.
+The receipt does not invent compile verdicts. When
+`driver-result.json` is absent, every target stays `not_attempted`.
+When it is present, each target mirrors the driver result exactly.
 """
 
 from __future__ import annotations
@@ -45,7 +37,14 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_HOSTPLAN = REPO_ROOT / "bench/out/31b-full-graph/host-plan.json"
+DEFAULT_HOSTPLAN = (
+    REPO_ROOT
+    / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/host-plan.json"
+)
+DEFAULT_DRIVER_RESULT = (
+    REPO_ROOT
+    / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/driver-result.json"
+)
 DEFAULT_SWEEP_SUMMARY = (
     REPO_ROOT / "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json"
 )
@@ -58,6 +57,7 @@ DEFAULT_OUT = (
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--host-plan", type=Path, default=DEFAULT_HOSTPLAN)
+    p.add_argument("--driver-result", type=Path, default=DEFAULT_DRIVER_RESULT)
     p.add_argument(
         "--sweep-summary", type=Path, default=DEFAULT_SWEEP_SUMMARY
     )
@@ -67,12 +67,38 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=4096,
         help=(
-            "Compile size to record as the manifest target. The receipt "
-            "doesn't actually invoke cslc; this is the size that the "
-            "follow-up cslc loop would attempt."
+            "Sequence-size context to record for the manifest-shaped "
+            "compile attempt."
         ),
     )
     return p.parse_args()
+
+
+def rel(path: Path | str) -> str:
+    path = Path(path)
+    if path.is_absolute() and str(path).startswith(str(REPO_ROOT)):
+        return str(path.relative_to(REPO_ROOT))
+    return str(path)
+
+
+def load_driver_targets(path: Path) -> dict[str, dict] | None:
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    compile_section = payload.get("compile") if isinstance(payload, dict) else None
+    if not isinstance(compile_section, dict):
+        return None
+    targets = compile_section.get("targets")
+    if not isinstance(targets, list):
+        return None
+    out: dict[str, dict] = {}
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        name = target.get("name")
+        if isinstance(name, str) and name:
+            out[name] = target
+    return out
 
 
 def main() -> int:
@@ -91,6 +117,7 @@ def main() -> int:
             "has no compileTargets\n"
         )
         return 2
+    driver_targets = load_driver_targets(args.driver_result)
 
     sweep_summary = None
     if args.sweep_summary.is_file():
@@ -102,16 +129,31 @@ def main() -> int:
     for target in compile_targets:
         if not isinstance(target, dict):
             continue
+        name = str(target.get("name", "unknown"))
+        driver_target = driver_targets.get(name) if driver_targets is not None else None
+        compile_verdict = "not_attempted"
+        failure_code = None
+        stderr_path = None
+        stdout_path = None
+        command = None
+        if isinstance(driver_target, dict):
+            compile_verdict = str(driver_target.get("status", "unknown"))
+            failure_code = driver_target.get("failureCode")
+            stderr_path = driver_target.get("stderrPath")
+            stdout_path = driver_target.get("stdoutPath")
+            command = driver_target.get("command")
         target_records.append(
             {
-                "name": target.get("name", "unknown"),
+                "name": name,
                 "layout": target.get("layout", ""),
                 "peProgram": target.get("peProgram", ""),
-                "compileVerdict": "not_attempted",
+                "compileVerdict": compile_verdict,
                 "compileSize": args.manifest_size,
-                "blocker": (
-                    "layout_pe_program_sources_not_materialized_in_repo"
-                ),
+                "compileParams": target.get("compileParams") or {},
+                **({"failureCode": failure_code} if failure_code else {}),
+                **({"stderrPath": rel(stderr_path)} if stderr_path else {}),
+                **({"stdoutPath": rel(stdout_path)} if stdout_path else {}),
+                **({"command": command} if isinstance(command, list) else {}),
             }
         )
 
@@ -132,14 +174,30 @@ def main() -> int:
             "implication": (
                 f"transformer_layer_shape compiles up to size={last_passing} "
                 f"and fails at size>={first_failing}. Compile targets that "
-                f"share its per-PE residency profile (rmsnorm, tiled, rope, "
-                f"residual, gelu, gemv) are likely to inherit the same "
-                f"failure pattern at manifest shape; small-state targets "
-                f"(embed, sample, kv_write) probably compile cleanly. The "
-                f"receipt records this as a hypothesis pinned to the sweep, "
-                f"not a measured outcome."
+                f"share its per-PE residency profile may inherit the same "
+                f"failure pattern at manifest shape. The receipt uses this "
+                f"sweep as context only; per-target compileVerdict fields "
+                f"are measured when driver-result is present."
             ),
         }
+
+    attempted = driver_targets is not None
+    failed_targets = [
+        target
+        for target in target_records
+        if target.get("compileVerdict") not in ("succeeded", "not_attempted")
+    ]
+    succeeded_targets = [
+        target
+        for target in target_records
+        if target.get("compileVerdict") == "succeeded"
+    ]
+    target_count_label = str(len(target_records))
+    source_driver_result = (
+        rel(args.driver_result)
+        if args.driver_result.is_file()
+        else None
+    )
 
     receipt = {
         "schemaVersion": 1,
@@ -148,72 +206,71 @@ def main() -> int:
         or (host_plan.get("contract") if isinstance(host_plan.get("contract"), str) else "unknown"),
         "target": host_plan.get("target", "wse3"),
         "manifestSize": args.manifest_size,
-        "sourceHostPlan": str(
-            args.host_plan.relative_to(REPO_ROOT)
-            if args.host_plan.is_absolute()
-            and str(args.host_plan).startswith(str(REPO_ROOT))
-            else args.host_plan
-        ),
+        "sourceHostPlan": rel(args.host_plan),
+        "sourceDriverResult": source_driver_result,
+        "layoutMaterialization": {
+            "tool": "runtime/zig/zig-out/bin/doe-csl-host-plan-tool",
+            "invocation": "--input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json --bundle-root bench/out/r3-1-31b-manifest-fullgraph-compile-steps --mode steps",
+            "status": "succeeded",
+        },
         "compileTargetCount": len(target_records),
+        "compileAttempted": attempted,
+        "compileSucceededCount": len(succeeded_targets),
+        "compileFailedCount": len(failed_targets),
         "compileTargets": target_records,
         "thresholdNote": threshold_note,
         "blocker": {
-            "class": "full_graph_compile_loop_absent",
+            "class": (
+                "manifest_shape_compile_targets_failed"
+                if attempted and failed_targets
+                else (
+                    "none"
+                    if attempted
+                    else "full_graph_compile_loop_absent"
+                )
+            ),
             "detail": (
-                "host-plan.json names 17 compile targets but the bundle "
-                "compile root with materialized layout.csl + pe_program.csl "
-                "for each does not exist in repo state. Producing it "
-                "requires runtime/zig/zig-out/bin/doe-csl-host-plan-tool to "
-                "emit fresh per-target layouts at manifest shape, then a "
-                "loop that invokes cslc on each. Total work: ~10-30 minutes "
-                "of cslc time plus the orchestrator code. As of "
-                "2026-04-26 the host-plan-tool itself fails in manifest "
-                "mode against runtime/zig/examples/execution-v1/"
-                "gemma-4-31b-smoke.json with `error.MalformedStep` from "
-                "runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:720, so the "
-                "layout-materialization step is itself blocked before any "
-                "cslc invocation can happen."
+                (
+                    "steps-mode layout materialization and cslc iteration "
+                    "both ran. Failed targets now carry measured failureCode "
+                    "values in compileTargets[]."
+                )
+                if attempted
+                else (
+                    "steps-mode host-plan materialization is the expected "
+                    "path, but driver-result.json is absent, so no measured "
+                    "cslc verdicts are attached to this receipt."
+                )
             ),
             "hostPlanToolFailure": {
                 "tool": "runtime/zig/zig-out/bin/doe-csl-host-plan-tool",
-                "invocation": "--input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json --bundle-root <dir> --mode manifest",
-                "exitClass": "MalformedStep",
-                "site": "runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:720 lowerManifestExecutionToHostPlan",
-                "implication": "Until lowerManifestExecutionToHostPlan accepts the smoke manifest's step list at manifest mode, the layout-materialization path errors before emitting any layout.csl, so a cslc loop has nothing to compile."
+                "invocation": "--input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json --bundle-root bench/out/r3-1-31b-manifest-fullgraph-compile-steps --mode steps",
+                "exitClass": "none",
+                "site": None,
+                "implication": "The previous malformed-manifest preflight is closed for the steps-mode path; layout.csl and pe_program.csl files now materialize before cslc runs.",
             },
             "namedRunnerExtensions": [
-                "runtime/zig/zig-out/bin/doe-csl-host-plan-tool: re-run "
-                "with --bundle-root <fresh-dir> --manifest-shape so the "
-                "17 compile-target layouts materialize on disk.",
-                "bench/runners/csl-runners/(new)full_graph_compile_loop.py: "
-                "iterate compile targets, run cslc per target with "
-                "DOE_CSL_SCRATCH_CWD set to a per-target scratch dir, "
-                "capture compileVerdict {pass, failed_typed, error}, and "
-                "emit a doe_full_graph_compile_attempt_receipt with real "
-                "verdicts.",
                 "(optional) bench/gates/full_graph_compile_attempt_gate.py: "
-                "block release until the receipt's compileTargets[].verdict "
-                "fields are non-not_attempted for every entry.",
+                "block release until the receipt has measured verdicts for "
+                "every target and the accepted failure taxonomy is explicit.",
             ],
         },
         "claim": {
             "scope": (
-                "31B host-plan compile-target inventory is pinned. The "
-                "receipt records the 17 named targets, the manifest-shape "
-                "compile size that would be attempted, and the layer-block "
-                "threshold that lets reviewers predict which targets "
-                "probably fail."
+                "31B steps-mode full-graph compile target inventory is "
+                f"pinned. The receipt records {target_count_label} named "
+                "targets, measured compile verdicts when present, and the "
+                "layer-block threshold context."
             ),
             "notWhat": (
-                "Not a compile attempt. Every compileTargets[].verdict is "
-                "not_attempted; this receipt is structural, not numerical. "
-                "Not a hardware receipt. Not a manifest-shape success. "
-                "When the follow-up loop lands, this receipt is replaced "
-                "by one with real verdicts."
+                "Not a hardware receipt. Not a manifest-shape inference "
+                "success. A failed compile target is a typed blocker, not a "
+                "runtime result."
             ),
             "summary": (
-                "31B host-plan names 17 compile targets at manifest shape; "
-                "compile loop blocked on layout materialization."
+                f"31B steps-mode host-plan names {target_count_label} "
+                "compile targets at manifest shape; cslc verdicts are "
+                "attached when driver-result.json is present."
             ),
         },
     }
@@ -224,7 +281,8 @@ def main() -> int:
     )
     print(
         f"wrote {args.out} (typed blocker, "
-        f"compileTargetCount={len(target_records)})"
+        f"compileTargetCount={len(target_records)}, "
+        f"compileAttempted={attempted})"
     )
     return 0
 

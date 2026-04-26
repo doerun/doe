@@ -56,6 +56,7 @@ from bench.tools import extract_gemma4_e2b_weight_slices as e2b_extractor
 
 DEFAULT_FIXTURE = "config/gemma-4-31b-real-weight-fixture.json"
 DEFAULT_OUT_DIR = "bench/out/gemma-4-31b-real-weights"
+WEIGHTS_DIR_VERDICT = "verdict.json"
 _ENV_SOURCE_DIR = os.environ.get("DOE_GEMMA4_31B_SAFETENSORS_DIR")
 DEFAULT_SOURCE_DIR_CANDIDATES = [
     *([_ENV_SOURCE_DIR] if _ENV_SOURCE_DIR else []),
@@ -73,7 +74,7 @@ PROJECTION_SUBSTITUTE_CHOICES = (
 LINEAR_ATTENTION_POLICY_CHOICES = (
     "fail",
     "skip-with-layout-metadata",
-    "dup-k-into-v",
+    "duplicate-k-proj",
 )
 
 
@@ -110,12 +111,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Policy for layers that lack self_attn.v_proj.weight (linear / "
-            "sliding-window attention). 'skip-with-layout-metadata' omits "
-            "the v_proj concat for those layers and records "
-            "kv_layout='linear' in the materialization metadata so the "
-            "audit accepts the layer as complete-by-policy. 'dup-k-into-v' "
-            "duplicates k_proj into the v_proj slot (structurally "
-            "dishonest; use only when the audit explicitly asks for it). "
+            "sliding-window attention). 'skip-with-layout-metadata' keeps "
+            "real K data, zero-fills the absent V slots, and records "
+            "kv_layout='linear' in materialization metadata so the audit "
+            "accepts the layer as complete-by-policy. 'duplicate-k-proj' "
+            "duplicates k_proj into the V slot and is included only as an "
+            "explicit alternative policy. "
             "'fail' (default) refuses to substitute and surfaces the "
             "missing tensors."
         ),
@@ -209,7 +210,7 @@ def materialize_gemma4_31b_smoke_contract(
             )
         elif linear_attention_policy == "skip-with-layout-metadata":
             v = b"\x00" * (num_heads * per_head_values * 4)
-        elif linear_attention_policy == "dup-k-into-v":
+        elif linear_attention_policy == "duplicate-k-proj":
             v = bytes(k)
         else:
             failures.append(
@@ -267,6 +268,8 @@ def materialize_gemma4_31b_smoke_contract(
             "kvLenPerHead": smoke_kv_len,
             "perHeadValues": per_head_values,
             "mlpSliceValues": mlp_len,
+            "projectionSubstituteTensor": projection_substitute_tensor,
+            "linearAttentionPolicy": linear_attention_policy,
         },
         "perLayerKvLayout": per_layer_kv_layout,
         "linearLayerCount": sum(
@@ -420,6 +423,7 @@ def main() -> int:
             "filesWritten": 0 if failures else len(names),
             "materialization": materialization,
         }
+        _write_weights_dir_verdict(out_dir, verdict)
         _emit_verdict(args, verdict)
         if failures:
             print(
@@ -460,6 +464,14 @@ def _emit_verdict(args: argparse.Namespace, verdict: dict[str, Any]) -> None:
         out_path.write_text(text, encoding="utf-8")
     else:
         sys.stdout.write(text)
+
+
+def _write_weights_dir_verdict(out_dir: Path, verdict: dict[str, Any]) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / WEIGHTS_DIR_VERDICT).write_text(
+        json.dumps(verdict, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

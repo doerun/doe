@@ -375,7 +375,7 @@ class TestParityScaffolding(unittest.TestCase):
         with self.assertRaises(ValueError):
             doe_parity.compare(reference, backend, "looks_good_to_me")
 
-    def test_tolerance_bounded_refuses_without_metric_wiring(self) -> None:
+    def test_tolerance_bounded_defers_without_policy(self) -> None:
         reference = doe_parity.ComparisonOutcome(
             backend="reference", status="ok", backend_hash="abc"
         )
@@ -383,7 +383,7 @@ class TestParityScaffolding(unittest.TestCase):
             backend="webgpu", status="ok", backend_hash="abc"
         )
         result = doe_parity.compare(reference, backend, "tolerance_bounded")
-        self.assertEqual(result.status, "fail")
+        self.assertEqual(result.status, "deferred")
         self.assertIn("tolerance_bounded", result.detail or "")
 
     def test_bit_exact_pass_and_fail(self) -> None:
@@ -402,6 +402,82 @@ class TestParityScaffolding(unittest.TestCase):
         self.assertEqual(
             doe_parity.compare(ref, bad, "bit_exact_solo").status, "fail"
         )
+
+    def test_exact_classes_defer_on_missing_hash_payloads(self) -> None:
+        ref = doe_parity.ComparisonOutcome(backend="reference", status="pass")
+        backend = doe_parity.ComparisonOutcome(backend="webgpu", status="pass")
+        for exactness in ("bit_exact_solo", "algorithm_exact"):
+            with self.subTest(exactness=exactness):
+                result = doe_parity.compare(ref, backend, exactness)
+                self.assertEqual(result.status, "deferred")
+                self.assertIn("missing referenceHash", result.detail or "")
+
+    def test_algorithm_exact_uses_backend_hash(self) -> None:
+        ref = doe_parity.ComparisonOutcome(
+            backend="reference", status="pass", backend_hash="f" * 64
+        )
+        ok = doe_parity.ComparisonOutcome(
+            backend="webgpu", status="pass", backend_hash="f" * 64
+        )
+        bad = doe_parity.ComparisonOutcome(
+            backend="webgpu", status="pass", backend_hash="0" * 64
+        )
+        self.assertEqual(doe_parity.compare(ref, ok, "algorithm_exact").status, "pass")
+        self.assertEqual(doe_parity.compare(ref, bad, "algorithm_exact").status, "fail")
+
+    def test_tolerance_bounded_exact_hash_passes_with_zero_metric(self) -> None:
+        policy = doe_parity.TolerancePolicy(metric="max_abs", epsilon=1.0e-6)
+        ref = doe_parity.ComparisonOutcome(
+            backend="reference", status="pass", backend_hash="a" * 64
+        )
+        backend = doe_parity.ComparisonOutcome(
+            backend="webgpu", status="pass", backend_hash="a" * 64
+        )
+        result = doe_parity.compare(ref, backend, "tolerance_bounded", policy)
+        self.assertEqual(result.status, "pass")
+        self.assertEqual(result.metric, "max_abs")
+        self.assertEqual(result.metric_value, 0.0)
+        self.assertEqual(result.metric_epsilon, 1.0e-6)
+
+    def test_tolerance_bounded_numeric_metric_pass_and_fail(self) -> None:
+        policy = doe_parity.TolerancePolicy(metric="max_abs", epsilon=1.0e-6)
+        ref = doe_parity.ComparisonOutcome(
+            backend="reference", status="pass", backend_hash="a" * 64
+        )
+        within = doe_parity.ComparisonOutcome(
+            backend="webgpu",
+            status="pass",
+            backend_hash="b" * 64,
+            metric="max_abs",
+            metric_value=5.0e-7,
+        )
+        outside = doe_parity.ComparisonOutcome(
+            backend="webgpu",
+            status="pass",
+            backend_hash="c" * 64,
+            metric="max_abs",
+            metric_value=2.0e-6,
+        )
+        self.assertEqual(
+            doe_parity.compare(ref, within, "tolerance_bounded", policy).status,
+            "pass",
+        )
+        self.assertEqual(
+            doe_parity.compare(ref, outside, "tolerance_bounded", policy).status,
+            "fail",
+        )
+
+    def test_tolerance_bounded_defers_when_numeric_payload_missing(self) -> None:
+        policy = doe_parity.TolerancePolicy(metric="max_abs", epsilon=1.0e-6)
+        ref = doe_parity.ComparisonOutcome(
+            backend="reference", status="pass", backend_hash="a" * 64
+        )
+        backend = doe_parity.ComparisonOutcome(
+            backend="webgpu", status="pass", backend_hash="b" * 64
+        )
+        result = doe_parity.compare(ref, backend, "tolerance_bounded", policy)
+        self.assertEqual(result.status, "deferred")
+        self.assertIn("no numeric metric payload", result.detail or "")
 
     def test_schema_is_well_formed(self) -> None:
         schema_path = REPO_ROOT / "config" / "doe-parity-receipt.schema.json"
@@ -429,6 +505,9 @@ class TestParityScaffolding(unittest.TestCase):
                     backend="webgpu",
                     status="deferred",
                     detail="backend pending",
+                    metric="max_abs",
+                    metric_value=0.0,
+                    metric_epsilon=1.0e-6,
                 ),
             ],
             rejection_reasons=[],

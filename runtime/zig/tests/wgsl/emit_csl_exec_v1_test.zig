@@ -319,20 +319,34 @@ test "lowerJsonToHostPlan rejects shared kv without shared-kv metadata" {
     try std.testing.expectError(error.MalformedStep, exec_v1.lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode));
 }
 
-test "lowerManifestExecutionToHostPlan rejects Gemma 4-only launch metadata" {
+test "lowerManifestExecutionToHostPlan accepts Gemma 4 launch metadata" {
     const json_payload =
         \\{
-        \\  "layerPattern": { "type": "every_n", "period": 5, "offset": 4 }
+        \\  "grid": { "width": 8, "height": 1 },
+        \\  "slidingWindowSize": 512,
+        \\  "numKvSharedLayers": 4,
+        \\  "layerPattern": { "type": "every_n", "period": 5, "offset": 4 },
+        \\  "steps": [
+        \\    { "phase": "prefill", "op": "embed", "kernelKey": "embed" },
+        \\    { "phase": "decode", "op": "attention_sliding", "kernelKey": "attn_decode_sliding", "attentionType": "sliding" },
+        \\    { "phase": "decode", "op": "kv_write_shared", "kernelKey": "kv_write_shared", "kvCacheAlias": "layer.0.kv" },
+        \\    { "phase": "decode", "op": "sample", "kernelKey": "sample", "kind": "sample" }
+        \\  ]
         \\}
     ;
 
-    var kernels: [4]host.KernelSpec = undefined;
-    var prefill: [4]host.LaunchSpec = undefined;
-    var decode: [4]host.LaunchSpec = undefined;
+    var kernels: [8]host.KernelSpec = undefined;
+    var prefill: [8]host.LaunchSpec = undefined;
+    var decode: [8]host.LaunchSpec = undefined;
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
-    try std.testing.expectError(error.MalformedStep, exec_v1.lowerManifestExecutionToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode));
+    const plan = try exec_v1.lowerManifestExecutionToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode);
+    try std.testing.expectEqual(@as(usize, 1), plan.prefill_launches.len);
+    try std.testing.expectEqual(@as(usize, 3), plan.decode_launches.len);
+    try std.testing.expect(plan.decode_launches[0].attention_type.? == .sliding);
+    try std.testing.expectEqual(@as(?u32, 512), plan.decode_launches[0].sliding_window_size);
+    try std.testing.expectEqualStrings("layer.0.kv", plan.decode_launches[1].kv_cache_alias.?);
 }
 
 test "Gemma 3 smoke fixture lowers to golden host plan artifact" {

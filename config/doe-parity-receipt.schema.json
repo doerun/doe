@@ -115,7 +115,18 @@
           "enum": ["pass", "fail", "deferred", "not_implemented", "rejected"]
         },
         "backendHash": { "type": ["string", "null"] },
-        "detail": { "type": ["string", "null"] }
+        "detail": { "type": ["string", "null"] },
+        "numeric": { "$ref": "#/$defs/numericComparison" }
+      }
+    },
+    "numericComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "value", "epsilon"],
+      "properties": {
+        "metric": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "epsilon": { "type": "number" }
       }
     }
   }

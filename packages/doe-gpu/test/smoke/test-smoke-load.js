@@ -264,6 +264,20 @@ if (native) {
   check('native.gpu.requestDevice', typeof native.gpu?.requestDevice === 'function');
 }
 
+let nodeWebgpu;
+try {
+  nodeWebgpu = await import('doe-gpu/node-webgpu');
+  check('node-webgpu import succeeds', true);
+} catch (err) {
+  check('node-webgpu import succeeds', false, err.message);
+}
+if (nodeWebgpu) {
+  check('node-webgpu exports bootstrapNodeWebGPU', typeof nodeWebgpu.bootstrapNodeWebGPU === 'function');
+  check('node-webgpu exports bootstrapNodeWebGPUProvider', typeof nodeWebgpu.bootstrapNodeWebGPUProvider === 'function');
+  check('node-webgpu exports hasNavigatorGpu', typeof nodeWebgpu.hasNavigatorGpu === 'function');
+  check('node-webgpu exports installNavigatorGpu', typeof nodeWebgpu.installNavigatorGpu === 'function');
+}
+
 let plan;
 try {
   plan = await import('doe-gpu/plan');

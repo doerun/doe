@@ -122,7 +122,8 @@ pub fn emitReductionLayout(
     _ = info;
 
     try write(buf, pos, "// Layout: single-PE reduction kernel (width x 1, no cross-PE fabric).\n\n");
-    try write(buf, pos, "param width: i16;\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param hidden_size: i16 = 1024;\n\n");
 
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n");
@@ -147,6 +148,7 @@ pub fn emitReductionLayout(
     try write(buf, pos, "            .pe_id = pe_x,\n");
     try write(buf, pos, "            .num_pes = width,\n");
     try write(buf, pos, "            .reduce_color = reduce_color,\n");
+    try write(buf, pos, "            .hidden_size = hidden_size,\n");
     try write(buf, pos, "        });\n");
     try write(buf, pos, "    }\n\n");
 

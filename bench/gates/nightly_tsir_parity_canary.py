@@ -169,17 +169,38 @@ def _doppler_transcript_for(
 
 
 def _doppler_probe_hash_for(
-    kernel: str, probes_dir: Path | None
+    kernel: str,
+    probes_dir: Path | None,
+    transcript_path: Path | None = None,
 ) -> str | None:
-    if probes_dir is None:
-        return None
-    candidate = probes_dir / f"{kernel}.kernel-probe-hash"
-    if not candidate.is_file():
-        return None
-    text = candidate.read_text(encoding="utf-8").strip()
-    if not text:
-        return None
-    return text
+    """Locate a per-kernel probe hash.
+
+    Priority order:
+      1. `<probes-dir>/<kernel>.kernel-probe-hash` if `probes_dir` is given.
+      2. The transcript JSON's `kernelProbe.hash` field if the transcript file
+         carries one. This lets the harness consume self-contained transcripts
+         that bundle the probe hash inline (the format authored by
+         `bench/fixtures/tsir-real-doppler-transcripts/`).
+    Returns None when neither source has a probe hash.
+    """
+    if probes_dir is not None:
+        candidate = probes_dir / f"{kernel}.kernel-probe-hash"
+        if candidate.is_file():
+            text = candidate.read_text(encoding="utf-8").strip()
+            if text:
+                return text
+    if transcript_path is not None and transcript_path.is_file():
+        try:
+            doc = json.loads(transcript_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if isinstance(doc, dict):
+            probe = doc.get("kernelProbe")
+            if isinstance(probe, dict):
+                value = probe.get("hash")
+                if isinstance(value, str) and value:
+                    return value
+    return None
 
 
 def run_fixture(
@@ -215,7 +236,9 @@ def run_fixture(
                 "with a per-kernel transcript file."
             )
         cmd.extend(["--doppler-transcript", str(transcript_path)])
-        probe_hash = _doppler_probe_hash_for(kernel, doppler_probes_dir)
+        probe_hash = _doppler_probe_hash_for(
+            kernel, doppler_probes_dir, transcript_path=transcript_path
+        )
         if probe_hash is not None:
             cmd.extend(["--doppler-kernel-probe-hash", probe_hash])
     proc = subprocess.run(

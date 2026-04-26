@@ -581,10 +581,11 @@ fn emitCslKvWrite(
         try writer.writeAll("param max_seq_len: i16;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try writer.writeAll("const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);\n");
     try writeCslBufferArray(writer, p, key_proj.name, "head_dim", "f32");
     try writeCslBufferArray(writer, p, val_proj.name, "head_dim", "f32");
-    try writeCslBufferArray(writer, p, key_cache.name, "max_seq_len * head_dim", "f32");
-    try writeCslBufferArray(writer, p, val_cache.name, "max_seq_len * head_dim", "f32");
+    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", "f32");
+    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", "f32");
     try writeCslBufferArray(writer, p, position.name, "1", "u32");
     try writeCslBufferPointer(writer, p, key_proj.name, "f32");
     try writeCslBufferPointer(writer, p, val_proj.name, "f32");
@@ -653,8 +654,9 @@ fn emitCslKvRead(
         try writer.writeAll("param read_len: i16;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try writeCslBufferArray(writer, p, key_cache.name, "max_seq_len * head_dim", "f32");
-    try writeCslBufferArray(writer, p, val_cache.name, "max_seq_len * head_dim", "f32");
+    try writer.writeAll("const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);\n");
+    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", "f32");
+    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", "f32");
     try writeCslBufferArray(writer, p, key_output.name, "read_len * head_dim", "f32");
     try writeCslBufferArray(writer, p, val_output.name, "read_len * head_dim", "f32");
     try writeCslBufferPointer(writer, p, key_cache.name, "f32");

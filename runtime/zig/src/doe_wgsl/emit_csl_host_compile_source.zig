@@ -612,6 +612,7 @@ test "host compile source emits TSIR KV cache bodies" {
 
     const kv_write = try emitPatternSections(std.testing.allocator, "kv_write", &buf);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param max_seq_len: i16 = 4096;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const base = position[0] * @as(u32, head_dim);") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "key_cache[idx] = key_proj[@as(u32, d)];") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "val_cache[idx] = val_proj[@as(u32, d)];") != null);
@@ -620,6 +621,7 @@ test "host compile source emits TSIR KV cache bodies" {
 
     const read = try emitPatternSections(std.testing.allocator, "kv_read", &buf);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param read_len: i16 = 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);") != null);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const src_base = @as(u32, read_start + i) * @as(u32, head_dim);") != null);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "key_out[dst_base + @as(u32, d)] = key_cache[src_base + @as(u32, d)];") != null);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "val_out[dst_base + @as(u32, d)] = val_cache[src_base + @as(u32, d)];") != null);
@@ -715,10 +717,11 @@ test "reduction pattern emits real rmsnorm: chunked sum, sqrt, per-element outpu
     // Per-element output loop bounded by the runtime size, not by workgroup_size 64.
     // A scalar-per-PE regression would write `output[...] = sum;` once and skip
     // the size-bounded loop.
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "i < size") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "i < @as(u32, hidden_size)") != null);
 
-    // Gemma offset path must be reachable.
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "rms_norm_offset") != null);
+    // Gemma offset path must be reachable. Uniform structs lower to a single
+    // u32 buffer, so rms_norm_offset is slot 2 of `u`.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "u[2]") != null);
 
     // Single-barrier shape preserved (pre/post barrier zones).
     // The lane-loop wrap is the existing reduction emitter contract.

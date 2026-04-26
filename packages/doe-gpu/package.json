@@ -20,6 +20,10 @@
       "types": "./src/native.d.ts",
       "default": "./src/native.js"
     },
+    "./node-webgpu": {
+      "types": "./src/node-webgpu.d.ts",
+      "default": "./src/node-webgpu.js"
+    },
     "./plan": {
       "types": "./src/plan.d.ts",
       "default": "./src/plan.js"

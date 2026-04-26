@@ -118,7 +118,8 @@ def main() -> int:
         manifest_path = REPO_ROOT / manifest_path
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     model_config = manifest.get("modelConfig", {})
-    num_layers = int(model_config["numLayers"])
+    manifest_num_layers = int(model_config["numLayers"])
+    num_layers = manifest_num_layers
     num_heads = int(model_config.get("numHeads", 0)) or None
     head_dim = int(model_config.get("headDim", 0)) or None
     model_id = manifest.get("modelId", "")
@@ -135,11 +136,16 @@ def main() -> int:
     expected_bytes = expected_f32 * 4  # f32 = 4 bytes
 
     fixture = None
+    fixture_num_layers = None
     if args.fixture:
         fixture_path = Path(args.fixture)
         if not fixture_path.is_absolute():
             fixture_path = REPO_ROOT / fixture_path
         fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        fixture_shape = fixture.get("modelShape") or {}
+        if fixture_shape.get("numLayers") is not None:
+            fixture_num_layers = int(fixture_shape["numLayers"])
+            num_layers = fixture_num_layers
         # Manifest-sha identity pin: reject if the provided manifest
         # doesn't match the fixture's recorded bundle hash.
         fix_manifest = (fixture.get("bundle") or {}).get("manifest") or {}
@@ -270,6 +276,9 @@ def main() -> int:
         "modelId": model_id,
         "manifestPath": args.manifest,
         "manifestSha256": sha256_file(manifest_path),
+        "manifestNumLayers": manifest_num_layers,
+        "fixtureNumLayers": fixture_num_layers,
+        "numLayersSource": "fixture.modelShape" if fixture_num_layers is not None else "manifest.modelConfig",
         "numLayersExpected": num_layers,
         "shapeMode": args.shape,
         "numHeadsManifest": num_heads,

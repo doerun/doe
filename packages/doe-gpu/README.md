@@ -66,6 +66,8 @@ const result = await device.compute({
 - `doe-gpu`: default native-runtime surface
 - `doe-gpu/api`: provider-neutral JS API helpers and types
 - `doe-gpu/native`: explicit Zig-backed native WebGPU provider
+- `doe-gpu/node-webgpu`: explicit Node WebGPU provider bootstrap for
+  repo-adjacent evidence tooling
 - `doe-gpu/plan`: JSON command-stream, capture-graph, and execution-plan contracts
 - `doe-gpu/capture`: alias for the record-only WebGPU capture provider
 - `doe-gpu/compute`: narrower compute-focused surface

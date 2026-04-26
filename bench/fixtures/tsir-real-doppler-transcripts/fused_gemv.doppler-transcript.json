@@ -1,0 +1,36 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.fused_gemv",
+  "executionGraphHash": "sha256:90dd540690deb7af279a5720ef8b7412177ab96fbb478d2118ca72ea95b2d5d5",
+  "source": {
+    "hash": "sha256:dc0bd4178526eb59b8794879f8ae62b609faec503b10999367b5ea9e16285e4a",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/fused_gemv.json"
+  },
+  "kernelProbe": {
+    "hash": "1734e75aee4a4517734906d86a0ec4ae513d6604e90d012db2da941f92c626cc",
+    "outputElementCount": 4
+  },
+  "exactness": {
+    "class": "algorithm_exact",
+    "toleranceMetric": "",
+    "toleranceEpsilon": 0.0
+  },
+  "referenceOutputs": {
+    "y": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        -1.0,
+        -1.25,
+        -2.0,
+        1.5
+      ]
+    }
+  },
+  "claim": {
+    "scope": "Per-kernel Doppler-shape reference for fused_gemv. Computed from the bootstrap input fixture; output values + probe hash recorded so the parity harness can verify backend output element-wise (for tolerance_bounded) or by hash (for algorithm_exact / bit_exact_solo).",
+    "notWhat": "Not a hardware-captured Doppler reference. Synthesized locally from deterministic numpy reference computation against the same input fixture the canary feeds to backends. Replace with a real Doppler browser/Node WebGPU per-kernel probe when that capture lands."
+  }
+}

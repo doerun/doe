@@ -85,6 +85,15 @@ class ComparisonOutcome:
     status: str
     backend_hash: str | None = None
     detail: str | None = None
+    metric: str | None = None
+    metric_value: float | None = None
+    metric_epsilon: float | None = None
+
+
+@dataclass(frozen=True)
+class TolerancePolicy:
+    metric: str
+    epsilon: float
 
 
 @dataclass
@@ -169,6 +178,25 @@ class ParityReceipt:
     reference_source: ReferenceSource | None = None
 
     def to_json(self) -> dict[str, Any]:
+        def comparison_to_json(c: ComparisonOutcome) -> dict[str, Any]:
+            doc: dict[str, Any] = {
+                "backend": c.backend,
+                "status": c.status,
+                "backendHash": c.backend_hash,
+                "detail": c.detail,
+            }
+            if (
+                c.metric is not None
+                or c.metric_value is not None
+                or c.metric_epsilon is not None
+            ):
+                doc["numeric"] = {
+                    "metric": c.metric,
+                    "value": c.metric_value,
+                    "epsilon": c.metric_epsilon,
+                }
+            return doc
+
         doc: dict[str, Any] = {
             "schemaVersion": self.schema_version,
             "artifactKind": self.artifact_kind,
@@ -176,15 +204,7 @@ class ParityReceipt:
             "exactnessClass": self.exactness_class,
             "referenceHash": self.reference_hash,
             "inputsDigest": self.inputs_digest,
-            "comparisons": [
-                {
-                    "backend": c.backend,
-                    "status": c.status,
-                    "backendHash": c.backend_hash,
-                    "detail": c.detail,
-                }
-                for c in self.comparisons
-            ],
+            "comparisons": [comparison_to_json(c) for c in self.comparisons],
             "rejectionReasons": self.rejection_reasons,
         }
         if self.reference_source is not None:
@@ -449,6 +469,61 @@ def lowering_identity_from_manifest_entry(
     )
 
 
+def kernel_ref_prefix_from_manifest_entry(
+    entry_path: Path | None,
+) -> str | None:
+    """Return the manifest-entry's kernelRef prefix when one is loadable.
+
+    Used to disambiguate the bootstrap-vs-real routing decision when the
+    positional kernel name overlaps both fixture sets (e.g. `fused_gemv`
+    and `rmsnorm` exist in both `bench/fixtures/tsir-manifest-entries/`
+    and `bench/fixtures/tsir-real-entries/`). The kernelRef carries the
+    namespace prefix authoritatively; the positional kernel name does not.
+
+    Returns one of:
+      - "doe.tsir.real."
+      - "doe.tsir.bootstrap."
+      - None if the entry is absent or its kernelRef does not match a known prefix
+    """
+    if entry_path is None:
+        return None
+    try:
+        entry = tsir_manifest_lowering.load_entry_doc(entry_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    kernel_ref = entry.get("kernelRef")
+    if not isinstance(kernel_ref, str):
+        return None
+    for prefix in ("doe.tsir.real.", "doe.tsir.bootstrap."):
+        if kernel_ref.startswith(prefix):
+            return prefix
+    return None
+
+
+def tolerance_policy_from_manifest_entry(
+    entry_path: Path | None, exactness: str
+) -> TolerancePolicy | None:
+    if exactness != "tolerance_bounded":
+        return None
+    if entry_path is None:
+        return None
+    entry = tsir_manifest_lowering.load_entry_doc(entry_path)
+    entry_exactness = entry["exactness"]["class"]
+    if entry_exactness != exactness:
+        raise ValueError(
+            "manifest lowering exactness class does not match CLI --class: "
+            f"{entry_exactness} != {exactness}"
+        )
+    exactness_doc = entry["exactness"]
+    metric = exactness_doc.get("toleranceMetric")
+    epsilon = exactness_doc.get("toleranceEpsilon")
+    if not isinstance(metric, str) or not metric:
+        raise ValueError("tolerance_bounded fixture requires toleranceMetric")
+    if not isinstance(epsilon, (int, float)):
+        raise ValueError("tolerance_bounded fixture requires toleranceEpsilon")
+    return TolerancePolicy(metric=metric, epsilon=float(epsilon))
+
+
 def load_doppler_transcript(path: Path) -> dict[str, Any]:
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
@@ -595,20 +670,203 @@ def run_reference_interpreter(
     )
 
 
-def run_backend(backend: str) -> ComparisonOutcome:
+WEBGPU_DISPATCH_HELPER = (
+    REPO_ROOT / "bench" / "tools" / "run_doe_webgpu_kernel_dispatch.mjs"
+)
+CSL_CHANNEL_LOCK_FILE = Path("/tmp/doe-csl-channel.lock")
+
+
+def _kernel_wgsl_path(kernel: str) -> Path | None:
+    """Locate the WGSL source for a kernel, bootstrap or real.
+
+    Real-kernel layout: runtime/zig/tests/tsir/real/<kernel>/<kernel>.wgsl
+    Bootstrap layout:   runtime/zig/tests/tsir/bootstrap/<kernel>.wgsl
+    Returns None when no WGSL file exists at either location.
+    """
+    real = ZIG_RUNTIME_DIR / "tests" / "tsir" / "real" / kernel / f"{kernel}.wgsl"
+    if real.is_file():
+        return real
+    bootstrap = ZIG_RUNTIME_DIR / "tests" / "tsir" / "bootstrap" / f"{kernel}.wgsl"
+    if bootstrap.is_file():
+        return bootstrap
+    return None
+
+
+def _csl_channel_locked() -> bool:
+    """Return True when the CSL/simfabric channel is reserved for another job.
+
+    The lock is observed via either the env var `DOE_PARITY_CSL_CHANNEL_LOCKED`
+    (set to "1" / "true" / "yes") or the presence of the lock file at
+    `/tmp/doe-csl-channel.lock`. Task 2's full-graph cslc loop sets the
+    lock so the parity harness's simfabric backend lane defers cleanly
+    rather than contending on the singularity SDK channel.
+    """
+    import os
+    env_value = (os.environ.get("DOE_PARITY_CSL_CHANNEL_LOCKED") or "").strip().lower()
+    if env_value in {"1", "true", "yes", "on"}:
+        return True
+    return CSL_CHANNEL_LOCK_FILE.is_file()
+
+
+def _run_webgpu_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
+    if not WEBGPU_DISPATCH_HELPER.is_file():
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="not_implemented",
+            detail=(
+                "webgpu dispatch helper missing at "
+                f"{WEBGPU_DISPATCH_HELPER.relative_to(REPO_ROOT)}"
+            ),
+        )
+    wgsl_path = _kernel_wgsl_path(kernel)
+    if wgsl_path is None:
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="deferred",
+            detail=(
+                f"WGSL source for kernel {kernel!r} not found under "
+                "runtime/zig/tests/tsir/{real,bootstrap}/"
+            ),
+        )
+    cache_dir = REPO_ROOT / ".cache" / "doe-parity"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    output_hash_path = cache_dir / f"{kernel}.webgpu.hash"
+    if output_hash_path.is_file():
+        output_hash_path.unlink()
+    try:
+        proc = subprocess.run(
+            [
+                "node",
+                str(WEBGPU_DISPATCH_HELPER),
+                "--wgsl",
+                str(wgsl_path),
+                "--inputs",
+                str(inputs_path),
+                "--output-hash-out",
+                str(output_hash_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=REPO_ROOT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="error",
+            detail=f"webgpu dispatch invocation failed: {exc}",
+        )
+    if proc.returncode != 0:
+        snippet = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:][0:1]
+        tail = snippet[0] if snippet else "(no output)"
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="error",
+            detail=f"webgpu dispatch exit {proc.returncode}: {tail}",
+        )
+    if not output_hash_path.is_file():
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="error",
+            detail="webgpu dispatch produced no output hash",
+        )
+    backend_hash = output_hash_path.read_text(encoding="utf-8").strip()
+    if not backend_hash:
+        return ComparisonOutcome(
+            backend="webgpu",
+            status="error",
+            detail="webgpu dispatch wrote an empty hash file",
+        )
+    return ComparisonOutcome(
+        backend="webgpu",
+        status="pass",
+        backend_hash=backend_hash,
+        detail="doe-webgpu dispatch via packages/doe-gpu Node runtime",
+    )
+
+
+def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
+    if _csl_channel_locked():
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="deferred",
+            detail=(
+                "csl-simfabric channel locked via DOE_PARITY_CSL_CHANNEL_LOCKED "
+                "or /tmp/doe-csl-channel.lock; rerun without the lock to "
+                "execute the per-kernel simfabric runner."
+            ),
+        )
+    sim_runner = (
+        REPO_ROOT
+        / "bench"
+        / "runners"
+        / "csl-runners"
+        / f"{kernel}_sim_runner.py"
+    )
+    if not sim_runner.is_file():
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="not_implemented",
+            detail=(
+                f"per-kernel simfabric runner not found at "
+                f"{sim_runner.relative_to(REPO_ROOT)}; harness needs a "
+                f"runner for {kernel!r} before this lane can hash output."
+            ),
+        )
+    # The per-kernel simfabric runners require a pre-compiled compile-dir
+    # (cslc invocation) plus the singularity wrapper. Producing those on
+    # demand for every parity invocation would contend with Task 2's
+    # full-graph cslc loop on the same SDK channel; the harness defers
+    # the actual run until the channel is free and the compile artifacts
+    # are produced. The runner is named here so reviewers can see the
+    # exact path that closes this lane.
+    return ComparisonOutcome(
+        backend="csl-simfabric",
+        status="not_implemented",
+        detail=(
+            f"runner located at {sim_runner.relative_to(REPO_ROOT)}; "
+            "fixture-driven compile + singularity invocation pending. "
+            "Task 4 wired this lane structurally; closing the lane requires "
+            "(a) per-kernel compile-dir materialization and (b) channel "
+            "release from Task 2's cslc loop."
+        ),
+    )
+
+
+def run_backend(
+    backend: str,
+    kernel: str | None = None,
+    inputs_path: Path | None = None,
+) -> ComparisonOutcome:
     """Run a backend emission path and return its hash.
 
-    Scaffolding: both backend lanes are still execution-stub-only. The
-    TSIR emitters now have semantic-aware bootstrap bodies, but this CLI
-    still needs WebGPU execution and CSL simfabric driver wiring before it
-    can compare backend bytes. Until those land, this returns
-    `not_implemented` so the receipt reflects the actual state rather than
-    an invented answer.
+    Webgpu lane: subprocess to bench/tools/run_doe_webgpu_kernel_dispatch.mjs,
+    which boots a Node WebGPU device, dispatches the kernel's WGSL with
+    inputs from the fixture, and writes a sha256 of the output buffer.
+
+    Csl-simfabric lane: when the channel is unlocked (no env / no lock
+    file) and the per-kernel `<kernel>_sim_runner.py` exists, the runner
+    is intended to be invoked here. The lane is currently structurally
+    wired but defers actual execution until the SDK channel is free of
+    Task 2's cslc loop and per-kernel compile-dirs are materialized.
     """
+    if kernel is None or inputs_path is None:
+        return ComparisonOutcome(
+            backend=backend,
+            status="not_implemented",
+            detail=(
+                f"{backend} backend lane requires kernel + inputs_path; "
+                "called without context."
+            ),
+        )
+    if backend == "webgpu":
+        return _run_webgpu_backend(kernel, inputs_path)
+    if backend == "csl-simfabric":
+        return _run_csl_simfabric_backend(kernel, inputs_path)
     return ComparisonOutcome(
         backend=backend,
         status="not_implemented",
-        detail=f"{backend} backend lane wiring not yet landed",
+        detail=f"unrecognized backend: {backend!r}",
     )
 
 
@@ -616,6 +874,7 @@ def compare(
     reference: ComparisonOutcome,
     backend_outcome: ComparisonOutcome,
     exactness: str,
+    tolerance_policy: TolerancePolicy | None = None,
 ) -> ComparisonOutcome:
     if exactness not in VALID_EXACTNESS:
         raise ValueError(f"unrecognized exactness class: {exactness}")
@@ -636,6 +895,22 @@ def compare(
             backend=backend_outcome.backend, status="deferred", detail=detail
         )
     if exactness in {"bit_exact_solo", "algorithm_exact"}:
+        if not reference.backend_hash or not backend_outcome.backend_hash:
+            missing: list[str] = []
+            if not reference.backend_hash:
+                missing.append("referenceHash")
+            if not backend_outcome.backend_hash:
+                missing.append("backendHash")
+            return ComparisonOutcome(
+                backend=backend_outcome.backend,
+                status="deferred",
+                backend_hash=backend_outcome.backend_hash,
+                detail=(
+                    f"{backend_outcome.backend} deferred: missing "
+                    + ", ".join(missing)
+                    + f" for {exactness}"
+                ),
+            )
         if reference.backend_hash == backend_outcome.backend_hash:
             return ComparisonOutcome(
                 backend=backend_outcome.backend,
@@ -648,14 +923,60 @@ def compare(
             backend_hash=backend_outcome.backend_hash,
             detail="hash mismatch",
         )
-    # tolerance_bounded: the real comparator lives in the kernel's
-    # declared metric/epsilon pair; scaffolding refuses to pass here
-    # without those fields, by design.
+    if tolerance_policy is None:
+        return ComparisonOutcome(
+            backend=backend_outcome.backend,
+            status="deferred",
+            backend_hash=backend_outcome.backend_hash,
+            detail=(
+                "tolerance_bounded deferred: declared toleranceMetric/"
+                "toleranceEpsilon not supplied"
+            ),
+        )
+    if (
+        reference.backend_hash
+        and backend_outcome.backend_hash
+        and reference.backend_hash == backend_outcome.backend_hash
+    ):
+        return ComparisonOutcome(
+            backend=backend_outcome.backend,
+            status="pass",
+            backend_hash=backend_outcome.backend_hash,
+            detail=(
+                "byte-identical output; "
+                f"{tolerance_policy.metric}=0 <= {tolerance_policy.epsilon}"
+            ),
+            metric=tolerance_policy.metric,
+            metric_value=0.0,
+            metric_epsilon=tolerance_policy.epsilon,
+        )
+    if (
+        backend_outcome.metric == tolerance_policy.metric
+        and backend_outcome.metric_value is not None
+    ):
+        metric_value = float(backend_outcome.metric_value)
+        status = "pass" if metric_value <= tolerance_policy.epsilon else "fail"
+        relation = "<=" if status == "pass" else ">"
+        return ComparisonOutcome(
+            backend=backend_outcome.backend,
+            status=status,
+            backend_hash=backend_outcome.backend_hash,
+            detail=(
+                f"{tolerance_policy.metric}={metric_value} "
+                f"{relation} {tolerance_policy.epsilon}"
+            ),
+            metric=tolerance_policy.metric,
+            metric_value=metric_value,
+            metric_epsilon=tolerance_policy.epsilon,
+        )
     return ComparisonOutcome(
         backend=backend_outcome.backend,
-        status="fail",
+        status="deferred",
         backend_hash=backend_outcome.backend_hash,
-        detail="tolerance_bounded metric+epsilon not yet wired",
+        detail=(
+            "tolerance_bounded deferred: backend hash differs or is missing "
+            "and no numeric metric payload was produced"
+        ),
     )
 
 
@@ -677,11 +998,22 @@ def validate_receipt_doc(doc: dict[str, Any]) -> None:
         )
 
 
-def write_receipt(receipt: ParityReceipt, receipt_dir: Path) -> Path:
+def write_receipt(
+    receipt: ParityReceipt,
+    receipt_dir: Path,
+    basename: str | None = None,
+) -> Path:
     doc = receipt.to_json()
     validate_receipt_doc(doc)
     receipt_dir.mkdir(parents=True, exist_ok=True)
-    out_path = receipt_dir / f"{receipt.kernel}.parity.json"
+    # Filename uses the caller-supplied basename when given so the canary
+    # (which addresses receipts by un-normalized kernel name from the
+    # manifest entry's kernelRef suffix) can find the file even when an
+    # alias normalized the in-content `receipt.kernel` (e.g. "rmsnorm" ->
+    # "rms_norm"). Without this, the receipt is written at the normalized
+    # path and the canary reports "did not write a receipt".
+    out_basename = basename if basename else receipt.kernel
+    out_path = receipt_dir / f"{out_basename}.parity.json"
     out_path.write_text(
         json.dumps(doc, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -705,9 +1037,26 @@ def main() -> int:
         lowering_identity = lowering_identity_from_manifest_entry(
             args.manifest_lowering_entry, args.exactness
         )
+        tolerance_policy = tolerance_policy_from_manifest_entry(
+            args.manifest_lowering_entry, args.exactness
+        )
 
         normalized_kernel = KERNEL_ALIASES.get(args.kernel, args.kernel)
-        is_bootstrap_kernel = normalized_kernel in BOOTSTRAP_ORACLE_KERNELS
+        # Route by manifest-entry kernelRef prefix when supplied — the
+        # positional kernel name overlaps between bootstrap and real fixture
+        # sets (`fused_gemv`, `rmsnorm`, `gather` all exist in both), so
+        # falling back to the positional name alone misroutes real kernels
+        # that share a name with a bootstrap entry. The kernelRef namespace
+        # prefix is authoritative; positional name is a fallback.
+        kernel_ref_prefix = kernel_ref_prefix_from_manifest_entry(
+            args.manifest_lowering_entry
+        )
+        if kernel_ref_prefix == "doe.tsir.real.":
+            is_bootstrap_kernel = False
+        elif kernel_ref_prefix == "doe.tsir.bootstrap.":
+            is_bootstrap_kernel = True
+        else:
+            is_bootstrap_kernel = normalized_kernel in BOOTSTRAP_ORACLE_KERNELS
         doppler_transcript = args.doppler_transcript
 
         if is_bootstrap_kernel and doppler_transcript is not None:
@@ -743,12 +1092,12 @@ def main() -> int:
             )
             reference_source = ReferenceSource(kind=REFERENCE_SOURCE_ZIG)
 
-        webgpu_result = run_backend("webgpu")
-        csl_result = run_backend("csl-simfabric")
+        webgpu_result = run_backend("webgpu", normalized_kernel, args.inputs)
+        csl_result = run_backend("csl-simfabric", normalized_kernel, args.inputs)
 
         comparisons = [
-            compare(reference, webgpu_result, args.exactness),
-            compare(reference, csl_result, args.exactness),
+            compare(reference, webgpu_result, args.exactness, tolerance_policy),
+            compare(reference, csl_result, args.exactness, tolerance_policy),
         ]
 
         receipt = ParityReceipt(
@@ -763,7 +1112,7 @@ def main() -> int:
             lowering_identity=lowering_identity,
             reference_source=reference_source,
         )
-        out_path = write_receipt(receipt, args.receipt_dir)
+        out_path = write_receipt(receipt, args.receipt_dir, basename=args.kernel)
         try:
             display_path: Path | str = out_path.relative_to(REPO_ROOT)
         except ValueError:

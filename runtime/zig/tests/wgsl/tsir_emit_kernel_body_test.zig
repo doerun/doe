@@ -321,8 +321,9 @@ test "tsir csl emitter produces executable kv_write body" {
     defer allocator.free(csl);
     try expectContains(csl, "param head_dim: i16;");
     try expectContains(csl, "param max_seq_len: i16;");
-    try expectContains(csl, "tsir_key_cache: [max_seq_len * head_dim]f32");
-    try expectContains(csl, "tsir_value_cache: [max_seq_len * head_dim]f32");
+    try expectContains(csl, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);");
+    try expectContains(csl, "tsir_key_cache: [kv_cache_len]f32");
+    try expectContains(csl, "tsir_value_cache: [kv_cache_len]f32");
     try expectContains(csl, "const base = tsir_decode_position[0] * @as(u32, head_dim);");
     try expectContains(csl, "tsir_key_cache[idx] = tsir_key_projection[@as(u32, d)];");
     try expectContains(csl, "tsir_value_cache[idx] = tsir_value_projection[@as(u32, d)];");
@@ -355,6 +356,9 @@ test "tsir csl emitter produces executable kv_read body" {
     defer allocator.free(csl);
     try expectContains(csl, "param read_start: i16 = 0;");
     try expectContains(csl, "param read_len: i16;");
+    try expectContains(csl, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);");
+    try expectContains(csl, "tsir_key_cache: [kv_cache_len]f32");
+    try expectContains(csl, "tsir_value_cache: [kv_cache_len]f32");
     try expectContains(csl, "tsir_key_output: [read_len * head_dim]f32");
     try expectContains(csl, "tsir_value_output: [read_len * head_dim]f32");
     try expectContains(csl, "const src_base = @as(u32, read_start + i) * @as(u32, head_dim);");

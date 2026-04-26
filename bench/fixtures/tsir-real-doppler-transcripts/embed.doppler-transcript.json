@@ -1,0 +1,36 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.embed",
+  "executionGraphHash": "sha256:aeedaa4bb86d2d64b623510fb6e2c83d995eb4329aff69f40323817782438d12",
+  "source": {
+    "hash": "sha256:0f5d64fe371d578ff14645c0665898984c29d59610c07e7d1dc90aeb12289b89",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/embed.json"
+  },
+  "kernelProbe": {
+    "hash": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+    "outputElementCount": 4
+  },
+  "exactness": {
+    "class": "bit_exact_solo",
+    "toleranceMetric": "",
+    "toleranceEpsilon": 0.0
+  },
+  "referenceOutputs": {
+    "output": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "claim": {
+    "scope": "Per-kernel Doppler-shape reference for embed. Computed from the bootstrap input fixture; output values + probe hash recorded so the parity harness can verify backend output element-wise (for tolerance_bounded) or by hash (for algorithm_exact / bit_exact_solo).",
+    "notWhat": "Not a hardware-captured Doppler reference. Synthesized locally from deterministic numpy reference computation against the same input fixture the canary feeds to backends. Replace with a real Doppler browser/Node WebGPU per-kernel probe when that capture lands."
+  }
+}

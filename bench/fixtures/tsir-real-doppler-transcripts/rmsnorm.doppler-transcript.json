@@ -1,0 +1,36 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.rmsnorm",
+  "executionGraphHash": "sha256:a12dcb5e694bcc1c7df8040e3129906704b82b0b754af335e74f178d3dda281c",
+  "source": {
+    "hash": "sha256:c8a472e6d989f63bb9219aef81559d5b12b6f760b7b767a8531697705e2fc78d",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/rms_norm.json"
+  },
+  "kernelProbe": {
+    "hash": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+    "outputElementCount": 4
+  },
+  "exactness": {
+    "class": "algorithm_exact",
+    "toleranceMetric": "",
+    "toleranceEpsilon": 0.0
+  },
+  "referenceOutputs": {
+    "output": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "claim": {
+    "scope": "Per-kernel Doppler-shape reference for rmsnorm. Computed from the bootstrap input fixture; output values + probe hash recorded so the parity harness can verify backend output element-wise (for tolerance_bounded) or by hash (for algorithm_exact / bit_exact_solo).",
+    "notWhat": "Not a hardware-captured Doppler reference. Synthesized locally from deterministic numpy reference computation against the same input fixture the canary feeds to backends. Replace with a real Doppler browser/Node WebGPU per-kernel probe when that capture lands."
+  }
+}

@@ -23,12 +23,18 @@ pub const CompileTarget = struct {
     layout_path: []const u8,
     pe_program_path: []const u8,
     metadata: ?CompileTargetMetadata = null,
+    compile_params: []const CompileParam = &.{},
     /// "prefill" / "decode" when the target was produced as a phase variant
     /// of a phase-specialized kernel; null for base targets.
     phase: ?[]const u8 = null,
     /// Base kernel name when this target is a phase variant; equal to
     /// `kernel_name` for base targets.
     base_kernel: ?[]const u8 = null,
+};
+
+pub const CompileParam = struct {
+    name: []const u8,
+    value: u32,
 };
 
 pub const CompileTargetMetadata = struct {
@@ -128,6 +134,23 @@ pub fn emitCompileTargetMetadataJson(
     try write(buf, pos, "        ]\n      }");
 }
 
+pub fn emitCompileParamsFieldJson(
+    buf: []u8,
+    pos: *usize,
+    compile_params: []const CompileParam,
+) EmitError!void {
+    if (compile_params.len == 0) return;
+    try write(buf, pos, ", \"compileParams\": {");
+    for (compile_params, 0..) |param, idx| {
+        if (idx > 0) try write(buf, pos, ",");
+        try write(buf, pos, " ");
+        try writeJsonString(buf, pos, param.name);
+        try write(buf, pos, ": ");
+        try writeInt(buf, pos, param.value);
+    }
+    try write(buf, pos, " }");
+}
+
 fn emitBindingShapeJson(buf: []u8, pos: *usize, shape: BindingShape) EmitError!void {
     try write(buf, pos, "{ \"kind\": ");
     try writeJsonString(buf, pos, shape.kind);
@@ -225,6 +248,7 @@ pub fn emitHostPlanArtifactJson(
         try writeJsonString(buf, pos, target.layout_path);
         try write(buf, pos, ", \"peProgram\": ");
         try writeJsonString(buf, pos, target.pe_program_path);
+        try emitCompileParamsFieldJson(buf, pos, target.compile_params);
         try write(buf, pos, " }");
         if (idx + 1 < targets.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");
