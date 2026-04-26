@@ -414,6 +414,18 @@ def parse_args() -> argparse.Namespace:
             "is still tagged with -dirty)."
         ),
     )
+    p.add_argument(
+        "--skip-canary-fingerprint",
+        action="store_true",
+        help=(
+            "Skip the pre-pack TSIR canary fingerprint check. Off by default: "
+            "pack reruns nightly_tsir_parity_canary and refuses to pack if any "
+            "fixture receipt's identity-chain status fails. This catches the "
+            "case where TSIR / doe_wgsl source edits invalidate emitted hashes "
+            "but the bundle would still ship the stale receipts. Pass this "
+            "flag only when the canary is known-broken for unrelated reasons."
+        ),
+    )
     return p.parse_args()
 
 
@@ -491,6 +503,32 @@ def main() -> int:
             "gitDirtyTree=true and the archive name is still -dirty tagged).\n"
         )
         return 2
+
+    if not args.skip_canary_fingerprint:
+        canary_gate = REPO_ROOT / "bench/gates/nightly_tsir_parity_canary.py"
+        if canary_gate.is_file():
+            canary_proc = subprocess.run(
+                [sys.executable, str(canary_gate)],
+                capture_output=True,
+                text=True,
+                timeout=600,
+                check=False,
+            )
+            if canary_proc.returncode != 0:
+                sys.stderr.write(
+                    "pack_cerebras_validation_archive: pre-pack canary "
+                    "fingerprint check failed.\n"
+                    "  TSIR / doe_wgsl edits may have invalidated emitted "
+                    "hashes. Refusing to pack so the bundle does not ship "
+                    "stale receipts.\n"
+                    "  Re-run nightly_tsir_parity_canary directly to see the "
+                    "failing fixtures, regenerate, then pack again. Pass "
+                    "--skip-canary-fingerprint only when the canary is known-"
+                    "broken for unrelated reasons.\n"
+                )
+                sys.stderr.write(canary_proc.stdout)
+                sys.stderr.write(canary_proc.stderr)
+                return 2
 
     if args.out:
         out_path = resolve(args.out)
