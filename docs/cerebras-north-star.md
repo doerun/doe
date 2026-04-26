@@ -109,7 +109,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 
 | # | Rung | Output | Gates |
 | --- | --- | --- | --- |
-| 0 | Per-target compile cache | content-addressed `.elf` reuse | infra only |
+| 0 | Per-target compile cache | `bench/tools/compile_cache_manager.py` (14/14 tests pass; steps-mode driver wiring is followup) | infra only |
 | 1 | Schema-enforced hash spine | `bench/tools/_receipt_hash_guard.py` (12/12 tests pass; wiring into individual receipt writers is followup) | every receipt below |
 | 2 | Predicted simfabric wall-clock | per-graph cycle/D2H budget JSON | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
@@ -122,12 +122,21 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 
 ### Refinements (where each lands on disk)
 
-1. **Per-target compile cache (rung 0).** `bench/tools/compile_cache_manager.py`,
-   driven from the steps-mode driver. Cache key = sha256 of (HostPlan target
-   hash + emitted CSL hash + `compileParams`). Reuses prior `.elf` when key
-   matches; runs `cslc` only on miss. Hash-key inputs are the same ones
-   `bench/tools/prepack_hash_drift_guard.py` already pins, so the cache cannot
-   reuse a stale artifact across a real lowering change.
+1. **Per-target compile cache (rung 0).** Module landed at
+   `bench/tools/compile_cache_manager.py` with `target_cache_key`,
+   `is_hit`, `store`, `restore`, and `load_entry_metadata` entry points.
+   Cache key = sha256(layout.csl bytes + pe_program.csl bytes + canonical
+   JSON of `compileParams`); cache root defaults to
+   `bench/out/scratch/compile-cache/` (gitignored). Each entry pins the
+   input hashes and a UTC timestamp in `cache-entry.json` so auditors can
+   spot stale entries. 14/14 tests pass under
+   `python3 -m unittest bench.tests.test_compile_cache_manager`. Wiring
+   into the steps-mode driver (so `cslc` only runs on miss) is the
+   follow-up; the module lands first as a self-contained primitive that
+   the driver can adopt without further design work. Hash-key inputs are
+   the same ones `bench/tools/prepack_hash_drift_guard.py` already pins,
+   so the cache cannot reuse a stale artifact across a real lowering
+   change.
 
 2. **Schema-enforced hash spine (rung 1).** Module landed at
    `bench/tools/_receipt_hash_guard.py` with `evaluate_receipt_hash_spine`,
