@@ -32,12 +32,28 @@ When it is present, each target mirrors the driver result exactly.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools._receipt_hash_guard import (  # noqa: E402
+    ReceiptHashSpineError,
+    enforce_receipt_hash_spine,
+)
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 DEFAULT_HOSTPLAN = (
     REPO_ROOT
     / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/host-plan.json"
@@ -455,6 +471,7 @@ def main() -> int:
         else None
     )
 
+    host_plan_hash = _sha256_file(args.host_plan)
     receipt = {
         "schemaVersion": 1,
         "artifactKind": "doe_full_graph_compile_attempt_receipt",
@@ -463,6 +480,8 @@ def main() -> int:
         "target": host_plan.get("target", "wse3"),
         "manifestSize": args.manifest_size,
         "sourceHostPlan": rel(args.host_plan),
+        "hostPlanPath": rel(args.host_plan),
+        "hostPlanHash": host_plan_hash,
         "sourceDriverResult": source_driver_result,
         "layoutMaterialization": {
             "tool": "runtime/zig/zig-out/bin/doe-csl-host-plan-tool",
@@ -531,6 +550,15 @@ def main() -> int:
             ),
         },
     }
+
+    try:
+        enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    except ReceiptHashSpineError as err:
+        sys.stderr.write(
+            "synthesize_full_graph_compile_attempt_receipt: receipt hash "
+            f"spine rejected emit:\n  {err}\n"
+        )
+        return 2
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
