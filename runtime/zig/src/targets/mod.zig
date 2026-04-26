@@ -25,6 +25,8 @@ const std = @import("std");
 
 pub const wse3 = @import("wse3.zig");
 pub const webgpu_generic = @import("webgpu_generic.zig");
+pub const msl = @import("msl.zig");
+pub const spir_v = @import("spir_v.zig");
 
 pub const NumericalMode = enum { f32, f16, bf16, int8_quant, int4_quant };
 
@@ -148,7 +150,14 @@ fn updateU32(h: *std.crypto.hash.sha2.Sha256, v: u32) void {
 test "distinct descriptors have distinct hashes" {
     const wse3_hash = descriptorHash(wse3.descriptor);
     const webgpu_hash = descriptorHash(webgpu_generic.descriptor);
+    const msl_hash = descriptorHash(msl.descriptor);
+    const spirv_hash = descriptorHash(spir_v.descriptor);
     try std.testing.expect(!std.mem.eql(u8, &wse3_hash, &webgpu_hash));
+    try std.testing.expect(!std.mem.eql(u8, &wse3_hash, &msl_hash));
+    try std.testing.expect(!std.mem.eql(u8, &wse3_hash, &spirv_hash));
+    try std.testing.expect(!std.mem.eql(u8, &webgpu_hash, &msl_hash));
+    try std.testing.expect(!std.mem.eql(u8, &webgpu_hash, &spirv_hash));
+    try std.testing.expect(!std.mem.eql(u8, &msl_hash, &spirv_hash));
 }
 
 test "descriptor hash is stable" {

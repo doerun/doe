@@ -65,6 +65,16 @@ pub fn main() !void {
             .emitter_digest = tsir.emit_csl.emitterCodeDigest(),
             .fabric_streaming = true,
         },
+        .{
+            .backend = "msl",
+            .descriptor = targets.msl.descriptor,
+            .emitter_digest = tsir.emit_msl.emitterCodeDigest(),
+        },
+        .{
+            .backend = "spir-v",
+            .descriptor = targets.spir_v.descriptor,
+            .emitter_digest = tsir.emit_spir_v.emitterCodeDigest(),
+        },
     };
 
     const stdout = std.fs.File.stdout().deprecatedWriter();

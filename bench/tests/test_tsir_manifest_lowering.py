@@ -174,7 +174,7 @@ class TestTsirManifestLowering(unittest.TestCase):
 
     def test_bootstrap_fixtures_validate_and_bind_distinct_targets(self) -> None:
         paths = sorted(FIXTURE_DIR.glob("*.json"))
-        self.assertEqual(len(paths), 6)
+        self.assertEqual(len(paths), 12)
 
         seen = set()
         semantic_by_kernel: dict[str, str] = {}
@@ -199,10 +199,22 @@ class TestTsirManifestLowering(unittest.TestCase):
             )
             realization_by_pair[pair] = entry["tsirRealizationDigest"]
 
+        # Every (kernel, backend) pair must produce a distinct
+        # tsirRealizationDigest from every other backend for the same
+        # kernel; realization is target-specific.
         for kernel_ref in semantic_by_kernel:
-            webgpu = realization_by_pair[(kernel_ref, "webgpu-generic")]
-            wse3 = realization_by_pair[(kernel_ref, "wse3")]
-            self.assertNotEqual(webgpu, wse3)
+            per_backend = {
+                backend: realization_by_pair[(kernel_ref, backend)]
+                for backend in ("webgpu-generic", "wse3", "msl", "spir-v")
+            }
+            self.assertEqual(
+                len(set(per_backend.values())),
+                len(per_backend),
+                msg=(
+                    f"{kernel_ref}: tsirRealizationDigest collides across "
+                    f"backends: {per_backend}"
+                ),
+            )
 
     def test_bootstrap_fixtures_share_version_and_descriptor_identity(self) -> None:
         """The full bootstrap fixture set must agree on
@@ -220,7 +232,7 @@ class TestTsirManifestLowering(unittest.TestCase):
         existed. Catch that before it reaches Loop 3 promotion.
         """
         paths = sorted(FIXTURE_DIR.glob("*.json"))
-        self.assertEqual(len(paths), 6)
+        self.assertEqual(len(paths), 12)
 
         frontend_versions: set[str] = set()
         compiler_versions: set[str] = set()
@@ -254,11 +266,18 @@ class TestTsirManifestLowering(unittest.TestCase):
             1,
             msg=f"fixture set disagrees on compilerVersion: {compiler_versions}",
         )
-        # Both target descriptors must be present and distinct.
-        self.assertEqual(set(descriptor_hashes), {"webgpu-generic", "wse3"})
-        self.assertNotEqual(
-            descriptor_hashes["webgpu-generic"],
-            descriptor_hashes["wse3"],
+        # All four target descriptors must be present and pairwise distinct.
+        self.assertEqual(
+            set(descriptor_hashes),
+            {"webgpu-generic", "wse3", "msl", "spir-v"},
+        )
+        self.assertEqual(
+            len(set(descriptor_hashes.values())),
+            len(descriptor_hashes),
+            msg=(
+                "target descriptor correctness hashes collide across "
+                f"backends: {descriptor_hashes}"
+            ),
         )
 
     def test_every_bootstrap_wgsl_has_manifest_fixture(self) -> None:
@@ -270,7 +289,7 @@ class TestTsirManifestLowering(unittest.TestCase):
         kernel landed in the catalog but fixtures weren't regenerated":
         the catalog test would pass (the new kernel has semantic +
         realization + notes), existing fixture tests hard-code
-        `len(paths) == 6` and so only fire if a fixture is removed, not
+        `len(paths) == 12` and so only fire if a fixture is removed, not
         if the catalog grew. Downstream consumers (nightly canary,
         receipt producers) assume every kernel has fixtures — this
         test makes that assumption testable.
@@ -285,7 +304,7 @@ class TestTsirManifestLowering(unittest.TestCase):
             "bootstrap catalog must pin at least one WGSL snapshot",
         )
 
-        required_backends = ("webgpu-generic", "wse3")
+        required_backends = ("webgpu-generic", "wse3", "msl", "spir-v")
         for stem in sorted(wgsl_stems):
             for backend in required_backends:
                 with self.subTest(kernel=stem, backend=backend):

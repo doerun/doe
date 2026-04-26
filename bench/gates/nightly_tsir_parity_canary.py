@@ -21,7 +21,7 @@ DEFAULT_FIXTURE_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-manifest-entries"
 DEFAULT_INPUTS_DIR = REPO_ROOT / "bench" / "fixtures" / "tsir-bootstrap-inputs"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "out" / "nightly-tsir-parity-canary"
 PARITY_CLI = REPO_ROOT / "bench" / "tools" / "doe_parity.py"
-EXPECTED_FIXTURE_COUNT = 6
+EXPECTED_FIXTURE_COUNT = 12
 FAIL_STATUSES = {"fail"}
 KERNEL_REF_PREFIXES = ("doe.tsir.bootstrap.", "doe.tsir.real.")
 
@@ -42,6 +42,31 @@ def parse_args() -> argparse.Namespace:
             "Expected number of fixture files in --fixture-dir. Defaults to 6 "
             "(the bootstrap set); set higher when running against real-kernel "
             "fixture sets that include additional kernel/backend pairings."
+        ),
+    )
+    parser.add_argument(
+        "--doppler-transcripts-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Directory containing per-kernel doppler.reference-transcript/v1 "
+            "JSON files named <kernel>.doppler-transcript.json. Required "
+            "when running against real-kernel fixtures (kernelRef prefix "
+            "doe.tsir.real.*); "
+            "ignored for bootstrap kernels. doe_parity.py rejects real "
+            "kernels without --doppler-transcript and rejects bootstrap "
+            "kernels with one, so the canary routes per-kernel based on "
+            "the fixture's kernelRef prefix."
+        ),
+    )
+    parser.add_argument(
+        "--doppler-kernel-probes-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optional directory containing per-kernel probe-hash files "
+            "named <kernel>.kernel-probe-hash (single line, 64-char hex). "
+            "Only consumed for real kernels; bootstrap kernels skip this."
         ),
     )
     parser.add_argument(
@@ -124,12 +149,47 @@ def _inputs_path(inputs_dir: Path, entry: dict[str, Any]) -> Path:
     return candidate
 
 
+def _is_real_kernel(entry: dict[str, Any]) -> bool:
+    kernel_ref = entry["kernelRef"]
+    return kernel_ref.startswith("doe.tsir.real.")
+
+
+def _doppler_transcript_for(
+    kernel: str, transcripts_dir: Path | None
+) -> Path | None:
+    if transcripts_dir is None:
+        return None
+    candidate = transcripts_dir / f"{kernel}.doppler-transcript.json"
+    if not candidate.is_file():
+        raise FileNotFoundError(
+            f"Doppler transcript missing for real kernel {kernel!r}: "
+            f"{candidate}"
+        )
+    return candidate
+
+
+def _doppler_probe_hash_for(
+    kernel: str, probes_dir: Path | None
+) -> str | None:
+    if probes_dir is None:
+        return None
+    candidate = probes_dir / f"{kernel}.kernel-probe-hash"
+    if not candidate.is_file():
+        return None
+    text = candidate.read_text(encoding="utf-8").strip()
+    if not text:
+        return None
+    return text
+
+
 def run_fixture(
     path: Path,
     entry: dict[str, Any],
     output_dir: Path,
     inputs_dir: Path,
     python: str,
+    doppler_transcripts_dir: Path | None = None,
+    doppler_probes_dir: Path | None = None,
 ) -> dict[str, Any]:
     kernel = _kernel_name(entry)
     receipt_dir = _receipt_dir(output_dir, entry)
@@ -147,6 +207,17 @@ def run_fixture(
         "--receipt-dir",
         str(receipt_dir),
     ]
+    if _is_real_kernel(entry):
+        transcript_path = _doppler_transcript_for(kernel, doppler_transcripts_dir)
+        if transcript_path is None:
+            raise ValueError(
+                f"Real kernel {kernel!r} requires --doppler-transcripts-dir "
+                "with a per-kernel transcript file."
+            )
+        cmd.extend(["--doppler-transcript", str(transcript_path)])
+        probe_hash = _doppler_probe_hash_for(kernel, doppler_probes_dir)
+        if probe_hash is not None:
+            cmd.extend(["--doppler-kernel-probe-hash", probe_hash])
     proc = subprocess.run(
         cmd,
         cwd=REPO_ROOT,
@@ -204,10 +275,20 @@ def build_report(
     output_dir: Path,
     python: str,
     expected_count: int = EXPECTED_FIXTURE_COUNT,
+    doppler_transcripts_dir: Path | None = None,
+    doppler_probes_dir: Path | None = None,
 ) -> dict[str, Any]:
     entries = load_fixture_entries(fixture_dir, expected_count=expected_count)
     results = [
-        run_fixture(path, entry, output_dir, inputs_dir, python)
+        run_fixture(
+            path,
+            entry,
+            output_dir,
+            inputs_dir,
+            python,
+            doppler_transcripts_dir=doppler_transcripts_dir,
+            doppler_probes_dir=doppler_probes_dir,
+        )
         for path, entry in entries
     ]
     failures = [
@@ -243,6 +324,8 @@ def main() -> int:
             args.output_dir,
             args.python,
             expected_count=args.expected_count,
+            doppler_transcripts_dir=args.doppler_transcripts_dir,
+            doppler_probes_dir=args.doppler_kernel_probes_dir,
         )
         report_path = write_report(report, args.output_dir)
     except (OSError, ValueError, json.JSONDecodeError) as exc:

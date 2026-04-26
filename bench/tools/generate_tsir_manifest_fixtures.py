@@ -27,6 +27,7 @@ ZIG_WORKDIR = REPO_ROOT / "runtime" / "zig"
 ZIG_INPUT_BINARY = (
     ZIG_WORKDIR / "zig-out" / "bin" / "doe-tsir-bootstrap-manifest-inputs"
 )
+EXPECTED_BOOTSTRAP_FIXTURE_COUNT = 12
 
 
 def _run_zig_input_tool(zig: str) -> list[dict[str, Any]]:
@@ -91,8 +92,12 @@ def generate_entries(zig: str) -> dict[str, dict[str, Any]]:
         if name in fixtures:
             raise ValueError(f"duplicate TSIR manifest fixture name: {name}")
         fixtures[name] = entry
-    if len(fixtures) != 6:
-        raise ValueError(f"expected 6 bootstrap manifest fixtures, got {len(fixtures)}")
+    if len(fixtures) != EXPECTED_BOOTSTRAP_FIXTURE_COUNT:
+        raise ValueError(
+            f"expected {EXPECTED_BOOTSTRAP_FIXTURE_COUNT} bootstrap manifest "
+            f"fixtures (3 kernels x 4 backends: webgpu-generic, wse3, msl, "
+            f"spir-v), got {len(fixtures)}"
+        )
     return fixtures
 
 

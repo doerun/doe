@@ -1,7 +1,7 @@
 {
-  "backend": "wse3",
+  "backend": "msl",
   "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
-  "emitterDigest": "5c48d5d86564cb2d50547136e4ebbb89e63d69180a8ddbcfa7389f3e87d3311f",
+  "emitterDigest": "a377ffe5e665ac2bbb12f41fe87940ad20583e616f5f9e2f1ec7f79e2cbd5145",
   "exactness": {
     "algorithmExactInvariants": [
       "reduction_order",
@@ -14,7 +14,7 @@
   "frontendVersion": "frontend-bootstrap-pipeline-v1",
   "kernelRef": "doe.tsir.bootstrap.fused_gemv",
   "rejectionReasons": [],
-  "targetDescriptorCorrectnessHash": "a3852140d7a2063cb066c02a4e1201a64546e64056a06d93a5ed575bc9620948",
-  "tsirRealizationDigest": "ad60e7304df8ca56b108ec50693cec19dc328305f2a99cae3335d669fb3c8e33",
+  "targetDescriptorCorrectnessHash": "4c9fff2b7ad274f8364cc2d57e68583011948992b865731d15b917c9c08cff2b",
+  "tsirRealizationDigest": "498a7a1707a8e513ad254b39e76ea395ba5f00d6798583383580a8f6a2cb4bb7",
   "tsirSemanticDigest": "4e4f2615efe4534eddd6af24a75345c31b9d87e2c8fedc4cb9900087ee8b0944"
 }

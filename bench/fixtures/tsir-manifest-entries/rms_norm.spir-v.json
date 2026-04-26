@@ -1,7 +1,7 @@
 {
-  "backend": "wse3",
+  "backend": "spir-v",
   "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
-  "emitterDigest": "5c48d5d86564cb2d50547136e4ebbb89e63d69180a8ddbcfa7389f3e87d3311f",
+  "emitterDigest": "ae06f0d5f41d46d14e096dc5dceda5d71e8761da4ecec2cce6034983b6b45ff0",
   "exactness": {
     "algorithmExactInvariants": [],
     "class": "tolerance_bounded",
@@ -11,7 +11,7 @@
   "frontendVersion": "frontend-bootstrap-pipeline-v1",
   "kernelRef": "doe.tsir.bootstrap.rms_norm",
   "rejectionReasons": [],
-  "targetDescriptorCorrectnessHash": "a3852140d7a2063cb066c02a4e1201a64546e64056a06d93a5ed575bc9620948",
-  "tsirRealizationDigest": "ad60e7304df8ca56b108ec50693cec19dc328305f2a99cae3335d669fb3c8e33",
+  "targetDescriptorCorrectnessHash": "401c8879b3e684854fe5052127aba26f626846fe005df5e144a3d88e4be14ec3",
+  "tsirRealizationDigest": "68b53965a7a9b368cc0657eae7dce7199d12c6bee2f43ce1e47bfdf0fcf51e2b",
   "tsirSemanticDigest": "d97496705eae4ecf3d6feadde826228b767c175fb038ed53762dfa3ffb1b2e49"
 }

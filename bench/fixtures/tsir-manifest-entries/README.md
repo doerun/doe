@@ -2,12 +2,12 @@
 
 These fixtures bind the Phase A bootstrap kernels to schema-valid
 `integrityExtensions.lowerings[]` rows — one row per `(kernel, backend)`
-pair. Six files total, matching the cross-product of the three
-bootstrap families and the two Phase A target descriptors:
+pair. Twelve files total, matching the cross-product of the three
+bootstrap families and the four Phase A target descriptors:
 
-- `fused_gemv.{webgpu-generic,wse3}.json`
-- `rms_norm.{webgpu-generic,wse3}.json`
-- `gather.{webgpu-generic,wse3}.json`
+- `fused_gemv.{webgpu-generic,wse3,msl,spir-v}.json`
+- `rms_norm.{webgpu-generic,wse3,msl,spir-v}.json`
+- `gather.{webgpu-generic,wse3,msl,spir-v}.json`
 
 ## Why they exist
 
@@ -34,15 +34,17 @@ Locked by `bench/tests/test_tsir_manifest_lowering.py`:
 
 - Each entry validates against `config/doe-tsir-manifest-lowering.schema.json`.
 - Each `(kernelRef, backend)` pair appears exactly once.
-- For a given kernel, both backends share the same `tsirSemanticDigest`
+- For a given kernel, all backends share the same `tsirSemanticDigest`
   (semantic is target-independent).
-- For a given kernel, `webgpu-generic` and `wse3` produce distinct
-  `tsirRealizationDigest` values (realization is target-specific).
-- All six entries share the same `frontendVersion` and `compilerVersion`
-  (the set is a coherent snapshot, not a partial regeneration).
+- For a given kernel, `webgpu-generic`, `wse3`, `msl`, and `spir-v`
+  each produce distinct `tsirRealizationDigest` values (realization is
+  target-specific).
+- All twelve entries share the same `frontendVersion` and
+  `compilerVersion` (the set is a coherent snapshot, not a partial
+  regeneration).
 - All entries for a given backend share the same
   `targetDescriptorCorrectnessHash` (set agrees on descriptor identity).
-- The two backends use distinct descriptor hashes.
+- The four backends use four distinct descriptor hashes.
 
 Locked by `bench/tests/test_nightly_tsir_parity_canary.py`:
 
@@ -69,7 +71,7 @@ TSIR semantic, and target realization planning, then calls the
 schema-backed `bench/tools/tsir_manifest_lowering.py` builder to write
 the manifest entries.
 
-**Always regenerate all six fixtures together.** The uniformity
+**Always regenerate all twelve fixtures together.** The uniformity
 invariants above assume the set moves as a unit; partial regeneration
 (e.g., running the generator against only one kernel after a descriptor
 change) leaves the fixture set internally inconsistent in a way that

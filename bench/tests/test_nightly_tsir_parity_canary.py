@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -27,18 +28,22 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
             (entry["kernelRef"], entry["backend"])
             for _, entry in entries
         }
-        self.assertEqual(len(entries), 6)
-        self.assertEqual(
-            pairs,
-            {
-                ("doe.tsir.bootstrap.fused_gemv", "webgpu-generic"),
-                ("doe.tsir.bootstrap.fused_gemv", "wse3"),
-                ("doe.tsir.bootstrap.gather", "webgpu-generic"),
-                ("doe.tsir.bootstrap.gather", "wse3"),
-                ("doe.tsir.bootstrap.rms_norm", "webgpu-generic"),
-                ("doe.tsir.bootstrap.rms_norm", "wse3"),
-            },
-        )
+        self.assertEqual(len(entries), 12)
+        expected_pairs = {
+            (kernel_ref, backend)
+            for kernel_ref in (
+                "doe.tsir.bootstrap.fused_gemv",
+                "doe.tsir.bootstrap.gather",
+                "doe.tsir.bootstrap.rms_norm",
+            )
+            for backend in (
+                "webgpu-generic",
+                "wse3",
+                "msl",
+                "spir-v",
+            )
+        }
+        self.assertEqual(pairs, expected_pairs)
 
     def test_canary_runs_fixture_receipts_without_claiming_backend_pass(self) -> None:
         """Reference lane is expected to be green once input-tensor fixtures
@@ -53,7 +58,7 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
                 python=sys.executable,
             )
         self.assertEqual(report["artifactKind"], "tsir_nightly_parity_canary")
-        self.assertEqual(report["fixtureCount"], 6)
+        self.assertEqual(report["fixtureCount"], 12)
         self.assertEqual(report["failures"], [])
         for result in report["results"]:
             self.assertIn("loweringIdentity", result)
@@ -106,6 +111,126 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
                             f"fixture={fixture[key]!r}"
                         ),
                     )
+
+    def test_real_kernel_requires_doppler_transcript_dir(self) -> None:
+        fixture = (
+            REPO_ROOT
+            / "bench"
+            / "fixtures"
+            / "tsir-real-entries"
+            / "fused_gemv.webgpu-generic.json"
+        )
+        entry = canary.tsir_manifest_lowering.load_entry_doc(fixture)
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(ValueError, "--doppler-transcripts-dir"):
+                canary.run_fixture(
+                    fixture,
+                    entry,
+                    Path(tmp),
+                    canary.DEFAULT_INPUTS_DIR,
+                    sys.executable,
+                )
+
+    def test_real_kernel_threads_doppler_transcript_and_probe(self) -> None:
+        fixture = (
+            REPO_ROOT
+            / "bench"
+            / "fixtures"
+            / "tsir-real-entries"
+            / "fused_gemv.webgpu-generic.json"
+        )
+        entry = canary.tsir_manifest_lowering.load_entry_doc(fixture)
+        captured_cmd: list[str] = []
+
+        def fake_run(
+            cmd: list[str],
+            cwd: Path,
+            check: bool,
+            text: bool,
+            stdout: int,
+            stderr: int,
+        ) -> canary.subprocess.CompletedProcess[str]:
+            del cwd, check, text, stdout, stderr
+            captured_cmd.extend(cmd)
+            receipt_dir = Path(cmd[cmd.index("--receipt-dir") + 1])
+            receipt_dir.mkdir(parents=True, exist_ok=True)
+            receipt = {
+                "schemaVersion": 2,
+                "artifactKind": "doe_parity_receipt",
+                "kernel": "fused_gemv",
+                "exactnessClass": entry["exactness"]["class"],
+                "referenceHash": None,
+                "inputsDigest": "test-inputs",
+                "loweringIdentity": {
+                    key: entry[key] for key in LOWERING_IDENTITY_KEYS
+                },
+                "referenceSource": {
+                    "kind": "doppler-reference-transcript",
+                    "executionGraphHash": "sha256:" + ("a" * 64),
+                    "sourceHash": "sha256:" + ("b" * 64),
+                    "transcriptPath": "fixture",
+                },
+                "comparisons": [
+                    {
+                        "backend": "reference",
+                        "status": "not_implemented",
+                    },
+                    {
+                        "backend": "webgpu",
+                        "status": "deferred",
+                    },
+                    {
+                        "backend": "csl-simfabric",
+                        "status": "deferred",
+                    },
+                ],
+                "rejectionReasons": [],
+            }
+            (receipt_dir / "fused_gemv.parity.json").write_text(
+                json.dumps(receipt),
+                encoding="utf-8",
+            )
+            return canary.subprocess.CompletedProcess(cmd, 1, "", "")
+
+        original_run = canary.subprocess.run
+        canary.subprocess.run = fake_run
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                tmp_path = Path(tmp)
+                transcripts = tmp_path / "transcripts"
+                probes = tmp_path / "probes"
+                transcripts.mkdir()
+                probes.mkdir()
+                transcript_path = transcripts / "fused_gemv.doppler-transcript.json"
+                transcript_path.write_text("{}", encoding="utf-8")
+                probe_hash = "c" * 64
+                (probes / "fused_gemv.kernel-probe-hash").write_text(
+                    probe_hash + "\n",
+                    encoding="utf-8",
+                )
+                result = canary.run_fixture(
+                    fixture,
+                    entry,
+                    tmp_path / "out",
+                    canary.DEFAULT_INPUTS_DIR,
+                    sys.executable,
+                    doppler_transcripts_dir=transcripts,
+                    doppler_probes_dir=probes,
+                )
+        finally:
+            canary.subprocess.run = original_run
+
+        self.assertEqual(result["statuses"], ["not_implemented", "deferred", "deferred"])
+        self.assertIn("--doppler-transcript", captured_cmd)
+        self.assertEqual(
+            captured_cmd[captured_cmd.index("--doppler-transcript") + 1],
+            str(transcript_path),
+        )
+        self.assertIn("--doppler-kernel-probe-hash", captured_cmd)
+        self.assertEqual(
+            captured_cmd[captured_cmd.index("--doppler-kernel-probe-hash") + 1],
+            probe_hash,
+        )
 
 
 if __name__ == "__main__":
