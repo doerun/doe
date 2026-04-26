@@ -792,6 +792,17 @@ def _run_webgpu_backend(
     )
 
 
+# Real-canary kernels whose body op has no CSL emit body in
+# runtime/zig/src/tsir/emit_kernel_body.zig (line 119:
+# `.unknown, .attention_scores => error.UnsupportedKernelBody` for the
+# CSL backend). These can never produce a CSL-side hash through TSIR
+# lowering; they are structurally rejected, not deferred.
+_CSL_REJECTED_KERNELS = frozenset({
+    "attention_head256_f16kv",
+    "attention_head512_f16kv",
+})
+
+
 def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
     if _csl_channel_locked():
         return ComparisonOutcome(
@@ -803,6 +814,19 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
                 "execute the per-kernel simfabric runner."
             ),
         )
+    if kernel in _CSL_REJECTED_KERNELS:
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="rejected",
+            detail=(
+                f"{kernel!r} body op (attention_scores) has no CSL emit "
+                "body in runtime/zig/src/tsir/emit_kernel_body.zig:119 "
+                "(emitCsl returns UnsupportedKernelBody for "
+                "attention_scores). Closing this lane requires authoring "
+                "the attention_scores CSL emit body — schema enum already "
+                "accepts it; only the emitter is missing."
+            ),
+        )
     sim_runner = (
         REPO_ROOT
         / "bench"
@@ -811,13 +835,25 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
         / f"{kernel}_sim_runner.py"
     )
     if not sim_runner.is_file():
+        # Body op is CSL-lowerable (fused_gemv / rms_norm / gather paths
+        # exist in emit_kernel_body.zig); the gap is the per-kernel
+        # runner harness + materialized compile-dir, not the emit path.
+        # Status `deferred` (not `not_implemented`) signals the lane is
+        # structurally reachable; what's missing is operational glue.
         return ComparisonOutcome(
             backend="csl-simfabric",
-            status="not_implemented",
+            status="deferred",
             detail=(
-                f"per-kernel simfabric runner not found at "
-                f"{sim_runner.relative_to(REPO_ROOT)}; harness needs a "
-                f"runner for {kernel!r} before this lane can hash output."
+                f"{kernel!r} is CSL-lowerable via emit_kernel_body.zig but "
+                f"the per-kernel runner harness "
+                f"bench/runners/csl-runners/{kernel}_sim_runner.py does not "
+                "exist. Closing this entry needs (a) a generic real-kernel "
+                "CSL dispatch tool that materializes a compile-dir from the "
+                f"realization JSON at "
+                f"runtime/zig/tests/tsir/real/{kernel}/"
+                f"{kernel}.tsir-realization.wse3.json, (b) cslc compile + "
+                "simfabric run via cs_python_singularity.sh, (c) output "
+                "byte capture and sha256."
             ),
         )
     # The per-kernel simfabric runners require a pre-compiled compile-dir
@@ -829,13 +865,13 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
     # exact path that closes this lane.
     return ComparisonOutcome(
         backend="csl-simfabric",
-        status="not_implemented",
+        status="deferred",
         detail=(
             f"runner located at {sim_runner.relative_to(REPO_ROOT)}; "
             "fixture-driven compile + singularity invocation pending. "
-            "Task 4 wired this lane structurally; closing the lane requires "
-            "(a) per-kernel compile-dir materialization and (b) channel "
-            "release from Task 2's cslc loop."
+            "Closing this lane requires (a) per-kernel compile-dir "
+            "materialization and (b) channel release from Task 2's cslc "
+            "loop."
         ),
     )
 
@@ -893,6 +929,15 @@ def compare(
             backend=backend_outcome.backend,
             status="rejected",
             detail=f"{backend_outcome.backend} blocked: reference={reference.status}",
+        )
+    if backend_outcome.status == "rejected":
+        return ComparisonOutcome(
+            backend=backend_outcome.backend,
+            status="rejected",
+            detail=(
+                f"{backend_outcome.backend} structurally rejected: "
+                f"{backend_outcome.detail or 'no further detail'}"
+            ),
         )
     reference_ready = reference.status in {"ok", "pass"}
     backend_ready = backend_outcome.status in {"ok", "pass"}
