@@ -110,7 +110,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 | # | Rung | Output | Gates |
 | --- | --- | --- | --- |
 | 0 | Per-target compile cache | content-addressed `.elf` reuse | infra only |
-| 1 | Schema-enforced hash spine | receipt-emit guard rejects mismatched hashes | every receipt below |
+| 1 | Schema-enforced hash spine | `bench/tools/_receipt_hash_guard.py` (12/12 tests pass; wiring into individual receipt writers is followup) | every receipt below |
 | 2 | Predicted simfabric wall-clock | per-graph cycle/D2H budget JSON | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
 | 4 | Layout receipt | bytes-in/out + buffer digest, **no oracle compare** | rung 6 (separates plumbing from numerics) |
@@ -129,14 +129,22 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
    `bench/tools/prepack_hash_drift_guard.py` already pins, so the cache cannot
    reuse a stale artifact across a real lowering change.
 
-2. **Schema-enforced hash spine (rung 1).** `bench/tools/_receipt_hash_guard.py`
-   imported by every Doe receipt writer. Guard rejects emit when:
-   (a) cited manifest hash ≠ live manifest hash for the bundle path,
-   (b) `hostPlanHash` does not chain back to the manifest,
-   (c) `referenceFixtureHash` is missing for any receipt with
-   `receiptClass.startswith("manifest_shape")` and `comparisonMode == "parity"`.
-   Existing audit-time gates in `bench/tools/prepack_hash_drift_guard.py`
-   remain; this guard is the upstream catch.
+2. **Schema-enforced hash spine (rung 1).** Module landed at
+   `bench/tools/_receipt_hash_guard.py` with `evaluate_receipt_hash_spine`,
+   `enforce_receipt_hash_spine`, and `evaluate_receipt_path` entry points
+   plus a `HashSpineReport(bound, violations[])` result type. The guard
+   rejects when (a) a cited `manifestSha256` does not match the file at
+   `manifestPath`, (b) a cited `hostPlanHash` does not match the file at
+   `hostPlanPath`, or (c) a receipt with
+   `receiptClass.startswith("manifest_shape")` and
+   `comparisonMode == "parity"` is missing `referenceFixtureHash`.
+   Pending-tokens (`""`, `"pending"`, `"unknown"`, `"absent"`) bypass the
+   hash chain check (advisory, matching the verifier's PENDING set).
+   12/12 tests pass under `python3 -m unittest
+   bench.tests.test_receipt_hash_guard`. Existing audit-time gates in
+   `bench/tools/prepack_hash_drift_guard.py` remain; this guard is the
+   upstream catch. Wiring into individual receipt writers is a separate
+   follow-up so the rung lands as a self-contained module first.
 
 3. **Predicted simfabric wall-clock (rung 2).** `bench/tools/predict_simfabric_wallclock.py`.
    Inputs: `pe_program.metadata.json` per target plus the host plan. Per
