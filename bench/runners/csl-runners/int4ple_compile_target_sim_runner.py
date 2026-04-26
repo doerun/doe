@@ -1460,11 +1460,14 @@ def _compile_embed_roi_target(
         str(output_dir),
         "--memcpy",
     ]
+    scratch_cwd = roi_dir / "scratch"
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
     completed = subprocess.run(
         command,
         check=False,
         capture_output=True,
         text=True,
+        cwd=str(scratch_cwd),
     )
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip() or "unknown"

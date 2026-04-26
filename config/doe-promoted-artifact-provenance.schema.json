@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-promoted-artifact-provenance.schema.json",
+  "title": "Doe promoted-artifact provenance",
+  "description": "Schema for the PROVENANCE.json sidecar that accompanies every promoted bundle-include directory under bench/out/. The packer's INCLUDE_FILES is a static allow-list, so promoted artifacts live at deterministic destination paths; their PROVENANCE.json captures source path(s), hashes, claim scope, and what is explicitly NOT claimed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "purpose",
+    "claim"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "description": "Stable identifier for the kind of promoted artifact, prefixed with doe_ and ending in _provenance for sidecar provenance files. The packer's CLAIM_ROLE map keys destination paths to roles; this field gives readers the artifact's typed identity independent of path.",
+      "pattern": "^doe_[a-z0-9_]+_provenance$"
+    },
+    "promotedAt": {
+      "type": "string",
+      "description": "ISO-8601 timestamp at which the artifact was promoted to its stable include path.",
+      "format": "date-time"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Human-readable purpose. What this artifact is, why it is in the bundle, and what evidence it adds. Should describe the kind of thing the artifact is, not embed counts or numerical results."
+    },
+    "produced": {
+      "type": "object",
+      "description": "How the artifact was produced. Lists the runner, wrapper, invocation, and resulting paths/hashes. Free-form to accommodate different artifact kinds.",
+      "additionalProperties": true
+    },
+    "promoted": {
+      "type": "array",
+      "description": "When the artifact was promoted from a dated overnight matrix cell or other source path, each entry records source -> destination + sha256 + sourceMtimeUnix.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["destination", "source", "sha256"],
+        "properties": {
+          "destination": {
+            "type": "string",
+            "description": "Stable bundle-include path, repo-relative."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source path the artifact was promoted from, repo-relative."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "sha256 of the promoted file at promotion time."
+          },
+          "sourceMtimeUnix": {
+            "type": "integer",
+            "description": "mtime of the source file at promotion time, as unix seconds."
+          }
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "description": "What this artifact claims and what it does NOT claim. Required so reviewers and verifiers can read claim boundaries from the artifact itself, not from prose elsewhere.",
+      "additionalProperties": false,
+      "required": ["scope", "notWhat"],
+      "properties": {
+        "scope": {
+          "type": "string",
+          "description": "Affirmative claim. What this artifact is evidence FOR."
+        },
+        "notWhat": {
+          "type": "string",
+          "description": "Negative claim. What this artifact is explicitly NOT evidence for. Required so partial/typed-blocked receipts cannot be misread as proving more than they do."
+        },
+        "blockerClass": {
+          "type": "string",
+          "description": "When the artifact is a typed blocker rather than a success receipt, the typed blocker class. Examples: local_simfabric_d2h_throughput_wall, real_weights_dir_drift_or_shape_mismatch, per_pe_memory_overflow."
+        },
+        "blockedAt": {
+          "type": "string",
+          "description": "When the artifact is a typed blocker, free-form description of where execution stopped."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Optional one-line structured summary that a verifier or reader can show without parsing the full artifact. Keep under 200 characters; lead with the outcome."
+        }
+      }
+    },
+    "reviewerNotes": {
+      "type": "object",
+      "description": "Reviewer-facing supplementary information. Populated when the artifact references local paths or SDK environments that reviewers cannot reproduce without explicit guidance.",
+      "additionalProperties": false,
+      "properties": {
+        "howToObtainSource": {
+          "type": "string",
+          "description": "Reviewer-facing text explaining how to obtain the upstream source the artifact references (e.g. HuggingFace repo + revision for a real-weight pin). Required when the artifact references a local absolute path that the reviewer does not have."
+        },
+        "howToReproduceLocally": {
+          "type": "string",
+          "description": "Reviewer-facing reproduction recipe. Optional for receipts that are deterministic from public inputs."
+        }
+      }
+    }
+  }
+}

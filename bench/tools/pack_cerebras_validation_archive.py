@@ -38,6 +38,7 @@ import io
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tarfile
@@ -284,6 +285,17 @@ def git_short_sha(commit: str) -> str:
     return commit[:12] if commit and commit != "unknown" else "nogit"
 
 
+SDK_VERSION_FROM_ROOT_RE = re.compile(r"cerebras-sdk-(?P<version>[0-9][0-9.]*[0-9])")
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def detect_cs_python_availability() -> dict:
     # Availability is useful signal (bundling host CAN run live CSL);
     # the literal path leaks the bundler's home dir so redact it always.
@@ -295,6 +307,80 @@ def detect_cs_python_availability() -> dict:
         "csPythonPath": "redacted",
         "sdkRootPath": "redacted",
     }
+
+
+def detect_sdk_version_metadata() -> dict:
+    # Returned-receipt verification needs to bind hardware-side cslc/SDK
+    # versions to the bundle that produced the ask. Capture the SDK label
+    # parsed from the root directory name plus content sha256 of cslc and
+    # cs_python (read from sha256sum.txt when present, otherwise hashed
+    # directly). Path strings are redacted so the bundler's home dir does
+    # not leak; only version label and content hashes ship.
+    sdk_root = os.environ.get("DOE_CSL_SDK_ROOT", "/home/x/cerebras-sdk")
+    sdk_root_path = Path(sdk_root)
+    metadata: dict[str, object] = {
+        "sdkVersionLabel": "unknown",
+        "sdkRootBasename": "redacted",
+        "cslcSha256": "unknown",
+        "csPythonSha256": "unknown",
+        "sdkSifSha256": "unknown",
+        "sdkSifFilename": "unknown",
+        "sha256sumFileSha256": "unknown",
+    }
+    if not sdk_root_path.is_dir():
+        return metadata
+
+    try:
+        resolved = sdk_root_path.resolve()
+    except OSError:
+        resolved = sdk_root_path
+    basename = resolved.name
+    match = SDK_VERSION_FROM_ROOT_RE.match(basename)
+    if match:
+        metadata["sdkVersionLabel"] = match.group("version")
+    metadata["sdkRootBasename"] = basename
+    sdk_root_path = resolved
+
+    sha_file = sdk_root_path / "sha256sum.txt"
+    sums: dict[str, str] = {}
+    if sha_file.is_file():
+        try:
+            for line in sha_file.read_text(encoding="utf-8").splitlines():
+                parts = line.strip().split()
+                if len(parts) == 2 and len(parts[0]) == 64:
+                    sums[parts[1]] = parts[0]
+            metadata["sha256sumFileSha256"] = _sha256_file(sha_file)
+        except OSError:
+            pass
+    cslc = sdk_root_path / "cslc"
+    if "cslc" in sums:
+        metadata["cslcSha256"] = sums["cslc"]
+    elif cslc.is_file():
+        try:
+            metadata["cslcSha256"] = _sha256_file(cslc)
+        except OSError:
+            pass
+    cs_python = sdk_root_path / "cs_python"
+    if "cs_python" in sums:
+        metadata["csPythonSha256"] = sums["cs_python"]
+    elif cs_python.is_file():
+        try:
+            metadata["csPythonSha256"] = _sha256_file(cs_python)
+        except OSError:
+            pass
+    for entry in sdk_root_path.iterdir():
+        name = entry.name
+        if name.startswith("sdk-cbcore-") and name.endswith(".sif"):
+            metadata["sdkSifFilename"] = name
+            if name in sums:
+                metadata["sdkSifSha256"] = sums[name]
+            else:
+                try:
+                    metadata["sdkSifSha256"] = _sha256_file(entry)
+                except OSError:
+                    pass
+            break
+    return metadata
 
 
 def detect_host_os() -> dict:
@@ -314,6 +400,18 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Archive output path. When unset, uses "
             "bench/out/doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz"
+        ),
+    )
+    p.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help=(
+            "Allow packing from a dirty work tree. By default the packer "
+            "refuses to produce an external bundle when `git status --porcelain` "
+            "reports any changes, since reviewers cannot rebuild bundle "
+            "identity from a commit-only state. Pass this flag to override "
+            "(BUNDLE_META still records gitDirtyTree=true and the archive name "
+            "is still tagged with -dirty)."
         ),
     )
     return p.parse_args()
@@ -382,6 +480,18 @@ def main() -> int:
     commit = git_commit()
     dirty = git_dirty_tree()
 
+    if dirty and not args.allow_dirty:
+        sys.stderr.write(
+            "pack_cerebras_validation_archive: refusing to pack from a dirty "
+            "work tree.\n"
+            "  Reviewers cannot reproduce the bundle from gitCommit alone "
+            "when uncommitted changes exist.\n"
+            "  Commit (or stash) the listed changes, then re-run. To override "
+            "deliberately, pass --allow-dirty (BUNDLE_META still records "
+            "gitDirtyTree=true and the archive name is still -dirty tagged).\n"
+        )
+        return 2
+
     if args.out:
         out_path = resolve(args.out)
     else:
@@ -391,6 +501,7 @@ def main() -> int:
     utc_built = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     host_os = detect_host_os()
     cs_py = detect_cs_python_availability()
+    sdk_meta = detect_sdk_version_metadata()
     bundle_meta = {
         "schemaVersion": 1,
         "artifactKind": "doe_cerebras_evidence_bundle_meta",
@@ -401,6 +512,7 @@ def main() -> int:
         "gitDirtyTree": dirty,
         "hostOs": host_os,
         "csPython": cs_py,
+        "sdkVersion": sdk_meta,
         "claimScopeSource": "docs/claim-discipline.md",
         "hardwareValidationAppendix": "docs/hardware-validation-appendix.md",
         "scope": (

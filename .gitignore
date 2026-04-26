@@ -209,3 +209,8 @@ wio_flows_tmpdir.*/
 /transformer_layer_shape-*-compile-errors.txt
 /gemma4_e2b_manifest_attention_core-*.json
 /stage3_*-compile-errors.txt
+# Cerebras SDK scratch dir at repo root: cslc emits compiled binaries
+# into ./executables/ when invoked from repo root cwd. Runners should
+# set DOE_CSL_SCRATCH_CWD or pass cwd= so this dir does not appear at
+# repo root, but ignore it as defense in depth.
+/executables/

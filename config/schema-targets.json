@@ -712,6 +712,10 @@
     {
       "schema": "config/pilot-evidence-receipt.schema.json",
       "data": "bench/out/pilot-evidence/example/receipt.json"
+    },
+    {
+      "schema": "config/doe-promoted-artifact-provenance.schema.json",
+      "data": "bench/out/r3-1-31b-real-weights/PROVENANCE.json"
     }
   ],
   "globTargets": [
@@ -726,6 +730,10 @@
     {
       "schema": "bench/plans/normalized_plan.schema.json",
       "glob": "bench/plans/generated/*.plan.json"
+    },
+    {
+      "schema": "config/doe-promoted-artifact-provenance.schema.json",
+      "glob": "bench/out/r3-1-*/PROVENANCE.json"
     }
   ]
 }

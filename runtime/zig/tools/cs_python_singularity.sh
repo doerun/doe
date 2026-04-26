@@ -64,6 +64,20 @@ DOE_REPO_REAL=$(realpath "$SCRIPT_DIR/../../..")
 WORKSPACE_REAL=$(realpath "$DOE_REPO_REAL/..")
 TMP_BIND="${TMPDIR:-/tmp}"
 
+# Optional scratch-cwd redirect: cslc, sim runners, and the SDK paint
+# flow all create scratch in the cwd (executables/, sim_stats.json,
+# wio_flows_tmpdir*). When DOE_CSL_SCRATCH_CWD is set the wrapper cd's
+# there before exec, so scratch lands inside the named workspace dir
+# instead of the repo root. Unset behavior is unchanged for legacy
+# callers; new callers should set this to a path under
+# `bench/out/scratch/` (gitignored).
+if [[ -n "${DOE_CSL_SCRATCH_CWD:-}" ]]; then
+    mkdir -p "$DOE_CSL_SCRATCH_CWD"
+    SCRATCH_REAL=$(realpath "$DOE_CSL_SCRATCH_CWD")
+    cd "$SCRATCH_REAL"
+    PWD_REAL="$SCRATCH_REAL"
+fi
+
 # Singularity's `-C` (containall) flag strips parent env vars from the
 # container. Doe-side runtime helpers (e.g.,
 # `int4ple_compile_target_sim_runner.cs_python_executable()`) read

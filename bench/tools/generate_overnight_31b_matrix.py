@@ -228,6 +228,7 @@ def lane_b_cells(batch_dir: Path, smoke_depths: list[int], smoke_size: int) -> l
     for depth in sorted(smoke_depths):
         cell_id = f"csl-31b-L{depth:03d}-size{smoke_size}"
         cell_dir, trace, compile_dir = cell_paths(batch_dir, cell_id)
+        scratch_dir = cell_dir / "scratch"
         cells.append({
             "id": cell_id,
             "lane": "csl_heavy",
@@ -240,6 +241,7 @@ def lane_b_cells(batch_dir: Path, smoke_depths: list[int], smoke_size: int) -> l
                 "--compile-out", str(compile_dir),
                 "--trace-out", str(trace),
             ],
+            "env": {"DOE_CSL_SCRATCH_CWD": str(scratch_dir)},
             "timeoutSeconds": 5400,
             "expectSuccessReceiptPath": str(trace),
         })
