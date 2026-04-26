@@ -1,0 +1,10 @@
+{
+  "artifactKind": "doe_cluster_b_fixture_fingerprints",
+  "computedAt": "2026-04-26T19:55:57.232147+00:00",
+  "missing": [],
+  "paths": {
+    "bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/doppler-program-bundle.json": "2904416b5a09c6138369f74ddedd1c7f7f8219ab2988609607454125bbee4d7a",
+    "bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/host-plan.json": "46919a6f54aabba1ded84077c09c36208a21204e87ce73c1f2db02bfbe1e0d43"
+  },
+  "schemaVersion": 1
+}
