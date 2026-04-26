@@ -379,6 +379,130 @@ test "tsir csl emitter produces executable kv_read body" {
     );
 }
 
+test "tsir csl emitter produces executable attention_scores body" {
+    // Bootstrap-shape canary fingerprint: head_dim=256, kv_len bound by
+    // param so the same compiled artifact runs across canary-shape
+    // inputs, two-pass-stable softmax, no causal masking, no softcap,
+    // literal scale source. Mirrors the contract enforced by
+    // runtime/zig/src/tsir/emit_kernel_body_attention.zig and the
+    // matching host-side oracle at
+    // runtime/zig/src/tsir/reference_interpreter.zig:tryAttentionScores.
+    const allocator = std.testing.allocator;
+    const semantic = attentionScoresSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const head_dim: i16 = 256;");
+    try expectContains(csl, "param kv_len: i16;");
+    try expectContains(csl, "const attn_scale: f32 = 1");
+    try expectContains(csl, "var attn_scores: [kv_len]f32 = @zeros([kv_len]f32);");
+    try expectContains(csl, "tsir_query: [head_dim]f32");
+    try expectContains(csl, "tsir_key: [kv_len * head_dim]f32");
+    try expectContains(csl, "tsir_value: [kv_len * head_dim]f32");
+    try expectContains(csl, "tsir_output: [head_dim]f32");
+    try expectContains(csl, "var max_score: f32 = -1.0e30;");
+    try expectContains(csl, "const e = math.exp(attn_scores[@as(u32, k)] - max_score);");
+    try expectContains(csl, "@export_symbol(tsir_query_ptr, \"query\");");
+    try expectContains(csl, "@export_symbol(tsir_key_ptr, \"key\");");
+    try expectContains(csl, "@export_symbol(tsir_value_ptr, \"value\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+
+    // Other backends remain typed-rejection: emit_kernel_body.zig:123
+    // gates webgpu/msl/dxil/spir-v at `error.UnsupportedKernelBody`
+    // for `attention_scores` until the per-backend lowering lands.
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_msl.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl attention_scores rejects out-of-contract bodies" {
+    // The bootstrap canary contract is intentionally narrow: only
+    // softmax_mode=.two_pass_stable, causal_mode=.none, no softcap,
+    // literal scale. Anything else surfaces as InvalidBodyContract so
+    // the canary lane can fail loudly when an unsupported attention
+    // shape is requested before manifest-shape attention emit lands.
+    const allocator = std.testing.allocator;
+
+    var streaming = attentionScoresSemantic();
+    var streaming_body = streaming.body.attention_scores.?;
+    streaming_body.softmax_mode = .streaming_online;
+    streaming.body.attention_scores = streaming_body;
+    try std.testing.expectError(
+        error.InvalidBodyContract,
+        tsir.emit_csl.emitSemanticFunction(
+            allocator,
+            streaming,
+            fixtureFunction(targets.wse3.descriptor),
+            targets.wse3.descriptor,
+        ),
+    );
+
+    var causal = attentionScoresSemantic();
+    var causal_body = causal.body.attention_scores.?;
+    causal_body.causal_mode = .causal;
+    causal.body.attention_scores = causal_body;
+    try std.testing.expectError(
+        error.InvalidBodyContract,
+        tsir.emit_csl.emitSemanticFunction(
+            allocator,
+            causal,
+            fixtureFunction(targets.wse3.descriptor),
+            targets.wse3.descriptor,
+        ),
+    );
+
+    var softcap = attentionScoresSemantic();
+    var softcap_body = softcap.body.attention_scores.?;
+    softcap_body.has_softcap = true;
+    softcap.body.attention_scores = softcap_body;
+    try std.testing.expectError(
+        error.InvalidBodyContract,
+        tsir.emit_csl.emitSemanticFunction(
+            allocator,
+            softcap,
+            fixtureFunction(targets.wse3.descriptor),
+            targets.wse3.descriptor,
+        ),
+    );
+
+    var uniform = attentionScoresSemantic();
+    var uniform_body = uniform.body.attention_scores.?;
+    uniform_body.scale_source = .uniform_field;
+    uniform_body.scale_literal_f32 = null;
+    uniform.body.attention_scores = uniform_body;
+    try std.testing.expectError(
+        error.InvalidBodyContract,
+        tsir.emit_csl.emitSemanticFunction(
+            allocator,
+            uniform,
+            fixtureFunction(targets.wse3.descriptor),
+            targets.wse3.descriptor,
+        ),
+    );
+}
+
 test "tsir emitters produce executable gather bodies" {
     const allocator = std.testing.allocator;
     const semantic = gatherSemantic();
@@ -656,6 +780,54 @@ fn kvReadSemantic() tsir.schema.SemanticFunction {
             .op = .kv_read,
             .binding_roles = &data.body_bindings,
             .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn attentionScoresSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "k", .lower_bound = "0", .upper_bound = "kv_len", .step = "1" },
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "head_dim", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "query", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "key", .group = 0, .binding = 1, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "value", .group = 0, .binding = 2, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 3, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .query },
+            .{ .binding_index = 1, .role = .key },
+            .{ .binding_index = 2, .role = .value },
+            .{ .binding_index = 3, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .token },
+            .{ .axis_index = 1, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .attention_decode,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .attention_scores,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+            .attention_scores = .{
+                .softmax_mode = .two_pass_stable,
+                .head_dim = 256,
+                .key_sequence_axis = 0,
+                .scale_source = .literal_f32,
+                .scale_literal_f32 = 1.0,
+                .has_softcap = false,
+                .causal_mode = .none,
+            },
         },
         .source_digest = [_]u8{0} ** 32,
     };

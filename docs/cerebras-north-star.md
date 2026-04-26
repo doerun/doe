@@ -32,10 +32,14 @@ Layers B and C gate the 31B hardware ask. Layer A is supporting bookkeeping.
   across browser WebGPU and Cerebras WSE3 / MSL / SPIR-V backends
   (`bench/out/r3-1-tsir-bootstrap-four-backend-canary/`,
   `bench/out/r3-1-31b-doe-webgpu-parity/`).
-- 31B manifest-shape compile attempted over all 23 graph kernels —
-  **19 compile cleanly, 4 typed-blocked** with concrete byte math and named
-  redesign class per failure
-  (`bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json`).
+- 31B manifest-shape compile **closed across all 23 graph kernels**: every
+  entry in `compile.targets` reports `status: "succeeded"` at
+  `bench/out/r3-1-31b-manifest-fullgraph-compile-steps/trace.json.driver-result.json`.
+  The four prior `csl_compile_pe_memory_exhausted` targets (`ple_rmsnorm`,
+  `tiled`, `kv_write`, `kv_write_shared`) are resolved via the slot-sharded
+  KV emit body, the `tiled` per-PE block shrink (64 → 32), and dropping the
+  `hidden_size` override forwarding into `ple_rmsnorm`. Synthesized receipt
+  regeneration against the new driver result is in flight elsewhere.
 - Bounded-shape multi-token decode chain executing end-to-end on simfabric
   (`bench/out/r3-1-31b-multi-token-decode/`).
 - Real-weight extraction + audit against the canonical Gemma 4 31B weights
@@ -49,24 +53,161 @@ In order:
 
 1. **R3-1 — 31B L1 smoke hardware receipt** (`bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1`).
    Proves the 31B dense runner, SDK environment, source-hash chain, and
-   hardware receipt path before deeper work. Time-boxed; doesn't depend on
-   Layer B.
-2. **Close Layer B (residency redesigns for the 4 typed blockers)**, then
-   rerun the manifest-shape compile loop.
-3. **R3-3 — Manifest-shape hardware parity receipt**: execute the 23-kernel
+   hardware receipt path before deeper work. Doesn't depend on Layer C.
+2. **R3-3 — Manifest-shape hardware parity receipt**: execute the 23-kernel
    graph end-to-end on the WSE, bind the transcript to the deterministic
    reference export with matching manifest / graph / weights / prompt /
-   token-logit-KV artifacts. This is the actual North Star evidence.
+   token-logit-KV artifacts. This is the actual North Star evidence. Layer B
+   is now closed at compile scope, so this step is gated only on Layer C
+   (manifest-shape simfabric execution receipt) and on hardware access — not
+   on residency redesigns.
 
 ### One-sentence pitch
 
 We have a single Doppler-authored Gemma 4 31B model program with identity
-pinned across all four backends, 19 of 23 manifest-shape kernels compiling
-cleanly under WSE-3 per-PE budget with the other 4 carrying typed
-residency-redesign blockers, and a bounded-shape multi-token decode chain
-running end-to-end on simfabric — what we need hardware for is the L1 smoke
-receipt, then manifest-shape end-to-end execution after the four residency
-redesigns land.
+pinned across all four backends, all 23 manifest-shape kernels now compiling
+cleanly under the WSE-3 per-PE budget, and a bounded-shape multi-token decode
+chain running end-to-end on simfabric — what we need hardware for is the L1
+smoke receipt, then manifest-shape end-to-end execution; the only remaining
+non-hardware work is the manifest-shape simfabric execution receipt
+(see "Manifest-shape simfabric proof plan" below).
+
+## Manifest-shape simfabric proof plan
+
+The remaining non-hardware work is producing a Layer C manifest-shape simfabric
+execution receipt — the 23-kernel graph executing end-to-end at manifest shape
+on simfabric, bound to the manifest hash. Layer B is closed at compile scope;
+this section is the rung ladder for closing Layer C without (a) running the
+full graph blindly and timing out, or (b) producing receipts that look green
+but cite mismatched identity.
+
+The plan trades full-graph wall-clock for a stack of cheaper rungs that
+isolate failure modes. Every rung produces a receipt with the manifest hash
+spine; promotion to the next rung is gated on the prior rung's receipt
+passing schema-enforced hash checks.
+
+### Acceptance bar (Layer C)
+
+A manifest-shape simfabric execution receipt is closed when:
+
+- All 23 manifest-shape kernels have **dispatched** on simfabric (not merely
+  compiled), with bytes-in / bytes-out and output buffer digests recorded.
+- For one prompt, prefill plus the first decoded token's logits hash matches
+  the frozen Doppler reference fixture (one of the WebGPU non-determinism
+  branches, frozen — not regenerated).
+- The receipt's manifest / HostPlan / CSL / reference-fixture hash chain is
+  unbroken end-to-end.
+
+Multi-token continuation, full-depth (48-layer) parity, and longer prompts are
+*additional* receipt classes layered on top — they do not gate the bar above.
+
+### Rung ladder
+
+Each rung produces a receipt under `bench/out/r3-1-31b-manifest-simfabric-*`
+with explicit `receiptClass`, manifest hash citation, and `referenceFixtureHash`
+where applicable. Promotion is gated on schema enforcement (rung 1).
+
+| # | Rung | Output | Gates |
+| --- | --- | --- | --- |
+| 0 | Per-target compile cache | content-addressed `.elf` reuse | infra only |
+| 1 | Schema-enforced hash spine | receipt-emit guard rejects mismatched hashes | every receipt below |
+| 2 | Predicted simfabric wall-clock | per-graph cycle/D2H budget JSON | rung 8 launch decision |
+| 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
+| 4 | Layout receipt | bytes-in/out + buffer digest, **no oracle compare** | rung 6 (separates plumbing from numerics) |
+| 5 | Frozen Doppler reference fixture | hashed transcript + activation probes | every parity rung below |
+| 6 | 1-of-48-layer first-token parity (`receiptClass: manifest_shape_1L_first_token`) | first-token logits hash vs frozen reference at L=1 | rung 7 |
+| 7 | Single-block parity with intra-block probes | post-rmsnorm / post-QKV / post-attn / post-FFN hash check | rung 8 |
+| 8 | Full 48-layer prefill + first-token (`receiptClass: manifest_shape_first_token`) | prefill + first-token logits hash | rung 9 |
+| 9 | Multi-token continuation | N-token sequence vs frozen reference branch | done |
+
+### Refinements (where each lands on disk)
+
+1. **Per-target compile cache (rung 0).** `bench/tools/compile_cache_manager.py`,
+   driven from the steps-mode driver. Cache key = sha256 of (HostPlan target
+   hash + emitted CSL hash + `compileParams`). Reuses prior `.elf` when key
+   matches; runs `cslc` only on miss. Hash-key inputs are the same ones
+   `bench/tools/prepack_hash_drift_guard.py` already pins, so the cache cannot
+   reuse a stale artifact across a real lowering change.
+
+2. **Schema-enforced hash spine (rung 1).** `bench/tools/_receipt_hash_guard.py`
+   imported by every Doe receipt writer. Guard rejects emit when:
+   (a) cited manifest hash ≠ live manifest hash for the bundle path,
+   (b) `hostPlanHash` does not chain back to the manifest,
+   (c) `referenceFixtureHash` is missing for any receipt with
+   `receiptClass.startswith("manifest_shape")` and `comparisonMode == "parity"`.
+   Existing audit-time gates in `bench/tools/prepack_hash_drift_guard.py`
+   remain; this guard is the upstream catch.
+
+3. **Predicted simfabric wall-clock (rung 2).** `bench/tools/predict_simfabric_wallclock.py`.
+   Inputs: `pe_program.metadata.json` per target plus the host plan. Per
+   kernel, sum (estimated D2H bytes × throughput constant) +
+   (residency cycles × call count). Output:
+   `bench/out/r3-1-31b-manifest-simfabric-predicted-wallclock/budget.json`.
+   The throughput constant is calibrated from a single rung-3 dispatch, not
+   guessed. Rung 8 will not launch unless the budget is under a configured
+   ceiling in `config/manifest-simfabric-budget.json`.
+
+4. **Per-kernel manifest-shape dispatch (rung 3).** Extend
+   `bench/runners/csl-runners/multi_token_decode_orchestrator.py` (or a new
+   sibling `manifest_kernel_probe_runner.py`) to dispatch one kernel at
+   manifest shape with manifest-shape inputs, against per-kernel Doppler
+   probes from `bench/fixtures/tsir-real-doppler-transcripts/`. Receipt:
+   `bench/out/r3-1-31b-manifest-simfabric-per-kernel/<kernel>.json`.
+
+5. **Layout receipt (rung 4).** `bench/tools/run_manifest_shape_layout_receipt.py`.
+   Per kernel, dispatch with manifest-shape inputs; record `inputBytes`,
+   `outputBytes`, `outputDigest`, `dispatchExitCode`, `bufferAlignment`. No
+   oracle compare. Failure here is plumbing (stride, layout, axis order),
+   not numerics. Receipt:
+   `bench/out/r3-1-31b-manifest-simfabric-layout-receipt/<kernel>.json`.
+
+6. **Frozen Doppler reference fixture (rung 5).** `bench/fixtures/r3-1-31b-doppler-frozen/{transcript.json,activations/<layer>/<probe-point>.npy}`,
+   indexed by `frozen-reference.manifest.json`. Probe points:
+   `post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn` for layer L=1 (used by
+   rungs 6 and 7) plus first-token logits (used by rungs 6, 8, 9). The
+   fixture's digest is exported as `referenceFixtureHash` and consumed by
+   the receipt-emit guard (refinement 2). Coordination note: the bundle's
+   manifest needs a `referenceFixtureHash` field on the Doppler side; the
+   Doe-side fixture and validator can land first.
+
+7. **Intra-block probes (rung 7).** Add four probe-write hooks at the four
+   TSIR boundary points already encoded in the per-block emit
+   (`runtime/zig/src/tsir/emit_kernel_body.zig` plus the per-kernel emitters).
+   Probes write `.npy` snapshots into the orchestrator's per-step scratch
+   dir during dispatch; rung 7 hashes them and compares against the same
+   four points in the frozen fixture (refinement 6). Same dispatch cost as a
+   block-level parity run; localizes any mismatch to a single TSIR boundary.
+
+8. **1-of-48-layer first-token rung (rung 6).** The host-plan tool already
+   accepts `--num-layers`; verify in
+   `runtime/zig/src/csl_host_plan_tool.zig` that 1-layer emission keeps the
+   per-kernel artifacts identical to the 48-layer emission (kernel CSL is
+   per-class, not per-layer-instance). Receipt class:
+   `manifest_shape_1L_first_token` — explicitly *not* full-depth manifest
+   parity, but a real manifest-shape first-token receipt.
+
+### Integrity invariants (across all rungs)
+
+- Every receipt names the same manifest hash; mismatches are emit-time errors,
+  not audit findings.
+- Compile artifacts are reused only by content hash, never by filename.
+- Shape substitution (e.g., running `hidden_dim=1024` instead of `5120`) is a
+  separate receipt class — never promoted to manifest-shape parity.
+- The reference fixture is *frozen*: regeneration is a fixture-version event
+  (new digest, new manifest field), not a silent refresh.
+- Every kernel in the manifest graph dispatches at manifest shape at least
+  once (rung 4) before any parity claim is made — canary coverage at
+  bootstrap shape does not substitute.
+
+### What this plan does not include
+
+- Hardware execution receipts (R3-1, R3-3) — those remain hardware-gated.
+- Performance claims — every rung is a correctness/identity receipt; timing
+  data appears only as the predicted-wall-clock budget input, not as a
+  performance claim.
+- Real-weight numerical parity beyond the frozen reference branch — the
+  WebGPU-non-determinism convention (frozen reference vs regenerated) is the
+  only valid comparison mode here.
 
 ## Queue
 
@@ -85,11 +226,11 @@ The current bundle has a manifest-shape compile-attempt receipt and threshold
 sweep (`bench/out/r3-1-31b-manifest-compile-attempt/`,
 `bench/out/r3-1-31b-manifest-compile-sweep/`), plus a measured full-graph
 compile attempt over the steps-mode targets
-(`bench/out/r3-1-31b-manifest-fullgraph-compile-steps/driver-result.json`,
+(`bench/out/r3-1-31b-manifest-fullgraph-compile-steps/trace.json.driver-result.json`,
 `bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json`). The full-graph
-receipt now classifies every remaining failed target as
-`csl_compile_pe_memory_exhausted`, including `kv_write` and
-`kv_write_shared`; the prior KV integer-range blocker is closed. It also has a
+driver result now records every entry in `compile.targets` at
+`status: "succeeded"`; synthesized receipt regeneration against the new
+driver result is in flight elsewhere. It also has a
 bounded KV/decode chain (`bench/out/r3-1-31b-bounded-decode-integrated/`) and a
 multi-token decode chain that runs end-to-end on simfabric via
 subprocess-isolated SdkRuntimes
