@@ -1,0 +1,38 @@
+{
+  "kernel": "embed",
+  "_purpose": "Smoke-shape input fixture for the doe.tsir.real.embed kernel. The bootstrap oracle does not yet support 'embed' (BOOTSTRAP_ORACLE_KERNELS = {fused_gemv, rms_norm, gather}); this fixture exists so the canary can locate paired inputs by kernel name and produce a 'not_implemented' deferred receipt rather than FileNotFoundError. Real-shape dims are captured in runtime/zig/tests/tsir/real/embed/embed.notes.md (num_tokens=32, hidden_size=1536, vocab_size=262144 at Gemma 4 E2B); these smoke values are intentionally tiny so the file stays compact.",
+  "_smokeContract": {
+    "num_tokens": 4,
+    "hidden_size": 8,
+    "vocab_size": 16
+  },
+  "inputs": {
+    "indices": {
+      "elem": "u32",
+      "shape": [4],
+      "values": [0, 3, 7, 15]
+    },
+    "table": {
+      "elem": "f32",
+      "shape": [16, 8],
+      "values": [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+        3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
+        4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0,
+        5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+        6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0,
+        7.0, 7.0, 7.0, 7.0, 7.0, 7.0, 7.0, 7.0,
+        8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0,
+        9.0, 9.0, 9.0, 9.0, 9.0, 9.0, 9.0, 9.0,
+        10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0,
+        11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0,
+        12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0,
+        13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0, 13.0,
+        14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0, 14.0,
+        15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0
+      ]
+    }
+  }
+}

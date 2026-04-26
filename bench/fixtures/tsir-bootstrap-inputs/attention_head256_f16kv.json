@@ -1,0 +1,40 @@
+{
+  "kernel": "attention_head256_f16kv",
+  "_purpose": "Smoke-shape input fixture for the doe.tsir.real.attention_head256_f16kv kernel. The bootstrap oracle has no attention bodyOp support yet (per runtime/zig/tests/tsir/real/attention_head256_f16kv/attention_head256_f16kv.notes.md, the schema cannot express attention semantics until D3 lands attention_scores bodyOp + softmax reduction representation + sequence-axis softmax collective). This fixture exists so the canary can locate paired inputs by kernel name and produce a 'not_implemented' deferred receipt rather than FileNotFoundError. Real-shape dims are HEAD_DIM=256, BLOCK_SIZE=32; these smoke values are intentionally tiny.",
+  "_smokeContract": {
+    "head_dim": 8,
+    "block_size": 4,
+    "num_heads": 2,
+    "kv_dtype": "f16"
+  },
+  "inputs": {
+    "Q": {
+      "elem": "f32",
+      "shape": [2, 1, 8],
+      "values": [
+        0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+        1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0
+      ]
+    },
+    "K_cache": {
+      "elem": "f16",
+      "shape": [4, 8],
+      "values": [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0
+      ]
+    },
+    "V_cache": {
+      "elem": "f16",
+      "shape": [4, 8],
+      "values": [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+        3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0,
+        4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0
+      ]
+    }
+  }
+}

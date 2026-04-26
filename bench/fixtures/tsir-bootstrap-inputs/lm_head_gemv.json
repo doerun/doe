@@ -1,0 +1,35 @@
+{
+  "kernel": "lm_head_gemv",
+  "_purpose": "Smoke-shape input fixture for the doe.tsir.real.lm_head_gemv kernel. The bootstrap oracle currently only supports fused_gemv at toy shape; this fixture exists so the canary can locate paired inputs by kernel name and produce a 'not_implemented' deferred receipt rather than FileNotFoundError. Real-shape dims are captured in runtime/zig/tests/tsir/real/lm_head_gemv/lm_head_gemv.notes.md (M=1, K=1152, N=262144 at Gemma 3 1B Q4K decode).",
+  "_smokeContract": {
+    "M": 1,
+    "K": 4,
+    "N": 8
+  },
+  "inputs": {
+    "A": {
+      "elem": "f32",
+      "shape": [4],
+      "values": [1.0, 0.5, -0.5, 2.0]
+    },
+    "B": {
+      "elem": "f32",
+      "shape": [8, 4],
+      "values": [
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+        0.5, 0.5, 0.0, 0.0,
+        0.0, 0.0, 0.5, 0.5,
+        1.0, 1.0, 1.0, 1.0,
+        -1.0, -1.0, -1.0, -1.0
+      ]
+    },
+    "alpha": {
+      "elem": "f32",
+      "shape": [1],
+      "values": [1.0]
+    }
+  }
+}
