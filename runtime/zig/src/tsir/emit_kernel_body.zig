@@ -133,11 +133,8 @@ fn emitCsl(writer: anytype, func: schema.SemanticFunction, config: *const Config
         .gelu_gated => emitCslGeluGated(writer, func, config),
         .kv_write => emitCslKvWrite(writer, func, config),
         .kv_read => emitCslKvRead(writer, func, config),
-        // attention_scores lowering is fixture-only under Move 4 D3;
-        // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
-        // Add executable body emission when attention moves out of
-        // the typed-rejection phase.
-        .unknown, .attention_scores => error.UnsupportedKernelBody,
+        .attention_scores => @import("emit_kernel_body_attention.zig").emitCslAttentionScores(writer, func, config),
+        .unknown => error.UnsupportedKernelBody,
     };
 }
 
