@@ -802,6 +802,15 @@ _CSL_REJECTED_KERNELS = frozenset({
     "attention_head512_f16kv",
 })
 
+# Pre-compiled real-canary CSL compile-dirs, keyed by kernel name.
+# Source CSL lives at bench/out/csl-real-canary-source/<kernel>/, and
+# the cslc product at bench/out/csl-real-canary-compile/<kernel>/<kernel>/.
+# A kernel is wired through this lane when (a) the per-kernel sim runner
+# exists at bench/runners/csl-runners/<kernel>_sim_runner.py and (b) the
+# compile-dir bin/ subdir is populated.
+_CSL_REAL_CANARY_COMPILE_ROOT = REPO_ROOT / "bench" / "out" / "csl-real-canary-compile"
+_CS_PYTHON_SINGULARITY = REPO_ROOT / "runtime" / "zig" / "tools" / "cs_python_singularity.sh"
+
 
 def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
     if _csl_channel_locked():
@@ -835,11 +844,6 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
         / f"{kernel}_sim_runner.py"
     )
     if not sim_runner.is_file():
-        # Body op is CSL-lowerable (fused_gemv / rms_norm / gather paths
-        # exist in emit_kernel_body.zig); the gap is the per-kernel
-        # runner harness + materialized compile-dir, not the emit path.
-        # Status `deferred` (not `not_implemented`) signals the lane is
-        # structurally reachable; what's missing is operational glue.
         return ComparisonOutcome(
             backend="csl-simfabric",
             status="deferred",
@@ -847,31 +851,99 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
                 f"{kernel!r} is CSL-lowerable via emit_kernel_body.zig but "
                 f"the per-kernel runner harness "
                 f"bench/runners/csl-runners/{kernel}_sim_runner.py does not "
-                "exist. Closing this entry needs (a) a generic real-kernel "
-                "CSL dispatch tool that materializes a compile-dir from the "
-                f"realization JSON at "
-                f"runtime/zig/tests/tsir/real/{kernel}/"
-                f"{kernel}.tsir-realization.wse3.json, (b) cslc compile + "
-                "simfabric run via cs_python_singularity.sh, (c) output "
-                "byte capture and sha256."
+                "exist. Closing this entry needs (a) authored CSL kernel "
+                f"sources at bench/out/csl-real-canary-source/{kernel}/, "
+                "(b) cslc-compiled output at "
+                f"bench/out/csl-real-canary-compile/{kernel}/{kernel}/, "
+                "(c) a per-kernel sim runner that loads bootstrap inputs, "
+                "dispatches via SdkRuntime, hashes f32 output bytes."
             ),
         )
-    # The per-kernel simfabric runners require a pre-compiled compile-dir
-    # (cslc invocation) plus the singularity wrapper. Producing those on
-    # demand for every parity invocation would contend with Task 2's
-    # full-graph cslc loop on the same SDK channel; the harness defers
-    # the actual run until the channel is free and the compile artifacts
-    # are produced. The runner is named here so reviewers can see the
-    # exact path that closes this lane.
+
+    compile_dir = _CSL_REAL_CANARY_COMPILE_ROOT / kernel / kernel
+    if not (compile_dir / "bin").is_dir():
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="deferred",
+            detail=(
+                f"{kernel}_sim_runner.py exists but the cslc compile-dir "
+                f"{compile_dir.relative_to(REPO_ROOT)} is not materialized. "
+                "Run cslc against "
+                f"bench/out/csl-real-canary-source/{kernel}/layout.csl "
+                "via cs_python_singularity.sh to produce it."
+            ),
+        )
+
+    # Invoke the per-kernel runner via cs_python_singularity. The runner
+    # writes a sha256 hex digest to the --output-hash-out path.
+    cache_dir = REPO_ROOT / ".cache" / "doe-parity"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    output_hash_path = cache_dir / f"{kernel}.csl.hash"
+    if output_hash_path.is_file():
+        output_hash_path.unlink()
+    scratch_dir = (
+        _CSL_REAL_CANARY_COMPILE_ROOT / kernel / "scratch"
+    )
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+
+    import os
+    env = os.environ.copy()
+    env["DOE_CSL_SCRATCH_CWD"] = str(scratch_dir)
+
+    try:
+        proc = subprocess.run(
+            [
+                str(_CS_PYTHON_SINGULARITY),
+                str(sim_runner),
+                "--compile-dir",
+                str(compile_dir),
+                "--inputs",
+                str(inputs_path),
+                "--output-hash-out",
+                str(output_hash_path),
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            cwd=REPO_ROOT,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="error",
+            detail=f"csl-simfabric subprocess failed: {exc}",
+        )
+    if proc.returncode != 0:
+        snippet = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:]
+        tail = snippet[0] if snippet else "(no output)"
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="error",
+            detail=(
+                f"csl-simfabric subprocess exit {proc.returncode}: {tail}"
+            ),
+        )
+    if not output_hash_path.is_file():
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="error",
+            detail="csl-simfabric runner produced no output hash",
+        )
+    backend_hash = output_hash_path.read_text(encoding="utf-8").strip()
+    if not backend_hash:
+        return ComparisonOutcome(
+            backend="csl-simfabric",
+            status="error",
+            detail="csl-simfabric runner wrote an empty hash file",
+        )
     return ComparisonOutcome(
         backend="csl-simfabric",
-        status="deferred",
+        status="pass",
+        backend_hash=backend_hash,
         detail=(
-            f"runner located at {sim_runner.relative_to(REPO_ROOT)}; "
-            "fixture-driven compile + singularity invocation pending. "
-            "Closing this lane requires (a) per-kernel compile-dir "
-            "materialization and (b) channel release from Task 2's cslc "
-            "loop."
+            f"doe-csl-simfabric dispatch via {sim_runner.name} against "
+            f"compile-dir {compile_dir.relative_to(REPO_ROOT)}"
         ),
     )
 
