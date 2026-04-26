@@ -25,6 +25,33 @@ receipt backed by explicit bundle identity, compile evidence, streaming
 residency evidence, and parity or typed blockers — but only step 1 is "next";
 steps 2-5 are sequenced behind it, not all simultaneously active.
 
+Parallel no-hardware work has produced a stack of bounded receipts that
+strengthen the ask before hardware access, kept below the hardware-claim line:
+a manifest-shape compile-attempt receipt naming the WSE3 per-PE memory
+overflow sections at `size=4096`
+(`bench/out/r3-1-31b-manifest-compile-attempt/`), extended by a five-point
+threshold sweep that brackets the per-PE memory ceiling to `(2560, 3072]`
+(`bench/out/r3-1-31b-manifest-compile-sweep/`); a bounded KV write/read
+simfabric trace at width=4 head_dim=32
+(`bench/out/r3-1-31b-kv-bounded/`), composed into an integrated decode chain
+that exercises `kv_write` -> `attention_decode` -> `sample` end-to-end and
+emits token id `1913`
+(`bench/out/r3-1-31b-bounded-decode-integrated/`); a 31B real-weight pin
+against HuggingFace revision `439edf5652646a0d1bd8b46bfdc1d3645761a445`
+covering 288 shards plus a `weightsDir` symlink that flips
+`weightsDirPresent` to true and refines the parity verdict to
+`weights_audit_failed` with named missing smoke-shape projection files
+(`bench/out/r3-1-31b-real-weights/`,
+`bench/out/gemma-4-31b-real-weight-parity-L1.json`); a 3-kernel x 2-backend
+TSIR cross-backend identity matrix plus a real-kernel canary subset adding
+`fused_gemv` real x 2 backends
+(`bench/out/r3-1-tsir-cross-backend/`); and a Doe-WebGPU capture-graph parity
+receipt that ties Doe's WebGPU lane and Doppler's reference transcript to the
+same `modelId` (`bench/out/r3-1-31b-doe-webgpu-parity/`). None of these prove
+Gemma 4 31B inference on Cerebras — that still requires a WSE hardware
+receipt — but each closes a stated unknown and ships in the bundle as either
+an in-hand receipt or a typed blocker.
+
 ## 31B-first execution plan
 
 This section orders 31B work into three buckets. The narrative reorder
@@ -65,6 +92,75 @@ content for E2B may be reordered but should not be demoted in substance.
    deterministic reference export with matching manifest, graph, weights,
    prompt/input, token/logit/KV artifacts, and explicit `hardware_success` or
    typed blocker taxonomy.
+
+### No-hardware evidence ladder
+
+These receipts are the best local work before endpoint access or a
+Cerebras-assisted run. They should be included in the bundle only with explicit
+claim boundaries.
+
+| Item | Status | Current evidence | Work left |
+| --- | --- | --- | --- |
+| Manifest-shape compile attempt receipt | Done as typed blocker; threshold bracketed | `bench/out/r3-1-31b-manifest-compile-attempt/receipt.json` records `failed_typed` at `size=4096` with the exact `.bss` / task-table / `.data.hi` overflow and `.bss/.filters` address overlap. `bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json` brackets the per-PE memory threshold to `(2560, 3072]` via five discrete data points (`size=1024 pass`, `2048 pass`, `2560 pass`, `3072 fail`, `4096 fail`). | Redesign per-PE residency for manifest shape, then rerun compile and hardware execution. |
+| Cross-backend TSIR matrix | Partial; canary extended for real-kernel fixtures | `bench/out/r3-1-tsir-cross-backend/canary-report.json` records the bootstrap 3 kernels x 2 backends (`fused_gemv`, `gather`, `rms_norm` across `webgpu-generic` and `wse3`) with identity-chain status passing for 6/6 receipts. `bench/out/r3-1-tsir-cross-backend/real-canary/` adds `fused_gemv` real-kernel x 2 backends passing identity (`rmsnorm` real-kernel input mismatch noted). Canary now accepts `--expected-count` and `doe.tsir.real.*` kernel refs (see `bench/gates/nightly_tsir_parity_canary.py`). | Connect numerical reference-interpreter comparison and cross-backend output hash agreement (statuses 2-3 still deferred); add MSL/SPIR-V canary coverage; author input fixtures for embed, lm_head_gemv, attention_head256_f16kv, attention_head512_f16kv. |
+| Bounded KV/decode simfabric receipt | Done at bounded shape | `bench/out/r3-1-31b-bounded-decode-integrated/receipt.json` chains `kv_write` -> `attention_decode` -> `sample` at width=4 (head_dim=32, vocab_chunk=1024). Each stage runtime-passed; chain produces token id `1913` from logits with stop reason `max_tokens`. Per-stage traces under the same dir. | Scale to manifest shape (currently bounded synthetic inputs); add multi-token decode iteration; bind to a real-weight reference. |
+| Doe-WebGPU parity against Doppler | Partial; identity-chain match landed | `bench/out/r3-1-31b-doe-webgpu-parity/parity-receipt.json` ties Doppler's 31B inference transcript and Doe's WebGPU capture graph (`graphSha256=4fdf8ca08...`, 1 shader, 1 submission) to the same `modelId`. Two-way local lane sanity confirmed. | Author a Doe-side end-to-end inference runner against the bundle to produce token-sequence parity (logits/KV digest agreement, not just modelId match). |
+| 31B real-weight pinning and Doppler reference | Pinned; weightsDir present; smoke-shape extraction missing | `bench/out/r3-1-31b-real-weights/pin.json` pins HuggingFace revision `439edf5652646a0d1bd8b46bfdc1d3645761a445`, 288 shards, 832 tensors, manifest hash, local path. `bench/out/gemma-4-31b-real-weights -> doppler/models/local/...` symlink flips `weightsDirPresent` to `true`; `bench/out/gemma-4-31b-real-weight-parity-L1.json` verdict moved from `blocked_weights_absent` to `weights_audit_failed` with named missing smoke-shape projection files (`smoke_layer_block_wts.f32`, `perLayerModelProjection.layer<N>.f32`). Doppler 31B reference transcript at `bench/out/r3-1-31b-doppler-reference/reference.json`. | Extract smoke-shape per-layer projection `.f32` files from the raw shards so the audit closes; real-weight Cerebras execution and Doppler <-> Doe numerical parity remain hardware/downstream work. |
+
+### Hardware risks after local evidence
+
+If the no-hardware ladder is green, the remaining risk is no longer "do the
+kernels mean the right thing?" It is whether the composed 31B program survives
+real WSE execution.
+
+| Risk | Mitigation before hardware | Closed by |
+| --- | --- | --- |
+| Full-shape per-PE residency overflows once lifetimes, scratch, KV, and host IO compose | Typed compile blocker is now known: manifest prefill width overflows per-PE memory in `.bss`, task table, and `.data.hi` | Redesign, clean compile, then hardware compile/run receipt |
+| Fabric or collective behavior differs at production grid | Small-grid simfabric checks; CSL route/collective audit; stage L1 -> L61 -> decode | WSE execution at target grid |
+| Host runtime wiring has symbol, offset, size, launch-order, or appliance-driver mismatch | Structured HostPlan metadata; pointer/hash-linked bundle; A3 already reached real 31B embed before the simfabric d2h wall | Hardware receipt with d2h outputs |
+| KV state works in isolation but fails across decode steps | Bounded `kv-write` with host readback is proven; integrated KV read/write decode receipt still needed | Hardware decode transcript |
+| Real weights are hash-valid but mapped with wrong shard/order/scale convention | 31B weight pin is complete for source identity; Doe/Cerebras execution with those weights is still open | Doppler <-> Doe hardware parity bind |
+| Manifest-shape numerics drift from smoke-shape numerics | TSIR identity-chain receipts exist; numerical reference and cross-backend hash statuses are still deferred | Hardware logits/token diff |
+| SDK/runtime version differs between local bundle and Cerebras run | Record `cslc`, SDK, driver, manifest, and bundle hashes in the ask | Returned receipt with matching versions |
+| Correctness runs but throughput is not useful | Stage perf after correctness; capture launch timing and token latency separately | Hardware performance receipt |
+| Receipt exists but cannot support a claim | Predefine required receipt fields: bundle hash, commit, prompt, weights, graph, HostPlan, logits/tokens/KV digests | Verifier-clean returned receipt |
+
+### Remaining no-hardware evidence gaps
+
+These are the highest-value local gaps after the in-hand receipts above. They
+are useful because they either tighten a typed blocker, raise the local oracle
+quality, or make the next Cerebras-returned receipt easier to validate.
+
+| Gap | Current state | Next evidence |
+| --- | --- | --- |
+| Manifest compile threshold | Closed as a five-point sweep: `size=1024,2048,2560` pass; `size=3072,4096` fail. Threshold bracketed to `(2560, 3072]`. See `bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json`. | Optionally narrow further inside the bracket; otherwise the sweep is sufficient evidence. |
+| Full inference graph compile | The manifest-shape receipt is a layer-block compile attempt. | Attempt compile for the full prefill+decode HostPlan at manifest shape and capture success or typed failure. |
+| TSIR kernel coverage | Bootstrap canary covers `fused_gemv`, `gather`, `rms_norm`. Real-kernel canary subset adds `fused_gemv` (2 backends) passing identity. Real fixtures for `embed`, `lm_head_gemv`, `attention_head256_f16kv`, `attention_head512_f16kv` exist; their bootstrap input fixtures do not. | Author input fixtures for the four uncovered real kernels, then re-run real-canary at full fixture count. |
+| TSIR backend coverage | Canary covers `webgpu-generic` and `wse3`. | Wire reference-interpreter, MSL, and SPIR-V canary coverage from the existing TSIR emitters. |
+| TSIR numerical statuses | Identity-chain status passes; numerical compare and cross-backend hash agreement are deferred. | Connect the oracle and hash-comparison stages so statuses 2 and 3 become real pass/fail fields. |
+| KV decode/sample | Closed at bounded shape: `bench/out/r3-1-31b-bounded-decode-integrated/` chains `kv_write` -> `attention_decode` -> `sample`, produces token id `1913`, stop reason `max_tokens`. | Scale to manifest shape, add multi-token iteration, bind to a real-weight reference. |
+| Doe-WebGPU vs Doppler parity | Identity-chain match landed (`bench/out/r3-1-31b-doe-webgpu-parity/parity-receipt.json`); both lanes hash to the same `modelId`. Token-sequence numerical agreement deferred. | Add a Doe-side end-to-end inference runner against the bundle to compare token IDs, logits, and KV digests. |
+| Real-weight Doppler reference | Real-weight pin complete; `weightsDirPresent` flipped to true via symlink; parity verdict at `weights_audit_failed` with named missing smoke-shape projection files. | Extract smoke-shape per-layer projection `.f32` files from raw shards so the audit closes; then run Doppler WebGPU end-to-end against the pinned weights. |
+| Manifest-shape numerical parity | Still a stated limit. | Close TSIR numerical statuses plus extend bounded decode to manifest shape first, then promote a manifest-shape oracle/parity receipt. |
+| Deployment-shape width generator | Current threshold sweep proves the upper bound (size <= 2560 fits, > 2560 does not). | Add the generator that derives deployable widths from memory-plan budgets, then re-run compile attempts. |
+
+### Local risk mitigations
+
+These are not new proof claims; they reduce the odds of stale or unverifiable
+artifacts when the next bundle or returned hardware receipt is handled.
+
+| Risk | Mitigation |
+| --- | --- |
+| `cslc` version drift between local bundle and Cerebras environment | Add explicit SDK / `cslc` version metadata to `BUNDLE_META.json` and verify it on returned receipts. |
+| TSIR or `doe_wgsl` edits invalidate emitted hashes | Add a pre-pack guard that re-runs canary and smoke compile fingerprints, then fails pack if receipt hashes drift. |
+| Cluster B fixture regen drift | Put `gemma-3-1b-doe-csl-hostplan/{host-plan,doppler-program-bundle}.json` regen behind a nightly check. |
+| Heavy WebGPU and heavy CSL jobs contend for the same RADV render node | Document the runner exclusion or add a slot lock around `/dev/dri/renderD128` users. |
+| Returned hardware receipt is hard to bind manually | Add a verifier entrypoint that ingests a returned hardware receipt and binds it to `BUNDLE_META.json`. |
+| A3 partial trace is hard to read | Add a one-line structured summary to its provenance: embed completed; `rmsnorm_prefill` stalled at d2h. |
+| Real-weight pin references a local absolute path | Add a reviewer-facing "how to obtain weights" stanza using the pinned HF repo and revision. |
+| Scratch files still originate at repo root | Change runner working directories so `wio_flows_tmpdir*`, `sim_stats.json`, and related scratch land under a workspace dir. |
+| Ad-hoc `PROVENANCE.json` files drift | Define a minimal provenance schema before any verifier consumes them. |
+| External bundle can still be packed dirty | Add `--require-clean` or make clean-tree enforcement the default for external packs. |
 
 ### Overnight local evidence plan
 

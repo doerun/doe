@@ -23,6 +23,7 @@ DEFAULT_OUTPUT_DIR = REPO_ROOT / "bench" / "out" / "nightly-tsir-parity-canary"
 PARITY_CLI = REPO_ROOT / "bench" / "tools" / "doe_parity.py"
 EXPECTED_FIXTURE_COUNT = 6
 FAIL_STATUSES = {"fail"}
+KERNEL_REF_PREFIXES = ("doe.tsir.bootstrap.", "doe.tsir.real.")
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,6 +33,16 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_FIXTURE_DIR,
         help="Directory containing TSIR manifest lowering entry fixtures.",
+    )
+    parser.add_argument(
+        "--expected-count",
+        type=int,
+        default=EXPECTED_FIXTURE_COUNT,
+        help=(
+            "Expected number of fixture files in --fixture-dir. Defaults to 6 "
+            "(the bootstrap set); set higher when running against real-kernel "
+            "fixture sets that include additional kernel/backend pairings."
+        ),
     )
     parser.add_argument(
         "--inputs-dir",
@@ -55,11 +66,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def _kernel_name(entry: dict[str, Any]) -> str:
-    prefix = "doe.tsir.bootstrap."
     kernel_ref = entry["kernelRef"]
-    if not kernel_ref.startswith(prefix):
-        raise ValueError(f"unexpected bootstrap kernelRef: {kernel_ref}")
-    return kernel_ref.removeprefix(prefix)
+    for prefix in KERNEL_REF_PREFIXES:
+        if kernel_ref.startswith(prefix):
+            return kernel_ref.removeprefix(prefix)
+    raise ValueError(
+        f"unexpected kernelRef: {kernel_ref!r}; expected one of "
+        f"{KERNEL_REF_PREFIXES}"
+    )
 
 
 def _entry_backend(entry: dict[str, Any]) -> str:
@@ -69,11 +83,13 @@ def _entry_backend(entry: dict[str, Any]) -> str:
     return backend
 
 
-def load_fixture_entries(fixture_dir: Path) -> list[tuple[Path, dict[str, Any]]]:
+def load_fixture_entries(
+    fixture_dir: Path, expected_count: int = EXPECTED_FIXTURE_COUNT
+) -> list[tuple[Path, dict[str, Any]]]:
     paths = sorted(fixture_dir.glob("*.json"))
-    if len(paths) != EXPECTED_FIXTURE_COUNT:
+    if len(paths) != expected_count:
         raise ValueError(
-            f"expected {EXPECTED_FIXTURE_COUNT} TSIR manifest fixtures, "
+            f"expected {expected_count} TSIR manifest fixtures, "
             f"got {len(paths)} in {fixture_dir}"
         )
     entries = [(path, tsir_manifest_lowering.load_entry_doc(path)) for path in paths]
@@ -187,8 +203,9 @@ def build_report(
     inputs_dir: Path,
     output_dir: Path,
     python: str,
+    expected_count: int = EXPECTED_FIXTURE_COUNT,
 ) -> dict[str, Any]:
-    entries = load_fixture_entries(fixture_dir)
+    entries = load_fixture_entries(fixture_dir, expected_count=expected_count)
     results = [
         run_fixture(path, entry, output_dir, inputs_dir, python)
         for path, entry in entries
@@ -225,6 +242,7 @@ def main() -> int:
             args.inputs_dir,
             args.output_dir,
             args.python,
+            expected_count=args.expected_count,
         )
         report_path = write_report(report, args.output_dir)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
