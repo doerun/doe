@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.github.io/doe/schemas/doe-frozen-doppler-reference.schema.json",
+  "title": "Doe frozen Doppler reference fixture manifest",
+  "description": "Schema for `frozen-reference.manifest.json` files indexing a frozen Doppler reference fixture under `bench/fixtures/r3-1-31b-doppler-frozen/`. The fixture pins one Doppler reference inference run as the comparison target so downstream parity checks score against a stable artifact (different WebGPU adapters produce different greedy sequences for the same prompt; the fixture freezes one branch). The manifest cites: a transcript JSON, per-layer per-probe-point activation tensors as `.npy` files, and the fixture's aggregate digest (`fixtureDigest`) that downstream receipts cite as `referenceFixtureHash` (consumed by `bench/tools/_receipt_hash_guard.py`).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "modelId",
+    "fixtureDigest",
+    "transcript",
+    "activations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Semantic version of this schema. Currently 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "description": "Receipt class identifier; used by aggregation tooling.",
+      "type": "string",
+      "const": "doe_frozen_doppler_reference_manifest"
+    },
+    "modelId": {
+      "description": "Model identifier the fixture was captured from (e.g. `gemma-4-31b-it-text-q4k-ehf16-af32`). Bound by the receipt-side hash chain; readers should refuse to compare against a fixture whose modelId differs from the receipt's modelId.",
+      "type": "string",
+      "minLength": 1
+    },
+    "modelRevision": {
+      "description": "Optional upstream model revision pin (e.g. HuggingFace commit sha). Helps reviewers materialize the same identity locally.",
+      "type": "string"
+    },
+    "rdrrVariant": {
+      "description": "Optional RDRR conversion variant string (e.g. `text-q4k-ehf16-af32`).",
+      "type": "string"
+    },
+    "promptText": {
+      "description": "Prompt text the fixture was captured against. Recorded so reviewers can reproduce; not used as a hash input.",
+      "type": "string"
+    },
+    "tokenizedPromptHash": {
+      "description": "sha256 of the tokenized prompt bytes the reference run consumed.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decodeSteps": {
+      "description": "How many decode steps after prefill the transcript captures.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "frozenAt": {
+      "description": "ISO 8601 timestamp at which this fixture was frozen.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "frozenReason": {
+      "description": "Free-form note explaining why this branch was frozen (e.g. 'WebGPU adapter X greedy branch picked as the comparison target — see bench/out/r3-1-webgpu-determinism-survey/').",
+      "type": "string"
+    },
+    "fixtureDigest": {
+      "description": "Aggregate sha256 binding every cited artifact in this manifest into a single digest. Computed as sha256 of the canonical-JSON serialization of `{transcript, activations, firstTokenLogits}` with each artifact's path and per-artifact sha256 included. Downstream receipts cite this value as `referenceFixtureHash`; `bench/tools/_receipt_hash_guard.py` enforces the chain.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "transcript": {
+      "description": "The reference run's transcript JSON.",
+      "$ref": "#/$defs/hashLinkedPath"
+    },
+    "firstTokenLogits": {
+      "description": "Optional per-vocab logits .npy for the first decoded token. Used by rungs 6, 8, 9.",
+      "$ref": "#/$defs/hashLinkedPath"
+    },
+    "activations": {
+      "description": "Per-layer activation snapshots at the four TSIR boundary points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`). Keyed by layer index (0-based string), then by probe-point name. The fixture is required to cover at least one (layer, probe-point) pair; the rung-7 contract calls for L=1 across all four probe points.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/$defs/hashLinkedPath"
+        },
+        "minProperties": 1,
+        "propertyNames": {
+          "enum": ["post_rmsnorm", "post_qkv", "post_attn", "post_ffn"]
+        }
+      },
+      "minProperties": 1
+    },
+    "reviewerNotes": {
+      "description": "Optional reviewer-facing notes (how the fixture was produced, how to reproduce, why a particular branch was frozen).",
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "Relative path from the manifest's directory to the artifact.",
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elemDtype": {
+          "description": "Numpy dtype string (e.g. 'float32', 'float16') for .npy artifacts.",
+          "type": "string"
+        },
+        "elemShape": {
+          "description": "Shape tuple recorded as a flat array of non-negative ints (e.g. [seq_len, hidden_dim]).",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

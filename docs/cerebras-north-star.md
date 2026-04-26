@@ -114,7 +114,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 | 2 | Predicted simfabric wall-clock | per-graph cycle/D2H budget JSON | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
 | 4 | Layout receipt | bytes-in/out + buffer digest, **no oracle compare** | rung 6 (separates plumbing from numerics) |
-| 5 | Frozen Doppler reference fixture | hashed transcript + activation probes | every parity rung below |
+| 5 | Frozen Doppler reference fixture | `config/doe-frozen-doppler-reference.schema.json` + `bench/tools/validate_frozen_doppler_reference.py` (9/9 tests pass; fixture data comes from a Doppler reference run elsewhere) | every parity rung below |
 | 6 | 1-of-48-layer first-token parity (`receiptClass: manifest_shape_1L_first_token`) | first-token logits hash vs frozen reference at L=1 | rung 7 |
 | 7 | Single-block parity with intra-block probes | post-rmsnorm / post-QKV / post-attn / post-FFN hash check | rung 8 |
 | 8 | Full 48-layer prefill + first-token (`receiptClass: manifest_shape_first_token`) | prefill + first-token logits hash | rung 9 |
@@ -178,14 +178,26 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
    not numerics. Receipt:
    `bench/out/r3-1-31b-manifest-simfabric-layout-receipt/<kernel>.json`.
 
-6. **Frozen Doppler reference fixture (rung 5).** `bench/fixtures/r3-1-31b-doppler-frozen/{transcript.json,activations/<layer>/<probe-point>.npy}`,
-   indexed by `frozen-reference.manifest.json`. Probe points:
-   `post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn` for layer L=1 (used by
-   rungs 6 and 7) plus first-token logits (used by rungs 6, 8, 9). The
-   fixture's digest is exported as `referenceFixtureHash` and consumed by
-   the receipt-emit guard (refinement 2). Coordination note: the bundle's
-   manifest needs a `referenceFixtureHash` field on the Doppler side; the
-   Doe-side fixture and validator can land first.
+6. **Frozen Doppler reference fixture (rung 5).** Schema landed at
+   `config/doe-frozen-doppler-reference.schema.json`; validator at
+   `bench/tools/validate_frozen_doppler_reference.py`. Manifest cites
+   `transcript.json` plus per-layer per-probe-point activation `.npy`
+   files keyed by layer index and probe-point name (enum:
+   `post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`). Validator
+   walks the fixture root, validates the manifest against the schema,
+   re-hashes every cited artifact (rejects sha256 drift, missing
+   files, and byte-length drift), parses cited `.npy` headers when
+   `elemDtype` / `elemShape` are claimed (rejects shape/dtype drift),
+   and recomputes `fixtureDigest` from the canonical-JSON of
+   `(transcript, activations, firstTokenLogits)` to confirm the
+   manifest's claim. The recomputed `fixtureDigest` is what
+   downstream receipts cite as `referenceFixtureHash`, which the
+   rung-1 receipt-emit guard then enforces. 9/9 tests pass under
+   `python3 -m unittest bench.tests.test_validate_frozen_doppler_reference`.
+   The fixture data itself comes from a Doppler reference run
+   (separate workstream); per the doc's coordination note, the
+   Doe-side schema + validator land first so the data only needs to
+   conform when it's produced.
 
 7. **Intra-block probes (rung 7).** Add four probe-write hooks at the four
    TSIR boundary points already encoded in the per-block emit
