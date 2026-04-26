@@ -166,8 +166,21 @@ def main() -> int:
                 "requires runtime/zig/zig-out/bin/doe-csl-host-plan-tool to "
                 "emit fresh per-target layouts at manifest shape, then a "
                 "loop that invokes cslc on each. Total work: ~10-30 minutes "
-                "of cslc time plus the orchestrator code."
+                "of cslc time plus the orchestrator code. As of "
+                "2026-04-26 the host-plan-tool itself fails in manifest "
+                "mode against runtime/zig/examples/execution-v1/"
+                "gemma-4-31b-smoke.json with `error.MalformedStep` from "
+                "runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:720, so the "
+                "layout-materialization step is itself blocked before any "
+                "cslc invocation can happen."
             ),
+            "hostPlanToolFailure": {
+                "tool": "runtime/zig/zig-out/bin/doe-csl-host-plan-tool",
+                "invocation": "--input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json --bundle-root <dir> --mode manifest",
+                "exitClass": "MalformedStep",
+                "site": "runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:720 lowerManifestExecutionToHostPlan",
+                "implication": "Until lowerManifestExecutionToHostPlan accepts the smoke manifest's step list at manifest mode, the layout-materialization path errors before emitting any layout.csl, so a cslc loop has nothing to compile."
+            },
             "namedRunnerExtensions": [
                 "runtime/zig/zig-out/bin/doe-csl-host-plan-tool: re-run "
                 "with --bundle-root <fresh-dir> --manifest-shape so the "
