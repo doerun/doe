@@ -215,3 +215,8 @@ wio_flows_tmpdir.*/
 # set DOE_CSL_SCRATCH_CWD or pass cwd= so this dir does not appear at
 # repo root, but ignore it as defense in depth.
 /executables/
+
+# cslc emits zero-byte kernel-module fragments at repo root when
+# invoked without a scratch cwd (e.g. `Relu`). Same root cause as the
+# blocks above; ignore as defense in depth.
+/Relu

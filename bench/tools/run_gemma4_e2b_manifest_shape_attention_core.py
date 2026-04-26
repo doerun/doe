@@ -30,6 +30,9 @@ DEFAULT_RUNNER = (
     "bench/runners/csl-runners/gemma4_e2b_manifest_attention_core.py"
 )
 DEFAULT_TMPDIR = REPO_ROOT / "bench/out/scratch/csl-sdk-2.10-tmp"
+DEFAULT_SCRATCH_CWD = (
+    REPO_ROOT / "bench/out/scratch/gemma4-e2b-manifest-attention-core"
+)
 SHAPES = (
     {"attentionKind": "local", "headDim": 256},
     {"attentionKind": "global", "headDim": 512},
@@ -126,6 +129,9 @@ def csl_env() -> dict[str, str]:
     env["TMPDIR"] = str(tmpdir)
     env.setdefault("APPTAINER_TMPDIR", str(tmpdir))
     env.setdefault("SINGULARITY_TMPDIR", str(tmpdir))
+    scratch_cwd = Path(env.get("DOE_CSL_SCRATCH_CWD", str(DEFAULT_SCRATCH_CWD)))
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
+    env["DOE_CSL_SCRATCH_CWD"] = str(scratch_cwd)
     return env
 
 
