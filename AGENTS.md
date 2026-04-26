@@ -233,6 +233,13 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - do not add comments that restate the code
 - do not add ad-hoc debug logging; use structured trace output
 
+## No time estimates
+
+- never estimate work in hours, days, weeks, or any other time unit, in code, comments, commit messages, status updates, receipts, or chat replies
+- do not say "~30 min", "~2 hr", "multi-day", "quick", "long-running" as size proxies for engineering work
+- describe what the work IS — the file to change, the function to add, the schema field to extend, the named blocker to fix — not how long it should take
+- if scope must be conveyed, list the concrete deltas (lines/files/symbols touched) instead of a duration
+
 ## Style guides
 
 Each language has a dedicated style guide. Read the relevant guide before
