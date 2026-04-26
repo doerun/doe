@@ -88,6 +88,9 @@ pub fn run(
     if (tryGeluGated(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
+    if (tryAttentionScores(allocator, semantic, inputs)) |maybe_result| {
+        if (maybe_result) |result| return result;
+    } else |err| return err;
     return error.NotImplemented;
 }
 
@@ -1015,6 +1018,181 @@ fn tryGeluGated(
         if (inner > 15.0) inner = 15.0;
         const gelu_x = 0.5 * x * (1.0 + std.math.tanh(inner));
         writeF32AsElem(output_bytes, i, gelu_x * v, ob.elem);
+    }
+
+    var outputs = try allocator.alloc([]const u8, 1);
+    outputs[0] = output_bytes;
+
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(output_bytes, &hash, .{});
+
+    return Result{
+        .reference_hash = hash,
+        .outputs = outputs,
+        .rejections = &[_]schema.RejectionEntry{},
+    };
+}
+
+/// Detect and interpret the `attention_scores` body op.
+///
+/// Mirrors the CSL emit body in `emit_kernel_body_attention.zig`. Same
+/// scope: bootstrap-canary surface only:
+///   * softmax_mode = .two_pass_stable
+///   * causal_mode  = .none
+///   * has_softcap  = false
+///   * scale_source = .literal_f32
+///   * Q / K / V / output bindings declared via SemanticBindingRole
+///   * f32 element type on every binding
+///
+/// The math follows the same two-pass-stable softmax form the emit body
+/// produces:
+///   scores[k]  = (sum_d Q[d] * K[k, d]) * scale
+///   m          = max_k scores[k]
+///   weights[k] = exp(scores[k] - m); sum_e = sum_k weights[k]
+///   O[d]       = sum_k V[k, d] * (weights[k] / sum_e)
+///
+/// This makes the canary's CSL hash comparable to a Zig-side numerical
+/// reference for non-zero Q/K/V inputs, lifting the bootstrap-fixture
+/// constraint that real attention closure required all-zero inputs.
+fn tryAttentionScores(
+    allocator: std.mem.Allocator,
+    semantic: schema.Semantic,
+    inputs: []const []const u8,
+) InterpretError!?Result {
+    if (semantic.functions.len != 1) return null;
+    const func = semantic.functions[0];
+    if (func.collectives.len != 0) return null;
+    if (func.body.op != .attention_scores) return null;
+    const attn = func.body.attention_scores orelse return null;
+    if (attn.softmax_mode != .two_pass_stable) return null;
+    if (attn.causal_mode != .none) return null;
+    if (attn.has_softcap) return null;
+    if (attn.scale_source != .literal_f32) return null;
+    const scale_f64 = attn.scale_literal_f32 orelse return null;
+    const scale: f32 = @floatCast(scale_f64);
+
+    if (inputs.len != countReadOnlyBindings(func)) return null;
+
+    var query_index: ?u32 = null;
+    var key_index: ?u32 = null;
+    var value_index: ?u32 = null;
+    var output_index: ?u32 = null;
+    for (func.body.binding_roles) |role| {
+        switch (role.role) {
+            .query => {
+                if (query_index != null) return null;
+                query_index = role.binding_index;
+            },
+            .key => {
+                if (key_index != null) return null;
+                key_index = role.binding_index;
+            },
+            .value => {
+                if (value_index != null) return null;
+                value_index = role.binding_index;
+            },
+            .output => {
+                if (output_index != null) return null;
+                output_index = role.binding_index;
+            },
+            // Optional bindings (kv_len_buffer / page_table) are tolerated
+            // here; the bootstrap-canary surface ignores them and lets
+            // shapes drive kv_len.
+            .kv_len_buffer, .page_table => {},
+            else => return null,
+        }
+    }
+    const qi = query_index orelse return null;
+    const ki = key_index orelse return null;
+    const vi = value_index orelse return null;
+    const oi = output_index orelse return null;
+    if (qi >= func.bindings.len or ki >= func.bindings.len or
+        vi >= func.bindings.len or oi >= func.bindings.len) return null;
+
+    const qb = func.bindings[qi];
+    const kb = func.bindings[ki];
+    const vb = func.bindings[vi];
+    const ob = func.bindings[oi];
+    if (qb.read_write or kb.read_write or vb.read_write) return null;
+    if (!ob.read_write) return null;
+    if (qb.elem != .f32 or kb.elem != .f32 or vb.elem != .f32 or ob.elem != .f32) return null;
+
+    const head_dim_u32 = attn.head_dim;
+    if (head_dim_u32 == 0) return null;
+    const head_dim: usize = head_dim_u32;
+
+    // Q is [head_dim]; K/V are [kv_len * head_dim]; O is [head_dim].
+    if (qb.logical_shape.len != 1) return null;
+    if (qb.logical_shape[0] != head_dim_u32) return null;
+    if (ob.logical_shape.len != 1) return null;
+    if (ob.logical_shape[0] != head_dim_u32) return null;
+    if (kb.logical_shape.len < 1) return null;
+    var k_total: u64 = 1;
+    for (kb.logical_shape) |dim| k_total *= dim;
+    if (k_total == 0 or k_total % head_dim_u32 != 0) return null;
+    const kv_len_u64 = k_total / head_dim_u32;
+    var v_total: u64 = 1;
+    for (vb.logical_shape) |dim| v_total *= dim;
+    if (v_total != k_total) return null;
+    const kv_len: usize = std.math.cast(usize, kv_len_u64) orelse return null;
+    if (kv_len == 0) return null;
+
+    const q_bytes = inputBytesForReadOnlyBinding(func, inputs, qi) orelse return null;
+    const k_bytes = inputBytesForReadOnlyBinding(func, inputs, ki) orelse return null;
+    const v_bytes = inputBytesForReadOnlyBinding(func, inputs, vi) orelse return null;
+    if (q_bytes.len != head_dim * 4) return null;
+    if (k_bytes.len != kv_len * head_dim * 4) return null;
+    if (v_bytes.len != kv_len * head_dim * 4) return null;
+
+    const output_len = head_dim * 4;
+    const output_bytes = try allocator.alloc(u8, output_len);
+    errdefer allocator.free(output_bytes);
+
+    var scores = try allocator.alloc(f32, kv_len);
+    defer allocator.free(scores);
+
+    // Pass 1: scores[k] = (Q · K[k]) * scale; track max.
+    var max_score: f32 = -std.math.inf(f32);
+    {
+        var k: usize = 0;
+        while (k < kv_len) : (k += 1) {
+            var dot: f32 = 0.0;
+            var d: usize = 0;
+            while (d < head_dim) : (d += 1) {
+                const q_val = readF32FromBytes(q_bytes, .f32, d);
+                const k_val = readF32FromBytes(k_bytes, .f32, k * head_dim + d);
+                dot += q_val * k_val;
+            }
+            const sc = dot * scale;
+            scores[k] = sc;
+            if (sc > max_score) max_score = sc;
+        }
+    }
+
+    // Pass 2: weights[k] = exp(scores[k] - max); sum.
+    var sum_exp: f32 = 0.0;
+    {
+        var k: usize = 0;
+        while (k < kv_len) : (k += 1) {
+            const e = @exp(scores[k] - max_score);
+            scores[k] = e;
+            sum_exp += e;
+        }
+    }
+    if (sum_exp == 0.0) return null;
+
+    // Output: O[d] = sum_k V[k, d] * (weights[k] / sum_exp).
+    {
+        var d: usize = 0;
+        while (d < head_dim) : (d += 1) {
+            var acc: f32 = 0.0;
+            var k: usize = 0;
+            while (k < kv_len) : (k += 1) {
+                const v_val = readF32FromBytes(v_bytes, .f32, k * head_dim + d);
+                acc += v_val * (scores[k] / sum_exp);
+            }
+            writeF32AsElem(output_bytes, d, acc, .f32);
+        }
     }
 
     var outputs = try allocator.alloc([]const u8, 1);
