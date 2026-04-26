@@ -111,7 +111,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 | --- | --- | --- | --- |
 | 0 | Per-target compile cache | `bench/tools/compile_cache_manager.py` (14/14 tests pass; steps-mode driver wiring is followup) | infra only |
 | 1 | Schema-enforced hash spine | `bench/tools/_receipt_hash_guard.py` (12/12 tests pass; wiring into individual receipt writers is followup) | every receipt below |
-| 2 | Predicted simfabric wall-clock | per-graph cycle/D2H budget JSON | rung 8 launch decision |
+| 2 | Predicted simfabric wall-clock | `bench/tools/predict_simfabric_wallclock.py` (18/18 tests pass; 17 kernels enumerated against the live 31B steps-mode host plan; calibration constant comes from rung 3) | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
 | 4 | Layout receipt | bytes-in/out + buffer digest, **no oracle compare** | rung 6 (separates plumbing from numerics) |
 | 5 | Frozen Doppler reference fixture | `config/doe-frozen-doppler-reference.schema.json` + `bench/tools/validate_frozen_doppler_reference.py` (9/9 tests pass; fixture data comes from a Doppler reference run elsewhere) | every parity rung below |
@@ -155,14 +155,24 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
    upstream catch. Wiring into individual receipt writers is a separate
    follow-up so the rung lands as a self-contained module first.
 
-3. **Predicted simfabric wall-clock (rung 2).** `bench/tools/predict_simfabric_wallclock.py`.
-   Inputs: `pe_program.metadata.json` per target plus the host plan. Per
-   kernel, sum (estimated D2H bytes × throughput constant) +
-   (residency cycles × call count). Output:
-   `bench/out/r3-1-31b-manifest-simfabric-predicted-wallclock/budget.json`.
-   The throughput constant is calibrated from a single rung-3 dispatch, not
-   guessed. Rung 8 will not launch unless the budget is under a configured
-   ceiling in `config/manifest-simfabric-budget.json`.
+3. **Predicted simfabric wall-clock (rung 2).** Module landed at
+   `bench/tools/predict_simfabric_wallclock.py`. Reads the steps-mode
+   host plan + per-target `pe_program.metadata.json`, walks the
+   `OUTPUT_SYMBOL_PATTERNS` heuristic (`output`, `logits`, `key_cache`,
+   `value_cache`, `key_output`, `value_output`, `next_token`,
+   `sampled_token`) to compute per-kernel `outputBytesPerCall`,
+   aggregates by phase (prefill / decode), and emits a
+   `doe_simfabric_wallclock_budget` JSON. A `--throughput-config` JSON
+   file supplies the calibration constant (`bytesPerCycle` plus a
+   `perPatternCyclesPerCall` map); without it the receipt records
+   `calibrated: false` and `predictedCycles: null`. Verified end-to-end
+   against the live 31B steps-mode host plan: 17 kernels enumerated, 0
+   issues, grand-total output bytes 923 608 in the uncalibrated baseline.
+   18/18 tests pass under
+   `python3 -m unittest bench.tests.test_predict_simfabric_wallclock`.
+   Rung 8 will not launch unless the budget is under a configured
+   ceiling in `config/manifest-simfabric-budget.json` — that ceiling +
+   gate are followup once the calibration constant lands.
 
 4. **Per-kernel manifest-shape dispatch (rung 3).** Extend
    `bench/runners/csl-runners/multi_token_decode_orchestrator.py` (or a new
