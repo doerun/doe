@@ -48,6 +48,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -205,6 +206,8 @@ def main() -> int:
     # weightsDir.expectedWeightSetSha256, reject a weightsDir whose
     # aggregate hash diverges.
     pinned_weight_sha = None
+    smoke_contract_pin: dict[str, Any] = {}
+    materialization_metadata: dict[str, Any] = {}
     if fixture is not None:
         pinned_weight_sha = (
             (fixture.get("weightsDir") or {}).get("expectedWeightSetSha256")
@@ -215,6 +218,52 @@ def main() -> int:
                 f"fixture's weightsDir.expectedWeightSetSha256 "
                 f"{pinned_weight_sha}"
             )
+        smoke_contract_pin = (
+            (fixture.get("weightsDir") or {}).get("smokeContract") or {}
+        )
+    # When the extractor wrote a verdict.json beside the weights, fold
+    # its materialization metadata (perLayerKvLayout, projectionSubstitute-
+    # Tensor, linearAttentionPolicy) into the audit so reviewers see the
+    # honest layered shape rather than a uniform-pass summary.
+    verdict_path = weights_dir / "verdict.json"
+    if verdict_path.is_file():
+        try:
+            verdict_doc = json.loads(verdict_path.read_text(encoding="utf-8"))
+            mat = verdict_doc.get("materialization") or {}
+            if isinstance(mat, dict):
+                materialization_metadata = {
+                    "mode": mat.get("mode"),
+                    "projectionSubstituteTensor": mat.get(
+                        "projectionSubstituteTensor"
+                    ),
+                    "linearAttentionPolicy": mat.get(
+                        "linearAttentionPolicy"
+                    ),
+                    "fullLayerCount": mat.get("fullLayerCount"),
+                    "linearLayerCount": mat.get("linearLayerCount"),
+                    "perLayerKvLayout": mat.get("perLayerKvLayout"),
+                }
+                if smoke_contract_pin:
+                    pin_proj = smoke_contract_pin.get(
+                        "projectionSubstituteTensor"
+                    )
+                    pin_pol = smoke_contract_pin.get("linearAttentionPolicy")
+                    mat_proj = mat.get("projectionSubstituteTensor")
+                    mat_pol = mat.get("linearAttentionPolicy")
+                    if pin_proj and mat_proj and pin_proj != mat_proj:
+                        failures.append(
+                            f"smokeContract.projectionSubstituteTensor "
+                            f"pin={pin_proj!r} but materialization "
+                            f"recorded {mat_proj!r}"
+                        )
+                    if pin_pol and mat_pol and pin_pol != mat_pol:
+                        failures.append(
+                            f"smokeContract.linearAttentionPolicy "
+                            f"pin={pin_pol!r} but materialization "
+                            f"recorded {mat_pol!r}"
+                        )
+        except (OSError, json.JSONDecodeError):
+            pass
     audit = {
         "schemaVersion": 1,
         "artifactKind": "doe_weights_dir_audit",
@@ -233,6 +282,8 @@ def main() -> int:
             None if pinned_weight_sha is None
             else pinned_weight_sha == weight_set_sha256
         ),
+        "smokeContractPin": smoke_contract_pin or None,
+        "materializationMetadata": materialization_metadata or None,
         "perLayer": per_layer_entries,
         "weightSetSha256": weight_set_sha256,
         "passedAudit": not failures,
