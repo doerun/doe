@@ -487,8 +487,18 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "tokens_per_chunk", @min(config.max_seq_len, @as(u32, 16)));
     } else if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         const is_ple = std.mem.startsWith(u8, target_name, "ple_");
-        const tile = if (is_ple) @as(u32, 16) else ceilDivU32(config.hidden_dim, 64);
-        const block = if (is_ple) @as(u32, 16) else @as(u32, 64);
+        // Per-PE block size 32 (down from 64) keeps the 5 SUMMA tile
+        // buffers (A_tile/B_tile/C_tile/A_buf/B_buf at Mt*Kt or Mt*Nt
+        // each) under the WSE-3 38 KB per-PE working budget:
+        // 5 * 32 * 32 * 4 = 20 KB. The prior block=64 produced
+        // 5 * 64 * 64 * 4 = 80 KB and tripped csl_compile_pe_memory_exhausted
+        // (`tiled_matmul_needs_smaller_per_pe_tiles` redesign class
+        // recorded in bench/out/r3-1-31b-full-graph-compile-attempt/
+        // receipt.json:redesignSummary). Halving block doubles the PE
+        // grid (tile = ceilDivU32(hidden_dim, 32) = 160), which still
+        // fits the 246x236 fabric.
+        const tile = if (is_ple) @as(u32, 16) else ceilDivU32(config.hidden_dim, 32);
+        const block = if (is_ple) @as(u32, 16) else @as(u32, 32);
         try appendParam(allocator, &params, "width", tile);
         try appendParam(allocator, &params, "height", tile);
         try appendParam(allocator, &params, "P", tile);
@@ -517,10 +527,26 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "in_dim_per_pe", @min(config.hidden_dim, @as(u32, 512)));
         try appendParam(allocator, &params, "num_blocks_per_row", 2);
     } else if (std.mem.eql(u8, pattern, "kv_write")) {
+        // 2D layout: width = num_heads (head axis), height =
+        // pe_grid_height (position-shard axis). Each PE (pe_x, pe_y)
+        // owns head pe_x's slot range starting at pe_y * slots_per_pe.
+        // Slot-sharding by num_heads alone (height=1) leaves
+        // slots_per_pe = ceil(max_seq_len / num_heads) which at
+        // manifest shape (max_seq_len=4096, head_dim=160) yields
+        // 128 * 160 * 4 = 80 KB per cache × 2 caches = 160 KB per PE,
+        // still well over the WSE-3 per-PE working budget. Sharding
+        // along height too gets per-cache to ~11 KB at height=236
+        // (slots_per_pe = ceil(4096/236) = 18, 18*160*4 ≈ 11 KB,
+        // 22 KB total per PE). The pe_program-side ownership guard in
+        // `runtime/zig/src/tsir/emit_kernel_body_kv.zig` uses pe_id
+        // (set to pe_y by the layout, see emit_csl_layout.zig) and
+        // num_pes (set to height) for the slot-axis math.
+        const slot_shard_pes = plan.pe_grid_height;
         try appendParam(allocator, &params, "width", config.num_heads);
-        try appendParam(allocator, &params, "height", 1);
+        try appendParam(allocator, &params, "height", slot_shard_pes);
         try appendParam(allocator, &params, "head_dim", config.head_dim);
         try appendParam(allocator, &params, "max_seq_len", config.max_seq_len);
+        try appendParam(allocator, &params, "slots_per_pe", ceilDivU32(config.max_seq_len, slot_shard_pes));
     } else if (std.mem.eql(u8, pattern, "attention_tiled")) {
         const q_len_per_pe = ceilDivU32(config.max_seq_len, plan.pe_grid_width);
         try appendParam(allocator, &params, "width", plan.pe_grid_width);

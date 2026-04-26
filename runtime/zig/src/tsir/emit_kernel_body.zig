@@ -59,6 +59,25 @@ pub const EmitError = std.mem.Allocator.Error || error{
 /// unless they carry source-level defaults. The live wrapper sets
 /// them; TSIR-only callers leave them null to preserve the
 /// "no defaults" test expectation.
+///
+/// `kv_cache_pe_strategy` selects the per-PE residency layout for the
+/// KV cache buffers. `.full_per_pe` (default) emits the full
+/// `kv_cache_len = max_seq_len * head_dim` array on every PE — the
+/// pre-existing behavior that all current tests and live wrappers
+/// expect. `.slot_sharded` shards the cache by position-slot stride:
+/// each PE owns `slots_per_pe = ceil(max_seq_len / num_pes)` slots,
+/// allocates `[slots_per_pe * head_dim]f32` per cache, and the
+/// owning PE writes/reads only when the global decode position falls
+/// in its local stride. The slot-sharded path additionally requires
+/// `pe_id` / `num_pes` params from the layout side.
+///
+/// `kv_slots_per_pe_default` is the kv_write / kv_read analog of
+/// `head_dim_default`: when the live wrapper invokes the slot-sharded
+/// strategy via `@set_tile_code` without forwarding `slots_per_pe`,
+/// the emitted body needs a source-level default to satisfy cslc's
+/// uninitialized-param check.
+pub const KvCachePeStrategy = enum { full_per_pe, slot_sharded };
+
 pub const Config = struct {
     var_prefix: []const u8 = "tsir_",
     chunk_size_default: ?u32 = null,
@@ -67,6 +86,8 @@ pub const Config = struct {
     head_dim_default: ?u32 = null,
     max_seq_len_default: ?u32 = null,
     read_len_default: ?u32 = null,
+    kv_cache_pe_strategy: KvCachePeStrategy = .full_per_pe,
+    kv_slots_per_pe_default: ?u32 = null,
 };
 
 const default_config: Config = .{};
@@ -458,7 +479,7 @@ fn emitCslResidualAdd(
     try writer.writeAll("}\n");
 }
 
-fn writeCslBufferArray(
+pub fn writeCslBufferArray(
     writer: anytype,
     prefix: []const u8,
     name: []const u8,
@@ -471,7 +492,7 @@ fn writeCslBufferArray(
     );
 }
 
-fn writeCslBufferPointer(
+pub fn writeCslBufferPointer(
     writer: anytype,
     prefix: []const u8,
     name: []const u8,
@@ -483,7 +504,7 @@ fn writeCslBufferPointer(
     );
 }
 
-fn writeCslExportSymbol(writer: anytype, prefix: []const u8, name: []const u8) !void {
+pub fn writeCslExportSymbol(writer: anytype, prefix: []const u8, name: []const u8) !void {
     try writer.print(
         "    @export_symbol({s}{s}_ptr, \"{s}\");\n",
         .{ prefix, name, name },
@@ -557,6 +578,9 @@ fn emitCslKvWrite(
     func: schema.SemanticFunction,
     config: *const Config,
 ) EmitError!void {
+    if (config.kv_cache_pe_strategy == .slot_sharded) {
+        return @import("emit_kernel_body_kv.zig").emitCslKvWriteSlotSharded(writer, func, config);
+    }
     const key_proj = try bindingForRole(func, .key_projection);
     const val_proj = try bindingForRole(func, .value_projection);
     const key_cache = try bindingForRole(func, .key_cache);
@@ -626,6 +650,9 @@ fn emitCslKvRead(
     func: schema.SemanticFunction,
     config: *const Config,
 ) EmitError!void {
+    if (config.kv_cache_pe_strategy == .slot_sharded) {
+        return @import("emit_kernel_body_kv.zig").emitCslKvReadSlotSharded(writer, func, config);
+    }
     const key_cache = try bindingForRole(func, .key_cache);
     const val_cache = try bindingForRole(func, .value_cache);
     const key_output = try bindingForRole(func, .key_output);
@@ -811,7 +838,7 @@ fn emitSpirVGather(writer: anytype, func: schema.SemanticFunction) EmitError!voi
     try writer.writeAll("void main() { uint h = gl_GlobalInvocationID.x; uint token = gl_GlobalInvocationID.y; if (token >= tsir_num_tokens || h >= tsir_hidden) return; uint row = tsir_indices[token]; uint dst = token * tsir_hidden + h; tsir_output[dst] = (row >= tsir_vocab) ? 0.0 : tsir_table[row * tsir_hidden + h]; }\n");
 }
 
-fn bindingForRole(func: schema.SemanticFunction, role: schema.SemanticBindingRole) EmitError!schema.BufferBinding {
+pub fn bindingForRole(func: schema.SemanticFunction, role: schema.SemanticBindingRole) EmitError!schema.BufferBinding {
     for (func.body.binding_roles) |binding_role| {
         if (binding_role.role == role) return bindingForIndex(func, binding_role.binding_index);
     }
@@ -830,7 +857,7 @@ fn rmsNormBody(func: schema.SemanticFunction) EmitError!schema.RmsNormBody {
     return rms;
 }
 
-fn requireElem(binding: schema.BufferBinding, elem: schema.ScalarKind) EmitError!void {
+pub fn requireElem(binding: schema.BufferBinding, elem: schema.ScalarKind) EmitError!void {
     if (binding.elem != elem) return error.UnsupportedScalarKind;
 }
 

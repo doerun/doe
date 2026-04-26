@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -52,6 +53,26 @@ DEFAULT_OUT = (
     REPO_ROOT
     / "bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json"
 )
+DEFAULT_BUNDLE_ROOT = (
+    REPO_ROOT / "bench/out/r3-1-31b-manifest-fullgraph-compile-steps"
+)
+
+# WSE-3 per-PE budgets, mirroring runtime/zig/src/targets/wse3.zig:
+# pe_working_memory_bytes (38 KB) + pe_persistent_pool_bytes (10 KB).
+# `working` is the conservative upper bound the residency pass enforces
+# for emitted-var residency; total includes the persistent pool that
+# the SDK reserves for task-table / .data.hi / .filters overhead.
+WSE3_PE_WORKING_BYTES = 38 * 1024
+WSE3_PE_PERSISTENT_BYTES = 10 * 1024
+WSE3_PE_TOTAL_BYTES = WSE3_PE_WORKING_BYTES + WSE3_PE_PERSISTENT_BYTES
+
+ELEM_BYTES = {
+    "f32": 4, "u32": 4, "i32": 4,
+    "f16": 2, "u16": 2, "i16": 2,
+    "u8": 1, "i8": 1,
+}
+
+_AS_CAST_INLINE = re.compile(r"@as\([a-z0-9_]+,\s*([^)]+)\)")
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,6 +83,15 @@ def parse_args() -> argparse.Namespace:
         "--sweep-summary", type=Path, default=DEFAULT_SWEEP_SUMMARY
     )
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    p.add_argument(
+        "--bundle-root",
+        type=Path,
+        default=DEFAULT_BUNDLE_ROOT,
+        help=(
+            "Bundle root containing per-target compile/<name>/pe_program.metadata.json. "
+            "Used to compute per-PE residency byte math for failed targets."
+        ),
+    )
     p.add_argument(
         "--manifest-size",
         type=int,
@@ -99,6 +129,212 @@ def load_driver_targets(path: Path) -> dict[str, dict] | None:
         if isinstance(name, str) and name:
             out[name] = target
     return out
+
+
+def resolve_size_expr(expr: str, scope: dict[str, int]) -> int | None:
+    """Resolve a CSL sizeExpr against a scope of known integer values.
+
+    Handles literals, single identifiers, `@as(u32, X)` casts, and
+    simple `A * B * ...` products. Returns None when any sub-term is
+    unresolved so the caller can defer the analysis instead of
+    fabricating a number.
+    """
+    expr = expr.strip()
+    # Strip inline @as(u32, X) casts wherever they appear; the inner
+    # expression may include multiplication of multiple casts.
+    prev = None
+    while prev != expr:
+        prev = expr
+        expr = _AS_CAST_INLINE.sub(r"\1", expr).strip()
+    try:
+        return int(expr)
+    except ValueError:
+        pass
+    if expr in scope:
+        return scope[expr]
+    if "*" in expr:
+        product = 1
+        for part in expr.split("*"):
+            value = resolve_size_expr(part, scope)
+            if value is None:
+                return None
+            product *= value
+        return product
+    return None
+
+
+def build_resolution_scope(metadata: dict, params: dict[str, int]) -> dict[str, int]:
+    scope: dict[str, int] = {k: int(v) for k, v in params.items()}
+    for entry in metadata.get("compileTimeConstants", []) or []:
+        if not isinstance(entry, dict):
+            continue
+        kind = entry.get("kind")
+        name = entry.get("name")
+        expr = entry.get("expr")
+        if kind not in ("param", "const") or not name or not expr:
+            continue
+        if name in scope:
+            continue
+        value = resolve_size_expr(expr, scope)
+        if value is not None:
+            scope[name] = value
+    return scope
+
+
+def parse_linker_overlap(stderr_text: str) -> dict | None:
+    overlap = re.search(
+        r"section\s+(\.\w+)\s+virtual address range overlaps with\s+(\.\w+)",
+        stderr_text,
+    )
+    bss_range = re.search(r"\.bss range is \[(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+)\]", stderr_text)
+    if not overlap and not bss_range:
+        return None
+    info: dict = {}
+    if overlap:
+        info["overlap"] = {
+            "section": overlap.group(1),
+            "overlapsWith": overlap.group(2),
+        }
+    if bss_range:
+        lo = int(bss_range.group(1), 16)
+        hi = int(bss_range.group(2), 16)
+        info["bssRange"] = {
+            "loHex": bss_range.group(1),
+            "hiHex": bss_range.group(2),
+            "spanBytes": hi - lo,
+        }
+    return info
+
+
+def classify_redesign(
+    target_name: str,
+    var_bytes: list[dict],
+    total_var_bytes: int,
+    linker_info: dict | None,
+) -> tuple[str, str]:
+    is_kv = any(
+        v["name"] in ("key_cache", "val_cache") and v["totalBytes"] >= 64 * 1024
+        for v in var_bytes
+    )
+    if is_kv:
+        return (
+            "kv_cache_needs_slot_shard",
+            "key_cache and val_cache are emitted at full kv_cache_len per PE. "
+            "Redesign: shard kv_cache by position-slot stride (each PE owns "
+            "ceil(max_seq_len / num_pes) slots × head_dim × 4 B); compute() "
+            "no-ops when the decode position falls outside the local stride. "
+            "Owning emitter: runtime/zig/src/tsir/emit_kernel_body.zig:emitCslKvWrite "
+            "(plus symmetric emitCslKvRead).",
+        )
+    if "rmsnorm" in target_name and total_var_bytes > WSE3_PE_WORKING_BYTES:
+        return (
+            "rmsnorm_needs_fabric_reduce",
+            "input/scale/output are each [hidden_size]f32 per PE; "
+            "single-PE reduction algorithm. Redesign: shard hidden across "
+            "PEs (each PE owns hidden_per_pe = ceil(hidden_size / width)), "
+            "compute local sum_sq, allreduce_add across the PE row, broadcast "
+            "inv_rms, apply locally. Owning emitter: "
+            "runtime/zig/src/doe_wgsl/emit_csl_reduction.zig (NOT "
+            "emit_kernel_body.zig — single-PE algorithm baked in).",
+        )
+    if "tiled" in target_name and total_var_bytes > WSE3_PE_WORKING_BYTES:
+        return (
+            "tiled_matmul_needs_smaller_per_pe_tiles",
+            "Per-PE SUMMA tiles A_tile/B_tile/C_tile/A_buf/B_buf at "
+            "Mt=Kt=Nt=64 sum to ~80 KB (5 × 64*64*4). Redesign: shrink "
+            "the per-PE block size (e.g. Mt=Kt=Nt=32 → 5 × 4 KB = 20 KB), "
+            "or fold A_buf/B_buf into A_tile/B_tile via a ping-pong "
+            "single-buffer. The .bss/.filters overlap is downstream of "
+            "the oversize .bss. Owning emitter/planner: "
+            "runtime/zig/src/doe_wgsl/emit_csl_matmul.zig + "
+            "runtime/zig/src/csl_host_plan_tool.zig (block-size choice in "
+            "the tiled_matmul compileParams branch).",
+        )
+    if linker_info and total_var_bytes <= WSE3_PE_WORKING_BYTES:
+        return (
+            "linker_section_overlap",
+            "Emitted vars fit in the working budget; failure is .bss/.filters "
+            "virtual-address overlap from collectives_2d/queue static "
+            "reservations. Redesign: trim collectives_2d DSR/queue counts, "
+            "or shrink imported module footprint. Owning emitter: "
+            "runtime/zig/src/doe_wgsl/emit_csl_matmul.zig (layout-side "
+            "@set_tile_code module imports).",
+        )
+    return (
+        "unclassified_residency_overflow",
+        f"Total var bytes {total_var_bytes} exceeds WSE-3 per-PE working "
+        f"budget {WSE3_PE_WORKING_BYTES}. No taxonomy match yet — review "
+        "stderr and pe_program.metadata.json by hand and add a typed "
+        "redesign class to bench/tools/synthesize_full_graph_compile_attempt_receipt.py.",
+    )
+
+
+def compute_residency_analysis(
+    target_name: str,
+    bundle_root: Path,
+    params: dict[str, int],
+    stderr_path_rel: str | None,
+) -> dict | None:
+    metadata_path = bundle_root / "compile" / target_name / "pe_program.metadata.json"
+    if not metadata_path.is_file():
+        return None
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    scope = build_resolution_scope(metadata, params)
+    var_bytes: list[dict] = []
+    unresolved: list[str] = []
+    total_bytes = 0
+    for var in metadata.get("variables", []) or []:
+        if not isinstance(var, dict):
+            continue
+        name = var.get("name", "")
+        size_expr = var.get("sizeExpr", "")
+        elem_type = var.get("elemType", "")
+        elements = resolve_size_expr(size_expr, scope)
+        elem_b = ELEM_BYTES.get(elem_type)
+        if elements is None or elem_b is None:
+            unresolved.append(name)
+            continue
+        total = elements * elem_b
+        total_bytes += total
+        var_bytes.append({
+            "name": name,
+            "sizeExpr": size_expr,
+            "elements": elements,
+            "elemType": elem_type,
+            "elemBytes": elem_b,
+            "totalBytes": total,
+        })
+
+    linker_info = None
+    if stderr_path_rel:
+        stderr_path = REPO_ROOT / stderr_path_rel
+        if stderr_path.is_file():
+            try:
+                stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
+                linker_info = parse_linker_overlap(stderr_text)
+            except OSError:
+                linker_info = None
+
+    redesign_class, redesign_detail = classify_redesign(
+        target_name, var_bytes, total_bytes, linker_info
+    )
+    over_budget = total_bytes - WSE3_PE_WORKING_BYTES
+    return {
+        "perPeWorkingBudgetBytes": WSE3_PE_WORKING_BYTES,
+        "perPeTotalBudgetBytes": WSE3_PE_TOTAL_BYTES,
+        "totalVarBytes": total_bytes,
+        "overWorkingBudgetBytes": over_budget,
+        "fitsInWorkingBudget": over_budget <= 0,
+        "varBytes": sorted(var_bytes, key=lambda v: -v["totalBytes"]),
+        "unresolvedVars": unresolved,
+        **({"linkerSectionAnalysis": linker_info} if linker_info else {}),
+        "redesignClass": redesign_class,
+        "redesignDetail": redesign_detail,
+    }
 
 
 def main() -> int:
@@ -142,6 +378,15 @@ def main() -> int:
             stderr_path = driver_target.get("stderrPath")
             stdout_path = driver_target.get("stdoutPath")
             command = driver_target.get("command")
+        params_dict = target.get("compileParams") or {}
+        residency = None
+        if compile_verdict not in ("succeeded", "not_attempted"):
+            residency = compute_residency_analysis(
+                name,
+                args.bundle_root,
+                {k: int(v) for k, v in params_dict.items() if isinstance(v, (int, str)) and str(v).lstrip("-").isdigit()},
+                stderr_path,
+            )
         target_records.append(
             {
                 "name": name,
@@ -149,11 +394,12 @@ def main() -> int:
                 "peProgram": target.get("peProgram", ""),
                 "compileVerdict": compile_verdict,
                 "compileSize": args.manifest_size,
-                "compileParams": target.get("compileParams") or {},
+                "compileParams": params_dict,
                 **({"failureCode": failure_code} if failure_code else {}),
                 **({"stderrPath": rel(stderr_path)} if stderr_path else {}),
                 **({"stdoutPath": rel(stdout_path)} if stdout_path else {}),
                 **({"command": command} if isinstance(command, list) else {}),
+                **({"residencyAnalysis": residency} if residency else {}),
             }
         )
 
@@ -193,6 +439,16 @@ def main() -> int:
         if target.get("compileVerdict") == "succeeded"
     ]
     target_count_label = str(len(target_records))
+
+    redesign_summary: dict[str, list[str]] = {}
+    for target in failed_targets:
+        ra = target.get("residencyAnalysis")
+        if not isinstance(ra, dict):
+            continue
+        cls = ra.get("redesignClass")
+        if not isinstance(cls, str):
+            continue
+        redesign_summary.setdefault(cls, []).append(target["name"])
     source_driver_result = (
         rel(args.driver_result)
         if args.driver_result.is_file()
@@ -218,6 +474,7 @@ def main() -> int:
         "compileSucceededCount": len(succeeded_targets),
         "compileFailedCount": len(failed_targets),
         "compileTargets": target_records,
+        **({"redesignSummary": redesign_summary} if redesign_summary else {}),
         "thresholdNote": threshold_note,
         "blocker": {
             "class": (

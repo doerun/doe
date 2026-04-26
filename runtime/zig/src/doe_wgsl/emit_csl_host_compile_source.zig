@@ -608,24 +608,37 @@ test "host compile source emits semantic Gemma elementwise bodies" {
 }
 
 test "host compile source emits TSIR KV cache bodies" {
+    // Slot-sharded residency strategy: each PE owns ceil(max_seq_len /
+    // num_pes) slots of [head_dim]f32 instead of the full
+    // [max_seq_len * head_dim]f32 cache. Layout-side `pe_id`,
+    // `num_pes`, `slots_per_pe` are passed via @set_tile_code in
+    // `emit_csl_layout.zig:emitKvWriteLayout`. The write body guards
+    // on `owning_pe == pe_id` so only the owning PE mutates its local
+    // slot; non-owning PEs no-op.
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
 
     const kv_write = try emitPatternSections(std.testing.allocator, "kv_write", &buf);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param max_seq_len: i16 = 4096;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const base = position[0] * @as(u32, head_dim);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param pe_id: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param num_pes: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "param slots_per_pe: i16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "if (owning_pe == @as(u32, pe_id))") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "key_cache[idx] = key_proj[@as(u32, d)];") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "val_cache[idx] = val_proj[@as(u32, d)];") != null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "@export_symbol(position_ptr, \"position\");") != null);
+    // Full-per-pe artifacts must NOT appear under the slot-sharded path.
+    try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "[kv_cache_len]f32") == null);
     try std.testing.expect(std.mem.indexOf(u8, kv_write.pe_program, "gid.x") == null);
 
     const read = try emitPatternSections(std.testing.allocator, "kv_read", &buf);
-    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param read_len: i16 = 1;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const src_base = @as(u32, read_start + i) * @as(u32, head_dim);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "key_out[dst_base + @as(u32, d)] = key_cache[src_base + @as(u32, d)];") != null);
-    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "val_out[dst_base + @as(u32, d)] = val_cache[src_base + @as(u32, d)];") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param pe_id: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param num_pes: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "param slots_per_pe: i16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "[local_kv_len]f32") != null);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "@export_symbol(key_out_ptr, \"key_out\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "[kv_cache_len]f32") == null);
     try std.testing.expect(std.mem.indexOf(u8, read.pe_program, "gid.x") == null);
 }
 

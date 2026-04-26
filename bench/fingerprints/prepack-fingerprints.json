@@ -116,7 +116,7 @@
     },
     {
       "path": "bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json",
-      "sha256": "ecc488308c6c4e579a93b00d34826ecee3ce3a9d04cf66f5ed977ac707fb4dbd"
+      "sha256": "ef47b34a5f7e79d7bb7543d1fd0893acd44bc9cb0ef4581b57d725ee653045eb"
     },
     {
       "path": "bench/out/r3-1-31b-l1-dry/trace.json",
@@ -148,11 +148,11 @@
     },
     {
       "path": "bench/out/r3-1-31b-multi-token-decode/PROVENANCE.json",
-      "sha256": "fe39a69e3e1ea56497457c2cb5bd8da3480b8bcfef3feef2a3e1d895d4e7906c"
+      "sha256": "be287dd03902c29595283fddd0524fd22afb174c27483bfd7b5ba731c97ed553"
     },
     {
       "path": "bench/out/r3-1-31b-multi-token-decode/receipt.json",
-      "sha256": "9626cc2223d87664c3d8ff6a59b39c57702f669e7933340ed872c192625ca4a9"
+      "sha256": "17b8a9866e7e9be1b7f645f7480020b86934e5d7c01507a148b92113c6b9f022"
     },
     {
       "path": "bench/out/r3-1-31b-real-weight-smoke-extraction/audit.json",

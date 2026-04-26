@@ -71,6 +71,15 @@ pub fn emitWrite(
         .var_prefix = "",
         .head_dim_default = 256,
         .max_seq_len_default = 4096,
+        // Slot-sharded residency strategy at manifest shape: each PE
+        // owns ceil(max_seq_len / num_pes) position slots and allocates
+        // [slots_per_pe * head_dim]f32 per cache. The full-per-pe
+        // alternative requires [max_seq_len * head_dim]f32 = 4 MiB per
+        // cache at manifest shape, which exceeds the WSE-3 per-PE
+        // memory budget. Layout-side `pe_id` / `num_pes` /
+        // `slots_per_pe` plumbing lives in
+        // `runtime/zig/src/doe_wgsl/emit_csl_layout.zig:emitKvWriteLayout`.
+        .kv_cache_pe_strategy = .slot_sharded,
     };
     var fixed: [4096]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);
@@ -140,6 +149,9 @@ pub fn emitRead(
         .head_dim_default = 256,
         .max_seq_len_default = 4096,
         .read_len_default = 1,
+        // Symmetric slot-sharded read so the cache layout matches the
+        // write side; see emitWrite above.
+        .kv_cache_pe_strategy = .slot_sharded,
     };
     var fixed: [4096]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);

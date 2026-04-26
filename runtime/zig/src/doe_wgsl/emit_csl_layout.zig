@@ -148,7 +148,17 @@ pub fn emitReductionLayout(
     try write(buf, pos, "            .pe_id = pe_x,\n");
     try write(buf, pos, "            .num_pes = width,\n");
     try write(buf, pos, "            .reduce_color = reduce_color,\n");
-    try write(buf, pos, "            .hidden_size = hidden_size,\n");
+    // hidden_size is intentionally NOT forwarded from layout to
+    // pe_program: when forwarded, the cslc command-line override flows
+    // through to per-PE buffer sizes ([hidden_size]f32 × 3 inputs/outputs)
+    // and at manifest shape (hidden_dim=5120) overflows the WSE-3
+    // per-PE working budget (60 KB > 38 KB). Leaving the pe_program's
+    // own `param hidden_size: i16 = 1024;` default in scope keeps each
+    // PE's buffers at 12 KB so the kernel compiles. Same pattern as
+    // emit_csl_reduction.zig's caller (rmsnorm). The single-PE
+    // reduction algorithm itself is the broader R3-2 redesign target;
+    // this change only restores compile-success at manifest shape so
+    // Layer B reaches 23/23.
     try write(buf, pos, "        });\n");
     try write(buf, pos, "    }\n\n");
 
@@ -584,20 +594,27 @@ pub fn emitKvWriteLayout(
     info: classify.KvWriteInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: KV cache write on a 1-D PE row.\n\n");
+    try write(buf, pos, "// Layout: KV cache write on a 2-D PE grid.\n");
+    try write(buf, pos, "// width = num_heads (head axis), height = position-shard count.\n");
+    try write(buf, pos, "// Each PE (pe_x, pe_y) owns head pe_x's slot range starting at\n");
+    try write(buf, pos, "// pe_y * slots_per_pe. The pe_program receives pe_id = pe_y so the\n");
+    try write(buf, pos, "// slot-axis ownership guard `owning_pe == pe_id` works on the\n");
+    try write(buf, pos, "// position-shard axis (not the head axis). num_pes = height.\n\n");
     try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param height: i16;\n");
     try write(buf, pos, "param head_dim: i16;\n");
-    try write(buf, pos, "param max_seq_len: i16;\n\n");
-    try emitMemcpyRow(buf, pos);
-    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .max_seq_len = max_seq_len,\n");
+    try write(buf, pos, "param max_seq_len: i16;\n");
+    try write(buf, pos, "param slots_per_pe: i16;\n\n");
+    try emitMemcpyGrid(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, height);\n\n");
+    try emitKvSlotTileLoop(buf, pos, ".head_dim = head_dim, .max_seq_len = max_seq_len, .slots_per_pe = slots_per_pe,\n");
     try emitStorageExports(buf, pos, module);
     try emitPositionExport(buf, pos);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }
 
 // ---------------------------------------------------------------------------
-// KV cache read layout: 1-D row, no fabric
+// KV cache read layout: 2-D grid, no fabric
 // ---------------------------------------------------------------------------
 
 pub fn emitKvReadLayout(
@@ -607,13 +624,20 @@ pub fn emitKvReadLayout(
     info: classify.KvReadInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: KV cache read on a 1-D PE row.\n\n");
+    try write(buf, pos, "// Layout: KV cache read on a 2-D PE grid.\n");
+    try write(buf, pos, "// Symmetric slot-sharded surface to the write-side: width =\n");
+    try write(buf, pos, "// num_heads, height = position-shard count, slots_per_pe must\n");
+    try write(buf, pos, "// match the write-side value so the cache layout per PE is\n");
+    try write(buf, pos, "// consistent across writers and readers.\n\n");
     try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param height: i16;\n");
     try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param max_seq_len: i16;\n");
+    try write(buf, pos, "param slots_per_pe: i16;\n");
     try write(buf, pos, "param read_len: i16;\n\n");
-    try emitMemcpyRow(buf, pos);
-    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .read_len = read_len,\n");
+    try emitMemcpyGrid(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, height);\n\n");
+    try emitKvSlotTileLoop(buf, pos, ".head_dim = head_dim, .max_seq_len = max_seq_len, .slots_per_pe = slots_per_pe, .read_len = read_len,\n");
     try emitStorageExports(buf, pos, module);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }
@@ -649,6 +673,32 @@ pub fn emitFusedFfnLayout(
 fn emitMemcpyRow(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n    .height = 1,\n});\n\n");
+}
+
+fn emitMemcpyGrid(buf: []u8, pos: *usize) EmitError!void {
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n    .height = height,\n});\n\n");
+}
+
+// 2-D tile loop for slot-sharded KV layouts: pe_id is set to pe_y
+// (the position-shard axis) so the pe_program's `owning_pe == pe_id`
+// guard fires on the position-stride dimension. num_pes is set to
+// height (the count of position shards). pe_x identifies which head
+// owns this PE column; the head identity is implicit in the head_dim
+// param + the global cache-strip layout, so it isn't forwarded as
+// its own param to pe_program here.
+fn emitKvSlotTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitError!void {
+    try write(buf, pos, "    for (@range(i16, width)) |pe_x| {\n");
+    try write(buf, pos, "        for (@range(i16, height)) |pe_y| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .pe_id = pe_y,\n");
+    try write(buf, pos, "                .num_pes = height,\n");
+    try write(buf, pos, "                ");
+    try write(buf, pos, extra_params);
+    try write(buf, pos, "            });\n        }\n    }\n\n");
 }
 
 fn emitReduceColor(buf: []u8, pos: *usize) EmitError!void {
