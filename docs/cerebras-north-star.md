@@ -110,7 +110,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 | # | Rung | Output | Gates |
 | --- | --- | --- | --- |
 | 0 | Per-target compile cache | `bench/tools/compile_cache_manager.py` (14/14 tests pass; steps-mode driver wiring is followup) | infra only |
-| 1 | Schema-enforced hash spine | `bench/tools/_receipt_hash_guard.py` (12/12 tests pass; wiring into individual receipt writers is followup) | every receipt below |
+| 1 | Schema-enforced hash spine | `bench/tools/_receipt_hash_guard.py` (15/15 tests pass; wired into 6 receipt writers — `synthesize_full_graph_compile_attempt_receipt`, `emit_csl_reference_parity_sample`, `bind_shared_execution_parity`, `build_model_runtime_receipt`, `synthesize_bounded_multi_token_decode_receipt`, `predict_simfabric_wallclock`) | every receipt below |
 | 2 | Predicted simfabric wall-clock | `bench/tools/predict_simfabric_wallclock.py` (18/18 tests pass; 17 kernels enumerated against the live 31B steps-mode host plan; calibration constant comes from rung 3) | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | one receipt per kernel: bytes-in/out + exit code | rung 4 |
 | 4 | Layout receipt | bytes-in/out + buffer digest, **no oracle compare** | rung 6 (separates plumbing from numerics) |
@@ -147,13 +147,22 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
    `hostPlanPath`, or (c) a receipt with
    `receiptClass.startswith("manifest_shape")` and
    `comparisonMode == "parity"` is missing `referenceFixtureHash`.
-   Pending-tokens (`""`, `"pending"`, `"unknown"`, `"absent"`) bypass the
-   hash chain check (advisory, matching the verifier's PENDING set).
-   12/12 tests pass under `python3 -m unittest
-   bench.tests.test_receipt_hash_guard`. Existing audit-time gates in
+   Pending-tokens (`""`, `"pending"`, `"unknown"`, `"absent"`) bypass
+   the hash chain check (advisory, matching the verifier's PENDING set).
+   The guard looks up `manifestSha256` / `manifestPath` / `hostPlanHash` /
+   `hostPlanPath` either at the receipt root or under `sourceProgram`
+   so both rung-1-style and older nested-receipt shapes are covered.
+   15/15 tests pass under `python3 -m unittest
+   bench.tests.test_receipt_hash_guard`. Wired into 6 downstream
+   writers: `synthesize_full_graph_compile_attempt_receipt`,
+   `emit_csl_reference_parity_sample`, `bind_shared_execution_parity`,
+   `build_model_runtime_receipt`,
+   `synthesize_bounded_multi_token_decode_receipt`, and
+   `predict_simfabric_wallclock`. Existing audit-time gates in
    `bench/tools/prepack_hash_drift_guard.py` remain; this guard is the
-   upstream catch. Wiring into individual receipt writers is a separate
-   follow-up so the rung lands as a self-contained module first.
+   upstream catch. Future receipt writers should call
+   `enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)` before
+   their JSON write.
 
 3. **Predicted simfabric wall-clock (rung 2).** Module landed at
    `bench/tools/predict_simfabric_wallclock.py`. Reads the steps-mode
