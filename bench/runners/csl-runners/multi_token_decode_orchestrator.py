@@ -1,66 +1,60 @@
-#!/usr/bin/env cs_python
-"""Multi-token decode orchestrator on simfabric.
+#!/usr/bin/env python3
+"""Multi-token decode orchestrator on simfabric (subprocess-isolated).
 
-Holds one SdkRuntime instance for the full decode loop, calling
-kv_write -> attention_decode -> sample symbols in sequence per step,
-advancing the position counter, and recording the sampled token IDs +
-per-step logits digests. Closes the "KV decode/sample" gap in
-docs/cerebras-north-star.md by replacing three independent single-step
-sim runs with one stateful orchestration that proves the per-step
-state (KV cache writes + position counter) is preserved across
-launches in a single SdkRuntime.
+Replaces the prior in-process design that instantiated three
+SdkRuntime instances in one Python process — that pattern aborts at
+`simfab_api.cc:163: Assertion '0' failed` because Cerebras SDK 2.10
+simfabric refuses to host multiple SdkRuntimes in a single process.
 
-Why three runtimes (with host-shuttle):
-  The existing single-step runners (kv_write_sim_runner.py,
-  attention_decode_sim_runner.py, sample_sim_runner.py) each spin up
-  their own SdkRuntime against a kernel-specific compile-dir. The
-  three kernels are separate compile units with disjoint symbols
-  (kv_write owns k_cache/v_cache/position; attention-decode owns
-  Q/K/V/O; sample owns logits/local_max_*). The orchestrator runs
-  three SdkRuntime instances in one process and shuttles state via
-  host-side numpy arrays per step.
+This orchestrator drives the bounded decode chain via
+`bench/runners/csl-runners/chain_step_adapter.py` as a subprocess per
+(kernel, step) tuple. Each adapter invocation:
+  - spawns its own cs_python interpreter under
+    `runtime/zig/tools/cs_python_singularity.sh`
+  - constructs ONE SdkRuntime against the compile-dir for that kernel
+  - reads its inputs from .npy files the orchestrator wrote
+  - dispatches the kernel
+  - writes outputs to .npy files the orchestrator reads next step
 
-Empirical blocker (Cerebras SDK 2.10.0):
-  Cerebras simfabric refuses to host three independent SdkRuntime
-  instances in a single Python process — SdkRuntime construction
-  aborts at simfab_api.cc:163 with `Assertion '0' failed`. The
-  orchestrator's host-shuttle architecture is structurally correct
-  but cannot run in-process under simfabric. See
-  bench/out/r3-1-31b-multi-token-decode/receipt.json for the typed
-  blocker + the two named alternative architectures (unified compile
-  target / subprocess-isolated decode loop).
+The subprocess boundary resets simfab global state, so the parent
+orchestrator can chain N decode steps × 3 kernels without contending
+on the multi-runtime assertion.
 
-  When run under hardware (cmaddr-provided), the multi-runtime
-  constraint is a simfabric-only limit and may not apply; the
-  orchestrator is hardware-ready in shape.
+Per step:
 
-Bounded smoke shape:
-  width=4 PEs, head_dim=32, max_seq_len=64, vocab_chunk=1024.
-  Same shapes as the per-kernel sim runners so the kernel binaries
-  produced by their compile-dirs can be reused here.
+  1. host writes k_proj.npy, v_proj.npy, position.npy under the
+     scratch dir's step{N}/in/ subdir
+  2. subprocess A: chain_step_adapter.py against kv_write compile-dir,
+     reads k_proj/v_proj/position, writes k_cache.npy, v_cache.npy
+  3. host loads k_cache/v_cache, truncates the cached rows to
+     attention_decode's compile-time kv_len, writes Q.npy, K.npy, V.npy
+  4. subprocess B: chain_step_adapter.py against attention_decode
+     compile-dir, reads Q/K/V, writes O.npy
+  5. host tiles O (head_dim) into vocab_chunk-wide logits, writes
+     logits.npy
+  6. subprocess C: chain_step_adapter.py against sample compile-dir,
+     reads logits, writes local_max_val.npy + local_max_idx.npy
+  7. host reads local_max_val/local_max_idx, reconstructs token id
+     via PE-winner argmax across width, appends to tokenSequence
+  8. host advances position; loop until num-steps reached
+
+The trace.json is emitted with full tokenSequence + per-step logits
+digests + per-step kernel timing summary.
+
+Bounded smoke shape: width=4, head_dim=32, max_seq_len=64,
+attention kv_len=8, vocab_chunk=1024. Same as the previous receipt's
+shape so the trace binds to the existing single-step bounded decode
+chain.
 
 Invocation:
-  cs_python bench/runners/csl-runners/multi_token_decode_orchestrator.py \\
-      --compile-dir-kv-write <path> \\
-      --compile-dir-attention-decode <path> \\
-      --compile-dir-sample <path> \\
-      --num-steps 4 \\
-      --trace-out bench/out/r3-1-31b-multi-token-decode/trace.json
 
-Each --compile-dir-* is a cslc -o output directory for the
-corresponding kernel; the orchestrator does not compile, it only
-runs. Materialize compile-dirs by invoking the per-kernel sim runners'
-compile path (or by adding a compile step here later).
-
-The trace.json records:
-  schemaVersion, kernel="multi-token-decode-chain", target=wse3,
-  executionTarget=simfabric, perStep[]: stepIndex, position,
-  kvWritePassed, attentionDecodePassed, sampledTokenId, logitsDigest.
-
-Stop reason is "max-steps" (no EOS check at this scope) — the
-sample kernel produces a token; we record it without checking
-against an EOS list. EOS handling is downstream of bounded-shape
-correctness.
+  python3 bench/runners/csl-runners/multi_token_decode_orchestrator.py \\
+    --compile-dir-kv-write <path> \\
+    --compile-dir-attention-decode <path> \\
+    --compile-dir-sample <path> \\
+    --num-steps 4 \\
+    --scratch-dir bench/out/r3-1-31b-multi-token-decode/scratch \\
+    --trace-out bench/out/r3-1-31b-multi-token-decode/trace.json
 """
 
 from __future__ import annotations
@@ -68,52 +62,31 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
 
-import common
-
-try:
-    from cerebras.sdk.runtime.sdkruntimepybind import (  # type: ignore[import-not-found]  # noqa: E501
-        SdkRuntime,
-        MemcpyDataType,
-        MemcpyOrder,
-    )
-    HAS_SDK = True
-except ImportError:
-    SdkRuntime = None  # type: ignore[assignment]
-    MemcpyDataType = None  # type: ignore[assignment]
-    MemcpyOrder = None  # type: ignore[assignment]
-    HAS_SDK = False
-
+REPO_ROOT = Path(__file__).resolve().parents[3]
+CS_PYTHON_SINGULARITY = REPO_ROOT / "runtime" / "zig" / "tools" / "cs_python_singularity.sh"
+CHAIN_STEP_ADAPTER = (
+    REPO_ROOT / "bench" / "runners" / "csl-runners" / "chain_step_adapter.py"
+)
 
 WIDTH = 4
 HEAD_DIM = 32
 MAX_SEQ_LEN = 64
+ATTENTION_KV_LEN_DEFAULT = 8
 VOCAB_CHUNK = 1024
-DEFAULT_TEMPERATURE = 1.0
-DEFAULT_SOFTCAP = 0.0
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__ or "")
-    parser.add_argument(
-        "--compile-dir-kv-write",
-        required=True,
-        help="cslc -o directory for the kv-write kernel",
-    )
-    parser.add_argument(
-        "--compile-dir-attention-decode",
-        required=True,
-        help="cslc -o directory for the attention-decode kernel",
-    )
-    parser.add_argument(
-        "--compile-dir-sample",
-        required=True,
-        help="cslc -o directory for the sample kernel",
-    )
+    parser.add_argument("--compile-dir-kv-write", required=True)
+    parser.add_argument("--compile-dir-attention-decode", required=True)
+    parser.add_argument("--compile-dir-sample", required=True)
     parser.add_argument(
         "--num-steps",
         type=int,
@@ -125,9 +98,27 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--scratch-dir",
+        required=True,
+        help=(
+            "Workspace dir for per-step .npy state files and adapter "
+            "scratch. Files at scratch-dir/step{N}/{in,out}/."
+        ),
+    )
+    parser.add_argument(
         "--trace-out",
         required=True,
         help="Path to write the chain trace JSON",
+    )
+    parser.add_argument(
+        "--attention-kv-len",
+        type=int,
+        default=ATTENTION_KV_LEN_DEFAULT,
+        help=(
+            "Compile-time kv_len of the attention_decode kernel. The host "
+            "shuttle truncates kv_write's max_seq_len-row cache to this "
+            "many leading rows before passing K/V into attention."
+        ),
     )
     parser.add_argument(
         "--cmaddr",
@@ -140,165 +131,213 @@ def parse_args() -> argparse.Namespace:
         default=29,
         help="RNG seed for synthetic input generation",
     )
+    parser.add_argument(
+        "--subprocess-timeout-seconds",
+        type=int,
+        default=600,
+        help="Per-subprocess timeout (passed to subprocess.run)",
+    )
     return parser.parse_args()
 
 
 def _hash_floats(arr: np.ndarray) -> str:
-    return hashlib.sha256(arr.astype(np.float32, copy=False).tobytes()).hexdigest()
+    return hashlib.sha256(
+        arr.astype(np.float32, copy=False).tobytes()
+    ).hexdigest()
 
 
-def _run_kv_write_step(runner, k_proj, v_proj, position):
-    """Write K/V projections at `position` into the runtime's KV cache.
+def _run_adapter(
+    *,
+    label: str,
+    compile_dir: Path,
+    width: int,
+    chunk_size: int,
+    inputs: list[tuple[str, Path, str, int | None]],
+    outputs: list[tuple[str, Path, str, int | None]],
+    scratch_cwd: Path,
+    cmaddr: str,
+    timeout: int,
+) -> dict:
+    """Spawn one chain_step_adapter subprocess for a single kernel launch.
 
-    Returns (kv_pass, k_cache_host, v_cache_host). The host-side cache
-    arrays are returned so the orchestrator can shuttle them to the
-    attention-decode runner: each runtime owns its own device-side K/V
-    state, and host-side numpy buffers are the canonical chain state
-    across kernel boundaries.
+    Returns a dict with stdout / stderr / returncode for trace recording.
+    Raises on non-zero exit so the chain stops early when a kernel fails.
     """
-    kproj_sym = runner.get_id("k_proj")
-    vproj_sym = runner.get_id("v_proj")
-    kcache_sym = runner.get_id("k_cache")
-    vcache_sym = runner.get_id("v_cache")
-    pos_sym = runner.get_id("position")
+    compile_dir_abs = compile_dir.resolve()
+    cmd: list[str] = [
+        str(CS_PYTHON_SINGULARITY),
+        str(CHAIN_STEP_ADAPTER),
+        "--compile-dir", str(compile_dir_abs),
+        "--width", str(width),
+        "--chunk-size", str(chunk_size),
+    ]
+    if cmaddr:
+        cmd.extend(["--cmaddr", cmaddr])
+    for symbol, path, dtype, chunk_override in inputs:
+        spec = f"{symbol}:{path.resolve()}:{dtype}"
+        if chunk_override is not None:
+            spec += f":{chunk_override}"
+        cmd.extend(["--input", spec])
+    for symbol, path, dtype, chunk_override in outputs:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        spec = f"{symbol}:{path.resolve()}:{dtype}"
+        if chunk_override is not None:
+            spec += f":{chunk_override}"
+        cmd.extend(["--output", spec])
 
-    runner.memcpy_h2d(
-        kproj_sym, k_proj, 0, 0, WIDTH, 1, HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    runner.memcpy_h2d(
-        vproj_sym, v_proj, 0, 0, WIDTH, 1, HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    pos_arr = np.full(WIDTH, position, dtype=np.uint32)
-    runner.memcpy_h2d(
-        pos_sym, pos_arr, 0, 0, WIDTH, 1, 1,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    runner.launch("compute", nonblock=False)
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["DOE_CSL_SCRATCH_CWD"] = str(scratch_cwd)
 
-    k_cache = np.zeros((WIDTH, MAX_SEQ_LEN, HEAD_DIM), dtype=np.float32)
-    v_cache = np.zeros_like(k_cache)
-    runner.memcpy_d2h(
-        k_cache, kcache_sym, 0, 0, WIDTH, 1, MAX_SEQ_LEN * HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        env=env,
+        cwd=REPO_ROOT,
     )
-    runner.memcpy_d2h(
-        v_cache, vcache_sym, 0, 0, WIDTH, 1, MAX_SEQ_LEN * HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"chain_step_adapter [{label}] exit {proc.returncode}: "
+            f"stderr_tail={proc.stderr.strip().splitlines()[-3:]}"
+        )
+    return {
+        "label": label,
+        "compileDir": str(compile_dir),
+        "returncode": proc.returncode,
+        "stdoutTail": proc.stdout.strip().splitlines()[-3:],
+    }
+
+
+def _kv_write_step(
+    *,
+    args: argparse.Namespace,
+    step_dir: Path,
+    rng: np.random.Generator,
+    position: int,
+    cmaddr: str,
+) -> tuple[bool, np.ndarray, np.ndarray, dict]:
+    in_dir = step_dir / "in"
+    out_dir = step_dir / "out"
+    in_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    k_proj = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
+    v_proj = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
+    position_arr = np.full(WIDTH, position, dtype=np.uint32)
+
+    np.save(in_dir / "k_proj.npy", k_proj)
+    np.save(in_dir / "v_proj.npy", v_proj)
+    np.save(in_dir / "position.npy", position_arr)
+
+    adapter_meta = _run_adapter(
+        label="kv_write",
+        compile_dir=Path(args.compile_dir_kv_write),
+        width=WIDTH,
+        chunk_size=HEAD_DIM,
+        inputs=[
+            ("k_proj", in_dir / "k_proj.npy", "f32", HEAD_DIM),
+            ("v_proj", in_dir / "v_proj.npy", "f32", HEAD_DIM),
+            ("position", in_dir / "position.npy", "u32", 1),
+        ],
+        outputs=[
+            ("k_cache", out_dir / "k_cache.npy", "f32", MAX_SEQ_LEN * HEAD_DIM),
+            ("v_cache", out_dir / "v_cache.npy", "f32", MAX_SEQ_LEN * HEAD_DIM),
+        ],
+        scratch_cwd=step_dir / "scratch_kv_write",
+        cmaddr=cmaddr,
+        timeout=args.subprocess_timeout_seconds,
     )
+    k_cache = np.load(out_dir / "k_cache.npy").reshape(WIDTH, MAX_SEQ_LEN, HEAD_DIM)
+    v_cache = np.load(out_dir / "v_cache.npy").reshape(WIDTH, MAX_SEQ_LEN, HEAD_DIM)
+
     written_k = k_cache[:, position, :]
     written_v = v_cache[:, position, :]
-    write_err = float(np.max(np.abs(written_k - k_proj))) + float(
+    err = float(np.max(np.abs(written_k - k_proj))) + float(
         np.max(np.abs(written_v - v_proj))
     )
-    return (write_err == 0.0, k_cache, v_cache)
+    return (err == 0.0), k_cache, v_cache, adapter_meta
 
 
-def _run_attention_decode_step(
-    runner,
-    q_host: np.ndarray,
-    k_host: np.ndarray,
-    v_host: np.ndarray,
-    kv_len: int,
-):
-    """Shuttle host-side Q/K/V into the attention-decode runtime, launch,
-    read back O.
+def _attention_decode_step(
+    *,
+    args: argparse.Namespace,
+    step_dir: Path,
+    rng: np.random.Generator,
+    k_cache: np.ndarray,
+    v_cache: np.ndarray,
+    cmaddr: str,
+) -> tuple[np.ndarray, dict]:
+    in_dir = step_dir / "in"
+    out_dir = step_dir / "out"
+    in_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    `q_host` shape: (WIDTH, HEAD_DIM) — current decode-step query.
-    `k_host`, `v_host` shape: (WIDTH, kv_len, HEAD_DIM) — cached K/V
-    truncated from the kv-write runner's k_cache/v_cache to the
-    attention-decode kernel's compile-time kv_len.
-    The attention kernel's pe_program declares Q[q_len * head_dim],
-    K[kv_len * head_dim], V[kv_len * head_dim], O[q_len * head_dim];
-    q_len is implicitly 1 at decode shape.
-    """
-    q_sym = runner.get_id("Q")
-    k_sym = runner.get_id("K")
-    v_sym = runner.get_id("V")
-    o_sym = runner.get_id("O")
+    kv_len = args.attention_kv_len
+    k_truncated = k_cache[:, :kv_len, :]
+    v_truncated = v_cache[:, :kv_len, :]
+    q = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
 
-    runner.memcpy_h2d(
-        q_sym, q_host, 0, 0, WIDTH, 1, HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
+    np.save(in_dir / "Q.npy", q)
+    np.save(in_dir / "K.npy", k_truncated)
+    np.save(in_dir / "V.npy", v_truncated)
+
+    adapter_meta = _run_adapter(
+        label="attention_decode",
+        compile_dir=Path(args.compile_dir_attention_decode),
+        width=WIDTH,
+        chunk_size=HEAD_DIM,
+        inputs=[
+            ("Q", in_dir / "Q.npy", "f32", HEAD_DIM),
+            ("K", in_dir / "K.npy", "f32", kv_len * HEAD_DIM),
+            ("V", in_dir / "V.npy", "f32", kv_len * HEAD_DIM),
+        ],
+        outputs=[
+            ("O", out_dir / "O.npy", "f32", HEAD_DIM),
+        ],
+        scratch_cwd=step_dir / "scratch_attention",
+        cmaddr=cmaddr,
+        timeout=args.subprocess_timeout_seconds,
     )
-    runner.memcpy_h2d(
-        k_sym, k_host, 0, 0, WIDTH, 1, kv_len * HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    runner.memcpy_h2d(
-        v_sym, v_host, 0, 0, WIDTH, 1, kv_len * HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    runner.launch("compute", nonblock=False)
-    output = np.zeros((WIDTH, HEAD_DIM), dtype=np.float32)
-    runner.memcpy_d2h(
-        output, o_sym, 0, 0, WIDTH, 1, HEAD_DIM,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    return output
+    o = np.load(out_dir / "O.npy").reshape(WIDTH, HEAD_DIM)
+    return o, adapter_meta
 
 
-def _run_sample_step(runner, logits):
-    """Project attention output to a vocab chunk, sample greedily."""
-    logits_sym = runner.get_id("logits")
-    vals_sym = runner.get_id("local_max_val")
-    idxs_sym = runner.get_id("local_max_idx")
+def _sample_step(
+    *,
+    args: argparse.Namespace,
+    step_dir: Path,
+    logits: np.ndarray,
+    cmaddr: str,
+) -> tuple[int, dict]:
+    in_dir = step_dir / "in"
+    out_dir = step_dir / "out"
+    in_dir.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    runner.memcpy_h2d(
-        logits_sym, logits, 0, 0, WIDTH, 1, VOCAB_CHUNK,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
+    np.save(in_dir / "logits.npy", logits)
+    adapter_meta = _run_adapter(
+        label="sample",
+        compile_dir=Path(args.compile_dir_sample),
+        width=WIDTH,
+        chunk_size=VOCAB_CHUNK,
+        inputs=[
+            ("logits", in_dir / "logits.npy", "f32", VOCAB_CHUNK),
+        ],
+        outputs=[
+            ("local_max_val", out_dir / "local_max_val.npy", "f32", 1),
+            ("local_max_idx", out_dir / "local_max_idx.npy", "u32", 1),
+        ],
+        scratch_cwd=step_dir / "scratch_sample",
+        cmaddr=cmaddr,
+        timeout=args.subprocess_timeout_seconds,
     )
-    runner.launch("compute", nonblock=False)
-    local_max_vals = np.zeros(WIDTH, dtype=np.float32)
-    local_max_idxs = np.zeros(WIDTH, dtype=np.uint32)
-    runner.memcpy_d2h(
-        local_max_vals, vals_sym, 0, 0, WIDTH, 1, 1,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
-    runner.memcpy_d2h(
-        local_max_idxs, idxs_sym, 0, 0, WIDTH, 1, 1,
-        streaming=False,
-        order=MemcpyOrder.ROW_MAJOR,
-        data_type=MemcpyDataType.MEMCPY_32BIT,
-        nonblock=False,
-    )
+    local_max_vals = np.load(out_dir / "local_max_val.npy").reshape(WIDTH)
+    local_max_idxs = np.load(out_dir / "local_max_idx.npy").reshape(WIDTH).astype(np.uint32)
     pe_winner = int(np.argmax(local_max_vals))
     token_id = pe_winner * VOCAB_CHUNK + int(local_max_idxs[pe_winner])
-    return token_id
+    return token_id, adapter_meta
 
 
 def _write_blocked_trace(out_path: Path, reason: str) -> None:
@@ -318,114 +357,94 @@ def _write_blocked_trace(out_path: Path, reason: str) -> None:
 def main() -> int:
     args = parse_args()
     trace_out = Path(args.trace_out)
+    scratch_root = Path(args.scratch_dir)
+    cmaddr = args.cmaddr.strip() or ""
 
-    if not HAS_SDK:
+    if not CS_PYTHON_SINGULARITY.is_file():
         _write_blocked_trace(
             trace_out,
-            "cerebras.sdk.runtime.sdkruntimepybind not importable; "
-            "run via runtime/zig/tools/cs_python_singularity.sh",
+            f"cs_python_singularity wrapper missing at {CS_PYTHON_SINGULARITY}",
         )
-        print(f"BLOCKED: SDK unavailable, wrote {trace_out}", file=sys.stderr)
+        print(f"BLOCKED: wrapper missing, wrote {trace_out}", file=sys.stderr)
         return 1
+    if not CHAIN_STEP_ADAPTER.is_file():
+        _write_blocked_trace(
+            trace_out,
+            f"chain_step_adapter missing at {CHAIN_STEP_ADAPTER}",
+        )
+        print(f"BLOCKED: adapter missing, wrote {trace_out}", file=sys.stderr)
+        return 1
+    for label, p in (
+        ("kv_write", Path(args.compile_dir_kv_write)),
+        ("attention_decode", Path(args.compile_dir_attention_decode)),
+        ("sample", Path(args.compile_dir_sample)),
+    ):
+        if not (p / "bin").is_dir():
+            _write_blocked_trace(
+                trace_out,
+                f"{label} compile-dir missing bin/ subdir at {p}",
+            )
+            print(f"BLOCKED: compile-dir absent for {label}, wrote {trace_out}", file=sys.stderr)
+            return 1
 
     rng = np.random.default_rng(seed=args.seed)
-    cmaddr = common.endpoint(args.cmaddr)
-
-    # Three independent SdkRuntime instances — one per kernel binary.
-    # The orchestrator coordinates them via its own host-side state:
-    # token IDs flow Python-side, K/V state lives device-side per-runner.
-    # If a future kernel set bundles all three into one binary, this can
-    # collapse to a single SdkRuntime.
-    kv_runner = SdkRuntime(args.compile_dir_kv_write, cmaddr=cmaddr)
-    attn_runner = SdkRuntime(args.compile_dir_attention_decode, cmaddr=cmaddr)
-    sample_runner = SdkRuntime(args.compile_dir_sample, cmaddr=cmaddr)
-
-    per_step = []
+    per_step: list[dict] = []
     token_sequence: list[int] = []
     per_step_logits_digests: list[str] = []
 
-    # Detect attention-decode's compile-time kv_len from its compile-out
-    # params file so the host-shuttle truncates kv_write's max_seq_len
-    # correctly. Default to 8 if the file is unreadable.
-    attn_params_path = (
-        Path(args.compile_dir_attention_decode) / ".." / "attention-decode.params"
-    )
-    attn_kv_len = 8
-    if attn_params_path.is_file():
-        try:
-            for line in attn_params_path.read_text(encoding="utf-8").splitlines():
-                if line.startswith("kv_len="):
-                    attn_kv_len = int(line.split("=", 1)[1])
-                    break
-        except (OSError, ValueError):
-            pass
+    for step_idx in range(args.num_steps):
+        step_dir = scratch_root / f"step{step_idx:03d}"
+        step_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        for runner in (kv_runner, attn_runner, sample_runner):
-            runner.load()
-            runner.run()
+        position = step_idx
+        kv_pass, k_cache, v_cache, kv_meta = _kv_write_step(
+            args=args, step_dir=step_dir, rng=rng,
+            position=position, cmaddr=cmaddr,
+        )
+        attn_output, attn_meta = _attention_decode_step(
+            args=args, step_dir=step_dir, rng=rng,
+            k_cache=k_cache, v_cache=v_cache, cmaddr=cmaddr,
+        )
 
-        for step_idx in range(args.num_steps):
-            position = step_idx
-            k_proj = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
-            v_proj = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
+        # Tile attn_output (head_dim=32) into vocab_chunk=1024 as a
+        # deterministic logits-shape input — same approach as the
+        # in-process orchestrator's prior design. Production inference
+        # would route through lm_head; this is bounded synthetic.
+        tile_count = (VOCAB_CHUNK + HEAD_DIM - 1) // HEAD_DIM
+        logits = np.tile(attn_output, (1, tile_count))[:, :VOCAB_CHUNK].astype(
+            np.float32, copy=False
+        )
+        logits_digest = _hash_floats(logits)
+        per_step_logits_digests.append(logits_digest)
 
-            kv_pass, k_cache_host, v_cache_host = _run_kv_write_step(
-                kv_runner, k_proj, v_proj, position
-            )
+        token_id, sample_meta = _sample_step(
+            args=args, step_dir=step_dir, logits=logits, cmaddr=cmaddr,
+        )
+        token_sequence.append(token_id)
 
-            # Truncate kv_write's max_seq_len cache to attention-decode's
-            # compile-time kv_len. Decode-step S sees rows [0..S+1]
-            # populated and the rest zero — the cached state matches
-            # what a real decode loop would see.
-            k_truncated = k_cache_host[:, :attn_kv_len, :]
-            v_truncated = v_cache_host[:, :attn_kv_len, :]
-            q_step = rng.standard_normal((WIDTH, HEAD_DIM), dtype=np.float32)
-
-            attn_output = _run_attention_decode_step(
-                attn_runner, q_step, k_truncated, v_truncated, attn_kv_len
-            )
-
-            # Use the attention output as a deterministic input to sample —
-            # in production decode this would pass through lm_head; here
-            # we project the attention output (head_dim=32) into vocab_chunk
-            # by tiling so the chain is reproducible without inventing a
-            # learned lm_head.
-            tile_count = (VOCAB_CHUNK + HEAD_DIM - 1) // HEAD_DIM
-            logits = np.tile(attn_output, (1, tile_count))[:, :VOCAB_CHUNK]
-            logits_digest = _hash_floats(logits)
-            per_step_logits_digests.append(logits_digest)
-
-            token_id = _run_sample_step(sample_runner, logits)
-            token_sequence.append(token_id)
-
-            per_step.append({
-                "stepIndex": step_idx,
-                "position": position,
-                "kvWritePassed": bool(kv_pass),
-                "attentionDecodePassed": True,
-                "attentionOutputDigest": _hash_floats(attn_output),
-                "sampledTokenId": int(token_id),
-                "logitsDigest": logits_digest,
-            })
-
-    finally:
-        for runner in (kv_runner, attn_runner, sample_runner):
-            try:
-                runner.stop()
-            except Exception:  # pragma: no cover  # noqa: BLE001
-                pass
+        per_step.append({
+            "stepIndex": step_idx,
+            "position": position,
+            "kvWritePassed": bool(kv_pass),
+            "attentionDecodePassed": True,
+            "attentionOutputDigest": _hash_floats(attn_output),
+            "sampledTokenId": int(token_id),
+            "logitsDigest": logits_digest,
+            "subprocesses": [kv_meta, attn_meta, sample_meta],
+        })
 
     trace = {
         "schemaVersion": 1,
         "artifactKind": "doe_multi_token_decode_chain_trace",
         "kernel": "multi-token-decode-chain",
         "target": "wse3",
-        "executionTarget": "simfabric" if cmaddr is None else "system",
+        "executionTarget": "simfabric" if not cmaddr else "system",
+        "isolation": "subprocess",
         "shape": {
             "width": WIDTH,
             "headDim": HEAD_DIM,
             "maxSeqLen": MAX_SEQ_LEN,
+            "attentionKvLen": args.attention_kv_len,
             "vocabChunk": VOCAB_CHUNK,
         },
         "numSteps": args.num_steps,
