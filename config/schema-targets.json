@@ -714,6 +714,10 @@
       "data": "bench/out/pilot-evidence/example/receipt.json"
     },
     {
+      "schema": "config/doe-prepack-fingerprints.schema.json",
+      "data": "bench/fingerprints/prepack-fingerprints.json"
+    },
+    {
       "schema": "config/doe-promoted-artifact-provenance.schema.json",
       "data": "bench/out/r3-1-31b-real-weights/PROVENANCE.json"
     }
@@ -733,6 +737,10 @@
     },
     {
       "schema": "config/doe-promoted-artifact-provenance.schema.json",
+      "glob": "bench/out/r3-1-*/PROVENANCE.json"
+    },
+    {
+      "schema": "config/doe-provenance.schema.json",
       "glob": "bench/out/r3-1-*/PROVENANCE.json"
     }
   ]

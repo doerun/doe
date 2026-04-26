@@ -47,6 +47,15 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DIAGNOSTIC_DEPTHS = (2, 4, 8, 35)
+TSIR_REAL_CANARY_KERNELS = (
+    "attention_head256_f16kv",
+    "attention_head512_f16kv",
+    "embed",
+    "fused_gemv",
+    "lm_head_gemv",
+    "rmsnorm",
+)
+TSIR_REAL_CANARY_BACKENDS = ("msl", "spir-v", "webgpu-generic", "wse3")
 
 # Explicit allow-list. Nothing is bundled that isn't named here — the
 # archive cannot accidentally pull SDK binaries or weight bytes
@@ -147,6 +156,41 @@ INCLUDE_FILES: tuple = (
     "bench/out/r3-1-31b-a3-partial/PROVENANCE.json",
     "bench/out/r3-1-31b-l1-dry/trace.json",
     "bench/out/r3-1-31b-l61-smoke/trace.json",
+    # 31B no-hardware evidence promoted after the initial bundle.
+    "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json",
+    "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json",
+    "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json",
+    "bench/out/r3-1-31b-manifest-compile-sweep/PROVENANCE.json",
+    "bench/out/r3-1-31b-deployment-widths/derived-widths.json",
+    "bench/out/r3-1-31b-deployment-widths/PROVENANCE.json",
+    "bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json",
+    "bench/out/r3-1-31b-full-graph-compile-attempt/PROVENANCE.json",
+    "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/driver-result.json",
+    "bench/out/r3-1-31b-bounded-decode-integrated/receipt.json",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage1_kv_write.trace.json",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage2_attention_decode.trace.json",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage3_sample.trace.json",
+    "bench/out/r3-1-31b-bounded-decode-integrated/PROVENANCE.json",
+    "bench/out/r3-1-31b-multi-token-decode/receipt.json",
+    "bench/out/r3-1-31b-multi-token-decode/PROVENANCE.json",
+    "bench/out/r3-1-31b-real-weights/pin.json",
+    "bench/out/r3-1-31b-real-weights/file_hashes.txt",
+    "bench/out/r3-1-31b-real-weights/PROVENANCE.json",
+    "bench/out/r3-1-31b-real-weight-smoke-extraction/receipt.json",
+    "bench/out/r3-1-31b-real-weight-smoke-extraction/audit.json",
+    (
+        "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/"
+        "nightly-tsir-parity-canary.json"
+    ),
+    *(
+        (
+            "bench/out/r3-1-tsir-cross-backend/"
+            "real-canary-with-transcripts/receipts/"
+            f"{kernel}.{backend}/{kernel}.parity.json"
+        )
+        for kernel in TSIR_REAL_CANARY_KERNELS
+        for backend in TSIR_REAL_CANARY_BACKENDS
+    ),
     "bench/out/cerebras-evidence-bundle/summary.json",
 )
 
@@ -247,6 +291,40 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/r3-1-31b-a3-partial/PROVENANCE.json": "promoted-artifact-provenance",
     "bench/out/r3-1-31b-l1-dry/trace.json": "simfabric-31b-l1-smoke-receipt",
     "bench/out/r3-1-31b-l61-smoke/trace.json": "simfabric-31b-l61-smoke-receipt",
+    "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json": "manifest-compile-attempt",
+    "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json": "manifest-compile-sweep",
+    "bench/out/r3-1-31b-manifest-compile-sweep/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-deployment-widths/derived-widths.json": "deployment-width-derivation",
+    "bench/out/r3-1-31b-deployment-widths/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json": "full-graph-compile-attempt",
+    "bench/out/r3-1-31b-full-graph-compile-attempt/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-manifest-fullgraph-compile-steps/driver-result.json": "full-graph-compile-driver-result",
+    "bench/out/r3-1-31b-bounded-decode-integrated/receipt.json": "bounded-decode-receipt",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage1_kv_write.trace.json": "bounded-decode-stage-trace",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage2_attention_decode.trace.json": "bounded-decode-stage-trace",
+    "bench/out/r3-1-31b-bounded-decode-integrated/stage3_sample.trace.json": "bounded-decode-stage-trace",
+    "bench/out/r3-1-31b-bounded-decode-integrated/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-multi-token-decode/receipt.json": "multi-token-decode-typed-blocker",
+    "bench/out/r3-1-31b-multi-token-decode/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-real-weights/pin.json": "real-weight-pin",
+    "bench/out/r3-1-31b-real-weights/file_hashes.txt": "real-weight-hash-manifest",
+    "bench/out/r3-1-31b-real-weights/PROVENANCE.json": "promoted-artifact-provenance",
+    "bench/out/r3-1-31b-real-weight-smoke-extraction/receipt.json": "real-weight-smoke-extraction",
+    "bench/out/r3-1-31b-real-weight-smoke-extraction/audit.json": "real-weight-smoke-extraction",
+    (
+        "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/"
+        "nightly-tsir-parity-canary.json"
+    ): "tsir-cross-backend-canary",
+    **{
+        (
+            "bench/out/r3-1-tsir-cross-backend/"
+            "real-canary-with-transcripts/receipts/"
+            f"{kernel}.{backend}/{kernel}.parity.json"
+        ): "tsir-real-canary-parity-receipt"
+        for kernel in TSIR_REAL_CANARY_KERNELS
+        for backend in TSIR_REAL_CANARY_BACKENDS
+    },
     "bench/out/cerebras-evidence-bundle/summary.json": "rollup",
 }
 

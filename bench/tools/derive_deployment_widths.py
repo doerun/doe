@@ -134,11 +134,11 @@ def main() -> int:
                 f"Recommended deployment widths: {widths}."
             ),
             "notWhat": (
-                "Not a manifest-shape success — it only states which widths "
+                "Not a manifest-shape success - it only states which widths "
                 "the layer-block compile accepts, not which produce useful "
                 "execution. Not a policy decision: callers still decide which "
                 "widths to materialize and how to compose them across "
-                "streaming residency. Not generalized to chained layers — "
+                "streaming residency. Not generalized to chained layers - "
                 "the underlying sweep is L1 only."
             ),
         },

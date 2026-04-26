@@ -57,8 +57,8 @@
           }
         },
         "captureScope": { "type": "string", "minLength": 1 },
-        "sourceRepo": { "const": "../doppler" },
-        "sourcePath": { "const": "../doppler/src/tooling/node-webgpu.js" },
+        "sourceRepo": { "const": "." },
+        "sourcePath": { "const": "packages/doe-gpu/src/node-webgpu.js" },
         "model": {
           "type": "object",
           "additionalProperties": false,

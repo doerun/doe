@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.github.io/doe/schemas/doe-provenance.schema.json",
+  "title": "Doe receipt provenance",
+  "description": "Schema for the PROVENANCE.json files that sit alongside each artifact directory under bench/out/r3-1-*. Each provenance file records: schema version, artifact kind, promotion timestamp, human-readable purpose, a claim (scope + notWhat) that scopes what the receipt does and does not assert, and either `produced` (when the receipt was produced fresh by a runner) or `promoted` (when the receipt was copied/promoted from a dated source dir). Optional `reviewerNotes` carry instructions for external reviewers (e.g. how to obtain bundled-out source artifacts).",
+  "type": "object",
+  "required": ["schemaVersion", "artifactKind", "promotedAt", "purpose", "claim"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": {
+      "description": "Semantic version of the provenance schema. Currently 1.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "artifactKind": {
+      "description": "Free-form snake_case identifier naming the receipt class (e.g. `doe_31b_real_weight_pin_provenance`). Used by aggregation tooling to group receipts.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "promotedAt": {
+      "description": "ISO 8601 timestamp at which the artifact was promoted to its stable bundle path. Records the moment of promotion, not the moment the underlying evidence was produced.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "purpose": {
+      "description": "One-paragraph explanation of why this receipt exists and what it is evidence for. Reviewer-facing.",
+      "type": "string",
+      "minLength": 1
+    },
+    "claim": {
+      "description": "Strict scope of what this receipt asserts. `scope` names what the receipt proves; `notWhat` names what the receipt explicitly does NOT prove. Both required so reviewers cannot mistake bounded evidence for a stronger claim.",
+      "type": "object",
+      "required": ["scope", "notWhat"],
+      "additionalProperties": true,
+      "properties": {
+        "scope": {"type": "string", "minLength": 1},
+        "notWhat": {"type": "string", "minLength": 1},
+        "summary": {"type": "string"},
+        "blockerClass": {"type": "string"},
+        "blockedAt": {"type": "string"}
+      }
+    },
+    "produced": {
+      "description": "Optional. Records the runner / wrapper / inputs that produced the receipt fresh. Mutually exclusive in spirit with `promoted` but both allowed for hybrid cases.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "runner": {"type": "string"},
+        "wrapper": {"type": "string"},
+        "invocation": {"type": "string"},
+        "result": {"type": "string"}
+      }
+    },
+    "promoted": {
+      "description": "Optional. Records the source-side dated path(s) that the artifact was copied from, with hashes pinning identity.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["destination", "source", "sha256"],
+        "additionalProperties": true,
+        "properties": {
+          "destination": {"type": "string"},
+          "source": {"type": "string"},
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sourceMtimeUnix": {"type": "number"}
+        }
+      }
+    },
+    "reviewerNotes": {
+      "description": "Optional reviewer-facing instructions: how to obtain the source artifact, how to reproduce locally, how to verify identity. Used when the local path in `produced` or `promoted` is not addressable by an external reviewer.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "howToObtainSource": {"type": "string"},
+        "howToReproduceLocally": {"type": "string"}
+      }
+    }
+  }
+}

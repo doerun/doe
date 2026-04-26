@@ -729,7 +729,7 @@ def _build_sdklayout_depth_diagnostic_evidence(
 def _build_doppler_webgpu_capture_evidence(
     receipt: dict[str, Any],
 ) -> dict[str, Any] | None:
-    """Bind Doppler-owned WebGPU capture input for Doe lowering."""
+    """Bind Doppler model capture through Doe's WebGPU provider."""
     model_id = (receipt.get("modelId") or "").lower()
     if "e2b" not in model_id:
         return None
@@ -799,11 +799,11 @@ def _build_doppler_webgpu_capture_evidence(
         "status": status,
         "claimable": False,
         "claimScope": (
-            "Doppler-owned WebGPU provider bootstrap and Gemma-4 E2B "
-            "manifest-shape WGSL capture only. This records the input "
-            "graph Doe must lower to HostPlan/SdkLayout/CSL; it does "
-            "not prove full Doppler inference, CSL simulator execution, "
-            "hardware, or performance."
+            "Doe-owned Node WebGPU provider bootstrap installed into a "
+            "Doppler Gemma-4 E2B capture run, plus manifest-shape WGSL "
+            "capture only. This records the input graph Doe must lower "
+            "to HostPlan/SdkLayout/CSL; it does not prove full Doppler "
+            "inference, CSL simulator execution, hardware, or performance."
         ),
         "captureGraph": {
             **capture_link,

@@ -18,9 +18,9 @@ A real multi-token decode requires a stateful runner that:
   - threads sampled token IDs back into the next prefill step,
   - emits per-step logits digests and a token-id sequence.
 
-That runner does not exist; producing one would mean ~minutes per
-iteration of simfabric work plus host-side state management. This
-tool synthesizes a typed-blocker receipt that records:
+That runner does not exist; producing one requires simfabric execution
+per iteration plus host-side state management. This tool synthesizes a
+typed-blocker receipt that records:
   - the single-step chain that DOES exist (with hashes),
   - the contract a multi-token runner would emit,
   - the named blocker (`stateful_multi_token_runner_absent`) so the

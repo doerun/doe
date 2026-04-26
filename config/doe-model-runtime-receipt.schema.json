@@ -776,7 +776,7 @@
     },
     "dopplerWebgpuCaptureEvidence": {
       "type": "object",
-      "description": "Doppler-owned WebGPU capture graph bound into the model receipt. This is the shared JS/WGSL input surface for Doe HostPlan/SdkLayout/CSL lowering and remains non-claimable until lowered, compiled, and parity-checked.",
+      "description": "Doppler model capture graph bound into the model receipt through Doe's Node WebGPU provider. This is the shared JS/WGSL input surface for Doe HostPlan/SdkLayout/CSL lowering and remains non-claimable until lowered, compiled, and parity-checked.",
       "required": [
         "status",
         "claimable",
@@ -820,9 +820,9 @@
             "sourceRepo"
           ],
           "properties": {
-            "sourceRepo": { "const": "../doppler" },
+            "sourceRepo": { "const": "." },
             "sourcePath": {
-              "const": "../doppler/src/tooling/node-webgpu.js"
+              "const": "packages/doe-gpu/src/node-webgpu.js"
             },
             "providerModule": {
               "const": "packages/doe-gpu/src/capture.js"

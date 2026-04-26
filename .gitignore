@@ -5,6 +5,7 @@ demos/volume-render/out/
 # Ignore the oversized raw change dump
 dawn-research/data/raw_changes.ndjson
 .cache/doppler-compare/
+.cache/doe-parity/
 
 # Local toolchains and build caches
 .tooling/

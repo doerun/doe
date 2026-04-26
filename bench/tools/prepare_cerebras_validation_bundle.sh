@@ -2,6 +2,7 @@
 # End-to-end Cerebras validation bundle preparation.
 #
 #   gates (run_cerebras_evidence_bundle.py)
+#     -> prepack fingerprint guard (prepack_hash_drift_guard.py)
 #     -> pack (pack_cerebras_validation_archive.py)
 #       -> verify (verify_cerebras_validation_archive.py)
 #
@@ -25,10 +26,11 @@ prepare_cerebras_validation_bundle.sh — one-command Cerebras bundle prep
 
 Chains in sequence:
   1. run_cerebras_evidence_bundle.py   (local evidence gates)
-  2. pack_cerebras_validation_archive.py   (builds dated tarball)
-  3. verify_cerebras_validation_archive.py   (manifest + claim-role + claim-discipline scan)
+  2. prepack_hash_drift_guard.py   (pinned receipt hash drift guard)
+  3. pack_cerebras_validation_archive.py   (builds dated tarball)
+  4. verify_cerebras_validation_archive.py   (manifest + claim-role + claim-discipline scan)
 
-Output: bench/out/doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>[-dirty].tar.gz
+Output: bench/out/doe-cerebras-evidence-YYYYMMDD-HHMM-<shortSha>.tar.gz
 
 Usage:
   bench/tools/prepare_cerebras_validation_bundle.sh        run the full chain
@@ -54,14 +56,17 @@ step() {
     "$@"
 }
 
-step "1/3  gates: run_cerebras_evidence_bundle.py" \
+step "1/4  gates: run_cerebras_evidence_bundle.py" \
     python3 bench/tools/run_cerebras_evidence_bundle.py
 
 if [[ "$SIM_STATS_WAS_CLEAN" -eq 1 && -n "$(git status --porcelain -- sim_stats.json 2>/dev/null)" ]]; then
     git restore -- sim_stats.json
 fi
 
-step "2/3  pack: pack_cerebras_validation_archive.py" \
+step "2/4  prepack guard: prepack_hash_drift_guard.py" \
+    python3 bench/tools/prepack_hash_drift_guard.py
+
+step "3/4  pack: pack_cerebras_validation_archive.py" \
     python3 bench/tools/pack_cerebras_validation_archive.py
 
 # Find the newest archive for step 3 — the packer prints the filename
@@ -72,7 +77,7 @@ if [[ -z "${ARCHIVE}" ]]; then
     exit 1
 fi
 
-step "3/3  verify: verify_cerebras_validation_archive.py --archive $ARCHIVE" \
+step "4/4  verify: verify_cerebras_validation_archive.py --archive $ARCHIVE" \
     python3 bench/tools/verify_cerebras_validation_archive.py --archive "$ARCHIVE"
 
 # Refresh docs/cerebras-evidence-bundle-pointer.md with the current
@@ -132,10 +137,9 @@ bench/tools/summarize_cerebras_evidence_archive.sh <path-to-archive>
 
 ## Reproducibility note
 
-If \`git dirty\` is \`dirty\`, the bundle was built from an uncommitted
-working tree; rebuild from a clean tree before external circulation.
-The archive's own \`BUNDLE_META.json\` is the authoritative source of
-truth for any bundle in hand — this file just mirrors the values
+The prep script refuses to pack from a dirty tree. The archive's own
+\`BUNDLE_META.json\` is the authoritative source of truth for any bundle
+in hand; this file just mirrors the values
 from the last prep-script run on the repo.
 EOF
 echo
@@ -146,10 +150,10 @@ echo "=== PREP DONE ==="
 echo "archive:     $ARCHIVE"
 echo "size:        $(stat --printf=%s "$ARCHIVE" 2>/dev/null || stat -f%z "$ARCHIVE") bytes"
 echo "git commit:  $(git rev-parse HEAD)"
-if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
-    echo "git tree:    DIRTY — prefer a clean rebuild before external circulation"
+if [[ "$GIT_STATE" == "dirty" ]]; then
+    echo "archive tree: dirty"
 else
-    echo "git tree:    clean"
+    echo "archive tree: clean"
 fi
 echo
 echo "Next step: attach $ARCHIVE and the unpacked README.md to the external ask."

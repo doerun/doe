@@ -1775,8 +1775,10 @@ def main() -> int:
         if not _graph.get("graphSha256"):
             _c45_bad.append("captureGraph.graphSha256 missing")
         _bootstrap = _capture.get("bootstrap") or {}
-        if _bootstrap.get("sourceRepo") != "../doppler":
+        if _bootstrap.get("sourceRepo") != ".":
             _c45_bad.append("bootstrap.sourceRepo mismatch")
+        if _bootstrap.get("sourcePath") != "packages/doe-gpu/src/node-webgpu.js":
+            _c45_bad.append("bootstrap.sourcePath mismatch")
         if _bootstrap.get("providerModule") != "packages/doe-gpu/src/capture.js":
             _c45_bad.append("bootstrap.providerModule mismatch")
         if _bootstrap.get("providerInstalled") is not True:
@@ -2242,21 +2244,27 @@ def main() -> int:
                 '(cat > "$POINTER" missing)'
             )
         if not _c30_fails:
-            # Use the step-label strings ("1/3  gates:", "2/3  pack:",
-            # "3/3  verify:") as unique anchors — the script names
+            # Use the step-label strings as unique anchors — the script names
             # themselves appear in docstrings and heredocs too.
-            _step_gates = _prep_src.find('"1/3  gates:')
-            _step_pack = _prep_src.find('"2/3  pack:')
-            _step_verify = _prep_src.find('"3/3  verify:')
-            if _step_gates < 0 or _step_pack < 0 or _step_verify < 0:
+            _step_gates = _prep_src.find('"1/4  gates:')
+            _step_guard = _prep_src.find('"2/4  prepack guard:')
+            _step_pack = _prep_src.find('"3/4  pack:')
+            _step_verify = _prep_src.find('"4/4  verify:')
+            if (
+                _step_gates < 0
+                or _step_guard < 0
+                or _step_pack < 0
+                or _step_verify < 0
+            ):
                 _c30_fails.append(
                     "prep script step labels drifted; expected "
-                    '"1/3  gates:", "2/3  pack:", "3/3  verify:"'
+                    '"1/4  gates:", "2/4  prepack guard:", '
+                    '"3/4  pack:", "4/4  verify:"'
                 )
-            elif not (_step_gates < _step_pack < _step_verify):
+            elif not (_step_gates < _step_guard < _step_pack < _step_verify):
                 _c30_fails.append(
                     "prep script stage order drifted from "
-                    "gates -> pack -> verify"
+                    "gates -> prepack guard -> pack -> verify"
                 )
             elif _pointer_write_idx < _step_verify:
                 _c30_fails.append(
@@ -2270,7 +2278,7 @@ def main() -> int:
     else:
         print(
             "  C30 PASS: prep-script ordering holds "
-            "(gates -> pack -> verify -> pointer-write)"
+            "(gates -> prepack guard -> pack -> verify -> pointer-write)"
         )
 
     # C31: cerebras-evidence-bundle-tools.md lists every on-disk
@@ -3088,7 +3096,7 @@ def main() -> int:
             )
             _c16_pack = _subprocess_c16.run(
                 ["python3", "bench/tools/pack_cerebras_validation_archive.py",
-                 "--out", str(_scratch_archive)],
+                 "--allow-dirty", "--out", str(_scratch_archive)],
                 cwd=REPO_ROOT, capture_output=True, text=True,
                 timeout=60, check=False,
             )

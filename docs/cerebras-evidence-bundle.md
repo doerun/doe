@@ -134,6 +134,20 @@ cross-references inside the receipts resolve as written.
 | `doppler-int4ple-reference-transcript` | Per-step logits and token IDs for the bounded Doppler reference transcript, without raw logits tensors | Numerical reviewers checking the transcript contract |
 | `doe-csl-int4ple-blocked-transcript` | Doe CSL transcript receipt shape, graph-derived lowering plan, and normalized HostPlan bundle for the production INT4 PLE lane, currently blocked before simfabric output | Reviewers checking the missing proof producer and blocker taxonomy |
 | `doppler-int4ple-pending-parity` | Doe parity receipt binding the production Doppler INT4 PLE reference and documenting the missing CSL transcript | Numerical reviewers; blocked until CSL emits the matching transcript |
+| `manifest-compile-attempt` | 31B manifest-shape compile attempt receipt with typed compiler blocker taxonomy | Reviewers checking what fails before hardware |
+| `manifest-compile-sweep` | 31B layer-block compile-threshold sweep summary | Reviewers checking per-PE residency headroom |
+| `deployment-width-derivation` | Width recommendation derived from the compile-threshold sweep | Reviewers checking deployable smoke-width choices |
+| `full-graph-compile-attempt` | 31B steps-mode full-graph compile-attempt receipt | Reviewers checking manifest-shaped compile target coverage |
+| `full-graph-compile-driver-result` | Driver result backing the full-graph compile attempt | Reviewers checking measured per-target compiler verdicts |
+| `tsir-cross-backend-canary` | Real-kernel TSIR canary summary across MSL, SPIR-V, WebGPU, and WSE3 descriptors | Reviewers checking independent semantic-oracle coverage |
+| `tsir-real-canary-parity-receipt` | Per-kernel parity receipts from the real-kernel TSIR canary | Numerical reviewers; CSL lane may remain typed-deferred |
+| `bounded-decode-receipt` | Bounded simfabric `kv_write -> attention_decode -> sample` receipt | Reviewers checking KV/decode mechanics at bounded shape |
+| `bounded-decode-stage-trace` | Per-stage trace files bound by the bounded decode receipt | Reviewers checking stage-level hashes and max error |
+| `multi-token-decode-typed-blocker` | Typed blocker for local multi-token decode orchestration | Reviewers checking the remaining decode execution blocker |
+| `real-weight-pin` | 31B real-weight source identity pin | Reviewers checking source identity; not Cerebras execution |
+| `real-weight-hash-manifest` | Hash manifest for the pinned 31B real-weight files | Reviewers checking weight-file identity |
+| `real-weight-smoke-extraction` | 31B real-weight smoke-contract extraction and audit | Reviewers checking smoke-slice materialization |
+| `promoted-artifact-provenance` | Sidecar provenance for promoted stable bundle paths | Reviewers checking source-to-bundle identity |
 | `target-run-receipt` | Per-target L1 receipt for WebGPU WGSL, CSL WebGPU emulator, or CSL simfabric | Reviewers of the side-by-side layer-block demo |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
 | `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
@@ -239,17 +253,30 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
    contracts. This is a lowering/artifact-chain claim, not a Doe/CSL
    full-model execution claim.
 
-10. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+10. **31B no-hardware evidence has moved beyond L1-only smoke.**
+    Backed by manifest compile-attempt receipts, the compile-threshold
+    sweep, the steps-mode full-graph compile attempt, bounded
+    single-step decode, real-weight source pin and smoke extraction,
+    and the real-kernel TSIR canary. These artifacts reduce local
+    unknowns but do not replace a WSE hardware receipt.
+
+11. **The TSIR real-kernel reference and Doe-WebGPU lanes agree for
+    the bundled canary set.** Backed by the `tsir-cross-backend-canary`
+    summary and per-kernel parity receipts. The CSL simfabric lane is
+    intentionally typed-deferred when the channel or per-kernel compile
+    dirs are not ready.
+
+12. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent*: a separate WGSL harness matching the
    semantic contract, not Doppler's production inference path.
 
-11. **CSL WebGPU emulator is faster than local CSL simfabric on the
+13. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-12. **Unified Doe entrypoint routes to five backend targets, with
+14. **Unified Doe entrypoint routes to five backend targets, with
    runtime-output receipts for three L1 side-by-side lanes.** Backed
    by `rollup/all-lanes-summary-L1.json` plus `target-run-receipt`
    artifacts for `webgpu-wgsl`, `csl-sdklayout`, and
@@ -290,9 +317,10 @@ bundle integrity failure.
   receipts. Today only L1 synthetic and E2B L1 real-weight
   smoke-contract evidence are claimable.
 
-- **31B real Gemma-4 weights have been used.** The 31B real-weight
-  parity verdict remains blocked until its own extractor and parity
-  receipt land.
+- **31B real Gemma-4 weights have executed on Cerebras or produced a
+  parity verdict.** The bundle includes a source identity pin and
+  smoke-contract extraction/audit. It does not include a Cerebras
+  execution receipt or Doppler-vs-Doe parity verdict for those weights.
 
 - **Full E2B real-weight execution has been proven on Doe/CSL.** The
   E2B real-weight Doe/CSL evidence is L1 smoke-contract only. The
@@ -312,7 +340,7 @@ bundle integrity failure.
 | Unlock | External dependency |
 | --- | --- |
 | Doppler production INT4 PLE transcript parity | Doppler-owned production prefill+decode transcript export plus Doe CSL simfabric transcript for the same prompt/input contract, manifest, graph, weights, real KV/cache behavior, per-step logits, and token IDs |
-| 31B real-weight layer-block parity | 31B extractor materializes `bench/out/gemma-4-31b-real-weights/` matching the fixture contract |
+| 31B real-weight layer-block parity | Runner consumes the pinned 31B smoke slices and returns a comparable Doe receipt |
 | Manifest-shape execution | Embed/unembed, decoder-stack stream binding, full attention semantics, and logits parity for E2B local `headDim=256`, `globalHeadDim=512`, `numKeyValueHeads=1`, or 31B `headDim=160`; in-repo structural work |
 | Full E2B end-to-end | Embed + 35 transformer + unembed + sample wired through the streaming runtime; in-repo structural work |
 | Gemma-4 runs on Cerebras hardware | Hardware receipt via either (a) endpoint access for us to run the runner with `--cmaddr` / `csl_appliance_driver.py`, or (b) Cerebras-assisted bundle run that returns the receipt |
@@ -608,10 +636,10 @@ validate the weights described in `MODEL_ACCESS.md`, then add:
 ```
 
 Without `--weights-dir`, the hardware run remains a synthetic/smoke
-tensor run and must not be described as real-weight evidence. 31B
-real-weight evidence remains blocked until
-`bench/out/gemma-4-31b-real-weights/` is materialized under its fixture
-contract.
+tensor run and must not be described as real-weight evidence. The
+bundle includes a 31B real-weight source pin and smoke-contract
+extraction/audit, but it still needs a comparable Doe receipt before
+any 31B real-weight Cerebras execution or parity claim.
 
 The 31B runner writes a trace whose `executedRun` section includes the
 host numpy comparison for the same smoke-shape layer-block chain. For
@@ -627,7 +655,7 @@ python3 bench/tools/compare_runner_vs_synthetic.py \
 For E2B, this should report `promotionEligible=true` with six of six
 preconditions met, matching the simfabric run recorded in this bundle.
 
-Stretch, if time permits:
+Optional follow-up runs:
 
 - Re-run the 31B smoke command with `--num-layers 61`.
 - When 31B real-weight slices are available, re-run with
