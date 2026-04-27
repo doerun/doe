@@ -114,7 +114,7 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
 | 2 | Predicted simfabric wall-clock | `bench/tools/predict_simfabric_wallclock.py` (18/18 tests pass; 17 kernels enumerated against the live 31B steps-mode host plan; calibration constant comes from rung 3) | rung 8 launch decision |
 | 3 | Per-kernel manifest-shape dispatch | runner landed (`bench/runners/csl-runners/manifest_kernel_probe_runner.py`, 10/10 tests). Manifest-shape simfabric does not finish a single kernel in the 1800s timeout; calibration constant for rung 2 derived via `bench/tools/derive_canary_proxy_calibration.py` from canary-shape sim_stats files (7/7 tests). Receipt class `manifest_shape_per_kernel_dispatch_proxy` with `calibrationSource: canary_proxy`; supersede with sha256 of a real manifest-shape rung-3 dispatch when hardware execution lands. | rung 4 |
 | 4 | Layout receipt | runner landed (`bench/tools/run_manifest_shape_layout_receipt.py`, 13/13 tests); zero-fill, no oracle compare. Hardware-gated for the same wall-time reason as rung 3. | rung 6 (separates plumbing from numerics) |
-| 5 | Frozen Doppler reference fixture | `config/doe-frozen-doppler-reference.schema.json` + `bench/tools/validate_frozen_doppler_reference.py` (9/9 tests pass). Doppler-side capture path landed in the upstream Doppler tree (`src/inference/pipelines/text/tsir-fixture-writer.js` + `tools/run-program-bundle-reference.js --tsir-fixture-dir`); Doe-side assembly via `bench/tools/build_frozen_doppler_reference_manifest.py`. Awaiting full 4-of-4-probe capture run after upstream Doppler chat-template fix lands. | every parity rung below |
+| 5 | Frozen Doppler reference fixture | `config/doe-frozen-doppler-reference.schema.json` + `bench/tools/validate_frozen_doppler_reference.py` (9/9 tests pass). Doppler-side capture path landed upstream (`src/inference/pipelines/text/tsir-fixture-writer.js` + `tools/run-program-bundle-reference.js --tsir-fixture-dir`); Doe-side assembly via `bench/tools/build_frozen_doppler_reference_manifest.py` (4/4 tests pass). Provisional 3-of-4-probe capture (post_rmsnorm/post_attn/post_ffn at L=0; post_qkv pending Doppler split-q/k/v stream wiring) is bound at `bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/` with `fixtureDigest=c0df267f3812d5c839f1e87fd0d7074f8ea6a7802fdf3b5afb8467e8f2a08449`; rung-7 oracle reads it in parity mode and emits `referenceFixtureHash` correctly. Replace with the 4-of-4 capture once Doppler's chat-template / split-QKV path is sorted. | every parity rung below |
 | 6 | 1-of-48-layer first-token parity (`receiptClass: manifest_shape_1L_first_token`) | first-token logits hash vs frozen reference at L=1. Per-kernel byte-identity precondition closed via `bench/tools/verify_per_kernel_byte_identity.py` (8/8 tests). Attention canary lane closed for `attention_head256_f16kv` through `runtime/zig/src/tsir/emit_kernel_body_attention.zig` (sha256 `5f70bf18a086…` matches the Doppler probe); `attention_head512_f16kv` stays on hand-authored CSL pending multi-PE distribution along the kv axis. | rung 7 |
 | 7 | Single-block parity with intra-block probes | post-rmsnorm / post-QKV / post-attn / post-FFN hash check | rung 8 |
 | 8 | Full 48-layer prefill + first-token (`receiptClass: manifest_shape_first_token`) | prefill + first-token logits hash | rung 9 |
@@ -216,7 +216,27 @@ where applicable. Promotion is gated on schema enforcement (rung 1).
    The fixture data itself comes from a Doppler reference run
    (separate workstream); per the doc's coordination note, the
    Doe-side schema + validator land first so the data only needs to
-   conform when it's produced.
+   conform when it's produced. First real-data assembly run against
+   the upstream Doppler 31B capture surfaced (and pinned via tests)
+   two latent plumbing bugs: the builder's `compute_fixture_digest`
+   was hashing the wrong canonical projection (full per-artifact
+   spec instead of the (path, sha256) pair the validator's tests
+   require — fixed by deferring to the validator's function), and
+   the validator's dtype check stripped the byte-order prefix but
+   never normalized `f4` → `float32` (fixed via a shared
+   `_NPY_DESCR_TO_NAME` table that accepts both raw and canonical
+   names). 4/4 builder-side tests now pass under
+   `python3 -m unittest bench.tests.test_build_frozen_doppler_reference_manifest`.
+   Provisional 3-of-4-probe capture is bound at
+   `bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/`
+   (post_rmsnorm/post_attn/post_ffn at L=0; post_qkv pending Doppler
+   split-q/k/v stream wiring), with
+   `fixtureDigest=c0df267f3812d5c839f1e87fd0d7074f8ea6a7802fdf3b5afb8467e8f2a08449`.
+   The rung-7 oracle reads the partial fixture in parity mode and
+   emits the correct `referenceFixtureHash`; it blocks (correctly)
+   on the missing post_qkv probe until either the 4-of-4 capture
+   lands or a parity contract that explicitly accepts the partial
+   set is added.
 
 7. **Intra-block probes (rung 7).** Add four probe-write hooks at the four
    TSIR boundary points already encoded in the per-block emit

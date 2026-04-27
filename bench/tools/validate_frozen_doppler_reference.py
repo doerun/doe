@@ -57,6 +57,25 @@ SCHEMA_PATH = (
 )
 MANIFEST_FILENAME = "frozen-reference.manifest.json"
 
+# Map raw numpy .npy dtype descrs (with byte-order prefix) to the canonical
+# numpy dtype names the schema documents in elemDtype. Builders may write
+# either the raw form (`<f4`) or the canonical name (`float32`); the
+# validator accepts both via this normalization table.
+_NPY_DESCR_TO_NAME: dict[str, str] = {
+    "f4": "float32",
+    "f2": "float16",
+    "f8": "float64",
+    "i1": "int8",
+    "i2": "int16",
+    "i4": "int32",
+    "i8": "int64",
+    "u1": "uint8",
+    "u2": "uint16",
+    "u4": "uint32",
+    "u8": "uint64",
+    "b1": "bool",
+}
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
@@ -232,10 +251,9 @@ def _validate_npy_metadata(
         return
     dtype_str, shape_list = parsed
     if cited_dtype is not None:
-        # Numpy descrs include the byte-order prefix (`<`, `>`, `|`); strip
-        # it for the comparison.
         normalized = dtype_str.lstrip("<>|=")
-        if normalized != cited_dtype:
+        canonical = _NPY_DESCR_TO_NAME.get(normalized, normalized)
+        if cited_dtype not in (dtype_str, normalized, canonical):
             violations.append(
                 f"{label}: elemDtype cited={cited_dtype!r} observed={dtype_str!r}"
             )

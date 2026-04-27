@@ -46,6 +46,15 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Defer the canonical fixtureDigest computation to the validator so the two
+# tools cannot drift; the validator is the source of truth for what binds.
+from bench.tools.validate_frozen_doppler_reference import (  # noqa: E402
+    compute_fixture_digest as _validator_compute_fixture_digest,
+)
+
 TSIR_PROBE_NAMES = ("post_rmsnorm", "post_qkv", "post_attn", "post_ffn")
 
 
@@ -154,12 +163,21 @@ def compute_fixture_digest(
     activations: dict[str, Any],
     first_token_logits: dict[str, Any] | None,
 ) -> str:
-    payload = {"transcript": transcript, "activations": activations}
+    """Compute the canonical fixtureDigest for the given manifest blocks.
+
+    Forwards to ``validate_frozen_doppler_reference.compute_fixture_digest``
+    so the builder and validator cannot drift. The canonical projection is
+    (path, sha256) per artifact — extra fields like byteLength / elemDtype /
+    elemShape are intentionally excluded so cosmetic edits to the manifest
+    do not invalidate the digest.
+    """
+    manifest_view: dict[str, Any] = {
+        "transcript": transcript,
+        "activations": activations,
+    }
     if first_token_logits is not None:
-        payload["firstTokenLogits"] = first_token_logits
-    return _sha256_bytes(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    )
+        manifest_view["firstTokenLogits"] = first_token_logits
+    return _validator_compute_fixture_digest(manifest_view)
 
 
 def parse_args() -> argparse.Namespace:
