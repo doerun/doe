@@ -5,8 +5,8 @@
 # Why this exists: the canonical SDK cs_python wrapper at
 # `$SDK_ROOT/cs_python` checks for `.direct-rootfs/host-bin/python3` first
 # and uses it when present. Direct-rootfs mode does NOT bind `/cbcore`
-# for cslc subprocesses, so the SDK paint flow fails with
-# `Could not find source code for "/cbcore/src/sdk/ucode/io_port.csl"`.
+# for cslc subprocesses, so the SDK paint flow fails with a
+# `Could not find source code for "/cbcore/...csl"` cslc error.
 # Singularity-mode binds `/cbcore` correctly because it executes inside
 # the SIF namespace.
 #
