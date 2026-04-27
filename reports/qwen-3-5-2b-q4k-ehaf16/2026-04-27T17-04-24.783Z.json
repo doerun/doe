@@ -1,0 +1,643 @@
+{
+  "mode": "verify",
+  "workload": "inference",
+  "suite": "inference",
+  "modelId": "qwen-3-5-2b-q4k-ehaf16",
+  "runtimeProfile": null,
+  "deviceInfo": {
+    "hasSubgroups": true,
+    "hasSubgroupsF16": true,
+    "hasF16": true,
+    "hasTimestampQuery": true,
+    "maxBufferSize": 4294967292,
+    "maxWorkgroupSize": 1024,
+    "maxWorkgroupStorageSize": 65536,
+    "adapterInfo": {
+      "vendor": "amd",
+      "architecture": "rdna-3",
+      "device": "radeon-8060s-graphics-radv-strix-halo-",
+      "description": "radv: Mesa 26.0.3-1ubuntu1"
+    },
+    "submitProbeMs": 0.5588830000000087
+  },
+  "results": [
+    {
+      "name": "generation",
+      "passed": true,
+      "duration": 1317.8112960000003
+    }
+  ],
+  "durationMs": 4137.913203,
+  "timestamp": "2026-04-27T17:04:24.783Z",
+  "metrics": {
+    "prompt": "user: Answer in one short sentence: What color is the sky on a clear day?",
+    "maxTokens": 32,
+    "tokensGenerated": 20,
+    "tokensPerSec": 15.18,
+    "totalRunMs": 1317.05,
+    "firstTokenMs": 386.49,
+    "firstResponseMs": 3177.73,
+    "prefillMs": 261.67,
+    "decodeMs": 929.58,
+    "prefillTokens": 28,
+    "decodeTokens": 20,
+    "stopReason": "stop-token",
+    "stopTokenId": null,
+    "prefillTokensPerSec": 107,
+    "prefillTokensPerSecTtft": 72.45,
+    "decodeTokensPerSec": 21.52,
+    "modelLoadMs": 2791.24,
+    "gpu": {
+      "decodeRecordMs": 536.925064,
+      "decodeSubmitWaitMs": 378.9808969999999,
+      "decodeReadbackWaitMs": 365.9386920000002,
+      "prefillRecordMs": 190.29578100000117,
+      "prefillSubmitWaitMs": 5.978780999999344,
+      "decodeOrchestrationMs": -352.26127099999985,
+      "singleTokenSubmitWaitMs": 0,
+      "singleTokenReadbackWaitMs": 0,
+      "singleTokenOrchestrationMs": 0
+    },
+    "plePreparedTokenCache": {
+      "hits": 0,
+      "misses": 0,
+      "entries": 0,
+      "bytes": 0
+    },
+    "prefillProfileSteps": [],
+    "decodeProfileSteps": [],
+    "executionPlan": {
+      "primary": {
+        "id": "primary",
+        "kernelPathId": "qwen-3-5-2b-q4k-ehaf16-execution-inline",
+        "kernelPathSource": "execution-v1",
+        "activationDtype": "f32",
+        "readbackInterval": 32,
+        "batchSize": 12,
+        "stopCheckMode": "batch",
+        "ringTokens": 1,
+        "ringStop": 1,
+        "ringStaging": 1
+      },
+      "fallback": null,
+      "activePlanIdAtStart": null,
+      "finalActivePlanId": null,
+      "transitions": []
+    },
+    "kernelPathId": "qwen-3-5-2b-q4k-ehaf16-execution-inline",
+    "kernelPathSource": "execution-v1",
+    "generationDiagnostics": {
+      "preview": [
+        {
+          "id": 1860,
+          "text": "On",
+          "fallbackText": "On"
+        },
+        {
+          "id": 264,
+          "text": " a",
+          "fallbackText": " a"
+        },
+        {
+          "id": 4574,
+          "text": " perfect",
+          "fallbackText": " perfect"
+        },
+        {
+          "id": 11,
+          "text": ",",
+          "fallbackText": ","
+        },
+        {
+          "id": 2708,
+          "text": " clear",
+          "fallbackText": " clear"
+        },
+        {
+          "id": 1834,
+          "text": " day",
+          "fallbackText": " day"
+        },
+        {
+          "id": 11,
+          "text": ",",
+          "fallbackText": ","
+        },
+        {
+          "id": 279,
+          "text": " the",
+          "fallbackText": " the"
+        },
+        {
+          "id": 12515,
+          "text": " sky",
+          "fallbackText": " sky"
+        },
+        {
+          "id": 369,
+          "text": " is",
+          "fallbackText": " is"
+        },
+        {
+          "id": 10813,
+          "text": " typically",
+          "fallbackText": " typically"
+        },
+        {
+          "id": 264,
+          "text": " a",
+          "fallbackText": " a"
+        },
+        {
+          "id": 19149,
+          "text": " brilliant",
+          "fallbackText": " brilliant"
+        },
+        {
+          "id": 11,
+          "text": ",",
+          "fallbackText": ","
+        },
+        {
+          "id": 1829,
+          "text": " color",
+          "fallbackText": " color"
+        },
+        {
+          "id": 1657,
+          "text": "less",
+          "fallbackText": "less"
+        },
+        {
+          "id": 6105,
+          "text": " blue",
+          "fallbackText": " blue"
+        },
+        {
+          "id": 13,
+          "text": ".",
+          "fallbackText": "."
+        },
+        {
+          "id": 248046,
+          "text": "",
+          "fallbackText": "<|im_end|>"
+        },
+        {
+          "id": 198,
+          "text": "\n",
+          "fallbackText": "\n"
+        }
+      ],
+      "total": 20,
+      "omitted": 0,
+      "emptyTextCount": 1,
+      "specialLikeTextCount": 0,
+      "specialLikeFallbackCount": 1
+    },
+    "kvCache": {
+      "layout": "contiguous",
+      "kvDtype": "f16",
+      "seqLen": 59,
+      "maxSeqLen": 4096,
+      "usedBytes": 2899968,
+      "allocatedBytes": 201326592,
+      "counters": {
+        "updateCalls": 0,
+        "gpuUpdateCalls": 0,
+        "recordedGpuUpdateCalls": 192,
+        "tokensWritten": 354
+      }
+    },
+    "referenceTranscript": {
+      "schema": "doppler.reference-transcript/v1",
+      "source": {
+        "kind": "inline-browser-suite",
+        "path": "inline",
+        "hash": "sha256:765087703787e9ced7a83244c45036f3eb2138c60aa57c9dc9366bee102ec5b4"
+      },
+      "executionGraphHash": "sha256:554bfbd54ba7f7f172e98b7614bfca00ac2e2b871994172b0387eaf4e73ee3e0",
+      "surface": "browser-webgpu",
+      "prompt": {
+        "identity": "user: Answer in one short sentence: What color is the sky on a clear day?",
+        "hash": "sha256:55fa4b8055dabbbefc9a3caa0aa8e8002ff4f1f7080f2953467383fadcd7e794",
+        "tokenIdsHash": "sha256:991e11c05982531ead5683849a84f85970e62c0c47ae737fe9f51551468aaff1",
+        "tokenCount": 28
+      },
+      "output": {
+        "textHash": "sha256:6a2d3152698d0f46c3c8da681a429547b8652c6efed9dff0ef83eced32ed6b51",
+        "tokensGenerated": 20,
+        "stopReason": "stop-token",
+        "stopTokenId": null
+      },
+      "tokens": {
+        "ids": [
+          1860,
+          264,
+          4574,
+          11,
+          2708,
+          1834,
+          11,
+          279,
+          12515,
+          369,
+          10813,
+          264,
+          19149,
+          11,
+          1829,
+          1657,
+          6105,
+          13,
+          248046,
+          198
+        ],
+        "generatedTokenIdsHash": "sha256:622e0340294b6bd2cb6081051d7b10b8de22dc2032f57322ee46e1ad7f14d4e2",
+        "generatedTextHash": "sha256:6a2d3152698d0f46c3c8da681a429547b8652c6efed9dff0ef83eced32ed6b51",
+        "preview": [
+          {
+            "id": 1860,
+            "text": "On",
+            "fallbackText": "On"
+          },
+          {
+            "id": 264,
+            "text": " a",
+            "fallbackText": " a"
+          },
+          {
+            "id": 4574,
+            "text": " perfect",
+            "fallbackText": " perfect"
+          },
+          {
+            "id": 11,
+            "text": ",",
+            "fallbackText": ","
+          },
+          {
+            "id": 2708,
+            "text": " clear",
+            "fallbackText": " clear"
+          },
+          {
+            "id": 1834,
+            "text": " day",
+            "fallbackText": " day"
+          },
+          {
+            "id": 11,
+            "text": ",",
+            "fallbackText": ","
+          },
+          {
+            "id": 279,
+            "text": " the",
+            "fallbackText": " the"
+          },
+          {
+            "id": 12515,
+            "text": " sky",
+            "fallbackText": " sky"
+          },
+          {
+            "id": 369,
+            "text": " is",
+            "fallbackText": " is"
+          },
+          {
+            "id": 10813,
+            "text": " typically",
+            "fallbackText": " typically"
+          },
+          {
+            "id": 264,
+            "text": " a",
+            "fallbackText": " a"
+          },
+          {
+            "id": 19149,
+            "text": " brilliant",
+            "fallbackText": " brilliant"
+          },
+          {
+            "id": 11,
+            "text": ",",
+            "fallbackText": ","
+          },
+          {
+            "id": 1829,
+            "text": " color",
+            "fallbackText": " color"
+          },
+          {
+            "id": 1657,
+            "text": "less",
+            "fallbackText": "less"
+          },
+          {
+            "id": 6105,
+            "text": " blue",
+            "fallbackText": " blue"
+          },
+          {
+            "id": 13,
+            "text": ".",
+            "fallbackText": "."
+          },
+          {
+            "id": 248046,
+            "text": "",
+            "fallbackText": "<|im_end|>"
+          },
+          {
+            "id": 198,
+            "text": "\n",
+            "fallbackText": "\n"
+          }
+        ],
+        "perStep": [
+          {
+            "index": 0,
+            "tokenId": 1860,
+            "tokenHash": "sha256:8aee5ce94f972afdbf52617a31ebf29551b9f35e0b2ab5651531998792400f58"
+          },
+          {
+            "index": 1,
+            "tokenId": 264,
+            "tokenHash": "sha256:4b49b1b94f116bbed12344d8bf6b3ce344baf55b066b9b96e21ad29afb10c1ed"
+          },
+          {
+            "index": 2,
+            "tokenId": 4574,
+            "tokenHash": "sha256:5a28d419caf75594640673d2723caf4ebe2f8eed4073ef410e0ddc3d10dcd741"
+          },
+          {
+            "index": 3,
+            "tokenId": 11,
+            "tokenHash": "sha256:f1f8648b8f2ebfc04c35632d2e7187bc382a58530d421ec158bc884cc7aff863"
+          },
+          {
+            "index": 4,
+            "tokenId": 2708,
+            "tokenHash": "sha256:5c2a36ed6cb466dc50c9a33ef5c27dd9c6bfa7575d2873d03e4ad89cbdfb607a"
+          },
+          {
+            "index": 5,
+            "tokenId": 1834,
+            "tokenHash": "sha256:f4770a4282b6238fef66147db390b71e1962db775a295c85a9b669b1f093b7da"
+          },
+          {
+            "index": 6,
+            "tokenId": 11,
+            "tokenHash": "sha256:31d437c062c5b15af47651163accb26887bda9bc251cde64212c0e256a346437"
+          },
+          {
+            "index": 7,
+            "tokenId": 279,
+            "tokenHash": "sha256:646595cc5026a730b58b15e613f4a6ae88e94ef342ab4d2c1c66b9e53f4f2811"
+          },
+          {
+            "index": 8,
+            "tokenId": 12515,
+            "tokenHash": "sha256:eb6c7ec42dbbd569dbe7059851074948102e392fbc8f5b659828fa8c793dcb48"
+          },
+          {
+            "index": 9,
+            "tokenId": 369,
+            "tokenHash": "sha256:cef202c220b5f5df52d39760e3fbe62f7bfd8ef93ec55311075bba3b3da61fa5"
+          },
+          {
+            "index": 10,
+            "tokenId": 10813,
+            "tokenHash": "sha256:2154b5d370c27e8a33112c7b640f4e8fd11041791de97380836cab06a30e144e"
+          },
+          {
+            "index": 11,
+            "tokenId": 264,
+            "tokenHash": "sha256:a75b5384935059ac1bf4874e458fda423c478ea3bd1c0e0e8eace7261c7c3678"
+          },
+          {
+            "index": 12,
+            "tokenId": 19149,
+            "tokenHash": "sha256:c5d904bf22418bf6d7f133907c0b456a32b53e4cca31d56739c3eed949304cd8"
+          },
+          {
+            "index": 13,
+            "tokenId": 11,
+            "tokenHash": "sha256:623435a74fae42b933e542391415f709895eeba1bcd14080c06377ef262dff44"
+          },
+          {
+            "index": 14,
+            "tokenId": 1829,
+            "tokenHash": "sha256:baa5579b524d1aecc6682695ecbf7ebe0fc6b685f652b39f150da8f2fe96242c"
+          },
+          {
+            "index": 15,
+            "tokenId": 1657,
+            "tokenHash": "sha256:995956ac8d5e2276d0bb402db62fa365d863c056e51f0bae0d1bd2aec6b62e17"
+          },
+          {
+            "index": 16,
+            "tokenId": 6105,
+            "tokenHash": "sha256:4754e878c09dbb865574af881467698a2d16561b22811d9690b40271b89f4ffc"
+          },
+          {
+            "index": 17,
+            "tokenId": 13,
+            "tokenHash": "sha256:21e8e0644032590a1be917f45fde97ec73163d9c1e443fd07d63106d6ca63beb"
+          },
+          {
+            "index": 18,
+            "tokenId": 248046,
+            "tokenHash": "sha256:4b066399573127229ec7a287131abb3e47e51a1bd021cd351c7632d0bf2b4a54"
+          },
+          {
+            "index": 19,
+            "tokenId": 198,
+            "tokenHash": "sha256:3e27e93dd1d122402cadb03c39476e5adef9cce6d2b536b67a8eaa7ebe1f76f2"
+          }
+        ],
+        "coverage": {
+          "mode": "full-token-ids",
+          "omitted": 0
+        }
+      },
+      "phase": {
+        "prefillMs": 261.67030399999976,
+        "decodeMs": 929.5833820000003,
+        "prefillTokens": 28,
+        "decodeTokens": 20
+      },
+      "kvCache": {
+        "mode": "stats",
+        "layout": "contiguous",
+        "kvDtype": "f16",
+        "seqLen": 59,
+        "maxSeqLen": 4096,
+        "usedBytes": 2899968,
+        "allocatedBytes": 201326592,
+        "counters": {
+          "updateCalls": 0,
+          "gpuUpdateCalls": 0,
+          "recordedGpuUpdateCalls": 192,
+          "tokensWritten": 354
+        },
+        "byteDigestMode": null,
+        "byteDigest": null,
+        "byteDigests": null,
+        "stateHash": "sha256:11992f1a91117042f04fbeb12442d54dd38616a27b98ccd190d3d1696f75bed6"
+      },
+      "logits": {
+        "mode": "not-captured",
+        "reason": "Per-step logits digests were not requested for this browser harness run.",
+        "perStepDigests": null
+      },
+      "tolerance": {
+        "tokenPolicy": "exact generated token IDs",
+        "logitsPolicy": "not captured",
+        "kvPolicy": "metadata hash only; KV tensor bytes are not read back by default"
+      }
+    },
+    "operatorDiagnostics": null,
+    "schemaVersion": 1,
+    "source": "doppler",
+    "suite": "inference",
+    "executionContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "qwen-3-5-2b-q4k-ehaf16.steps",
+          "ok": true
+        },
+        {
+          "id": "qwen-3-5-2b-q4k-ehaf16.session",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "session": {
+        "layout": "contiguous",
+        "disableCommandBatching": false,
+        "decodeBatchSize": 12,
+        "headDim": 256,
+        "kvLen": 8192,
+        "coldQuantMode": "none",
+        "contiguousQuantMode": "none"
+      },
+      "steps": {
+        "total": 35,
+        "attention": 2,
+        "attentionPhases": {
+          "prefill": 1,
+          "decode": 1,
+          "both": 0
+        }
+      }
+    },
+    "layerPatternContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "inference.layerPattern.patternKind.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.patternKind.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.even",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.odd",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_offset",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_negative_offset",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "patternKindRules": 4,
+        "layerTypeRules": 6,
+        "patternKindContexts": 16,
+        "layerTypeContexts": 12
+      }
+    },
+    "requiredInferenceFieldsArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "scope": "manifest",
+      "label": "qwen-3-5-2b-q4k-ehaf16.inference",
+      "ok": true,
+      "checks": [
+        {
+          "id": "qwen-3-5-2b-q4k-ehaf16.inference.requiredInferenceFields",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "fieldCases": 44,
+        "nullableCases": 23,
+        "nonNullableCases": 21
+      }
+    }
+  },
+  "output": "On a perfect, clear day, the sky is typically a brilliant, colorless blue.\n",
+  "memory": {
+    "used": 2992755712,
+    "pool": {
+      "allocations": 10785,
+      "reuses": 1272,
+      "totalBytesAllocated": 2945728768,
+      "peakBytesAllocated": 2936029440,
+      "currentBytesAllocated": 2791429120,
+      "totalBytesRequested": 2653773056,
+      "peakBytesRequested": 2644604672,
+      "currentBytesRequested": 2515438336,
+      "activeBuffers": 724,
+      "pooledBuffers": 64,
+      "budgetMaxBytes": 0,
+      "budgetUtilization": 0,
+      "hitRate": "10.5%"
+    },
+    "kvCache": {
+      "theoretical": 201326592,
+      "allocated": 201326592,
+      "used": 2899968,
+      "efficiency": 0.014404296875,
+      "seqLen": 59,
+      "maxSeqLen": 4096,
+      "layout": "contiguous",
+      "kvDtype": "f16",
+      "counters": {
+        "updateCalls": 0,
+        "gpuUpdateCalls": 0,
+        "recordedGpuUpdateCalls": 192,
+        "tokensWritten": 354
+      }
+    }
+  },
+  "debugSnapshot": null
+}

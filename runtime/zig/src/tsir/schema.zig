@@ -283,6 +283,15 @@ pub const SemanticBodyOp = enum {
     /// standard tanh-approximation form used by Doppler's MLP block;
     /// downstream emitters inline the polynomial.
     gelu_gated,
+    /// Gated SiLU activation (SwiGLU FFN inner): `output[i] = silu(gate[i]) * input[i]`,
+    /// where `silu(x) = x / (1 + exp(-x))`. Same binding shape as
+    /// `gelu_gated`. Used by Qwen 3 / Llama-style SwiGLU MLP blocks.
+    silu_gated,
+    /// Gated sigmoid activation: `output[i] = sigmoid(gate[i]) * input[i]`,
+    /// where `sigmoid(x) = 1 / (1 + exp(-x))`. Same binding shape as
+    /// `gelu_gated`. Used by Qwen 3's `attentionOutputGate` (sigmoid-gated
+    /// attention output prior to the O projection).
+    sigmoid_gated,
     /// KV-cache write: append per-token K/V projections at the
     /// runtime-supplied `decode_position` slot. Bindings:
     /// `key_projection`, `value_projection`, `key_cache`,
@@ -329,9 +338,10 @@ pub const SemanticBindingRole = enum {
     // binding per role; positional `a`/`b` would be ambiguous.
     summand_a,
     summand_b,
-    // Gated-GELU binding (added for SemanticBodyOp.gelu_gated). Pairs
-    // with the existing `.input` role; `.input` carries the activation
-    // value, `.gate` carries the value the gelu non-linearity is
+    // Gated-activation binding (added for SemanticBodyOp.gelu_gated;
+    // shared with .silu_gated and .sigmoid_gated). Pairs with the
+    // existing `.input` role; `.input` carries the activation
+    // value, `.gate` carries the value the non-linearity is
     // applied to, and `.output` is the per-element product.
     gate,
     // KV-cache write bindings (added for SemanticBodyOp.kv_write).

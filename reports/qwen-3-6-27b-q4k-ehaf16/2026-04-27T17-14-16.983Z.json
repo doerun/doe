@@ -1,0 +1,835 @@
+{
+  "mode": "verify",
+  "workload": "inference",
+  "suite": "inference",
+  "modelId": "qwen-3-6-27b-q4k-ehaf16",
+  "runtimeProfile": null,
+  "deviceInfo": {
+    "hasSubgroups": true,
+    "hasSubgroupsF16": true,
+    "hasF16": true,
+    "hasTimestampQuery": true,
+    "maxBufferSize": 4294967292,
+    "maxWorkgroupSize": 1024,
+    "maxWorkgroupStorageSize": 65536,
+    "adapterInfo": {
+      "vendor": "amd",
+      "architecture": "rdna-3",
+      "device": "radeon-8060s-graphics-radv-strix-halo-",
+      "description": "radv: Mesa 26.0.3-1ubuntu1"
+    },
+    "submitProbeMs": 0.5439340000000072
+  },
+  "results": [
+    {
+      "name": "generation",
+      "passed": true,
+      "duration": 5033.571423
+    }
+  ],
+  "durationMs": 11427.696564999998,
+  "timestamp": "2026-04-27T17:14:16.983Z",
+  "metrics": {
+    "prompt": "user: Answer in one short sentence: What color is the sky on a clear day?",
+    "maxTokens": 32,
+    "tokensGenerated": 32,
+    "tokensPerSec": 6.36,
+    "totalRunMs": 5032.63,
+    "firstTokenMs": 1629.17,
+    "firstResponseMs": 7989.37,
+    "prefillMs": 1517.06,
+    "decodeMs": 3402.5,
+    "prefillTokens": 28,
+    "decodeTokens": 32,
+    "stopReason": "max-tokens",
+    "stopTokenId": null,
+    "prefillTokensPerSec": 18.46,
+    "prefillTokensPerSecTtft": 17.19,
+    "decodeTokensPerSec": 9.4,
+    "modelLoadMs": 6360.2,
+    "gpu": {
+      "decodeRecordMs": 1281.2338720000007,
+      "decodeSubmitWaitMs": 2093.3964320000014,
+      "decodeReadbackWaitMs": 2045.7139829999996,
+      "prefillRecordMs": 1410.7280010000004,
+      "prefillSubmitWaitMs": 8.358453999997437,
+      "decodeOrchestrationMs": -2017.843971000002,
+      "singleTokenSubmitWaitMs": 0,
+      "singleTokenReadbackWaitMs": 0,
+      "singleTokenOrchestrationMs": 0
+    },
+    "plePreparedTokenCache": {
+      "hits": 0,
+      "misses": 0,
+      "entries": 0,
+      "bytes": 0
+    },
+    "prefillProfileSteps": [],
+    "decodeProfileSteps": [],
+    "executionPlan": {
+      "primary": {
+        "id": "primary",
+        "kernelPathId": "qwen-3-6-27b-q4k-ehaf16-execution-inline",
+        "kernelPathSource": "execution-v1",
+        "activationDtype": "f32",
+        "readbackInterval": 32,
+        "batchSize": 12,
+        "stopCheckMode": "batch",
+        "ringTokens": 1,
+        "ringStop": 1,
+        "ringStaging": 1
+      },
+      "fallback": null,
+      "activePlanIdAtStart": null,
+      "finalActivePlanId": null,
+      "transitions": []
+    },
+    "kernelPathId": "qwen-3-6-27b-q4k-ehaf16-execution-inline",
+    "kernelPathSource": "execution-v1",
+    "generationDiagnostics": {
+      "preview": [
+        {
+          "id": 760,
+          "text": "The",
+          "fallbackText": "The"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        },
+        {
+          "id": 0,
+          "text": "!",
+          "fallbackText": "!"
+        }
+      ],
+      "total": 32,
+      "omitted": 0,
+      "emptyTextCount": 0,
+      "specialLikeTextCount": 0,
+      "specialLikeFallbackCount": 0
+    },
+    "kvCache": {
+      "layout": "contiguous",
+      "kvDtype": "f16",
+      "seqLen": 59,
+      "maxSeqLen": 4096,
+      "usedBytes": 15466496,
+      "allocatedBytes": 1073741824,
+      "counters": {
+        "updateCalls": 0,
+        "gpuUpdateCalls": 0,
+        "recordedGpuUpdateCalls": 512,
+        "tokensWritten": 944
+      }
+    },
+    "referenceTranscript": {
+      "schema": "doppler.reference-transcript/v1",
+      "source": {
+        "kind": "inline-browser-suite",
+        "path": "inline",
+        "hash": "sha256:b76c80d40d3c6a97dded4d03bbd9bddc074226907fa31ca406640148eb2e6057"
+      },
+      "executionGraphHash": "sha256:554bfbd54ba7f7f172e98b7614bfca00ac2e2b871994172b0387eaf4e73ee3e0",
+      "surface": "browser-webgpu",
+      "prompt": {
+        "identity": "user: Answer in one short sentence: What color is the sky on a clear day?",
+        "hash": "sha256:55fa4b8055dabbbefc9a3caa0aa8e8002ff4f1f7080f2953467383fadcd7e794",
+        "tokenIdsHash": "sha256:991e11c05982531ead5683849a84f85970e62c0c47ae737fe9f51551468aaff1",
+        "tokenCount": 28
+      },
+      "output": {
+        "textHash": "sha256:adfda3e297bb70849192d45f59097bc25bcdf57e58fd98096a338f050acfd5cd",
+        "tokensGenerated": 32,
+        "stopReason": "max-tokens",
+        "stopTokenId": null
+      },
+      "tokens": {
+        "ids": [
+          760,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "generatedTokenIdsHash": "sha256:f76c8e7b3fc9ba699e20dfe17afb406ec5edd369c87456132dadde11d9d25916",
+        "generatedTextHash": "sha256:adfda3e297bb70849192d45f59097bc25bcdf57e58fd98096a338f050acfd5cd",
+        "preview": [
+          {
+            "id": 760,
+            "text": "The",
+            "fallbackText": "The"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          },
+          {
+            "id": 0,
+            "text": "!",
+            "fallbackText": "!"
+          }
+        ],
+        "perStep": [
+          {
+            "index": 0,
+            "tokenId": 760,
+            "tokenHash": "sha256:b272a11a19547541b7355a6204f4180f8525a96370cc25c815910a5e2e9843de"
+          },
+          {
+            "index": 1,
+            "tokenId": 0,
+            "tokenHash": "sha256:96a49e2cc3d27ec75e0c5198ecdb8b73322f5286cd80bc45b6c53bdfd621de17"
+          },
+          {
+            "index": 2,
+            "tokenId": 0,
+            "tokenHash": "sha256:87faaf6adb9c72c97ab146b404fcce54e4f4a57720db7e1a7d76ce46cb4cca6b"
+          },
+          {
+            "index": 3,
+            "tokenId": 0,
+            "tokenHash": "sha256:acfc78c84bcccde36e072fc7123b5841a35adbd68b6d019f93aa0c79db0c492f"
+          },
+          {
+            "index": 4,
+            "tokenId": 0,
+            "tokenHash": "sha256:fddddc34cad4c5f91bde773c80a25d55456368cfe080408d3943167bc144facc"
+          },
+          {
+            "index": 5,
+            "tokenId": 0,
+            "tokenHash": "sha256:34cd2ba9750f39ec87befcb0b515455845d8668022f7c00e2cb91a62633dda3c"
+          },
+          {
+            "index": 6,
+            "tokenId": 0,
+            "tokenHash": "sha256:23a7fd8812a4c8aca2dc02288c1442e46de968b4fb1708072fb4cf04a3a17325"
+          },
+          {
+            "index": 7,
+            "tokenId": 0,
+            "tokenHash": "sha256:2302b8eda5dfd7d92eac1f10d1335bc4aa7702e2052aa4ad68d06ce8657df168"
+          },
+          {
+            "index": 8,
+            "tokenId": 0,
+            "tokenHash": "sha256:39db988e977d639576a24d1fe03b3bde957d015f4befb6ae81d7daf70c6041a7"
+          },
+          {
+            "index": 9,
+            "tokenId": 0,
+            "tokenHash": "sha256:882d343897452638e0152919f6655be20ee09415c40c62dde1ba9dfe118166d0"
+          },
+          {
+            "index": 10,
+            "tokenId": 0,
+            "tokenHash": "sha256:efd1579863a335111ca7a025cba7bd5d2c719fd46d66dc4fc68865c1c7d7bd0a"
+          },
+          {
+            "index": 11,
+            "tokenId": 0,
+            "tokenHash": "sha256:82fd1130c772e2833d56a26d325a64df94623b0741d38a4365157a8a09df1ada"
+          },
+          {
+            "index": 12,
+            "tokenId": 0,
+            "tokenHash": "sha256:4c567f721b7008a89dac51a76748cfb395d0f7a6eb08b707f149e248fed0108b"
+          },
+          {
+            "index": 13,
+            "tokenId": 0,
+            "tokenHash": "sha256:f6d7eac9155b6b3fa64b7b51871d4f4d848170a31d8c914e4eff864f062b3eb2"
+          },
+          {
+            "index": 14,
+            "tokenId": 0,
+            "tokenHash": "sha256:5e261436195139225839f8524b5194528d70350a9e46fc5f503e45cc2ea62f1e"
+          },
+          {
+            "index": 15,
+            "tokenId": 0,
+            "tokenHash": "sha256:071b10dc4bf700a8af43a3506253b5ef889f5d00d1535d80f444e332e8df08d6"
+          },
+          {
+            "index": 16,
+            "tokenId": 0,
+            "tokenHash": "sha256:8029c5c9e3a0347c3a9431da0667b6ed33af73d543db29c8393edb99d5148c6b"
+          },
+          {
+            "index": 17,
+            "tokenId": 0,
+            "tokenHash": "sha256:4f2ada02567a2bce59e141040992bff43fb17713206ef1e6f807241bf4fa3968"
+          },
+          {
+            "index": 18,
+            "tokenId": 0,
+            "tokenHash": "sha256:6b09580a65f0520816521e56cc47702f179522e51da414d51cd7afc05a34801c"
+          },
+          {
+            "index": 19,
+            "tokenId": 0,
+            "tokenHash": "sha256:6d91bc7c40bfac70699be7fb2e2c380a4b1da1aa6ddccb67c400981a98af1ad1"
+          },
+          {
+            "index": 20,
+            "tokenId": 0,
+            "tokenHash": "sha256:cae79c7c6824fd0ab4541e5df5ef1568dd50da472efee0ce48a2ecd13ac89459"
+          },
+          {
+            "index": 21,
+            "tokenId": 0,
+            "tokenHash": "sha256:5d6950d10f02a8aae2574e1a0d76ba8374df89cd57be61f4f3beca4bfd88d342"
+          },
+          {
+            "index": 22,
+            "tokenId": 0,
+            "tokenHash": "sha256:8a91d15bc856b8b69d1ad687ce8c8173fc4438874946ee71cc80b9f5eca6751c"
+          },
+          {
+            "index": 23,
+            "tokenId": 0,
+            "tokenHash": "sha256:1229a085b1152d6a2398d8e591cb557744082a25d9b4afd0fb6e6283d9fff9c3"
+          },
+          {
+            "index": 24,
+            "tokenId": 0,
+            "tokenHash": "sha256:1f39df34ee1460fc6410ddbe8d9f2a2c49a24a34a33d55b499306d2ccfc38151"
+          },
+          {
+            "index": 25,
+            "tokenId": 0,
+            "tokenHash": "sha256:a68c41de33c19a0196b46040873285ef4094b9d2bbcad70f07b66e067965d8c5"
+          },
+          {
+            "index": 26,
+            "tokenId": 0,
+            "tokenHash": "sha256:3e87f2328a5940662c3dfca32f9588d109fc0c394a02f10bb870f0745a2bc9ee"
+          },
+          {
+            "index": 27,
+            "tokenId": 0,
+            "tokenHash": "sha256:79c1852a20a17a96172d2a2525c58f9261603f811c9fc82cff7c9c91a2df6c87"
+          },
+          {
+            "index": 28,
+            "tokenId": 0,
+            "tokenHash": "sha256:e5e314cd452f2cae34ef633ee3f704e968925de599b1d05be4ae73ead9eafc49"
+          },
+          {
+            "index": 29,
+            "tokenId": 0,
+            "tokenHash": "sha256:c51357a3082f489f433d2c2d00ef1d9328eaafaab2d45ed0d1b4bd5670d5568c"
+          },
+          {
+            "index": 30,
+            "tokenId": 0,
+            "tokenHash": "sha256:d85d5552cdfec27f4164cd55f7c1249d743f3511287f0c0fc38983c8a8e40a3d"
+          },
+          {
+            "index": 31,
+            "tokenId": 0,
+            "tokenHash": "sha256:ae692027aaad403ce8c9ad8213a3d4137854da681d7a80e6344c224c2d6abdb6"
+          }
+        ],
+        "coverage": {
+          "mode": "full-token-ids",
+          "omitted": 0
+        }
+      },
+      "phase": {
+        "prefillMs": 1517.0606289999996,
+        "decodeMs": 3402.5003159999997,
+        "prefillTokens": 28,
+        "decodeTokens": 32
+      },
+      "kvCache": {
+        "mode": "stats",
+        "layout": "contiguous",
+        "kvDtype": "f16",
+        "seqLen": 59,
+        "maxSeqLen": 4096,
+        "usedBytes": 15466496,
+        "allocatedBytes": 1073741824,
+        "counters": {
+          "updateCalls": 0,
+          "gpuUpdateCalls": 0,
+          "recordedGpuUpdateCalls": 512,
+          "tokensWritten": 944
+        },
+        "byteDigestMode": null,
+        "byteDigest": null,
+        "byteDigests": null,
+        "stateHash": "sha256:1f4817ad97101a27c1a98835667a9210821650b75924e35e66571f53a886faef"
+      },
+      "logits": {
+        "mode": "not-captured",
+        "reason": "Per-step logits digests were not requested for this browser harness run.",
+        "perStepDigests": null
+      },
+      "tolerance": {
+        "tokenPolicy": "exact generated token IDs",
+        "logitsPolicy": "not captured",
+        "kvPolicy": "metadata hash only; KV tensor bytes are not read back by default"
+      }
+    },
+    "operatorDiagnostics": null,
+    "schemaVersion": 1,
+    "source": "doppler",
+    "suite": "inference",
+    "executionContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "qwen-3-6-27b-q4k-ehaf16.steps",
+          "ok": true
+        },
+        {
+          "id": "qwen-3-6-27b-q4k-ehaf16.session",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "session": {
+        "layout": "contiguous",
+        "disableCommandBatching": false,
+        "decodeBatchSize": 12,
+        "headDim": 256,
+        "kvLen": 8192,
+        "coldQuantMode": "none",
+        "contiguousQuantMode": "none"
+      },
+      "steps": {
+        "total": 35,
+        "attention": 2,
+        "attentionPhases": {
+          "prefill": 1,
+          "decode": 1,
+          "both": 0
+        }
+      }
+    },
+    "layerPatternContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "inference.layerPattern.patternKind.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.patternKind.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.even",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.odd",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_offset",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_negative_offset",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "patternKindRules": 4,
+        "layerTypeRules": 6,
+        "patternKindContexts": 16,
+        "layerTypeContexts": 12
+      }
+    },
+    "requiredInferenceFieldsArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "scope": "manifest",
+      "label": "qwen-3-6-27b-q4k-ehaf16.inference",
+      "ok": true,
+      "checks": [
+        {
+          "id": "qwen-3-6-27b-q4k-ehaf16.inference.requiredInferenceFields",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "fieldCases": 44,
+        "nullableCases": 23,
+        "nonNullableCases": 21
+      }
+    }
+  },
+  "output": "The!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+  "memory": {
+    "used": 21878837760,
+    "pool": {
+      "allocations": 28507,
+      "reuses": 3310,
+      "totalBytesAllocated": 21874830080,
+      "peakBytesAllocated": 21838129920,
+      "currentBytesAllocated": 20805095936,
+      "totalBytesRequested": 18775630592,
+      "peakBytesRequested": 18742815488,
+      "currentBytesRequested": 18080127744,
+      "activeBuffers": 2014,
+      "pooledBuffers": 64,
+      "budgetMaxBytes": 0,
+      "budgetUtilization": 0,
+      "hitRate": "10.4%"
+    },
+    "kvCache": {
+      "theoretical": 1073741824,
+      "allocated": 1073741824,
+      "used": 15466496,
+      "efficiency": 0.014404296875,
+      "seqLen": 59,
+      "maxSeqLen": 4096,
+      "layout": "contiguous",
+      "kvDtype": "f16",
+      "counters": {
+        "updateCalls": 0,
+        "gpuUpdateCalls": 0,
+        "recordedGpuUpdateCalls": 512,
+        "tokensWritten": 944
+      }
+    }
+  },
+  "debugSnapshot": null
+}
