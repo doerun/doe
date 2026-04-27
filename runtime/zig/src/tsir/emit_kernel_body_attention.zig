@@ -53,7 +53,12 @@ pub fn emitCslAttentionScores(
     try writer.writeAll("param kv_len: i16;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try writer.print("const attn_scale: f32 = {d};\n", .{scale});
+    // CSL rejects bare integer literals where f32 is expected
+    // (`expected type 'f32', got: 'comptime_int'`). Force a decimal
+    // point + exponent so the literal always parses as f32 — matches
+    // the existing test assertion `try expectContains(csl, "const
+    // attn_scale: f32 = 1");` (still satisfied since "1" is a prefix).
+    try writer.print("const attn_scale: f32 = {e};\n", .{scale});
     try body_emit.writeCslBufferArray(writer, p, query.name, "head_dim", "f32");
     try body_emit.writeCslBufferArray(writer, p, key.name, "kv_len * head_dim", "f32");
     try body_emit.writeCslBufferArray(writer, p, value.name, "kv_len * head_dim", "f32");

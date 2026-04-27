@@ -723,6 +723,29 @@ pub fn build(b: *std.Build) void {
     emit_msl_step.dependOn(&install_emit_msl.step);
     b.getInstallStep().dependOn(emit_msl_step);
 
+    const emit_tsir_attention_canary_exe = b.addExecutable(.{
+        .name = "doe-emit-tsir-attention-canary",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_tsir_attention_canary.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_tsir_attention_canary_exe.linkLibC();
+    const install_emit_tsir_attention_canary = b.addInstallArtifact(
+        emit_tsir_attention_canary_exe,
+        .{},
+    );
+    const emit_tsir_attention_canary_step = b.step(
+        "emit-tsir-attention-canary",
+        "Build the TSIR-CSL attention canary emitter tool",
+    );
+    emit_tsir_attention_canary_step.dependOn(&install_emit_tsir_attention_canary.step);
+    b.getInstallStep().dependOn(emit_tsir_attention_canary_step);
+
     const emit_hlsl_exe = b.addExecutable(.{
         .name = "doe-emit-hlsl",
         .root_module = b.createModule(.{

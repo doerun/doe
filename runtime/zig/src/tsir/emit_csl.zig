@@ -85,17 +85,47 @@ pub fn emitSemanticFunction(
     try writer.writeAll("//--- layout.csl ---\n");
     try writeContractHeader(writer, function, descriptor, descriptor_hash);
     try writer.writeAll("param width: u32;\n");
-    try writer.writeAll("param height: u32;\n\n");
+    try writer.writeAll("param height: u32;\n");
+    // Body-op-specific layout params that are forwarded to the PE
+    // program via @set_tile_code below. Today only attention_scores
+    // declares `param kv_len: i16` in its emitted pe_program; other
+    // body ops inline their dimensions as constants. Extend this
+    // switch as new body ops grow runtime-tunable params.
+    switch (semantic_function.body.op) {
+        .attention_scores => try writer.writeAll("param kv_len: i16;\n"),
+        else => {},
+    }
+    try writer.writeAll("\n");
+    try writer.writeAll("const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try writer.writeAll("    .width = width,\n");
+    try writer.writeAll("    .height = height,\n");
+    try writer.writeAll("});\n\n");
     try writer.writeAll("layout {\n");
     try writer.writeAll("    @set_rectangle(width, height);\n");
     try writer.writeAll("    for (@range(u32, height)) |pe_y| {\n");
     try writer.writeAll("        for (@range(u32, width)) |pe_x| {\n");
     try writer.writeAll("            @set_tile_code(pe_x, pe_y, \"pe_program.csl\", .{\n");
+    try writer.writeAll("                .memcpy_params = memcpy.get_params(pe_x),\n");
+    switch (semantic_function.body.op) {
+        .attention_scores => try writer.writeAll("                .kv_len = kv_len,\n"),
+        else => {},
+    }
     try writer.writeAll("                .pe_id = pe_y * width + pe_x,\n");
     try writer.writeAll("                .num_pes = width * height,\n");
     try writer.writeAll("            });\n");
     try writer.writeAll("        }\n");
     try writer.writeAll("    }\n");
+    // Per-binding memcpy exports so the host can memcpy_h2d/d2h each
+    // buffer by name. All buffers carry the host-writable flag — the
+    // canary lane uses memcpy in both directions (host writes inputs,
+    // reads outputs), and the SDK's host-side memcpy_d2h works
+    // against host-writable exports too.
+    for (semantic_function.bindings) |binding| {
+        try writer.print(
+            "    @export_name(\"{s}\", [*]f32, true);\n",
+            .{binding.name},
+        );
+    }
     try writer.writeAll("    @export_name(\"compute\", fn()void);\n");
     try writer.writeAll("}\n\n");
 
