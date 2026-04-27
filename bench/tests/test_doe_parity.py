@@ -802,5 +802,134 @@ class TestReceiptWithReferenceSource(unittest.TestCase):
         doe_parity.validate_receipt_doc(doc)
 
 
+class TestCslRunnerResolution(unittest.TestCase):
+    """Pin _resolve_csl_runner's preference order.
+
+    The canary lane prefers the TSIR-emit runner pair
+    (_tsir_sim_runner.py + csl-real-canary-compile-tsir/<kernel>/<kernel>/)
+    over the hand-authored pair (_sim_runner.py + csl-real-canary-compile/
+    <kernel>/<kernel>/) when both are present, so the rung-6 attention
+    canary actually exercises the TSIR-CSL emit body. Hand-authored
+    stays as the fallback for kernels without a TSIR-emit runner or
+    when the TSIR compile-dir hasn't been materialized in this
+    environment.
+    """
+
+    def _layout_runners(
+        self, root: Path, kernel: str, *, tsir: bool, handauth: bool
+    ) -> Path:
+        runners_root = root / "runners"
+        runners_root.mkdir(parents=True, exist_ok=True)
+        if tsir:
+            (runners_root / f"{kernel}_tsir_sim_runner.py").write_text(
+                "# stub", encoding="utf-8"
+            )
+        if handauth:
+            (runners_root / f"{kernel}_sim_runner.py").write_text(
+                "# stub", encoding="utf-8"
+            )
+        return runners_root
+
+    def _layout_compile_dir(
+        self, root: Path, kernel: str, *, tsir: bool, handauth: bool
+    ) -> tuple[Path, Path]:
+        handauth_root = root / "compile-handauth"
+        tsir_root = root / "compile-tsir"
+        if handauth:
+            (handauth_root / kernel / kernel).mkdir(parents=True, exist_ok=True)
+        if tsir:
+            (tsir_root / kernel / kernel).mkdir(parents=True, exist_ok=True)
+        return handauth_root, tsir_root
+
+    def test_prefers_tsir_when_both_pairs_present(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runners_root = self._layout_runners(
+                root, "attention_head256_f16kv", tsir=True, handauth=True
+            )
+            handauth_root, tsir_root = self._layout_compile_dir(
+                root, "attention_head256_f16kv", tsir=True, handauth=True
+            )
+            runner, compile_dir, route = doe_parity._resolve_csl_runner(
+                "attention_head256_f16kv",
+                runners_root=runners_root,
+                handauth_compile_root=handauth_root,
+                tsir_compile_root=tsir_root,
+            )
+            self.assertEqual(route, "tsir")
+            self.assertEqual(runner.name, "attention_head256_f16kv_tsir_sim_runner.py")
+            self.assertEqual(
+                compile_dir,
+                tsir_root / "attention_head256_f16kv" / "attention_head256_f16kv",
+            )
+
+    def test_falls_back_to_handauth_when_tsir_compile_dir_missing(self) -> None:
+        # The TSIR runner exists but no one has run cslc against the
+        # TSIR-emit source yet. The canary must keep working off the
+        # hand-authored compile-dir so 24/24 doesn't regress.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runners_root = self._layout_runners(
+                root, "attention_head512_f16kv", tsir=True, handauth=True
+            )
+            handauth_root, tsir_root = self._layout_compile_dir(
+                root, "attention_head512_f16kv", tsir=False, handauth=True
+            )
+            runner, compile_dir, route = doe_parity._resolve_csl_runner(
+                "attention_head512_f16kv",
+                runners_root=runners_root,
+                handauth_compile_root=handauth_root,
+                tsir_compile_root=tsir_root,
+            )
+            self.assertEqual(route, "handauth")
+            self.assertEqual(runner.name, "attention_head512_f16kv_sim_runner.py")
+            self.assertEqual(
+                compile_dir,
+                handauth_root
+                / "attention_head512_f16kv"
+                / "attention_head512_f16kv",
+            )
+
+    def test_falls_back_to_handauth_when_no_tsir_runner(self) -> None:
+        # Non-attention kernels (no TSIR-emit canary path yet) must
+        # keep routing through the hand-authored pair.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runners_root = self._layout_runners(
+                root, "rms_norm", tsir=False, handauth=True
+            )
+            handauth_root, tsir_root = self._layout_compile_dir(
+                root, "rms_norm", tsir=False, handauth=True
+            )
+            runner, _, route = doe_parity._resolve_csl_runner(
+                "rms_norm",
+                runners_root=runners_root,
+                handauth_compile_root=handauth_root,
+                tsir_compile_root=tsir_root,
+            )
+            self.assertEqual(route, "handauth")
+            self.assertEqual(runner.name, "rms_norm_sim_runner.py")
+
+    def test_returns_handauth_paths_even_when_neither_exists(self) -> None:
+        # _resolve_csl_runner does not check for handauth presence on
+        # the fallback path — it returns the canonical names so the
+        # caller's existence check produces a useful deferred message.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runners_root = root / "runners"
+            runners_root.mkdir()
+            handauth_root = root / "compile-handauth"
+            tsir_root = root / "compile-tsir"
+            runner, _, route = doe_parity._resolve_csl_runner(
+                "ghost_kernel",
+                runners_root=runners_root,
+                handauth_compile_root=handauth_root,
+                tsir_compile_root=tsir_root,
+            )
+            self.assertEqual(route, "handauth")
+            self.assertEqual(runner.name, "ghost_kernel_sim_runner.py")
+            self.assertFalse(runner.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

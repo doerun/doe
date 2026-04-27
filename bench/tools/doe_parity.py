@@ -813,8 +813,56 @@ _CSL_REJECTED_KERNELS: frozenset[str] = frozenset()
 # A kernel is wired through this lane when (a) the per-kernel sim runner
 # exists at bench/runners/csl-runners/<kernel>_sim_runner.py and (b) the
 # compile-dir bin/ subdir is populated.
+#
+# When a TSIR-emit sister runner exists at
+# bench/runners/csl-runners/<kernel>_tsir_sim_runner.py with a matching
+# pre-compiled TSIR compile-dir at
+# bench/out/csl-real-canary-compile-tsir/<kernel>/<kernel>/, the lane
+# prefers it over the hand-authored runner. This routes the canary
+# through the TSIR-CSL emit body
+# (runtime/zig/src/tsir/emit_kernel_body_attention.zig) instead of the
+# hand-authored bootstrap-shape CSL while preserving the hand-authored
+# compile-dir as a fallback when the TSIR compile-dir hasn't been
+# materialized yet (e.g., in environments without cslc).
 _CSL_REAL_CANARY_COMPILE_ROOT = REPO_ROOT / "bench" / "out" / "csl-real-canary-compile"
+_CSL_REAL_CANARY_COMPILE_ROOT_TSIR = (
+    REPO_ROOT / "bench" / "out" / "csl-real-canary-compile-tsir"
+)
+_CSL_RUNNERS_ROOT = REPO_ROOT / "bench" / "runners" / "csl-runners"
 _CS_PYTHON_SINGULARITY = REPO_ROOT / "runtime" / "zig" / "tools" / "cs_python_singularity.sh"
+
+
+def _resolve_csl_runner(
+    kernel: str,
+    *,
+    runners_root: Path = _CSL_RUNNERS_ROOT,
+    handauth_compile_root: Path = _CSL_REAL_CANARY_COMPILE_ROOT,
+    tsir_compile_root: Path = _CSL_REAL_CANARY_COMPILE_ROOT_TSIR,
+) -> tuple[Path, Path, str]:
+    """Pick the runner + compile-dir for a kernel, preferring the TSIR-emit
+    pair when both halves are materialized.
+
+    Returns ``(runner_path, compile_dir, route)``. ``route`` is
+    ``"tsir"`` when the TSIR-emit pair is selected, ``"handauth"``
+    otherwise. ``compile_dir`` is the cslc product directory; the
+    caller checks whether ``compile_dir / "bin"`` exists.
+
+    Resolution rules:
+      - If ``<kernel>_tsir_sim_runner.py`` AND
+        ``<tsir_root>/<kernel>/<kernel>/`` BOTH exist, return the TSIR
+        pair (the runner exists irrespective of whether its bin/ is
+        populated; the caller handles missing-bin separately so the
+        deferred-detail message can name the right compile-dir).
+      - Else fall back to the hand-authored ``<kernel>_sim_runner.py``
+        + ``<handauth_root>/<kernel>/<kernel>/`` pair.
+    """
+    tsir_runner = runners_root / f"{kernel}_tsir_sim_runner.py"
+    tsir_compile_dir = tsir_compile_root / kernel / kernel
+    if tsir_runner.is_file() and tsir_compile_dir.is_dir():
+        return tsir_runner, tsir_compile_dir, "tsir"
+    handauth_runner = runners_root / f"{kernel}_sim_runner.py"
+    handauth_compile_dir = handauth_compile_root / kernel / kernel
+    return handauth_runner, handauth_compile_dir, "handauth"
 
 
 def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutcome:
@@ -841,13 +889,7 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
                 "accepts it; only the emitter is missing."
             ),
         )
-    sim_runner = (
-        REPO_ROOT
-        / "bench"
-        / "runners"
-        / "csl-runners"
-        / f"{kernel}_sim_runner.py"
-    )
+    sim_runner, compile_dir, route = _resolve_csl_runner(kernel)
     if not sim_runner.is_file():
         return ComparisonOutcome(
             backend="csl-simfabric",
@@ -865,17 +907,20 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
             ),
         )
 
-    compile_dir = _CSL_REAL_CANARY_COMPILE_ROOT / kernel / kernel
     if not (compile_dir / "bin").is_dir():
+        source_root_hint = (
+            f"bench/out/csl-real-canary-source-tsir/{kernel}/layout.csl"
+            if route == "tsir"
+            else f"bench/out/csl-real-canary-source/{kernel}/layout.csl"
+        )
         return ComparisonOutcome(
             backend="csl-simfabric",
             status="deferred",
             detail=(
-                f"{kernel}_sim_runner.py exists but the cslc compile-dir "
+                f"{sim_runner.name} exists but the cslc compile-dir "
                 f"{compile_dir.relative_to(REPO_ROOT)} is not materialized. "
-                "Run cslc against "
-                f"bench/out/csl-real-canary-source/{kernel}/layout.csl "
-                "via cs_python_singularity.sh to produce it."
+                f"Run cslc against {source_root_hint} via "
+                "cs_python_singularity.sh to produce it."
             ),
         )
 
@@ -886,9 +931,12 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
     output_hash_path = cache_dir / f"{kernel}.csl.hash"
     if output_hash_path.is_file():
         output_hash_path.unlink()
-    scratch_dir = (
-        _CSL_REAL_CANARY_COMPILE_ROOT / kernel / "scratch"
+    compile_root = (
+        _CSL_REAL_CANARY_COMPILE_ROOT_TSIR
+        if route == "tsir"
+        else _CSL_REAL_CANARY_COMPILE_ROOT
     )
+    scratch_dir = compile_root / kernel / "scratch"
     scratch_dir.mkdir(parents=True, exist_ok=True)
 
     import os
@@ -942,13 +990,15 @@ def _run_csl_simfabric_backend(kernel: str, inputs_path: Path) -> ComparisonOutc
             status="error",
             detail="csl-simfabric runner wrote an empty hash file",
         )
+    route_label = "tsir-emit" if route == "tsir" else "hand-authored"
     return ComparisonOutcome(
         backend="csl-simfabric",
         status="pass",
         backend_hash=backend_hash,
         detail=(
             f"doe-csl-simfabric dispatch via {sim_runner.name} against "
-            f"compile-dir {compile_dir.relative_to(REPO_ROOT)}"
+            f"compile-dir {compile_dir.relative_to(REPO_ROOT)} "
+            f"(route={route_label})"
         ),
     )
 
