@@ -169,6 +169,15 @@ pub const KernelPattern = union(enum) {
     element_wise: ElementWiseInfo,
     reduction: ReductionInfo,
     tiled_matmul: MatmulInfo,
+    /// SUMMA tiled matmul where the B operand is a Q4_K_M-quantized
+    /// byte stream rather than f32; the PE program runs a dequant
+    /// prologue per broadcast step. Same MatmulInfo shape as
+    /// `tiled_matmul` (tile_a/tile_b/tile_m/tile_n/tile_k); the
+    /// distinguishing feature is dispatch (PE program: emit_csl_matmul_q4k).
+    /// Wedge 3: variant is registered and switch sites are exhaustive,
+    /// but classifier never emits this variant yet — that arrives in
+    /// Wedge 4 (classifier extension).
+    tiled_matmul_q4k_dequant_b: MatmulInfo,
     gather: GatherInfo,
     rope: RoPEInfo,
     attention_streaming: AttentionStreamingInfo,
@@ -189,6 +198,12 @@ pub fn patternContractValid(pattern: KernelPattern) bool {
         .element_wise => |info| info.input_count > 0 and info.output_count > 0 and info.has_size_guard,
         .reduction => |info| info.input_count > 0 and info.output_count > 0 and info.has_apply_phase,
         .tiled_matmul => |info| info.tile_m > 0 and info.tile_n > 0 and info.tile_k > 0,
+        // Q4K block alignment (Kt % 256 == 0) is a host-plan concern at
+        // SUMMA dispatch time (Kt = 2560 for Gemma 4 31B), not a
+        // classifier-derived MatmulInfo invariant. The classifier's
+        // tile_k reflects the WGSL inner K-loop shape and is not the
+        // SUMMA Kt. The 256-alignment check belongs in the host plan.
+        .tiled_matmul_q4k_dequant_b => |info| info.tile_m > 0 and info.tile_n > 0 and info.tile_k > 0,
         .gather => |info| info.indices_global != info.table_global and
             info.output_global != info.indices_global and
             info.output_global != info.table_global,
@@ -266,6 +281,21 @@ pub fn classify(module: *const ir.Module, entry: ir.EntryPoint) KernelPattern {
             .cos_global = props.cos_global,
             .sin_global = props.sin_global,
         } };
+    }
+
+    // Tiled matmul with Q4K-quantized B input: struct storage (Q4K block
+    // weight buffer) + 2 workgroup-shared tiles (A tile + dequanted B
+    // tile) + barriers + at least one tiling loop. This must come before
+    // the generic dequant/fused_gemv_dequant branch below — without the
+    // earlier short-circuit, a Q4K-input tiled matmul would land in
+    // fused_gemv_dequant (which targets vector output, not full GEMM).
+    if (props.has_struct_storage and !props.has_qkv_buffers and
+        props.workgroup_globals == 2 and props.has_barriers and
+        props.loop_count >= 1)
+    {
+        return .{
+            .tiled_matmul_q4k_dequant_b = extractMatmulInfo(module, props.wg_indices[0..2]),
+        };
     }
 
     // Dequant: has struct-typed input buffer (Q4K block), no attention buffers

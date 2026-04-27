@@ -40,6 +40,7 @@ from int4ple_hostplan_executor_validator import validate_hostplan_executor
 from int4ple_summa_layout import (
     a_tiles_from_logical as _summa_a_tiles_from_logical,
     b_tiles_from_weight_matrix as _summa_b_tiles_from_weight_matrix,
+    b_tiles_from_q4k_bytes as _summa_b_tiles_from_q4k_bytes,
     required_positive_int as _required_positive_int,
 )
 from int4ple_runtime_scheduler import (
@@ -1111,6 +1112,35 @@ def _read_weight_prefix_bytes(weight_mapping: dict[str, Any], byte_count: int) -
     return bytes(chunks[:byte_count])
 
 
+def _materialize_weight_matrix_q4k_bytes(
+    mapping: dict[str, Any],
+    transform: dict[str, Any],
+) -> np.ndarray:
+    """Read raw Q4_K_M bytes for the [N, K] weight matrix without dequantizing.
+
+    Mirror of ``_materialize_weight_matrix_f32`` for the Q4K passthrough
+    path: on-PE dequant materializes the f32 working tile from these
+    bytes inside the SUMMA broadcast step.
+    """
+    nested = transform.get("sourceTransform") or {}
+    if not isinstance(nested, dict):
+        nested = {}
+    nested_kind = str(nested.get("kind") or "")
+    if nested_kind != "q4km_rowwise_passthrough":
+        raise ValueError(
+            "unsupported_summa_q4k_source_transform:"
+            f"{mapping.get('weightKey') or mapping.get('tensor')}:{nested_kind or 'none'}"
+        )
+    byte_count = int(mapping.get("byteSize") or 0)
+    if byte_count <= 0:
+        raise ValueError(
+            "summa_q4k_byte_size_missing:"
+            f"{mapping.get('weightKey') or mapping.get('tensor')}"
+        )
+    raw = _read_weight_prefix_bytes(mapping, byte_count)
+    return np.frombuffer(raw, dtype=np.uint8).copy()
+
+
 def _materialize_weight_matrix_f32(
     mapping: dict[str, Any],
     transform: dict[str, Any],
@@ -1195,6 +1225,19 @@ def _materialize_weight_input(
         if values.size != total_elements:
             raise ValueError(
                 f"weight_summa_tile_size_mismatch:{values.size}!={total_elements}"
+            )
+        return values
+    if dtype == "q4k_block256" and transform_kind == "weight_matrix_to_summa_q4k_tiles":
+        # Q4K passthrough: ship 144-byte blocks per 256-weight chunk to
+        # the fabric without host-side dequant. The PE program runs
+        # `dequant_b_tile()` as a per-broadcast-step prologue (see
+        # runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig).
+        # plannedElementCount is in BYTES for this dtype, not weights.
+        raw_bytes = _materialize_weight_matrix_q4k_bytes(mapping, source_transform)
+        values = _summa_b_tiles_from_q4k_bytes(raw_bytes, source_transform)
+        if values.size != total_elements:
+            raise ValueError(
+                f"weight_summa_q4k_tile_byte_mismatch:{values.size}!={total_elements}"
             )
         return values
     if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:

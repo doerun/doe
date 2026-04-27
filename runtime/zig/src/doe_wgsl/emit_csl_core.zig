@@ -17,6 +17,7 @@ const layout = @import("emit_csl_layout.zig");
 const elementwise = @import("emit_csl_elementwise.zig");
 const reduction = @import("emit_csl_reduction.zig");
 const matmul = @import("emit_csl_matmul.zig");
+const matmul_q4k = @import("emit_csl_matmul_q4k.zig");
 const reduce_dist = @import("emit_csl_reduce_dist.zig");
 const attention = @import("emit_csl_attention.zig");
 const linear_attn = @import("emit_csl_linear_attn.zig");
@@ -80,6 +81,7 @@ fn patternToValidationKind(pattern: classify.KernelPattern) EmitError!validate.P
         .element_wise => .element_wise,
         .reduction => .reduction,
         .tiled_matmul => .tiled_matmul,
+        .tiled_matmul_q4k_dequant_b => .tiled_matmul_q4k_dequant_b,
         .gather => .gather,
         .rope => .rope,
         .attention_streaming => .attention_streaming,
@@ -113,6 +115,7 @@ fn emitLayout(
             }
         },
         .tiled_matmul => |info| try layout.emitMatmulLayout(out, pos, module, entry, info),
+        .tiled_matmul_q4k_dequant_b => |info| try layout.emitMatmulQ4kLayout(out, pos, module, entry, info),
         .gather => |info| try layout.emitGatherLayout(out, pos, module, info),
         .rope => |info| try layout.emitRoPELayout(out, pos, module, info),
         .dequant => |info| try layout.emitDequantLayout(out, pos, module, info),
@@ -146,6 +149,7 @@ fn emitPeProgram(
             }
         },
         .tiled_matmul => |info| try matmul.emit(out, pos, module, entry, info),
+        .tiled_matmul_q4k_dequant_b => |info| try matmul_q4k.emit(out, pos, module, entry, info),
         .gather => |info| try gather.emit(out, pos, module, info),
         .rope => |info| try rope.emit(out, pos, module, info),
         .dequant => |info| try dequant.emit(out, pos, module, info),

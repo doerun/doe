@@ -723,6 +723,23 @@ pub fn build(b: *std.Build) void {
     emit_msl_step.dependOn(&install_emit_msl.step);
     b.getInstallStep().dependOn(emit_msl_step);
 
+    const emit_csl_exe = b.addExecutable(.{
+        .name = "doe-emit-csl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_csl.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_csl_exe.linkLibC();
+    const install_emit_csl = b.addInstallArtifact(emit_csl_exe, .{});
+    const emit_csl_step = b.step("emit-csl", "Build the WGSL-to-CSL emitter tool");
+    emit_csl_step.dependOn(&install_emit_csl.step);
+    b.getInstallStep().dependOn(emit_csl_step);
+
     const emit_tsir_attention_canary_exe = b.addExecutable(.{
         .name = "doe-emit-tsir-attention-canary",
         .root_module = b.createModule(.{

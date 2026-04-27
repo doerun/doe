@@ -6,6 +6,7 @@ const layout = @import("emit_csl_layout.zig");
 const elementwise = @import("emit_csl_elementwise.zig");
 const reduction = @import("emit_csl_reduction.zig");
 const matmul = @import("emit_csl_matmul.zig");
+const matmul_q4k = @import("emit_csl_matmul_q4k.zig");
 const attention = @import("emit_csl_attention.zig");
 const linear_attn = @import("emit_csl_linear_attn.zig");
 const kv_cache = @import("emit_csl_kv_cache.zig");
@@ -127,6 +128,7 @@ fn resolvePattern(pattern: []const u8, module_ir: *const ir.Module, entry: ir.En
         .element_wise => if (isElementWisePattern(pattern)) return detected,
         .reduction => if (std.mem.eql(u8, pattern, "reduction")) return detected,
         .tiled_matmul => if (std.mem.eql(u8, pattern, "tiled_matmul")) return detected,
+        .tiled_matmul_q4k_dequant_b => if (std.mem.eql(u8, pattern, "tiled_matmul_q4k_dequant_b")) return detected,
         .gather => if (std.mem.eql(u8, pattern, "gather")) return detected,
         .rope => if (std.mem.eql(u8, pattern, "rope")) return detected,
         .attention_streaming => if (std.mem.eql(u8, pattern, "attention_streaming")) return detected,
@@ -154,6 +156,7 @@ fn emitLayout(
         .element_wise => |info| try layout.emitElementWiseLayout(out, pos, module_ir, entry, info),
         .reduction => |info| try layout.emitReductionLayout(out, pos, module_ir, entry, info),
         .tiled_matmul => |info| try layout.emitMatmulLayout(out, pos, module_ir, entry, info),
+        .tiled_matmul_q4k_dequant_b => |info| try layout.emitMatmulQ4kLayout(out, pos, module_ir, entry, info),
         .gather => |info| try layout.emitGatherLayout(out, pos, module_ir, info),
         .rope => |info| try layout.emitRoPELayout(out, pos, module_ir, info),
         .attention_streaming => |info| try layout.emitStreamingAttentionLayout(out, pos, module_ir, info),
@@ -181,6 +184,7 @@ fn emitPeProgram(
         .element_wise => |info| try elementwise.emit(out, pos, module_ir, entry, info),
         .reduction => |info| try reduction.emit(out, pos, module_ir, entry, info),
         .tiled_matmul => |info| try matmul.emit(out, pos, module_ir, entry, info),
+        .tiled_matmul_q4k_dequant_b => |info| try matmul_q4k.emit(out, pos, module_ir, entry, info),
         .gather => |info| try gather.emit(out, pos, module_ir, info),
         .rope => |info| try rope.emit(out, pos, module_ir, info),
         .attention_streaming => |info| try attention.emitStreaming(out, pos, module_ir, info),
@@ -201,6 +205,7 @@ fn validationKind(pattern: []const u8) EmitError!validate.PatternKind {
     if (isElementWisePattern(pattern)) return .element_wise;
     if (std.mem.eql(u8, pattern, "reduction")) return .reduction;
     if (std.mem.eql(u8, pattern, "tiled_matmul")) return .tiled_matmul;
+    if (std.mem.eql(u8, pattern, "tiled_matmul_q4k_dequant_b")) return .tiled_matmul_q4k_dequant_b;
     if (std.mem.eql(u8, pattern, "gather")) return .gather;
     if (std.mem.eql(u8, pattern, "rope")) return .rope;
     if (std.mem.eql(u8, pattern, "attention_streaming")) return .attention_streaming;

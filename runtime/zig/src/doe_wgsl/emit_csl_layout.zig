@@ -245,6 +245,92 @@ pub fn emitMatmulLayout(
 }
 
 // ---------------------------------------------------------------------------
+// SUMMA tiled matmul layout with Q4_K_M-quantized B operand.
+//
+// Mirrors `emitMatmulLayout` exactly, including the per-PE c2d_params
+// stitching, but exports the B storage binding as `[*]u8` (Q4K byte
+// stream) instead of `[*]f32`. The export-type contract must match the
+// PE program's `var B_ptr: [*]u8 = &B_tile_q4k;` declaration (see
+// `emit_csl_matmul_q4k.zig`); a mismatch would cause the host memcpy
+// to push the wrong stride per element.
+//
+// Storage-binding order is the same ordinal contract used by
+// `storageExportName` in the matmul emitters: index 0 = A (f32),
+// index 1 = B (Q4K bytes), index 2 = C (f32). Any binding past index 2
+// reverts to f32 for forward-compatibility with future fused outputs.
+// ---------------------------------------------------------------------------
+
+pub fn emitMatmulQ4kLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    entry: ir.EntryPoint,
+    info: classify.MatmulInfo,
+) EmitError!void {
+    _ = entry;
+    _ = info;
+
+    try write(buf, pos, "// Layout: SUMMA tiled matmul on a P x P PE grid (Q4K B operand).\n\n");
+    try write(buf, pos, "param P: u16;\n");
+    try write(buf, pos, "param Mt: u16;\n");
+    try write(buf, pos, "param Kt: u16;\n");
+    try write(buf, pos, "param Nt: u16;\n\n");
+
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = P,\n");
+    try write(buf, pos, "    .height = P,\n");
+    try write(buf, pos, "});\n\n");
+
+    try write(buf, pos, "const c2d = @import_module(\"<collectives_2d/params>\");\n\n");
+
+    try write(buf, pos, "layout {\n");
+    try write(buf, pos, "    @set_rectangle(P, P);\n\n");
+
+    try write(buf, pos, "    for (@range(u16, P)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(u16, P)) |pe_x| {\n");
+    try write(buf, pos, "            const c2d_tile_params = c2d.get_params(pe_x, pe_y, .{\n");
+    try write(buf, pos, "                .x_colors      = .{ @get_color(0),         @get_color(1)         },\n");
+    try write(buf, pos, "                .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },\n");
+    try write(buf, pos, "                .y_colors      = .{ @get_color(4),         @get_color(5)         },\n");
+    try write(buf, pos, "                .y_entrypoints = .{ @get_local_task_id(10), @get_local_task_id(11) },\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .c2d_params = c2d_tile_params,\n");
+    try write(buf, pos, "                .Mt = Mt,\n");
+    try write(buf, pos, "                .Kt = Kt,\n");
+    try write(buf, pos, "                .Nt = Nt,\n");
+    try write(buf, pos, "                .P = P,\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
+
+    // Per-binding export type: index 0 = A (f32), index 1 = B (Q4K u8 bytes),
+    // index 2 = C (f32). Beyond that, default to f32.
+    var storage_index: u32 = 0;
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage) continue;
+
+        try write(buf, pos, "    @export_name(\"");
+        try write(buf, pos, global.name);
+        try write(buf, pos, "\", ");
+        if (storage_index == 1) {
+            try write(buf, pos, "[*]u8");
+        } else {
+            try write(buf, pos, "[*]f32");
+        }
+        try write(buf, pos, ", true);\n");
+        storage_index += 1;
+    }
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n");
+    try write(buf, pos, "}\n");
+}
+
+// ---------------------------------------------------------------------------
 // Gather layout: 1-D row, no fabric
 // ---------------------------------------------------------------------------
 
