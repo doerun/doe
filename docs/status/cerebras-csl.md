@@ -13,6 +13,73 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-27 — Qwen 3.6 27B Doe-side trio lands; typed-blocker chain pinned
+
+The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
+4 31B Doe-side evidence trio, all sitting on top of the SUMMA wedge merge:
+
+1. **Smoke config.** `runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json`
+   mirrors the Gemma 4 31B smoke shape with Qwen's actual numbers: GQA
+   24:4, head_dim=256, hidden=5120, intermediate=17408, 64 layers,
+   partial-rotary 0.25, queryKeyNorm, attentionOutputGate=swish, SwiGLU
+   FFN. `scopeRestrictions` block names three explicit blockers
+   (linearAttentionLayers, mropeInterleaved, causalAttentionPrefill).
+2. **Synthesizer.** `bench/tools/synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt.py`
+   imports the Gemma synthesizer's residency/classifier helpers and
+   only carries Qwen-specific defaults + claim text + scopeRestrictions
+   lift from the smoke config. Pre-bundle preflight verified: exits 2
+   with the host-plan-tool invocation pointer.
+3. **Per-kernel byte-identity test.**
+   `bench/tests/test_qwen_3_6_one_layer_per_kernel_byte_identity.py`
+   pins the 1L == 64L per-kernel CSL byte-identity property. Skips with
+   typed pointer when the upstream Qwen compile root is absent.
+4. **Validator binding test.**
+   `bench/tests/test_validate_frozen_qwen_3_6_doppler_reference.py`
+   binds the (model-agnostic)
+   `bench/tools/validate_frozen_doppler_reference.py` to the Qwen
+   fixture path. Skips with typed cross-repo pointer naming the Doppler
+   `run-program-bundle-reference.js --tsir-fixture-dir` invocation that
+   produces the fixture.
+
+**Typed-blocker chain pinned while running the trio.** Running
+`doe-csl-host-plan-tool --input qwen-3-6-27b-smoke.json --mode steps`
+fails with `error.UnknownOp` from
+`runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:280` — `opToSpec` does
+not recognize `silu_gated` or `sigmoid_gated`. The TSIR layer is fully
+wired (SemanticBodyOp + emit body + reference interpreter + tests) but
+the doe_wgsl kernel-classifier surface is not. To make the host-plan
+tool ingest the smoke config, the next branch tick needs:
+
+- `KernelPattern` variants `silu_gated` and `sigmoid_gated` in
+  `emit_csl_classify.zig` (same shape as the existing
+  `tiled_matmul_q4k_dequant_b` variant added on the SUMMA wedge);
+- WGSL pattern detection branches in the classifier (struct-storage
+  + workgroup arrays + barriers + the silu/sigmoid scalar form);
+- `opToSpec` entries in `emit_csl_exec_v1.zig` mapping the new ops to
+  the new kernel patterns;
+- emit dispatch for the new patterns through `emit_kernel_body_gated.zig`
+  (the TSIR emit body the audit already pointed at).
+
+Once that lands, the synthesizer's pre-bundle preflight closes and the
+byte-identity test's upstream-compile-root precondition is satisfied.
+The validator-binding test still depends on Doppler-side capture
+(separate cross-repo branch `feat/qwen-3-6-bringup` in the doppler
+tree), which is named in the test's typed-skip pointer.
+
+Open follow-ups:
+
+- Wire `silu_gated`/`sigmoid_gated` through the classifier + opToSpec
+  chain above (Doe-side; unblocks the smoke config compile).
+- Doppler `feat/qwen-3-6-bringup`: capture a deterministic Qwen
+  inference run + the TSIR boundary-probe fixture
+  (`bench/fixtures/r3-2-27b-doppler-frozen/`).
+- mropeInterleaved lowering (Qwen-only; deferred until 1D-rotary smoke
+  receipts pass).
+- Linear-attention layer body op (Qwen 3.6 hybrid; named blocker in
+  smoke scopeRestrictions; deferred).
+- Causal prefill in `AttentionScoresBody` (shared with Gemma; deferred
+  until the prefill simfabric ladder lands).
+
 ## 2026-04-27 — Fused-dequant SUMMA wedge (Q4K-input) compiles + executes on simfabric with parity
 
 The `feat/fused-dequant-summa` branch lands the on-PE Q4_K_M dequant SUMMA
