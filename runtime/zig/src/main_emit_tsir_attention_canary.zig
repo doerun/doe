@@ -17,6 +17,17 @@
 // Usage:
 //   doe-emit-tsir-attention-canary --head-dim 256 --out-dir <dir>
 //   doe-emit-tsir-attention-canary --head-dim 512 --out-dir <dir>
+//
+// Multi-PE kv-axis-sharded variant (rung-6 follow-up):
+//   doe-emit-tsir-attention-canary --head-dim 512 \
+//       --pe-strategy kv_axis_sharded --slots-per-pe 8 \
+//       --out-dir <dir>
+//
+// The sharded variant emits a partials-only kernel: each PE writes
+// `[head_dim + 2]f32` (local_O + local_max + local_sum_exp); the host
+// plan stitches with log-sum-exp distributed softmax. Required for
+// head_dim=512 at kv_len ≥ 15 because a single PE cannot hold the
+// full K/V buffers within the WSE-3 48 KiB SRAM budget.
 
 const std = @import("std");
 const tsir = @import("tsir/mod.zig");
@@ -126,28 +137,51 @@ pub fn main() !void {
     _ = args_iter.next(); // skip binary name
     var head_dim: u32 = 0;
     var out_dir: []const u8 = "";
+    var pe_strategy: tsir.emit_kernel_body.AttentionPeStrategy = .full_per_pe;
+    var slots_per_pe: ?u32 = null;
     while (args_iter.next()) |arg| {
         if (std.mem.eql(u8, arg, "--head-dim")) {
             const next = args_iter.next() orelse die("--head-dim requires a value", .{});
             head_dim = parseHeadDim(next) orelse die("invalid --head-dim {s}", .{next});
         } else if (std.mem.eql(u8, arg, "--out-dir")) {
             out_dir = args_iter.next() orelse die("--out-dir requires a value", .{});
+        } else if (std.mem.eql(u8, arg, "--pe-strategy")) {
+            const next = args_iter.next() orelse die("--pe-strategy requires a value", .{});
+            if (std.mem.eql(u8, next, "full_per_pe")) {
+                pe_strategy = .full_per_pe;
+            } else if (std.mem.eql(u8, next, "kv_axis_sharded")) {
+                pe_strategy = .kv_axis_sharded;
+            } else {
+                die("invalid --pe-strategy {s} (expected full_per_pe or kv_axis_sharded)", .{next});
+            }
+        } else if (std.mem.eql(u8, arg, "--slots-per-pe")) {
+            const next = args_iter.next() orelse die("--slots-per-pe requires a value", .{});
+            slots_per_pe = parseHeadDim(next) orelse die("invalid --slots-per-pe {s}", .{next});
         } else {
             die("unknown arg {s}", .{arg});
         }
     }
     if (head_dim == 0) die("--head-dim is required (256 or 512)", .{});
     if (out_dir.len == 0) die("--out-dir is required", .{});
+    if (pe_strategy == .kv_axis_sharded and slots_per_pe == null) {
+        die("--pe-strategy kv_axis_sharded requires --slots-per-pe <N>", .{});
+    }
 
     const semantic = buildSemantic(head_dim);
     const descriptor = targets.wse3.descriptor;
     const function = buildRealizationFunction(descriptor);
+    const config = tsir.emit_kernel_body.Config{
+        .var_prefix = "tsir_",
+        .attention_pe_strategy = pe_strategy,
+        .attention_slots_per_pe_default = slots_per_pe,
+    };
 
-    const csl = try tsir.emit_csl.emitSemanticFunction(
+    const csl = try tsir.emit_csl.emitSemanticFunctionWithConfig(
         allocator,
         semantic,
         function,
         descriptor,
+        &config,
     );
 
     const split = splitBundle(csl) orelse die("emitter output missing layout/pe_program markers", .{});
@@ -171,9 +205,13 @@ pub fn main() !void {
     const stdout_file = std.fs.File.stdout();
     var stdout_buf: [1024]u8 = undefined;
     var stdout_writer = stdout_file.writer(&stdout_buf);
+    const strategy_name = switch (pe_strategy) {
+        .full_per_pe => "full_per_pe",
+        .kv_axis_sharded => "kv_axis_sharded",
+    };
     try stdout_writer.interface.print(
-        "wrote {s}/layout.csl and {s}/pe_program.csl (head_dim={d})\n",
-        .{ out_dir, out_dir, head_dim },
+        "wrote {s}/layout.csl and {s}/pe_program.csl (head_dim={d}, pe_strategy={s})\n",
+        .{ out_dir, out_dir, head_dim, strategy_name },
     );
     try stdout_writer.interface.flush();
 }

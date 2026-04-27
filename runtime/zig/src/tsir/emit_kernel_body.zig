@@ -78,6 +78,28 @@ pub const EmitError = std.mem.Allocator.Error || error{
 /// uninitialized-param check.
 pub const KvCachePeStrategy = enum { full_per_pe, slot_sharded };
 
+/// Per-PE residency layout for `attention_scores`:
+///
+///   - `.full_per_pe` (default) keeps the full `[kv_len * head_dim]f32`
+///     K and V buffers replicated on every PE. Single-PE canary path;
+///     used by `attention_head256_f16kv` (kv_len=15) and the kv_len≤8
+///     `attention_head512_f16kv` lane that already fits the WSE-3
+///     48 KiB per-PE SRAM budget.
+///
+///   - `.kv_axis_sharded` shards the K/V buffers along the position
+///     axis: each PE owns `slots_per_pe = ceil(kv_len_max / num_pes)`
+///     slots, allocates `[slots_per_pe * head_dim]f32` per K/V buffer,
+///     and emits a partials-only kernel that writes a per-PE
+///     `local_O[d]` (un-normalized output contribution),
+///     `local_max`, and `local_sum_exp`. The host plan stitches the
+///     PE partials into the final `O[d]` using the standard
+///     distributed log-sum-exp recipe (mirrors the slot-sharded KV
+///     pattern: kernel emits per-PE pieces, host does the cross-PE
+///     reduce). This unblocks `head_dim=512` at `kv_len ≥ 15`, which
+///     the single-PE path cannot fit (see
+///     `docs/cerebras-north-star.md` rung 6 follow-up).
+pub const AttentionPeStrategy = enum { full_per_pe, kv_axis_sharded };
+
 pub const Config = struct {
     var_prefix: []const u8 = "tsir_",
     chunk_size_default: ?u32 = null,
@@ -88,9 +110,16 @@ pub const Config = struct {
     read_len_default: ?u32 = null,
     kv_cache_pe_strategy: KvCachePeStrategy = .full_per_pe,
     kv_slots_per_pe_default: ?u32 = null,
+    attention_pe_strategy: AttentionPeStrategy = .full_per_pe,
+    /// Compile-time default for `slots_per_pe` in the kv-axis-sharded
+    /// attention path. `slots_per_pe = ceil(kv_len_max / num_pes)`.
+    /// The live wrapper computes this from the manifest-shape kv_len
+    /// budget; TSIR-only callers leave it null and accept the
+    /// `csl_compile_uninitialized_param` failure.
+    attention_slots_per_pe_default: ?u32 = null,
 };
 
-const default_config: Config = .{};
+pub const default_config: Config = .{};
 
 pub fn emit(writer: anytype, func: schema.SemanticFunction, backend: Backend) EmitError!void {
     return emitWithConfig(writer, func, backend, &default_config);

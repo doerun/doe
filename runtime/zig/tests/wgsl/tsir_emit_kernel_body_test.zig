@@ -503,6 +503,133 @@ test "tsir csl attention_scores rejects out-of-contract bodies" {
     );
 }
 
+test "tsir csl attention_scores kv_axis_sharded emits per-PE partials shape" {
+    // Multi-PE kv-axis-sharded body: K/V are sliced along the position
+    // axis and each PE writes a `[head_dim + 2]f32` partials buffer
+    // (`local_O[d]` un-normalized + `local_max` + `local_sum_exp`).
+    // Asserts the shape signals the host plan needs to stitch:
+    //   - param pe_id / num_pes / slots_per_pe
+    //   - local_kv_len + partials_len declarations
+    //   - tail-mask guard (gk >= kv_len)
+    //   - partials writes at indices head_dim and head_dim+1
+    // Bypass the public `emit_csl.emitSemanticFunction` entry (which
+    // pins the default Config) and route through `emit_kernel_body
+    // .emitWithConfig` so the strategy can be flipped to
+    // `.kv_axis_sharded`. This mirrors the slot_sharded KV unit test
+    // pattern in `emit_kernel_body_kv.zig`.
+    const allocator = std.testing.allocator;
+    const semantic = attentionScoresSemantic();
+    const config = tsir.emit_kernel_body.Config{
+        .var_prefix = "tsir_",
+        .attention_pe_strategy = .kv_axis_sharded,
+        .attention_slots_per_pe_default = 8,
+    };
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    try tsir.emit_kernel_body.emitWithConfig(
+        buf.writer(allocator),
+        semantic,
+        .csl,
+        &config,
+    );
+    const csl = buf.items;
+    // pe_id / num_pes are declared by emit_csl's per-PE skeleton (as
+    // u32); the body must not redeclare them, otherwise the bundled
+    // CSL would have a duplicate `param` and cslc would reject it.
+    // The full-bundle regression test below pins this end-to-end.
+    try expectNotContains(csl, "param pe_id:");
+    try expectNotContains(csl, "param num_pes:");
+    try expectContains(csl, "param slots_per_pe: i16 = 8;");
+    try expectContains(csl, "const head_dim: i16 = 256;");
+    try expectContains(csl, "const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);");
+    try expectContains(csl, "const partials_len: u32 = @as(u32, head_dim) + 2;");
+    try expectContains(csl, "tsir_key: [local_kv_len]f32");
+    try expectContains(csl, "tsir_value: [local_kv_len]f32");
+    try expectContains(csl, "tsir_output: [partials_len]f32");
+    try expectContains(csl, "var attn_scores: [slots_per_pe]f32");
+    try expectContains(csl, "const slot_base: u32 = @as(u32, pe_id) * @as(u32, slots_per_pe);");
+    try expectContains(csl, "if (gk >= @as(u32, kv_len))");
+    try expectContains(csl, "tsir_output[@as(u32, head_dim)] = local_max;");
+    try expectContains(csl, "tsir_output[@as(u32, head_dim) + 1] = local_sum_exp;");
+    // Sharded path must NOT divide by sum_exp inside the kernel — the
+    // host stitch does the global normalization. Catch a regression
+    // where someone copies the single-PE final pass.
+    try expectNotContains(csl, "/ sum_exp");
+    // Default `.full_per_pe` strategy must not bleed into the sharded
+    // path: no full-cache `[kv_len * head_dim]f32` allocations.
+    try expectNotContains(csl, "[kv_len * head_dim]f32");
+}
+
+test "tsir csl attention_scores kv_axis_sharded full-bundle has no duplicate pe_id" {
+    // Regression for the redeclaration bug: emit_csl's per-PE skeleton
+    // already declares `param pe_id: u32; param num_pes: u32;`. If the
+    // sharded body redeclares them as `i16`, the bundled CSL has two
+    // `param pe_id` lines and cslc rejects it. This test routes through
+    // `emitSemanticFunctionWithConfig` (the full skeleton + body bundle)
+    // so the assertion catches anything the body-only test misses.
+    const allocator = std.testing.allocator;
+    const semantic = attentionScoresSemantic();
+    const config = tsir.emit_kernel_body.Config{
+        .var_prefix = "tsir_",
+        .attention_pe_strategy = .kv_axis_sharded,
+        .attention_slots_per_pe_default = 8,
+    };
+    const csl = try tsir.emit_csl.emitSemanticFunctionWithConfig(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+        &config,
+    );
+    defer allocator.free(csl);
+    // Skeleton declares pe_id once as u32; body must not redeclare it.
+    var pe_id_count: usize = 0;
+    var search_from: usize = 0;
+    while (std.mem.indexOfPos(u8, csl, search_from, "param pe_id")) |idx| {
+        pe_id_count += 1;
+        search_from = idx + 1;
+    }
+    try std.testing.expectEqual(@as(usize, 1), pe_id_count);
+    var num_pes_count: usize = 0;
+    search_from = 0;
+    while (std.mem.indexOfPos(u8, csl, search_from, "param num_pes")) |idx| {
+        num_pes_count += 1;
+        search_from = idx + 1;
+    }
+    try std.testing.expectEqual(@as(usize, 1), num_pes_count);
+    // Body must still declare slots_per_pe and the partials shape so
+    // the host stitch contract is intact.
+    try expectContains(csl, "param slots_per_pe: i16 = 8;");
+    try expectContains(csl, "tsir_output: [partials_len]f32");
+}
+
+test "tsir csl attention_scores defaults to full_per_pe single-PE shape" {
+    // Regression guard: with the default Config, the emit must still
+    // produce the single-PE body. Mirrors the existing canary contract
+    // (no pe_id / num_pes / slots_per_pe params, full kv_len * head_dim
+    // K/V buffers, normalized output).
+    const allocator = std.testing.allocator;
+    const semantic = attentionScoresSemantic();
+    const config = tsir.emit_kernel_body.Config{ .var_prefix = "tsir_" };
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    try tsir.emit_kernel_body.emitWithConfig(
+        buf.writer(allocator),
+        semantic,
+        .csl,
+        &config,
+    );
+    const csl = buf.items;
+    try expectContains(csl, "tsir_key: [kv_len * head_dim]f32");
+    try expectContains(csl, "tsir_value: [kv_len * head_dim]f32");
+    try expectContains(csl, "tsir_output: [head_dim]f32");
+    try expectContains(csl, "/ sum_exp");
+    try expectNotContains(csl, "param pe_id: i16;");
+    try expectNotContains(csl, "param slots_per_pe");
+    try expectNotContains(csl, "local_kv_len");
+    try expectNotContains(csl, "partials_len");
+}
+
 test "tsir emitters produce executable gather bodies" {
     const allocator = std.testing.allocator;
     const semantic = gatherSemantic();

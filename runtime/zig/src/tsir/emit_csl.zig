@@ -73,6 +73,28 @@ pub fn emitSemanticFunction(
     function: schema.RealizationFunction,
     descriptor: targets.TargetDescriptor,
 ) EmitError![]const u8 {
+    return emitSemanticFunctionWithConfig(
+        allocator,
+        semantic_function,
+        function,
+        descriptor,
+        &kernel_body.default_config,
+    );
+}
+
+/// Same as `emitSemanticFunction` but accepts a body-emit `Config` so
+/// callers can flip `attention_pe_strategy` / `kv_cache_pe_strategy`
+/// (and the matching default-tile params) without going through the
+/// public single-PE entry. Only callers that need a non-default
+/// strategy should reach for this; the default config wrapper above is
+/// the standard path.
+pub fn emitSemanticFunctionWithConfig(
+    allocator: std.mem.Allocator,
+    semantic_function: schema.SemanticFunction,
+    function: schema.RealizationFunction,
+    descriptor: targets.TargetDescriptor,
+    config: *const kernel_body.Config,
+) EmitError![]const u8 {
     const descriptor_hash = targets.descriptorHash(descriptor);
     if (!std.mem.eql(u8, &descriptor_hash, &function.target_descriptor_hash)) {
         return error.TargetDescriptorHashMismatch;
@@ -137,7 +159,7 @@ pub fn emitSemanticFunction(
     try writeReductions(writer, function.reductions);
     try writer.writeAll("param pe_id: u32;\n");
     try writer.writeAll("param num_pes: u32;\n\n");
-    try kernel_body.emit(writer, semantic_function, .csl);
+    try kernel_body.emitWithConfig(writer, semantic_function, .csl, config);
 
     return out.toOwnedSlice(allocator);
 }
