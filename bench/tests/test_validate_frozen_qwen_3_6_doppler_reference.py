@@ -41,9 +41,12 @@ QWEN_MODEL_IDS = {
     "qwen-3-6-27b-it-text-q4k-ehaf16",
 }
 DOPPLER_CAPTURE_INVOCATION = (
-    "doppler/tools/run-program-bundle-reference.js "
+    "doppler/docs/cerebras-tsir-fixture-capture.md (Qwen 3.6 27B section); "
+    "tl;dr: doppler/tools/run-program-bundle-reference.js "
     "--manifest models/local/qwen-3-6-27b-q4k-ehaf16/manifest.json "
-    "--prompt-file ... --tsir-fixture-dir <fixture-root>"
+    '--prompt "The color of the sky is" '
+    "--tsir-fixture-dir <doe-repo>/bench/fixtures/r3-2-27b-doppler-frozen "
+    "--tsir-fixture-layer-filter 0"
 )
 
 
