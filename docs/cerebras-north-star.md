@@ -560,7 +560,7 @@ ordering, not in claim substance.
 - Area: SUMMA fence audit.
 - Status: Closed.
 - Work left: None. Audit complete: diff against canonical
-  `csl-extras-202604101435-6/examples/benchmarks/gemm-collectives_2d/pe.csl`
+  `csl-extras/.../benchmarks/gemm-collectives_2d/pe.csl`
   showed Doe matches structurally, including `unblock_cmd_stream` placement on
   the exit task. No fence primitive exists in the canonical SUMMA pattern
   either. The sink PE does NOT need a different unblock signal; the issue is
