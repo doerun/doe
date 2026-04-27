@@ -24,7 +24,7 @@ is byte-stable against the bound receipt.
 runs the host-plan tool against `numLayers=1` and `numLayers=61`
 configs and asserts every shared kernel emits byte-identical
 `layout.csl`, `pe_program.csl`, and `pe_program.metadata.json`. This is
-the property a 1-of-60-layer first-token receipt relies on — kernel
+the property a 1-of-60-layer correctness receipt relies on — kernel
 CSL is per-class, not per-layer-instance. 2/2 pass, 17 shared kernels
 match.
 
