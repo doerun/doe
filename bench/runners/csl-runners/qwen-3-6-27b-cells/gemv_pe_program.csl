@@ -1,0 +1,106 @@
+// PE program: fused GEMV + Q4K dequant (auto-generated from WGSL)
+// Each PE dequants its weight slice and computes partial dot products.
+// Fabric allreduce accumulates the final output vector.
+
+param memcpy_params;
+param pe_id: i16;
+param num_pes: i16;
+param reduce_color: color;
+
+param out_dim_per_pe: i16;
+param in_dim_per_pe: i16;
+param num_blocks_per_row: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+const QK_K: u32 = 256;
+const QK_K_I16: i16 = 256;
+const Q4K_BLOCK_BYTES: u32 = 144;
+const Q4K_BLOCK_BYTES_I16: i16 = 144;
+
+var activation: [in_dim_per_pe]f32 = @zeros([in_dim_per_pe]f32);
+var weight: [out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8 = @zeros([out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8);
+var output: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+
+var activation_ptr: [*]f32 = &activation;
+var weight_ptr: [*]u8 = &weight;
+var output_ptr: [*]f32 = &output;
+
+var scratch_in: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var scratch_out: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim_per_pe} -> scratch_in[i] });
+const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim_per_pe} -> scratch_out[i] });
+const reduce_out_q = @get_output_queue(2);
+const reduce_in_q = @get_input_queue(2);
+const reduce_out = @get_dsd(fabout_dsd, .{ .extent = out_dim_per_pe, .output_queue = reduce_out_q });
+const reduce_in = @get_dsd(fabin_dsd, .{ .extent = out_dim_per_pe, .input_queue = reduce_in_q });
+
+const reduce_task_id: local_task_id = @get_local_task_id(10);
+const send_done_id: local_task_id = @get_local_task_id(11);
+
+fn compute() void {
+    for (@range(i16, out_dim_per_pe)) |row| {
+        var sum: f32 = 0.0;
+        const row_base = @as(u32, row) * @as(u32, num_blocks_per_row) * Q4K_BLOCK_BYTES;
+
+        for (@range(i16, num_blocks_per_row)) |blk| {
+            const blk_base = row_base + @as(u32, blk) * Q4K_BLOCK_BYTES;
+            const d_bits = @as(u16, weight[blk_base]) | (@as(u16, weight[blk_base + 1]) << 8);
+            const d = @as(f32, @bitcast(f16, d_bits));
+            const data_off = blk_base + 16;
+            const act_off = @as(u32, blk) * QK_K;
+
+            for (@range(u32, 128)) |i| {
+                const byte = weight[data_off + i];
+                const lo = @as(f32, byte & 0x0F) * d;
+                const hi = @as(f32, byte >> 4) * d;
+                sum += lo * activation[act_off + i * 2];
+                sum += hi * activation[act_off + i * 2 + 1];
+            }
+        }
+        partial[@as(u32, row)] = sum;
+    }
+
+    if (pe_id == 0) {
+        for (@range(i16, out_dim_per_pe)) |i| {
+            scratch_out[@as(u32, i)] = partial[@as(u32, i)];
+        }
+        @mov32(reduce_out, scratch_out_dsd, .{ .async = true, .unblock = send_done_id });
+    } else {
+        @mov32(scratch_in_dsd, reduce_in, .{ .async = true, .activate = reduce_task_id });
+    }
+}
+
+task reduce_recv() void {
+    for (@range(i16, out_dim_per_pe)) |i| {
+        output[@as(u32, i)] = partial[@as(u32, i)] + scratch_in[@as(u32, i)];
+    }
+    if (pe_id != num_pes - 1) {
+        for (@range(i16, out_dim_per_pe)) |i| {
+            scratch_out[@as(u32, i)] = output[@as(u32, i)];
+        }
+        @mov32(reduce_out, scratch_out_dsd, .{ .async = true, .unblock = send_done_id });
+    } else {
+        sys_mod.unblock_cmd_stream();
+    }
+}
+
+task send_done_task() void {
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @bind_local_task(reduce_recv, reduce_task_id);
+    @bind_local_task(send_done_task, send_done_id);
+    @block(send_done_id);
+    if (@is_arch("wse3")) {
+        @initialize_queue(reduce_out_q, .{ .color = reduce_color });
+        @initialize_queue(reduce_in_q, .{ .color = reduce_color });
+    }
+    @export_symbol(activation_ptr, "activation");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

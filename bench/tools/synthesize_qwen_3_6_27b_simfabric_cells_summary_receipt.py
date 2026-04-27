@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 """Synthesize the Qwen 3.6 27B simfabric-cells summary receipt.
 
-Aggregates the three per-kernel simfabric receipts produced by the
-small-shape cell drivers under
-``bench/runners/csl-runners/qwen-3-6-27b-cells/`` (rmsnorm, rope_partial,
-residual). The summary receipt cites each per-cell verdict, parity
-deltas, source-file sha256s, and the named blockers from the smoke
-config that this run does **not** cover (linear-attention layers,
-mrope-interleaved RoPE, causal prefill, attentionOutputGate,
-SwiGLU FFN fused gate, plus the manifest-shape per-PE residency
-blocker that motivates the layout patches in two of the three cells).
+Aggregates per-kernel simfabric receipts produced by the small-shape
+cell drivers under ``bench/runners/csl-runners/qwen-3-6-27b-cells/``.
+
+Coverage: 10 kernels in the Qwen 3.6 27B compile target inventory.
+Seven (rmsnorm, rope_partial, residual, silu, embed, tiled, kv_write,
+gemv [width=2], sample) execute end-to-end on simfabric with parity
+or documented stand-in semantics. Three carry typed kernel-emit
+gaps: attn_decode (missing reduce-task activation), gemv at width≥3
+(middle-PE routing pass-through), and sample (missing index reduction);
+each is recorded as a per-cell receipt with the gap in claim.notWhat
+so the summary cannot misread the lane as fully covered. The 11th
+kernel, attn_prefill, is the cslc compile failure
+(linker_pe_memory_overflow, "causal prefill" blocker shared with
+Gemma 31B) and is NOT a simfabric cell — it never compiled.
+
+The summary receipt cites each per-cell verdict, parity deltas,
+source-file sha256s, and the named blockers from the smoke config.
 
 Skip-when-absent for any cell whose receipt has not been produced
 yet (the expected pre-regeneration state on a fresh checkout).
@@ -83,6 +91,144 @@ CELLS = [
             "Same per-PE-residency rationale as rmsnorm: layout was "
             "hand-patched to forward chunk_size; the upstream emit "
             "intentionally omits this at manifest scale."
+        ),
+    },
+    {
+        "kernel": "silu",
+        "layout_basename": "silu_layout_patched.csl",
+        "pe_program_basename": "silu_pe_program.csl",
+        "run_basename": "silu_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-silu-simfabric-cell",
+        "layout_was_patched": True,
+        "patch_summary": (
+            "Layout patched to forward chunk_size (same per-PE-"
+            "residency rationale as rmsnorm/residual). KERNEL-EMIT "
+            "STAND-IN: the silu kernel currently emits as a pure "
+            "passthrough (output[idx] = input[idx] * 1.0); validates "
+            "the dispatch shape, not actual SiLU arithmetic. "
+            "Tracked as scopeRestrictions.swigluFfnFusedGate."
+        ),
+    },
+    {
+        "kernel": "embed",
+        "layout_basename": "embed_layout.csl",
+        "pe_program_basename": "embed_pe_program.csl",
+        "run_basename": "embed_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-embed-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — embed's layout forwards all per-PE shape "
+            "params. Validates the per-PE row-ownership branch "
+            "(`token_id ∈ [row_start, row_end)`) and table gather "
+            "end-to-end."
+        ),
+    },
+    {
+        "kernel": "tiled",
+        "layout_basename": "tiled_layout.csl",
+        "pe_program_basename": "tiled_pe_program.csl",
+        "run_basename": "tiled_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-tiled-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — SUMMA matmul layout forwards Mt/Kt/Nt/P. "
+            "Validates the collectives_2d row+column broadcast chain "
+            "end-to-end at P=2."
+        ),
+    },
+    {
+        "kernel": "kv_write",
+        "layout_basename": "kv_write_layout.csl",
+        "pe_program_basename": "kv_write_pe_program.csl",
+        "run_basename": "kv_write_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-kv-write-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — kv_write's layout forwards head_dim, "
+            "max_seq_len, slots_per_pe. Validates the slot-write at "
+            "the requested position; non-owning PE caches stay zero."
+        ),
+    },
+    {
+        "kernel": "gemv",
+        "layout_basename": "gemv_layout.csl",
+        "pe_program_basename": "gemv_pe_program.csl",
+        "run_basename": "gemv_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-gemv-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — gemv layout forwards out_dim_per_pe / "
+            "in_dim_per_pe / num_blocks_per_row. Q4_K dequant + "
+            "GEMV reduction validated end-to-end at width=2. "
+            "KERNEL-EMIT ROUTING GAP at width≥3: middle-PE "
+            "reduce_color routing is rx={WEST}, tx={EAST} pure "
+            "pass-through, so middle PEs never receive into RAMP "
+            "and the reduction at the last PE equals only "
+            "partial[0] + partial[width-1]. The width=2 canary "
+            "avoids middle PEs and runs to parity; the width≥3 gap "
+            "is documented in the per-cell receipt notWhat."
+        ),
+    },
+    {
+        "kernel": "sample",
+        "layout_basename": "sample_layout.csl",
+        "pe_program_basename": "sample_pe_program.csl",
+        "run_basename": "sample_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-sample-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — sample layout forwards chunk_size. KERNEL-"
+            "EMIT INDEX-REDUCTION GAP: the sample kernel reduces "
+            "the running max VALUE across PEs but unconditionally "
+            "writes the LAST PE's local_max_idx as the output "
+            "token; the global argmax INDEX is not propagated. The "
+            "canary works around this by constructing logits so the "
+            "global max lives in PE (width-1)'s chunk; the gap is "
+            "documented in the per-cell receipt."
+        ),
+    },
+    {
+        "kernel": "attn_decode",
+        "layout_basename": "attn_decode_layout.csl",
+        "pe_program_basename": "attn_decode_pe_program.csl",
+        "run_basename": "attn_decode_run.py",
+        "receipt_dir_basename": "r3-2-27b-qwen-attn-decode-simfabric-cell",
+        "layout_was_patched": False,
+        "patch_summary": (
+            "No patch — attn_decode layout forwards head_dim / "
+            "kv_chunk. KERNEL-EMIT TASK-ACTIVATION GAP — STALLS "
+            "ON SIMFABRIC: `task reduce_recv` is bound to "
+            "`reduce_task_id` but never activated; the "
+            "`@fmovs(&incoming, reduce_in)` call is missing the "
+            "`.activate = reduce_task_id` annotation that the "
+            "sample kernel's `@mov32` uses correctly. The cell "
+            "produces a typed-blocker receipt without launching "
+            "(any launch attempt aborts the SDK with the recorded "
+            "stall signature). Decode-loop correctness depends on "
+            "this gap being closed."
+        ),
+    },
+]
+
+# attn_prefill is the Qwen full-graph compile attempt's ONE cslc
+# failure (linker_pe_memory_overflow — the same per-PE residency
+# blocker the Gemma 4 31B prefill ladder carries; the smoke config
+# names it `causalAttentionPrefill`). It is NOT a simfabric cell —
+# the kernel never compiled. Recorded here so the summary verdict
+# can cite the manifest-shape compile-target gap explicitly.
+KNOWN_BLOCKERS = [
+    {
+        "kernel": "attn_prefill",
+        "blocker": "cslc_linker_pe_memory_overflow",
+        "blockerDetail": (
+            "attn_prefill at Qwen manifest shape (head_dim=256, "
+            "q_len=4096) does not link — exceeds the WSE-3 per-PE "
+            "data-section budget. Same blocker the Gemma 4 31B "
+            "prefill ladder carries (smoke config name: "
+            "causalAttentionPrefill). Not a simfabric cell — the "
+            "kernel never compiled. Closed by either the R3-2 "
+            "single-PE-reduction → fabric-shard redesign or by a "
+            "shape-aware split that brings q_len into per-PE budget."
         ),
     },
 ]
@@ -186,9 +332,20 @@ def main() -> int:
     notAttemptedCount = sum(
         1 for c in cells if c.get("verdict") == "not_attempted"
     )
+    kernelEmitGapCount = sum(
+        1 for c in cells if c.get("verdict") in (
+            "kernel_emit_stall",
+            "kernel_emit_partial_reduction",
+            "kernel_emit_index_gap",
+        )
+    )
 
     if failCount > 0:
         verdict = "fail"
+    elif kernelEmitGapCount > 0 or any(
+        "KERNEL-EMIT" in (c.get("patchSummary") or "") for c in cells
+    ):
+        verdict = "partial_with_kernel_emit_gaps"
     elif notAttemptedCount > 0 and passCount == 0:
         verdict = "not_attempted"
     elif notAttemptedCount > 0:
@@ -208,36 +365,51 @@ def main() -> int:
         "passCount": passCount,
         "failCount": failCount,
         "notAttemptedCount": notAttemptedCount,
+        "kernelEmitGapCount": kernelEmitGapCount,
         "cells": cells,
+        "knownBlockers": KNOWN_BLOCKERS,
         "smokeConfigPath": _rel(args.smoke_config),
         "scopeRestrictions": scope_restrictions,
         "claim": {
             "scope": (
-                "Qwen 3.6 27B per-kernel CSL (rmsnorm, rope_partial, "
-                "residual), sourced from the manifest-shape host plan, "
-                "compiles via cslc 2.10.0 at small-shape canary "
-                "configuration and runs end-to-end on simfabric. Each "
-                "kernel matches its host-computed reference within "
-                "float32 precision. Validates the per-kernel "
-                "arithmetic and the partialRotaryFactor wiring delta; "
-                "the rmsnorm and residual cells additionally exercise "
-                "a hand-patched layout that forwards the per-PE buffer "
-                "size to pe_program (the upstream emit intentionally "
-                "omits this at manifest scale due to per-PE residency)."
+                "Qwen 3.6 27B per-kernel CSL — 10 of 11 compile-"
+                "target kernels (rmsnorm, rope_partial, residual, "
+                "silu, embed, tiled, kv_write, gemv, sample, "
+                "attn_decode), sourced from the manifest-shape host "
+                "plan, compile via cslc 2.10.0 at small-shape canary "
+                "configuration. Cells without WGSL→CSL emit gaps "
+                "(rmsnorm, rope_partial, residual, embed, tiled, "
+                "kv_write, gemv at width=2) execute end-to-end on "
+                "simfabric and match host-computed references within "
+                "float32 precision. silu validates dispatch shape "
+                "against a passthrough reference (kernel currently "
+                "emits as identity, not real SiLU). sample, gemv "
+                "(at width≥3), and attn_decode carry typed kernel-"
+                "emit gaps captured per-cell so the lane cannot be "
+                "misread as fully covered."
             ),
             "notWhat": (
                 "Not a hardware run. Not a manifest-shape run — the "
-                "small canary shapes (hidden=128, head_dim=8, "
-                "chunk_size=128) exercise the kernel mechanism, not "
-                "production scale. Not a multi-kernel chain — each "
-                "cell runs a single kernel only. Does not cover the "
-                "smoke config's scopeRestrictions (linear-attention "
-                "layers, mrope-interleaved RoPE, causal prefill, "
-                "attentionOutputGate, SwiGLU FFN fused gate). Does not "
-                "cover the manifest-shape per-PE residency blocker "
-                "that motivates the layout patches in two of the three "
-                "cells — that is closed by the broader R3-2 single-PE-"
-                "reduction → fabric-shard redesign, tracked separately."
+                "small canary shapes exercise the kernel mechanism, "
+                "not production scale. Not a multi-kernel chain — "
+                "each cell runs a single kernel only. The 11th "
+                "compile-target kernel, attn_prefill, is the cslc "
+                "linker_pe_memory_overflow blocker (causalAttention"
+                "Prefill in the smoke config) and is recorded under "
+                "knownBlockers — not a simfabric cell. Does not "
+                "cover the smoke config's other scopeRestrictions "
+                "(linear-attention layers, mrope-interleaved RoPE, "
+                "attentionOutputGate, SwiGLU FFN fused gate). Does "
+                "not cover the manifest-shape per-PE residency "
+                "blocker that motivates the layout patches in three "
+                "of the cells (rmsnorm, residual, silu) — closed by "
+                "the broader R3-2 single-PE-reduction → fabric-shard "
+                "redesign, tracked separately. Three real WGSL→CSL "
+                "emit gaps surface here (sample index reduction, "
+                "gemv middle-PE routing at width≥3, attn_decode "
+                "reduce-task activation) and require Doe-side fixes "
+                "before the affected kernels can run end-to-end at "
+                "manifest shape."
             ),
         },
     }
@@ -246,7 +418,10 @@ def main() -> int:
     args.out.write_text(json.dumps(receipt, indent=2) + "\n")
     print(f"wrote {_rel(args.out)} verdict={verdict} "
           f"pass={passCount}/{cellCount}")
-    return 0 if verdict in ("pass", "partial") else 1
+    # partial_with_kernel_emit_gaps is a faithful synthesis result —
+    # the gaps are recorded per-cell and in the summary, not silently
+    # masked. Exit 0 so the evidence packet can cite the receipt.
+    return 0 if verdict in ("pass", "partial", "partial_with_kernel_emit_gaps") else 1
 
 
 if __name__ == "__main__":
