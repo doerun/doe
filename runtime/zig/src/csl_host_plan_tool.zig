@@ -40,6 +40,7 @@ const BundleConfigJson = struct {
         ffnMatrixCount: u32 = 3,
         pleWidth: ?u32 = null,
         pleVocabSize: ?u32 = null,
+        partialRotaryFactor: f32 = 1.0,
     };
 };
 
@@ -246,6 +247,7 @@ fn parseBundleModelConfig(allocator: std.mem.Allocator, payload: []const u8) !?h
         .ffn_matrix_count = model_config.ffnMatrixCount,
         .ple_width = model_config.pleWidth,
         .ple_vocab_size = model_config.pleVocabSize,
+        .partial_rotary_factor = model_config.partialRotaryFactor,
     };
 }
 
@@ -565,6 +567,21 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "width", width);
         try appendParam(allocator, &params, "height", 1);
         try appendParam(allocator, &params, "chunk_size", ceilDivU32(config.vocab_size, width));
+    } else if (std.mem.eql(u8, pattern, "rope")) {
+        // num_pairs = head_dim * partial_rotary_factor / 2.
+        // Full rotary (factor=1.0) → head_dim/2 pairs; Qwen 3.x's
+        // partialRotaryFactor=0.25 at head_dim=256 → 32 pairs. The
+        // factor lives in `manifest.attention.rotary.partialRotaryFactor`
+        // and lands here via parseBundleModelConfig. This is the audit
+        // wiring delta: the kernel's `param num_pairs: i16;` must be
+        // sourced from manifest contract, not the previous head_dim/2
+        // default.
+        const head_dim_f: f32 = @floatFromInt(config.head_dim);
+        const num_pairs_f: f32 = head_dim_f * config.partial_rotary_factor / 2.0;
+        const num_pairs: u32 = @intFromFloat(@round(num_pairs_f));
+        try appendParam(allocator, &params, "width", plan.pe_grid_width);
+        try appendParam(allocator, &params, "head_dim", config.head_dim);
+        try appendParam(allocator, &params, "num_pairs", num_pairs);
     }
     return try params.toOwnedSlice(allocator);
 }

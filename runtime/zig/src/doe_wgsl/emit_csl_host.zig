@@ -38,6 +38,12 @@ pub const ModelConfig = struct {
     ffn_matrix_count: u32 = 3,
     ple_width: ?u32 = null,
     ple_vocab_size: ?u32 = null,
+    /// Partial-rotary fraction. Full rotary = 1.0. Qwen 3.x uses 0.25
+    /// (rotates the first quarter of head_dim only). The host plan
+    /// derives `num_pairs` for rope kernels from this:
+    /// `num_pairs = head_dim * partial_rotary_factor / 2`. Source:
+    /// `manifest.attention.rotary.partialRotaryFactor`.
+    partial_rotary_factor: f32 = 1.0,
 
     pub const QuantFormat = enum { f16, q4k, q8_0 };
 };
