@@ -48,6 +48,25 @@ Simfabric is correctness-only. There is no way to measure speed without real sil
 
 A short multi-token inference run produces both. The bundle is hash-linked (host plan, CSL, fixture, expected-output digests).
 
+## Running the bundle on hardware
+
+The compiled artifacts referenced above live at `bench/out/r3-1-31b-manifest-fullgraph-compile-steps/` (~319 MB, 124 files): `host-plan.json`, `simulator-plan.json`, `runtime-config.json`, `memory-plan.json`, plus `compile/<kernel>/{layout,pe_program}.csl` for 17 kernel classes.
+
+The bundle directory is regeneration output, not source. It is gitignored under `bench/out/`, byte-stable regenerable from source.
+
+Regenerate with:
+
+```
+runtime/zig/zig-out/bin/doe-csl-host-plan-tool \
+  --input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json \
+  --bundle-root bench/out/r3-1-31b-manifest-fullgraph-compile-steps \
+  --mode steps
+```
+
+After regeneration, `host-plan.json` digests to `hostPlanHash=88ea720740…` (full hash bound in the synthesizer receipt). Run `cslc` against each `compile/<kernel>/` directory.
+
+For an on-cluster run, the bundle plus the smoke config (`runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json`) and the frozen reference fixture (`bench/fixtures/r3-1-31b-doppler-frozen/`) ship as a single tarball on request.
+
 ## Pipeline scope
 
 WGSL → TSIR → CSL is model-agnostic. The same path lowers any open-weight transformer with a clean reference implementation.
