@@ -100,6 +100,20 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--host-plan", type=Path, default=DEFAULT_HOST_PLAN)
     p.add_argument("--compile-root", type=Path, default=DEFAULT_COMPILE_ROOT)
+    p.add_argument(
+        "--source-root",
+        type=Path,
+        default=None,
+        help=(
+            "Optional separate root for per-kernel CSL source + "
+            "pe_program.metadata.json. Defaults to --compile-root. The "
+            "steps-mode driver lays source under "
+            "<compile-root>/<kernel>/ and binaries under "
+            "<compile-root>/compiled/<kernel>/, so callers pass "
+            "--source-root <compile-root> and "
+            "--compile-root <compile-root>/compiled."
+        ),
+    )
     p.add_argument("--probe-dir", type=Path, default=DEFAULT_PROBE_DIR)
     p.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     p.add_argument(
@@ -520,6 +534,7 @@ def run_one_kernel(
     kernel: str,
     target: dict[str, Any],
     compile_root: Path,
+    source_root: Path | None = None,
     probe_dir: Path,
     host_plan_path: Path,
     host_plan_hash: str,
@@ -531,7 +546,8 @@ def run_one_kernel(
     dry_run: bool,
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
-    metadata_path = compile_root / kernel / "pe_program.metadata.json"
+    effective_source_root = source_root if source_root is not None else compile_root
+    metadata_path = effective_source_root / kernel / "pe_program.metadata.json"
     if not metadata_path.is_file():
         return build_kernel_receipt(
             kernel=kernel,
@@ -818,6 +834,7 @@ def main() -> int:
             kernel=kernel,
             target=target,
             compile_root=args.compile_root,
+            source_root=args.source_root or args.compile_root,
             probe_dir=args.probe_dir,
             host_plan_path=args.host_plan,
             host_plan_hash=host_plan_hash,
