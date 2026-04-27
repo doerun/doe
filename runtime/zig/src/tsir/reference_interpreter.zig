@@ -85,7 +85,7 @@ pub fn run(
     if (tryResidualAdd(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
-    if (tryGeluGated(allocator, semantic, inputs)) |maybe_result| {
+    if (tryGated(allocator, semantic, inputs)) |maybe_result| {
         if (maybe_result) |result| return result;
     } else |err| return err;
     if (tryAttentionScores(allocator, semantic, inputs)) |maybe_result| {
@@ -922,14 +922,18 @@ fn tryResidualAdd(
     };
 }
 
-/// Detect and interpret the gated-GELU bootstrap-family case:
-///   `output[i] = gelu(gate[i]) * input[i]` where `gelu` uses the
-///   tanh-approximation form Doppler's MLP block emits:
-///     inner = clamp(GELU_A * (x + GELU_B * x³), -15, 15)
-///     gelu(x) = 0.5 * x * (1 + tanh(inner))
-///   with `GELU_A = sqrt(2/π)` and `GELU_B = 0.044715`. The clamp
-///   matches the live `emit_kernel_body.emitCslGeluGated` body so the
-///   interpreter mirrors live numerical behavior (algorithm-exact).
+/// Detect and interpret the gated-activation family
+/// (`gelu_gated`, `silu_gated`, `sigmoid_gated`):
+///   `output[i] = act(gate[i]) * input[i]` where `act` is one of:
+///     gelu    : tanh-approximation form Doppler's MLP block emits
+///       inner = clamp(GELU_A * (x + GELU_B * x³), -15, 15)
+///       gelu(x) = 0.5 * x * (1 + tanh(inner))
+///       with `GELU_A = sqrt(2/π)` and `GELU_B = 0.044715`
+///     silu    : `silu(x) = x / (1 + exp(z))` with `z = clamp(-x, -15, 15)`
+///     sigmoid : `sigmoid(x) = 1 / (1 + exp(z))` with `z = clamp(-x, -15, 15)`
+///   The clamps match the live emit body in
+///   `emit_kernel_body_gated.zig` so the interpreter mirrors live
+///   numerical behavior (algorithm-exact).
 ///
 /// Shape this recognizer matches:
 ///   * one function, zero reductions, zero collectives, one axis
@@ -938,7 +942,7 @@ fn tryResidualAdd(
 ///   * axis role is `hidden`
 ///   * `f32` element type across all three bindings
 ///   * one-dimensional `logical_shape` matching across the three bindings
-fn tryGeluGated(
+fn tryGated(
     allocator: std.mem.Allocator,
     semantic: schema.Semantic,
     inputs: []const []const u8,
@@ -949,7 +953,12 @@ fn tryGeluGated(
     if (func.reductions.len != 0) return null;
     if (func.bindings.len != 3) return null;
     if (func.axes.len != 1) return null;
-    if (func.body.op != .gelu_gated) return null;
+    const gated_kind: enum { gelu, silu, sigmoid } = switch (func.body.op) {
+        .gelu_gated => .gelu,
+        .silu_gated => .silu,
+        .sigmoid_gated => .sigmoid,
+        else => return null,
+    };
     if (func.body.binding_roles.len != 3) return null;
     if (func.body.axis_roles.len != 1) return null;
 
@@ -1013,11 +1022,27 @@ fn tryGeluGated(
     while (i < len) : (i += 1) {
         const x = readF32FromBytes(gate_bytes, gb.elem, i);
         const v = readF32FromBytes(input_bytes, ib.elem, i);
-        var inner = gelu_a * (x + gelu_b * x * x * x);
-        if (inner < -15.0) inner = -15.0;
-        if (inner > 15.0) inner = 15.0;
-        const gelu_x = 0.5 * x * (1.0 + std.math.tanh(inner));
-        writeF32AsElem(output_bytes, i, gelu_x * v, ob.elem);
+        const act_x: f32 = switch (gated_kind) {
+            .gelu => blk: {
+                var inner = gelu_a * (x + gelu_b * x * x * x);
+                if (inner < -15.0) inner = -15.0;
+                if (inner > 15.0) inner = 15.0;
+                break :blk 0.5 * x * (1.0 + std.math.tanh(inner));
+            },
+            .silu => blk: {
+                var z = -x;
+                if (z < -15.0) z = -15.0;
+                if (z > 15.0) z = 15.0;
+                break :blk x / (1.0 + std.math.exp(z));
+            },
+            .sigmoid => blk: {
+                var z = -x;
+                if (z < -15.0) z = -15.0;
+                if (z > 15.0) z = 15.0;
+                break :blk 1.0 / (1.0 + std.math.exp(z));
+            },
+        };
+        writeF32AsElem(output_bytes, i, act_x * v, ob.elem);
     }
 
     var outputs = try allocator.alloc([]const u8, 1);

@@ -308,6 +308,87 @@ test "tsir csl emitter produces executable gelu_gated body" {
     );
 }
 
+test "tsir csl emitter produces executable silu_gated body" {
+    const allocator = std.testing.allocator;
+    const semantic = siluGatedSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_gate: [chunk_size]f32");
+    try expectContains(csl, "tsir_input: [chunk_size]f32");
+    try expectContains(csl, "fn silu(x: f32) f32");
+    try expectContains(csl, "var z = -x;");
+    try expectContains(csl, "if (z < -15.0) z = -15.0;");
+    try expectContains(csl, "if (z > 15.0) z = 15.0;");
+    try expectContains(csl, "return x / (1.0 + math.exp(z));");
+    try expectContains(csl, "tsir_output[idx] = silu(tsir_gate[idx]) * tsir_input[idx];");
+    try expectContains(csl, "@export_symbol(tsir_gate_ptr, \"gate\");");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr, \"input\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+    // GELU's polynomial constants must not appear in a silu body.
+    try expectNotContains(csl, "GELU_A");
+    try expectNotContains(csl, "math.tanh");
+
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl emitter produces executable sigmoid_gated body" {
+    const allocator = std.testing.allocator;
+    const semantic = sigmoidGatedSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_gate: [chunk_size]f32");
+    try expectContains(csl, "tsir_input: [chunk_size]f32");
+    try expectContains(csl, "fn sigmoid(x: f32) f32");
+    try expectContains(csl, "var z = -x;");
+    try expectContains(csl, "if (z < -15.0) z = -15.0;");
+    try expectContains(csl, "if (z > 15.0) z = 15.0;");
+    try expectContains(csl, "return 1.0 / (1.0 + math.exp(z));");
+    try expectContains(csl, "tsir_output[idx] = sigmoid(tsir_gate[idx]) * tsir_input[idx];");
+    try expectContains(csl, "@export_symbol(tsir_gate_ptr, \"gate\");");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr, \"input\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+    try expectNotContains(csl, "GELU_A");
+    try expectNotContains(csl, "math.tanh");
+    // sigmoid divides 1.0, not x, distinguishing it from silu.
+    try expectNotContains(csl, "return x / (1.0 + math.exp(z));");
+
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
 test "tsir csl emitter produces executable kv_write body" {
     const allocator = std.testing.allocator;
     const semantic = kvWriteSemantic();
@@ -800,6 +881,18 @@ fn residualAddSemantic() tsir.schema.SemanticFunction {
 }
 
 fn geluGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.gelu_gated);
+}
+
+fn siluGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.silu_gated);
+}
+
+fn sigmoidGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.sigmoid_gated);
+}
+
+fn gatedSemantic(op: tsir.schema.SemanticBodyOp) tsir.schema.SemanticFunction {
     const data = struct {
         const axes = [_]tsir.schema.IterationAxis{
             .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
@@ -826,7 +919,7 @@ fn geluGatedSemantic() tsir.schema.SemanticFunction {
         .reductions = &.{},
         .collectives = &.{},
         .body = .{
-            .op = .gelu_gated,
+            .op = op,
             .binding_roles = &data.body_bindings,
             .axis_roles = &data.body_axes,
         },
