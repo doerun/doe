@@ -1,7 +1,7 @@
 {
   "backend": "spir-v",
   "compilerVersion": "doe-tsir-bootstrap-2026-04-24",
-  "emitterDigest": "ae06f0d5f41d46d14e096dc5dceda5d71e8761da4ecec2cce6034983b6b45ff0",
+  "emitterDigest": "da80fa8bc2571c64384e47f7591eaec7bc314d16a14e1b5ad1be4ebc1f5372d4",
   "exactness": {
     "algorithmExactInvariants": [],
     "class": "tolerance_bounded",
@@ -12,6 +12,6 @@
   "kernelRef": "doe.tsir.bootstrap.rms_norm",
   "rejectionReasons": [],
   "targetDescriptorCorrectnessHash": "401c8879b3e684854fe5052127aba26f626846fe005df5e144a3d88e4be14ec3",
-  "tsirRealizationDigest": "68b53965a7a9b368cc0657eae7dce7199d12c6bee2f43ce1e47bfdf0fcf51e2b",
+  "tsirRealizationDigest": "64033acea99c6c161a5c7213f19a396996a337845ae0678338f5440b15ae58d9",
   "tsirSemanticDigest": "d97496705eae4ecf3d6feadde826228b767c175fb038ed53762dfa3ffb1b2e49"
 }

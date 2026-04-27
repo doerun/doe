@@ -1,7 +1,7 @@
 {
   "backend": "webgpu-generic",
   "compilerVersion": "doe-tsir-real-2026-04-24",
-  "emitterDigest": "9c442c18c73f144d33a3fb76ab3a2fdfed56c4ed85cd267032e9f255617bf8cc",
+  "emitterDigest": "6028fd8d9945af9f6358cfc76c33dfb382179e7cb2d8827ebfa78d61931b51c1",
   "exactness": {
     "algorithmExactInvariants": [
       "reduction_order",

@@ -1,7 +1,7 @@
 {
   "backend": "msl",
   "compilerVersion": "doe-tsir-real-2026-04-24",
-  "emitterDigest": "a377ffe5e665ac2bbb12f41fe87940ad20583e616f5f9e2f1ec7f79e2cbd5145",
+  "emitterDigest": "46387900266a4f33fca6bf10545cffe8e13dc893123fd7c4c1bc4c26abf9be07",
   "exactness": {
     "algorithmExactInvariants": [],
     "class": "bit_exact_solo",

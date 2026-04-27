@@ -1,7 +1,7 @@
 {
   "backend": "spir-v",
   "compilerVersion": "doe-tsir-real-2026-04-24",
-  "emitterDigest": "ae06f0d5f41d46d14e096dc5dceda5d71e8761da4ecec2cce6034983b6b45ff0",
+  "emitterDigest": "da80fa8bc2571c64384e47f7591eaec7bc314d16a14e1b5ad1be4ebc1f5372d4",
   "exactness": {
     "algorithmExactInvariants": [
       "reduction_order",
