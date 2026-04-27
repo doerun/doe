@@ -191,7 +191,7 @@ class BuildDecisionReceiptTest(unittest.TestCase):
 
 
 class IntegrationTest(unittest.TestCase):
-    def test_bootstrap_ceiling_in_repo_denies_with_default_budget_shape(
+    def test_uncalibrated_budget_is_denied_against_in_repo_ceiling(
         self,
     ) -> None:
         ceiling_path = (
@@ -202,9 +202,18 @@ class IntegrationTest(unittest.TestCase):
         allow, schema_errors, reasons = evaluate(budget, ceiling)
         self.assertFalse(allow)
         self.assertEqual(schema_errors, [])
-        # Both calibration and budget-calibrated checks should fire
-        # against the in-repo bootstrap ceiling and an uncalibrated
-        # budget. Order is calibration first, then budget-calibrated.
+        # An uncalibrated budget always denies regardless of which
+        # calibrationStatus token the ceiling carries.
+        self.assertTrue(any("calibrated" in r for r in reasons))
+
+    def test_bootstrap_token_in_ceiling_denies_calibrated_budget(
+        self,
+    ) -> None:
+        ceiling = _ceiling(calibration_status=BOOTSTRAP_TOKEN)
+        budget = _budget(calibrated=True, grand=100)
+        allow, schema_errors, reasons = evaluate(budget, ceiling)
+        self.assertFalse(allow)
+        self.assertEqual(schema_errors, [])
         self.assertTrue(any("bootstrap-pending-rung-3" in r for r in reasons))
 
 
