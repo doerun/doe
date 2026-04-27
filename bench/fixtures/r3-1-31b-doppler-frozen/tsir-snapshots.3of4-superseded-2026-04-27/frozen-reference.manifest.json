@@ -19,17 +19,7 @@
           5376
         ],
         "path": "layer_0/post_ffn.npy",
-        "sha256": "63c74b477bb03e4a9be4e634ae971287bf0fe5c252379390b595276935377e60"
-      },
-      "post_qkv": {
-        "byteLength": 1245312,
-        "elemDtype": "float32",
-        "elemShape": [
-          19,
-          16384
-        ],
-        "path": "layer_0/post_qkv.npy",
-        "sha256": "7ff40f883e45e9d70b3398c05fd8f306e788bc737582bcc20d4615444f174982"
+        "sha256": "b1e9ed301d5ac7211fbb061662b3741e3c4811a83ee19360f701009fb063da8a"
       },
       "post_rmsnorm": {
         "byteLength": 408704,
@@ -45,16 +35,16 @@
   },
   "artifactKind": "doe_frozen_doppler_reference_manifest",
   "decodeSteps": 1,
-  "fixtureDigest": "8cc17070fedf9c3dd6571714b85a96ee1715519425c0e686990909c60c80ea87",
-  "frozenAt": "2026-04-27T13:59:21Z",
-  "frozenReason": "Captured 2026-04-27 via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; full 4-of-4 probe set (post_rmsnorm/post_qkv/post_attn/post_ffn) for the rung-5 frozen Doppler reference. Greedy decode of 'The color of the sky is' produces 'blue'.",
+  "fixtureDigest": "c0df267f3812d5c839f1e87fd0d7074f8ea6a7802fdf3b5afb8467e8f2a08449",
+  "frozenAt": "2026-04-27T04:46:09Z",
+  "frozenReason": "Provisional 3-of-4-probe capture (post_qkv missing); Doppler 31B chat-template debug ongoing in parallel thread. Use to exercise rung-5 validator + rung-7 oracle plumbing end-to-end on the 3 probes that ARE captured. Replace with full 4-probe capture once Doppler produces sensible greedy output for 'The color of the sky is'.",
   "modelId": "gemma-4-31b-it-text-q4k-ehf16-af32",
   "promptText": "The color of the sky is",
   "rdrrVariant": "text-q4k-ehf16-af32",
   "schemaVersion": 1,
   "transcript": {
-    "byteLength": 29623,
+    "byteLength": 29624,
     "path": "reference-report.json",
-    "sha256": "82563ac1af2a51babb0092fd35f04d644a29cc0ca2987b655fe8bb1e5281d655"
+    "sha256": "694d0e3b89e6a54e178abfa5d73a3c6238822829a82982e77b838b07faf75fee"
   }
 }
