@@ -1,0 +1,36 @@
+param memcpy_params;
+param hidden_size: i16 = 1024;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+fn sqrt_nr(x: f32) f32 {
+    const y0: f32 = math.sqrt(x);
+    return 0.5 * (y0 + x / y0);
+}
+
+var input: [hidden_size]f32 = @zeros([hidden_size]f32);
+var weight: [hidden_size]f32 = @zeros([hidden_size]f32);
+var output: [hidden_size]f32 = @zeros([hidden_size]f32);
+var input_ptr: [*]f32 = &input;
+var weight_ptr: [*]f32 = &weight;
+var output_ptr: [*]f32 = &output;
+
+fn compute() void {
+    var sum_sq: f32 = 0.0;
+    for (@range(i16, hidden_size)) |i| {
+        const v = input[@as(u32, i)];
+        sum_sq += v * v;
+    }
+    const mean_sq = sum_sq / @as(f32, hidden_size);
+    const inv_rms = 1.0 / sqrt_nr(mean_sq + 0.000001);
+    for (@range(i16, hidden_size)) |d| {
+        output[@as(u32, d)] = input[@as(u32, d)] * inv_rms * (1.0 + weight[@as(u32, d)]);
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}
