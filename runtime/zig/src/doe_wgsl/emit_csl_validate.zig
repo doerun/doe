@@ -130,6 +130,7 @@ pub fn validatePattern(csl: []const u8, pattern: PatternKind) ValidationResult {
         .attention_linear => validateAttention(csl, &result),
         .attention_streaming => validateAttention(csl, &result),
         .tiled_matmul => validateTiledMatmul(csl, &result),
+        .tiled_matmul_q4k_dequant_b => validateTiledMatmulQ4k(csl, &result),
         .fused_gemv_dequant => validateFusedGemvDequant(csl, &result),
         .dequant => validateDequant(csl, &result),
         .rope => validateRope(csl, &result),
@@ -223,6 +224,7 @@ pub const PatternKind = enum {
     attention_linear,
     attention_streaming,
     tiled_matmul,
+    tiled_matmul_q4k_dequant_b,
     fused_gemv_dequant,
     dequant,
     rope,
@@ -292,6 +294,17 @@ fn validateAttention(csl: []const u8, result: *ValidationResult) void {
 
 fn validateTiledMatmul(csl: []const u8, result: *ValidationResult) void {
     requireContains(csl, result, "accum", "tiled_matmul missing accumulator");
+}
+
+fn validateTiledMatmulQ4k(csl: []const u8, result: *ValidationResult) void {
+    // SUMMA shape (same as f32 path) plus Q4K-specific markers.
+    // The dequant_b_tile() prologue and the Q4K block-byte constant
+    // must both appear or the emit is missing the wedge.
+    requireContains(csl, result, "QK_K_BLOCK_BYTES", "tiled_matmul_q4k_dequant_b missing Q4K block-byte constant");
+    requireContains(csl, result, "dequant_b_tile", "tiled_matmul_q4k_dequant_b missing dequant prologue");
+    if (std.mem.indexOf(u8, csl, "var B_ptr: [*]f32") != null) {
+        addError(result, "tiled_matmul_q4k_dequant_b must export B_ptr as [*]u8 byte stream, not f32");
+    }
 }
 
 fn validateFusedGemvDequant(csl: []const u8, result: *ValidationResult) void {

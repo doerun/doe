@@ -67,6 +67,77 @@ def a_tiles_from_logical(
     return tiles.reshape(-1).astype(np.float32, copy=False), rows
 
 
+QK_K_BLOCK_ELEMENTS = 256
+QK_K_BLOCK_BYTES = 144
+
+
+def b_tiles_from_q4k_bytes(
+    matrix_nk_bytes: np.ndarray,
+    transform: dict[str, Any],
+) -> np.ndarray:
+    """Tile a logical [N, K_bytes] Q4_K_M weight byte stream into SUMMA B-side
+    per-PE order without dequantizing on the host.
+
+    Per-row stride is ``(K / QK_K_BLOCK_ELEMENTS) * QK_K_BLOCK_BYTES`` bytes.
+    The K-axis tile width must be a multiple of ``QK_K_BLOCK_ELEMENTS`` (256)
+    so Q4K block boundaries align with SUMMA tile boundaries; otherwise a
+    block would straddle two PEs and require cross-PE reassembly.
+
+    The output is a flat ``uint8`` array carrying the byte order
+    ``[grid_height, grid_width, tile_rows, tile_byte_stride]`` where
+    ``tile_byte_stride = (tile_cols / 256) * 144``.
+    """
+    source_rows = required_positive_int(transform, "sourceRows")
+    source_cols = required_positive_int(transform, "sourceCols")
+    padded_rows = required_positive_int(transform, "paddedCols")
+    padded_cols = required_positive_int(transform, "paddedReduction")
+    grid_height = required_positive_int(transform, "gridHeight")
+    grid_width = required_positive_int(transform, "gridWidth")
+    tile_rows = required_positive_int(transform, "tileCols")
+    tile_cols = required_positive_int(transform, "tileReduction")
+    if source_cols % QK_K_BLOCK_ELEMENTS != 0:
+        raise ValueError(
+            "summa_b_q4k_source_cols_unaligned:"
+            f"{source_cols}%{QK_K_BLOCK_ELEMENTS}"
+        )
+    if padded_cols % QK_K_BLOCK_ELEMENTS != 0:
+        raise ValueError(
+            "summa_b_q4k_padded_cols_unaligned:"
+            f"{padded_cols}%{QK_K_BLOCK_ELEMENTS}"
+        )
+    if tile_cols % QK_K_BLOCK_ELEMENTS != 0:
+        raise ValueError(
+            "summa_b_q4k_tile_cols_unaligned:"
+            f"{tile_cols}%{QK_K_BLOCK_ELEMENTS}"
+        )
+    source_bytes_per_row = (source_cols // QK_K_BLOCK_ELEMENTS) * QK_K_BLOCK_BYTES
+    padded_bytes_per_row = (padded_cols // QK_K_BLOCK_ELEMENTS) * QK_K_BLOCK_BYTES
+    tile_bytes_per_row = (tile_cols // QK_K_BLOCK_ELEMENTS) * QK_K_BLOCK_BYTES
+    expected_input_bytes = source_rows * source_bytes_per_row
+    if matrix_nk_bytes.size != expected_input_bytes:
+        raise ValueError(
+            "summa_b_q4k_input_size_mismatch:"
+            f"{matrix_nk_bytes.size}!={expected_input_bytes}"
+        )
+    if source_rows > padded_rows:
+        raise ValueError(
+            "summa_b_q4k_source_rows_exceed_padded:"
+            f"{source_rows}>{padded_rows}"
+        )
+    flat = matrix_nk_bytes.astype(np.uint8, copy=False).reshape(
+        source_rows, source_bytes_per_row
+    )
+    padded = np.zeros((padded_rows, padded_bytes_per_row), dtype=np.uint8)
+    padded[:source_rows, :source_bytes_per_row] = flat
+    tiles = padded.reshape(
+        grid_width,
+        tile_rows,
+        grid_height,
+        tile_bytes_per_row,
+    ).transpose(2, 0, 1, 3)
+    return tiles.reshape(-1).astype(np.uint8, copy=False)
+
+
 def b_tiles_from_weight_matrix(
     matrix_nk: np.ndarray,
     transform: dict[str, Any],

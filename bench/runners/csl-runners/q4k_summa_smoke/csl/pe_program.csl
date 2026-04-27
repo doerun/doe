@@ -1,0 +1,215 @@
+// PE program: SUMMA tiled matmul with Q4_K_M B (auto-generated from WGSL)
+// P×P PE grid, collectives_2d for row/column broadcasts.
+// C[M,N] = A[M,K] * dequantize(B_q4k)^T[N,K]
+// Q4K block: 144 bytes per 256 weights (d/dmin f16, scales 12B, qs 128B).
+
+param c2d_params;
+param memcpy_params;
+param Mt: i16;
+param Kt: i16;
+param Nt: i16;
+param P: u16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const mpi_x = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.x,
+    .queues = [2]u16{2, 4},
+    .dest_dsr_ids = [1]u16{1},
+    .src0_dsr_ids = [1]u16{1},
+    .src1_dsr_ids = [1]u16{1},
+});
+const mpi_y = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.y,
+    .queues = [2]u16{3, 5},
+    .dest_dsr_ids = [1]u16{2},
+    .src0_dsr_ids = [1]u16{2},
+    .src1_dsr_ids = [1]u16{2},
+});
+
+// Q4_K_M super-block: 256 weights packed into 144 bytes.
+const QK_K: i16 = 256;
+const QK_K_SUBBLOCKS: i16 = 8;
+const QK_K_SUBBLOCK_ELEMENTS: i16 = 32;
+const QK_K_BLOCK_BYTES: i16 = 144;
+const QK_K_QUANT_BYTE_OFFSET: i16 = 16;
+
+var A_tile = @zeros([Mt * Kt]f32);
+var B_tile = @zeros([Kt * Nt]f32);
+var C_tile = @zeros([Mt * Nt]f32);
+var A_buf  = @zeros([Mt * Kt]f32);
+// B_tile_q4k holds the broadcast-received Q4K bytes; one block per
+// 256-weight stride along the (Kt × Nt) flattened tile.
+var B_tile_q4k = @zeros([(Kt * Nt / QK_K) * QK_K_BLOCK_BYTES]u8);
+var B_buf_q4k  = @zeros([(Kt * Nt / QK_K) * QK_K_BLOCK_BYTES]u8);
+
+var A_ptr: [*]f32 = &A_tile;
+var B_ptr: [*]u8  = &B_tile_q4k;
+var C_ptr: [*]f32 = &C_tile;
+
+var step: u16 = 0;
+var px: u16 = 0;
+var py: u16 = 0;
+
+const exit_task_id:    local_task_id = @get_local_task_id(12);
+const compute_task_id: local_task_id = @get_local_task_id(13);
+const x_done_id:       local_task_id = @get_local_task_id(14);
+const y_done_id:       local_task_id = @get_local_task_id(15);
+
+var x_done: bool = false;
+var y_done: bool = false;
+
+// Unpack a packed u32 (lo half) as f16 → f32 using CSL's
+// `@bitcast(@fp16(), u16)` reinterpretation followed by an
+// implicit f16→f32 widen via `@as(f32, ...)`.
+fn unpack_f16_lo(word: u32) f32 {
+    const lo: u16 = @as(u16, word & 0xFFFF);
+    const f: f16 = @bitcast(@fp16(), lo);
+    return @as(f32, f);
+}
+
+// Read a single byte from a Q4K-byte buffer at logical block-and-byte offset.
+fn q4k_byte_at(buf_ptr: [*]u8, block_idx: i16, byte_idx: i16) u8 {
+    const off: u32 = @as(u32, block_idx) * @as(u32, QK_K_BLOCK_BYTES) + @as(u32, byte_idx);
+    return buf_ptr[off];
+}
+
+// Decode the 6-bit scale and min for sub-block `sub` (0..7) of a Q4K
+// super-block read from `buf_ptr`. Mirrors Doppler's WGSL
+// get_scale_min_k4 and Doe's Python unpack_q4k_scale_min_bits.
+// Returns sc and mn packed into a u16 (sc in low byte, mn in high
+// byte) — CSL rejects array return types at runtime.
+fn q4k_scale_min_bits(buf_ptr: [*]u8, block_idx: i16, sub: i16) u16 {
+    var sc: u8 = 0;
+    var mn: u8 = 0;
+    if (sub < 4) {
+        sc = q4k_byte_at(buf_ptr, block_idx, 4 + sub) & 0x3F;
+        mn = q4k_byte_at(buf_ptr, block_idx, 8 + sub) & 0x3F;
+    } else {
+        const base: i16 = sub - 4;
+        const mid:  u8  = q4k_byte_at(buf_ptr, block_idx, 12 + base);
+        const lo_b: u8  = q4k_byte_at(buf_ptr, block_idx, 4  + base);
+        const hi_b: u8  = q4k_byte_at(buf_ptr, block_idx, 8  + base);
+        sc = (mid & 0x0F) | ((lo_b >> 6) << 4);
+        mn = (mid >> 4)   | ((hi_b >> 6) << 4);
+    }
+    return @as(u16, sc) | (@as(u16, mn) << 8);
+}
+
+// Materialize the f32 B tile from the Q4K-byte tile staged by the
+// broadcast. Per-block decode walks 4 chunks of 32 bytes each.
+// For each byte at chunk*32+index, the LOW nibble lands at output
+// position chunk*64+index (sub-block 2*chunk) and the HIGH nibble
+// lands at chunk*64+32+index (sub-block 2*chunk+1). The two halves
+// of one byte therefore use DIFFERENT scale/min — scales[2*chunk]
+// for the lo half, scales[2*chunk+1] for the hi half. This matches
+// `bench/tools/doppler_rdrr_q4k.py::dequantize_q4km_block` byte for
+// byte and the canonical llama.cpp Q4_K_M dequant.
+fn dequant_b_tile(buf_ptr: [*]u8) void {
+    const blocks_per_tile: i16 = Kt * Nt / QK_K;
+    for (@range(i16, blocks_per_tile)) |bi| {
+        const lo_word: u32 =
+            (@as(u32, q4k_byte_at(buf_ptr, bi, 0)))
+          | (@as(u32, q4k_byte_at(buf_ptr, bi, 1)) << 8);
+        const hi_word: u32 =
+            (@as(u32, q4k_byte_at(buf_ptr, bi, 2)))
+          | (@as(u32, q4k_byte_at(buf_ptr, bi, 3)) << 8);
+        const d:    f32 = unpack_f16_lo(lo_word);
+        const dmin: f32 = unpack_f16_lo(hi_word);
+        for (@range(i16, 4)) |chunk| {
+            const lo_sub: i16 = chunk * 2;
+            const hi_sub: i16 = chunk * 2 + 1;
+            const sm_lo: u16 = q4k_scale_min_bits(buf_ptr, bi, lo_sub);
+            const sm_hi: u16 = q4k_scale_min_bits(buf_ptr, bi, hi_sub);
+            const scale_lo: f32 = d    * @as(f32, @as(i16, sm_lo & 0xFF));
+            const min_lo:   f32 = dmin * @as(f32, @as(i16, (sm_lo >> 8) & 0xFF));
+            const scale_hi: f32 = d    * @as(f32, @as(i16, sm_hi & 0xFF));
+            const min_hi:   f32 = dmin * @as(f32, @as(i16, (sm_hi >> 8) & 0xFF));
+            const chunk_base:    u32 = @as(u32, chunk) * 64;
+            const qs_byte_base: i16 = QK_K_QUANT_BYTE_OFFSET + chunk * 32;
+            for (@range(i16, 32)) |idx| {
+                const packed_byte: u8 = q4k_byte_at(buf_ptr, bi, qs_byte_base + idx);
+                const lo_nib: i16 = @as(i16, packed_byte & 0x0F);
+                const hi_nib: i16 = @as(i16, (packed_byte >> 4) & 0x0F);
+                const out_lo: u32 = @as(u32, bi) * @as(u32, QK_K) + chunk_base + @as(u32, idx);
+                const out_hi: u32 = out_lo + 32;
+                B_tile[out_lo] = scale_lo * @as(f32, lo_nib) - min_lo;
+                B_tile[out_hi] = scale_hi * @as(f32, hi_nib) - min_hi;
+            }
+        }
+    }
+}
+
+fn compute() void {
+    if (step == 0) {
+        mpi_x.init();
+        mpi_y.init();
+        px = mpi_x.pe_id;
+        py = mpi_y.pe_id;
+    }
+
+    const Ap = if (px == step) &A_tile else &A_buf;
+    const Bp_q4k = if (py == step) &B_tile_q4k else &B_buf_q4k;
+
+    x_done = false;
+    y_done = false;
+
+    mpi_x.broadcast(step, @ptrcast([*]u32, Ap), Mt * Kt, x_done_id);
+    mpi_y.broadcast(step, @ptrcast([*]u32, Bp_q4k), (Kt * Nt / QK_K) * (QK_K_BLOCK_BYTES / 4), y_done_id);
+}
+
+task x_done_task() void {
+    x_done = true;
+    if (y_done) @activate(compute_task_id);
+}
+
+task y_done_task() void {
+    y_done = true;
+    if (x_done) @activate(compute_task_id);
+}
+
+task compute_step() void {
+    const Ap = if (px == step) &A_tile else &A_buf;
+    const Bp_q4k = if (py == step) &B_tile_q4k else &B_buf_q4k;
+
+    // Q4K → f32 dequant of the post-broadcast B tile. After this
+    // call, B_tile holds the same f32 weights the f32-path SUMMA
+    // would receive directly from the host. The active Q4K buffer
+    // is the one that just received the broadcast: B_tile_q4k for
+    // the broadcaster (py == step), B_buf_q4k for receivers.
+    dequant_b_tile(Bp_q4k);
+
+    var A_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> A_tile[i] });
+    A_dsd = @set_dsd_base_addr(A_dsd, Ap);
+    for (@range(i16, Kt)) |k| {
+        var C_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> C_tile[i] });
+        for (@range(i16, Nt)) |j| {
+            const b_val = B_tile[@as(u32, j) * @as(u32, Kt) + @as(u32, k)];
+            @fmacs(C_dsd, C_dsd, A_dsd, b_val);
+            C_dsd = @increment_dsd_offset(C_dsd, Mt, f32);
+        }
+        A_dsd = @increment_dsd_offset(A_dsd, Mt, f32);
+    }
+
+    step += 1;
+    if (step != P) {
+        compute();
+    } else {
+        @activate(exit_task_id);
+    }
+}
+
+task exit_task() void {
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @bind_local_task(x_done_task, x_done_id);
+    @bind_local_task(y_done_task, y_done_id);
+    @bind_local_task(compute_step, compute_task_id);
+    @bind_local_task(exit_task, exit_task_id);
+
+    @export_symbol(A_ptr, "a");
+    @export_symbol(B_ptr, "b_q4k");
+    @export_symbol(C_ptr, "c");
+    @export_symbol(compute);
+}

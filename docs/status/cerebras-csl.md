@@ -13,6 +13,41 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-27 — Fused-dequant SUMMA wedge (Q4K-input) compiles + executes on simfabric with parity
+
+The `feat/fused-dequant-summa` branch lands the on-PE Q4_K_M dequant SUMMA
+wedge end-to-end:
+
+1. **Emitter.** `runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig` produces
+   CSL where the B operand is broadcast as raw Q4K bytes and dequanted on
+   each PE before the SUMMA fmac inner loop. Layout export at
+   `emit_csl_layout.zig::emitMatmulQ4kLayout` types B as `[*]u8` (storage
+   index 1). Classifier branch `tiled_matmul_q4k_dequant_b` recognizes the
+   pattern (`emit_csl_classify.zig`).
+2. **Cell parity.** `bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/run.py`
+   drives `cs_python` with cliff-distributed Q4K bytes and compares against
+   canonical Doppler dequant + host matmul. Cell receipt
+   `bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json` records
+   `verdict=pass` at P=2 Mt=8 Kt=256 Nt=8 with parity within float32
+   precision.
+3. **Bound dispatch receipt.** `bench/out/r3-1-31b-multi-token-decode-q4k/`
+   carries `mode=compile_and_execute`, hash-links the cell receipt and
+   cslc invocation, and records the structural fabric-byte ratio
+   (`baselineFabricBytes_f32_dense / wedgeFabricBytes_q4k_block256`).
+   `cellParityPassed=true`. Receipt synthesizer
+   `bench/tools/synthesize_q4k_summa_dispatch_receipt.py` carries three
+   modes: `pending`, `compile_and_execute`, `dispatch`.
+4. **Validation gate.** `bench/tests/test_q4k_summa_receipt_parity.py`
+   pins the baseline witness, the wedge structural invariants, and the
+   compile_and_execute milestone (cell parity flag + tile shape). Dispatch
+   parity tests skip until a multi-token decode chain re-runs with
+   `b_dtype=.q4k_block256`.
+
+What this is not: not a speed claim (simfabric is correctness-only); not
+hardware; not yet bound to Gemma 4 31B's full compile sweep shape. The
+small SUMMA cell proves the mechanism. Promotion to manifest-shape SUMMA
+is named in the dispatch receipt's `remainingForFullClaim`.
+
 ## 2026-04-26 — Rung 3 calibration lands; rung 6 closes for head_dim=256; rung 8 launch gate flips to allow
 
 Three landings against the manifest-shape simfabric proof plan in

@@ -36,6 +36,16 @@ Identity tests at [`bench/tests/test_attention_canary_kv_axis_sharded_identity.p
 
 Schema at [`config/manifest-simfabric-budget.schema.json`](../config/manifest-simfabric-budget.schema.json), 12/12 tests pass.
 
+**Fused-dequant SUMMA wedge (Q4K-input, on-PE dequant).** Q4_K_M-quantized B is broadcast to PEs as raw bytes (~7× smaller fabric memcpy than f32-dense) and dequanted on-PE before SUMMA accumulation, instead of pre-dequanting on the host.
+
+Cell receipt at [`bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json`](../bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json) — `verdict=pass`, parity vs canonical Doppler dequant within float32 precision.
+
+Bound dispatch receipt at [`bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json`](../bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json) — `mode=compile_and_execute`, `cellParityPassed=true`, hash-linked to the cell receipt and the cslc invocation. Fabric-byte ratio (`baselineFabricBytes_f32_dense / wedgeFabricBytes_q4k_block256`) recorded structurally.
+
+Emitter at [`runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig`](../runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig); host-side B-tile q4k passthrough at [`bench/runners/csl-runners/int4ple_summa_layout.py`](../bench/runners/csl-runners/int4ple_summa_layout.py) (`b_tiles_from_q4k_bytes`); structural-pin tests at [`bench/tests/test_q4k_summa_receipt_parity.py`](../bench/tests/test_q4k_summa_receipt_parity.py) and [`bench/tests/test_int4ple_q4k_passthrough.py`](../bench/tests/test_int4ple_q4k_passthrough.py); CSL emit unit tests at [`runtime/zig/tests/wgsl/emit_csl_matmul_q4k_test.zig`](../runtime/zig/tests/wgsl/emit_csl_matmul_q4k_test.zig).
+
+Wedge mechanism is proven at small SUMMA shape; promotion to Gemma 4 31B's full compile sweep shape is named in the dispatch receipt's `remainingForFullClaim`. This is not a speed claim — simfabric is correctness-only — and the fabric-byte ratio is structural.
+
 ## What's hardware-gated
 
 An on-cluster compile + dispatch run for the bound bundle delivers two things simfabric cannot:
