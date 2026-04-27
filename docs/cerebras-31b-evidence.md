@@ -69,6 +69,6 @@ For an on-cluster run, the bundle plus the smoke config (`runtime/zig/examples/e
 
 ## Pipeline scope
 
-WGSL → TSIR → CSL is model-agnostic. The same path lowers any open-weight transformer with a clean reference implementation.
+WGSL → TSIR → CSL is transformer-agnostic. The same path lowers any open-weight transformer with a clean reference implementation.
 
 Gemma 4 31B is the first proof. Qwen 3.6-27B is queued behind hardware validation of the first.
