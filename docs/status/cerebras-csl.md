@@ -63,9 +63,21 @@ With the revised smoke config, all three trio legs now run:
   layer property holds);
 - the synthesizer emits
   `bench/out/r3-2-27b-full-graph-compile-attempt/receipt.json` with
-  `compileTargetCount=15`, `compileAttempted=false` (cslc has not run;
-  driver-result.json is absent), `scopeRestrictions` lifted from the
-  smoke config.
+  `compileTargetCount=15`, `compileAttempted=true`,
+  `compileSucceededCount=10`, `compileFailedCount=1`,
+  `scopeRestrictions` lifted from the smoke config.
+
+cslc 2.10.0 ran against each compile dir; 10/11 unique kernels return
+`Compilation successful` (embed, rmsnorm, tiled, rope_partial,
+residual, silu, gemv, kv_write, attn_decode, sample). The 1 failure is
+`attn_prefill` with `failureCode=linker_pe_memory_overflow` — the
+same per-PE-residency blocker the Gemma 4 31B prefill ladder carries.
+Decode path is fully cslc-clean. The 4 phase-specialized kernel
+variants (rmsnorm_prefill/_decode, residual_prefill/_decode) share
+CSL byte-identically with their base kernels (verified by the byte-
+identity test) and therefore inherit the base verdicts; they are
+recorded as `not_attempted` in the receipt's per-target list pending
+explicit alias-resolution in the synthesizer.
 
 The rope kernel's `compileParams` now read `head_dim=256, num_pairs=32`
 — validating the partial-rotary wiring delta this tick: at Qwen's
