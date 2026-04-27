@@ -548,6 +548,24 @@ def run_one_kernel(
 ) -> dict[str, Any]:
     effective_source_root = source_root if source_root is not None else compile_root
     metadata_path = effective_source_root / kernel / "pe_program.metadata.json"
+    # Phase-variant kernels (`_decode` / `_prefill` suffix) often share
+    # source with their base kernel — the steps-mode driver runs cslc
+    # per variant with different compileParams (e.g. width=246 vs
+    # width=1) but emits only one source dir per base kernel name. If
+    # the variant's source is absent, fall back to the base kernel's
+    # metadata. The pe_program.metadata.json describes exports, which
+    # are kernel-structure (not shape) properties, so the fallback is
+    # safe.
+    if not metadata_path.is_file():
+        for suffix in ("_decode", "_prefill"):
+            if kernel.endswith(suffix):
+                base_kernel = kernel[: -len(suffix)]
+                base_metadata_path = (
+                    effective_source_root / base_kernel / "pe_program.metadata.json"
+                )
+                if base_metadata_path.is_file():
+                    metadata_path = base_metadata_path
+                    break
     if not metadata_path.is_file():
         return build_kernel_receipt(
             kernel=kernel,
