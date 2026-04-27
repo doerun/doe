@@ -41,38 +41,57 @@ The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
    `run-program-bundle-reference.js --tsir-fixture-dir` invocation that
    produces the fixture.
 
-**Typed-blocker chain pinned while running the trio.** Running
-`doe-csl-host-plan-tool --input qwen-3-6-27b-smoke.json --mode steps`
-fails with `error.UnknownOp` from
-`runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig:280` — `opToSpec` does
-not recognize `silu_gated` or `sigmoid_gated`. The TSIR layer is fully
-wired (SemanticBodyOp + emit body + reference interpreter + tests) but
-the doe_wgsl kernel-classifier surface is not. To make the host-plan
-tool ingest the smoke config, the next branch tick needs:
+**Trio now exercises the bundle end-to-end at honest scope.** The
+smoke config was revised this tick to use ops the host-plan tool
+recognizes today (single-input `silu` for FFN activation; the `o_gate`
+step is dropped entirely rather than mapped to a non-gated stand-in).
+`scopeRestrictions` was extended with `attentionOutputGate` and
+`swigluFfnFusedGate` named-blocker entries so the receipts cannot be
+misread as covering Qwen's actual gated forms — those need
+`silu_gated` / `sigmoid_gated` `KernelPattern` variants + classifier
+wiring + opToSpec entries to land before the smoke config can carry
+the gated ops. The audit-named TSIR emit-body work is already done on
+this branch (see emit_kernel_body_gated.zig); the doe_wgsl classifier
+surface is the open downstream blocker.
 
-- `KernelPattern` variants `silu_gated` and `sigmoid_gated` in
-  `emit_csl_classify.zig` (same shape as the existing
-  `tiled_matmul_q4k_dequant_b` variant added on the SUMMA wedge);
-- WGSL pattern detection branches in the classifier (struct-storage
-  + workgroup arrays + barriers + the silu/sigmoid scalar form);
-- `opToSpec` entries in `emit_csl_exec_v1.zig` mapping the new ops to
-  the new kernel patterns;
-- emit dispatch for the new patterns through `emit_kernel_body_gated.zig`
-  (the TSIR emit body the audit already pointed at).
+With the revised smoke config, all three trio legs now run:
 
-Once that lands, the synthesizer's pre-bundle preflight closes and the
-byte-identity test's upstream-compile-root precondition is satisfied.
+- `doe-csl-host-plan-tool` materializes a 15-target Qwen bundle at
+  `bench/out/r3-2-27b-manifest-fullgraph-compile-steps/`;
+- the per-kernel byte-identity test passes (1L emission is byte-
+  identical to 64L emission across all shared kernels — the 1-of-64-
+  layer property holds);
+- the synthesizer emits
+  `bench/out/r3-2-27b-full-graph-compile-attempt/receipt.json` with
+  `compileTargetCount=15`, `compileAttempted=false` (cslc has not run;
+  driver-result.json is absent), `scopeRestrictions` lifted from the
+  smoke config.
+
+The rope kernel's `compileParams` now read `head_dim=256, num_pairs=32`
+— validating the partial-rotary wiring delta this tick: at Qwen's
+manifest `partialRotaryFactor=0.25`, the canonical formula
+`head_dim * factor / 2 = 32` rides through correctly (was previously
+the kernel-default 64).
+
+Open follow-ups (to make the receipts cite Qwen's actual gated forms,
+not stand-ins):
 The validator-binding test still depends on Doppler-side capture
 (separate cross-repo branch `feat/qwen-3-6-bringup` in the doppler
 tree), which is named in the test's typed-skip pointer.
 
-Open follow-ups:
-
-- Wire `silu_gated`/`sigmoid_gated` through the classifier + opToSpec
-  chain above (Doe-side; unblocks the smoke config compile).
+- `silu_gated` / `sigmoid_gated` through the classifier + opToSpec
+  chain (KernelPattern variants in emit_csl_classify.zig + WGSL
+  pattern-detection branches + opToSpec entries + emit dispatch
+  through emit_kernel_body_gated.zig). The TSIR-side work landed on
+  this branch; only the doe_wgsl surface remains. Doe-side; unblocks
+  the smoke config carrying the actual gated ops.
 - Doppler `feat/qwen-3-6-bringup`: capture a deterministic Qwen
   inference run + the TSIR boundary-probe fixture
   (`bench/fixtures/r3-2-27b-doppler-frozen/`).
+- cslc invocation against the Qwen bundle (driver-result.json) so the
+  synthesizer's `compileAttempted` flips to true and per-target
+  failureCode values get attached. Same SDK toolchain dependency the
+  Gemma 31B receipts have.
 - mropeInterleaved lowering (Qwen-only; deferred until 1D-rotary smoke
   receipts pass).
 - Linear-attention layer body op (Qwen 3.6 hybrid; named blocker in

@@ -31,7 +31,11 @@
     "mropeInterleaved": "named_blocker",
     "mropeInterleavedDetail": "Manifest carries mropeInterleaved=true with mropeSection=[11,11,10] (3D rotary for text/image/video). For text-only inference the smoke config falls back to standard 1D RoPE with partialRotaryFactor=0.25 (num_pairs = headDim * 0.25 / 2 = 32). True mrope lowering is a typed-blocker.",
     "causalAttentionPrefill": "named_blocker",
-    "causalAttentionPrefillDetail": "AttentionScoresBody currently rejects causal_mode != .none (emit_kernel_body_attention.zig). Manifest-shape simfabric proof for prefill is gated on this; same blocker the Gemma 4 31B prefill ladder still carries. Decode-only receipts are unblocked."
+    "causalAttentionPrefillDetail": "AttentionScoresBody currently rejects causal_mode != .none (emit_kernel_body_attention.zig). Manifest-shape simfabric proof for prefill is gated on this; same blocker the Gemma 4 31B prefill ladder still carries. Decode-only receipts are unblocked.",
+    "attentionOutputGate": "named_blocker",
+    "attentionOutputGateDetail": "Qwen 3.6 27B applies sigmoid(qGateProjection) * attnOutput before the O projection. The TSIR sigmoid_gated body op landed on this branch (emit_kernel_body_gated.zig), but the doe_wgsl classifier surface and exec-v1 opToSpec map do not yet route this op. The smoke config drops the o_gate step entirely (rather than silently mapping to a non-gated activation) so the receipts cannot misread Qwen attention as gate-free; the gap is a named blocker.",
+    "swigluFfnFusedGate": "named_blocker",
+    "swigluFfnFusedGateDetail": "Qwen FFN is silu(gate_proj(x)) * up_proj(x) → down_proj. The smoke config maps the activation step to single-input op=silu (existing element_wise pattern) so the host plan ingests; the gate*up multiplication is currently implicit in the host plan's MLP fusion and not surfaced as a discrete step. silu_gated as a fused op (TSIR SemanticBodyOp landed; classifier + opToSpec wiring deferred) would surface this."
   },
   "steps": [
     {
@@ -102,13 +106,6 @@
       "namedBlocker": "causal_attention_prefill"
     },
     {
-      "name": "o_gate",
-      "phase": "prefill",
-      "op": "sigmoid_gated",
-      "kernelKey": "sigmoid_gated",
-      "weightsKey": "layer.0.self_attn.o_gate_proj"
-    },
-    {
       "name": "o_proj",
       "phase": "prefill",
       "op": "matmul",
@@ -144,8 +141,8 @@
     {
       "name": "activation",
       "phase": "prefill",
-      "op": "silu_gated",
-      "kernelKey": "silu_gated"
+      "op": "silu",
+      "kernelKey": "silu"
     },
     {
       "name": "down_proj",
@@ -224,14 +221,7 @@
       "phase": "decode",
       "op": "attention",
       "kernelKey": "attn_decode",
-      "attentionType": "causal"
-    },
-    {
-      "name": "o_gate",
-      "phase": "decode",
-      "op": "sigmoid_gated",
-      "kernelKey": "sigmoid_gated",
-      "weightsKey": "layer.0.self_attn.o_gate_proj"
+      "attentionType": "global"
     },
     {
       "name": "o_proj",
@@ -269,8 +259,8 @@
     {
       "name": "activation",
       "phase": "decode",
-      "op": "silu_gated",
-      "kernelKey": "silu_gated"
+      "op": "silu",
+      "kernelKey": "silu"
     },
     {
       "name": "down_proj",
