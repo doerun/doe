@@ -60,12 +60,19 @@ produces `decision=allow` against
 
 ## What's hardware-gated
 
-A single on-cluster `cslc` compile + dispatch run for the bound
-bundle produces the runtime parity receipt that supersedes the
-canary-proxy calibration constant and closes the 1-of-60-layer
-first-token rung. The bundle is hash-linked (host plan, CSL,
-fixture, expected-output digests). The dispatch is bounded — single
-first-token decode at 60 layers, not a sweep.
+An on-cluster compile + dispatch run for the bound bundle delivers
+two things simfabric cannot:
+
+1. **Dispatch parity.** Runtime parity receipt vs the simulator,
+   confirming the bundle dispatches the same on real silicon.
+   Supersedes the canary-proxy calibration constant.
+2. **Speed.** Wall-clock tok/s for prefill and decode, comparable
+   against published Gemma 4 31B inference references on competing
+   accelerators. Simfabric is correctness-only — there is no way to
+   measure speed without real silicon.
+
+A short multi-token inference run produces both. The bundle is
+hash-linked (host plan, CSL, fixture, expected-output digests).
 
 ## Pipeline scope
 
