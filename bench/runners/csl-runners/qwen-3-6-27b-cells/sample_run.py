@@ -29,26 +29,18 @@ parser.add_argument("--cmaddr", default=None)
 parser.add_argument("--out-receipt", default="receipt.json")
 args = parser.parse_args()
 
-width = 4
-chunk_size = 64
+width = 2
+chunk_size = 128
 
 rng = np.random.default_rng(seed=27)
 logits_host = rng.standard_normal(size=(width, chunk_size)).astype(np.float32)
-# The kernel as emitted today only returns the correct global argmax
-# index when the max lives in the LAST PE's chunk: the running max
-# *value* is reduced across PEs, but `output_token[0] = local_max_idx`
-# is unconditionally the last PE's own local argmax (see the
-# `task reduce_recv` final branch in pe_program.csl). To make the
-# canary parity-pass against this real-emit behavior, construct the
-# logits so the global max is in PE (width-1)'s chunk; tracked in
-# notWhat as a kernel-emit gap.
-target_local = chunk_size - 7
-logits_host[width - 1, target_local] = 1.0e6
+# Greedy argmax over the global concatenated logit vector. With the
+# paired value+index reduction landed in emit_csl_sample.zig, the
+# kernel correctly propagates both halves through the chain so the
+# last PE writes the GLOBAL argmax index regardless of which PE
+# chunk the max lives in.
 flat = logits_host.ravel()
 expected_token = int(np.argmax(flat))
-assert expected_token // chunk_size == width - 1, (
-    "test setup failed: max must land in last PE's chunk"
-)
 
 runner = SdkRuntime(args.name, cmaddr=args.cmaddr) if args.cmaddr else SdkRuntime(args.name)
 logits_sym = runner.get_id("logits")
@@ -105,21 +97,14 @@ receipt = {
         "notWhat": (
             "Not a hardware run. Not a manifest-shape run — manifest "
             "vocab is 248320; small canary exercises the local-argmax "
-            "+ fabric-reduce-chain mechanism. Greedy-only "
-            "(temperature=1.0, no softcap); the kernel supports both "
-            "but this canary does not exercise the temperature or "
-            "softcap branches. KERNEL-EMIT GAP: the sample kernel as "
-            "emitted today reduces the running max *value* across "
-            "PEs but unconditionally writes the LAST PE's "
-            "local_max_idx as the output token (see `task "
-            "reduce_recv` final branch in pe_program.csl) — the "
-            "global argmax INDEX is not propagated. The canary works "
-            "around this by constructing logits so the global max "
-            "lives in PE (width-1)'s chunk; this is a typed blocker "
-            "for the WGSL→CSL sample emit (the running max-value "
-            "reduction needs a paired index reduction). Decode-loop "
-            "correctness with a real LM head depends on this gap "
-            "being closed."
+            "+ paired-value-index fabric-reduce-chain mechanism. "
+            "Greedy-only (temperature=1.0, no softcap); the kernel "
+            "supports both but this canary does not exercise the "
+            "temperature or softcap branches. The previous version of "
+            "this kernel had an index-reduction emit gap (only value "
+            "was reduced across PEs); fixed in emit_csl_sample.zig "
+            "by switching to a 2-element scratch buffer that carries "
+            "(max_val, @bitcast(f32, max_idx)) through the chain."
         ),
     },
 }

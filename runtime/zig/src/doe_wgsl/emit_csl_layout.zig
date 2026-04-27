@@ -606,10 +606,14 @@ pub fn emitFusedGemvLayout(
     try write(buf, pos, "                .in_dim_per_pe = in_dim_per_pe,\n");
     try write(buf, pos, "                .num_blocks_per_row = num_blocks_per_row,\n");
     try write(buf, pos, "            });\n\n");
-    // Per-row reduce routing (east-west within the same pe_y).
-    //   pe_x=0:       rx=RAMP,  tx=EAST
-    //   pe_x=width-1: rx=WEST,  tx=RAMP
-    //   middle:       rx=WEST,  tx=EAST
+    // Per-row reduce routing (east-west within the same pe_y). Same
+    // as emitFusedGemvLayout — middle PEs are pass-through. See that
+    // function for the multi-PE chain-reduction limitation note (the
+    // csl-extras teardown/switch machinery is required for full
+    // width≥3 reduction; not yet inlined into this emit).
+    //   pe_x=0:       rx=RAMP, tx=EAST
+    //   pe_x=width-1: rx=WEST, tx=RAMP
+    //   middle:       rx=WEST, tx=EAST  (pass-through, KNOWN GAP)
     try write(buf, pos, "            if (pe_x == 0) {\n");
     try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
     try write(buf, pos, "                    .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
@@ -819,18 +823,32 @@ fn emitReduceRowTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitE
     try write(buf, pos, extra_params);
     try write(buf, pos, "        });\n\n");
     // Reduce color routing (wse3-compatible: one rx direction per color).
-    //   PE 0:   rx=RAMP, tx=EAST   — seed PE pushes local value east via its
-    //                                @fmovs(reduce_out, ...).
-    //   middle: rx=WEST, tx=EAST   — receive chain, combine with local state
-    //                                in the task handler (e.g. math.max with
-    //                                local_max_val from registers), forward.
-    //   PE N-1: rx=WEST, tx=RAMP   — final sink; receive chain, deliver to
-    //                                the PE's own logic via RAMP.
-    // Earlier revisions routed middle PEs with rx={WEST, RAMP} — valid on
-    // wse2 but wse3 rejects: "expected at most 1 input direction(s)". The
-    // RAMP rx on middle PEs was redundant anyway — no emitted task handler
-    // consumes a ramp-routed wavelet there; the local contribution is read
-    // from register state (local_max_val / local_accum / ...).
+    //   PE 0:   rx=RAMP, tx=EAST   — seed PE pushes local value east via
+    //                                @mov32(reduce_out, ...).
+    //   middle: rx=WEST, tx=EAST   — pass-through. The wavelet from west
+    //                                is forwarded east WITHOUT delivery
+    //                                to the local input queue. Middle
+    //                                PEs' contributions are NOT folded
+    //                                into the chain — only PE 0's data
+    //                                reaches PE (width-1). KNOWN GAP for
+    //                                width≥3: a true chain reduction
+    //                                requires the csl-extras
+    //                                collectives_2d teardown/switch
+    //                                machinery (see SDK csl-libs/
+    //                                collectives_2d/pe.csl) which is not
+    //                                yet inlined into this emit. The
+    //                                width=2 case (no middle PE) works
+    //                                end-to-end with the kernel's
+    //                                emit_csl_sample / emit_csl_fused /
+    //                                emit_csl_attention reduce_recv
+    //                                handlers. tx={EAST, RAMP} was
+    //                                tried but cascades: the same
+    //                                wavelet feeds both PE k's queue
+    //                                AND PE k+1's queue, so PE k+1
+    //                                consumes PE 0's raw data instead
+    //                                of PE k's processed best.
+    //   PE N-1: rx=WEST, tx=RAMP   — final sink; receive whatever
+    //                                reaches it, write output.
     try write(buf, pos, "        if (pe_x == 0) {\n");
     try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
     try write(buf, pos, "                .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");

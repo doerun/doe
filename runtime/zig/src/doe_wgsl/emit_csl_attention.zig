@@ -194,7 +194,19 @@ pub fn emitDecode(
     try W.write(buf, pos, "var global_max: f32 = -3.4028235e+38;\n");
     try W.write(buf, pos, "var global_sum: f32 = 0.0;\n\n");
 
-    // Fabric DSDs
+    // wse3 DSD-to-DSD async fabric pattern (matches emit_csl_sample.zig
+    // and emit_csl_fused.zig). The earlier emit used the wse2-era
+    // synchronous `@fmovs(f32_var, fabin_dsd)` form in `task
+    // reduce_recv` without an `.activate = reduce_task_id` annotation
+    // anywhere, so the task was bound but never fired — every
+    // simfabric launch hung at memcpy_d2h with `received length (0
+    // bytes) is not expected`. Switching to scratch-buffer mem1d_dsds
+    // and the async @mov32 form lets compute() arm the recv with
+    // `.activate = reduce_task_id`, mirroring the canonical pattern.
+    try W.write(buf, pos, "var scratch_in: [1]f32 = @zeros([1]f32);\n");
+    try W.write(buf, pos, "var scratch_out: [1]f32 = @zeros([1]f32);\n");
+    try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_in[i] });\n");
+    try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_out[i] });\n");
     try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
     try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
     try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });\n");
@@ -202,20 +214,42 @@ pub fn emitDecode(
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n");
     try W.write(buf, pos, "const norm_task_id: local_task_id = @get_local_task_id(11);\n\n");
 
-    // Phase 1: local score computation
+    // Phase 1: local score computation. PE 0 stages local_max into
+    // scratch_out and fires the chain east; other PEs arm an async
+    // recv that activates reduce_recv when the wavelet arrives from
+    // the west. The width=1 case (pe_id == 0 and pe_id == num_pes-1
+    // simultaneously) skips the chain entirely and goes straight to
+    // normalize with global_max = local_max.
     try W.write(buf, pos, "fn compute() void {\n");
     try W.write(buf, pos, "    local_max = -3.4028235e+38;\n");
     try W.write(buf, pos, "    local_sum = 0.0;\n");
     try emitScoreLoop(buf, pos, q, k, "kv_chunk");
-    try W.write(buf, pos, "    @fmovs(reduce_out, local_max);\n");
+    try W.write(buf, pos, "    if (num_pes == 1) {\n");
+    try W.write(buf, pos, "        global_max = local_max;\n");
+    try W.write(buf, pos, "        @activate(norm_task_id);\n");
+    try W.write(buf, pos, "    } else if (pe_id == 0) {\n");
+    try W.write(buf, pos, "        scratch_out[0] = local_max;\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        @mov32(scratch_in_dsd, reduce_in, .{ .async = true, .activate = reduce_task_id });\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
-    // Phase 2: reduce and normalize
+    // Phase 2: task fires on async recv completion. scratch_in[0]
+    // carries the running max from the west. Combine with local
+    // state, forward east on non-last PEs, or activate normalize on
+    // the last PE.
     try W.write(buf, pos, "task reduce_recv() void {\n");
-    try W.write(buf, pos, "    var incoming: f32 = 0.0;\n");
-    try W.write(buf, pos, "    @fmovs(&incoming, reduce_in);\n");
+    try W.write(buf, pos, "    const incoming = scratch_in[0];\n");
     try W.write(buf, pos, "    if (incoming > global_max) global_max = incoming;\n");
-    try W.write(buf, pos, "    if (pe_id == num_pes - 1) @activate(norm_task_id);\n");
+    try W.write(buf, pos, "    const best = (if (local_max > global_max) local_max else global_max);\n");
+    try W.write(buf, pos, "    if (pe_id != num_pes - 1) {\n");
+    try W.write(buf, pos, "        scratch_out[0] = best;\n");
+    try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        global_max = best;\n");
+    try W.write(buf, pos, "        @activate(norm_task_id);\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
     try W.write(buf, pos, "task normalize() void {\n");

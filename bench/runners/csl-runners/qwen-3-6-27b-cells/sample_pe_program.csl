@@ -25,14 +25,14 @@ var local_max_idx: u32 = 0;
 var global_max_val: f32 = -3.4028235e+38;
 var global_max_idx: u32 = 0;
 
-var scratch_in: [1]f32 = @zeros([1]f32);
-var scratch_out: [1]f32 = @zeros([1]f32);
-const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_in[i] });
-const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_out[i] });
+var scratch_in: [2]f32 = @zeros([2]f32);
+var scratch_out: [2]f32 = @zeros([2]f32);
+const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{2} -> scratch_in[i] });
+const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{2} -> scratch_out[i] });
 const reduce_out_q = @get_output_queue(2);
 const reduce_in_q = @get_input_queue(2);
-const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });
-const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .input_queue = reduce_in_q });
+const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 2, .output_queue = reduce_out_q });
+const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 2, .input_queue = reduce_in_q });
 
 const reduce_task_id: local_task_id = @get_local_task_id(10);
 
@@ -53,6 +53,7 @@ fn compute() void {
 
     if (pe_id == 0) {
         scratch_out[0] = local_max_val;
+        scratch_out[1] = @bitcast(f32, local_max_idx);
         @mov32(reduce_out, scratch_out_dsd, .{ .async = true });
         sys_mod.unblock_cmd_stream();
     } else {
@@ -61,16 +62,20 @@ fn compute() void {
 }
 
 task reduce_recv() void {
-    const incoming = scratch_in[0];
-    if (incoming > global_max_val) {
-        global_max_val = incoming;
+    const incoming_val = scratch_in[0];
+    const incoming_idx = @bitcast(u32, scratch_in[1]);
+    if (incoming_val > global_max_val) {
+        global_max_val = incoming_val;
+        global_max_idx = incoming_idx;
     }
+    const best_val = (if (local_max_val > global_max_val) local_max_val else global_max_val);
+    const best_idx = (if (local_max_val > global_max_val) local_max_idx else global_max_idx);
     if (pe_id != num_pes - 1) {
-        const best = (if (local_max_val > global_max_val) local_max_val else global_max_val);
-        scratch_out[0] = best;
+        scratch_out[0] = best_val;
+        scratch_out[1] = @bitcast(f32, best_idx);
         @mov32(reduce_out, scratch_out_dsd, .{ .async = true });
     } else {
-        output_token[0] = local_max_idx;
+        output_token[0] = best_idx;
         sys_mod.unblock_cmd_stream();
     }
 }

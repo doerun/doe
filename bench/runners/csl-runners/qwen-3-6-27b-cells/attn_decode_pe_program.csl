@@ -32,6 +32,10 @@ var local_sum: f32 = 0.0;
 var global_max: f32 = -3.4028235e+38;
 var global_sum: f32 = 0.0;
 
+var scratch_in: [1]f32 = @zeros([1]f32);
+var scratch_out: [1]f32 = @zeros([1]f32);
+const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_in[i] });
+const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_out[i] });
 const reduce_out_q = @get_output_queue(2);
 const reduce_in_q = @get_input_queue(2);
 const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });
@@ -62,14 +66,28 @@ fn compute() void {
         }
         local_sum += math.exp(score - local_max);
     }
-    @fmovs(reduce_out, local_max);
+    if (num_pes == 1) {
+        global_max = local_max;
+        @activate(norm_task_id);
+    } else if (pe_id == 0) {
+        scratch_out[0] = local_max;
+        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });
+    } else {
+        @mov32(scratch_in_dsd, reduce_in, .{ .async = true, .activate = reduce_task_id });
+    }
 }
 
 task reduce_recv() void {
-    var incoming: f32 = 0.0;
-    @fmovs(&incoming, reduce_in);
+    const incoming = scratch_in[0];
     if (incoming > global_max) global_max = incoming;
-    if (pe_id == num_pes - 1) @activate(norm_task_id);
+    const best = (if (local_max > global_max) local_max else global_max);
+    if (pe_id != num_pes - 1) {
+        scratch_out[0] = best;
+        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });
+    } else {
+        global_max = best;
+        @activate(norm_task_id);
+    }
 }
 
 task normalize() void {
