@@ -85,6 +85,33 @@ CANARY_INVENTORY: dict[str, dict[str, Any]] = {
     },
 }
 
+# Auxiliary calibration sources from the bounded multi-token decode
+# orchestrator (`bench/out/r3-1-31b-multi-token-decode/scratch-subprocess/`).
+# These cover host-plan patterns (`kv_write`, `sample`) that the canary
+# inventory above doesn't reach. Bounded shape: width=4, head_dim=32,
+# kv_len=64, vocab_chunk=1024 — runs on an 11x3 fabric with ~17
+# simulated tiles. Output bytes per call are derived from
+# multi_token_decode_orchestrator's per-step contract:
+#   - kv_write: writes one [head_dim] f32 row into K and V cache
+#     (max_seq_len=64 rows, but per-call writes one row at the
+#     current target_position) -> 32 * 4 = 128 bytes per buffer
+#     per call; the full kernel writes both K and V -> 256 bytes
+#   - attention_decode: writes [head_dim] f32 -> 32 * 4 = 128
+#   - sample: writes one i32 token id (PE-winner argmax over
+#     vocab_chunk) -> 4 bytes
+EXTRA_DECODE_INVENTORY: dict[str, dict[str, Any]] = {
+    "kv_write": {
+        "pattern": "kv_write",
+        "output_bytes": 32 * 4 * 2,
+        "scratch_subdir": "scratch_kv_write",
+    },
+    "sample": {
+        "pattern": "sample",
+        "output_bytes": 4,
+        "scratch_subdir": "scratch_sample",
+    },
+}
+
 
 def _try_relative(path: Path) -> str:
     try:
@@ -106,45 +133,95 @@ def _sha256_canonical(payload: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _sample_from_stats(
+    *,
+    kernel: str,
+    pattern: str,
+    sim_stats_path: Path,
+    output_bytes: int,
+    sample_source: str,
+) -> dict[str, Any] | None:
+    if not sim_stats_path.is_file():
+        return None
+    stats = json.loads(sim_stats_path.read_text(encoding="utf-8"))
+    cycle_count = int(stats.get("cycle_count") or 0)
+    if cycle_count <= 0:
+        return None
+    return {
+        "kernel": kernel,
+        "pattern": pattern,
+        "sampleSource": sample_source,
+        "simStatsPath": _try_relative(sim_stats_path),
+        "simStatsSha256": _sha256_file(sim_stats_path),
+        "cycleCount": cycle_count,
+        "totalTimeSec": float(stats.get("total_time") or 0.0),
+        "outputBytes": output_bytes,
+        "bytesPerCycle": output_bytes / cycle_count,
+        "fabricX": int(stats.get("fabric_x") or 0),
+        "fabricY": int(stats.get("fabric_y") or 0),
+        "simulatedTileCount": int(stats.get("simulated_tile_count") or 0),
+    }
+
+
 def collect_samples(
     canary_compile_root: Path,
+    multi_token_decode_root: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
-    """Walk the canary compile root and pull cycle_count + total_time.
+    """Walk calibration roots and build per-kernel sample records.
 
-    Returns (samples, missing): one sample dict per canary kernel that
-    has a sim_stats.json on disk, plus the list of kernels we expected
-    but did not find.
+    Pulls from two sources:
+    1. The bootstrap canary compile root (`bench/out/csl-real-canary-compile/`),
+       one sim_stats.json per kernel under `<kernel>/scratch/sim_stats.json`.
+    2. Optional bounded multi-token decode scratch
+       (`bench/out/r3-1-31b-multi-token-decode/scratch-subprocess/step*/`)
+       which carries `kv_write` / `sample` patterns the canary inventory
+       does not cover.
+
+    Returns (samples, missing): one sample dict per kernel that has
+    sim_stats on disk, plus the list of kernels we expected but did
+    not find.
     """
     samples: list[dict[str, Any]] = []
     missing: list[str] = []
     for kernel, meta in CANARY_INVENTORY.items():
         sim_stats_path = canary_compile_root / kernel / "scratch" / "sim_stats.json"
-        if not sim_stats_path.is_file():
+        sample = _sample_from_stats(
+            kernel=kernel,
+            pattern=meta["pattern"],
+            sim_stats_path=sim_stats_path,
+            output_bytes=int(meta["output_bytes"]),
+            sample_source="canary_compile",
+        )
+        if sample is None:
             missing.append(kernel)
             continue
-        stats = json.loads(sim_stats_path.read_text(encoding="utf-8"))
-        cycle_count = int(stats.get("cycle_count") or 0)
-        total_time = float(stats.get("total_time") or 0.0)
-        out_bytes = int(meta["output_bytes"])
-        if cycle_count <= 0:
-            missing.append(f"{kernel} (cycle_count={cycle_count})")
-            continue
-        bytes_per_cycle = out_bytes / cycle_count
-        samples.append(
-            {
-                "kernel": kernel,
-                "pattern": meta["pattern"],
-                "simStatsPath": _try_relative(sim_stats_path),
-                "simStatsSha256": _sha256_file(sim_stats_path),
-                "cycleCount": cycle_count,
-                "totalTimeSec": total_time,
-                "outputBytes": out_bytes,
-                "bytesPerCycle": bytes_per_cycle,
-                "fabricX": int(stats.get("fabric_x") or 0),
-                "fabricY": int(stats.get("fabric_y") or 0),
-                "simulatedTileCount": int(stats.get("simulated_tile_count") or 0),
-            }
-        )
+        samples.append(sample)
+
+    if multi_token_decode_root is not None:
+        # Walk every step* dir; pick whichever step has a sim_stats.json
+        # (typically step000 or step001). The orchestrator writes one
+        # sim_stats.json per (step, kernel) pair.
+        step_dirs = sorted(
+            (multi_token_decode_root / "scratch-subprocess").glob("step*")
+        ) if (multi_token_decode_root / "scratch-subprocess").is_dir() else []
+        for kernel, meta in EXTRA_DECODE_INVENTORY.items():
+            sample: dict[str, Any] | None = None
+            for step_dir in step_dirs:
+                sim_stats_path = step_dir / meta["scratch_subdir"] / "sim_stats.json"
+                sample = _sample_from_stats(
+                    kernel=kernel,
+                    pattern=meta["pattern"],
+                    sim_stats_path=sim_stats_path,
+                    output_bytes=int(meta["output_bytes"]),
+                    sample_source=f"bounded_multi_token_decode/{step_dir.name}",
+                )
+                if sample is not None:
+                    break
+            if sample is None:
+                missing.append(f"{kernel} (no multi-token decode step had sim_stats)")
+                continue
+            samples.append(sample)
+
     return samples, missing
 
 
@@ -229,6 +306,20 @@ def parse_args() -> argparse.Namespace:
         default=REPO_ROOT / "bench" / "out" / "csl-real-canary-compile",
     )
     p.add_argument(
+        "--multi-token-decode-root",
+        type=Path,
+        default=REPO_ROOT / "bench" / "out" / "r3-1-31b-multi-token-decode",
+        help=(
+            "Optional path to the bounded multi-token decode "
+            "scratch root. When present, the tool also pulls "
+            "kv_write/sample sim_stats from "
+            "<root>/scratch-subprocess/step*/scratch_<kernel>/sim_stats.json "
+            "to extend per-pattern coverage beyond the canary "
+            "inventory. Pass an absent path or use a directory that "
+            "doesn't contain scratch-subprocess/ to skip."
+        ),
+    )
+    p.add_argument(
         "--out-dir",
         type=Path,
         default=(
@@ -253,7 +344,16 @@ def main() -> int:
         )
         return 2
 
-    samples, missing = collect_samples(canary_compile_root)
+    multi_token_decode_root: Path | None = args.multi_token_decode_root
+    if multi_token_decode_root is not None and not (
+        multi_token_decode_root / "scratch-subprocess"
+    ).is_dir():
+        multi_token_decode_root = None
+
+    samples, missing = collect_samples(
+        canary_compile_root,
+        multi_token_decode_root=multi_token_decode_root,
+    )
     if not samples:
         sys.stderr.write(
             "derive_canary_proxy_calibration: no canary sim_stats.json "
