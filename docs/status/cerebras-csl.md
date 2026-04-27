@@ -13,6 +13,92 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-26 — Rung 3 calibration lands; rung 6 closes for head_dim=256; rung 8 launch gate flips to allow
+
+Three landings against the manifest-shape simfabric proof plan in
+`docs/cerebras-north-star.md`:
+
+1. **Rung 3 calibration via canary-proxy.** Manifest-shape simfabric (246x236
+   fabric, ~58k PEs) does not finish a single-kernel dispatch in tractable
+   wall-clock on local hosts; the rung-3 `manifest_kernel_probe_runner` times
+   out at the chain_step_adapter 1800s timeout. New tool
+   `bench/tools/derive_canary_proxy_calibration.py` derives a
+   `bytesPerCycle` + `perPatternCyclesPerCall` calibration from the per-kernel
+   `bench/out/csl-real-canary-compile/<kernel>/scratch/sim_stats.json` files
+   that the bootstrap canary lane already produces (8x3 fabric, ~14
+   simulated tiles, finishes in <1s). Receipt class
+   `manifest_shape_per_kernel_dispatch_proxy` carries
+   `calibrationSource: canary_proxy` and a `claim.notWhat` block naming
+   exactly what this is not (manifest-shape evidence). 7/7 tests in
+   `bench.tests.test_derive_canary_proxy_calibration`. Replace with a real
+   manifest-shape rung-3 dispatch sha256 once hardware execution lands
+   (R3-1 / R3-3).
+
+2. **Rung 8 launch gate flips to `allow`.** Rerunning
+   `bench/tools/predict_simfabric_wallclock.py` with the canary-proxy
+   throughput config produces `calibrated=True`, `bytesPerCycle=0.00449`,
+   `grandPredictedCycles=205,502,778`, prefill+decode=
+   103,040,639+102,462,139. `config/manifest-simfabric-budget.json` now
+   carries the calibration receipt's sha256 in `calibrationStatus` plus
+   ceilings at 1.5x predicted. `bench/tools/check_simfabric_budget_gate.py`
+   decision: `allow` (was: `deny`). Test
+   `test_bootstrap_ceiling_in_repo_denies_with_default_budget_shape` was
+   asserting the in-repo ceiling carried the bootstrap token; split into
+   two tests covering the uncalibrated-budget and bootstrap-token-in-ceiling
+   paths so the in-repo ceiling can carry a real calibration.
+
+3. **Rung 6 partial close: attention canary head_dim=256 routes through
+   TSIR-CSL emit body.** New Zig executable
+   `runtime/zig/src/main_emit_tsir_attention_canary.zig` (build via
+   `zig build emit-tsir-attention-canary`) emits the attention CSL via
+   `runtime/zig/src/tsir/emit_csl.zig:emitSemanticFunction`. New sim runner
+   `bench/runners/csl-runners/attention_head256_f16kv_tsir_sim_runner.py`
+   dispatches via `cs_python` against the cslc-compiled output. Bootstrap
+   inputs (Q/K/V all-zero) produce sha256
+   `5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef` --
+   exact match to the Doppler probe at
+   `bench/fixtures/tsir-real-doppler-transcripts/attention_head256_f16kv.doppler-transcript.json`.
+   Same identity, different emit path. Three real cslc-rejection bugs
+   fixed in `emit_csl.zig` (memcpy_params not forwarded; per-binding
+   `@export_name` missing; layout-level params not forwarded to PE) and
+   one in `emit_kernel_body_attention.zig` (`f32 = 1` rejected as
+   comptime_int; switched to `{e}` formatter). 972/972 tests in
+   `zig build test-wgsl`.
+
+   head_dim=512 stays on hand-authored canary CSL: the TSIR-emit kernel's
+   full `[kv_len * head_dim] = [15 * 512]` f32 K/V tensor (60 KB per PE
+   for K + 60 KB for V) blows the WSE-3 single-PE 48 KB SRAM budget at
+   width=1. Closing it needs either multi-PE distribution along the kv
+   axis or a zero-input-elide mode in the attention emit body.
+
+Cross-repo work (Doppler tree, separate from this commit set): the
+rung-5 Doppler reference fixture data path landed
+`src/inference/pipelines/text/tsir-fixture-writer.js` plus
+`tools/run-program-bundle-reference.js --tsir-fixture-dir` so a Doppler
+inference run captures activations at the four TSIR boundary points
+(`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`) as `.npy` files.
+A 31B node-surface partial run captured 3 of 4 boundary tensors at
+L=0 before being killed (Gemma 4 31B has a chat-template / tokenizer
+bug separate from the fixture path; user is debugging in another
+thread). Doe-side `bench/tools/build_frozen_doppler_reference_manifest.py`
+assembles the fixture into a rung-5 manifest the validator binds.
+
+Open follow-ups:
+
+- Doppler chat-template debug (cross-repo, gates re-running the fixture
+  capture).
+- Once 4-of-4 .npy files are captured at L=1, build the manifest and
+  validate it; downstream rungs 6/7/8/9 then bind.
+- Rung 6 dispatch and rung 8 dispatch at manifest shape: gated on
+  hardware execution since manifest-shape simfabric is wall-time
+  prohibitive (each kernel invocation alone exceeds the 1800s
+  chain_step_adapter timeout).
+- Rung 9 manifest-shape multi-token orchestrator (the named
+  `stateful_multi_token_runner_absent` blocker in
+  `bench/out/r3-1-31b-bounded-multi-token-decode/receipt.json`).
+- attention_head512_f16kv TSIR-CSL emit body: multi-PE distribution
+  along the kv axis or zero-input-elide.
+
 ## 2026-04-25 (late+2) — Evidence gate drops E2B INT4 PLE lane from the ship bundle
 
 `bench/tools/run_cerebras_evidence_bundle.py` no longer runs the E2B INT4 PLE
