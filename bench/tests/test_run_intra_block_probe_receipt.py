@@ -43,7 +43,7 @@ def _sample_probe_map() -> dict[str, object]:
                 "outputSymbol": "output",
             },
             "post_ffn": {
-                "kernel": "gelu_decode",
+                "kernel": "gelu",
                 "outputSymbol": "output",
             },
         },

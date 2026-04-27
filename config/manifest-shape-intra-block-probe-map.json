@@ -19,9 +19,9 @@
       "note": "Attention-block output before residual + output projection."
     },
     "post_ffn": {
-      "kernel": "gelu_decode",
+      "kernel": "gelu",
       "outputSymbol": "output",
-      "note": "Gated-MLP output after activation, before final residual."
+      "note": "Gated-MLP output after activation, before final residual. The host plan compileTargets list has a single shared 'gelu' kernel (no _decode / _prefill split) per bench/out/r3-1-31b-manifest-fullgraph-compile-steps/host-plan.json."
     }
   }
 }
