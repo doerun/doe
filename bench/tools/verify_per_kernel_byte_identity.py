@@ -6,7 +6,7 @@ docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
 
   > The host-plan tool already accepts `--num-layers`; verify in
   > runtime/zig/src/csl_host_plan_tool.zig that 1-layer emission keeps
-  > the per-kernel artifacts identical to the 48-layer emission
+  > the per-kernel artifacts identical to the 60-layer emission
   > (kernel CSL is per-class, not per-layer-instance).
 
 The property: per-kernel files emitted under
@@ -63,7 +63,7 @@ def parse_args() -> argparse.Namespace:
         "--left",
         type=Path,
         required=True,
-        help="First compile root (e.g. 48-layer emission).",
+        help="First compile root (e.g. 60-layer emission).",
     )
     p.add_argument(
         "--right",
@@ -218,7 +218,7 @@ def build_receipt(
                 "roots. Bound iff every shared kernel emits the same "
                 "layout.csl, pe_program.csl, and pe_program.metadata.json "
                 "bytes on both sides — the property rung 6 needs so a "
-                "1-layer emission can stand in for the 48-layer one when "
+                "1-layer emission can stand in for the 60-layer one when "
                 "verifying first-token parity at L=1."
             ),
             "notWhat": (
