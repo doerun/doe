@@ -5,10 +5,6 @@ end-to-end against the SDK simulator, and the single remaining
 hardware-gated step. Every claim below resolves to a specific file,
 digest, or runnable test in this repo.
 
-The full receipt-bound rung ladder and working-notes context live at
-[`docs/cerebras-north-star.md`](cerebras-north-star.md) — read that if
-you want the long form.
-
 ## What's bound today
 
 **Full-graph compile.** Gemma 4 31B's full 60-layer model compiles
