@@ -228,11 +228,19 @@ def main() -> int:
     rel_l2 = diff_l2 / max(upstream_l2, 1e-9)
 
     bound = max_abs <= args.tolerance
+    per_token_corr = []
+    if upstream.ndim == 2:
+        for i in range(upstream.shape[0]):
+            corr = float(np.corrcoef(hf_aligned[i].astype(np.float32),
+                                     upstream[i].astype(np.float32))[0, 1])
+            per_token_corr.append(corr)
+    mean_corr = float(np.mean(per_token_corr)) if per_token_corr else None
     report = {
         "schemaVersion": 1,
         "artifactKind": "doe_hf_qwen_3_6_27b_l0_post_attn_diff",
         "modelId": args.model_id,
         "prompt": args.prompt,
+        "layerIdx": args.layer_idx,
         "upstreamProbePath": str(args.upstream_probe),
         "hfProbePath": _rel(args.out / "hf_l0_post_attn.npy"),
         "shape": list(upstream.shape),
@@ -242,15 +250,28 @@ def main() -> int:
         "upstreamL2": upstream_l2,
         "diffL2": diff_l2,
         "relL2": rel_l2,
+        "perTokenCorr": per_token_corr,
+        "meanCorr": mean_corr,
         "bound": bound,
         "verdict": "agrees" if bound else "diverges",
         "diagnosis": (
-            "Upstream linear-attention runtime appears correct relative to "
-            "HF reference at L=0."
+            f"Upstream agrees with HF reference at L={args.layer_idx} "
+            f"within tolerance."
             if bound
-            else "Upstream linear-attention runtime diverges from HF "
-            "reference at L=0; first non-tiny divergence names the "
-            "buggy op."
+            else (
+                f"Upstream diverges from HF reference at L={args.layer_idx}: "
+                f"max_abs={max_abs:.3e}, rel_l2={rel_l2:.3e}, "
+                f"mean_corr={mean_corr:.3f}. "
+                + (
+                    "Negative correlation indicates a sign-flip-pattern "
+                    "bug — upstream output is approximately the negative "
+                    "of HF reference, not just noisy."
+                    if mean_corr is not None and mean_corr < -0.5
+                    else "Drift consistent with bf16 precision noise."
+                    if mean_corr is not None and mean_corr > 0.99
+                    else "Pattern divergence; bisect upstream-side from L=0 forward."
+                )
+            )
         ),
     }
     (args.out / "report.json").write_text(json.dumps(report, indent=2) + "\n")
