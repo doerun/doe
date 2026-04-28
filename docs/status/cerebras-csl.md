@@ -13,6 +13,21 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-28 — Qwen SSM body ops bound into exec-v1 smoke config
+
+The Qwen 3.6 27B non-hardware scope now covers the hybrid architecture rather
+than only the 16 full-attention layers. The smoke config dispatches the
+gated-DeltaNet SSM body sequence with `repeat=48`: `conv1d_depthwise`,
+`l2_normalize` for Q/K rows, then `linear_attention`.
+
+The exec-v1 `opToSpec` table routes all three ops to semantic CSL patterns.
+`emit_csl_semantic_ops.zig` delegates each PE program to the existing TSIR
+body emitters, so the route shares the same math pinned by
+`reference_interpreter.zig`: causal depthwise conv, row L2 normalization, and
+the shared-norm DeltaNet linear-attention state update. The host-plan tool now
+emits compile params and binding metadata for the three SSM body kernels, and
+the paired-gate canary pins the new op mapping plus body-program fragments.
+
 ## 2026-04-28 — Qwen fused GEMV row reduction switches to collectives_2d
 
 The Qwen 3.6 27B `gemv` width>=3 non-hardware blocker is closed at the Doe

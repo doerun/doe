@@ -120,6 +120,12 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         // 48 KiB budget at width=height=512 with q_len_per_pe=8 and
         // slots_per_pe=8.
         .{ .op = "attention_prefill_kv_axis_sharded", .spec = .{ .pattern = "attention_prefill_kv_axis_sharded", .allow_prefill = true, .allow_decode = false, .kind = .compute } },
+        // Qwen 3.6 gated-DeltaNet SSM body ops. These route directly
+        // through emit_csl_semantic_ops.zig to the TSIR CSL bodies used
+        // by the reference-interpreter parity tests.
+        .{ .op = "conv1d_depthwise", .spec = .{ .pattern = "conv1d_depthwise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "l2_normalize", .spec = .{ .pattern = "l2_normalize", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "linear_attention", .spec = .{ .pattern = "linear_attention", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention_linear", .spec = .{ .pattern = "attention_linear", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rope", .spec = .{ .pattern = "rope", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rmsnorm", .spec = .{ .pattern = "rms_norm", .allow_prefill = true, .allow_decode = true, .kind = .compute } },

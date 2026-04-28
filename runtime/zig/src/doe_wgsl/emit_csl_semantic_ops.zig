@@ -22,6 +22,9 @@ pub fn isSemanticPattern(pattern: []const u8) bool {
         std.mem.eql(u8, pattern, "gelu_gated") or
         std.mem.eql(u8, pattern, "silu_gated") or
         std.mem.eql(u8, pattern, "sigmoid_gated") or
+        std.mem.eql(u8, pattern, "conv1d_depthwise") or
+        std.mem.eql(u8, pattern, "l2_normalize") or
+        std.mem.eql(u8, pattern, "linear_attention") or
         std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded");
 }
 
@@ -31,6 +34,9 @@ pub fn emitLayout(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void {
     if (std.mem.eql(u8, pattern, "gelu_gated")) return emitElementwiseLayout(buf, pos, .gated);
     if (std.mem.eql(u8, pattern, "silu_gated")) return emitElementwiseLayout(buf, pos, .gated);
     if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitElementwiseLayout(buf, pos, .gated);
+    if (std.mem.eql(u8, pattern, "conv1d_depthwise")) return emitSsmLayout(buf, pos, .conv1d_depthwise);
+    if (std.mem.eql(u8, pattern, "l2_normalize")) return emitSsmLayout(buf, pos, .l2_normalize);
+    if (std.mem.eql(u8, pattern, "linear_attention")) return emitSsmLayout(buf, pos, .linear_attention);
     if (std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded"))
         return emitAttnPrefillKvAxisShardedLayout(buf, pos);
     return error.UnsupportedPattern;
@@ -42,6 +48,9 @@ pub fn emitPeProgram(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void
     if (std.mem.eql(u8, pattern, "gelu_gated")) return emitGatedPe(buf, pos, .gelu_gated);
     if (std.mem.eql(u8, pattern, "silu_gated")) return emitGatedPe(buf, pos, .silu_gated);
     if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitGatedPe(buf, pos, .sigmoid_gated);
+    if (std.mem.eql(u8, pattern, "conv1d_depthwise")) return emitConv1DDepthwisePe(buf, pos);
+    if (std.mem.eql(u8, pattern, "l2_normalize")) return emitL2NormalizePe(buf, pos);
+    if (std.mem.eql(u8, pattern, "linear_attention")) return emitLinearAttentionPe(buf, pos);
     if (std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded"))
         return emitAttnPrefillKvAxisShardedPe(buf, pos);
     return error.UnsupportedPattern;
@@ -303,6 +312,223 @@ fn emitGatedPe(buf: []u8, pos: *usize, op: tsir_schema.SemanticBodyOp) EmitError
         .chunk_size_default = 1024,
     };
     var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
+}
+
+const SsmKind = enum {
+    conv1d_depthwise,
+    l2_normalize,
+    linear_attention,
+};
+
+fn emitSsmLayout(buf: []u8, pos: *usize, kind: SsmKind) EmitError!void {
+    try write(buf, pos, "// Layout: Qwen 3.6 gated-DeltaNet SSM body op.\n\n");
+    try write(buf, pos, "param width: u16;\n");
+    try write(buf, pos, "param height: u16;\n");
+    switch (kind) {
+        .conv1d_depthwise => try write(buf, pos, "param num_tokens: i16 = 4;\n"),
+        .linear_attention => try write(buf, pos, "param a_log: f32 = 0.5;\n"),
+        .l2_normalize => {},
+    }
+    try write(buf, pos, "\n");
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n");
+    try write(buf, pos, "    .height = height,\n");
+    try write(buf, pos, "});\n\n");
+    try write(buf, pos, "layout {\n");
+    try write(buf, pos, "    @set_rectangle(width, height);\n\n");
+    try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    switch (kind) {
+        .conv1d_depthwise => try write(buf, pos, "                .num_tokens = num_tokens,\n"),
+        .linear_attention => try write(buf, pos, "                .a_log = a_log,\n"),
+        .l2_normalize => {},
+    }
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
+    switch (kind) {
+        .conv1d_depthwise => {
+            try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"weight\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"bias\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"output\", [*]f32, true);\n");
+        },
+        .l2_normalize => {
+            try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"output\", [*]f32, true);\n");
+        },
+        .linear_attention => {
+            try write(buf, pos, "    @export_name(\"query\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"key\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"value\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"gate\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"linear_state\", [*]f32, true);\n");
+            try write(buf, pos, "    @export_name(\"output\", [*]f32, true);\n");
+        },
+    }
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n");
+    try write(buf, pos, "}\n");
+}
+
+fn emitL2NormalizePe(buf: []u8, pos: *usize) EmitError!void {
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .output },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .l2_normalize,
+            .binding_roles = &body_bindings,
+            .axis_roles = &.{},
+            .l2_normalize = .{
+                .hidden = 256,
+                .eps = 0.000001,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{ .var_prefix = "" };
+    var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
+}
+
+fn emitConv1DDepthwisePe(buf: []u8, pos: *usize) EmitError!void {
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "t", .lower_bound = "0", .upper_bound = "num_tokens", .step = "1" },
+        .{ .name = "c", .lower_bound = "0", .upper_bound = "channels", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+        .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+        .{ .name = "bias", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 3, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .input },
+        .{ .binding_index = 1, .role = .weight },
+        .{ .binding_index = 2, .role = .bias },
+        .{ .binding_index = 3, .role = .output },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .conv1d_depthwise,
+            .binding_roles = &body_bindings,
+            .axis_roles = &.{},
+            .conv1d_depthwise = .{
+                .channels = 256,
+                .kernel_size = 4,
+                .has_bias = true,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{ .var_prefix = "" };
+    var fixed: [8192]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
+}
+
+fn emitLinearAttentionPe(buf: []u8, pos: *usize) EmitError!void {
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "value_dim", .step = "1" },
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "key_dim", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "query", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "key", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "value", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "gate", .group = 0, .binding = 3, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "linear_state", .group = 0, .binding = 4, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+        .{ .name = "output", .group = 0, .binding = 5, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .query },
+        .{ .binding_index = 1, .role = .key },
+        .{ .binding_index = 2, .role = .value },
+        .{ .binding_index = 3, .role = .gate },
+        .{ .binding_index = 4, .role = .linear_state },
+        .{ .binding_index = 5, .role = .output },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .attention_decode,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .linear_attention,
+            .binding_roles = &body_bindings,
+            .axis_roles = &.{},
+            .linear_attention = .{
+                .key_dim = 256,
+                .value_dim = 256,
+                .key_heads = 16,
+                .value_heads = 48,
+                .norm_mode = .shared,
+                .has_dt_bias = false,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{ .var_prefix = "" };
+    var fixed: [16384]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);
     var sink = std.ArrayList(u8){};
     defer sink.deinit(fba.allocator());

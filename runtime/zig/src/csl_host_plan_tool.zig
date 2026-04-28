@@ -67,6 +67,12 @@ const COMPILE_ROOT_NAME: []const u8 = "compile";
 
 const CHUNK_SHAPE = host_plan.BindingShape{ .elements = "chunk_size" };
 const HIDDEN_SHAPE = host_plan.BindingShape{ .elements = "hidden_size" };
+const SSM_TOKEN_CHANNEL_SHAPE = host_plan.BindingShape{ .elements = "num_tokens * channels" };
+const SSM_CHANNEL_KERNEL_SHAPE = host_plan.BindingShape{ .elements = "channels * kernel_size" };
+const SSM_CHANNEL_SHAPE = host_plan.BindingShape{ .elements = "channels" };
+const SSM_KEY_SHAPE = host_plan.BindingShape{ .elements = "key_dim" };
+const SSM_VALUE_SHAPE = host_plan.BindingShape{ .elements = "value_dim" };
+const SSM_STATE_SHAPE = host_plan.BindingShape{ .elements = "value_dim * key_dim" };
 const SUMMA_A_SHAPE = host_plan.BindingShape{ .elements = "Mt * Kt" };
 const SUMMA_B_SHAPE = host_plan.BindingShape{ .elements = "Kt * Nt" };
 const SUMMA_C_SHAPE = host_plan.BindingShape{ .elements = "Mt * Nt" };
@@ -92,6 +98,27 @@ const GATED_BINDINGS = [_]host_plan.BindingMetadata{
     .{ .symbol = "gate", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
     .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
     .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+};
+
+const L2_NORMALIZE_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE },
+};
+
+const CONV1D_DEPTHWISE_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = SSM_TOKEN_CHANNEL_SHAPE, .per_pe_shape = SSM_TOKEN_CHANNEL_SHAPE },
+    .{ .symbol = "weight", .access = "read", .elem_type = "f32", .binding_shape = SSM_CHANNEL_KERNEL_SHAPE, .per_pe_shape = SSM_CHANNEL_KERNEL_SHAPE, .weight_source = "runtime_weight_mapping" },
+    .{ .symbol = "bias", .access = "read", .elem_type = "f32", .binding_shape = SSM_CHANNEL_SHAPE, .per_pe_shape = SSM_CHANNEL_SHAPE, .weight_source = "runtime_weight_mapping" },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = SSM_TOKEN_CHANNEL_SHAPE, .per_pe_shape = SSM_TOKEN_CHANNEL_SHAPE },
+};
+
+const LINEAR_ATTENTION_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "query", .access = "read", .elem_type = "f32", .binding_shape = SSM_VALUE_SHAPE, .per_pe_shape = SSM_VALUE_SHAPE },
+    .{ .symbol = "key", .access = "read", .elem_type = "f32", .binding_shape = SSM_KEY_SHAPE, .per_pe_shape = SSM_KEY_SHAPE },
+    .{ .symbol = "value", .access = "read", .elem_type = "f32", .binding_shape = SSM_KEY_SHAPE, .per_pe_shape = SSM_KEY_SHAPE },
+    .{ .symbol = "gate", .access = "read", .elem_type = "f32", .binding_shape = SSM_VALUE_SHAPE, .per_pe_shape = SSM_VALUE_SHAPE },
+    .{ .symbol = "linear_state", .access = "read_write", .elem_type = "f32", .binding_shape = SSM_STATE_SHAPE, .per_pe_shape = SSM_STATE_SHAPE },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = SSM_VALUE_SHAPE, .per_pe_shape = SSM_VALUE_SHAPE },
 };
 
 const TILED_BINDINGS = [_]host_plan.BindingMetadata{
@@ -468,6 +495,15 @@ fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_pl
     {
         return .{ .target_phase = target_phase, .bindings = &GATED_BINDINGS };
     }
+    if (std.mem.eql(u8, pattern, "l2_normalize")) {
+        return .{ .target_phase = target_phase, .bindings = &L2_NORMALIZE_BINDINGS };
+    }
+    if (std.mem.eql(u8, pattern, "conv1d_depthwise")) {
+        return .{ .target_phase = target_phase, .bindings = &CONV1D_DEPTHWISE_BINDINGS };
+    }
+    if (std.mem.eql(u8, pattern, "linear_attention")) {
+        return .{ .target_phase = target_phase, .bindings = &LINEAR_ATTENTION_BINDINGS };
+    }
     if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
     }
@@ -552,6 +588,21 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "width", row_width);
         try appendParam(allocator, &params, "height", row_height);
         try appendParam(allocator, &params, "chunk_size", config.hidden_dim);
+    } else if (std.mem.eql(u8, pattern, "l2_normalize")) {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "hidden_size", config.head_dim);
+    } else if (std.mem.eql(u8, pattern, "conv1d_depthwise")) {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "num_tokens", @min(config.max_seq_len, @as(u32, 4)));
+        try appendParam(allocator, &params, "channels", config.head_dim);
+        try appendParam(allocator, &params, "kernel_size", 4);
+    } else if (std.mem.eql(u8, pattern, "linear_attention")) {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "key_dim", config.head_dim);
+        try appendParam(allocator, &params, "value_dim", config.head_dim);
     } else if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) {
         const out_dim_per_pe = ceilDivU32(config.hidden_dim, plan.pe_grid_height);
         try appendParam(allocator, &params, "width", plan.pe_grid_width);

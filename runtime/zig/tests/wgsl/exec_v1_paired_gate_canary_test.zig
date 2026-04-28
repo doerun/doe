@@ -184,6 +184,92 @@ test "exec-v1 opToSpec routes attention_prefill_kv_axis_sharded to its semantic 
     try std.testing.expect(semantic_ops.isSemanticPattern(spec.pattern));
 }
 
+test "exec-v1 opToSpec routes Qwen SSM body ops to semantic patterns" {
+    const ops = [_][]const u8{ "conv1d_depthwise", "l2_normalize", "linear_attention" };
+    for (ops) |op| {
+        const spec = exec_v1.opToSpec(op) orelse return error.OpUnregistered;
+        try std.testing.expectEqualStrings(op, spec.pattern);
+        try std.testing.expect(spec.allow_prefill);
+        try std.testing.expect(spec.allow_decode);
+        try std.testing.expect(spec.kind == .compute);
+        try std.testing.expect(semantic_ops.isSemanticPattern(spec.pattern));
+        try std.testing.expect(!exec_v1.isPairedGateOp(op));
+    }
+}
+
+test "Qwen SSM body op layouts export their host-plan bindings" {
+    var conv_buf: [16384]u8 = undefined;
+    const conv = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "conv1d_depthwise",
+        &conv_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "param num_tokens: i16 = 4;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, ".num_tokens = num_tokens") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"input\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"weight\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"bias\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"output\", [*]f32, true)") != null);
+
+    var l2_buf: [16384]u8 = undefined;
+    const l2 = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "l2_normalize",
+        &l2_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, l2.layout, "@export_name(\"input\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, l2.layout, "@export_name(\"output\", [*]f32, true)") != null);
+
+    var linear_buf: [32768]u8 = undefined;
+    const linear = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "linear_attention",
+        &linear_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "param a_log: f32 = 0.5;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, ".a_log = a_log") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"query\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"key\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"value\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"gate\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"linear_state\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"output\", [*]f32, true)") != null);
+}
+
+test "Qwen SSM body op pe programs pin TSIR formulas" {
+    var conv_buf: [16384]u8 = undefined;
+    const conv = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "conv1d_depthwise",
+        &conv_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const channels: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const kernel_size: i16 = 4;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const t_in: i16 = t - (kernel_size - 1 - k);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "sys_mod.unblock_cmd_stream();") != null);
+
+    var l2_buf: [16384]u8 = undefined;
+    const l2 = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "l2_normalize",
+        &l2_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "const hidden_size: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "1.0 / math.sqrt(sq + l2_eps)") != null);
+
+    var linear_buf: [32768]u8 = undefined;
+    const linear = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "linear_attention",
+        &linear_buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const key_dim: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const value_dim: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const alpha: f32 = 1.0 - math.exp(-a_log);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "linear_state") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const sigmoid_g: f32 = 1.0 / (1.0 + math.exp(-g));") != null);
+}
+
 test "attention_prefill_kv_axis_sharded layout exports query/key/value/output and partials params" {
     // Layout contract expected by the host plan stitch:
     //   - 2D PE grid (width × height) so K/V can shard along pe_y while

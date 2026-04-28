@@ -2,7 +2,7 @@
 
 One Doppler-authored Qwen 3.6 27B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Mirrors the Gemma 4 31B ladder at [`docs/cerebras-north-star.md`](cerebras-north-star.md).
 
-**Scoped today**: the 16 full-attention layers (head_dim=256, GQA 24:4). The 48 gated-DeltaNet (linear-attention SSM) layers' end-to-end coverage requires the linear-attention body op + smoke-config wiring; the body op landed on this branch (see Doe-gated below) but the smoke config still scopes to full-attention layers.
+**Scoped today**: the full hybrid Qwen 3.6 27B architecture at non-hardware scope: 16 full-attention layers plus 48 gated-DeltaNet SSM layers (conv1d_depthwise -> l2_normalize(q/k) -> linear_attention). WSE receipts remain hardware-gated under R3-2.
 
 External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md).
 
@@ -12,7 +12,7 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 |---|---|---|---|
 | A. Per-kernel byte-identity | Smoke | No | 2/2 pass (1L vs 64L) |
 | B. 27B manifest-shape full-graph cslc compile | Manifest | Yes | **emit-spec resolved**: `attn_prefill_pe_memory_overflow` closed by kv-axis-sharded semantic pattern wiring (multi-Q body + 2D PE grid). Compile re-attempt now produces a fresh receipt class; baseline 10/15 was from the legacy `attention_tiled` route that the smoke config no longer takes. Hardware compile receipt re-baselining is hardware-gated. |
-| C. 27B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | per-kernel cells running (**10/10 pass** after sample + attn_decode emit fixes); follow-up: smoke-config rebind to wire silu_gated/o_gate kernels |
+| C. 27B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | per-kernel cells running (**10/10 pass** after sample + attn_decode emit fixes); non-hardware smoke config now includes the 48 SSM layer body sequence; WSE receipt remains R3-2 gated |
 
 ## Bound today (no hardware)
 
@@ -23,6 +23,7 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 - [x] TSIR `silu_gated` + `sigmoid_gated` body ops + classifier wiring + exec-v1 `opToSpec` map (`o_gate` aliased to `sigmoid_gated`)
 - [x] `silu_gated` / `sigmoid_gated` host-plan bindings (paired `(gate, input) → output`) and compile params
 - [x] Smoke-config rebind: `op="silu_gated"` for FFN activation + new `op="o_gate"` step between attention and o_proj, both with `inputsFrom` declaring upstream step names (commit `cc88c546a`)
+- [x] 48 SSM layer smoke-config rebind: `conv1d_depthwise` -> `l2_normalize` (Q/K) -> `linear_attention` with `repeat=48`, host-plan compile params/bindings, and semantic CSL emit via the TSIR body ops
 - [x] `causal_mode` and `sliding_window` accepted in `attention_scores` body op (commit `8e8226f4c`)
 - [x] Multi-Q kv-axis-sharded body for causal-prefill — `query_seq_len > 1` widens Q to `[query_seq_len * head_dim]` and output to `[query_seq_len * (head_dim+2)]f32` (commit `6b15aae01`)
 - [x] `gemv` middle-PE routing aligned with reduce-dist canonical pattern (`rx={WEST,RAMP}, tx={EAST}`; commit `d1ede0c12`)
@@ -44,6 +45,7 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 - [x] **`gemv` width>=3 row reduction** — closed by routing fused GEMV through the SDK `collectives_2d` import surface already used by SUMMA. `emitFusedGemvLayout` now imports `<collectives_2d/params>` and passes per-tile `c2d_params`; `emit_csl_fused.zig` imports `<collectives_2d/pe>` and calls `reduce_fadds(root=width-1, partial, output, out_dim_per_pe, reduce_done_id)`. This removes the hand-rolled `reduce_color` route and relies on the SDK teardown/switch FSM without vendoring SDK source.
 - [x] Causal mask + sliding-window in `attention_scores` body op
 - [x] Classifier + opToSpec wiring for `silu_gated` + `sigmoid_gated` + `o_gate`; smoke config rebound
+- [x] Classifier + opToSpec + host-plan binding wiring for SSM body ops: `conv1d_depthwise`, `l2_normalize`, and `linear_attention`; smoke config now dispatches the composed SSM block with `repeat=48`.
 - [x] Reference interpreter for the new TSIR body ops: `tryL2Normalize`, `tryConv1DDepthwise`, `tryLinearAttention` in `runtime/zig/src/tsir/reference_interpreter.zig`. All three mirror their CSL emit math (commit `8c3bcfa6d`); wired into `run()` dispatch alongside the existing tryers.
 - [x] mrope-3D kernel-side validation — `emit_csl_rope.zig` now accepts `param mrope_t_pairs / mrope_h_pairs / mrope_w_pairs: i16 = 0` and asserts `T + H + W == num_pairs` at comptime when any is non-zero (commit `1812ede97`). Kernel remains mrope-agnostic for the cos/sin math (tables generated host-side with per-section position multipliers folded in); the params surface the mrope shape for receipt attribution and let a future image/video bring-up branch inside the kernel without contract changes.
 - [x] Bounded multi-token decode chain receipt — `bench/tools/aggregate_qwen_3_6_27b_multi_token_decode_receipt.py` binds `bench/out/r3-2-27b-qwen-multi-token-decode/trace.json` into a typed receipt with `smokeConfigHash` + `traceHash` + per-kernel compile-dir digests; rung-1 receipt-hash-guard enforced (commit `25dcde355`).
@@ -59,7 +61,7 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 ## Acceptance bar (Layer C, scoped)
 
 - All cslc-clean kernels dispatched on simfabric, bytes/digests recorded.
-- For one prompt on the 16 full-attention layers, post_rmsnorm/post_qkv/post_attn/post_ffn at L=0 hash matches Doppler reference.
+- For one prompt on the full hybrid architecture, post_rmsnorm/post_qkv/post_attn/post_ffn plus the SSM body-op boundaries hash-match the Doppler reference at the frozen probe points.
 - Manifest / HostPlan / CSL / reference-fixture hash chain unbroken end-to-end.
 
 ## Integrity invariants
@@ -75,4 +77,3 @@ Same as Gemma:
 ## Long-tail
 
 - **Optimization roadmap** (post-hardware): same three items as Gemma's north star (mixed precision, fused-dequant SUMMA, cross-kernel fusion). Wedge already shipped on Gemma side.
-- **End-to-end SSM coverage**: the linear-attention body op landed in this branch, but promoting from "full-attention slice" to "full Qwen 3.6 27B end-to-end" still needs (a) the smoke config rewired to dispatch `linear_attention` for the 48 SSM layers, (b) the conv1d + l2_normalize body ops composed into the SSM block in the host plan, and (c) full SSM-block parity across the composed host-plan path.
