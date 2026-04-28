@@ -21,7 +21,8 @@ pub fn isSemanticPattern(pattern: []const u8) bool {
         std.mem.eql(u8, pattern, "residual_add") or
         std.mem.eql(u8, pattern, "gelu_gated") or
         std.mem.eql(u8, pattern, "silu_gated") or
-        std.mem.eql(u8, pattern, "sigmoid_gated");
+        std.mem.eql(u8, pattern, "sigmoid_gated") or
+        std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded");
 }
 
 pub fn emitLayout(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void {
@@ -30,6 +31,8 @@ pub fn emitLayout(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void {
     if (std.mem.eql(u8, pattern, "gelu_gated")) return emitElementwiseLayout(buf, pos, .gated);
     if (std.mem.eql(u8, pattern, "silu_gated")) return emitElementwiseLayout(buf, pos, .gated);
     if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitElementwiseLayout(buf, pos, .gated);
+    if (std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded"))
+        return emitAttnPrefillKvAxisShardedLayout(buf, pos);
     return error.UnsupportedPattern;
 }
 
@@ -39,6 +42,8 @@ pub fn emitPeProgram(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void
     if (std.mem.eql(u8, pattern, "gelu_gated")) return emitGatedPe(buf, pos, .gelu_gated);
     if (std.mem.eql(u8, pattern, "silu_gated")) return emitGatedPe(buf, pos, .silu_gated);
     if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitGatedPe(buf, pos, .sigmoid_gated);
+    if (std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded"))
+        return emitAttnPrefillKvAxisShardedPe(buf, pos);
     return error.UnsupportedPattern;
 }
 
@@ -298,6 +303,130 @@ fn emitGatedPe(buf: []u8, pos: *usize, op: tsir_schema.SemanticBodyOp) EmitError
         .chunk_size_default = 1024,
     };
     var fixed: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&fixed);
+    var sink = std.ArrayList(u8){};
+    defer sink.deinit(fba.allocator());
+    tsir_kernel_body.emitWithConfig(sink.writer(fba.allocator()), semantic, .csl, &config) catch |err| switch (err) {
+        error.OutOfMemory => return error.OutputTooLarge,
+        error.InvalidBodyContract,
+        error.MissingBindingRole,
+        error.UnsupportedKernelBody,
+        error.UnsupportedScalarKind,
+        => return error.UnsupportedPattern,
+    };
+    try write(buf, pos, sink.items);
+}
+
+// Hardcoded query stripe for the `attention_prefill_kv_axis_sharded`
+// pattern. The host plan stripes Q across pe_x in chunks of this size,
+// so width must equal `q_len / ATTN_PREFILL_QUERY_SEQ_LEN`. With
+// head_dim=256 and slots_per_pe=8 (kv stripe), per-PE working-set is:
+//   Q (8 * 256 * 4 = 8 KiB)
+// + K (8 * 256 * 4 = 8 KiB)
+// + V (8 * 256 * 4 = 8 KiB)
+// + partials (8 * 258 * 4 ≈ 8 KiB)
+// + scores (8 * 4 = 32 B)
+// ≈ 32 KiB, comfortably under WSE-3's 48 KiB per-PE SRAM budget.
+const ATTN_PREFILL_HEAD_DIM: u32 = 256;
+const ATTN_PREFILL_QUERY_SEQ_LEN: u32 = 8;
+// 1 / sqrt(256) = 0.0625; the smoke kernel emits this as a literal_f32.
+const ATTN_PREFILL_SCALE: f64 = 0.0625;
+
+fn emitAttnPrefillKvAxisShardedLayout(buf: []u8, pos: *usize) EmitError!void {
+    // 2D PE grid: pe_x shards Q (each column owns a per-PE Q stripe of
+    // ATTN_PREFILL_QUERY_SEQ_LEN queries), pe_y shards K/V (each row
+    // owns slots_per_pe positions). The host plan log-sum-exp stitches
+    // partials across pe_y after the PE program writes its
+    // `[query_seq_len * (head_dim + 2)]f32` partials buffer.
+    try write(buf, pos, "param width: u16;\n");
+    try write(buf, pos, "param height: u16;\n");
+    try write(buf, pos, "param kv_len: i16;\n");
+    try write(buf, pos, "param slots_per_pe: i16;\n\n");
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n");
+    try write(buf, pos, "    .height = height,\n");
+    try write(buf, pos, "});\n\n");
+    try write(buf, pos, "layout {\n");
+    try write(buf, pos, "    @set_rectangle(width, height);\n\n");
+    try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
+    try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
+    try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "                .pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x),\n");
+    try write(buf, pos, "                .num_pes = @as(u32, width) * @as(u32, height),\n");
+    try write(buf, pos, "                .kv_len = kv_len,\n");
+    try write(buf, pos, "                .slots_per_pe = slots_per_pe,\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
+    try write(buf, pos, "    @export_name(\"query\", [*]f32, true);\n");
+    try write(buf, pos, "    @export_name(\"key\", [*]f32, true);\n");
+    try write(buf, pos, "    @export_name(\"value\", [*]f32, true);\n");
+    try write(buf, pos, "    @export_name(\"output\", [*]f32, true);\n");
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n");
+    try write(buf, pos, "}\n");
+}
+
+fn emitAttnPrefillKvAxisShardedPe(buf: []u8, pos: *usize) EmitError!void {
+    // Build a SemanticFunction that drives
+    // emit_kernel_body_attention.zig::emitKvAxisSharded with multi-Q
+    // (causal-prefill). pe_id and num_pes are declared on the
+    // pe_program skeleton because emitKvAxisSharded reads `pe_id` to
+    // index into its K/V stripe and the body itself does not redeclare
+    // those params.
+    try write(buf, pos, "param pe_id: u32;\n");
+    try write(buf, pos, "param num_pes: u32;\n\n");
+    const axes = [_]tsir_schema.IterationAxis{
+        .{ .name = "k", .lower_bound = "0", .upper_bound = "kv_len", .step = "1" },
+        .{ .name = "d", .lower_bound = "0", .upper_bound = "head_dim", .step = "1" },
+    };
+    const bindings = [_]tsir_schema.BufferBinding{
+        .{ .name = "query", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+        .{ .name = "key", .group = 0, .binding = 1, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+        .{ .name = "value", .group = 0, .binding = 2, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 3, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir_schema.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .query },
+        .{ .binding_index = 1, .role = .key },
+        .{ .binding_index = 2, .role = .value },
+        .{ .binding_index = 3, .role = .output },
+    };
+    const body_axes = [_]tsir_schema.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .token },
+        .{ .axis_index = 1, .role = .hidden },
+    };
+    const semantic = tsir_schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .attention_decode,
+        .axes = &axes,
+        .bindings = &bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .attention_scores,
+            .binding_roles = &body_bindings,
+            .axis_roles = &body_axes,
+            .attention_scores = .{
+                .softmax_mode = .two_pass_stable,
+                .head_dim = ATTN_PREFILL_HEAD_DIM,
+                .key_sequence_axis = 0,
+                .scale_source = .literal_f32,
+                .scale_literal_f32 = ATTN_PREFILL_SCALE,
+                .has_softcap = false,
+                .causal_mode = .causal,
+                .query_seq_len = ATTN_PREFILL_QUERY_SEQ_LEN,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    const config = tsir_kernel_body.Config{
+        .var_prefix = "",
+        .attention_pe_strategy = .kv_axis_sharded,
+    };
+    var fixed: [16384]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);
     var sink = std.ArrayList(u8){};
     defer sink.deinit(fba.allocator());

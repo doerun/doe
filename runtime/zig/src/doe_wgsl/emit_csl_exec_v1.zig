@@ -113,6 +113,13 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "embed", .spec = .{ .pattern = "gather", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention", .spec = .{ .pattern = "attention_decode", .allow_prefill = false, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention_prefill", .spec = .{ .pattern = "attention_tiled", .allow_prefill = true, .allow_decode = false, .kind = .compute } },
+        // Multi-Q causal-prefill, K/V sharded across pe_y. Used by the
+        // Qwen 3.6 27B smoke config in place of `attention_prefill` to
+        // sidestep the `attention_tiled` linker_pe_memory_overflow at
+        // head_dim=256 / q_len=4096; per-PE working-set fits the WSE-3
+        // 48 KiB budget at width=height=512 with q_len_per_pe=8 and
+        // slots_per_pe=8.
+        .{ .op = "attention_prefill_kv_axis_sharded", .spec = .{ .pattern = "attention_prefill_kv_axis_sharded", .allow_prefill = true, .allow_decode = false, .kind = .compute } },
         .{ .op = "attention_linear", .spec = .{ .pattern = "attention_linear", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rope", .spec = .{ .pattern = "rope", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rmsnorm", .spec = .{ .pattern = "rms_norm", .allow_prefill = true, .allow_decode = true, .kind = .compute } },

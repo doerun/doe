@@ -589,6 +589,11 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "q_len", config.max_seq_len);
         try appendParam(allocator, &params, "q_len_per_pe", q_len_per_pe);
         try appendParam(allocator, &params, "block_size", @min(config.max_seq_len, @as(u32, 16)));
+    } else if (std.mem.eql(u8, pattern, "attention_prefill_kv_axis_sharded")) {
+        try appendParam(allocator, &params, "width", 512);
+        try appendParam(allocator, &params, "height", 512);
+        try appendParam(allocator, &params, "kv_len", config.max_seq_len);
+        try appendParam(allocator, &params, "slots_per_pe", ceilDivU32(config.max_seq_len, 512));
     } else if (std.mem.eql(u8, pattern, "attention_decode")) {
         try appendParam(allocator, &params, "width", plan.pe_grid_width);
         try appendParam(allocator, &params, "height", 1);

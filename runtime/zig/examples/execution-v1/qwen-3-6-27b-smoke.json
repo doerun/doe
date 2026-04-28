@@ -32,7 +32,9 @@
     "mropeInterleaved": "bound",
     "mropeInterleavedDetail": "modelConfig.mropeSection=[11,11,10] is now plumbed through ModelConfig.mrope_section into rope compile params (mrope_t_pairs/mrope_h_pairs/mrope_w_pairs). The host validates T+H+W == num_pairs (32 at headDim=256, partialRotaryFactor=0.25). The kernel-side rope math is mrope-agnostic: cos/sin tables are generated host-side with per-section position multipliers folded in, and the kernel applies them per-pair. For text-only inference the image/video positions are zero so cos=1/sin=0 in those sections; the rotation reduces to standard 1D RoPE for the text section but the wiring is now in place for image/video bring-up.",
     "causalAttentionPrefill": "bound",
-    "causalAttentionPrefillDetail": "AttentionScoresBody now accepts causal_mode in {.none, .causal, .sliding_window} (emit_kernel_body_attention.zig). Prefill receipts at manifest shape are unblocked from the body-op side; per-PE residency for attn_prefill at head_dim=256 (the 27B kv-axis-sharded redesign) is a separate Doe-gated item.",
+    "causalAttentionPrefillDetail": "AttentionScoresBody accepts causal_mode in {.none, .causal, .sliding_window} (emit_kernel_body_attention.zig). The 27B per-PE residency redesign is wired: opToSpec routes `attention_prefill_kv_axis_sharded` to a semantic-ops pattern that delegates to TSIR's emitKvAxisSharded with multi-Q causal-prefill (query_seq_len=8, head_dim=256) and the host plan supplies 2D PE grid + kv_len + slots_per_pe via `attention_prefill_kv_axis_sharded` compile params (csl_host_plan_tool.zig). The smoke config swaps the prefill attention step to `attention_prefill_kv_axis_sharded` so `attn_prefill` no longer tripping `linker_pe_memory_overflow` at manifest shape.",
+    "attnPrefillPeMemoryOverflow": "bound",
+    "attnPrefillPeMemoryOverflowDetail": "Closed by the kv-axis-sharded multi-Q body. Per-PE working set at width=height=512, query_seq_len=8, head_dim=256: Q stripe ~= 8 KiB, K/V stripe ~= 8 KiB each, partials buffer ~= 8 KiB, attn_scores ~= 32 B → ~= 32 KiB total, comfortably under the WSE-3 48 KiB per-PE budget. Tail slots (gk >= kv_len) are masked to -1e30 so the over-provisioning of PE positions is numerically idempotent.",
     "attentionOutputGate": "bound",
     "attentionOutputGateDetail": "Qwen 3.6 27B applies sigmoid(qGateProjection) * attnOutput before the O projection. The TSIR sigmoid_gated body op, the doe_wgsl classifier surface, and the exec-v1 opToSpec map (with `o_gate` aliased to `sigmoid_gated`) are all wired. The smoke config now declares an explicit `o_gate` step between attention and o_proj that reads (q_proj_output, attention_output) → gated. Receipts surface the gate as a discrete kernel.",
     "swigluFfnFusedGate": "bound",
@@ -102,9 +104,8 @@
     {
       "name": "attention",
       "phase": "prefill",
-      "op": "attention_prefill",
-      "kernelKey": "attn_prefill",
-      "namedBlocker": "attn_prefill_pe_memory_overflow"
+      "op": "attention_prefill_kv_axis_sharded",
+      "kernelKey": "attn_prefill_kv_axis_sharded"
     },
     {
       "name": "o_gate",

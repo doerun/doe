@@ -29,6 +29,7 @@ const std = @import("std");
 const exec_v1 = @import("../../src/doe_wgsl/emit_csl_exec_v1.zig");
 const host = @import("../../src/doe_wgsl/emit_csl_host.zig");
 const semantic_ops = @import("../../src/doe_wgsl/emit_csl_semantic_ops.zig");
+const compile_source = @import("../../src/doe_wgsl/emit_csl_host_compile_source.zig");
 
 test "exec-v1 opToSpec routes gelu_gated to gelu_gated pattern" {
     const spec = exec_v1.opToSpec("gelu_gated") orelse return error.OpUnregistered;
@@ -165,6 +166,83 @@ test "lowerJsonToHostPlan rejects paired-gate op missing inputsFrom" {
         error.MalformedStep,
         exec_v1.lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode),
     );
+}
+
+test "exec-v1 opToSpec routes attention_prefill_kv_axis_sharded to its semantic pattern" {
+    // The Qwen 3.6 27B smoke config swaps the prefill attention step
+    // from `attention_prefill` (which routes to attention_tiled and
+    // overflows per-PE memory at head_dim=256/q_len=4096) to
+    // `attention_prefill_kv_axis_sharded`. The op must dispatch to the
+    // matching semantic pattern, must allow prefill (and reject decode),
+    // and the pattern must be on the semantic-ops list so the host
+    // compile-source path delegates to TSIR's emitKvAxisSharded body.
+    const spec = exec_v1.opToSpec("attention_prefill_kv_axis_sharded") orelse return error.OpUnregistered;
+    try std.testing.expectEqualStrings("attention_prefill_kv_axis_sharded", spec.pattern);
+    try std.testing.expect(spec.allow_prefill);
+    try std.testing.expect(!spec.allow_decode);
+    try std.testing.expect(spec.kind == .compute);
+    try std.testing.expect(semantic_ops.isSemanticPattern(spec.pattern));
+}
+
+test "attention_prefill_kv_axis_sharded layout exports query/key/value/output and partials params" {
+    // Layout contract expected by the host plan stitch:
+    //   - 2D PE grid (width × height) so K/V can shard along pe_y while
+    //     pe_x carries the per-stripe Q queries.
+    //   - kv_len + slots_per_pe params so cslc can specialize per-shape.
+    //   - flat pe_id (pe_y*width + pe_x) so the body's slot_base math
+    //     (slot_base = pe_id * slots_per_pe) covers all K/V positions.
+    //   - exports: query, key, value, output, compute. The body writes
+    //     [query_seq_len * (head_dim + 2)]f32 partials per PE; the host
+    //     plan log-sum-exp stitch reduces those into final attention
+    //     output. The kernel itself must NOT divide by sum_exp — that
+    //     would defeat the global stitch.
+    var buf: [16384]u8 = undefined;
+    const sections = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "attention_prefill_kv_axis_sharded",
+        &buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param width: u16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param height: u16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param kv_len: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param slots_per_pe: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_rectangle(width, height)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"query\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"key\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"value\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"output\", [*]f32, true)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"compute\", fn()void)") != null);
+}
+
+test "attention_prefill_kv_axis_sharded pe program emits multi-Q kv-axis-sharded body" {
+    // Multi-Q (causal-prefill) signals the body must emit per its
+    // hardcoded query_seq_len (8) wrapped in a `for q in 0..8` loop.
+    // The emit must NOT bake in /sum_exp — that's the host stitch's
+    // job. tail-mask `gk >= kv_len` and partials writes at
+    // (head_dim, head_dim+1) within each query stripe pin the
+    // log-sum-exp interface. The skeleton declares pe_id/num_pes; the
+    // body itself must not redeclare them or cslc rejects the bundle.
+    var buf: [16384]u8 = undefined;
+    const sections = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "attention_prefill_kv_axis_sharded",
+        &buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param pe_id: u32;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param num_pes: u32;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param kv_len: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param slots_per_pe: i16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const head_dim: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const query_seq_len: u32 = 8;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const partials_len: u32 = @as(u32, head_dim) + 2;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "for (@range(u32, query_seq_len)) |q|") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "if (gk >= @as(u32, kv_len))") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "out_row_offset + @as(u32, head_dim)") != null);
+    // Causal mask per row.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "if (gk > q_pos)") != null);
+    // Sharded path defers global normalization to the host stitch.
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "/ sum_exp") == null);
 }
 
 test "lowerJsonToHostPlan rejects paired-gate op with wrong inputsFrom arity" {
