@@ -83,6 +83,12 @@ const GELU_BINDINGS = [_]host_plan.BindingMetadata{
     .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
 };
 
+const GATED_BINDINGS = [_]host_plan.BindingMetadata{
+    .{ .symbol = "gate", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+    .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+    .{ .symbol = "output", .access = "read_write", .elem_type = "f32", .binding_shape = CHUNK_SHAPE, .per_pe_shape = CHUNK_SHAPE },
+};
+
 const TILED_BINDINGS = [_]host_plan.BindingMetadata{
     .{
         .symbol = "a",
@@ -450,6 +456,12 @@ fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_pl
     if (std.mem.eql(u8, pattern, "gelu")) {
         return .{ .target_phase = target_phase, .bindings = &GELU_BINDINGS };
     }
+    if (std.mem.eql(u8, pattern, "gelu_gated") or
+        std.mem.eql(u8, pattern, "silu_gated") or
+        std.mem.eql(u8, pattern, "sigmoid_gated"))
+    {
+        return .{ .target_phase = target_phase, .bindings = &GATED_BINDINGS };
+    }
     if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
     }
@@ -517,6 +529,20 @@ fn compileTargetParams(
         std.mem.eql(u8, pattern, "gelu") or
         std.mem.eql(u8, pattern, "element_wise"))
     {
+        try appendParam(allocator, &params, "width", row_width);
+        try appendParam(allocator, &params, "height", row_height);
+        try appendParam(allocator, &params, "chunk_size", config.hidden_dim);
+    } else if (std.mem.eql(u8, pattern, "gelu_gated") or
+        std.mem.eql(u8, pattern, "silu_gated") or
+        std.mem.eql(u8, pattern, "sigmoid_gated"))
+    {
+        // Gated activations: paired (gate, input) -> output. SwiGLU FFN
+        // (silu_gated) and attentionOutputGate (sigmoid_gated, alias
+        // "o_gate") both ride the chunk_size=hidden_dim shape; the gate
+        // input is the gate-projection output (FFN: gate_proj; attn: q
+        // gate projection), the input is the up-projection / attention
+        // output, and the output replaces the input in-place from the
+        // host plan's perspective.
         try appendParam(allocator, &params, "width", row_width);
         try appendParam(allocator, &params, "height", row_height);
         try appendParam(allocator, &params, "chunk_size", config.hidden_dim);
