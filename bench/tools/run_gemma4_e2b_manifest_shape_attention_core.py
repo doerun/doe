@@ -96,6 +96,19 @@ def file_link(path: Path) -> dict[str, Any]:
     return link
 
 
+def classify_subprocess_failure(proc: subprocess.CompletedProcess[str]) -> str:
+    text = f"{proc.stdout}\n{proc.stderr}"
+    if "Failed to create container process: Operation not permitted" in text:
+        return "sdk_container_launch_not_permitted"
+    if "root filesystem extraction failed" in text:
+        return "sdk_container_rootfs_extract_failed"
+    if "Environment variable 'GITTOP' is undefined" in text:
+        return "sdk_direct_rootfs_gittop_missing"
+    if "elf2jsondebug: not found" in text:
+        return "sdk_direct_rootfs_absolute_cb_missing"
+    return "sdk_subprocess_failed"
+
+
 def select_cs_python(args: argparse.Namespace) -> Path | str:
     if args.cs_python:
         selected = Path(args.cs_python)
@@ -267,6 +280,11 @@ def run_shape(
     if args.cmaddr:
         command.extend(["--cmaddr", args.cmaddr])
 
+    try:
+        shape_out.unlink()
+    except FileNotFoundError:
+        pass
+
     start = time.time()
     proc = subprocess.run(
         command,
@@ -279,14 +297,16 @@ def run_shape(
     )
     elapsed_ms = (time.time() - start) * 1000.0
     if not shape_out.is_file():
+        failure_code = classify_subprocess_failure(proc)
         return {
             "schemaVersion": 1,
             "artifactKind": (
                 "doe_gemma4_e2b_manifest_shape_attention_core_shape_run"
             ),
-            "status": "failed:missing_shape_receipt",
+            "status": f"blocked:{failure_code}",
             "attentionKind": shape["attentionKind"],
             "shape": {"headDim": shape["headDim"]},
+            "failureCode": failure_code,
             "subprocess": {
                 "returnCode": proc.returncode,
                 "elapsedMs": elapsed_ms,
@@ -295,6 +315,8 @@ def run_shape(
             },
         }
     run = load_json(shape_out)
+    if proc.returncode != 0:
+        run["failureCode"] = classify_subprocess_failure(proc)
     run["subprocess"] = {
         "returnCode": proc.returncode,
         "elapsedMs": elapsed_ms,
@@ -366,6 +388,11 @@ def build_payload(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         if status == "succeeded"
         else "manifest_shape_attention_core_failed"
     )
+    failure_codes = sorted({
+        str(run.get("failureCode"))
+        for run in failed_runs
+        if run.get("failureCode")
+    })
     payload = {
         "schemaVersion": 1,
         "artifactKind": "doe_gemma4_e2b_manifest_shape_attention_core",
@@ -388,9 +415,9 @@ def build_payload(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "kvSourceHeadByQueryHead": [0 for _ in range(8)],
         },
         "claimScope": claim_scope(),
-        "blockers": [] if status == "succeeded" else [
-            "manifest_shape_attention_core_execution_failed"
-        ],
+        "blockers": [] if status == "succeeded" else (
+            failure_codes or ["manifest_shape_attention_core_execution_failed"]
+        ),
         "errors": [
             run.get("status", "unknown")
             for run in failed_runs

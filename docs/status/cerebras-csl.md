@@ -13,6 +13,21 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-28 — Evidence runner blocks stale attention-core receipts
+
+`bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py` now removes the
+per-shape output JSON before each SDK subprocess launch and records a typed
+failure code when the subprocess cannot produce a fresh receipt. This prevents
+an old successful `bench/out/manifest-shape/attention-core/*.json` file from
+being loaded after the current SDK invocation fails.
+
+On this host the E2B attention-core lane records
+`sdk_container_launch_not_permitted`, so the Cerebras evidence-bundle driver
+correctly reports that E2B bundle lane as blocked instead of reusing stale
+success evidence. The Gemma 4 31B and Qwen 3.6 27B cross-model compile/parity
+receipts remain separate: `bench/out/r3-cross-model-parity/receipt.json`
+binds Gemma at 23/23 and Qwen at 19/19 with no accepted compile blockers.
+
 ## 2026-04-28 — Qwen cross-model prehardware gate bound with clean compile receipt
 
 The Qwen 3.6 27B compile-step bundle at

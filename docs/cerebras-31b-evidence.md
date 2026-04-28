@@ -2,6 +2,13 @@
 
 External-facing snapshot of what's bound in-tree, what's verified end-to-end against the SDK simulator, and the single remaining hardware-gated step.
 
+Qwen 3.6 27B mirrors this evidence trail in
+[`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md).
+The shared cross-model receipt at
+`bench/out/r3-cross-model-parity/receipt.json` binds both models to the
+same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes,
+budget hashes, and compile-blocker taxonomy.
+
 Every claim below resolves to a specific file, digest, or runnable test in this repo.
 
 ## What's bound today
@@ -81,4 +88,6 @@ For an on-cluster run, the bundle plus the smoke config (`runtime/zig/examples/e
 
 WGSL → TSIR → CSL is transformer-agnostic. The same path lowers any open-weight transformer with a clean reference implementation.
 
-Gemma 4 31B is the first proof. Qwen 3.6-27B is queued behind hardware validation of the first.
+Gemma 4 31B and Qwen 3.6 27B are now both bound at the non-hardware compile
+and receipt-gate scope. The remaining tail for both models is WSE execution
+evidence: L1 smoke, manifest-shape hardware parity, and prefill/decode timing.
