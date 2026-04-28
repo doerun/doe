@@ -19,20 +19,26 @@ const RMS_EPS: []const u8 = "0.000001";
 pub fn isSemanticPattern(pattern: []const u8) bool {
     return std.mem.eql(u8, pattern, "rms_norm") or
         std.mem.eql(u8, pattern, "residual_add") or
-        std.mem.eql(u8, pattern, "gelu_gated");
+        std.mem.eql(u8, pattern, "gelu_gated") or
+        std.mem.eql(u8, pattern, "silu_gated") or
+        std.mem.eql(u8, pattern, "sigmoid_gated");
 }
 
 pub fn emitLayout(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void {
     if (std.mem.eql(u8, pattern, "rms_norm")) return emitRmsNormLayout(buf, pos);
     if (std.mem.eql(u8, pattern, "residual_add")) return emitElementwiseLayout(buf, pos, .residual);
-    if (std.mem.eql(u8, pattern, "gelu_gated")) return emitElementwiseLayout(buf, pos, .gelu);
+    if (std.mem.eql(u8, pattern, "gelu_gated")) return emitElementwiseLayout(buf, pos, .gated);
+    if (std.mem.eql(u8, pattern, "silu_gated")) return emitElementwiseLayout(buf, pos, .gated);
+    if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitElementwiseLayout(buf, pos, .gated);
     return error.UnsupportedPattern;
 }
 
 pub fn emitPeProgram(buf: []u8, pos: *usize, pattern: []const u8) EmitError!void {
     if (std.mem.eql(u8, pattern, "rms_norm")) return emitRmsNormPe(buf, pos);
     if (std.mem.eql(u8, pattern, "residual_add")) return emitResidualPe(buf, pos);
-    if (std.mem.eql(u8, pattern, "gelu_gated")) return emitGeluPe(buf, pos);
+    if (std.mem.eql(u8, pattern, "gelu_gated")) return emitGatedPe(buf, pos, .gelu_gated);
+    if (std.mem.eql(u8, pattern, "silu_gated")) return emitGatedPe(buf, pos, .silu_gated);
+    if (std.mem.eql(u8, pattern, "sigmoid_gated")) return emitGatedPe(buf, pos, .sigmoid_gated);
     return error.UnsupportedPattern;
 }
 
@@ -59,12 +65,12 @@ fn emitRmsNormLayout(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, "}\n");
 }
 
-const ElementwiseKind = enum { residual, gelu };
+const ElementwiseKind = enum { residual, gated };
 
 fn emitElementwiseLayout(buf: []u8, pos: *usize, kind: ElementwiseKind) EmitError!void {
     const title = switch (kind) {
         .residual => "residual add",
-        .gelu => "gated GELU",
+        .gated => "gated activation (gelu/silu/sigmoid)",
     };
     try write(buf, pos, "// Layout: ");
     try write(buf, pos, title);
@@ -91,7 +97,7 @@ fn emitElementwiseLayout(buf: []u8, pos: *usize, kind: ElementwiseKind) EmitErro
             try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
             try write(buf, pos, "    @export_name(\"residual\", [*]f32, true);\n");
         },
-        .gelu => {
+        .gated => {
             try write(buf, pos, "    @export_name(\"input\", [*]f32, true);\n");
             try write(buf, pos, "    @export_name(\"gate\", [*]f32, true);\n");
         },
@@ -249,13 +255,14 @@ fn emitResidualPe(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, sink.items);
 }
 
-fn emitGeluPe(buf: []u8, pos: *usize) EmitError!void {
-    // Delegate to TSIR. Same wrapper recipe as `emitResidualPe`
+fn emitGatedPe(buf: []u8, pos: *usize, op: tsir_schema.SemanticBodyOp) EmitError!void {
+    // Delegate to TSIR. Single emit body parameterized by activation
+    // kind (.gelu_gated, .silu_gated, .sigmoid_gated) — TSIR's
+    // emit_kernel_body_gated.zig dispatches on the op via the shared
+    // clamp form `z = clamp(-x, -15, 15)` so all three kinds share
+    // the saturation behavior. Same wrapper recipe as `emitResidualPe`
     // (cycle 16): build a SemanticFunction with bindings named to
-    // match the symbols the live HostPlan binding map expects, ask
-    // TSIR to emit with no `tsir_` var prefix and a chunk_size
-    // default. TSIR's `emitCslGeluGated` carries the saturation
-    // clamping that matches the prior hand-written body byte-for-byte.
+    // match the symbols the live HostPlan binding map expects.
     const axes = [_]tsir_schema.IterationAxis{
         .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
     };
@@ -280,7 +287,7 @@ fn emitGeluPe(buf: []u8, pos: *usize) EmitError!void {
         .reductions = &.{},
         .collectives = &.{},
         .body = .{
-            .op = .gelu_gated,
+            .op = op,
             .binding_roles = &body_bindings,
             .axis_roles = &body_axes,
         },

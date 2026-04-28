@@ -101,6 +101,22 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "softmax", .spec = .{ .pattern = "reduction", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "gelu", .spec = .{ .pattern = "gelu", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "silu", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        // Gated-activation family: paired (gate, input) -> output kernels.
+        // gelu_gated: GeGLU (Gemma-style); silu_gated: SwiGLU FFN inner
+        // (Qwen 3.6 / Llama-style); sigmoid_gated: attentionOutputGate
+        // (Qwen 3.6 q-gate * attn output before O-projection). All three
+        // share the same elementwise (gate, input, output) layout and
+        // dispatch to emit_csl_semantic_ops emitGatedPe parameterized by
+        // SemanticBodyOp; the TSIR side already routes the body op via
+        // emit_kernel_body.zig + emit_kernel_body_gated.zig.
+        .{ .op = "gelu_gated", .spec = .{ .pattern = "gelu_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "silu_gated", .spec = .{ .pattern = "silu_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "sigmoid_gated", .spec = .{ .pattern = "sigmoid_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        // Qwen 3.6 attention_output_gate alias: smoke configs use
+        // shorthand `o_gate` for the sigmoid-gated step that runs
+        // between attention output and O-projection. Aliases to
+        // sigmoid_gated; no separate emit.
+        .{ .op = "o_gate", .spec = .{ .pattern = "sigmoid_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "relu", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "scale", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "bias_add", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
