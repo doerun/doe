@@ -149,7 +149,7 @@ fn emitWebGpu(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -165,6 +165,9 @@ fn emitCsl(writer: anytype, func: schema.SemanticFunction, config: *const Config
         .kv_write => emitCslKvWrite(writer, func, config),
         .kv_read => emitCslKvRead(writer, func, config),
         .attention_scores => @import("emit_kernel_body_attention.zig").emitCslAttentionScores(writer, func, config),
+        .conv1d_depthwise => @import("emit_kernel_body_conv1d.zig").emitCslConv1DDepthwise(writer, func, config),
+        .l2_normalize => @import("emit_kernel_body_l2_normalize.zig").emitCslL2Normalize(writer, func, config),
+        .linear_attention => @import("emit_kernel_body_linear_attention.zig").emitCslLinearAttention(writer, func, config),
         .unknown => error.UnsupportedKernelBody,
     };
 }
@@ -178,7 +181,7 @@ fn emitMsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -191,7 +194,7 @@ fn emitDxil(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -204,7 +207,7 @@ fn emitSpirV(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
