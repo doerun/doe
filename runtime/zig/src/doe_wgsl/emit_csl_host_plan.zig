@@ -24,6 +24,7 @@ pub const CompileTarget = struct {
     pe_program_path: []const u8,
     metadata: ?CompileTargetMetadata = null,
     compile_params: []const CompileParam = &.{},
+    compile_blocked_reason: ?[]const u8 = null,
     /// "prefill" / "decode" when the target was produced as a phase variant
     /// of a phase-specialized kernel; null for base targets.
     phase: ?[]const u8 = null,

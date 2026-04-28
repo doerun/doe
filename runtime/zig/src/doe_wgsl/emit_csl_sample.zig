@@ -52,22 +52,29 @@ pub fn emit(
     try W.write(buf, pos, "var global_max_val: f32 = -3.4028235e+38;\n");
     try W.write(buf, pos, "var global_max_idx: u32 = 0;\n\n");
 
-    // wse3 DSD-to-DSD async fabric pattern.
-    // Reference: csl-extras .../row-col-broadcast/src/sync/pe.csl.
+    // wse3 DSD-to-DSD async fabric pattern with PAIRED VALUE+INDEX
+    // reduction. Reference: csl-extras .../row-col-broadcast/src/sync/pe.csl.
     // The wse2-era `@fmovs(f32_var, fabin_dsd)` synchronous form is
     // rejected on wse3. The canonical replacement stages values through
-    // a mem1d_dsd over a single-element scratch buffer and uses
+    // a mem1d_dsd over a multi-element scratch buffer and uses
     // `@mov32(dst_dsd, src_dsd, .{.async=true, [.activate=task]})`.
-    try W.write(buf, pos, "var scratch_in: [1]f32 = @zeros([1]f32);\n");
-    try W.write(buf, pos, "var scratch_out: [1]f32 = @zeros([1]f32);\n");
-    try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_in[i] });\n");
-    try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{1} -> scratch_out[i] });\n");
+    //
+    // Sample's reduction must propagate BOTH the running max value AND
+    // the index of the PE that produced it; a value-only reduction
+    // would let the last PE in the chain unconditionally claim the
+    // output token even when its local max was not the global max.
+    // The 2-element scratch ([0]=val, [1]=idx-as-f32-bitcast) lets the
+    // single fabric color carry both halves in one wavelet.
+    try W.write(buf, pos, "var scratch_in: [2]f32 = @zeros([2]f32);\n");
+    try W.write(buf, pos, "var scratch_out: [2]f32 = @zeros([2]f32);\n");
+    try W.write(buf, pos, "const scratch_in_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{2} -> scratch_in[i] });\n");
+    try W.write(buf, pos, "const scratch_out_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{2} -> scratch_out[i] });\n");
     // Queues 0-1 are reserved by the memcpy runtime; use id=2 to avoid
     // the wse3 router remap conflict (see emit_csl_fused for details).
     try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
     try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .input_queue = reduce_in_q });\n\n");
+    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 2, .output_queue = reduce_out_q });\n");
+    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 2, .input_queue = reduce_in_q });\n\n");
     try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n\n");
 
     // Phase 1: local argmax. Then seed-vs-non-seed split:
@@ -94,6 +101,7 @@ pub fn emit(
     try W.write(buf, pos, "    }\n\n");
     try W.write(buf, pos, "    if (pe_id == 0) {\n");
     try W.write(buf, pos, "        scratch_out[0] = local_max_val;\n");
+    try W.write(buf, pos, "        scratch_out[1] = @bitcast(f32, local_max_idx);\n");
     try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
     try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "    } else {\n");
@@ -101,20 +109,26 @@ pub fn emit(
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
-    // Phase 2: task fires on async recv completion. scratch_in[0] now
-    // carries the chain value from the west. Combine with local state;
-    // forward east on non-last PEs or write output on the last PE.
+    // Phase 2: task fires on async recv completion. scratch_in carries
+    // the running (max_val, max_idx) from the west. Combine with local
+    // state; forward east on non-last PEs or write output on the last
+    // PE. The pair propagates both halves so the last PE writes the
+    // GLOBAL argmax index, not just its own local index.
     try W.write(buf, pos, "task reduce_recv() void {\n");
-    try W.write(buf, pos, "    const incoming = scratch_in[0];\n");
-    try W.write(buf, pos, "    if (incoming > global_max_val) {\n");
-    try W.write(buf, pos, "        global_max_val = incoming;\n");
+    try W.write(buf, pos, "    const incoming_val = scratch_in[0];\n");
+    try W.write(buf, pos, "    const incoming_idx = @bitcast(u32, scratch_in[1]);\n");
+    try W.write(buf, pos, "    if (incoming_val > global_max_val) {\n");
+    try W.write(buf, pos, "        global_max_val = incoming_val;\n");
+    try W.write(buf, pos, "        global_max_idx = incoming_idx;\n");
     try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "    const best_val = (if (local_max_val > global_max_val) local_max_val else global_max_val);\n");
+    try W.write(buf, pos, "    const best_idx = (if (local_max_val > global_max_val) local_max_idx else global_max_idx);\n");
     try W.write(buf, pos, "    if (pe_id != num_pes - 1) {\n");
-    try W.write(buf, pos, "        const best = (if (local_max_val > global_max_val) local_max_val else global_max_val);\n");
-    try W.write(buf, pos, "        scratch_out[0] = best;\n");
+    try W.write(buf, pos, "        scratch_out[0] = best_val;\n");
+    try W.write(buf, pos, "        scratch_out[1] = @bitcast(f32, best_idx);\n");
     try W.write(buf, pos, "        @mov32(reduce_out, scratch_out_dsd, .{ .async = true });\n");
     try W.write(buf, pos, "    } else {\n");
-    try W.write(buf, pos, "        output_token[0] = local_max_idx;\n");
+    try W.write(buf, pos, "        output_token[0] = best_idx;\n");
     try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");

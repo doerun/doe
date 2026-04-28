@@ -498,6 +498,8 @@
             "element_wise",
             "gelu",
             "gelu_gated",
+            "silu_gated",
+            "sigmoid_gated",
             "fused_gemv_dequant",
             "residual",
             "residual_add",

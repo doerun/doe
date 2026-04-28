@@ -99,6 +99,7 @@ pub const KvCachePeStrategy = enum { full_per_pe, slot_sharded };
 ///     the single-PE path cannot fit (see
 ///     `docs/cerebras-north-star.md` rung 6 follow-up).
 pub const AttentionPeStrategy = enum { full_per_pe, kv_axis_sharded };
+pub const AttentionPeIdSource = enum { tile_param, layout_coordinates };
 
 pub const Config = struct {
     var_prefix: []const u8 = "tsir_",
@@ -111,6 +112,10 @@ pub const Config = struct {
     kv_cache_pe_strategy: KvCachePeStrategy = .full_per_pe,
     kv_slots_per_pe_default: ?u32 = null,
     attention_pe_strategy: AttentionPeStrategy = .full_per_pe,
+    /// `.tile_param` expects the wrapper layout to provide `pe_id`.
+    /// `.layout_coordinates` derives it from CSL `<layout>` coordinates,
+    /// which avoids per-tile code specialization for large 2-D grids.
+    attention_pe_id_source: AttentionPeIdSource = .tile_param,
     /// Compile-time default for `slots_per_pe` in the kv-axis-sharded
     /// attention path. `slots_per_pe = ceil(kv_len_max / num_pes)`.
     /// The live wrapper computes this from the manifest-shape kv_len
@@ -149,7 +154,7 @@ fn emitWebGpu(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -159,10 +164,15 @@ fn emitCsl(writer: anytype, func: schema.SemanticFunction, config: *const Config
         .rms_norm => emitCslRmsNorm(writer, func, config),
         .gather => emitCslGather(writer, func),
         .residual_add => emitCslResidualAdd(writer, func, config),
-        .gelu_gated => emitCslGeluGated(writer, func, config),
+        .gelu_gated => @import("emit_kernel_body_gated.zig").emitCsl(writer, func, config, .gelu),
+        .silu_gated => @import("emit_kernel_body_gated.zig").emitCsl(writer, func, config, .silu),
+        .sigmoid_gated => @import("emit_kernel_body_gated.zig").emitCsl(writer, func, config, .sigmoid),
         .kv_write => emitCslKvWrite(writer, func, config),
         .kv_read => emitCslKvRead(writer, func, config),
         .attention_scores => @import("emit_kernel_body_attention.zig").emitCslAttentionScores(writer, func, config),
+        .conv1d_depthwise => @import("emit_kernel_body_conv1d.zig").emitCslConv1DDepthwise(writer, func, config),
+        .l2_normalize => @import("emit_kernel_body_l2_normalize.zig").emitCslL2Normalize(writer, func, config),
+        .linear_attention => @import("emit_kernel_body_linear_attention.zig").emitCslLinearAttention(writer, func, config),
         .unknown => error.UnsupportedKernelBody,
     };
 }
@@ -176,7 +186,7 @@ fn emitMsl(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -189,7 +199,7 @@ fn emitDxil(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -202,7 +212,7 @@ fn emitSpirV(writer: anytype, func: schema.SemanticFunction) EmitError!void {
         // see runtime/zig/tests/tsir/real/attention_head256_f16kv/.
         // Add executable body emission when attention moves out of
         // the typed-rejection phase.
-        .unknown, .attention_scores, .residual_add, .gelu_gated, .kv_write, .kv_read => error.UnsupportedKernelBody,
+        .unknown, .attention_scores, .residual_add, .gelu_gated, .silu_gated, .sigmoid_gated, .kv_write, .kv_read, .conv1d_depthwise, .l2_normalize, .linear_attention => error.UnsupportedKernelBody,
     };
 }
 
@@ -543,60 +553,6 @@ fn writeCslChunkSizeParam(writer: anytype, config: *const Config) !void {
     } else {
         try writer.writeAll("param chunk_size: i16;\n");
     }
-}
-
-fn emitCslGeluGated(
-    writer: anytype,
-    func: schema.SemanticFunction,
-    config: *const Config,
-) EmitError!void {
-    const gate = try bindingForRole(func, .gate);
-    const input = try bindingForRole(func, .input);
-    const output = try bindingForRole(func, .output);
-    try requireElem(gate, .f32);
-    try requireElem(input, .f32);
-    try requireElem(output, .f32);
-
-    const p = config.var_prefix;
-    try writer.writeAll("param memcpy_params;\n");
-    try writeCslChunkSizeParam(writer, config);
-    try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try writer.writeAll("const GELU_A: f32 = 0.7978845608028654;\n");
-    try writer.writeAll("const GELU_B: f32 = 0.044715;\n");
-    try writeCslBufferArray(writer, p, gate.name, "chunk_size", "f32");
-    try writeCslBufferArray(writer, p, input.name, "chunk_size", "f32");
-    try writeCslBufferArray(writer, p, output.name, "chunk_size", "f32");
-    try writeCslBufferPointer(writer, p, gate.name, "f32");
-    try writeCslBufferPointer(writer, p, input.name, "f32");
-    try writeCslBufferPointer(writer, p, output.name, "f32");
-    try writer.writeAll("\n");
-    try writer.writeAll("fn gelu(x: f32) f32 {\n");
-    try writer.writeAll("    var inner = GELU_A * (x + GELU_B * x * x * x);\n");
-    // Saturation clamping matches the hand-written
-    // `emit_csl_semantic_ops.emitGeluPe` body so live HostPlan
-    // numerical behavior is preserved when delegating through TSIR.
-    // tanh saturates well before ±15, so the bound is conservative.
-    try writer.writeAll("    if (inner < -15.0) inner = -15.0;\n");
-    try writer.writeAll("    if (inner > 15.0) inner = 15.0;\n");
-    try writer.writeAll("    return 0.5 * x * (1.0 + math.tanh(inner));\n");
-    try writer.writeAll("}\n\n");
-    try writer.writeAll("fn compute() void {\n");
-    try writer.writeAll("    for (@range(i16, chunk_size)) |i| {\n");
-    try writer.writeAll("        const idx = @as(u32, i);\n");
-    try writer.print(
-        "        {s}{s}[idx] = gelu({s}{s}[idx]) * {s}{s}[idx];\n",
-        .{ p, output.name, p, gate.name, p, input.name },
-    );
-    try writer.writeAll("    }\n");
-    try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
-    try writer.writeAll("}\n\n");
-    try writer.writeAll("comptime {\n");
-    try writeCslExportSymbol(writer, p, gate.name);
-    try writeCslExportSymbol(writer, p, input.name);
-    try writeCslExportSymbol(writer, p, output.name);
-    try writer.writeAll("    @export_symbol(compute);\n");
-    try writer.writeAll("}\n");
 }
 
 fn emitCslKvWrite(

@@ -52,6 +52,7 @@ pub const SimulatorPlan = struct {
         name: []const u8,
         layout: []const u8,
         peProgram: []const u8,
+        compileBlockedReason: ?[]const u8 = null,
     };
 
     pub const Runtime = struct {
@@ -149,6 +150,10 @@ pub fn emitSimulatorPlanArtifactJson(
         try write(buf, pos, ", \"peProgram\": ");
         try writeJsonString(buf, pos, target.pe_program_path);
         try host_plan.emitCompileParamsFieldJson(buf, pos, target.compile_params);
+        if (target.compile_blocked_reason) |reason| {
+            try write(buf, pos, ", \"compileBlockedReason\": ");
+            try writeJsonString(buf, pos, reason);
+        }
         if (target.metadata) |metadata| {
             try write(buf, pos, ", ");
             try host_plan.emitCompileTargetMetadataJson(buf, pos, metadata);
@@ -398,6 +403,9 @@ fn validateCompileTargets(raw: std.json.Value) EmitError!void {
                 if (!expectNonEmptyString(obj.get("name"))) return error.InvalidSchema;
                 if (!expectNonEmptyString(obj.get("layout"))) return error.InvalidSchema;
                 if (!expectNonEmptyString(obj.get("peProgram"))) return error.InvalidSchema;
+                if (obj.get("compileBlockedReason")) |raw_reason| {
+                    if (!expectNonEmptyString(raw_reason)) return error.InvalidSchema;
+                }
             }
         },
         else => return error.InvalidSchema,
@@ -538,7 +546,12 @@ test "simulator plan artifact emits and validates" {
         .state_buffer_count = 0,
     };
     const targets = [_]host_plan.CompileTarget{
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
+        .{
+            .kernel_name = "gelu",
+            .layout_path = "gelu/layout.csl",
+            .pe_program_path = "gelu/pe_program.csl",
+            .compile_blocked_reason = "fixture_compile_blocked",
+        },
     };
     const paths = ArtifactPaths{
         .host_plan_artifact_path = "artifacts/host-plan.json",
@@ -551,6 +564,7 @@ test "simulator plan artifact emits and validates" {
     var buf: [8192]u8 = undefined;
     var pos: usize = 0;
     try emitSimulatorPlanArtifactJson(&buf, &pos, plan, &targets, paths, .{});
+    try std.testing.expect(std.mem.indexOf(u8, buf[0..pos], "\"compileBlockedReason\": \"fixture_compile_blocked\"") != null);
     try validateSimulatorPlanArtifactJson(std.testing.allocator, buf[0..pos]);
 }
 

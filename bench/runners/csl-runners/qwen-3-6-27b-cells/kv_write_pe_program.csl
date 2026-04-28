@@ -1,0 +1,42 @@
+param memcpy_params;
+param pe_id: i16;
+param num_pes: i16;
+param head_dim: i16 = 256;
+param max_seq_len: i16 = 4096;
+param slots_per_pe: i16;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);
+var key_proj: [head_dim]f32 = @zeros([head_dim]f32);
+var val_proj: [head_dim]f32 = @zeros([head_dim]f32);
+var key_cache: [local_kv_len]f32 = @zeros([local_kv_len]f32);
+var val_cache: [local_kv_len]f32 = @zeros([local_kv_len]f32);
+var position: [1]u32 = @zeros([1]u32);
+var key_proj_ptr: [*]f32 = &key_proj;
+var val_proj_ptr: [*]f32 = &val_proj;
+var key_cache_ptr: [*]f32 = &key_cache;
+var val_cache_ptr: [*]f32 = &val_cache;
+var position_ptr: [*]u32 = &position;
+
+fn compute() void {
+    const global_pos: u32 = position[0];
+    const owning_pe: u32 = global_pos / @as(u32, slots_per_pe);
+    if (owning_pe == @as(u32, pe_id)) {
+        const local_slot: u32 = global_pos - owning_pe * @as(u32, slots_per_pe);
+        const base: u32 = local_slot * @as(u32, head_dim);
+        for (@range(i16, head_dim)) |d| {
+            const idx = base + @as(u32, d);
+            key_cache[idx] = key_proj[@as(u32, d)];
+            val_cache[idx] = val_proj[@as(u32, d)];
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(key_proj_ptr, "key_proj");
+    @export_symbol(val_proj_ptr, "val_proj");
+    @export_symbol(key_cache_ptr, "key_cache");
+    @export_symbol(val_cache_ptr, "val_cache");
+    @export_symbol(position_ptr, "position");
+    @export_symbol(compute);
+}

@@ -1,0 +1,366 @@
+{
+  "modelFamily": "qwen3",
+  "modelId": "qwen-3-6-27b-q4k-ehaf16",
+  "modelConfig": {
+    "hiddenDim": 5120,
+    "numHeads": 24,
+    "numKvHeads": 4,
+    "headDim": 256,
+    "linearKeyHeadDim": 128,
+    "linearValueHeadDim": 128,
+    "linearConvKernelDim": 4,
+    "numLayers": 64,
+    "vocabSize": 248320,
+    "maxSeqLen": 4096,
+    "quantFormat": "q4k",
+    "ffnIntermediateSize": 17408,
+    "ffnActivation": "silu_gated",
+    "queryKeyNorm": true,
+    "attentionOutputGate": true,
+    "outputGateType": "swish",
+    "partialRotaryFactor": 0.25,
+    "mropeSection": [11, 11, 10],
+    "ropeTheta": 10000000,
+    "rmsNormEps": 0.000001
+  },
+  "placementPolicy": {
+    "maxGridWidth": 512,
+    "maxGridHeight": 512,
+    "preferSquare": true
+  },
+  "eosTokenId": 151645,
+  "scopeRestrictions": {
+    "linearAttentionLayers": "bound",
+    "linearAttentionLayersDetail": "Qwen 3.6 27B is a hybrid architecture (16 full-attention + 48 gated-DeltaNet SSM layers). The smoke config now carries the SSM body sequence with repeat=48: conv1d_depthwise -> l2_normalize(q/k) -> linear_attention. The three body ops route through exec-v1 opToSpec, semantic CSL emit, host-plan compile params/bindings, and reference-interpreter parity. WSE hardware receipts remain R3-2 gated.",
+    "mropeInterleaved": "bound",
+    "mropeInterleavedDetail": "modelConfig.mropeSection=[11,11,10] is now plumbed through ModelConfig.mrope_section into rope compile params (mrope_t_pairs/mrope_h_pairs/mrope_w_pairs). The host validates T+H+W == num_pairs (32 at headDim=256, partialRotaryFactor=0.25). The kernel-side rope math is mrope-agnostic: cos/sin tables are generated host-side with per-section position multipliers folded in, and the kernel applies them per-pair. For text-only inference the image/video positions are zero so cos=1/sin=0 in those sections; the rotation reduces to standard 1D RoPE for the text section but the wiring is now in place for image/video bring-up.",
+    "causalAttentionPrefill": "bound",
+    "causalAttentionPrefillDetail": "AttentionScoresBody accepts causal_mode in {.none, .causal, .sliding_window} (emit_kernel_body_attention.zig). The 27B per-PE residency redesign is wired: opToSpec routes `attention_prefill_kv_axis_sharded` to a semantic-ops pattern that delegates to TSIR's emitKvAxisSharded with multi-Q causal-prefill (query_seq_len=8, head_dim=256) and the host plan supplies 2D PE grid + kv_len + slots_per_pe via `attention_prefill_kv_axis_sharded` compile params (csl_host_plan_tool.zig). The smoke config swaps the prefill attention step to `attention_prefill_kv_axis_sharded` so `attn_prefill` no longer tripping `linker_pe_memory_overflow` at manifest shape.",
+    "attnPrefillPeMemoryOverflow": "bound",
+    "attnPrefillPeMemoryOverflowDetail": "Closed by the kv-axis-sharded multi-Q body. Per-PE working set at width=height=512, query_seq_len=8, head_dim=256: Q stripe ~= 8 KiB, K/V stripe ~= 8 KiB each, partials buffer ~= 8 KiB, attn_scores ~= 32 B → ~= 32 KiB total, comfortably under the WSE-3 48 KiB per-PE budget. Tail slots (gk >= kv_len) are masked to -1e30 so the over-provisioning of PE positions is numerically idempotent.",
+    "attentionOutputGate": "bound",
+    "attentionOutputGateDetail": "Qwen 3.6 27B applies sigmoid(qGateProjection) * attnOutput before the O projection. The TSIR sigmoid_gated body op, the doe_wgsl classifier surface, and the exec-v1 opToSpec map (with `o_gate` aliased to `sigmoid_gated`) are all wired. The smoke config now declares an explicit `o_gate` step between attention and o_proj that reads (q_proj_output, attention_output) → gated. Receipts surface the gate as a discrete kernel.",
+    "swigluFfnFusedGate": "bound",
+    "swigluFfnFusedGateDetail": "Qwen FFN is silu(gate_proj(x)) * up_proj(x) → down_proj. The smoke config now declares the activation step as `silu_gated` with inputsFrom=[gate_proj, up_proj]; the TSIR silu_gated body op + classifier + opToSpec + host-plan gated bindings are all wired. Receipts surface the gate as a discrete kernel."
+  },
+  "steps": [
+    {
+      "name": "embed_tokens",
+      "phase": "prefill",
+      "op": "embed",
+      "kernelKey": "embed",
+      "weightsKey": "embed_tokens"
+    },
+    {
+      "name": "input_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "ssm_conv1d_depthwise",
+      "phase": "prefill",
+      "op": "conv1d_depthwise",
+      "kernelKey": "ssm_conv1d_depthwise",
+      "weightsKey": "layer.linear_attn.conv1d",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_q_l2_normalize",
+      "phase": "prefill",
+      "op": "l2_normalize",
+      "kernelKey": "ssm_l2_normalize",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_k_l2_normalize",
+      "phase": "prefill",
+      "op": "l2_normalize",
+      "kernelKey": "ssm_l2_normalize",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_linear_attention",
+      "phase": "prefill",
+      "op": "linear_attention",
+      "kernelKey": "ssm_linear_attention",
+      "weightsKey": "layer.linear_attn",
+      "repeat": 48
+    },
+    {
+      "name": "q_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.q_proj"
+    },
+    {
+      "name": "k_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.k_proj"
+    },
+    {
+      "name": "v_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.v_proj"
+    },
+    {
+      "name": "q_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "layer.0.self_attn.q_norm"
+    },
+    {
+      "name": "k_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "layer.0.self_attn.k_norm"
+    },
+    {
+      "name": "rope_q",
+      "phase": "prefill",
+      "op": "rope",
+      "kernelKey": "rope_partial"
+    },
+    {
+      "name": "rope_k",
+      "phase": "prefill",
+      "op": "rope",
+      "kernelKey": "rope_partial"
+    },
+    {
+      "name": "attention",
+      "phase": "prefill",
+      "op": "attention_prefill_kv_axis_sharded",
+      "kernelKey": "attn_prefill_kv_axis_sharded"
+    },
+    {
+      "name": "o_gate",
+      "phase": "prefill",
+      "op": "o_gate",
+      "kernelKey": "o_gate",
+      "inputsFrom": ["q_proj", "attention"]
+    },
+    {
+      "name": "o_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.self_attn.o_proj"
+    },
+    {
+      "name": "attn_residual",
+      "phase": "prefill",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "post_attn_norm",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "gate_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.gate_proj"
+    },
+    {
+      "name": "up_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.up_proj"
+    },
+    {
+      "name": "activation",
+      "phase": "prefill",
+      "op": "silu_gated",
+      "kernelKey": "silu_gated",
+      "inputsFrom": ["gate_proj", "up_proj"]
+    },
+    {
+      "name": "down_proj",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "tiled",
+      "weightsKey": "layer.0.mlp.down_proj"
+    },
+    {
+      "name": "ffn_residual",
+      "phase": "prefill",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "input_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "ssm_conv1d_depthwise",
+      "phase": "decode",
+      "op": "conv1d_depthwise",
+      "kernelKey": "ssm_conv1d_depthwise",
+      "weightsKey": "layer.linear_attn.conv1d",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_q_l2_normalize",
+      "phase": "decode",
+      "op": "l2_normalize",
+      "kernelKey": "ssm_l2_normalize",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_k_l2_normalize",
+      "phase": "decode",
+      "op": "l2_normalize",
+      "kernelKey": "ssm_l2_normalize",
+      "repeat": 48
+    },
+    {
+      "name": "ssm_linear_attention",
+      "phase": "decode",
+      "op": "linear_attention",
+      "kernelKey": "ssm_linear_attention",
+      "weightsKey": "layer.linear_attn",
+      "repeat": 48
+    },
+    {
+      "name": "q_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.q_proj"
+    },
+    {
+      "name": "k_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.k_proj"
+    },
+    {
+      "name": "v_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.v_proj"
+    },
+    {
+      "name": "q_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "layer.0.self_attn.q_norm"
+    },
+    {
+      "name": "k_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "layer.0.self_attn.k_norm"
+    },
+    {
+      "name": "rope_q",
+      "phase": "decode",
+      "op": "rope",
+      "kernelKey": "rope_partial"
+    },
+    {
+      "name": "rope_k",
+      "phase": "decode",
+      "op": "rope",
+      "kernelKey": "rope_partial"
+    },
+    {
+      "name": "kv_write",
+      "phase": "decode",
+      "op": "kv_write",
+      "kernelKey": "kv_write"
+    },
+    {
+      "name": "attention",
+      "phase": "decode",
+      "op": "attention",
+      "kernelKey": "attn_decode",
+      "attentionType": "global"
+    },
+    {
+      "name": "o_gate",
+      "phase": "decode",
+      "op": "o_gate",
+      "kernelKey": "o_gate",
+      "inputsFrom": ["q_proj", "attention"]
+    },
+    {
+      "name": "o_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.self_attn.o_proj"
+    },
+    {
+      "name": "attn_residual",
+      "phase": "decode",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "post_attn_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm"
+    },
+    {
+      "name": "gate_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.gate_proj"
+    },
+    {
+      "name": "up_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.up_proj"
+    },
+    {
+      "name": "activation",
+      "phase": "decode",
+      "op": "silu_gated",
+      "kernelKey": "silu_gated",
+      "inputsFrom": ["gate_proj", "up_proj"]
+    },
+    {
+      "name": "down_proj",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "gemv",
+      "weightsKey": "layer.0.mlp.down_proj"
+    },
+    {
+      "name": "ffn_residual",
+      "phase": "decode",
+      "op": "residual",
+      "kernelKey": "residual"
+    },
+    {
+      "name": "sample",
+      "phase": "decode",
+      "op": "sample",
+      "kernelKey": "sample"
+    }
+  ]
+}

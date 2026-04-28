@@ -1,0 +1,38 @@
+// Layout: element-wise kernel distributed across a width x height PE grid.
+// Each PE processes a contiguous chunk of the input array.
+
+// Grid width and height are set at compile time via
+// --params=width:<W>,height:<H>. height defaults to 1 for 1-D layouts.
+param width: u16;
+param height: u16;
+// Hand-patched for the small-shape simfabric canary: forward chunk_size
+// from layout to pe_program so the cslc command-line override flows
+// through. Doe's emit_csl_layout.zig deliberately does not forward this
+// at manifest shape — see the rmsnorm cell receipt for the full
+// rationale (per-PE working-budget overflow at hidden_dim=5120).
+param chunk_size: i16 = 1024;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = height,
+});
+
+layout {
+    @set_rectangle(width, height);
+
+    for (@range(u16, height)) |pe_y| {
+        for (@range(u16, width)) |pe_x| {
+            @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
+                .memcpy_params = memcpy.get_params(pe_x),
+                .width = width,
+                .height = height,
+                .chunk_size = chunk_size,
+            });
+        }
+    }
+
+    @export_name("input", [*]f32, true);
+    @export_name("residual", [*]f32, true);
+    @export_name("output", [*]f32, true);
+    @export_name("compute", fn()void);
+}

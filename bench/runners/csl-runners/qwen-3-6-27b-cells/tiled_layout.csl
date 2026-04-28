@@ -1,0 +1,41 @@
+// Layout: SUMMA tiled matmul on a P x P PE grid.
+
+param P: u16;
+param Mt: u16;
+param Kt: u16;
+param Nt: u16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = P,
+    .height = P,
+});
+
+const c2d = @import_module("<collectives_2d/params>");
+
+layout {
+    @set_rectangle(P, P);
+
+    for (@range(u16, P)) |pe_y| {
+        for (@range(u16, P)) |pe_x| {
+            const c2d_tile_params = c2d.get_params(pe_x, pe_y, .{
+                .x_colors      = .{ @get_color(0),         @get_color(1)         },
+                .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },
+                .y_colors      = .{ @get_color(4),         @get_color(5)         },
+                .y_entrypoints = .{ @get_local_task_id(10), @get_local_task_id(11) },
+            });
+            @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
+                .memcpy_params = memcpy.get_params(pe_x),
+                .c2d_params = c2d_tile_params,
+                .Mt = Mt,
+                .Kt = Kt,
+                .Nt = Nt,
+                .P = P,
+            });
+        }
+    }
+
+    @export_name("a", [*]f32, true);
+    @export_name("b", [*]f32, true);
+    @export_name("c", [*]f32, true);
+    @export_name("compute", fn()void);
+}

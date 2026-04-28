@@ -28,6 +28,9 @@ pub const ModelConfig = struct {
     hidden_dim: u32,
     num_heads: u32,
     head_dim: u32,
+    linear_key_head_dim: ?u32 = null,
+    linear_value_head_dim: ?u32 = null,
+    linear_conv_kernel_dim: ?u32 = null,
     global_head_dim: ?u32 = null,
     num_key_value_heads: ?u32 = null,
     num_layers: u32,
@@ -38,6 +41,23 @@ pub const ModelConfig = struct {
     ffn_matrix_count: u32 = 3,
     ple_width: ?u32 = null,
     ple_vocab_size: ?u32 = null,
+    /// Partial-rotary fraction. Full rotary = 1.0. Qwen 3.x uses 0.25
+    /// (rotates the first quarter of head_dim only). The host plan
+    /// derives `num_pairs` for rope kernels from this:
+    /// `num_pairs = head_dim * partial_rotary_factor / 2`. Source:
+    /// `manifest.attention.rotary.partialRotaryFactor`.
+    partial_rotary_factor: f32 = 1.0,
+    /// mRoPE-interleaved 3D rotary section sizes
+    /// (`[text_pairs, height_pairs, width_pairs]`). When all three are
+    /// non-zero the rope kernel splits the rotation into the three
+    /// sub-sections; the cos/sin tables are generated host-side with
+    /// the per-section position multipliers folded in (text frequency
+    /// for the first section, image-row for the middle, image-column
+    /// for the last). Kernel-side math is the same per-pair rotation
+    /// — only the cos/sin table generator differs from 1D RoPE. Source:
+    /// `manifest.attention.rotary.mropeSection`. The sum of the three
+    /// values must equal `num_pairs` for validity.
+    mrope_section: ?[3]u32 = null,
 
     pub const QuantFormat = enum { f16, q4k, q8_0 };
 };

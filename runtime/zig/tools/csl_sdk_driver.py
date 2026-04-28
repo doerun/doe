@@ -905,7 +905,13 @@ def compile_targets(
             target_entry["cacheStored"] = cache_stored
         if name == RESIDUAL_DIAGNOSTIC_TARGET and return_code == 0:
             if cache_hit:
+                diagnostic_output_dir = (
+                    outputs_dir / "diagnostic" / "residual-compact"
+                ).resolve()
                 target_entry["diagnosticCompile"] = {
+                    "purpose": "compact_residual_runtime_diagnostic",
+                    "sourceTarget": RESIDUAL_DIAGNOSTIC_TARGET,
+                    "outputDir": str(diagnostic_output_dir),
                     "status": "skipped",
                     "reason": "compile_cache_hit",
                 }
@@ -945,14 +951,30 @@ def compile_targets(
     # first specific failure code when every failed target shares the same
     # classification. This keeps the top-level receipt specific ("the 270M
     # compile failed because n_channels=0 was rejected") instead of generic.
-    failure_codes = [t.get("failureCode") for t in target_results if t.get("failureCode")]
-    if failure_codes:
+    failure_codes = [
+        t.get("failureCode")
+        for t in target_results
+        if t.get("status") == "failed" and t.get("failureCode")
+    ]
+    blocked_codes = [
+        t.get("failureCode")
+        for t in target_results
+        if t.get("status") == "blocked" and t.get("failureCode")
+    ]
+    if overall_failed and failure_codes:
         unique = set(failure_codes)
         if len(unique) == 1:
             summary["reason"] = next(iter(unique))
         else:
             summary["reason"] = "csl_compile_failed_multi"
             summary["failureCodes"] = sorted(unique)
+    elif overall_blocked and blocked_codes:
+        unique = set(blocked_codes)
+        if len(unique) == 1:
+            summary["reason"] = next(iter(unique))
+        else:
+            summary["reason"] = "compile_blocked_multi"
+            summary["blockedReasons"] = sorted(unique)
     return summary, target_results, {"compileRoot": compile_root, "logsDir": logs_dir, "outputsDir": outputs_dir}
 
 
@@ -1671,6 +1693,15 @@ def build_driver_result(
     run_summary: dict[str, Any],
     operation_graph: dict[str, Any] | None,
 ) -> dict[str, Any]:
+    compile_payload = {
+        "attempted": compile_summary["attempted"],
+        "status": compile_summary["status"],
+        "reason": compile_summary["reason"],
+        "targets": compile_targets_payload,
+    }
+    for key in ("failureCodes", "blockedReasons"):
+        if key in compile_summary:
+            compile_payload[key] = compile_summary[key]
     result: dict[str, Any] = {
         "schemaVersion": 1,
         "artifactKind": "csl_simulator_driver_result",
@@ -1679,12 +1710,7 @@ def build_driver_result(
         "simulatorPlanPath": str(plan_path.resolve()),
         "compilerExecutable": cslc_executable,
         "runtimeConfigPath": str(runtime_config_path.resolve()),
-        "compile": {
-            "attempted": compile_summary["attempted"],
-            "status": compile_summary["status"],
-            "reason": compile_summary["reason"],
-            "targets": compile_targets_payload,
-        },
+        "compile": compile_payload,
         "run": run_summary,
     }
     if operation_graph is not None:

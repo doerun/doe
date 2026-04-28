@@ -49,6 +49,7 @@ const tsir_emit_csl_test = @import("tests/wgsl/tsir_emit_csl_test.zig");
 const tsir_emit_backend_skeleton_test = @import("tests/wgsl/tsir_emit_backend_skeleton_test.zig");
 const tsir_emit_webgpu_test = @import("tests/wgsl/tsir_emit_webgpu_test.zig");
 const tsir_emit_kernel_body_test = @import("tests/wgsl/tsir_emit_kernel_body_test.zig");
+const exec_v1_paired_gate_canary_test = @import("tests/wgsl/exec_v1_paired_gate_canary_test.zig");
 
 comptime {
     _ = emit_hlsl_map_test;
@@ -102,4 +103,5 @@ comptime {
     _ = tsir_emit_backend_skeleton_test;
     _ = tsir_emit_webgpu_test;
     _ = tsir_emit_kernel_body_test;
+    _ = exec_v1_paired_gate_canary_test;
 }

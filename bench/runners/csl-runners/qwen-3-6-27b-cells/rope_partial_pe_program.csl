@@ -1,0 +1,51 @@
+// PE program: rotary position embeddings (auto-generated from WGSL)
+// Each PE applies RoPE rotations to its local Q/K chunk.
+
+param memcpy_params;
+param pe_id: i16;
+param num_pes: i16;
+param head_dim: i16;
+param num_pairs: i16;
+param interleaved: bool = true;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var input: [head_dim]f32 = @zeros([head_dim]f32);
+var cos_table: [num_pairs]f32 = @zeros([num_pairs]f32);
+var sin_table: [num_pairs]f32 = @zeros([num_pairs]f32);
+
+var input_ptr: [*]f32 = &input;
+var cos_table_ptr: [*]f32 = &cos_table;
+var sin_table_ptr: [*]f32 = &sin_table;
+
+fn compute() void {
+    for (@range(i16, num_pairs)) |p| {
+        const cos_val = cos_table[@as(u32, p)];
+        const sin_val = sin_table[@as(u32, p)];
+
+        if (interleaved) {
+            const dim0 = @as(u32, p) * 2;
+            const dim1 = dim0 + 1;
+            const x0 = input[dim0];
+            const x1 = input[dim1];
+            input[dim0] = x0 * cos_val - x1 * sin_val;
+            input[dim1] = x0 * sin_val + x1 * cos_val;
+        } else {
+            const dim0 = @as(u32, p);
+            const dim1 = dim0 + @as(u32, num_pairs);
+            const x0 = input[dim0];
+            const x1 = input[dim1];
+            input[dim0] = x0 * cos_val - x1 * sin_val;
+            input[dim1] = x0 * sin_val + x1 * cos_val;
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(cos_table_ptr, "cos_table");
+    @export_symbol(sin_table_ptr, "sin_table");
+    @export_symbol(compute);
+}

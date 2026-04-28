@@ -31,7 +31,25 @@ pub fn emit(
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
     try W.write(buf, pos, "param num_pairs: i16;\n");
-    try W.write(buf, pos, "param interleaved: bool = true;\n\n");
+    try W.write(buf, pos, "param interleaved: bool = true;\n");
+    // mRoPE-interleaved 3D rotary section sizes (text/image-height/
+    // image-width). When all three default to 0 the kernel is plain
+    // 1D RoPE; when any is non-zero the host plan must satisfy the
+    // invariant `mrope_t_pairs + mrope_h_pairs + mrope_w_pairs ==
+    // num_pairs` so the per-pair index is unambiguous. The kernel
+    // itself remains mrope-agnostic because cos/sin tables are
+    // pre-computed host-side with the per-section position multipliers
+    // folded in. The params are surfaced so receipts can attribute
+    // the rope step to its mrope shape and so a future kernel that
+    // wants per-section conditional logic has the indices available.
+    try W.write(buf, pos, "param mrope_t_pairs: i16 = 0;\n");
+    try W.write(buf, pos, "param mrope_h_pairs: i16 = 0;\n");
+    try W.write(buf, pos, "param mrope_w_pairs: i16 = 0;\n");
+    try W.write(buf, pos, "comptime {\n");
+    try W.write(buf, pos, "    if (mrope_t_pairs != 0 or mrope_h_pairs != 0 or mrope_w_pairs != 0) {\n");
+    try W.write(buf, pos, "        @comptime_assert(mrope_t_pairs + mrope_h_pairs + mrope_w_pairs == num_pairs);\n");
+    try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "}\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");

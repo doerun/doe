@@ -308,6 +308,87 @@ test "tsir csl emitter produces executable gelu_gated body" {
     );
 }
 
+test "tsir csl emitter produces executable silu_gated body" {
+    const allocator = std.testing.allocator;
+    const semantic = siluGatedSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_gate: [chunk_size]f32");
+    try expectContains(csl, "tsir_input: [chunk_size]f32");
+    try expectContains(csl, "fn silu(x: f32) f32");
+    try expectContains(csl, "var z = -x;");
+    try expectContains(csl, "if (z < -15.0) z = -15.0;");
+    try expectContains(csl, "if (z > 15.0) z = 15.0;");
+    try expectContains(csl, "return x / (1.0 + math.exp(z));");
+    try expectContains(csl, "tsir_output[idx] = silu(tsir_gate[idx]) * tsir_input[idx];");
+    try expectContains(csl, "@export_symbol(tsir_gate_ptr, \"gate\");");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr, \"input\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+    // GELU's polynomial constants must not appear in a silu body.
+    try expectNotContains(csl, "GELU_A");
+    try expectNotContains(csl, "math.tanh");
+
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
+test "tsir csl emitter produces executable sigmoid_gated body" {
+    const allocator = std.testing.allocator;
+    const semantic = sigmoidGatedSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "param chunk_size: i16;");
+    try expectContains(csl, "tsir_gate: [chunk_size]f32");
+    try expectContains(csl, "tsir_input: [chunk_size]f32");
+    try expectContains(csl, "fn sigmoid(x: f32) f32");
+    try expectContains(csl, "var z = -x;");
+    try expectContains(csl, "if (z < -15.0) z = -15.0;");
+    try expectContains(csl, "if (z > 15.0) z = 15.0;");
+    try expectContains(csl, "return 1.0 / (1.0 + math.exp(z));");
+    try expectContains(csl, "tsir_output[idx] = sigmoid(tsir_gate[idx]) * tsir_input[idx];");
+    try expectContains(csl, "@export_symbol(tsir_gate_ptr, \"gate\");");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr, \"input\");");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr, \"output\");");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+    try expectNotContains(csl, "mechanical skeleton");
+    try expectNotContains(csl, "GELU_A");
+    try expectNotContains(csl, "math.tanh");
+    // sigmoid divides 1.0, not x, distinguishing it from silu.
+    try expectNotContains(csl, "return x / (1.0 + math.exp(z));");
+
+    try std.testing.expectError(
+        error.UnsupportedKernelBody,
+        tsir.emit_webgpu.emitSemanticFunction(
+            allocator,
+            semantic,
+            fixtureFunction(targets.webgpu_generic.descriptor),
+            targets.webgpu_generic.descriptor,
+        ),
+    );
+}
+
 test "tsir csl emitter produces executable kv_write body" {
     const allocator = std.testing.allocator;
     const semantic = kvWriteSemantic();
@@ -438,11 +519,10 @@ test "tsir csl emitter produces executable attention_scores body" {
 }
 
 test "tsir csl attention_scores rejects out-of-contract bodies" {
-    // The bootstrap canary contract is intentionally narrow: only
-    // softmax_mode=.two_pass_stable, causal_mode=.none, no softcap,
-    // literal scale. Anything else surfaces as InvalidBodyContract so
-    // the canary lane can fail loudly when an unsupported attention
-    // shape is requested before manifest-shape attention emit lands.
+    // The bootstrap canary contract: softmax_mode=.two_pass_stable, no
+    // softcap, literal scale. Causal mask (.causal / .sliding_window)
+    // is now accepted; only streaming softmax, softcap, sliding window
+    // missing its size, and uniform scale are rejected.
     const allocator = std.testing.allocator;
 
     var streaming = attentionScoresSemantic();
@@ -459,15 +539,17 @@ test "tsir csl attention_scores rejects out-of-contract bodies" {
         ),
     );
 
-    var causal = attentionScoresSemantic();
-    var causal_body = causal.body.attention_scores.?;
-    causal_body.causal_mode = .causal;
-    causal.body.attention_scores = causal_body;
+    // sliding_window without an explicit window size is invalid.
+    var sliding_no_size = attentionScoresSemantic();
+    var sliding_no_size_body = sliding_no_size.body.attention_scores.?;
+    sliding_no_size_body.causal_mode = .sliding_window;
+    sliding_no_size_body.sliding_window_size = null;
+    sliding_no_size.body.attention_scores = sliding_no_size_body;
     try std.testing.expectError(
         error.InvalidBodyContract,
         tsir.emit_csl.emitSemanticFunction(
             allocator,
-            causal,
+            sliding_no_size,
             fixtureFunction(targets.wse3.descriptor),
             targets.wse3.descriptor,
         ),
@@ -601,6 +683,176 @@ test "tsir csl attention_scores kv_axis_sharded full-bundle has no duplicate pe_
     // the host stitch contract is intact.
     try expectContains(csl, "param slots_per_pe: i16 = 8;");
     try expectContains(csl, "tsir_output: [partials_len]f32");
+}
+
+test "tsir csl attention_scores emits causal mask conditional" {
+    // `.causal` is a structural no-op for the single-Q canary surface
+    // (query_pos = kv_len - 1 means no K position is ever after Q), but
+    // the conditional is emitted so the lane is exercised end-to-end.
+    // Manifest-shape promotion to multi-Q reuses the same emit point.
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.causal_mode = .causal;
+    semantic.body.attention_scores = body;
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "if (@as(u32, k) > @as(u32, kv_len) - 1)");
+    try expectContains(csl, "sc = -1.0e30;");
+}
+
+test "tsir csl attention_scores emits sliding-window mask with declared size" {
+    // sliding_window_size=4: any K position before
+    // `kv_len - 4` must be masked to -1e30. Both the kernel and the
+    // reference interpreter at runtime/zig/src/tsir/reference_interpreter.zig
+    // use the same threshold so canary parity holds.
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.causal_mode = .sliding_window;
+    body.sliding_window_size = 4;
+    semantic.body.attention_scores = body;
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const window_size: u32 = 4;");
+    try expectContains(csl, "if (@as(u32, kv_len) > window_size and @as(u32, k) < @as(u32, kv_len) - window_size)");
+    try expectContains(csl, "sc = -1.0e30;");
+}
+
+test "tsir csl attention_scores kv_axis_sharded multi-Q widens Q and output buffers" {
+    // Causal-prefill body: query_seq_len > 1 emits the kv-axis-sharded
+    // body wrapped in a per-query loop. Q widens to
+    // [query_seq_len * head_dim]; output widens to
+    // [query_seq_len * (head_dim + 2)] so each query position carries
+    // its own (local_O, local_max, local_sum_exp) triple. The host
+    // plan stitches each query's partials independently. This is the
+    // path that unblocks `attn_prefill` per-PE memory at the 27B
+    // manifest shape (Doe-gated north-star item; see
+    // docs/cerebras-north-star-qwen.md).
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.query_seq_len = 4;
+    body.causal_mode = .causal;
+    semantic.body.attention_scores = body;
+
+    const config = tsir.emit_kernel_body.Config{
+        .var_prefix = "tsir_",
+        .attention_pe_strategy = .kv_axis_sharded,
+        .attention_slots_per_pe_default = 8,
+    };
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    try tsir.emit_kernel_body.emitWithConfig(
+        buf.writer(allocator),
+        semantic,
+        .csl,
+        &config,
+    );
+    const csl = buf.items;
+    try expectContains(csl, "const query_seq_len: u32 = 4;");
+    try expectContains(csl, "tsir_query: [query_seq_len * @as(u32, head_dim)]f32");
+    try expectContains(csl, "tsir_output: [query_seq_len * partials_len]f32");
+    try expectContains(csl, "for (@range(u32, query_seq_len)) |q|");
+    try expectContains(csl, "const q_row_offset: u32 = q * @as(u32, head_dim);");
+    try expectContains(csl, "const out_row_offset: u32 = q * partials_len;");
+    // Per-row causal mask: query q sits at kv_len - query_seq_len + q.
+    try expectContains(csl, "const q_pos: u32 = @as(u32, kv_len) - query_seq_len + q;");
+    try expectContains(csl, "if (gk > q_pos)");
+    // Output writes hit the per-row offsets, not the single-Q form.
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, d)] = acc;");
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, head_dim)] = local_max;");
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, head_dim) + 1] = local_sum_exp;");
+}
+
+test "tsir csl emitter produces executable l2_normalize body" {
+    // DeltaNet Q/K pre-attention L2 normalize. Two-pass body: compute
+    // squared sum, then divide each element by sqrt(sum + eps). Same
+    // var-prefix / export-symbol contract as rms_norm.
+    const allocator = std.testing.allocator;
+    const semantic = l2NormalizeSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const hidden_size: i16 = 8;");
+    try expectContains(csl, "const l2_eps: f32 = 1");
+    try expectContains(csl, "tsir_input: [hidden_size]f32");
+    try expectContains(csl, "tsir_output: [hidden_size]f32");
+    try expectContains(csl, "var sq: f32 = 0.0;");
+    try expectContains(csl, "const inv_norm = 1.0 / math.sqrt(sq + l2_eps);");
+    try expectContains(csl, "@export_symbol(tsir_input_ptr");
+    try expectContains(csl, "@export_symbol(tsir_output_ptr");
+    try expectContains(csl, "sys_mod.unblock_cmd_stream();");
+}
+
+test "tsir csl emitter produces executable conv1d_depthwise body" {
+    // DeltaNet conv1d kernel_size=4 depthwise with bias. Causal pad
+    // (left-only) so the kernel cannot see future tokens. Per-channel
+    // bias is added before the conv accumulator.
+    const allocator = std.testing.allocator;
+    const semantic = conv1dDepthwiseSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const channels: i16 = 16;");
+    try expectContains(csl, "const kernel_size: i16 = 4;");
+    try expectContains(csl, "param num_tokens: i16;");
+    try expectContains(csl, "tsir_input: [num_tokens * channels]f32");
+    try expectContains(csl, "tsir_weight: [channels * kernel_size]f32");
+    try expectContains(csl, "tsir_bias: [channels]f32");
+    try expectContains(csl, "var acc: f32 = tsir_bias[@as(u32, c)];");
+    try expectContains(csl, "const t_in: i16 = t - (kernel_size - 1 - k);");
+    try expectContains(csl, "if (t_in >= 0)");
+}
+
+test "tsir csl emitter produces executable linear_attention body" {
+    // Gated DeltaNet single-token update + readout. Shared-norm form
+    // (one A_log scalar per head pair, no dt_bias). Sigmoid-gated
+    // residual carries the query stream through to the output.
+    const allocator = std.testing.allocator;
+    const semantic = linearAttentionSemantic();
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const key_dim: i16 = 8;");
+    try expectContains(csl, "const value_dim: i16 = 8;");
+    // value_dim is sharded across pe_y; layout passes value_dim_per_pe
+    // through @set_tile_code so per-PE state fits the per-PE SRAM budget.
+    try expectContains(csl, "param value_dim_per_pe: i16;");
+    try expectContains(csl, "param a_log: f32;");
+    try expectContains(csl, "tsir_linear_state: [value_dim_per_pe * key_dim]f32");
+    try expectContains(csl, "for (@range(i16, value_dim_per_pe))");
+    try expectContains(csl, "const alpha: f32 = 1.0 - math.exp(-a_log);");
+    try expectContains(csl, "const decay: f32 = 1.0 - alpha;");
+    try expectContains(csl, "const sigmoid_g: f32 = 1.0 / (1.0 + math.exp(-g));");
+    try expectContains(csl, "@export_symbol(tsir_linear_state_ptr");
 }
 
 test "tsir csl attention_scores defaults to full_per_pe single-PE shape" {
@@ -800,6 +1052,18 @@ fn residualAddSemantic() tsir.schema.SemanticFunction {
 }
 
 fn geluGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.gelu_gated);
+}
+
+fn siluGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.silu_gated);
+}
+
+fn sigmoidGatedSemantic() tsir.schema.SemanticFunction {
+    return gatedSemantic(.sigmoid_gated);
+}
+
+fn gatedSemantic(op: tsir.schema.SemanticBodyOp) tsir.schema.SemanticFunction {
     const data = struct {
         const axes = [_]tsir.schema.IterationAxis{
             .{ .name = "i", .lower_bound = "0", .upper_bound = "chunk_size", .step = "1" },
@@ -826,9 +1090,138 @@ fn geluGatedSemantic() tsir.schema.SemanticFunction {
         .reductions = &.{},
         .collectives = &.{},
         .body = .{
-            .op = .gelu_gated,
+            .op = op,
             .binding_roles = &data.body_bindings,
             .axis_roles = &data.body_axes,
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn l2NormalizeSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .input },
+            .{ .binding_index = 1, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .l2_normalize,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+            .l2_normalize = .{ .hidden = 8, .eps = 1.0e-6 },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn conv1dDepthwiseSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "t", .lower_bound = "0", .upper_bound = "num_tokens", .step = "1" },
+            .{ .name = "c", .lower_bound = "0", .upper_bound = "channels", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = false },
+            .{ .name = "bias", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 3, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .input },
+            .{ .binding_index = 1, .role = .weight },
+            .{ .binding_index = 2, .role = .bias },
+            .{ .binding_index = 3, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .token },
+            .{ .axis_index = 1, .role = .hidden },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .elementwise,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .conv1d_depthwise,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+            .conv1d_depthwise = .{
+                .channels = 16,
+                .kernel_size = 4,
+                .has_bias = true,
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+fn linearAttentionSemantic() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "value_dim", .step = "1" },
+            .{ .name = "k", .lower_bound = "0", .upper_bound = "key_dim", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "query", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "key", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "value", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "gate", .group = 0, .binding = 3, .logical_shape = &.{0}, .elem = .f32, .read_write = false },
+            .{ .name = "linear_state", .group = 0, .binding = 4, .logical_shape = &.{ 0, 0 }, .elem = .f32, .read_write = true },
+            .{ .name = "output", .group = 0, .binding = 5, .logical_shape = &.{0}, .elem = .f32, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .query },
+            .{ .binding_index = 1, .role = .key },
+            .{ .binding_index = 2, .role = .value },
+            .{ .binding_index = 3, .role = .gate },
+            .{ .binding_index = 4, .role = .linear_state },
+            .{ .binding_index = 5, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .hidden },
+            .{ .axis_index = 1, .role = .reduction },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .attention_decode,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .linear_attention,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+            .linear_attention = .{
+                .key_dim = 8,
+                .value_dim = 8,
+                .key_heads = 1,
+                .value_heads = 1,
+                .norm_mode = .shared,
+                .has_dt_bias = false,
+            },
         },
         .source_digest = [_]u8{0} ** 32,
     };

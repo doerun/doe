@@ -68,7 +68,26 @@ pub const ExecStep = struct {
     sliding_window_size: ?u32 = null,
     kv_cache_alias: ?[]const u8 = null,
     repeat: u32 = LAUNCH_REPEAT,
+    /// Names of upstream steps whose outputs feed this step's input
+    /// bindings. Required for paired-input ops like `silu_gated`,
+    /// `sigmoid_gated`, `gelu_gated`, and the Qwen 3.6 `o_gate` alias —
+    /// these consume two upstream outputs (gate, input) and produce a
+    /// single output. The order matches the kernel binding order:
+    /// `inputs_from[0]` → `gate`, `inputs_from[1]` → `input`. For
+    /// non-paired ops the field is null and the host plan threads the
+    /// previous step's output as the single input.
+    inputs_from: ?[]const []const u8 = null,
 };
+
+/// Ops that consume two upstream outputs (gate, input) and emit one
+/// output. The host plan needs `inputs_from = [gate_step, input_step]`
+/// declared on the smoke config to bind them correctly.
+pub fn isPairedGateOp(op: []const u8) bool {
+    return std.mem.eql(u8, op, "silu_gated") or
+        std.mem.eql(u8, op, "sigmoid_gated") or
+        std.mem.eql(u8, op, "gelu_gated") or
+        std.mem.eql(u8, op, "o_gate");
+}
 
 const LayerPattern = struct {
     period: u32,
@@ -94,6 +113,19 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "embed", .spec = .{ .pattern = "gather", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention", .spec = .{ .pattern = "attention_decode", .allow_prefill = false, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention_prefill", .spec = .{ .pattern = "attention_tiled", .allow_prefill = true, .allow_decode = false, .kind = .compute } },
+        // Multi-Q causal-prefill, K/V sharded across pe_y. Used by the
+        // Qwen 3.6 27B smoke config in place of `attention_prefill` to
+        // sidestep the `attention_tiled` linker_pe_memory_overflow at
+        // head_dim=256 / q_len=4096; per-PE working-set fits the WSE-3
+        // 48 KiB budget at width=height=512 with q_len_per_pe=8 and
+        // slots_per_pe=8.
+        .{ .op = "attention_prefill_kv_axis_sharded", .spec = .{ .pattern = "attention_prefill_kv_axis_sharded", .allow_prefill = true, .allow_decode = false, .kind = .compute } },
+        // Qwen 3.6 gated-DeltaNet SSM body ops. These route directly
+        // through emit_csl_semantic_ops.zig to the TSIR CSL bodies used
+        // by the reference-interpreter parity tests.
+        .{ .op = "conv1d_depthwise", .spec = .{ .pattern = "conv1d_depthwise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "l2_normalize", .spec = .{ .pattern = "l2_normalize", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "linear_attention", .spec = .{ .pattern = "linear_attention", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "attention_linear", .spec = .{ .pattern = "attention_linear", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rope", .spec = .{ .pattern = "rope", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "rmsnorm", .spec = .{ .pattern = "rms_norm", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
@@ -101,6 +133,22 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "softmax", .spec = .{ .pattern = "reduction", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "gelu", .spec = .{ .pattern = "gelu", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "silu", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        // Gated-activation family: paired (gate, input) -> output kernels.
+        // gelu_gated: GeGLU (Gemma-style); silu_gated: SwiGLU FFN inner
+        // (Qwen 3.6 / Llama-style); sigmoid_gated: attentionOutputGate
+        // (Qwen 3.6 q-gate * attn output before O-projection). All three
+        // share the same elementwise (gate, input, output) layout and
+        // dispatch to emit_csl_semantic_ops emitGatedPe parameterized by
+        // SemanticBodyOp; the TSIR side already routes the body op via
+        // emit_kernel_body.zig + emit_kernel_body_gated.zig.
+        .{ .op = "gelu_gated", .spec = .{ .pattern = "gelu_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "silu_gated", .spec = .{ .pattern = "silu_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "sigmoid_gated", .spec = .{ .pattern = "sigmoid_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        // Qwen 3.6 attention_output_gate alias: smoke configs use
+        // shorthand `o_gate` for the sigmoid-gated step that runs
+        // between attention output and O-projection. Aliases to
+        // sigmoid_gated; no separate emit.
+        .{ .op = "o_gate", .spec = .{ .pattern = "sigmoid_gated", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "relu", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "scale", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "bias_add", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
@@ -239,6 +287,9 @@ fn parseModelConfig(value: ?std.json.Value) LowerError!?host.ModelConfig {
         .hidden_dim = try expectU32(object.get("hiddenDim") orelse return error.InvalidJson),
         .num_heads = try expectU32(object.get("numHeads") orelse return error.InvalidJson),
         .head_dim = try expectU32(object.get("headDim") orelse return error.InvalidJson),
+        .linear_key_head_dim = try parseOptionalU32(object.get("linearKeyHeadDim")),
+        .linear_value_head_dim = try parseOptionalU32(object.get("linearValueHeadDim")),
+        .linear_conv_kernel_dim = try parseOptionalU32(object.get("linearConvKernelDim")),
         .global_head_dim = try parseOptionalU32(object.get("globalHeadDim")),
         .num_key_value_heads = try parseOptionalU32(object.get("numKeyValueHeads")),
         .num_layers = try expectU32(object.get("numLayers") orelse return error.InvalidJson),
@@ -295,6 +346,12 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
     const repeat = (try parseOptionalU32(object.get("repeat"))) orelse LAUNCH_REPEAT;
     if (repeat == 0) return error.MalformedStep;
 
+    const inputs_from = try parseInputsFrom(allocator, object.get("inputsFrom"));
+    if (isPairedGateOp(op)) {
+        if (inputs_from == null) return error.MalformedStep;
+        if (inputs_from.?.len != 2) return error.MalformedStep;
+    }
+
     return .{
         .phase = try parsePhase(phase_text),
         .kind = kind,
@@ -305,7 +362,25 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
         .sliding_window_size = sliding_window_size,
         .kv_cache_alias = kv_cache_alias,
         .repeat = repeat,
+        .inputs_from = inputs_from,
     };
+}
+
+fn parseInputsFrom(allocator: std.mem.Allocator, value: ?std.json.Value) LowerError!?[]const []const u8 {
+    const raw = value orelse return null;
+    const array = try expectArray(raw);
+    if (array.items.len == 0) return error.MalformedStep;
+    var slice = try allocator.alloc([]const u8, array.items.len);
+    var written: usize = 0;
+    errdefer {
+        for (slice[0..written]) |entry| allocator.free(entry);
+        allocator.free(slice);
+    }
+    while (written < array.items.len) : (written += 1) {
+        const text = try expectString(array.items[written]);
+        slice[written] = try allocator.dupe(u8, text);
+    }
+    return slice;
 }
 
 fn parseStepTuple(allocator: std.mem.Allocator, array: std.json.Array) LowerError!ExecStep {

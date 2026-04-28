@@ -216,6 +216,151 @@ test "reference interpreter computes gelu_gated tanh-approx body" {
     try std.testing.expectEqual(expected3, output[3]);
 }
 
+test "reference interpreter computes silu_gated body" {
+    const allocator = std.testing.allocator;
+
+    const axes = [_]tsir.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "len", .step = "1" },
+    };
+    const bindings = [_]tsir.BufferBinding{
+        .{ .name = "gate", .group = 0, .binding = 0, .logical_shape = &.{4}, .elem = .f32, .read_write = false },
+        .{ .name = "input", .group = 0, .binding = 1, .logical_shape = &.{4}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{4}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .gate },
+        .{ .binding_index = 1, .role = .input },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]tsir.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+    };
+    const functions = [_]tsir.SemanticFunction{
+        .{
+            .name = "main",
+            .family_hint = .elementwise,
+            .axes = &axes,
+            .bindings = &bindings,
+            .reductions = &.{},
+            .collectives = &.{},
+            .body = .{
+                .op = .silu_gated,
+                .binding_roles = &body_bindings,
+                .axis_roles = &body_axes,
+            },
+            .source_digest = [_]u8{0} ** 32,
+        },
+    };
+    const semantic = tsir.Semantic{ .functions = &functions, .rejections = &.{} };
+    const realization = tsir.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Cases:
+    //   gate=0, input=anything  -> silu(0)=0, output=0
+    //   gate=anything, input=0  -> input multiplier=0, output=0
+    //   gate=-50, input=2       -> z clamps at 15; silu(-50) is small but
+    //                              non-zero (~-50/(1+e^15)); derived inline
+    //   gate=1, input=2         -> derive from same formula
+    const gate_values = [_]f32{ 0.0, 5.0, -50.0, 1.0 };
+    const input_values = [_]f32{ 100.0, 0.0, 2.0, 2.0 };
+    const gate_bytes = std.mem.sliceAsBytes(&gate_values);
+    const input_bytes = std.mem.sliceAsBytes(&input_values);
+    const inputs = [_][]const u8{ gate_bytes, input_bytes };
+
+    var result = try tsir_reference.run(allocator, semantic, realization, &inputs);
+    defer tsir_reference.freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    const output = std.mem.bytesAsSlice(f32, @as([]align(4) const u8, @alignCast(result.outputs[0])));
+    try std.testing.expectEqual(@as(usize, 4), output.len);
+    try std.testing.expectEqual(@as(f32, 0.0), output[0]);
+    try std.testing.expectEqual(@as(f32, 0.0), output[1]);
+
+    // Derive case 2 (gate=-50, input=2) from the same clamped formula.
+    const x2: f32 = -50.0;
+    var z2: f32 = -x2;
+    if (z2 < -15.0) z2 = -15.0;
+    if (z2 > 15.0) z2 = 15.0;
+    const silu_x2 = x2 / (1.0 + std.math.exp(z2));
+    try std.testing.expectEqual(silu_x2 * 2.0, output[2]);
+
+    // Case 3 (gate=1, input=2).
+    const x3: f32 = 1.0;
+    var z3: f32 = -x3;
+    if (z3 < -15.0) z3 = -15.0;
+    if (z3 > 15.0) z3 = 15.0;
+    const silu_x3 = x3 / (1.0 + std.math.exp(z3));
+    try std.testing.expectEqual(silu_x3 * 2.0, output[3]);
+}
+
+test "reference interpreter computes sigmoid_gated body" {
+    const allocator = std.testing.allocator;
+
+    const axes = [_]tsir.IterationAxis{
+        .{ .name = "i", .lower_bound = "0", .upper_bound = "len", .step = "1" },
+    };
+    const bindings = [_]tsir.BufferBinding{
+        .{ .name = "gate", .group = 0, .binding = 0, .logical_shape = &.{4}, .elem = .f32, .read_write = false },
+        .{ .name = "input", .group = 0, .binding = 1, .logical_shape = &.{4}, .elem = .f32, .read_write = false },
+        .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{4}, .elem = .f32, .read_write = true },
+    };
+    const body_bindings = [_]tsir.SemanticBodyBinding{
+        .{ .binding_index = 0, .role = .gate },
+        .{ .binding_index = 1, .role = .input },
+        .{ .binding_index = 2, .role = .output },
+    };
+    const body_axes = [_]tsir.SemanticBodyAxis{
+        .{ .axis_index = 0, .role = .hidden },
+    };
+    const functions = [_]tsir.SemanticFunction{
+        .{
+            .name = "main",
+            .family_hint = .elementwise,
+            .axes = &axes,
+            .bindings = &bindings,
+            .reductions = &.{},
+            .collectives = &.{},
+            .body = .{
+                .op = .sigmoid_gated,
+                .binding_roles = &body_bindings,
+                .axis_roles = &body_axes,
+            },
+            .source_digest = [_]u8{0} ** 32,
+        },
+    };
+    const semantic = tsir.Semantic{ .functions = &functions, .rejections = &.{} };
+    const realization = tsir.Realization{
+        .functions = &.{},
+        .emitter_digest = [_]u8{0} ** 32,
+        .rejections = &.{},
+    };
+
+    // Cases:
+    //   gate=0  -> sigmoid(0)=0.5; output = 0.5 * input
+    //   input=0 -> output=0
+    //   gate=50, input=2   -> z clamps at -15; sigmoid(50)≈1 -> output≈2
+    //   gate=-50, input=2  -> z clamps at 15;  sigmoid(-50)≈0 -> output≈0
+    const gate_values = [_]f32{ 0.0, 5.0, 50.0, -50.0 };
+    const input_values = [_]f32{ 4.0, 0.0, 2.0, 2.0 };
+    const gate_bytes = std.mem.sliceAsBytes(&gate_values);
+    const input_bytes = std.mem.sliceAsBytes(&input_values);
+    const inputs = [_][]const u8{ gate_bytes, input_bytes };
+
+    var result = try tsir_reference.run(allocator, semantic, realization, &inputs);
+    defer tsir_reference.freeResult(allocator, &result);
+
+    try std.testing.expectEqual(@as(usize, 1), result.outputs.len);
+    const output = std.mem.bytesAsSlice(f32, @as([]align(4) const u8, @alignCast(result.outputs[0])));
+    try std.testing.expectEqual(@as(usize, 4), output.len);
+    try std.testing.expectEqual(@as(f32, 2.0), output[0]); // 0.5 * 4
+    try std.testing.expectEqual(@as(f32, 0.0), output[1]);
+    try std.testing.expectApproxEqAbs(@as(f32, 2.0), output[2], 1e-6);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.0), output[3], 1e-6);
+}
+
 test "rejection taxonomy is exhaustive and enumerable" {
     const reasons = [_]tsir.RejectionReason{
         .tsir_subgroup_unlowerable,

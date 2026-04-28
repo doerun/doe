@@ -283,6 +283,15 @@ pub const SemanticBodyOp = enum {
     /// standard tanh-approximation form used by Doppler's MLP block;
     /// downstream emitters inline the polynomial.
     gelu_gated,
+    /// Gated SiLU activation (SwiGLU FFN inner): `output[i] = silu(gate[i]) * input[i]`,
+    /// where `silu(x) = x / (1 + exp(-x))`. Same binding shape as
+    /// `gelu_gated`. Used by Qwen 3 / Llama-style SwiGLU MLP blocks.
+    silu_gated,
+    /// Gated sigmoid activation: `output[i] = sigmoid(gate[i]) * input[i]`,
+    /// where `sigmoid(x) = 1 / (1 + exp(-x))`. Same binding shape as
+    /// `gelu_gated`. Used by Qwen 3's `attentionOutputGate` (sigmoid-gated
+    /// attention output prior to the O projection).
+    sigmoid_gated,
     /// KV-cache write: append per-token K/V projections at the
     /// runtime-supplied `decode_position` slot. Bindings:
     /// `key_projection`, `value_projection`, `key_cache`,
@@ -302,6 +311,35 @@ pub const SemanticBodyOp = enum {
     /// single semantic body so TSIR can emit one lowering instead of
     /// the current per-variant template pile. See `AttentionScoresBody`.
     attention_scores,
+    /// Depthwise 1-D convolution along the token axis. Each channel
+    /// runs an independent kernel of length `kernel_size` over the
+    /// padded token sequence. Used by DeltaNet / Mamba-family SSM
+    /// mixers where the conv1d step provides causal local context
+    /// before the linear-attention update. Bindings: `input`, `weight`,
+    /// `output` (and optional `bias`). Body parameters: `channels`,
+    /// `kernel_size` (always 4 in current DeltaNet variants).
+    /// See `Conv1DDepthwiseBody`.
+    conv1d_depthwise,
+    /// L2-normalize each `[hidden]` row of the input:
+    /// `output[d] = input[d] / sqrt(sum_d input[d]^2 + eps)`. Used by
+    /// DeltaNet to normalize Q and K before the linear-attention
+    /// state update. Bindings: `input`, `output`. Body parameters:
+    /// `eps`. See `L2NormalizeBody`.
+    l2_normalize,
+    /// Gated DeltaNet linear-attention update + readout. Each token
+    /// updates the SSM state `S[d, k]` and emits an output row:
+    ///
+    ///   gated_input[d] = beta * input[d]
+    ///   delta[d, k]    = alpha * (q[d] - dot(S[d], k_in)) * k_in[k]
+    ///   S[d, k]        = (A_log-decayed S) - delta[d, k]
+    ///   output[d]      = sum_k S[d, k] * v[k] + gated_input[d]
+    ///
+    /// Bindings: `query`, `key`, `value`, `gate` (β stream),
+    /// `linear_state` (read+write SSM matrix), `output`. Body params:
+    /// `key_dim`, `value_dim`, `value_heads`, `key_heads`,
+    /// `linear_norm_mode` (`shared` vs `per_head`). See
+    /// `LinearAttentionBody`.
+    linear_attention,
 };
 
 pub const SemanticBindingRole = enum {
@@ -329,9 +367,10 @@ pub const SemanticBindingRole = enum {
     // binding per role; positional `a`/`b` would be ambiguous.
     summand_a,
     summand_b,
-    // Gated-GELU binding (added for SemanticBodyOp.gelu_gated). Pairs
-    // with the existing `.input` role; `.input` carries the activation
-    // value, `.gate` carries the value the gelu non-linearity is
+    // Gated-activation binding (added for SemanticBodyOp.gelu_gated;
+    // shared with .silu_gated and .sigmoid_gated). Pairs with the
+    // existing `.input` role; `.input` carries the activation
+    // value, `.gate` carries the value the non-linearity is
     // applied to, and `.output` is the per-element product.
     gate,
     // KV-cache write bindings (added for SemanticBodyOp.kv_write).
@@ -348,6 +387,12 @@ pub const SemanticBindingRole = enum {
     // these are the destination buffers the read copies into.
     key_output,
     value_output,
+    // Conv1D / DeltaNet bindings.
+    weight,
+    bias,
+    // Linear-attention DeltaNet bindings. `linear_state` is the
+    // [value_dim x key_dim] SSM matrix that read+writes per token.
+    linear_state,
 };
 
 pub const SemanticAxisRole = enum {
@@ -471,6 +516,14 @@ pub const AttentionScoresBody = struct {
     /// Required when `causal_mode == .sliding_window`; bounds the
     /// visible key range.
     sliding_window_size: ?u32 = null,
+    /// Query sequence length. `null` (default) means single-Q (decode
+    /// shape, kv_len-1 query position). When set to a value > 1 the body
+    /// is multi-query (prefill / causal prefill); Q has shape
+    /// `[query_seq_len * head_dim]` and each query position produces its
+    /// own attention output. The kv-axis-sharded path widens its output
+    /// buffer to `[query_seq_len * (head_dim + 2)]f32` so the host stitch
+    /// can reduce per-row.
+    query_seq_len: ?u32 = null,
 };
 
 pub const AttentionScaleSource = enum {
@@ -479,6 +532,70 @@ pub const AttentionScaleSource = enum {
     uniform_field,
     /// Scale is a compile-time literal, declared on the containing body.
     literal_f32,
+};
+
+/// Depthwise causal 1-D convolution along the token axis. Each channel
+/// runs an independent kernel of length `kernel_size`. DeltaNet uses
+/// kernel_size=4 with a per-channel bias and SiLU activation downstream.
+/// Inputs / outputs are `[token, channel]` row-major; the conv emit must
+/// pad-with-zero on the left so the kernel is causal (only past tokens
+/// contribute to the output at position t).
+pub const Conv1DDepthwiseBody = struct {
+    /// Number of independent channels (each runs its own kernel).
+    channels: u32,
+    /// Kernel size along the token axis. DeltaNet: 4. Other Mamba
+    /// variants may use different sizes; the emit body parameterizes
+    /// the loop bound and the left-pad amount as `kernel_size - 1`.
+    kernel_size: u32,
+    /// Whether a per-channel scalar bias is added after the conv:
+    /// `output[t, c] = bias[c] + sum_k weight[c, k] * input[t-k, c]`
+    /// The `bias` binding is required when this is true.
+    has_bias: bool = false,
+};
+
+/// L2-normalize each row of the input:
+/// `output[d] = input[d] / sqrt(sum_d input[d]^2 + eps)`.
+/// Bindings: `input`, `output`. DeltaNet applies this to Q and K
+/// before the linear-attention state update so the SSM update step's
+/// alpha gain is scale-invariant.
+pub const L2NormalizeBody = struct {
+    /// Hidden dimension. The reduction sum runs over `[0, hidden)`.
+    hidden: u32,
+    /// Numerical-stability epsilon added inside the sqrt. Typical
+    /// DeltaNet value: 1e-6.
+    eps: f32,
+};
+
+/// Linear-attention DeltaNet update + readout. Per-token recurrent
+/// state update written in compact pseudocode at the SemanticBodyOp
+/// docstring. The body declares the head layout (key_heads /
+/// value_heads / per-head dims) and the normalization mode shared
+/// vs per-head A_log scalars.
+pub const LinearAttentionBody = struct {
+    /// Per-head dimension on the K side. DeltaNet: 256 in Qwen 3.6 27B.
+    key_dim: u32,
+    /// Per-head dimension on the V side. DeltaNet: 256 in Qwen 3.6 27B.
+    value_dim: u32,
+    /// Number of K heads. DeltaNet shares K/V dims and head counts
+    /// differently from full attention; for Qwen 3.6 27B this is 16.
+    key_heads: u32,
+    /// Number of V heads. For Qwen 3.6 27B this is 48.
+    value_heads: u32,
+    /// Normalization mode for the A_log decay scalar. `.shared` means
+    /// one scalar per (key_head, value_head) pair across all tokens;
+    /// `.per_head` means each head has its own time-varying decay.
+    norm_mode: LinearAttentionNormMode,
+    /// `dt_bias[h]` is a per-head additive bias applied to A_log
+    /// before exp; the conv1d step's output sets the time-varying
+    /// component. Required when `norm_mode = .per_head`.
+    has_dt_bias: bool = false,
+};
+
+pub const LinearAttentionNormMode = enum {
+    /// One scalar A_log per (key_head, value_head). Time-invariant.
+    shared,
+    /// One scalar A_log per head per token (time-varying).
+    per_head,
 };
 
 /// Declares the kernel body family in semantic, digestable form. Family hints
@@ -490,6 +607,9 @@ pub const SemanticBody = struct {
     axis_roles: []const SemanticBodyAxis = &.{},
     rms_norm: ?RmsNormBody = null,
     attention_scores: ?AttentionScoresBody = null,
+    conv1d_depthwise: ?Conv1DDepthwiseBody = null,
+    l2_normalize: ?L2NormalizeBody = null,
+    linear_attention: ?LinearAttentionBody = null,
 };
 
 // ============================================================

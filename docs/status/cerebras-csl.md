@@ -13,6 +13,157 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-28 — Qwen cross-model prehardware gate bound with clean compile receipt
+
+The Qwen 3.6 27B compile-step bundle at
+`bench/out/r3-2-27b-manifest-fullgraph-compile-steps/` has a current
+driver result whose compile section succeeds for every target. The previous
+typed blockers for `ssm_linear_attention` and
+`attn_prefill_kv_axis_sharded` are closed in the receipt.
+
+The host-plan tool now resolves the checked-in simulator driver correctly
+from repo-root invocations. `ssm_linear_attention` shards
+`linear_state` with `value_dim_per_pe`, and
+`attn_prefill_kv_axis_sharded` derives PE identity from CSL `<layout>`
+coordinates rather than per-tile `@set_tile_code` params. `gemv` is
+cslc-clean at Qwen shape after the fused GEMV layout reserved both x and y
+collectives task-id pairs for SDK `collectives_2d` validation.
+
+`bench/tools/synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt.py`
+now fails closed on stale driver coverage and writes `blocker.class="none"`
+when all measured compile verdicts succeed. The joint Gemma/Qwen gate at
+`bench/tools/aggregate_cross_model_parity.py` consumes those per-model
+compile summaries and writes
+`bench/out/r3-cross-model-parity/receipt.json` with `verdict=bound`.
+
+## 2026-04-28 — Qwen SSM body ops bound into exec-v1 smoke config
+
+The Qwen 3.6 27B non-hardware scope now covers the hybrid architecture rather
+than only the 16 full-attention layers. The smoke config dispatches the
+gated-DeltaNet SSM body sequence with `repeat=48`: `conv1d_depthwise`,
+`l2_normalize` for Q/K rows, then `linear_attention`.
+
+The exec-v1 `opToSpec` table routes all three ops to semantic CSL patterns.
+`emit_csl_semantic_ops.zig` delegates each PE program to the existing TSIR
+body emitters, so the route shares the same math pinned by
+`reference_interpreter.zig`: causal depthwise conv, row L2 normalization, and
+the shared-norm DeltaNet linear-attention state update. The host-plan tool now
+emits compile params and binding metadata for the three SSM body kernels, and
+the paired-gate canary pins the new op mapping plus body-program fragments.
+
+## 2026-04-28 — Qwen fused GEMV row reduction switches to collectives_2d
+
+The Qwen 3.6 27B `gemv` width>=3 non-hardware blocker is closed at the Doe
+emit surface. The fused GEMV layout no longer hand-configures a `reduce_color`
+east-west route. It imports `<collectives_2d/params>`, passes per-tile
+`c2d_params` to the PE program, and the PE program imports
+`<collectives_2d/pe>` and calls `reduce_fadds` with root `width - 1`.
+
+This keeps SDK source out of the repository while using the SDK's existing
+teardown/switch FSM through the normal cslc import path, matching the SUMMA
+collectives integration pattern already carried by tiled matmul. The Qwen GEMV
+cell fixture mirrors the emitter shape, and the WGSL structural canary pins
+that `fused_gemv_dequant` emits collectives imports rather than manual
+`@set_color_config` routes.
+
+## 2026-04-27 — Qwen 3.6 27B Doe-side trio lands; typed-blocker chain pinned
+
+The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
+4 31B Doe-side evidence trio, all sitting on top of the SUMMA wedge merge:
+
+1. **Smoke config.** `runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json`
+   mirrors the Gemma 4 31B smoke shape with Qwen's actual numbers: GQA
+   24:4, head_dim=256, hidden=5120, intermediate=17408, 64 layers,
+   partial-rotary 0.25, queryKeyNorm, attentionOutputGate=swish, SwiGLU
+   FFN. `scopeRestrictions` block names three explicit blockers
+   (linearAttentionLayers, mropeInterleaved, causalAttentionPrefill).
+2. **Synthesizer.** `bench/tools/synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt.py`
+   imports the Gemma synthesizer's residency/classifier helpers and
+   only carries Qwen-specific defaults + claim text + scopeRestrictions
+   lift from the smoke config. Pre-bundle preflight verified: exits 2
+   with the host-plan-tool invocation pointer.
+3. **Per-kernel byte-identity test.**
+   `bench/tests/test_qwen_3_6_one_layer_per_kernel_byte_identity.py`
+   pins the 1L == 64L per-kernel CSL byte-identity property. Skips with
+   typed pointer when the upstream Qwen compile root is absent.
+4. **Validator binding test.**
+   `bench/tests/test_validate_frozen_qwen_3_6_doppler_reference.py`
+   binds the (model-agnostic)
+   `bench/tools/validate_frozen_doppler_reference.py` to the Qwen
+   fixture path. Skips with typed cross-repo pointer naming the Doppler
+   `run-program-bundle-reference.js --tsir-fixture-dir` invocation that
+   produces the fixture.
+
+**Trio now exercises the bundle end-to-end at honest scope.** The
+smoke config was revised this tick to use ops the host-plan tool
+recognizes today (single-input `silu` for FFN activation; the `o_gate`
+step is dropped entirely rather than mapped to a non-gated stand-in).
+`scopeRestrictions` was extended with `attentionOutputGate` and
+`swigluFfnFusedGate` named-blocker entries so the receipts cannot be
+misread as covering Qwen's actual gated forms — those need
+`silu_gated` / `sigmoid_gated` `KernelPattern` variants + classifier
+wiring + opToSpec entries to land before the smoke config can carry
+the gated ops. The audit-named TSIR emit-body work is already done on
+this branch (see emit_kernel_body_gated.zig); the doe_wgsl classifier
+surface is the open downstream blocker.
+
+With the revised smoke config, all three trio legs now run:
+
+- `doe-csl-host-plan-tool` materializes a 15-target Qwen bundle at
+  `bench/out/r3-2-27b-manifest-fullgraph-compile-steps/`;
+- the per-kernel byte-identity test passes (1L emission is byte-
+  identical to 64L emission across all shared kernels — the 1-of-64-
+  layer property holds);
+- the synthesizer emits
+  `bench/out/r3-2-27b-full-graph-compile-attempt/receipt.json` with
+  `compileTargetCount=15`, `compileAttempted=true`,
+  `compileSucceededCount=10`, `compileFailedCount=1`,
+  `scopeRestrictions` lifted from the smoke config.
+
+cslc 2.10.0 ran against each compile dir; 10/11 unique kernels return
+`Compilation successful` (embed, rmsnorm, tiled, rope_partial,
+residual, silu, gemv, kv_write, attn_decode, sample). The 1 failure is
+`attn_prefill` with `failureCode=linker_pe_memory_overflow` — the
+same per-PE-residency blocker the Gemma 4 31B prefill ladder carries.
+Decode path is fully cslc-clean. The 4 phase-specialized kernel
+variants (rmsnorm_prefill/_decode, residual_prefill/_decode) share
+CSL byte-identically with their base kernels (verified by the byte-
+identity test) and therefore inherit the base verdicts; they are
+recorded as `not_attempted` in the receipt's per-target list pending
+explicit alias-resolution in the synthesizer.
+
+The rope kernel's `compileParams` now read `head_dim=256, num_pairs=32`
+— validating the partial-rotary wiring delta this tick: at Qwen's
+manifest `partialRotaryFactor=0.25`, the canonical formula
+`head_dim * factor / 2 = 32` rides through correctly (was previously
+the kernel-default 64).
+
+Open follow-ups (to make the receipts cite Qwen's actual gated forms,
+not stand-ins):
+The validator-binding test still depends on Doppler-side capture
+(separate cross-repo branch `feat/qwen-3-6-bringup` in the doppler
+tree), which is named in the test's typed-skip pointer.
+
+- `silu_gated` / `sigmoid_gated` through the classifier + opToSpec
+  chain (KernelPattern variants in emit_csl_classify.zig + WGSL
+  pattern-detection branches + opToSpec entries + emit dispatch
+  through emit_kernel_body_gated.zig). The TSIR-side work landed on
+  this branch; only the doe_wgsl surface remains. Doe-side; unblocks
+  the smoke config carrying the actual gated ops.
+- Doppler `feat/qwen-3-6-bringup`: capture a deterministic Qwen
+  inference run + the TSIR boundary-probe fixture
+  (`bench/fixtures/r3-2-27b-doppler-frozen/`).
+- cslc invocation against the Qwen bundle (driver-result.json) so the
+  synthesizer's `compileAttempted` flips to true and per-target
+  failureCode values get attached. Same SDK toolchain dependency the
+  Gemma 31B receipts have.
+- mropeInterleaved lowering (Qwen-only; deferred until 1D-rotary smoke
+  receipts pass).
+- Linear-attention layer body op (Qwen 3.6 hybrid; named blocker in
+  smoke scopeRestrictions; deferred).
+- Causal prefill in `AttentionScoresBody` (shared with Gemma; deferred
+  until the prefill simfabric ladder lands).
+
 ## 2026-04-27 — Fused-dequant SUMMA wedge (Q4K-input) compiles + executes on simfabric with parity
 
 The `feat/fused-dequant-summa` branch lands the on-PE Q4_K_M dequant SUMMA

@@ -93,7 +93,7 @@
     },
     "bodyOp": {
       "type": "string",
-      "enum": ["unknown", "fused_gemv", "rms_norm", "gather", "residual_add", "gelu_gated", "kv_write", "kv_read", "attention_scores"]
+      "enum": ["unknown", "fused_gemv", "rms_norm", "gather", "residual_add", "gelu_gated", "silu_gated", "sigmoid_gated", "kv_write", "kv_read", "attention_scores"]
     },
     "bindingRole": {
       "type": "string",

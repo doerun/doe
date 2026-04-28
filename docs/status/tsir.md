@@ -18,6 +18,84 @@ live here; older TSIR history (2026-04-23 TSIR Step 4 increments) was
 moved to [`archive/2026-04.md`](archive/2026-04.md) in a subsequent
 tick. New TSIR entries go here going forward.
 
+## 2026-04-27 — Qwen 3.6-27B audit: TSIR / CSL emit gap list
+
+Audit of what Qwen 3.6-27B (or any current Qwen 3.5 architecture extended to
+27B) needs from the TSIR + CSL spatial-lowering path that Gemma 4 31B currently
+travels. Trigger: Doppler already runs Qwen 3.5 (0.8B and 2B) in production
+through the same Program Bundle shape, so the next Cerebras-lane refresh-loop
+target is queued to be Qwen 3.6-27B once the gaps below are typed-rejected or
+lowered. Findings are against:
+
+- `runtime/zig/src/tsir/schema.zig`
+- `runtime/zig/src/tsir/emit_kernel_body.zig`
+- `runtime/zig/src/tsir/emit_kernel_body_attention.zig`
+- `runtime/zig/src/doe_wgsl/emit_csl_rope.zig`
+- `runtime/zig/src/doe_wgsl/emit_csl_layout.zig`
+
+### Already covered (no Doe-side change needed)
+
+- **GQA shape (`num_q_heads != num_kv_heads`).** `AttentionScoresBody` is
+  per-head; `head_dim` is the only head-level field
+  (`schema.zig:451-474`). Q→KV head mapping is the host plan's job, not the
+  body's. Qwen 3.5-2B's 8:2 GQA ratio already rides through Doppler's bundle
+  shape without an attention-body change; Doe's host plan binds the right
+  K/V slice per Q head.
+- **Partial-rotary RoPE (`partialRotaryFactor < 1.0`).** `emit_csl_rope.zig`
+  iterates `num_pairs` rotation pairs as a CSL `param`
+  (`emit_csl_rope.zig:33,51`). The kernel never assumes `num_pairs ==
+  head_dim/2`; the layout emitter just supplies a `head_dim=128, num_pairs=64`
+  *default* (`emit_csl_layout.zig:313-314`) that the driver's `--params`
+  invocation overrides. For Qwen 3.5 (`head_dim=128`,
+  `partialRotaryFactor=0.25`) the host wires `num_pairs=16`. No CSL emit
+  change required; the host plan just needs to source `num_pairs` from
+  `manifest.attention.rotary.partialRotaryFactor` instead of `head_dim/2`.
+- **Per-head Q/K RMSNorm (`queryKeyNorm: true`).** Doppler implements this as
+  a separate rms_norm dispatch (`doppler/src/inference/pipelines/text/attention/run.js:419`,
+  `applyAttentionQKNorm`). It rides through Doe's existing
+  `SemanticBodyOp.rms_norm` for free as additional kernel invocations between
+  QKV projection and attention.
+
+### Typed-blocker gaps (would require a Doe-side body / emit change)
+
+- **`SemanticBodyOp` has no `rope` variant.** The schema enum
+  (`schema.zig:271-305`) covers `rms_norm`, `gather`, `kv_write`, `kv_read`,
+  `attention_scores`, etc., but not `rope`. RoPE today is handled at the
+  `doe_wgsl` layer (a separate WGSL-pattern → CSL transpiler) rather than as
+  a TSIR semantic body. Promoting RoPE to a TSIR body op is required if RoPE
+  needs to participate in TSIR cross-backend canaries the way attention does.
+  Not a Qwen 3.6 blocker if RoPE keeps riding through `doe_wgsl` only.
+- **Causal mask in `AttentionScoresBody`.**
+  `emit_kernel_body_attention.zig:59` rejects
+  `causal_mode != .none` with `error.InvalidBodyContract`. Qwen 3.6 prefill
+  uses standard causal masking; the unified-emit path is decode-only until
+  causal lowering lands. Manifest-shape simfabric proof of concept for Qwen
+  prefill is gated on this. Decode-only / single-token receipts can avoid
+  it. Same blocker the Gemma 4 31B prefill simfabric ladder still carries.
+- **Sigmoid-gated activation (`attentionOutputGate: true`).** Qwen 3 applies
+  `sigmoid(qGateProjection) * attnOutput` before the O projection
+  (`doppler/.../attention/run.js:893-902`, `gateActivation: 'sigmoid'`).
+  Doe's `SemanticBodyOp.gelu_gated` is GELU-shaped only
+  (`schema.zig:285`). Either generalize to a `gated_activation` body with a
+  `kind ∈ {gelu, sigmoid, silu}` field, or add a sibling `sigmoid_gated`
+  variant. Same emit shape as `gelu_gated`, just a different scalar
+  activation in the inner loop. Qwen 3 SwiGLU FFN
+  (`silu(gate) * x`) needs the same generalization.
+- **Softcap (`tanh(s/cap)·cap`).** Currently rejected
+  (`emit_kernel_body_attention.zig:60`); affects Gemma-style attention not
+  Qwen, called out here only because it lives in the same emit body and
+  closing causal usually ships alongside softcap.
+
+### Non-blockers for the existing receipt surface
+
+The Doe-WebGPU end-to-end runner does not go through the unified
+`attention_scores` emit; it runs Doppler's WGSL kernel closure directly
+through Doe's WebGPU runtime, where causal/softcap/sigmoid-gate/SwiGLU all
+ride through the kernel body verbatim. Qwen 3.6-27B going through the
+*Doe-WebGPU vs Doppler reference parity* receipt is unblocked today
+modulo bundle availability; only the *Cerebras-lane simfabric* receipt
+needs the body-emit gaps closed.
+
 ## 2026-04-25 — CSL RMSNorm emitters use sqrt_nr wrapper
 
 TSIR CSL RMSNorm emission no longer writes raw `math.sqrt(mean_sq + eps)` into
