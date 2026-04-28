@@ -68,7 +68,26 @@ pub const ExecStep = struct {
     sliding_window_size: ?u32 = null,
     kv_cache_alias: ?[]const u8 = null,
     repeat: u32 = LAUNCH_REPEAT,
+    /// Names of upstream steps whose outputs feed this step's input
+    /// bindings. Required for paired-input ops like `silu_gated`,
+    /// `sigmoid_gated`, `gelu_gated`, and the Qwen 3.6 `o_gate` alias —
+    /// these consume two upstream outputs (gate, input) and produce a
+    /// single output. The order matches the kernel binding order:
+    /// `inputs_from[0]` → `gate`, `inputs_from[1]` → `input`. For
+    /// non-paired ops the field is null and the host plan threads the
+    /// previous step's output as the single input.
+    inputs_from: ?[]const []const u8 = null,
 };
+
+/// Ops that consume two upstream outputs (gate, input) and emit one
+/// output. The host plan needs `inputs_from = [gate_step, input_step]`
+/// declared on the smoke config to bind them correctly.
+pub fn isPairedGateOp(op: []const u8) bool {
+    return std.mem.eql(u8, op, "silu_gated") or
+        std.mem.eql(u8, op, "sigmoid_gated") or
+        std.mem.eql(u8, op, "gelu_gated") or
+        std.mem.eql(u8, op, "o_gate");
+}
 
 const LayerPattern = struct {
     period: u32,
@@ -311,6 +330,12 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
     const repeat = (try parseOptionalU32(object.get("repeat"))) orelse LAUNCH_REPEAT;
     if (repeat == 0) return error.MalformedStep;
 
+    const inputs_from = try parseInputsFrom(allocator, object.get("inputsFrom"));
+    if (isPairedGateOp(op)) {
+        if (inputs_from == null) return error.MalformedStep;
+        if (inputs_from.?.len != 2) return error.MalformedStep;
+    }
+
     return .{
         .phase = try parsePhase(phase_text),
         .kind = kind,
@@ -321,7 +346,25 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
         .sliding_window_size = sliding_window_size,
         .kv_cache_alias = kv_cache_alias,
         .repeat = repeat,
+        .inputs_from = inputs_from,
     };
+}
+
+fn parseInputsFrom(allocator: std.mem.Allocator, value: ?std.json.Value) LowerError!?[]const []const u8 {
+    const raw = value orelse return null;
+    const array = try expectArray(raw);
+    if (array.items.len == 0) return error.MalformedStep;
+    var slice = try allocator.alloc([]const u8, array.items.len);
+    var written: usize = 0;
+    errdefer {
+        for (slice[0..written]) |entry| allocator.free(entry);
+        allocator.free(slice);
+    }
+    while (written < array.items.len) : (written += 1) {
+        const text = try expectString(array.items[written]);
+        slice[written] = try allocator.dupe(u8, text);
+    }
+    return slice;
 }
 
 fn parseStepTuple(allocator: std.mem.Allocator, array: std.json.Array) LowerError!ExecStep {

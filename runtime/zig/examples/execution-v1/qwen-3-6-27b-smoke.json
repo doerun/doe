@@ -11,7 +11,7 @@
     "maxSeqLen": 4096,
     "quantFormat": "q4k",
     "ffnIntermediateSize": 17408,
-    "ffnActivation": "silu",
+    "ffnActivation": "silu_gated",
     "queryKeyNorm": true,
     "attentionOutputGate": true,
     "outputGateType": "swish",
@@ -30,12 +30,12 @@
     "linearAttentionLayersDetail": "Qwen 3.6 27B is a hybrid architecture (full + linear attention). Manifest carries both linear_attn.{A_log,conv1d,dt_bias,in_proj_a/b/qkv/z,norm,out_proj} and self_attn.{q,k,v,o}_proj per layer. The TSIR/CSL emit path covers full-attention-only today; linear-attn (Mamba-style SSM with conv1d) has no TSIR body op. This smoke config exercises the full-attention layer pattern; linear-attn layers compile-attempt is a typed-blocker until a SemanticBodyOp.linear_attn body lands.",
     "mropeInterleaved": "named_blocker",
     "mropeInterleavedDetail": "Manifest carries mropeInterleaved=true with mropeSection=[11,11,10] (3D rotary for text/image/video). For text-only inference the smoke config falls back to standard 1D RoPE with partialRotaryFactor=0.25 (num_pairs = headDim * 0.25 / 2 = 32). True mrope lowering is a typed-blocker.",
-    "causalAttentionPrefill": "named_blocker",
-    "causalAttentionPrefillDetail": "AttentionScoresBody currently rejects causal_mode != .none (emit_kernel_body_attention.zig). Manifest-shape simfabric proof for prefill is gated on this; same blocker the Gemma 4 31B prefill ladder still carries. Decode-only receipts are unblocked.",
-    "attentionOutputGate": "named_blocker",
-    "attentionOutputGateDetail": "Qwen 3.6 27B applies sigmoid(qGateProjection) * attnOutput before the O projection. The TSIR sigmoid_gated body op landed on this branch (emit_kernel_body_gated.zig), but the doe_wgsl classifier surface and exec-v1 opToSpec map do not yet route this op. The smoke config drops the o_gate step entirely (rather than silently mapping to a non-gated activation) so the receipts cannot misread Qwen attention as gate-free; the gap is a named blocker.",
-    "swigluFfnFusedGate": "named_blocker",
-    "swigluFfnFusedGateDetail": "Qwen FFN is silu(gate_proj(x)) * up_proj(x) → down_proj. The smoke config maps the activation step to single-input op=silu (existing element_wise pattern) so the host plan ingests; the gate*up multiplication is currently implicit in the host plan's MLP fusion and not surfaced as a discrete step. silu_gated as a fused op (TSIR SemanticBodyOp landed; classifier + opToSpec wiring deferred) would surface this."
+    "causalAttentionPrefill": "bound",
+    "causalAttentionPrefillDetail": "AttentionScoresBody now accepts causal_mode in {.none, .causal, .sliding_window} (emit_kernel_body_attention.zig). Prefill receipts at manifest shape are unblocked from the body-op side; per-PE residency for attn_prefill at head_dim=256 (the 27B kv-axis-sharded redesign) is a separate Doe-gated item.",
+    "attentionOutputGate": "bound",
+    "attentionOutputGateDetail": "Qwen 3.6 27B applies sigmoid(qGateProjection) * attnOutput before the O projection. The TSIR sigmoid_gated body op, the doe_wgsl classifier surface, and the exec-v1 opToSpec map (with `o_gate` aliased to `sigmoid_gated`) are all wired. The smoke config now declares an explicit `o_gate` step between attention and o_proj that reads (q_proj_output, attention_output) → gated. Receipts surface the gate as a discrete kernel.",
+    "swigluFfnFusedGate": "bound",
+    "swigluFfnFusedGateDetail": "Qwen FFN is silu(gate_proj(x)) * up_proj(x) → down_proj. The smoke config now declares the activation step as `silu_gated` with inputsFrom=[gate_proj, up_proj]; the TSIR silu_gated body op + classifier + opToSpec + host-plan gated bindings are all wired. Receipts surface the gate as a discrete kernel."
   },
   "steps": [
     {
@@ -103,7 +103,14 @@
       "phase": "prefill",
       "op": "attention_prefill",
       "kernelKey": "attn_prefill",
-      "namedBlocker": "causal_attention_prefill"
+      "namedBlocker": "attn_prefill_pe_memory_overflow"
+    },
+    {
+      "name": "o_gate",
+      "phase": "prefill",
+      "op": "o_gate",
+      "kernelKey": "o_gate",
+      "inputsFrom": ["q_proj", "attention"]
     },
     {
       "name": "o_proj",
@@ -141,8 +148,9 @@
     {
       "name": "activation",
       "phase": "prefill",
-      "op": "silu",
-      "kernelKey": "silu"
+      "op": "silu_gated",
+      "kernelKey": "silu_gated",
+      "inputsFrom": ["gate_proj", "up_proj"]
     },
     {
       "name": "down_proj",
@@ -224,6 +232,13 @@
       "attentionType": "global"
     },
     {
+      "name": "o_gate",
+      "phase": "decode",
+      "op": "o_gate",
+      "kernelKey": "o_gate",
+      "inputsFrom": ["q_proj", "attention"]
+    },
+    {
       "name": "o_proj",
       "phase": "decode",
       "op": "matmul_q4k",
@@ -259,8 +274,9 @@
     {
       "name": "activation",
       "phase": "decode",
-      "op": "silu",
-      "kernelKey": "silu"
+      "op": "silu_gated",
+      "kernelKey": "silu_gated",
+      "inputsFrom": ["gate_proj", "up_proj"]
     },
     {
       "name": "down_proj",
