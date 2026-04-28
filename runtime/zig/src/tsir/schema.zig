@@ -481,6 +481,14 @@ pub const AttentionScoresBody = struct {
     /// Required when `causal_mode == .sliding_window`; bounds the
     /// visible key range.
     sliding_window_size: ?u32 = null,
+    /// Query sequence length. `null` (default) means single-Q (decode
+    /// shape, kv_len-1 query position). When set to a value > 1 the body
+    /// is multi-query (prefill / causal prefill); Q has shape
+    /// `[query_seq_len * head_dim]` and each query position produces its
+    /// own attention output. The kv-axis-sharded path widens its output
+    /// buffer to `[query_seq_len * (head_dim + 2)]f32` so the host stitch
+    /// can reduce per-row.
+    query_seq_len: ?u32 = null,
 };
 
 pub const AttentionScaleSource = enum {

@@ -731,6 +731,52 @@ test "tsir csl attention_scores emits sliding-window mask with declared size" {
     try expectContains(csl, "sc = -1.0e30;");
 }
 
+test "tsir csl attention_scores kv_axis_sharded multi-Q widens Q and output buffers" {
+    // Causal-prefill body: query_seq_len > 1 emits the kv-axis-sharded
+    // body wrapped in a per-query loop. Q widens to
+    // [query_seq_len * head_dim]; output widens to
+    // [query_seq_len * (head_dim + 2)] so each query position carries
+    // its own (local_O, local_max, local_sum_exp) triple. The host
+    // plan stitches each query's partials independently. This is the
+    // path that unblocks `attn_prefill` per-PE memory at the 27B
+    // manifest shape (Doe-gated north-star item; see
+    // docs/cerebras-north-star-qwen.md).
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.query_seq_len = 4;
+    body.causal_mode = .causal;
+    semantic.body.attention_scores = body;
+
+    const config = tsir.emit_kernel_body.Config{
+        .var_prefix = "tsir_",
+        .attention_pe_strategy = .kv_axis_sharded,
+        .attention_slots_per_pe_default = 8,
+    };
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    try tsir.emit_kernel_body.emitWithConfig(
+        buf.writer(allocator),
+        semantic,
+        .csl,
+        &config,
+    );
+    const csl = buf.items;
+    try expectContains(csl, "const query_seq_len: u32 = 4;");
+    try expectContains(csl, "tsir_query: [query_seq_len * @as(u32, head_dim)]f32");
+    try expectContains(csl, "tsir_output: [query_seq_len * partials_len]f32");
+    try expectContains(csl, "for (@range(u32, query_seq_len)) |q|");
+    try expectContains(csl, "const q_row_offset: u32 = q * @as(u32, head_dim);");
+    try expectContains(csl, "const out_row_offset: u32 = q * partials_len;");
+    // Per-row causal mask: query q sits at kv_len - query_seq_len + q.
+    try expectContains(csl, "const q_pos: u32 = @as(u32, kv_len) - query_seq_len + q;");
+    try expectContains(csl, "if (gk > q_pos)");
+    // Output writes hit the per-row offsets, not the single-Q form.
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, d)] = acc;");
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, head_dim)] = local_max;");
+    try expectContains(csl, "tsir_output[out_row_offset + @as(u32, head_dim) + 1] = local_sum_exp;");
+}
+
 test "tsir csl attention_scores defaults to full_per_pe single-PE shape" {
     // Regression guard: with the default Config, the emit must still
     // produce the single-PE body. Mirrors the existing canary contract

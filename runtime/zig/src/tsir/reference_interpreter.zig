@@ -1107,6 +1107,15 @@ fn tryAttentionScores(
             sliding_window_threshold = window;
         },
     }
+    // Multi-Q (causal-prefill) shape: query_seq_len > 1 widens Q to
+    // [query_seq_len * head_dim] and (for kv-axis-sharded) widens output
+    // to [query_seq_len * (head_dim + 2)]. The bootstrap canary
+    // interpreter covers the single-Q decode shape only; multi-Q is
+    // exercised by emit-side unit tests until the host stitch oracle
+    // for multi-Q lands.
+    if (attn.query_seq_len) |qsl| {
+        if (qsl > 1) return null;
+    }
 
     if (inputs.len != countReadOnlyBindings(func)) return null;
 
