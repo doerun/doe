@@ -7,13 +7,24 @@
 //
 // Scope: bootstrap-canary surface only. Required body schema:
 //   - softmax_mode = .two_pass_stable
-//   - causal_mode = .none (causal / sliding_window are rejected)
-//   - has_softcap = false
+//   - causal_mode  ∈ { .none, .causal, .sliding_window }
+//   - has_softcap  = false
 //   - scale_source = .literal_f32 (uniform scale not yet wired)
-// Streaming softmax, causal masks, softcap, page-table KV, and uniform
-// scale are explicit `error.InvalidBodyContract` so the canary lane fails
-// loudly when an unsupported attention shape is requested. Manifest-shape
-// attention with those features needs a separate emit body class.
+// Streaming softmax, softcap, page-table KV, and uniform scale remain
+// explicit `error.InvalidBodyContract` so the canary lane fails loudly
+// when those shapes are requested. Manifest-shape attention with those
+// features needs a separate emit body class.
+//
+// Single-Q convention for the canary surface: Q is the latest query
+// position, i.e. `query_pos = kv_len - 1`. Under that convention:
+//   - `.causal` is mathematically a no-op (no K position is ever after
+//     `query_pos`), but the conditional is emitted so the lane is
+//     exercised end-to-end against the reference interpreter.
+//   - `.sliding_window` masks K positions where
+//     `k < kv_len - sliding_window_size` (i.e. the window covers the
+//     last `sliding_window_size` slots).
+// When this body is later promoted to multi-Q (causal prefill), the same
+// mask emit point widens to `k > query_pos[q]` per row.
 //
 // Two PE-residency strategies are implemented:
 //   - `.full_per_pe` (default): every PE holds the full
@@ -56,10 +67,13 @@ pub fn emitCslAttentionScores(
 
     const attn = func.body.attention_scores orelse return error.InvalidBodyContract;
     if (attn.softmax_mode != .two_pass_stable) return error.InvalidBodyContract;
-    if (attn.causal_mode != .none) return error.InvalidBodyContract;
     if (attn.has_softcap) return error.InvalidBodyContract;
     if (attn.scale_source != .literal_f32) return error.InvalidBodyContract;
     const scale = attn.scale_literal_f32 orelse return error.InvalidBodyContract;
+    if (attn.causal_mode == .sliding_window) {
+        const window = attn.sliding_window_size orelse return error.InvalidBodyContract;
+        if (window == 0) return error.InvalidBodyContract;
+    }
 
     const ctx = AttnEmitContext{
         .query = query,
@@ -68,6 +82,8 @@ pub fn emitCslAttentionScores(
         .output = output,
         .head_dim = attn.head_dim,
         .scale = scale,
+        .causal_mode = attn.causal_mode,
+        .sliding_window_size = attn.sliding_window_size,
         .var_prefix = config.var_prefix,
     };
 
@@ -84,8 +100,48 @@ const AttnEmitContext = struct {
     output: schema.BufferBinding,
     head_dim: u32,
     scale: f64,
+    causal_mode: schema.CausalMode,
+    sliding_window_size: ?u32,
     var_prefix: []const u8,
 };
+
+/// Emit the per-slot mask conditional that runs after `dot * attn_scale`
+/// has been computed. `k_global_expr` is the CSL expression that
+/// resolves to the absolute K position the score corresponds to (single
+/// PE: just `k`; sharded: `gk = slot_base + k`). Single-Q convention:
+/// query_pos = kv_len - 1, so `.causal` is a no-op (emitted as a
+/// structural conditional that never fires), and `.sliding_window`
+/// masks `k_global < kv_len - sliding_window_size`.
+fn emitCausalMask(
+    writer: anytype,
+    causal_mode: schema.CausalMode,
+    sliding_window_size: ?u32,
+    k_global_expr: []const u8,
+) body_emit.EmitError!void {
+    switch (causal_mode) {
+        .none => {},
+        .causal => {
+            try writer.writeAll("        // Single-Q canary convention: query_pos = kv_len - 1.\n");
+            try writer.writeAll("        // The conditional is structural; for single-Q it never fires.\n");
+            try writer.print(
+                "        if ({s} > @as(u32, kv_len) - 1) {{\n",
+                .{k_global_expr},
+            );
+            try writer.writeAll("            sc = -1.0e30;\n");
+            try writer.writeAll("        }\n");
+        },
+        .sliding_window => {
+            const window = sliding_window_size.?;
+            try writer.print("        const window_size: u32 = {d};\n", .{window});
+            try writer.print(
+                "        if (@as(u32, kv_len) > window_size and {s} < @as(u32, kv_len) - window_size) {{\n",
+                .{k_global_expr},
+            );
+            try writer.writeAll("            sc = -1.0e30;\n");
+            try writer.writeAll("        }\n");
+        },
+    }
+}
 
 /// Single-PE two-pass-stable softmax:
 ///
@@ -126,7 +182,8 @@ fn emitFullPerPe(writer: anytype, ctx: AttnEmitContext) body_emit.EmitError!void
         .{ p, ctx.query.name, p, ctx.key.name },
     );
     try writer.writeAll("        }\n");
-    try writer.writeAll("        const sc = dot * attn_scale;\n");
+    try writer.writeAll("        var sc: f32 = dot * attn_scale;\n");
+    try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "@as(u32, k)");
     try writer.writeAll("        attn_scores[@as(u32, k)] = sc;\n");
     try writer.writeAll("        if (sc > max_score) {\n");
     try writer.writeAll("            max_score = sc;\n");
@@ -248,7 +305,8 @@ fn emitKvAxisSharded(
         .{ p, ctx.query.name, p, ctx.key.name },
     );
     try writer.writeAll("        }\n");
-    try writer.writeAll("        const sc = dot * attn_scale;\n");
+    try writer.writeAll("        var sc: f32 = dot * attn_scale;\n");
+    try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "gk");
     try writer.writeAll("        attn_scores[@as(u32, k)] = sc;\n");
     try writer.writeAll("        if (sc > local_max) {\n");
     try writer.writeAll("            local_max = sc;\n");

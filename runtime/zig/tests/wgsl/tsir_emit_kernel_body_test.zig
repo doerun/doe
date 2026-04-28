@@ -519,11 +519,10 @@ test "tsir csl emitter produces executable attention_scores body" {
 }
 
 test "tsir csl attention_scores rejects out-of-contract bodies" {
-    // The bootstrap canary contract is intentionally narrow: only
-    // softmax_mode=.two_pass_stable, causal_mode=.none, no softcap,
-    // literal scale. Anything else surfaces as InvalidBodyContract so
-    // the canary lane can fail loudly when an unsupported attention
-    // shape is requested before manifest-shape attention emit lands.
+    // The bootstrap canary contract: softmax_mode=.two_pass_stable, no
+    // softcap, literal scale. Causal mask (.causal / .sliding_window)
+    // is now accepted; only streaming softmax, softcap, sliding window
+    // missing its size, and uniform scale are rejected.
     const allocator = std.testing.allocator;
 
     var streaming = attentionScoresSemantic();
@@ -540,15 +539,17 @@ test "tsir csl attention_scores rejects out-of-contract bodies" {
         ),
     );
 
-    var causal = attentionScoresSemantic();
-    var causal_body = causal.body.attention_scores.?;
-    causal_body.causal_mode = .causal;
-    causal.body.attention_scores = causal_body;
+    // sliding_window without an explicit window size is invalid.
+    var sliding_no_size = attentionScoresSemantic();
+    var sliding_no_size_body = sliding_no_size.body.attention_scores.?;
+    sliding_no_size_body.causal_mode = .sliding_window;
+    sliding_no_size_body.sliding_window_size = null;
+    sliding_no_size.body.attention_scores = sliding_no_size_body;
     try std.testing.expectError(
         error.InvalidBodyContract,
         tsir.emit_csl.emitSemanticFunction(
             allocator,
-            causal,
+            sliding_no_size,
             fixtureFunction(targets.wse3.descriptor),
             targets.wse3.descriptor,
         ),
@@ -682,6 +683,52 @@ test "tsir csl attention_scores kv_axis_sharded full-bundle has no duplicate pe_
     // the host stitch contract is intact.
     try expectContains(csl, "param slots_per_pe: i16 = 8;");
     try expectContains(csl, "tsir_output: [partials_len]f32");
+}
+
+test "tsir csl attention_scores emits causal mask conditional" {
+    // `.causal` is a structural no-op for the single-Q canary surface
+    // (query_pos = kv_len - 1 means no K position is ever after Q), but
+    // the conditional is emitted so the lane is exercised end-to-end.
+    // Manifest-shape promotion to multi-Q reuses the same emit point.
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.causal_mode = .causal;
+    semantic.body.attention_scores = body;
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "if (@as(u32, k) > @as(u32, kv_len) - 1)");
+    try expectContains(csl, "sc = -1.0e30;");
+}
+
+test "tsir csl attention_scores emits sliding-window mask with declared size" {
+    // sliding_window_size=4: any K position before
+    // `kv_len - 4` must be masked to -1e30. Both the kernel and the
+    // reference interpreter at runtime/zig/src/tsir/reference_interpreter.zig
+    // use the same threshold so canary parity holds.
+    const allocator = std.testing.allocator;
+    var semantic = attentionScoresSemantic();
+    var body = semantic.body.attention_scores.?;
+    body.causal_mode = .sliding_window;
+    body.sliding_window_size = 4;
+    semantic.body.attention_scores = body;
+
+    const csl = try tsir.emit_csl.emitSemanticFunction(
+        allocator,
+        semantic,
+        fixtureFunction(targets.wse3.descriptor),
+        targets.wse3.descriptor,
+    );
+    defer allocator.free(csl);
+    try expectContains(csl, "const window_size: u32 = 4;");
+    try expectContains(csl, "if (@as(u32, kv_len) > window_size and @as(u32, k) < @as(u32, kv_len) - window_size)");
+    try expectContains(csl, "sc = -1.0e30;");
 }
 
 test "tsir csl attention_scores defaults to full_per_pe single-PE shape" {

@@ -1063,11 +1063,15 @@ fn tryGated(
 /// Mirrors the CSL emit body in `emit_kernel_body_attention.zig`. Same
 /// scope: bootstrap-canary surface only:
 ///   * softmax_mode = .two_pass_stable
-///   * causal_mode  = .none
+///   * causal_mode  ∈ { .none, .causal, .sliding_window }
 ///   * has_softcap  = false
 ///   * scale_source = .literal_f32
 ///   * Q / K / V / output bindings declared via SemanticBindingRole
 ///   * f32 element type on every binding
+///
+/// Single-Q convention (decode-shape Q): query_pos = kv_len - 1.
+/// `.causal` is then a structural no-op; `.sliding_window` masks
+/// `k < kv_len - sliding_window_size`.
 ///
 /// The math follows the same two-pass-stable softmax form the emit body
 /// produces:
@@ -1090,11 +1094,19 @@ fn tryAttentionScores(
     if (func.body.op != .attention_scores) return null;
     const attn = func.body.attention_scores orelse return null;
     if (attn.softmax_mode != .two_pass_stable) return null;
-    if (attn.causal_mode != .none) return null;
     if (attn.has_softcap) return null;
     if (attn.scale_source != .literal_f32) return null;
     const scale_f64 = attn.scale_literal_f32 orelse return null;
     const scale: f32 = @floatCast(scale_f64);
+    var sliding_window_threshold: ?usize = null;
+    switch (attn.causal_mode) {
+        .none, .causal => {},
+        .sliding_window => {
+            const window = attn.sliding_window_size orelse return null;
+            if (window == 0) return null;
+            sliding_window_threshold = window;
+        },
+    }
 
     if (inputs.len != countReadOnlyBindings(func)) return null;
 
@@ -1176,7 +1188,15 @@ fn tryAttentionScores(
     var scores = try allocator.alloc(f32, kv_len);
     defer allocator.free(scores);
 
-    // Pass 1: scores[k] = (Q · K[k]) * scale; track max.
+    // Pass 1: scores[k] = (Q · K[k]) * scale; track max. Apply causal /
+    // sliding-window mask before the max comparison so masked-out slots
+    // cannot win the running max (they go to -1e30 the same way the CSL
+    // body's tail-mask does).
+    const sentinel: f32 = -1.0e30;
+    const sliding_start: usize = if (sliding_window_threshold) |window|
+        if (kv_len > window) kv_len - window else 0
+    else
+        0;
     var max_score: f32 = -std.math.inf(f32);
     {
         var k: usize = 0;
@@ -1188,7 +1208,17 @@ fn tryAttentionScores(
                 const k_val = readF32FromBytes(k_bytes, .f32, k * head_dim + d);
                 dot += q_val * k_val;
             }
-            const sc = dot * scale;
+            var sc: f32 = dot * scale;
+            switch (attn.causal_mode) {
+                .none => {},
+                .causal => {
+                    // Single-Q convention: query_pos = kv_len - 1.
+                    if (k > kv_len - 1) sc = sentinel;
+                },
+                .sliding_window => {
+                    if (k < sliding_start) sc = sentinel;
+                },
+            }
             scores[k] = sc;
             if (sc > max_score) max_score = sc;
         }
