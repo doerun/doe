@@ -843,8 +843,12 @@ test "tsir csl emitter produces executable linear_attention body" {
     defer allocator.free(csl);
     try expectContains(csl, "const key_dim: i16 = 8;");
     try expectContains(csl, "const value_dim: i16 = 8;");
+    // value_dim is sharded across pe_y; layout passes value_dim_per_pe
+    // through @set_tile_code so per-PE state fits the per-PE SRAM budget.
+    try expectContains(csl, "param value_dim_per_pe: i16;");
     try expectContains(csl, "param a_log: f32;");
-    try expectContains(csl, "tsir_linear_state: [value_dim * key_dim]f32");
+    try expectContains(csl, "tsir_linear_state: [value_dim_per_pe * key_dim]f32");
+    try expectContains(csl, "for (@range(i16, value_dim_per_pe))");
     try expectContains(csl, "const alpha: f32 = 1.0 - math.exp(-a_log);");
     try expectContains(csl, "const decay: f32 = 1.0 - alpha;");
     try expectContains(csl, "const sigmoid_g: f32 = 1.0 / (1.0 + math.exp(-g));");

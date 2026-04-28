@@ -5,24 +5,32 @@
 // canary surface; multi-Q prefill is a follow-up that reuses this body
 // inside an outer query-row loop the same way attention_scores does.
 //
-// State buffer: linear_state has shape [value_dim * key_dim]f32 per
-// head pair. The update reads + writes it. The bootstrap canary covers
-// `norm_mode = .shared` (one A_log scalar per head pair, no dt_bias)
-// because that's the simplest closed form to oracle. `.per_head` with
-// time-varying dt_bias is an explicit `error.InvalidBodyContract` until
-// the conv1d → A_log decay path lands as a separate composition.
+// State buffer: linear_state has shape [value_dim_per_pe * key_dim]f32
+// per PE. value_dim is sharded across pe_y so the per-PE state fits
+// the WSE-3 48 KiB SRAM budget (at value_dim=128, key_dim=128, two PEs
+// per head pair: 64 * 128 * 4 = 32 KiB per PE). output[d] only reduces
+// over k, so each PE owns its d-block end-to-end with no cross-PE
+// reduction. Q, gate, and output stream are also sharded by d to match.
+// K and V are broadcast (every PE needs the full key/value vector).
 //
-// Math (shared-norm form):
+// The bootstrap canary covers `norm_mode = .shared` (one A_log scalar
+// per head pair, no dt_bias) because that's the simplest closed form to
+// oracle. `.per_head` with time-varying dt_bias is an explicit
+// `error.InvalidBodyContract` until the conv1d → A_log decay path
+// lands as a separate composition.
+//
+// Math (shared-norm form, per PE owning d-block):
 //   alpha = 1 - exp(-A_log_shared)              // per-head scalar in (0, 1)
-//   beta  = sigmoid(gate)                       // per-token gate
-//   for each (vh, kh) head pair:
+//   beta  = sigmoid(gate)                       // per-d gate
+//   for d in d-block:
 //     delta[d, k] = alpha * (q[d] - dot(state[d, :], k_in)) * k_in[k]
 //     state[d, k] = (1 - alpha) * state[d, k] + delta[d, k]
-//     output[d]   = sum_k state[d, k] * v[k] + beta * input[d]
+//     output[d]   = sum_k state[d, k] * v[k] + beta[d] * q[d]
 //
-// Bindings: query, key, value, gate (β stream), input (residual hint),
-// linear_state (R/W), output. Body params declared on
-// `LinearAttentionBody`. Single-PE; no fabric collectives.
+// Bindings: query, key, value, gate (β stream), linear_state (R/W),
+// output. Body params declared on `LinearAttentionBody`. Layout passes
+// value_dim_per_pe via @set_tile_code; key_dim and full value_dim are
+// emitted as compile-time consts from the body.
 
 const std = @import("std");
 const schema = @import("schema.zig");
@@ -57,15 +65,21 @@ pub fn emitCslLinearAttention(
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const key_dim: i16 = {d};\n", .{body.key_dim});
     try writer.print("const value_dim: i16 = {d};\n", .{body.value_dim});
+    // value_dim_per_pe is supplied by the layout via @set_tile_code; each
+    // PE owns value_dim_per_pe rows of the state matrix and the matching
+    // slice of query/gate/output. Keeping it as a layout-provided param
+    // (rather than a body const) lets the host plan choose a sharding
+    // factor without re-emitting the kernel.
+    try writer.writeAll("param value_dim_per_pe: i16;\n");
     try writer.writeAll("param a_log: f32;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try body_emit.writeCslBufferArray(writer, p, query.name, "value_dim", "f32");
+    try body_emit.writeCslBufferArray(writer, p, query.name, "value_dim_per_pe", "f32");
     try body_emit.writeCslBufferArray(writer, p, key.name, "key_dim", "f32");
     try body_emit.writeCslBufferArray(writer, p, value.name, "key_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, gate.name, "value_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, linear_state.name, "value_dim * key_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, output.name, "value_dim", "f32");
+    try body_emit.writeCslBufferArray(writer, p, gate.name, "value_dim_per_pe", "f32");
+    try body_emit.writeCslBufferArray(writer, p, linear_state.name, "value_dim_per_pe * key_dim", "f32");
+    try body_emit.writeCslBufferArray(writer, p, output.name, "value_dim_per_pe", "f32");
     try body_emit.writeCslBufferPointer(writer, p, query.name, "f32");
     try body_emit.writeCslBufferPointer(writer, p, key.name, "f32");
     try body_emit.writeCslBufferPointer(writer, p, value.name, "f32");
@@ -79,10 +93,10 @@ pub fn emitCslLinearAttention(
     // the new-information weight in the SSM update.
     try writer.writeAll("    const alpha: f32 = 1.0 - math.exp(-a_log);\n");
     try writer.writeAll("    const decay: f32 = 1.0 - alpha;\n");
-    // Pass 1: for each value-dim row d, compute scalar
+    // Pass 1: for each value-dim row d this PE owns, compute scalar
     //   prev_dot = sum_k state[d, k] * k_in[k]
     // and the per-(d, k) delta and updated state.
-    try writer.writeAll("    for (@range(i16, value_dim)) |d| {\n");
+    try writer.writeAll("    for (@range(i16, value_dim_per_pe)) |d| {\n");
     try writer.writeAll("        var prev_dot: f32 = 0.0;\n");
     try writer.writeAll("        for (@range(i16, key_dim)) |k| {\n");
     try writer.print(
@@ -120,7 +134,7 @@ pub fn emitCslLinearAttention(
     // The gate stream provides the residual mix-in; sigmoid here matches
     // the DeltaNet `attentionOutputGate=sigmoid` form. The query value
     // is the residual carrier (input to FFN if the SSM were a no-op).
-    try writer.writeAll("    for (@range(i16, value_dim)) |d| {\n");
+    try writer.writeAll("    for (@range(i16, value_dim_per_pe)) |d| {\n");
     try writer.writeAll("        var acc: f32 = 0.0;\n");
     try writer.writeAll("        for (@range(i16, key_dim)) |k| {\n");
     try writer.print(

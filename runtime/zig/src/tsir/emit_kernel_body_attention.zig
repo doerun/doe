@@ -260,13 +260,12 @@ fn emitKvAxisSharded(
 ) body_emit.EmitError!void {
     const p = ctx.var_prefix;
     const multi_q = ctx.query_seq_len > 1;
-    // pe_id / num_pes are already declared by emit_csl's per-PE
-    // skeleton (`param pe_id: u32;`, `param num_pes: u32;`); redeclaring
-    // them here would be a CSL redeclaration error and `num_pes` is
-    // unused below anyway. The body uses `pe_id` as u32 directly via
-    // the existing `@as(u32, pe_id)` site (a no-op when pe_id is
-    // already u32 — kept explicit so the cast tracks any future change
-    // to the skeleton's integer width).
+    // By default, pe_id is declared by emit_csl's per-PE skeleton.
+    // Large semantic wrapper layouts can instead derive pe_id from the
+    // CSL layout module to avoid specializing one program per tile.
+    if (config.attention_pe_id_source == .layout_coordinates) {
+        try writer.writeAll("param width: u16;\n");
+    }
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const head_dim: i16 = {d};\n", .{ctx.head_dim});
     try writer.writeAll("param kv_len: i16;\n");
@@ -280,6 +279,9 @@ fn emitKvAxisSharded(
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
+    if (config.attention_pe_id_source == .layout_coordinates) {
+        try writer.writeAll("const layout_mod = @import_module(\"<layout>\");\n");
+    }
     try writer.print("const attn_scale: f32 = {e};\n", .{ctx.scale});
     try writer.writeAll("const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);\n");
     try writer.writeAll("const partials_len: u32 = @as(u32, head_dim) + 2;\n");
@@ -302,6 +304,11 @@ fn emitKvAxisSharded(
     try body_emit.writeCslBufferPointer(writer, p, ctx.output.name, "f32");
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
+    if (config.attention_pe_id_source == .layout_coordinates) {
+        try writer.writeAll("    const pe_x = layout_mod.get_x_coord();\n");
+        try writer.writeAll("    const pe_y = layout_mod.get_y_coord();\n");
+        try writer.writeAll("    const pe_id: u32 = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x);\n");
+    }
     try writer.writeAll("    const slot_base: u32 = @as(u32, pe_id) * @as(u32, slots_per_pe);\n");
     const indent: []const u8 = if (multi_q) "        " else "    ";
     const q_index_expr: []const u8 = if (multi_q) "q_row_offset + @as(u32, d)" else "@as(u32, d)";

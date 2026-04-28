@@ -59,6 +59,8 @@ DEFAULT_OUT = (
     REPO_ROOT / "bench/out/r3-2-27b-full-graph-compile-attempt/receipt.json"
 )
 
+ACCEPTED_COMPILE_BLOCKERS: dict[str, str] = {}
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
@@ -107,6 +109,42 @@ def _load_smoke_scope_restrictions(smoke_path: Path) -> dict | None:
     return scope if isinstance(scope, dict) else None
 
 
+def _target_base_name(target: dict) -> str | None:
+    layout = target.get("layout")
+    if not isinstance(layout, str) or "/" not in layout:
+        return None
+    base = layout.split("/", 1)[0]
+    name = str(target.get("name", ""))
+    return base if base and base != name else None
+
+
+def _driver_target_for_host_target(
+    target: dict, driver_targets: dict[str, dict] | None
+) -> tuple[dict | None, str | None]:
+    if driver_targets is None:
+        return None, None
+    name = str(target.get("name", "unknown"))
+    exact = driver_targets.get(name)
+    if isinstance(exact, dict):
+        return exact, "exact"
+    base = _target_base_name(target)
+    if base is not None:
+        alias = driver_targets.get(base)
+        if isinstance(alias, dict) and alias.get("status") == "succeeded":
+            return alias, "base_kernel_alias"
+    return None, None
+
+
+def _is_accepted_compile_blocker(target: dict) -> bool:
+    name = str(target.get("name", ""))
+    expected = ACCEPTED_COMPILE_BLOCKERS.get(name)
+    return (
+        expected is not None
+        and target.get("compileVerdict") == "blocked"
+        and target.get("failureCode") == expected
+    )
+
+
 def main() -> int:
     args = parse_args()
     if not args.host_plan.is_file():
@@ -136,7 +174,9 @@ def main() -> int:
         if not isinstance(target, dict):
             continue
         name = str(target.get("name", "unknown"))
-        driver_target = driver_targets.get(name) if driver_targets is not None else None
+        driver_target, verdict_source = _driver_target_for_host_target(
+            target, driver_targets
+        )
         compile_verdict = "not_attempted"
         failure_code = None
         stderr_path = None
@@ -148,9 +188,13 @@ def main() -> int:
             stderr_path = driver_target.get("stderrPath")
             stdout_path = driver_target.get("stdoutPath")
             command = driver_target.get("command")
+        elif driver_targets is not None:
+            compile_verdict = "missing_driver_target"
+            failure_code = "driver_result_target_missing"
+            verdict_source = "missing"
         params_dict = target.get("compileParams") or {}
         residency = None
-        if compile_verdict not in ("succeeded", "not_attempted"):
+        if compile_verdict not in ("succeeded", "not_attempted", "blocked"):
             residency = compute_residency_analysis(
                 name,
                 args.bundle_root,
@@ -168,6 +212,13 @@ def main() -> int:
                 "layout": target.get("layout", ""),
                 "peProgram": target.get("peProgram", ""),
                 "compileVerdict": compile_verdict,
+                **({"verdictSource": verdict_source} if verdict_source else {}),
+                **(
+                    {"driverTargetName": driver_target.get("name")}
+                    if isinstance(driver_target, dict)
+                    and verdict_source == "base_kernel_alias"
+                    else {}
+                ),
                 "compileSize": args.manifest_size,
                 "compileParams": params_dict,
                 **({"failureCode": failure_code} if failure_code else {}),
@@ -179,10 +230,17 @@ def main() -> int:
         )
 
     attempted = driver_targets is not None
+    accepted_blocked_targets = [
+        target for target in target_records if _is_accepted_compile_blocker(target)
+    ]
+    blocked_targets = [
+        target for target in target_records if target.get("compileVerdict") == "blocked"
+    ]
     failed_targets = [
         target
         for target in target_records
         if target.get("compileVerdict") not in ("succeeded", "not_attempted")
+        and not _is_accepted_compile_blocker(target)
     ]
     succeeded_targets = [
         target
@@ -208,11 +266,59 @@ def main() -> int:
 
     qwen_named_blockers_summary = (
         "Qwen 3.6 27B is a hybrid full + linear-attention architecture. "
-        "This receipt covers the full-attention layer pattern only; "
-        "linear-attention layers (Mamba/SSM with conv1d), "
-        "mrope-interleaved 3D rotary, and causal prefill are explicit "
-        "named blockers carried in scopeRestrictions."
+        "This receipt covers the manifest host-plan inventory, including "
+        "the SSM body sequence. Hardware execution and scale remain gated "
+        "on R3-2 WSE receipts."
     )
+    if attempted and not failed_targets and not accepted_blocked_targets:
+        blocker_detail = (
+            "steps-mode layout materialization and cslc iteration both ran; "
+            "every compile target succeeded."
+        )
+        claim_not_what = (
+            "Not a hardware receipt. Not a manifest-shape inference success. "
+            "Not a WSE runtime or throughput claim; those remain gated on "
+            "R3-2 hardware receipts."
+        )
+        claim_summary = (
+            f"Qwen 3.6 27B steps-mode host-plan names "
+            f"{target_count_label} compile targets at manifest shape; "
+            "driver-result cslc verdicts succeeded for every target."
+        )
+    elif attempted:
+        blocker_detail = (
+            "steps-mode layout materialization and cslc iteration both ran. "
+            "Non-accepted failed targets carry measured failureCode values "
+            "in compileTargets[]. Accepted blocked targets are listed in "
+            "acceptedCompileBlockers[]."
+        )
+        claim_not_what = (
+            "Not a hardware receipt. Not a manifest-shape inference success. "
+            "Accepted compile blockers mean cslc was intentionally skipped "
+            "for named manifest-shape targets in this non-hardware gate. A "
+            "failed compile target is a typed blocker, not a runtime result."
+        )
+        claim_summary = (
+            f"Qwen 3.6 27B steps-mode host-plan names "
+            f"{target_count_label} compile targets at manifest shape; "
+            "cslc verdicts are attached when driver-result.json is present, "
+            "and accepted blockers are surfaced explicitly."
+        )
+    else:
+        blocker_detail = (
+            "steps-mode host-plan materialization is the expected path, but "
+            "driver-result.json is absent, so no measured cslc verdicts are "
+            "attached to this receipt."
+        )
+        claim_not_what = (
+            "Not a hardware receipt. Not a manifest-shape inference success. "
+            "Not a cslc success claim; no driver-result verdicts are attached."
+        )
+        claim_summary = (
+            f"Qwen 3.6 27B steps-mode host-plan names "
+            f"{target_count_label} compile targets at manifest shape; "
+            "measured cslc verdicts require driver-result.json."
+        )
 
     receipt = {
         "schemaVersion": 1,
@@ -249,6 +355,21 @@ def main() -> int:
         "compileTargetCount": len(target_records),
         "compileAttempted": attempted,
         "compileSucceededCount": len(succeeded_targets),
+        "compileBlockedCount": len(blocked_targets),
+        "compileAcceptedBlockedCount": len(accepted_blocked_targets),
+        "acceptedCompileBlockers": [
+            {
+                "name": target["name"],
+                "failureCode": target.get("failureCode"),
+                "reason": (
+                    "accepted Qwen manifest-shape non-hardware compile "
+                    "blocker; target is still covered by semantic CSL "
+                    "emission and reference parity, but cslc invocation is "
+                    "intentionally skipped in this gate"
+                ),
+            }
+            for target in accepted_blocked_targets
+        ],
         "compileFailedCount": len(failed_targets),
         "compileTargets": target_records,
         **({"redesignSummary": redesign_summary} if redesign_summary else {}),
@@ -257,23 +378,17 @@ def main() -> int:
                 "manifest_shape_compile_targets_failed"
                 if attempted and failed_targets
                 else (
-                    "none"
-                    if attempted
-                    else "full_graph_compile_loop_absent"
+                    "accepted_manifest_shape_compile_blockers"
+                    if attempted and accepted_blocked_targets
+                    else (
+                        "none"
+                        if attempted
+                        else "full_graph_compile_loop_absent"
+                    )
                 )
             ),
             "detail": (
-                (
-                    "steps-mode layout materialization and cslc iteration "
-                    "both ran. Failed targets carry measured failureCode "
-                    "values in compileTargets[]."
-                )
-                if attempted
-                else (
-                    "steps-mode host-plan materialization is the expected "
-                    "path, but driver-result.json is absent, so no measured "
-                    "cslc verdicts are attached to this receipt."
-                )
+                blocker_detail
             ),
             "hostPlanToolFailure": {
                 "tool": "runtime/zig/zig-out/bin/doe-csl-host-plan-tool",
@@ -306,19 +421,9 @@ def main() -> int:
                 f"{qwen_named_blockers_summary}"
             ),
             "notWhat": (
-                "Not a hardware receipt. Not a manifest-shape inference "
-                "success. Not a full-coverage Qwen 3.6 27B claim — "
-                "linear-attention layers, mrope-interleaved RoPE, and "
-                "causal prefill are explicit named blockers on this "
-                "receipt's scope. A failed compile target is a typed "
-                "blocker, not a runtime result."
+                claim_not_what
             ),
-            "summary": (
-                f"Qwen 3.6 27B steps-mode host-plan names "
-                f"{target_count_label} compile targets at manifest shape; "
-                "cslc verdicts are attached when driver-result.json is "
-                "present. Full-attention layer pattern only."
-            ),
+            "summary": claim_summary,
         },
     }
 
@@ -336,7 +441,7 @@ def main() -> int:
         json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
     )
     print(
-        f"wrote {args.out} (typed blocker, "
+        f"wrote {args.out} ("
         f"compileTargetCount={len(target_records)}, "
         f"compileAttempted={attempted})"
     )

@@ -592,11 +592,15 @@ pub fn emitFusedGemvLayout(
     // for the same reason. Row identity (pe_y) is handled by the host: it
     // stages the pe_y'th out_dim_per_pe rows of weight into this PE's memory,
     // and at D2H reads back that row shard from the reduce root.
+    // collectives_2d still validates both x and y task ids at layout time, so
+    // reserve y ids even though the PE program imports only c2d_params.x.
     try write(buf, pos, "    for (@range(u16, height)) |pe_y| {\n");
     try write(buf, pos, "        for (@range(u16, width)) |pe_x| {\n");
     try write(buf, pos, "            const c2d_tile_params = c2d.get_params(pe_x, pe_y, .{\n");
     try write(buf, pos, "                .x_colors      = .{ @get_color(4),         @get_color(5)         },\n");
     try write(buf, pos, "                .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },\n");
+    try write(buf, pos, "                .y_colors      = .{ @get_color(6),         @get_color(7)         },\n");
+    try write(buf, pos, "                .y_entrypoints = .{ @get_local_task_id(10), @get_local_task_id(11) },\n");
     try write(buf, pos, "            });\n");
     try write(buf, pos, "            @set_tile_code(pe_x, pe_y, \"");
     try write(buf, pos, spec.PE_PROGRAM_FILENAME);

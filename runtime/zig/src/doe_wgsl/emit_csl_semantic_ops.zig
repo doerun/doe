@@ -337,9 +337,20 @@ fn emitSsmLayout(buf: []u8, pos: *usize, kind: SsmKind) EmitError!void {
     try write(buf, pos, "param width: u16;\n");
     try write(buf, pos, "param height: u16;\n");
     switch (kind) {
-        .conv1d_depthwise => try write(buf, pos, "param num_tokens: i16 = 4;\n"),
-        .linear_attention => try write(buf, pos, "param a_log: f32 = 0.5;\n"),
-        .l2_normalize => {},
+        .conv1d_depthwise => {
+            try write(buf, pos, "param num_tokens: i16 = 4;\n");
+            try write(buf, pos, "param channels: i16 = 128;\n");
+            try write(buf, pos, "param kernel_size: i16 = 4;\n");
+        },
+        .l2_normalize => try write(buf, pos, "param hidden_size: i16 = 128;\n"),
+        .linear_attention => {
+            try write(buf, pos, "param key_dim: i16 = 128;\n");
+            try write(buf, pos, "param value_dim: i16 = 128;\n");
+            // value_dim is sharded across pe_y; each PE owns
+            // value_dim_per_pe rows of the per-head linear_state matrix.
+            try write(buf, pos, "param value_dim_per_pe: i16 = 64;\n");
+            try write(buf, pos, "param a_log: f32 = 0.5;\n");
+        },
     }
     try write(buf, pos, "\n");
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
@@ -356,7 +367,10 @@ fn emitSsmLayout(buf: []u8, pos: *usize, kind: SsmKind) EmitError!void {
     try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
     switch (kind) {
         .conv1d_depthwise => try write(buf, pos, "                .num_tokens = num_tokens,\n"),
-        .linear_attention => try write(buf, pos, "                .a_log = a_log,\n"),
+        .linear_attention => {
+            try write(buf, pos, "                .value_dim_per_pe = value_dim_per_pe,\n");
+            try write(buf, pos, "                .a_log = a_log,\n");
+        },
         .l2_normalize => {},
     }
     try write(buf, pos, "            });\n");
@@ -410,7 +424,7 @@ fn emitL2NormalizePe(buf: []u8, pos: *usize) EmitError!void {
             .binding_roles = &body_bindings,
             .axis_roles = &.{},
             .l2_normalize = .{
-                .hidden = 256,
+                .hidden = 128,
                 .eps = 0.000001,
             },
         },
@@ -461,7 +475,7 @@ fn emitConv1DDepthwisePe(buf: []u8, pos: *usize) EmitError!void {
             .binding_roles = &body_bindings,
             .axis_roles = &.{},
             .conv1d_depthwise = .{
-                .channels = 256,
+                .channels = 128,
                 .kernel_size = 4,
                 .has_bias = true,
             },
@@ -517,8 +531,8 @@ fn emitLinearAttentionPe(buf: []u8, pos: *usize) EmitError!void {
             .binding_roles = &body_bindings,
             .axis_roles = &.{},
             .linear_attention = .{
-                .key_dim = 256,
-                .value_dim = 256,
+                .key_dim = 128,
+                .value_dim = 128,
                 .key_heads = 16,
                 .value_heads = 48,
                 .norm_mode = .shared,
@@ -580,8 +594,7 @@ fn emitAttnPrefillKvAxisShardedLayout(buf: []u8, pos: *usize) EmitError!void {
     try write(buf, pos, spec.PE_PROGRAM_FILENAME);
     try write(buf, pos, "\", .{\n");
     try write(buf, pos, "                .memcpy_params = memcpy.get_params(pe_x),\n");
-    try write(buf, pos, "                .pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x),\n");
-    try write(buf, pos, "                .num_pes = @as(u32, width) * @as(u32, height),\n");
+    try write(buf, pos, "                .width = width,\n");
     try write(buf, pos, "                .kv_len = kv_len,\n");
     try write(buf, pos, "                .slots_per_pe = slots_per_pe,\n");
     try write(buf, pos, "            });\n");
@@ -598,12 +611,9 @@ fn emitAttnPrefillKvAxisShardedLayout(buf: []u8, pos: *usize) EmitError!void {
 fn emitAttnPrefillKvAxisShardedPe(buf: []u8, pos: *usize) EmitError!void {
     // Build a SemanticFunction that drives
     // emit_kernel_body_attention.zig::emitKvAxisSharded with multi-Q
-    // (causal-prefill). pe_id and num_pes are declared on the
-    // pe_program skeleton because emitKvAxisSharded reads `pe_id` to
-    // index into its K/V stripe and the body itself does not redeclare
-    // those params.
-    try write(buf, pos, "param pe_id: u32;\n");
-    try write(buf, pos, "param num_pes: u32;\n\n");
+    // (causal-prefill). The PE derives its tile identity from the CSL
+    // layout module so the layout does not specialize a distinct
+    // pe_program for each tile in the manifest-shape grid.
     const axes = [_]tsir_schema.IterationAxis{
         .{ .name = "k", .lower_bound = "0", .upper_bound = "kv_len", .step = "1" },
         .{ .name = "d", .lower_bound = "0", .upper_bound = "head_dim", .step = "1" },
@@ -651,6 +661,7 @@ fn emitAttnPrefillKvAxisShardedPe(buf: []u8, pos: *usize) EmitError!void {
     const config = tsir_kernel_body.Config{
         .var_prefix = "",
         .attention_pe_strategy = .kv_axis_sharded,
+        .attention_pe_id_source = .layout_coordinates,
     };
     var fixed: [16384]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&fixed);

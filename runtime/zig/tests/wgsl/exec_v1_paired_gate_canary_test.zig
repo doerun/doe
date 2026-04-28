@@ -31,6 +31,23 @@ const host = @import("../../src/doe_wgsl/emit_csl_host.zig");
 const semantic_ops = @import("../../src/doe_wgsl/emit_csl_semantic_ops.zig");
 const compile_source = @import("../../src/doe_wgsl/emit_csl_host_compile_source.zig");
 
+fn expectPatternByteIdentical(left_pattern: []const u8, right_pattern: []const u8) !void {
+    var left_buf: [65536]u8 = undefined;
+    var right_buf: [65536]u8 = undefined;
+    const left = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        left_pattern,
+        &left_buf,
+    );
+    const right = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        right_pattern,
+        &right_buf,
+    );
+    try std.testing.expectEqualStrings(left.layout, right.layout);
+    try std.testing.expectEqualStrings(left.pe_program, right.pe_program);
+}
+
 test "exec-v1 opToSpec routes gelu_gated to gelu_gated pattern" {
     const spec = exec_v1.opToSpec("gelu_gated") orelse return error.OpUnregistered;
     try std.testing.expectEqualStrings("gelu_gated", spec.pattern);
@@ -205,6 +222,8 @@ test "Qwen SSM body op layouts export their host-plan bindings" {
         &conv_buf,
     );
     try std.testing.expect(std.mem.indexOf(u8, conv.layout, "param num_tokens: i16 = 4;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "param channels: i16 = 128;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.layout, "param kernel_size: i16 = 4;") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.layout, ".num_tokens = num_tokens") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"input\", [*]f32, true)") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.layout, "@export_name(\"weight\", [*]f32, true)") != null);
@@ -217,6 +236,7 @@ test "Qwen SSM body op layouts export their host-plan bindings" {
         "l2_normalize",
         &l2_buf,
     );
+    try std.testing.expect(std.mem.indexOf(u8, l2.layout, "param hidden_size: i16 = 128;") != null);
     try std.testing.expect(std.mem.indexOf(u8, l2.layout, "@export_name(\"input\", [*]f32, true)") != null);
     try std.testing.expect(std.mem.indexOf(u8, l2.layout, "@export_name(\"output\", [*]f32, true)") != null);
 
@@ -226,6 +246,12 @@ test "Qwen SSM body op layouts export their host-plan bindings" {
         "linear_attention",
         &linear_buf,
     );
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "param key_dim: i16 = 128;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "param value_dim: i16 = 128;") != null);
+    // value_dim is sharded across pe_y via value_dim_per_pe so per-PE
+    // state fits the WSE-3 48 KiB SRAM budget; layout forwards it.
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, "param value_dim_per_pe: i16 = 64;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.layout, ".value_dim_per_pe = value_dim_per_pe") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.layout, "param a_log: f32 = 0.5;") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.layout, ".a_log = a_log") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.layout, "@export_name(\"query\", [*]f32, true)") != null);
@@ -243,7 +269,7 @@ test "Qwen SSM body op pe programs pin TSIR formulas" {
         "conv1d_depthwise",
         &conv_buf,
     );
-    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const channels: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const channels: i16 = 128;") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const kernel_size: i16 = 4;") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "const t_in: i16 = t - (kernel_size - 1 - k);") != null);
     try std.testing.expect(std.mem.indexOf(u8, conv.pe_program, "sys_mod.unblock_cmd_stream();") != null);
@@ -254,7 +280,7 @@ test "Qwen SSM body op pe programs pin TSIR formulas" {
         "l2_normalize",
         &l2_buf,
     );
-    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "const hidden_size: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "const hidden_size: i16 = 128;") != null);
     try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "1.0 / math.sqrt(sq + l2_eps)") != null);
 
     var linear_buf: [32768]u8 = undefined;
@@ -263,11 +289,29 @@ test "Qwen SSM body op pe programs pin TSIR formulas" {
         "linear_attention",
         &linear_buf,
     );
-    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const key_dim: i16 = 256;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const value_dim: i16 = 256;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const key_dim: i16 = 128;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const value_dim: i16 = 128;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "param value_dim_per_pe: i16;") != null);
+    // Compute loops iterate value_dim_per_pe (the per-PE d-block), not
+    // the full value_dim — that's the load-bearing sharding invariant.
+    try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "for (@range(i16, value_dim_per_pe))") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const alpha: f32 = 1.0 - math.exp(-a_log);") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "linear_state") != null);
     try std.testing.expect(std.mem.indexOf(u8, linear.pe_program, "const sigmoid_g: f32 = 1.0 / (1.0 + math.exp(-g));") != null);
+}
+
+test "shared Cerebras kernels emit byte-identical CSL through direct and exec-v1 invokers" {
+    const gemv = exec_v1.opToSpec("matmul_q4k") orelse return error.OpUnregistered;
+    try expectPatternByteIdentical(gemv.pattern, "fused_gemv_dequant");
+
+    const rope = exec_v1.opToSpec("rope") orelse return error.OpUnregistered;
+    try expectPatternByteIdentical(rope.pattern, "rope");
+
+    const rmsnorm = exec_v1.opToSpec("rmsnorm") orelse return error.OpUnregistered;
+    try expectPatternByteIdentical(rmsnorm.pattern, "rms_norm");
+
+    const prefill = exec_v1.opToSpec("attention_prefill_kv_axis_sharded") orelse return error.OpUnregistered;
+    try expectPatternByteIdentical(prefill.pattern, "attention_prefill_kv_axis_sharded");
 }
 
 test "attention_prefill_kv_axis_sharded layout exports query/key/value/output and partials params" {
@@ -275,8 +319,9 @@ test "attention_prefill_kv_axis_sharded layout exports query/key/value/output an
     //   - 2D PE grid (width × height) so K/V can shard along pe_y while
     //     pe_x carries the per-stripe Q queries.
     //   - kv_len + slots_per_pe params so cslc can specialize per-shape.
-    //   - flat pe_id (pe_y*width + pe_x) so the body's slot_base math
-    //     (slot_base = pe_id * slots_per_pe) covers all K/V positions.
+    //   - width is passed uniformly; the PE derives flat pe_id from CSL
+    //     layout coordinates so the layout does not specialize one
+    //     program per tile.
     //   - exports: query, key, value, output, compute. The body writes
     //     [query_seq_len * (head_dim + 2)]f32 partials per PE; the host
     //     plan log-sum-exp stitch reduces those into final attention
@@ -293,7 +338,9 @@ test "attention_prefill_kv_axis_sharded layout exports query/key/value/output an
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param kv_len: i16;") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "param slots_per_pe: i16;") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_rectangle(width, height)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".width = width") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".pe_id =") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".num_pes =") == null);
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"query\", [*]f32, true)") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"key\", [*]f32, true)") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"value\", [*]f32, true)") != null);
@@ -322,16 +369,21 @@ test "attention_prefill_kv_axis_sharded pe program emits multi-Q kv-axis-sharded
     // The emit must NOT bake in /sum_exp — that's the host stitch's
     // job. tail-mask `gk >= kv_len` and partials writes at
     // (head_dim, head_dim+1) within each query stripe pin the
-    // log-sum-exp interface. The skeleton declares pe_id/num_pes; the
-    // body itself must not redeclare them or cslc rejects the bundle.
+    // log-sum-exp interface. The pe program derives pe_id from the CSL
+    // layout module so cslc can reuse tile code across the full grid.
     var buf: [16384]u8 = undefined;
     const sections = try compile_source.emitPatternSections(
         std.testing.allocator,
         "attention_prefill_kv_axis_sharded",
         &buf,
     );
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param pe_id: u32;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param num_pes: u32;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param pe_id:") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param num_pes:") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param width: u16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const layout_mod = @import_module(\"<layout>\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_x_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "layout_mod.get_y_coord()") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const pe_id: u32 = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x);") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param kv_len: i16;") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param slots_per_pe: i16") != null);
     try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const head_dim: i16 = 256;") != null);

@@ -286,7 +286,7 @@ class PredictWallclockTest(unittest.TestCase):
             kernel_names = {r["name"] for r in receipt["perKernel"]}
             self.assertNotIn("rmsnorm", kernel_names)
 
-    def test_kernel_count_multiplies_call_count(self) -> None:
+    def test_phase_repeat_is_the_call_count(self) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             compile_root = Path(scratch) / "compile"
             _write_target(compile_root, "rmsnorm")
@@ -322,7 +322,7 @@ class PredictWallclockTest(unittest.TestCase):
                 receipt["phaseTotals"]["prefill"]["perKernelCalls"][
                     "rmsnorm"
                 ],
-                6,  # 2 repeats * 3 instances
+                2,
             )
 
 

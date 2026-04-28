@@ -305,8 +305,7 @@ def predict_wallclock(
         for call in phase_calls:
             kn = call.get("kernelName")
             repeat = int(call.get("repeat", 1))
-            kernel_count = int(kernels.get(kn, {}).get("count", 1))
-            n_calls = repeat * kernel_count
+            n_calls = repeat
             per_kernel_calls[kn] = per_kernel_calls.get(kn, 0) + n_calls
         for record in per_kernel:
             n = per_kernel_calls.get(record["name"], 0)

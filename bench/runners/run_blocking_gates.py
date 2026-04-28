@@ -219,6 +219,20 @@ def parse_args() -> argparse.Namespace:
         help="Run pilot_evidence_gate.py to audit registered pilot-evidence receipts + their artifact bundles.",
     )
     parser.add_argument(
+        "--with-cross-model-parity-gate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Run aggregate_cross_model_parity.py as a blocking two-model Cerebras "
+            "parity gate. Default: enabled."
+        ),
+    )
+    parser.add_argument(
+        "--cross-model-parity-out",
+        default="bench/out/r3-cross-model-parity/receipt.json",
+        help="Receipt path written by aggregate_cross_model_parity.py.",
+    )
+    parser.add_argument(
         "--spirv-val-require",
         action="store_true",
         help="Fail if spirv-val is not available (default: skip with warning).",
@@ -630,6 +644,7 @@ def main() -> int:
     kernel_chain_parity_gate = gates_dir / "kernel_chain_parity_gate.py"
     csl_fixture_mirror_gate = gates_dir / "csl_fixture_mirror_gate.py"
     csl_operation_graph_gate = gates_dir / "csl_operation_graph_gate.py"
+    cross_model_parity_gate = tools_dir / "aggregate_cross_model_parity.py"
     pilot_evidence_gate = gates_dir / "pilot_evidence_gate.py"
     claim_gate = gates_dir / "claim_gate.py"
     bench_cli = BENCH_ROOT / "cli.py"
@@ -681,6 +696,16 @@ def main() -> int:
         run_gate("doe-private-strategy-leak", [sys.executable, str(doe_private_strategy_leak_gate)])
         run_gate("csl-fixture-mirrors", [sys.executable, str(csl_fixture_mirror_gate)])
         run_gate("csl-operation-graph", [sys.executable, str(csl_operation_graph_gate)])
+        if args.with_cross_model_parity_gate:
+            run_gate(
+                "cross-model-parity",
+                [
+                    sys.executable,
+                    str(cross_model_parity_gate),
+                    "--out",
+                    args.cross_model_parity_out,
+                ],
+            )
         if args.with_pilot_evidence_gate:
             run_gate("pilot-evidence", [sys.executable, str(pilot_evidence_gate)])
         if args.with_file_size_gate:

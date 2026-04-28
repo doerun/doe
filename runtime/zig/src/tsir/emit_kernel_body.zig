@@ -99,6 +99,7 @@ pub const KvCachePeStrategy = enum { full_per_pe, slot_sharded };
 ///     the single-PE path cannot fit (see
 ///     `docs/cerebras-north-star.md` rung 6 follow-up).
 pub const AttentionPeStrategy = enum { full_per_pe, kv_axis_sharded };
+pub const AttentionPeIdSource = enum { tile_param, layout_coordinates };
 
 pub const Config = struct {
     var_prefix: []const u8 = "tsir_",
@@ -111,6 +112,10 @@ pub const Config = struct {
     kv_cache_pe_strategy: KvCachePeStrategy = .full_per_pe,
     kv_slots_per_pe_default: ?u32 = null,
     attention_pe_strategy: AttentionPeStrategy = .full_per_pe,
+    /// `.tile_param` expects the wrapper layout to provide `pe_id`.
+    /// `.layout_coordinates` derives it from CSL `<layout>` coordinates,
+    /// which avoids per-tile code specialization for large 2-D grids.
+    attention_pe_id_source: AttentionPeIdSource = .tile_param,
     /// Compile-time default for `slots_per_pe` in the kv-axis-sharded
     /// attention path. `slots_per_pe = ceil(kv_len_max / num_pes)`.
     /// The live wrapper computes this from the manifest-shape kv_len

@@ -13,6 +13,29 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-28 — Qwen cross-model prehardware gate bound with clean compile receipt
+
+The Qwen 3.6 27B compile-step bundle at
+`bench/out/r3-2-27b-manifest-fullgraph-compile-steps/` has a current
+driver result whose compile section succeeds for every target. The previous
+typed blockers for `ssm_linear_attention` and
+`attn_prefill_kv_axis_sharded` are closed in the receipt.
+
+The host-plan tool now resolves the checked-in simulator driver correctly
+from repo-root invocations. `ssm_linear_attention` shards
+`linear_state` with `value_dim_per_pe`, and
+`attn_prefill_kv_axis_sharded` derives PE identity from CSL `<layout>`
+coordinates rather than per-tile `@set_tile_code` params. `gemv` is
+cslc-clean at Qwen shape after the fused GEMV layout reserved both x and y
+collectives task-id pairs for SDK `collectives_2d` validation.
+
+`bench/tools/synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt.py`
+now fails closed on stale driver coverage and writes `blocker.class="none"`
+when all measured compile verdicts succeed. The joint Gemma/Qwen gate at
+`bench/tools/aggregate_cross_model_parity.py` consumes those per-model
+compile summaries and writes
+`bench/out/r3-cross-model-parity/receipt.json` with `verdict=bound`.
+
 ## 2026-04-28 — Qwen SSM body ops bound into exec-v1 smoke config
 
 The Qwen 3.6 27B non-hardware scope now covers the hybrid architecture rather
