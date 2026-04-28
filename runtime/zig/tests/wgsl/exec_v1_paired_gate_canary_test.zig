@@ -215,6 +215,21 @@ test "attention_prefill_kv_axis_sharded layout exports query/key/value/output an
     try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@export_name(\"compute\", fn()void)") != null);
 }
 
+test "fused_gemv_dequant uses collectives_2d reduce for width-greater-than-two rows" {
+    var buf: [32768]u8 = undefined;
+    const sections = try compile_source.emitPatternSections(
+        std.testing.allocator,
+        "fused_gemv_dequant",
+        &buf,
+    );
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "const c2d = @import_module(\"<collectives_2d/params>\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, ".c2d_params = c2d_tile_params") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_color_config") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "const mpi_x = @import_module(\"<collectives_2d/pe>\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "mpi_x.reduce_fadds(@as(u16, num_pes - 1)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "param reduce_color") == null);
+}
+
 test "attention_prefill_kv_axis_sharded pe program emits multi-Q kv-axis-sharded body" {
     // Multi-Q (causal-prefill) signals the body must emit per its
     // hardcoded query_seq_len (8) wrapped in a `for q in 0..8` loop.

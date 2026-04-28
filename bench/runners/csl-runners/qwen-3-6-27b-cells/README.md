@@ -38,21 +38,13 @@ buffers fit within budget for those kernels).
 
 ## Kernel-emit gaps surfaced by these cells
 
-Three cells carry typed WGSL→CSL emit gaps:
+Two cells carry typed WGSL→CSL emit gaps:
 
 - **`sample`** — index-reduction gap. The kernel reduces the running
   max VALUE across PEs but unconditionally writes the LAST PE's
   `local_max_idx` as the output token; the global argmax INDEX is
   not propagated. The canary works around this by constructing
   logits so the global max lives in PE (width-1)'s chunk.
-
-- **`gemv`** at width≥3 — middle-PE routing gap. The layout sets
-  `rx={WEST}, tx={EAST}` for middle PEs (pure pass-through). Wavelets
-  flow through but are not delivered to the PE's RAMP, so middle PEs'
-  recv DSDs block forever. The last PE accumulates only PE 0's
-  contribution + its own. The canary uses width=2 (no middle PEs) to
-  validate the rest of the kernel; closing the gap requires the
-  layout to set `tx={EAST, RAMP}` (or equivalent) for middle PEs.
 
 - **`attn_decode`** — task-activation gap. `task reduce_recv` is
   bound to `reduce_task_id` but never activated; the
@@ -83,7 +75,7 @@ for kernel in rmsnorm rope_partial residual silu embed tiled kv_write gemv sampl
     embed)        params="width:2,height:1,hidden_size:16,hidden_per_pe:16,rows_per_pe:8,num_tokens:2,tokens_per_chunk:2" ;;
     tiled)        params="P:2,Mt:4,Kt:4,Nt:4" ;;
     kv_write)     params="width:4,height:1,head_dim:8,max_seq_len:8,slots_per_pe:8" ;;
-    gemv)         params="width:2,height:1,out_dim:4,out_dim_per_pe:4,in_dim_per_pe:512,num_blocks_per_row:2" ;;
+    gemv)         params="width:4,height:1,out_dim:4,out_dim_per_pe:4,in_dim_per_pe:512,num_blocks_per_row:2" ;;
     sample)       params="width:4,chunk_size:64" ;;
     attn_decode)  params="width:4,head_dim:8,kv_chunk:4" ;;
   esac
@@ -114,7 +106,7 @@ blocker receipt directly. All other cells parity-pass at float32 ULP
   compiles cleanly via cslc 2.10.0 for 10 of the 11 compile targets
   (the 11th, `attn_prefill`, is the named per-PE-residency blocker).
 - For the seven kernels without WGSL→CSL emit gaps (rmsnorm,
-  rope_partial, residual, embed, tiled, kv_write, gemv at width=2),
+  rope_partial, residual, embed, tiled, kv_write, gemv),
   the kernel arithmetic matches the canonical formulation within
   float32 precision under simfabric execution.
 - The `partialRotaryFactor` wiring delta from
@@ -136,7 +128,6 @@ blocker receipt directly. All other cells parity-pass at float32 ULP
 - Real SiLU arithmetic (silu kernel emits as passthrough stand-in;
   tracked in `scopeRestrictions.swigluFfnFusedGate`).
 - Sample kernel's correct global-argmax behavior (index-reduction gap).
-- gemv's correct multi-PE reduction at width≥3 (middle-PE routing gap).
 - attn_decode's softmax-attention output (task-activation gap; the
   cell never launches under simfabric until the gap is closed).
 - The kernels Doe lists as named blockers in the smoke config's

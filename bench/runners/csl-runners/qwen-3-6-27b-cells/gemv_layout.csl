@@ -1,12 +1,12 @@
-// Layout: fused GEMV + Q4K dequant with 2-D grid + per-row fabric reduce.
-// width shards in_dim (reduce chain), height shards out_dim. See
+// Layout: fused GEMV + Q4K dequant with 2-D grid + per-row collectives reduce.
+// width shards in_dim, height shards out_dim. See
 // bench/out/cslc-lmhead-2d-probe/probe-result.json for the E2B
 // feasibility evidence. Defaults (height=1, out_dim_per_pe=out_dim)
 // preserve the pre-shard 1-D behaviour for callers that have not
 // plumbed the out_dim_per_pe / height pair through HostPlan.
 
-param width: i16;
-param height: i16 = 1;
+param width: u16;
+param height: u16 = 1;
 param out_dim: i16;
 param out_dim_per_pe: i16 = out_dim;
 param in_dim_per_pe: i16;
@@ -17,36 +17,26 @@ const memcpy = @import_module("<memcpy/get_params>", .{
     .height = height,
 });
 
-const reduce_color: color = @get_color(4);
+const c2d = @import_module("<collectives_2d/params>");
 
 layout {
     @set_rectangle(width, height);
 
-    for (@range(i16, height)) |pe_y| {
-        for (@range(i16, width)) |pe_x| {
+    for (@range(u16, height)) |pe_y| {
+        for (@range(u16, width)) |pe_x| {
+            const c2d_tile_params = c2d.get_params(pe_x, pe_y, .{
+                .x_colors      = .{ @get_color(4),         @get_color(5)         },
+                .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },
+            });
             @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
                 .memcpy_params = memcpy.get_params(pe_x),
-                .pe_id = pe_x,
-                .num_pes = width,
-                .reduce_color = reduce_color,
+                .c2d_params = c2d_tile_params,
+                .pe_id = @as(i16, pe_x),
+                .num_pes = @as(i16, width),
                 .out_dim_per_pe = out_dim_per_pe,
                 .in_dim_per_pe = in_dim_per_pe,
                 .num_blocks_per_row = num_blocks_per_row,
             });
-
-            if (pe_x == 0) {
-                @set_color_config(pe_x, pe_y, reduce_color, .{
-                    .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },
-                });
-            } else if (pe_x == width - 1) {
-                @set_color_config(pe_x, pe_y, reduce_color, .{
-                    .routes = .{ .rx = .{WEST}, .tx = .{RAMP} },
-                });
-            } else {
-                @set_color_config(pe_x, pe_y, reduce_color, .{
-                    .routes = .{ .rx = .{WEST}, .tx = .{EAST} },
-                });
-            }
         }
     }
 

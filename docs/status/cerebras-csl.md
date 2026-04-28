@@ -13,6 +13,21 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-28 — Qwen fused GEMV row reduction switches to collectives_2d
+
+The Qwen 3.6 27B `gemv` width>=3 non-hardware blocker is closed at the Doe
+emit surface. The fused GEMV layout no longer hand-configures a `reduce_color`
+east-west route. It imports `<collectives_2d/params>`, passes per-tile
+`c2d_params` to the PE program, and the PE program imports
+`<collectives_2d/pe>` and calls `reduce_fadds` with root `width - 1`.
+
+This keeps SDK source out of the repository while using the SDK's existing
+teardown/switch FSM through the normal cslc import path, matching the SUMMA
+collectives integration pattern already carried by tiled matmul. The Qwen GEMV
+cell fixture mirrors the emitter shape, and the WGSL structural canary pins
+that `fused_gemv_dequant` emits collectives imports rather than manual
+`@set_color_config` routes.
+
 ## 2026-04-27 — Qwen 3.6 27B Doe-side trio lands; typed-blocker chain pinned
 
 The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
