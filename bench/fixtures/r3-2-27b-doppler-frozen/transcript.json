@@ -1,0 +1,5056 @@
+{
+  "schema": "doppler.program-bundle/v1",
+  "schemaVersion": 1,
+  "bundleId": "qwen-3-6-27b-q4k-ehaf16-554bfbd54ba7",
+  "modelId": "qwen-3-6-27b-q4k-ehaf16",
+  "createdAtUtc": "2026-04-28T01:19:25.545Z",
+  "sources": {
+    "manifest": {
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/manifest.json",
+      "hash": "sha256:62a85cb1c1d670b82d14a1f0cfcc00643b710309453fd72949cc1c487ba65052"
+    },
+    "conversionConfig": {
+      "path": "src/config/conversion/qwen3/qwen-3-6-27b-q4k-ehaf16.json",
+      "hash": "sha256:9174e22d8ab5efd53be72e115e00a8927fdfc6cef8b10812d36ec5d7f90f2e6f"
+    },
+    "executionGraph": {
+      "schema": "doppler.execution/v1",
+      "hash": "sha256:554bfbd54ba7f7f172e98b7614bfca00ac2e2b871994172b0387eaf4e73ee3e0",
+      "expandedStepHash": "sha256:67b288f877821f261ef531d44f8296ee06770ae1e89f34f04587a903577b257c"
+    },
+    "weightSetHash": "sha256:422b06a6ffa4a7703c7edb9a96f63aec5d6f84ae761301458001db422aa09cb6",
+    "artifactSetHash": "sha256:b203b40a7d1a4b8271c0c6ddc43fba78b402c0350942b89d1347aa426f2ae839"
+  },
+  "host": {
+    "schema": "doppler.host-js/v1",
+    "jsSubset": "doppler-webgpu-host/v1",
+    "entrypoints": [
+      {
+        "id": "text-generation",
+        "module": "src/tooling/program-bundle-host.js",
+        "export": "createTextGenerationProgram",
+        "role": "model-orchestration",
+        "sourceHash": "sha256:fa549136f8d099cb4e86e8dd28df213a4a828da620039e0ae2aa6f6e567f6e5f",
+        "validation": {
+          "dynamicImport": "none-detected",
+          "dom": "none-detected"
+        }
+      }
+    ],
+    "constraints": {
+      "dynamicImport": "disallowed",
+      "dom": "disallowed-in-model-path",
+      "filesystem": "declared-artifacts-only",
+      "network": "declared-artifacts-only"
+    }
+  },
+  "wgslModules": [
+    {
+      "id": "attn_decode",
+      "file": "attention_decode_online_f16kv.wgsl",
+      "entry": "main",
+      "digest": "sha256:beee4722aa6281f58b74e1d055e192017b5555c189a58dd13dd158fe1511a7b8",
+      "sourcePath": "src/gpu/kernels/attention_decode_online_f16kv.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "Q"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "K"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "V"
+          },
+          {
+            "group": 0,
+            "binding": 4,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          },
+          {
+            "group": 0,
+            "binding": 5,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "kv_len_buffer"
+          },
+          {
+            "group": 0,
+            "binding": 6,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "page_table"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": true,
+        "sourceMetadataHash": "sha256:c77fe935b8af9efab7e059d71612360fafc03a90ef17de8676095a8c31abadd9"
+      }
+    },
+    {
+      "id": "attn_head256",
+      "file": "attention_head256_f16kv.wgsl",
+      "entry": "main",
+      "digest": "sha256:4ecdc079e322a770350414244cb383d72ae7ffa47ed620c64ff425c93413e97a",
+      "sourcePath": "src/gpu/kernels/attention_head256_f16kv.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "Q"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "K"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "V"
+          },
+          {
+            "group": 0,
+            "binding": 4,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          },
+          {
+            "group": 0,
+            "binding": 5,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "kv_len_buffer"
+          },
+          {
+            "group": 0,
+            "binding": 6,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "page_table"
+          }
+        ],
+        "overrides": [],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:498e37fdbe9acdeb666769224268cf87c841ebd378eedc19a8cc4be4d524c9bf"
+      }
+    },
+    {
+      "id": "embed",
+      "file": "gather_f16.wgsl",
+      "entry": "main",
+      "digest": "sha256:e9f8056a8764360ca23e53289a5f133c2e3d6da122f6437f5eb0d78a46e8f049",
+      "sourcePath": "src/gpu/kernels/gather_f16.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "indices"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "embeddings"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "WORKGROUP_SIZE_MAIN",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE_MAIN",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:1ba09f607f40bfad8dc2b5872fb41536547ea96a10390b6b21d6964c9672c306"
+      }
+    },
+    {
+      "id": "lm_head_q4",
+      "file": "fused_matmul_q4.wgsl",
+      "entry": "main_gemv",
+      "digest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+      "sourcePath": "src/gpu/kernels/fused_matmul_q4.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main_gemv",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "A"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "B_q4k"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "C"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "COLS_PER_WG",
+            "type": "u32",
+            "defaultValue": "32u"
+          },
+          {
+            "name": "SHARED_A_MAX",
+            "type": "u32",
+            "defaultValue": "3584u"
+          },
+          {
+            "name": "THREADS_PER_COL_GEMV",
+            "type": "u32",
+            "defaultValue": "8u"
+          },
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": true,
+        "sourceMetadataHash": "sha256:c6a57750c21f172650f24eb0680f8eb060a40e8cf7328e81f12ef93c2d51e74d"
+      }
+    },
+    {
+      "id": "q4_decode_gemv",
+      "file": "fused_matmul_q4.wgsl",
+      "entry": "main_gemv",
+      "digest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+      "sourcePath": "src/gpu/kernels/fused_matmul_q4.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main_gemv",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "A"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "B_q4k"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "C"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "COLS_PER_WG",
+            "type": "u32",
+            "defaultValue": "32u"
+          },
+          {
+            "name": "SHARED_A_MAX",
+            "type": "u32",
+            "defaultValue": "3584u"
+          },
+          {
+            "name": "THREADS_PER_COL_GEMV",
+            "type": "u32",
+            "defaultValue": "8u"
+          },
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": true,
+        "sourceMetadataHash": "sha256:c6a57750c21f172650f24eb0680f8eb060a40e8cf7328e81f12ef93c2d51e74d"
+      }
+    },
+    {
+      "id": "q4_widetile",
+      "file": "fused_matmul_q4_widetile.wgsl",
+      "entry": "main",
+      "digest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+      "sourcePath": "src/gpu/kernels/fused_matmul_q4_widetile.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "A"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "B_q4k"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "C"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "TILE_M",
+            "type": "u32",
+            "defaultValue": "4u"
+          },
+          {
+            "name": "TILE_N",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "TILE_N",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:212ebaaba376074c3a0b86de8ceba329398326d8c4c710f5ede3fc016fd638d4"
+      }
+    },
+    {
+      "id": "residual",
+      "file": "residual.wgsl",
+      "entry": "main",
+      "digest": "sha256:f1abd88c959c5d8dd27b9353d487e37b2a96850ed9d90c365212e260399cc2a7",
+      "sourcePath": "src/gpu/kernels/residual.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "a"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "b"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:a5451187b8b2a19c25f13a652eb22bb0bc847a8ab26b06a1d050bca458b2b6f0"
+      }
+    },
+    {
+      "id": "rmsnorm",
+      "file": "rmsnorm.wgsl",
+      "entry": "main",
+      "digest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+      "sourcePath": "src/gpu/kernels/rmsnorm.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "input"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "weight"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          },
+          {
+            "group": 0,
+            "binding": 4,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "residual"
+          },
+          {
+            "group": 0,
+            "binding": 5,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "residual_sum_output"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "HAS_RESIDUAL",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "OUTPUT_PRENORM",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "PRE_RESIDUAL",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "RMS_NORM_OFFSET",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "WEIGHT_IS_F16",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": true,
+        "sourceMetadataHash": "sha256:53f84d7fd8b7c0c86a064e6556e3da550d978859b2108fea875c19c7a36c426c"
+      }
+    },
+    {
+      "id": "rope",
+      "file": "rope.wgsl",
+      "entry": "main",
+      "digest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+      "sourcePath": "src/gpu/kernels/rope.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "input"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "freqs_cos"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "freqs_sin"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          },
+          {
+            "name": "YARN_ALPHA",
+            "type": "f32",
+            "defaultValue": "1.0"
+          },
+          {
+            "name": "YARN_BETA_FAST",
+            "type": "f32",
+            "defaultValue": "32.0"
+          },
+          {
+            "name": "YARN_BETA_SLOW",
+            "type": "f32",
+            "defaultValue": "1.0"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:fce2365e7756bb2568c6d2b6be32b49588d97ef2fbe1e98b79808e0d8017294d"
+      }
+    },
+    {
+      "id": "sample",
+      "file": "sample.wgsl",
+      "entry": "sample_single_pass",
+      "digest": "sha256:7ff3dd675b4737d920e0b3889e15c4fedde8410a353bbc6d4651db76ce69eb9b",
+      "sourcePath": "src/gpu/kernels/sample.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "sample_single_pass",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "logits"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "topk_indices"
+          },
+          {
+            "group": 0,
+            "binding": 4,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "topk_logits"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:9c5e9c0070c000b95a1c9673fd21c5f6ec8f8fb45abc04246badd0f482251c65"
+      }
+    },
+    {
+      "id": "silu",
+      "file": "silu.wgsl",
+      "entry": "main",
+      "digest": "sha256:7b52d30fb741beef2dbf728e0c4ecffe5b08d9661d63c306caecb4cb3ced85e5",
+      "sourcePath": "src/gpu/kernels/silu.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "input"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "output"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "gate"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "GATE_USE_SIGMOID",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "HAS_GATE",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "INPUT_USE_IDENTITY",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "USE_ROWSPLIT",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "USE_SPLIT",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "USE_VEC4",
+            "type": "bool",
+            "defaultValue": "false"
+          },
+          {
+            "name": "WORKGROUP_SIZE",
+            "type": "u32",
+            "defaultValue": "256u"
+          }
+        ],
+        "workgroupSize": [
+          "WORKGROUP_SIZE",
+          "1",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:96a42f111b53d18accecdfb05ddfa7cb6a6f376c600b675bc51741051fadd4f9"
+      }
+    },
+    {
+      "id": "tiled",
+      "file": "matmul_f16w_f32a.wgsl",
+      "entry": "main",
+      "digest": "sha256:027a8f1cd9713cbe0b0ada160bd175e0542bb90896ad85441b023522d9a1befc",
+      "sourcePath": "src/gpu/kernels/matmul_f16w_f32a.wgsl",
+      "reachable": true,
+      "metadata": {
+        "entry": "main",
+        "bindings": [
+          {
+            "group": 0,
+            "binding": 0,
+            "addressSpace": "uniform",
+            "access": null,
+            "name": "u"
+          },
+          {
+            "group": 0,
+            "binding": 1,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "A"
+          },
+          {
+            "group": 0,
+            "binding": 2,
+            "addressSpace": "storage",
+            "access": "read",
+            "name": "B"
+          },
+          {
+            "group": 0,
+            "binding": 3,
+            "addressSpace": "storage",
+            "access": "read_write",
+            "name": "C"
+          }
+        ],
+        "overrides": [
+          {
+            "name": "TILE_SIZE",
+            "type": "u32",
+            "defaultValue": "16u"
+          }
+        ],
+        "workgroupSize": [
+          "TILE_SIZE",
+          "TILE_SIZE",
+          "1"
+        ],
+        "requiresSubgroups": false,
+        "sourceMetadataHash": "sha256:61283724e18601a992574205826fd13f77af0bd8bf904e5d06af09fe7c0afab7"
+      }
+    }
+  ],
+  "execution": {
+    "graphHash": "sha256:554bfbd54ba7f7f172e98b7614bfca00ac2e2b871994172b0387eaf4e73ee3e0",
+    "stepMetadataHash": "sha256:f9c12f43a3316ab873dde1f47227ef9072ebc8a01ea84be46f7e93f3021a4d68",
+    "kernelClosure": {
+      "declaredKernelIds": [
+        "attn_decode",
+        "attn_head256",
+        "attn_stream",
+        "embed",
+        "lm_head_gemv",
+        "lm_head_q4",
+        "q4_decode",
+        "q4_decode_gemv",
+        "q4_prefill",
+        "q4_widetile",
+        "residual",
+        "rmsnorm",
+        "rope",
+        "sample",
+        "silu",
+        "tiled"
+      ],
+      "reachableKernelIds": [
+        "attn_decode",
+        "attn_head256",
+        "embed",
+        "lm_head_q4",
+        "q4_decode_gemv",
+        "q4_widetile",
+        "residual",
+        "rmsnorm",
+        "rope",
+        "sample",
+        "silu",
+        "tiled"
+      ],
+      "excludedKernelIds": [
+        "attn_stream",
+        "lm_head_gemv",
+        "q4_decode",
+        "q4_prefill"
+      ],
+      "undeclaredKernelRefs": [],
+      "expandedStepCount": 35,
+      "phases": {
+        "prefill": 15,
+        "decode": 15,
+        "preLayer": 1,
+        "postLayer": 4
+      }
+    },
+    "steps": [
+      {
+        "id": "preLayer_both_0_embed",
+        "index": 0,
+        "op": "embed",
+        "phase": "both",
+        "section": "preLayer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "embed",
+        "kernel": "gather_f16.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:e9f8056a8764360ca23e53289a5f133c2e3d6da122f6437f5eb0d78a46e8f049",
+        "weights": "embed_tokens",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "both",
+          "workgroups": "symbolic:preLayer:both:embed",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "indices",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "embeddings",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_1_input_norm",
+        "index": 1,
+        "op": "input_norm",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rmsnorm",
+        "kernel": "rmsnorm.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:input_norm",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "weight",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "residual",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "residual_sum_output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_2_q_proj",
+        "index": 2,
+        "op": "q_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.self_attn.q_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:q_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_3_k_proj",
+        "index": 3,
+        "op": "k_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.self_attn.k_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:k_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_4_v_proj",
+        "index": 4,
+        "op": "v_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.self_attn.v_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:v_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_5_rope_q",
+        "index": 5,
+        "op": "rope_q",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rope",
+        "kernel": "rope.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:rope_q",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "freqs_cos",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "freqs_sin",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_6_rope_k",
+        "index": 6,
+        "op": "rope_k",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rope",
+        "kernel": "rope.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:rope_k",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "freqs_cos",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "freqs_sin",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_7_attention",
+        "index": 7,
+        "op": "attention",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "attn_decode",
+        "kernel": "attention_decode_online_f16kv.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:beee4722aa6281f58b74e1d055e192017b5555c189a58dd13dd158fe1511a7b8",
+        "weights": null,
+        "constants": null,
+        "precision": {
+          "kvDtype": "f16"
+        },
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:attention",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "Q",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "K",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "V",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "kv_len_buffer",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 6,
+              "name": "page_table",
+              "addressSpace": "storage",
+              "access": "read"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_8_o_proj",
+        "index": 8,
+        "op": "o_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.self_attn.o_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:o_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_9_attn_residual",
+        "index": 9,
+        "op": "attn_residual",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "residual",
+        "kernel": "residual.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:f1abd88c959c5d8dd27b9353d487e37b2a96850ed9d90c365212e260399cc2a7",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:attn_residual",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "a",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "b",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_10_post_attn_norm",
+        "index": 10,
+        "op": "post_attn_norm",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rmsnorm",
+        "kernel": "rmsnorm.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:post_attn_norm",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "weight",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "residual",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "residual_sum_output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_11_gate_proj",
+        "index": 11,
+        "op": "gate_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.mlp.gate_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:gate_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_12_up_proj",
+        "index": 12,
+        "op": "up_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.mlp.up_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:up_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_13_activation",
+        "index": 13,
+        "op": "activation",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "silu",
+        "kernel": "silu.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:7b52d30fb741beef2dbf728e0c4ecffe5b08d9661d63c306caecb4cb3ced85e5",
+        "weights": null,
+        "constants": {
+          "HAS_GATE": true
+        },
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:activation",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "gate",
+              "addressSpace": "storage",
+              "access": "read"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_14_down_proj",
+        "index": 14,
+        "op": "down_proj",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "layer.{L}.mlp.down_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:down_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_decode_15_ffn_residual",
+        "index": 15,
+        "op": "ffn_residual",
+        "phase": "decode",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "residual",
+        "kernel": "residual.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:f1abd88c959c5d8dd27b9353d487e37b2a96850ed9d90c365212e260399cc2a7",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "decode",
+          "workgroups": "symbolic:layer:decode:ffn_residual",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "a",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "b",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_16_input_norm",
+        "index": 16,
+        "op": "input_norm",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rmsnorm",
+        "kernel": "rmsnorm.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:input_norm",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "weight",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "residual",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "residual_sum_output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_17_q_proj",
+        "index": 17,
+        "op": "q_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.self_attn.q_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:q_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_18_k_proj",
+        "index": 18,
+        "op": "k_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.self_attn.k_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:k_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_19_v_proj",
+        "index": 19,
+        "op": "v_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.self_attn.v_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:v_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_20_rope_q",
+        "index": 20,
+        "op": "rope_q",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rope",
+        "kernel": "rope.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:rope_q",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "freqs_cos",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "freqs_sin",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_21_rope_k",
+        "index": 21,
+        "op": "rope_k",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rope",
+        "kernel": "rope.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:b2da9d396668981dab9794c2973b668279f768994466b083d2105730555e1a5b",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:rope_k",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "freqs_cos",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "freqs_sin",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_22_attention",
+        "index": 22,
+        "op": "attention",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "attn_head256",
+        "kernel": "attention_head256_f16kv.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:4ecdc079e322a770350414244cb383d72ae7ffa47ed620c64ff425c93413e97a",
+        "weights": null,
+        "constants": null,
+        "precision": {
+          "kvDtype": "f16"
+        },
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:attention",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "Q",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "K",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "V",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "kv_len_buffer",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 6,
+              "name": "page_table",
+              "addressSpace": "storage",
+              "access": "read"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_23_o_proj",
+        "index": 23,
+        "op": "o_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.self_attn.o_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:o_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_24_attn_residual",
+        "index": 24,
+        "op": "attn_residual",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "residual",
+        "kernel": "residual.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:f1abd88c959c5d8dd27b9353d487e37b2a96850ed9d90c365212e260399cc2a7",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:attn_residual",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "a",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "b",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_25_post_attn_norm",
+        "index": 25,
+        "op": "post_attn_norm",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rmsnorm",
+        "kernel": "rmsnorm.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:post_attn_norm",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "weight",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "residual",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "residual_sum_output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_26_gate_proj",
+        "index": 26,
+        "op": "gate_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.mlp.gate_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:gate_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_27_up_proj",
+        "index": 27,
+        "op": "up_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.mlp.up_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:up_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_28_activation",
+        "index": 28,
+        "op": "activation",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "silu",
+        "kernel": "silu.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:7b52d30fb741beef2dbf728e0c4ecffe5b08d9661d63c306caecb4cb3ced85e5",
+        "weights": null,
+        "constants": {
+          "HAS_GATE": true
+        },
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:activation",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "gate",
+              "addressSpace": "storage",
+              "access": "read"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_29_down_proj",
+        "index": 29,
+        "op": "down_proj",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_widetile",
+        "kernel": "fused_matmul_q4_widetile.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:5631ce6f19f805c7ac85722bac17365048bc7b9e2c422f3ef9477b63cb8dad62",
+        "weights": "layer.{L}.mlp.down_proj",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:down_proj",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "layer_prefill_30_ffn_residual",
+        "index": 30,
+        "op": "ffn_residual",
+        "phase": "prefill",
+        "section": "layer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "residual",
+        "kernel": "residual.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:f1abd88c959c5d8dd27b9353d487e37b2a96850ed9d90c365212e260399cc2a7",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "prefill",
+          "workgroups": "symbolic:layer:prefill:ffn_residual",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "a",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "b",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "postLayer_both_31_final_norm",
+        "index": 31,
+        "op": "final_norm",
+        "phase": "both",
+        "section": "postLayer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "rmsnorm",
+        "kernel": "rmsnorm.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:c723c0300cc8f93396d79d1a274c0a90ccf1eb8ce82c0d778b8cd4659615fe45",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "both",
+          "workgroups": "symbolic:postLayer:both:final_norm",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "input",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "weight",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "residual",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 5,
+              "name": "residual_sum_output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "postLayer_both_32_lm_head",
+        "index": 32,
+        "op": "lm_head",
+        "phase": "both",
+        "section": "postLayer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "q4_decode_gemv",
+        "kernel": "fused_matmul_q4.wgsl",
+        "entry": "main_gemv",
+        "kernelDigest": "sha256:c547743b9806fec47142c6a9f9ac2bd047981fd8cded46ce40dc01725e8aa71d",
+        "weights": "lm_head",
+        "constants": {
+          "COLS_PER_WG": 64,
+          "THREADS_PER_COL_GEMV": 4
+        },
+        "precision": null,
+        "dispatch": {
+          "phase": "both",
+          "workgroups": "symbolic:postLayer:both:lm_head",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B_q4k",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "postLayer_both_33_lm_head_prefill",
+        "index": 33,
+        "op": "lm_head_prefill",
+        "phase": "both",
+        "section": "postLayer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "tiled",
+        "kernel": "matmul_f16w_f32a.wgsl",
+        "entry": "main",
+        "kernelDigest": "sha256:027a8f1cd9713cbe0b0ada160bd175e0542bb90896ad85441b023522d9a1befc",
+        "weights": "lm_head",
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "both",
+          "workgroups": "symbolic:postLayer:both:lm_head_prefill",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "A",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "B",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "C",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      },
+      {
+        "id": "postLayer_both_34_sample",
+        "index": 34,
+        "op": "sample",
+        "phase": "both",
+        "section": "postLayer",
+        "layers": "all",
+        "src": "state",
+        "dst": "state",
+        "kernelId": "sample",
+        "kernel": "sample.wgsl",
+        "entry": "sample_single_pass",
+        "kernelDigest": "sha256:7ff3dd675b4737d920e0b3889e15c4fedde8410a353bbc6d4651db76ce69eb9b",
+        "weights": null,
+        "constants": null,
+        "precision": null,
+        "dispatch": {
+          "phase": "both",
+          "workgroups": "symbolic:postLayer:both:sample",
+          "bindings": [
+            {
+              "group": 0,
+              "binding": 0,
+              "name": "u",
+              "addressSpace": "uniform",
+              "access": null
+            },
+            {
+              "group": 0,
+              "binding": 1,
+              "name": "logits",
+              "addressSpace": "storage",
+              "access": "read"
+            },
+            {
+              "group": 0,
+              "binding": 2,
+              "name": "output",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 3,
+              "name": "topk_indices",
+              "addressSpace": "storage",
+              "access": "read_write"
+            },
+            {
+              "group": 0,
+              "binding": 4,
+              "name": "topk_logits",
+              "addressSpace": "storage",
+              "access": "read_write"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "captureProfile": {
+    "schema": "doppler.capture-profile/v1",
+    "deterministic": true,
+    "phases": [
+      "prefill",
+      "decode"
+    ],
+    "surfaces": [
+      "browser-webgpu"
+    ],
+    "adapter": {
+      "source": "reference-report",
+      "surface": "browser-verify",
+      "deviceInfoHash": "sha256:f5af007d78ada2f5d26949bcdabb5e15221521f1f0cd4767dd77804c36082276",
+      "deviceInfo": {
+        "hasSubgroups": true,
+        "hasSubgroupsF16": true,
+        "hasF16": true,
+        "hasTimestampQuery": true,
+        "maxBufferSize": 4294967292,
+        "maxWorkgroupSize": 1024,
+        "maxWorkgroupStorageSize": 65536,
+        "adapterInfo": {
+          "vendor": "amd",
+          "architecture": "rdna-3",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "description": "radv: Mesa 26.0.3-1ubuntu1"
+        },
+        "submitProbeMs": 0.6545430000000465
+      }
+    },
+    "hashPolicy": {
+      "graph": "stable-json-sha256",
+      "dispatch": "stable-json-sha256",
+      "transcript": "stable-json-sha256"
+    },
+    "captureHash": "sha256:b9eebbbb2548f2bd3e912b02263cde7ef6e4b6e64a1f0963164337312cf6e448"
+  },
+  "artifacts": [
+    {
+      "role": "conversion-config",
+      "path": "src/config/conversion/qwen3/qwen-3-6-27b-q4k-ehaf16.json",
+      "hash": "sha256:9174e22d8ab5efd53be72e115e00a8927fdfc6cef8b10812d36ec5d7f90f2e6f",
+      "sizeBytes": 12409
+    },
+    {
+      "role": "manifest",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/manifest.json",
+      "hash": "sha256:62a85cb1c1d670b82d14a1f0cfcc00643b710309453fd72949cc1c487ba65052",
+      "sizeBytes": 459768
+    },
+    {
+      "role": "reference-report",
+      "path": "reports/program-bundles/qwen-3-6-27b-q4k-ehaf16/2026-04-28T01-19-10.497Z.reference.json",
+      "hash": "sha256:3337b7714c84f025ead782957074fd3fa6f7fe1a9f817297862fefa79e16e17f",
+      "sizeBytes": 32066
+    },
+    {
+      "role": "tokenizer",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/tokenizer.json",
+      "hash": "sha256:8fc3b6de02de5a8e21d3867aba335e2d9a3c2263201f55daaed1feab3541bea4",
+      "sizeBytes": 9088480
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00000.bin",
+      "hash": "sha256:92b4d22e09358b9d4265c7679e57219e2a61f7b323ea9b5626361a52d75248c3",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00001.bin",
+      "hash": "sha256:31ca239785cdad0e08d5b2c4e62bbd18bc03960e80828d2b0b4a39698d0ccd78",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00002.bin",
+      "hash": "sha256:6433e3c6ae16b4f8643518342fff91bcc52245d5fe9af1e5efb5300b574a5cd7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00003.bin",
+      "hash": "sha256:16039ab4d575113024c0a5b0896aaa2fb04ce6001033849c5e4d02a65ed9929d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00004.bin",
+      "hash": "sha256:ef0638b15622c0e6cb4a8fb313c411739299cae8bc3ea44665dfa24f51565560",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00005.bin",
+      "hash": "sha256:8fb470ca2a2094b246b2375649bd60a55e66b8e79b22b7feb32351f75fced9e6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00006.bin",
+      "hash": "sha256:b31109ed0b4f7bec155fdef75c443ba424341232d18b36ad520165992769bb72",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00007.bin",
+      "hash": "sha256:9d3937e1a71f394ff9cc94b5139494c260e7f6e1f66ffab0e6869b020cb619c5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00008.bin",
+      "hash": "sha256:9b977eeef7645b5dacb976f8e03c9ea6efd184e1a65112fdb23ef636a0b795a3",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00009.bin",
+      "hash": "sha256:016df93ebbe1aaf20ea95335ba49bdca0d22f2f1b9b3422ee47cb3cb81ddca0d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00010.bin",
+      "hash": "sha256:f260b332c4b2dd4f14b2d46169059563ad2d293eb749e1c86300c03359013f54",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00011.bin",
+      "hash": "sha256:5bea9f245f0295f3c205329fd329acca6174bd30b09d86d73895b70fcf55e294",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00012.bin",
+      "hash": "sha256:2ecb016a58e51cc9db5c0281737235d8605ac1cd11e55dca6a92f04dccf9a1ff",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00013.bin",
+      "hash": "sha256:626c71726939f340d663ae2a286b7d260992b796118e40d9712dbde962b94156",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00014.bin",
+      "hash": "sha256:9a4fc088b8cc3d95e38c6659d24f6a6b9e6e3adf65ebb57af1351a039f5d1e00",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00015.bin",
+      "hash": "sha256:09e85ee5e94b5edaa8027053d9863ffd25d48431014ba511716a210217c92fa7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00016.bin",
+      "hash": "sha256:dca907f598383a419e6ea6bd50650829d1fe2cce7241b85749acb0a53ce167b1",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00017.bin",
+      "hash": "sha256:0620c03d22a6e24967ba0229941b67847fd3473d1f29ff0c11d4cd31d60e8289",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00018.bin",
+      "hash": "sha256:9fd4c880239e8d197d307125eec4fd35e37c892b36d8d727a771872247e49747",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00019.bin",
+      "hash": "sha256:c16b6f712422d7f72a56006b775f85545d15357aa0358f1574b21e95585d126c",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00020.bin",
+      "hash": "sha256:fd14b75073a731d0f78fee58ac5c4e922b0f82001bdf49c86050512bf7a47354",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00021.bin",
+      "hash": "sha256:1d418b8984e236ea0cfd7f5606c4b88091897bdacf50b1814be527c923711894",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00022.bin",
+      "hash": "sha256:2759355e134e3aa9c751fe1552ab0b80035517c42bbfdf40ec19981d18ab1914",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00023.bin",
+      "hash": "sha256:d4665fa191ebc797b2023e893c8f6399543c77d5b6634c388a27aec9f91e1e4d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00024.bin",
+      "hash": "sha256:d144d3e814309ffabcce7535db97e794d230459416f4edade1bb86a198e3a7dd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00025.bin",
+      "hash": "sha256:d9946dabd26cd31295285070982f42919443cb2a0a64c1851f2dfcb554f75094",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00026.bin",
+      "hash": "sha256:1ded686452a8e0cde4c06a6a5b2465afffce2fb16bf93bba65a4790561d9fa10",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00027.bin",
+      "hash": "sha256:65d6a0bc0b97fdaa1fb5ae68f3188e3b1a22ffb6a40c76a98fd645766311e2e3",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00028.bin",
+      "hash": "sha256:60293dec67c4160ea32e0915f7a99ffc93d30ea5efdd5dfdba997f8ea0a80f32",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00029.bin",
+      "hash": "sha256:46a502438cb718350e939c3f4de67793da9796676662e200ca06f81734deacea",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00030.bin",
+      "hash": "sha256:e53948109f532c5b6a032a6f977861174f7436385d2f96d1ff01d1bbd05f1797",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00031.bin",
+      "hash": "sha256:984260d9fc35c6a293b4c9e055453f5e49302ee4ec234e05993417ba0beb436f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00032.bin",
+      "hash": "sha256:73b444860faa7959471e6fb332d5ddb09479eb044294add3e52bc73c29da688a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00033.bin",
+      "hash": "sha256:a50e937501dc5fe6f8384b1a900b3cb5bf67a2e2ec7b8e6286f94b172233af29",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00034.bin",
+      "hash": "sha256:75a4b86c3e41b8fb840cc6b8138abd70eeb7f07ced042940bb59b1cdaf4844a9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00035.bin",
+      "hash": "sha256:12602f6a8005058c6e2a29148fdb680db81c39a727a389654a3337f6839619cd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00036.bin",
+      "hash": "sha256:74263bd8b948d64650cc5bd70347705ac179a650f843d889aae55894480c1002",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00037.bin",
+      "hash": "sha256:eaa92173c76ee7cea9a46d8bafa6e1e257d237b0bcaae724b90a17137bb12eeb",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00038.bin",
+      "hash": "sha256:a27178adcf0c5ec07db01262ac09ce32f629d22d2b9319363419d03cfae63a58",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00039.bin",
+      "hash": "sha256:12def494d2d42efe42d62d17f6b1bbddd1d37a244f90f4b8b364fe2bbf54b102",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00040.bin",
+      "hash": "sha256:a7075aab1eddabf28aad3e8fa64da8f9c7a7d62903c0abf6514bb3cbe87b4ddb",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00041.bin",
+      "hash": "sha256:5e19e47c338de642293f6d847d79b07b8f641d69b7806125bd78f166b0074643",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00042.bin",
+      "hash": "sha256:3d8e0cf858a8c664e1f714039ee3bcf9432199f6dc0595b71ef1c8369f87c1a9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00043.bin",
+      "hash": "sha256:90d4c335ccc28f4329281286e5fefc677a3cdcf9ce4ae4e11320167f8dbeb875",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00044.bin",
+      "hash": "sha256:fa95688bf1eb3fe90155714bd9e04eed838968e6f829143c81568e0610a111d5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00045.bin",
+      "hash": "sha256:ccb131cf6f09cdf29717796d383905cd12ae48cdf767c9a7580630c9feb6595b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00046.bin",
+      "hash": "sha256:7144033edd2fbf652680f0aa49fdae1c300571f5b2f2fc5c8e4d90b656d51c0e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00047.bin",
+      "hash": "sha256:66f0cbfae70686e1b2514fc5de6b83527e143bbfd2a8cca4d71cc16764d8d200",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00048.bin",
+      "hash": "sha256:97cdc1d6ae7e6091f241e663f0fda204162753e8e9e06434cf1e45afca4d0385",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00049.bin",
+      "hash": "sha256:8d8ebae63aedcd0d33dd89ea6ba047f31afb020c0dc74669df931ea0ea56a45a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00050.bin",
+      "hash": "sha256:3bf81e3f26e4079655ea03b2c615d1b4f1d626391860c8d2e3337033f9d98c60",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00051.bin",
+      "hash": "sha256:b5d97624f8a895946cd50b95b3e803aa9967a4c874334e6927b53f5cc2a819d4",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00052.bin",
+      "hash": "sha256:ada5055e8aa6d09c100247f30dc39d530111a8cbbe192409fe1e4bbe40d15eda",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00053.bin",
+      "hash": "sha256:8ba85f1e11032caf0e44bff9eea22d42886585efe21c52cb1149b838509f22e0",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00054.bin",
+      "hash": "sha256:77c4ac36982995b3b2254cbdf4e6bfe995f7def50b6f5913bc33359343dae8d5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00055.bin",
+      "hash": "sha256:319be5215873a5a4990f512e9512afd5b0eced05d9674069c26c148f29fac181",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00056.bin",
+      "hash": "sha256:4f0be00ce968f6f7ff1f86a6dd7bdc303440f8584e376041d800f160516ae682",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00057.bin",
+      "hash": "sha256:5b54ecbb1348b047267746f044e93d2489ae1172c12ca2658dfa693b387af1de",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00058.bin",
+      "hash": "sha256:354619bb3ff8c87031fda39fec5da83530c5effd8a7994ed1ff7e97eba6d267d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00059.bin",
+      "hash": "sha256:8e9d6fc8e8ce1d579867ab304292901e547b5c6f96a05467e07cbafe07f0cb99",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00060.bin",
+      "hash": "sha256:e1e94dd12ab09937a50950ca76333553476e435eb46b54372ff626b70221fc6b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00061.bin",
+      "hash": "sha256:bf132c8d00c6196f1c444e811b5caf855025c93042344f259636038cedcdc68d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00062.bin",
+      "hash": "sha256:ea96993ba8d24b2a946356c8d5d3b4c31175b48d6c31cd6616f23a6a6c29bc24",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00063.bin",
+      "hash": "sha256:9d05a1f00dd5eb2f5cec99d8e2397d22fd4374f79910ad8f4a51d4e979996876",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00064.bin",
+      "hash": "sha256:e1e6a4a5456275bac97ed75a4452e05ca6679ef9a127f1a0f52d4ddf73260888",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00065.bin",
+      "hash": "sha256:51247ba613f3c44abab6bebda679bde7e672c31a18f6c2a4d5317ffd75eacb0b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00066.bin",
+      "hash": "sha256:f38da4a640a3008d927c26b616987ed9b22633ab1694b05a35895d5df92a2a1f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00067.bin",
+      "hash": "sha256:c63e472c658ccd25e25d9ff70c92afdf047493a0e39e9c7b48db12cd209da6f8",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00068.bin",
+      "hash": "sha256:6ae830aca3fea08d1f6ecf6aafb8e3c2bca38b80a5f0ef781111bc64592f5f16",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00069.bin",
+      "hash": "sha256:fef0c229bc327aac0045226e507d1ab2d372f468a0157497b946226b51247e18",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00070.bin",
+      "hash": "sha256:fbcff7b8bc5a5d402f5f8c9c4cf6b56c4ac4a7c69659991ab1e120109405db46",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00071.bin",
+      "hash": "sha256:7b45b1f3e2087fbdf2901453b9d739be96be27c04f77272d2ef4a9ef70bdb52d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00072.bin",
+      "hash": "sha256:3c2f67622f83963c15d4485b5848da56ad16bb555a92951bde2e6cfac5fdb1a6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00073.bin",
+      "hash": "sha256:1390992de611ca374e095697552429cac8e869c630c2519189723f89f1cf7bec",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00074.bin",
+      "hash": "sha256:2c09bcf4c87dbc12ded47c6347ddef18e360a9825cf8287a88bfda0454610185",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00075.bin",
+      "hash": "sha256:2519340fb23e0b0bb1db80e4b482f43a143f9635bd5ae517d3c7071bc9dcad17",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00076.bin",
+      "hash": "sha256:2e22e01dbf76635d1209f3a4b11cef681edf6ebf4348004dbd7e2ad8c2562cd8",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00077.bin",
+      "hash": "sha256:295d664fd564366902f1112981e9adfc7fb0fbe8b432a873614c58b313b2b318",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00078.bin",
+      "hash": "sha256:1c8fe669c2508c86019d0f3b9ae58c2428198baccf8faac43136e2ed286047c6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00079.bin",
+      "hash": "sha256:9fc9674231bacdf4cfa52035f9c7a3bf0fae80e385486e5280a0bdf43ca83c14",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00080.bin",
+      "hash": "sha256:4e3cb4d20a6f44290140b7a4ba0d332f56a1a99729abdd6b2514f98a7a38504a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00081.bin",
+      "hash": "sha256:415ee520e867ee7dd65945e985048acb3927e06f43791b22b7e66ec5f7ef1c70",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00082.bin",
+      "hash": "sha256:2ac3bc17ebafa17c568a3e80048574284928084b23f8993b373d8e95abdd6c1b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00083.bin",
+      "hash": "sha256:a91481557da5fd835104cb356184504001ce3cd598922ef8b513024bfaf5e40a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00084.bin",
+      "hash": "sha256:4282ebfeafba8938f569ebbefc4f97440c4cb5176384a902ded121648bd9bc98",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00085.bin",
+      "hash": "sha256:67ba3e0e9918aba5355e54c9258a45250301b7a0d75e0448ee220273690259fa",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00086.bin",
+      "hash": "sha256:30d3c3ced2ef5f5396d63808c9089c0c5c8b9b136bd6484e53450f188ac9e012",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00087.bin",
+      "hash": "sha256:3ab0a497fc2abe51be7449f698f8b485a61cd60a6a691e1a20cf268ade086a4f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00088.bin",
+      "hash": "sha256:1d6f27e5e130058d599cdf24d53e8522fa4255743c82c1d470a78020eace7df7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00089.bin",
+      "hash": "sha256:21a94b7a1bb49c28c20cac1ed258c1e8a73d791e30efcce830c931999af92ab6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00090.bin",
+      "hash": "sha256:05f962476fc0b6109ffa664aa65da1c87724cc8400d3156ba2bcbe73e2a5ce7c",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00091.bin",
+      "hash": "sha256:70fe233b14d392a1245a95f10ab19a9d189c8b29b0c2a3cd87ff905a324c0244",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00092.bin",
+      "hash": "sha256:e3e0be44a1f6311434ed852fa073672261afb60b786ac1788b223efa22250139",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00093.bin",
+      "hash": "sha256:7821febfac73a02f092f953dfdd4819ce74b08383a39fde9594b52a2ed905cb9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00094.bin",
+      "hash": "sha256:c45ade7c57a93dbf5c5d8f0bed9ea6ecb63dc78181998cefe2086be7172632a0",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00095.bin",
+      "hash": "sha256:730426764fb2450f4c80a34f1f556f41ad89324e79b4123dc3256456f4bd51be",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00096.bin",
+      "hash": "sha256:e1686a10307a359f7a783e084c6ba8f943199b143367ade44c368f85700f3e28",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00097.bin",
+      "hash": "sha256:4dc2f3eda7c39f0cbe26dc38441a252a44fdfcaff4813929493f5af175950e16",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00098.bin",
+      "hash": "sha256:32eccd31bcc9f2ab726e89b008d596ab81de99aed234df06bbde8b4e5e6f4d57",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00099.bin",
+      "hash": "sha256:9d7fe72e028eabb67a56ee097cc843ac94aa1f5390e83db4be52e3d4054fd304",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00100.bin",
+      "hash": "sha256:a00aac07a29c8fedd91c6cdab289663e1a9e328e593c4431784462a99db3a8d4",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00101.bin",
+      "hash": "sha256:3b6d49d5c37c3305f796fd9dbe25e67d109e58d5354594392adc513e9fb51767",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00102.bin",
+      "hash": "sha256:0a6ca220291e8d8df6a5e3cb8dd5597a608ece091de22b4749a4a4c5433fa0c5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00103.bin",
+      "hash": "sha256:46fc272df7d6fdabb27a39313b967896150a6441fd49f1445ce41fb9167847c0",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00104.bin",
+      "hash": "sha256:b8f4aad841b990234bfdad2a0cad74f7edd3b0d4133cb3edcc4a6f867a8b7c9d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00105.bin",
+      "hash": "sha256:fc19eb8112a994e2ad61f83e1ead01dc6b6f91932a9dbf998d715208c522597a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00106.bin",
+      "hash": "sha256:7189e849eb56646717019ce054c38403d124ef5d1cc93fb2ba9a5e1ea8cc0078",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00107.bin",
+      "hash": "sha256:bf8593f21b72510e0741f2b40ad789977e97229e867897a2448297b29c5ea645",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00108.bin",
+      "hash": "sha256:910be840c27ddf3854470e170b06371ec0af67be8a3dc6ab2e86ec1b13fe9c22",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00109.bin",
+      "hash": "sha256:eb76ba3468903115ed9f8b305482555930a0491fe42291d7d943d09565645a6a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00110.bin",
+      "hash": "sha256:525647b355b66fac30dce87d2166aa29b1f313c114575651679fcbcb105c438c",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00111.bin",
+      "hash": "sha256:ffac913c4875acaf377245ab951f489c037bf6d131d103347b8aa91ba8dfb7eb",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00112.bin",
+      "hash": "sha256:d465a2e904f7eebd8865237ef49b45a902becfd823560986ba265bbf8519a320",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00113.bin",
+      "hash": "sha256:ed36d39ebddeb138af8b05943e047590be915b2cfc55efcffe71f38bc25117c5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00114.bin",
+      "hash": "sha256:83921d7bde31d58c5e6081bcf91e9566f97b887976e7826a32278c1b1b0b4b2e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00115.bin",
+      "hash": "sha256:c508c864718f37b2cb4e0c5a0e09931591d4ccae361a33bc5e4954a188856283",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00116.bin",
+      "hash": "sha256:65db8f537b7983422e06fa7426bbee15fecf03e726ebc0ad840ae759e31b0b06",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00117.bin",
+      "hash": "sha256:0d93c52ebb2963a4f2e66cb984719c2b53db036aab3e1c5bbac52b743a04df2e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00118.bin",
+      "hash": "sha256:f70742c58c38fe5d18c172ed96539f9410da7326c8f0cd2f8930afdf0a1f0d5a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00119.bin",
+      "hash": "sha256:3ccfd89e95c953ab00d0ac6c7359bd74fc775b2d7fd14804499ded9a4d955574",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00120.bin",
+      "hash": "sha256:c5ab3d6032c61993c25af152637f21ea72faf9b013a4a33f63631dc3b458c38e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00121.bin",
+      "hash": "sha256:77fbfa945ff31a663fbb49494ab07385f25838902a92c9e69334c5f3ffa9863f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00122.bin",
+      "hash": "sha256:1cc52c26f204775ae732c5cd08e78f0ec7b1edb76549ba70867da834ecf3ddd4",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00123.bin",
+      "hash": "sha256:00dc0276fb984bbc0bdd3b1e3498b74f4434c9eb776577a63b4b8d2ab5e1c3a6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00124.bin",
+      "hash": "sha256:2272514f9a19038c181f1e9e6fb9cebe5aea29b1dcd38c021ca8a9e953438885",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00125.bin",
+      "hash": "sha256:388d8a4855c5fe0ab97ddfb7cc69f5164f377797bc43110fe3a9dce74b0d8513",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00126.bin",
+      "hash": "sha256:e606c4ebc7789d4b8b0d257f26bffa8370fb5574689912e299118558580267e0",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00127.bin",
+      "hash": "sha256:83314fa43eca41ec1a3573a811ac573445776cff3d23e0e5bc8ec6f4e0464810",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00128.bin",
+      "hash": "sha256:9d854f49927d3182a775ccabc8cca63b7dfbb1ca67af315a87b859f27797a0e0",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00129.bin",
+      "hash": "sha256:87aeba4d108f944e249467900f6a73c54d583ac03e0eb53b7d50a190081d9122",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00130.bin",
+      "hash": "sha256:bed8cbe3750c59f1e450cca6f9c3400ee37dc04157c3ccee76c142a2286a4198",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00131.bin",
+      "hash": "sha256:11e7bc94c0f4532cd669761ad2011a6ad1547a6e78e84cdc53598704dfa4e3e9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00132.bin",
+      "hash": "sha256:bad0c61beaf94e481fb88bf85035c5475e24f20c349d8800b3fc1a92f5375909",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00133.bin",
+      "hash": "sha256:653f55eb622fddf3e54126b307c4d08ea7f25798158e7a997f3318b3fdb9ff93",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00134.bin",
+      "hash": "sha256:71b1fee8e019837401564cfccee908e0d4b3a83445fa97c4a8e232bac4edb2b3",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00135.bin",
+      "hash": "sha256:89927c574b9145b49b7679ab2bb42cc474bdc44cedda8ca78133ba4bfdcac732",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00136.bin",
+      "hash": "sha256:88d5b2039db1cdc497c8d6a515de9e22caf83a2aa16963c6023991c635a50529",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00137.bin",
+      "hash": "sha256:ceb1c8773605e5f0c58cbe1d5ea88f2664e0a529b5a1c0af0747be9516f9cf67",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00138.bin",
+      "hash": "sha256:096b8953e7ea4eec130dd375a2246eabeea284279a4da17485f81b0c55f65187",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00139.bin",
+      "hash": "sha256:73c1d48ca64cad09e2352b164d48d88095b5d8bcd97ae435c6fd6c889ce7a76e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00140.bin",
+      "hash": "sha256:e9003ec3dd8345cca4b0b1872098bbba4fb41df4c4f46ae99f40b8d3ad6b9727",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00141.bin",
+      "hash": "sha256:b406e4f8e5f3b793cc7686fa21214c492acfcaa9cbe5e21af99a44aed69fdd53",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00142.bin",
+      "hash": "sha256:9367b2a89cd3e3a11f740fb943e0f5963ccfbac764692c74532036caa07dd00d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00143.bin",
+      "hash": "sha256:c7009e7b818d55f08b98093f2be960ab2b6e9b951fafe4d2a60f00f1e4ef3242",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00144.bin",
+      "hash": "sha256:e3f8b89c288f79b338ceef3a3a395fff863c3022dc8e0000fec169def0d6ccbd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00145.bin",
+      "hash": "sha256:21b34dc7ffea50259f3bb95b7208e9acdffa426fd7705e6fbd38cf20a6d1cdca",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00146.bin",
+      "hash": "sha256:6ec8d707df17c6106665e0daa78ccd95383a18d689b770c4267e780b7529be62",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00147.bin",
+      "hash": "sha256:26b7d7f56afe052ec95c8db43ba6f27dd31b4043195f64faa69a8ce456411031",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00148.bin",
+      "hash": "sha256:66e1a790bb3c7fbe0064749a64d02d86a7010b8bcdd4980c30b2a98eba8dcf8f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00149.bin",
+      "hash": "sha256:862770585a65cf020af3b5e8818f88ba159dd528ef2520380e64012f176a477b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00150.bin",
+      "hash": "sha256:4a2f42bf5e17ef33c4f8bcbf440a1a80aa8fa29e5d81b574d00efc912237e63a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00151.bin",
+      "hash": "sha256:08c434431974de2f370ec579a6fb999c1893b20ab93a17cf6eca8cb04bd13d74",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00152.bin",
+      "hash": "sha256:646e6b5c15281bed59a4b5513282327ce8344568ba41e1c720723fe7ea2fc03e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00153.bin",
+      "hash": "sha256:1d7e8e917680aac6b439eb91bdc105bfed7d3d949f457a7fbfafe32563a852ae",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00154.bin",
+      "hash": "sha256:be4e3329b57ede6f1eb8b5050bf3d05b3a2f222b47ab9cca09fb781adf56350e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00155.bin",
+      "hash": "sha256:18687433aaa907edc6d369338a60324f9e7e3b9155cb86253d441a5c13106c97",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00156.bin",
+      "hash": "sha256:756f0c95567ef9d965f00af427db5b7c93908665fc23766b61d1e9a8ba5af997",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00157.bin",
+      "hash": "sha256:6e236210c80901664255233b9a82ec6580f2020aea2c5a5afdcd92cbaae7c1d2",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00158.bin",
+      "hash": "sha256:34bb3c23934a548bf5b3b90222ff6fcc68543c7c4ec9d1b5d4a6f0b1c6e87836",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00159.bin",
+      "hash": "sha256:7e995680c3edf4e5128940f5d2d339d596da1179af6c7fadcaca5594273b5bea",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00160.bin",
+      "hash": "sha256:1855c169a4f68492ecd5db74d69af1372ef3e0597119f350f3b4d0d1fc1b63d3",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00161.bin",
+      "hash": "sha256:9406c7da72d392714905213a9313e14841e874a0ef262b10173502ebaba0b9fe",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00162.bin",
+      "hash": "sha256:053ddb1c631af44e4d6851f7676ab45e9dc0bd275b9bc07239eccbe43c7b08d2",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00163.bin",
+      "hash": "sha256:bd4c382b0657e943c3b446f2e0a19c2c7773001a4ac560e69cdd5249effd155d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00164.bin",
+      "hash": "sha256:08fd8fb980ae5cbe283214afd6a32bdce6c72733c65046ea5620977969d3a043",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00165.bin",
+      "hash": "sha256:6d59bf7418be2a5fc004bb1c84361adb591fdb4646ab8531d7ee67d0f12a8275",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00166.bin",
+      "hash": "sha256:68c563a5795c4edda60c6aa74dea64bc5c9c75c3ce38524f97390c3e1220c004",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00167.bin",
+      "hash": "sha256:03d24c5fb775384e25c7b13130fe050f3f86217e767db1eaa73d1c8dbce2eaec",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00168.bin",
+      "hash": "sha256:b7f230d6f6a8c9b13450b5796648b54d369dadb11bbd95c3106229a0893f2a14",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00169.bin",
+      "hash": "sha256:cf42ae54f1b46c4b016fe7dd338bcd5a6a8ff423d4512a988157a52052534823",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00170.bin",
+      "hash": "sha256:556a02e167109112e88ef6ba88afeb2eaae647354bd7076574ae65eea23f8d2f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00171.bin",
+      "hash": "sha256:33ec877a035f0c186a46491312ab9d14a854e800198393a2300b2516ec8691e9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00172.bin",
+      "hash": "sha256:0c2f57a0cd0294f30e7f6bc776b455edfcdc9ac109f546a4f4164674f2deaf58",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00173.bin",
+      "hash": "sha256:eaaf14e31884997dd76a0b909ca2e1c3a18b4a174e4dfd17338ada22533de0ab",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00174.bin",
+      "hash": "sha256:5a1a977e3160cc68785b4a182c11c86304c7f48cee691bad0f0b6c633ac41968",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00175.bin",
+      "hash": "sha256:0d0bb705bc8a154b5a497200efcf81d04aed5afbf1467c31d98251756b9fe5a9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00176.bin",
+      "hash": "sha256:99894ae6a7638dacb9fb35e3ef4ca56ebeaa37fbc081af2eedc76d481fdedc3e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00177.bin",
+      "hash": "sha256:e4c15ba055bcfa3c4114f2d3a9c63ff9a3551bfeebc678cecaf11cb368736fd5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00178.bin",
+      "hash": "sha256:d54be3621728fcc37eca57fbe8b2f6719e9699f5bed15a3935e06449f28d2c4a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00179.bin",
+      "hash": "sha256:b7e2cd0da00b11f8358f500f650788ed9ab8004e3c816e52326add49beceb539",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00180.bin",
+      "hash": "sha256:2ecec58809af19e5801e943028cffd1e9f8f35b6b04985534135ff3bd2426ac4",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00181.bin",
+      "hash": "sha256:dc232c4be98ad3597fc6cab3ef3fd3985e607247582f1e474613c13893d0c366",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00182.bin",
+      "hash": "sha256:57715a885a662c5dde79eb3e27136fa13aae6863e9f250ed9a24fcbfa0321b33",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00183.bin",
+      "hash": "sha256:f1d47d4d8269106353209ad5a8ce43b801c436a7697d42bda99fb19a2a8b22ba",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00184.bin",
+      "hash": "sha256:60276adb3e4da38435cb8dce4c86de07c1fc13191ef9c6c854a80e60f4c328d4",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00185.bin",
+      "hash": "sha256:77018ecec86b87607d03c1b9f5a1cdc4404023e65a69d7fee1c9dfadd4c7d163",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00186.bin",
+      "hash": "sha256:ed3470ea62be728741303063d08e2c994328e54bb3f18218e3398922b4d5e257",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00187.bin",
+      "hash": "sha256:c6bbc0892cf8b174074e0128affa7393b930c89d7e6d0488a0c87f7f3e54129b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00188.bin",
+      "hash": "sha256:bf46d0811973fb1bdd20cbeab71936025727b29283ee4744f7e7354842eb25ae",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00189.bin",
+      "hash": "sha256:6372ff043835c40f5e50bcc3d78da89022fc8ab73b507193b1f15ad1daf27744",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00190.bin",
+      "hash": "sha256:c1ba9876d35649c6ec7d007813eb2b914f01c1bd75d96fbc55c627a36db0a54e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00191.bin",
+      "hash": "sha256:2c426a61bf1eb838d6982880b8bb69d3ce6b2284e70a316fa03a2ee79ad3cfc1",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00192.bin",
+      "hash": "sha256:6430f0714fc453a7fe0c2eddfe1a7f4c929eba02ed937890cfa3ee17e4cd72b7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00193.bin",
+      "hash": "sha256:e2d1d5a8c223adb066f627d6ed2d8907f9b7f074794d7a5106dbac522dc86236",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00194.bin",
+      "hash": "sha256:664012564efc18750daaee04f638a2158dc2bdce716c4eac9be3c4dec84eea8a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00195.bin",
+      "hash": "sha256:8641655de72d8f0a48b586ae99bf77f172ab4e8e50b71cf9a120c17c6165273a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00196.bin",
+      "hash": "sha256:c0ee0b8e3d62f8cbb1b2c55b9c60396df2f1b197db9d9ce0ada936e21e307607",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00197.bin",
+      "hash": "sha256:55595e567aef08941d9bfc3f24efe4c8a73eedd44b46e76d8a85aada84429180",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00198.bin",
+      "hash": "sha256:a567f6fdc3ace78fba6f4973b2e50c85d5d4dc1e241fe6a97a44e106b12a62e5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00199.bin",
+      "hash": "sha256:3a3d35e7a0f9c7c75970bf5edde95748d879c0b841f2cbcf00b719561028985c",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00200.bin",
+      "hash": "sha256:320f41b98f1d03ef2b5299fa151bccaa6e35cbeeb9fdf6339629da834ea811d9",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00201.bin",
+      "hash": "sha256:aa53b68c55b62b3cb41785d2952b4a2ec4e543b5d6fb1b3bbd3a357182026bbc",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00202.bin",
+      "hash": "sha256:c32222096371ca6f2db6214ef3dab5c6b83127767bed0e320786933e8b2ae977",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00203.bin",
+      "hash": "sha256:4b8a2f00b113629f28afb73b5fdfa6f315de55b1f5fe97e523448ba905aca2f5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00204.bin",
+      "hash": "sha256:1d6339a9f2bfc06ff6259087aff54d00c1f97bcf17effff5e53b1e762c27e003",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00205.bin",
+      "hash": "sha256:9882b6b2342521771d45b2f1fdec9ee9e7f091f33bf1b9834e428801297902dd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00206.bin",
+      "hash": "sha256:68953ba2d24bae8210313ae0b914c0b3cd3e2d80bb97c512d163c5f43b015d5d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00207.bin",
+      "hash": "sha256:bc229cbb419c25891e9d06bc7e8c8d631c4eea6451a1068ebbe85cf79f83c580",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00208.bin",
+      "hash": "sha256:9e585e8f1351dbd6f027b8c9e926fed44baa4cf95a276c43d71d1404cd3a370a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00209.bin",
+      "hash": "sha256:125ae17a066ee263befc2fe3964199abba5c0033aff49908be17bae328243844",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00210.bin",
+      "hash": "sha256:55efea30ab6b2cf71de0a752b80e57d9724a298c9c4da4ad30645c527df5d1ea",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00211.bin",
+      "hash": "sha256:3556461d3f0ee355899efe22a382e10536dabf951dc78418eebf88f8bfed2c19",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00212.bin",
+      "hash": "sha256:71a8243f5334b85a8022e75b0fbdda48410ef4f717dafb341e3f9aa57d943d56",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00213.bin",
+      "hash": "sha256:f41a8f20454657a6ba449a93521ab0c7c662b22f51495a21c4fb420f0bbde6bb",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00214.bin",
+      "hash": "sha256:799de4ab6dd7f8a16637fa3ed0a445351b897a23c3a6dd54a2abfe2d44fecb7b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00215.bin",
+      "hash": "sha256:6df9bd4f19ce9c3478114ce450f9e6a0b16db4bc77b2d48709abb0247e352507",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00216.bin",
+      "hash": "sha256:8030254ff2568861f59b1ff75169d5ecd5572cc74291fd7744b1de029fe64c9c",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00217.bin",
+      "hash": "sha256:8afc1d9bb766e705fdebb76fe253276529f6ae2784b5d89ff3a78a3c54ef2852",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00218.bin",
+      "hash": "sha256:e9c64c60bb0b86be7133278696da3247d18dbcc0049033ce05099cc1fe007f86",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00219.bin",
+      "hash": "sha256:9ee987b245502000b3949907c2a11ba7cc807079d1c2103a6b0cf5edb3f75a03",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00220.bin",
+      "hash": "sha256:d055014ed84570f84ac35bfd739b992db087c647dd655e60adce71d40d9db145",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00221.bin",
+      "hash": "sha256:435820112346a738b6c886cca5dc59be62cbc095473f9452b59edd0c07b07901",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00222.bin",
+      "hash": "sha256:143a548b54771f0064eb94d234a465dd8025f6f44317a8046520458a92d5e7cd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00223.bin",
+      "hash": "sha256:495a5c15a37e0f3da9518355dfa2d98fbd74b1412d116d5aeef09317369da8d7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00224.bin",
+      "hash": "sha256:7bf61f37e9bd8892d15b82413fa8a065187b79be866f42ea68fb5cd42bf568dc",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00225.bin",
+      "hash": "sha256:b4f54299d25ff9508f4f81922e0fe455d657752a1dd601d7961309cd0b851a63",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00226.bin",
+      "hash": "sha256:d7abfb70c2563a76e75b923b45dc3e37a7aa15c72fa70349aa5acf971fb9cd7f",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00227.bin",
+      "hash": "sha256:7bfd42fe0064d58dbe2bb3a9cc122524762c0863c2da88d1ae17aeffe51ba19b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00228.bin",
+      "hash": "sha256:8f9c4cba0734883ac4400b0feccb23b460240c7be49f7ce837973c98a7e32c79",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00229.bin",
+      "hash": "sha256:4ae9f2aa6246619fdd925d2a43b5575cbd73fd834712bc655787c84b22db7de7",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00230.bin",
+      "hash": "sha256:5ffa456116e5d817c85f438a54b9a3822b768017e5a1b7716612f3e732401deb",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00231.bin",
+      "hash": "sha256:d4278600d770278064900bfdc223cb38beca3d5978a1cb65c7a48a8640054a20",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00232.bin",
+      "hash": "sha256:a7161a4fb13c2c9240bf18cecb01ba09160030ad5d97fa64faf63db1af9c87d1",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00233.bin",
+      "hash": "sha256:4169f946917deb826bad274a368e99aafeaf0df5fdf10fae9b7b4fd15afacd7b",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00234.bin",
+      "hash": "sha256:be1cd67e51f058f58f63f282e3cdc642927876ab42fd5cdc6b2bdfe2ee41093d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00235.bin",
+      "hash": "sha256:f28773ecbd3f97d2045e2ef8cde1786f7b1a799de1cd71798d7a46367c1bd0fe",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00236.bin",
+      "hash": "sha256:d1a111d8477be388ff0fe4453449bd66c6467d68f86b9d9ffcba62fbc7368bb5",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00237.bin",
+      "hash": "sha256:f8bc3ed5da919c5440ca591d5780d44a588e809ee17f49f63d14521bb41f4fdd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00238.bin",
+      "hash": "sha256:a12ab31316df344c656bf45c9a80a17fb424058f8810e8d11b89f595ce37799a",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00239.bin",
+      "hash": "sha256:20425454f4279ad002c8bde2bf527a6789c6c67ea821d30e5596138f0c42aac2",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00240.bin",
+      "hash": "sha256:c1eff422535faba5aa75fd094ea5c7e42b2031be36eba0239d89fda40a943915",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00241.bin",
+      "hash": "sha256:44857d522b6b6231fd7dce6c93be74a96e9118624af07969d90656b317eea1c2",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00242.bin",
+      "hash": "sha256:ae95af57bf8f6fd2a8501bfb6ff3e8a8c99afb6541a262e2c77b1e6086751828",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00243.bin",
+      "hash": "sha256:65297ef7ea2d9ae1ce7e9264488d442d3fe81dc43c99bcfed845d28559731aa6",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00244.bin",
+      "hash": "sha256:7a66115584301d1cebcd0a1141082ef576995d79c049eac226d32aaec6627880",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00245.bin",
+      "hash": "sha256:ab2f287333510efff84c53c30de2a1a83f7bc7603c6ce62944118cc6b1736b90",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00246.bin",
+      "hash": "sha256:65b5673a56c5286414ebc7c4f93e83190ebd3ad255512b8e97c272f02786ab58",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00247.bin",
+      "hash": "sha256:236867516cb23a546f5c1e6f8872136f46b63aa5d4a1c2c78a43b57863bb574e",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00248.bin",
+      "hash": "sha256:fa5317a202467c2f2bc8930d973faec69edd8a416fb1b4d6948b74553269a9cc",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00249.bin",
+      "hash": "sha256:11a84438a0b85ba431a2bb06413d6cdfdfd0acabdcf433eb4e0a572d4f628a6d",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00250.bin",
+      "hash": "sha256:0221e6f516d77f0e1c973e4527d3244f0e715ce30982c44969fb689ab9040de1",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00251.bin",
+      "hash": "sha256:3659dcd9703166e1d423485f0b9e4c802daf5dcad9123a754a304df42093c1cd",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00252.bin",
+      "hash": "sha256:c1f108353137cd92aaf0fa6eb2b63d1417e6ea394b69d5a2fb6b7c0b736134ba",
+      "sizeBytes": 67108864
+    },
+    {
+      "role": "weight-shard",
+      "path": "models/local/qwen-3-6-27b-q4k-ehaf16/shard_00253.bin",
+      "hash": "sha256:63ffa92b6fb45180d80b45faba8df751fe80ed935ecc5c05453bc7748d44db10",
+      "sizeBytes": 15809536
+    }
+  ],
+  "referenceTranscript": {
+    "schema": "doppler.reference-transcript/v1",
+    "source": {
+      "kind": "browser-report",
+      "path": "reports/program-bundles/qwen-3-6-27b-q4k-ehaf16/2026-04-28T01-19-10.497Z.reference.json",
+      "hash": "sha256:3337b7714c84f025ead782957074fd3fa6f7fe1a9f817297862fefa79e16e17f"
+    },
+    "executionGraphHash": "sha256:554bfbd54ba7f7f172e98b7614bfca00ac2e2b871994172b0387eaf4e73ee3e0",
+    "surface": "browser-verify",
+    "prompt": {
+      "identity": "The color of the sky is",
+      "hash": "sha256:c2912dd49373207ca1d000f8d1a9045103e23c881916136efdf95190a54893ff",
+      "tokenIdsHash": "sha256:1341f54f35fa27f037bf008dc182b2117670c666b1e0c515414a718446ebe3ec",
+      "tokenCount": 18
+    },
+    "output": {
+      "textHash": "sha256:7d3af59e96cb198af091f5a03a7be0106597e83defc697f6f60c5f658e4d09bd",
+      "tokensGenerated": 4,
+      "stopReason": "max-tokens",
+      "stopTokenId": null
+    },
+    "tokens": {
+      "generatedTokenIdsHash": "sha256:e81d0af56467e59d7dcfdbfb2d618ec9afcf5a08de535b530d804caf01937891",
+      "generatedTextHash": "sha256:7d3af59e96cb198af091f5a03a7be0106597e83defc697f6f60c5f658e4d09bd",
+      "preview": [
+        {
+          "id": 760,
+          "text": "The",
+          "fallbackText": "The"
+        },
+        {
+          "id": 1829,
+          "text": " color",
+          "fallbackText": " color"
+        },
+        {
+          "id": 314,
+          "text": " of",
+          "fallbackText": " of"
+        },
+        {
+          "id": 279,
+          "text": " the",
+          "fallbackText": " the"
+        }
+      ],
+      "perStep": [
+        {
+          "index": 0,
+          "tokenId": 760,
+          "tokenHash": "sha256:b272a11a19547541b7355a6204f4180f8525a96370cc25c815910a5e2e9843de"
+        },
+        {
+          "index": 1,
+          "tokenId": 1829,
+          "tokenHash": "sha256:dfca6a8fed4d0d9a6cd1105fe4aba2170c6759c99bc709f4c7097aa9d1b7586f"
+        },
+        {
+          "index": 2,
+          "tokenId": 314,
+          "tokenHash": "sha256:a07f74df7a9d2fd9a73b8d248f007d5bcc5abdf15bba91c36741e0bdd02a32bd"
+        },
+        {
+          "index": 3,
+          "tokenId": 279,
+          "tokenHash": "sha256:f9e09f4a4f6e4081553db78c4ef78881bf894811035fec85dc9f3ed69aa18d7d"
+        }
+      ],
+      "ids": [
+        760,
+        1829,
+        314,
+        279
+      ],
+      "coverage": {
+        "mode": "full-token-ids",
+        "omitted": 0
+      }
+    },
+    "phase": {
+      "prefillMs": 1604.0486440000004,
+      "decodeMs": 715.855239999999,
+      "prefillTokens": 18,
+      "decodeTokens": 4
+    },
+    "kvCache": {
+      "mode": "stats+sha256-layer-kv-bytes",
+      "layout": "contiguous",
+      "kvDtype": "f16",
+      "seqLen": 21,
+      "maxSeqLen": 4096,
+      "usedBytes": 5505024,
+      "allocatedBytes": 1073741824,
+      "counters": {
+        "updateCalls": 0,
+        "gpuUpdateCalls": 64,
+        "recordedGpuUpdateCalls": 0,
+        "tokensWritten": 336
+      },
+      "byteDigestMode": "sha256-layer-kv-bytes",
+      "byteDigest": "sha256:9dc2176c9bacedd8ea025a599b150433ff8295fd6c2de05afc74fa0dd1ab1fca",
+      "byteDigests": [
+        {
+          "layer": 0,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 1,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 2,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 3,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:b1efdff59c1abda6ee1efe7d0463e0f6c23b43ae355ac67abef6a123975b8534",
+          "valueDigest": "sha256:e3604a532fd80388f60d7c903e320468bcfac26135eb7adb004a262a2664f184"
+        },
+        {
+          "layer": 4,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 5,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 6,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 7,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:e430d4bb7d720ca9214214322cb7eb247655d153481435f59a68a6b0bd165bde",
+          "valueDigest": "sha256:b43665546cd6f6be11cccc2fa698368bea22e0987738722573646efc4fe68779"
+        },
+        {
+          "layer": 8,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 9,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 10,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 11,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:491e7bddb5b497c3eccfcb49552dd51eac1d0ff1cc567d2efd7ff7639ca68e14",
+          "valueDigest": "sha256:9ead7a394a4669f59cbf96a37514e46312f48926d0fbbcff25a590d2ae545c01"
+        },
+        {
+          "layer": 12,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 13,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 14,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 15,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:56c0cc953e15d1413b30ca7f72d308a297ea0c2293a122da126d3648300b40d6",
+          "valueDigest": "sha256:856275be9a978f3910ef6cffb74c766e5bbe83ca32b55cc839a10b3bf65c8a9a"
+        },
+        {
+          "layer": 16,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 17,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 18,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 19,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:6d9d6bf0097ec7ef40d94f1a4661f9d18fd088850357b5eb79b57ebbfe84ef89",
+          "valueDigest": "sha256:7593cff0a1495a91f2517d12dbd323bf96bc4033e4f686bea6eb21a8385c0f96"
+        },
+        {
+          "layer": 20,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 21,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 22,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 23,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:f50d9eaabb050109cf91c41e6d067e00296efe4345dc6be098fd1f063f68ad3f",
+          "valueDigest": "sha256:27fabe5e86b01d481f99758eaebd64888228933cbb405bc75df1c9d81e26662f"
+        },
+        {
+          "layer": 24,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 25,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 26,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 27,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:ad74b0e7f0d4968521725fe8816dd931554af4bb558f7dee6545d1e39d0fdda5",
+          "valueDigest": "sha256:c6e510c9ed431dd1d00feb3880602164e2a036be3adcdec994ca29902542b919"
+        },
+        {
+          "layer": 28,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 29,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 30,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 31,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:7d790b0ce0fec0d2a03c64707edb8b63590c15e1b9a4f9e8706074aa9033c3c4",
+          "valueDigest": "sha256:92eb233b6c92169d9a122cd469d45235eaba8aadd8d4e2b7190d243bc75c48df"
+        },
+        {
+          "layer": 32,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 33,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 34,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 35,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:e749b2acd8929c446096e823c22ad90bb8d57315783ae4bdb865a56251020af5",
+          "valueDigest": "sha256:bed3b0cfbcfaeecc0c239442b638b165048c682205bfbccebfc8f89e32bdb494"
+        },
+        {
+          "layer": 36,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 37,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 38,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 39,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:c7b93122e9f371f5685d24580089bb0065bc41e292bf0b1ebf265695b593d70c",
+          "valueDigest": "sha256:f3b7614dcb91ca7cacd26c48d9b8c92fa854156a2ff2589841acd79fa3f60b12"
+        },
+        {
+          "layer": 40,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 41,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 42,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 43,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:d26ddb73ae78615afcd9ee8dee06947b1af16a690b6f1dd66951ab7b90eb6f83",
+          "valueDigest": "sha256:02f1955454379a44ac3c55a1a68af3a236c520a493de05ccf7cb8f52f76afcb6"
+        },
+        {
+          "layer": 44,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 45,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 46,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 47,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:b286cbea95853ff0e48bd14c25f065939a523499d609f142f651c0c54d0c7f87",
+          "valueDigest": "sha256:fd57696f97a57c79a75111dc6795213bc3b3ad3a5674f1935708882076ead88b"
+        },
+        {
+          "layer": 48,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 49,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 50,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 51,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:b3da274e9d81d195ad0068e619da633d6203201383b168b2e0a0247c6acabf96",
+          "valueDigest": "sha256:a5bb0a9bde5d5a035cfc25e43fb1ce6d413dc43db55c9317fb8c3f2d71716597"
+        },
+        {
+          "layer": 52,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 53,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 54,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 55,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:b67b015a395b83ca2a797cbde35df12dd2416c726b9826fb30ef20838220481e",
+          "valueDigest": "sha256:97f9e65b5ca3cc6bf7c92b04f4de21bf97742ad4478c0cb22cfda3dfac7bb891"
+        },
+        {
+          "layer": 56,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 57,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 58,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 59,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:c6bbef12f4e5ef7d27a1422ebb2058757944c3ead1afec7411b6333cdfe23b67",
+          "valueDigest": "sha256:29ee60ea35a1ad128d268c7a6c641e2d2d8225a3badc538174ce4116cc561379"
+        },
+        {
+          "layer": 60,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 61,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 62,
+          "seqLen": 0,
+          "keyBytes": 0,
+          "valueBytes": 0,
+          "keyDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "valueDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "layer": 63,
+          "seqLen": 21,
+          "keyBytes": 43008,
+          "valueBytes": 43008,
+          "keyDigest": "sha256:21c023ba0645712249b6a181d8e21c04eabc86366cb94e9f8b5656849726f885",
+          "valueDigest": "sha256:2cbacf93b66c26849162cc9d174a1a89a6b4d398d37c7505f6d48190653f37a2"
+        }
+      ],
+      "stateHash": "sha256:fc0cf24d7d370e397f8b4901ac137387236953ca13112c07eae8c2a662ca1632"
+    },
+    "logits": {
+      "mode": "not-captured",
+      "reason": "Per-step logits digest count did not match generated token count.",
+      "perStepDigests": null
+    },
+    "tolerance": {
+      "tokenPolicy": "exact generated token IDs",
+      "logitsPolicy": "not captured",
+      "kvPolicy": "exact sha256 digest over used KV cache bytes by layer/key/value"
+    }
+  }
+}

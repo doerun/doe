@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_frozen_doppler_reference_manifest",
+  "modelId": "qwen-3-6-27b-q4k-ehaf16",
+  "rdrrVariant": "text-q4k-ehaf16",
+  "promptText": "The color of the sky is",
+  "decodeSteps": 4,
+  "frozenAt": "2026-04-28T01:21:35Z",
+  "frozenReason": "Captured after the Doppler attention-output-gate sigmoid-vs-silu fix landed (commit fc04ec5c on Doppler feat/qwen-3-6-bringup); first deterministic Qwen 3.6 27B Doppler reference output. L=3 post_attn vs HF reference: rel_l2 \u2248 0.068 (down from 1.365 pre-fix, sign-flipped).",
+  "fixtureDigest": "9c57150e98a95f6fce8bf5c9a579a1a716e216106575d0afa76adb5875d6b75a",
+  "transcript": {
+    "path": "transcript.json",
+    "sha256": "7acbb2a6b5b16e4ae8c2ca1f17d23a027a83007d1db72573590b1fdd7496e5ae",
+    "byteLength": 162142
+  },
+  "activations": {
+    "3": {
+      "post_rmsnorm": {
+        "path": "layer_3/post_rmsnorm.npy",
+        "sha256": "548c7b09b01afc636bdf038a8136dfabdf588e882bc9b78625434d1e3899cd90",
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ]
+      },
+      "post_qkv": {
+        "path": "layer_3/post_qkv.npy",
+        "sha256": "76fe99e2f80f7464c7cfb116516b61be37e6686e536d81047fafa7ccc3eb0a17",
+        "byteLength": 589952,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          8192
+        ]
+      },
+      "post_attn": {
+        "path": "layer_3/post_attn.npy",
+        "sha256": "8e548f2a5804635716a16a2403c4353579fd038b186b6ec8ca654303541a3b8e",
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ]
+      },
+      "post_ffn": {
+        "path": "layer_3/post_ffn.npy",
+        "sha256": "a1702c973fdc20308e3e0220f902d82892358058fa048d737e8d706021a76d5d",
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ]
+      }
+    }
+  },
+  "tokenizedPromptHash": "c2912dd49373207ca1d000f8d1a9045103e23c881916136efdf95190a54893ff"
+}
