@@ -1,93 +1,42 @@
-# Gemma 4 31B on Cerebras WSE: Evidence Summary
+# Gemma 4 31B on Cerebras WSE: Evidence summary
 
-External-facing snapshot of what's bound in-tree, what's verified end-to-end against the SDK simulator, and the single remaining hardware-gated step.
+External-facing snapshot of what is bound in-tree for Gemma 4 31B before WSE hardware. The Gemma path mirrors the Qwen 3.6 27B evidence trail at [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md); identical source-identity chain, parallel artifacts, and hardware-gated tail.
 
-Qwen 3.6 27B mirrors this evidence trail in
-[`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md).
-The shared cross-model receipt at
-`bench/out/r3-cross-model-parity/receipt.json` binds both models to the
-same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes,
-budget hashes, and compile-blocker taxonomy.
+The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json) binds both models to the same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes, budget hashes, and compile-blocker taxonomy.
 
-Every claim below resolves to a specific file, digest, or runnable test in this repo.
+## Bound non-hardware scope
 
-## What's bound today
+**Smoke-config full architecture.** [`runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json`](../runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json) declares the Gemma manifest architecture and is the source of truth for the host-plan bundle shape.
 
-**Full-graph compile.** Gemma 4 31B's full 60-layer model compiles clean against the WSE-3 simulator.
+**Manifest compile receipt.** [`bench/tools/synthesize_full_graph_compile_attempt_receipt.py`](../bench/tools/synthesize_full_graph_compile_attempt_receipt.py) binds the current Gemma steps-mode bundle and driver result. The receipt reports `blocker.class="none"`; see [`bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json`](../bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json) for the current target inventory and measured `cslc` verdicts.
 
-Receipt produced by [`bench/tools/synthesize_full_graph_compile_attempt_receipt.py`](../bench/tools/synthesize_full_graph_compile_attempt_receipt.py): `compileSucceededCount=23/23`, `compileFailedCount=0`, `blocker.class="none"`.
+**Frozen Doppler boundary fixture.** [`bench/fixtures/r3-1-31b-doppler-frozen/`](../bench/fixtures/r3-1-31b-doppler-frozen/) binds the Doppler reference probes for the Gemma smoke prompt. [`bench/tools/validate_frozen_doppler_reference.py`](../bench/tools/validate_frozen_doppler_reference.py) validates the fixture digest, manifest identity, schema, and probe set.
 
-The host plan it cites is hash-linked (`hostPlanHash=88ea720740…`); rerunning the synthesizer is byte-stable against the bound receipt.
+**Per-kernel byte identity.** [`bench/tests/test_one_layer_per_kernel_byte_identity.py`](../bench/tests/test_one_layer_per_kernel_byte_identity.py) asserts that shared kernel classes emit byte-identical `layout.csl`, `pe_program.csl`, and `pe_program.metadata.json` across the single-layer and full-shape host plans. This is the property the L1 hardware smoke receipt relies on.
 
-**Per-kernel byte-identity (the 1-of-60-layer property).** [`bench/tests/test_one_layer_per_kernel_byte_identity.py`](../bench/tests/test_one_layer_per_kernel_byte_identity.py) runs the host-plan tool against `numLayers=1` and `numLayers=61` configs and asserts every shared kernel emits byte-identical `layout.csl`, `pe_program.csl`, and `pe_program.metadata.json`.
+**Cerebras semantic kernels.** The Gemma host plan exercises the shared transformer CSL surface, including kv-axis-sharded attention for the large head-dim path. The attention emitter lives in [`runtime/zig/src/tsir/emit_kernel_body_attention.zig`](../runtime/zig/src/tsir/emit_kernel_body_attention.zig); host-side log-sum-exp stitching lives in [`bench/tools/attention_kv_axis_sharded_stitch.py`](../bench/tools/attention_kv_axis_sharded_stitch.py); semantic identity coverage lives in [`bench/tests/test_attention_canary_kv_axis_sharded_identity.py`](../bench/tests/test_attention_canary_kv_axis_sharded_identity.py).
 
-This is the property a 1-of-60-layer correctness receipt relies on. Kernel CSL is per-class, not per-layer-instance.
+**Fused-dequant SUMMA wedge.** The Q4K fused-dequant SUMMA path is bound by [`bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json`](../bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json) and the Gemma dispatch receipt at [`bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json`](../bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json). The emitter and structural tests are linked from those receipts; this is correctness and structural fabric-byte evidence, not a WSE speed claim.
 
-2/2 pass, 17 shared kernels match.
+**Cross-model parity gate.** [`bench/tools/aggregate_cross_model_parity.py`](../bench/tools/aggregate_cross_model_parity.py) joins Gemma 4 31B and Qwen 3.6 27B receipts, asserts shared toolchain and contract identity, and writes [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json). [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py) runs this gate by default.
 
-**Numerical parity vs reference inference.** Frozen 4-of-4 TSIR boundary probes (post_rmsnorm / post_qkv / post_attn / post_ffn at L=0) bound at [`bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/`](../bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/) with `fixtureDigest=8cc17070fedf9c3dd6571714b85a96ee1715519425c0e686990909c60c80ea87`.
+## Simulator performance guardrail
 
-Captured from a Doppler reference run with prompt "The color of the sky is"; greedy decode produces "blue".
+Manifest-shape simfabric is a correctness and budget guardrail, not a WSE latency claim. [`bench/tools/check_simfabric_budget_gate.py`](../bench/tools/check_simfabric_budget_gate.py) keeps the Gemma envelope under the shared calibrated ceiling in [`config/manifest-simfabric-budget.json`](../config/manifest-simfabric-budget.json). Real performance claims remain gated on WSE receipts.
 
-Validator ([`bench/tools/validate_frozen_doppler_reference.py`](../bench/tools/validate_frozen_doppler_reference.py)) passes: `schemaValid=true`, `bound=true`, `verdict="bound"`.
+## Hardware-gated tail
 
-**head_dim=512 attention fits per-PE SRAM.** Multi-PE kv-axis sharding.
+The remaining Gemma claims require real WSE execution or a hardware-authorized compile/run lane:
 
-Emit body at [`runtime/zig/src/tsir/emit_kernel_body_attention.zig`](../runtime/zig/src/tsir/emit_kernel_body_attention.zig) (`emitKvAxisSharded`). Partials-only kernel that writes `[head_dim + 2]f32` per PE (`local_O[d]` un-normalized, `local_max`, `local_sum_exp`).
+- R3-1 Gemma 4 31B L1 smoke hardware receipt.
+- WSE execution receipt for the manifest-shape full architecture.
+- Scale proof beyond the non-hardware host-plan and simfabric gates.
+- Performance proof with WSE timing counters and hardware telemetry.
 
-Host-side log-sum-exp stitch at [`bench/tools/attention_kv_axis_sharded_stitch.py`](../bench/tools/attention_kv_axis_sharded_stitch.py).
+## Regeneration contract
 
-Identity tests at [`bench/tests/test_attention_canary_kv_axis_sharded_identity.py`](../bench/tests/test_attention_canary_kv_axis_sharded_identity.py) pin rtol=1e-4 vs single-PE reference across multiple PE-grid configurations (13/13 pass).
+The Gemma compile-step bundle is regeneration output under `bench/out/`, not source. Source of truth remains the smoke config, TSIR/reference implementations, CSL semantic emitters, frozen Doppler fixture, and gate scripts above.
 
-**Wall-clock budget under ceiling.** [`bench/tools/check_simfabric_budget_gate.py`](../bench/tools/check_simfabric_budget_gate.py) produces `decision=allow` against [`config/manifest-simfabric-budget.json`](../config/manifest-simfabric-budget.json).
+## Claim enabled by this branch
 
-Schema at [`config/manifest-simfabric-budget.schema.json`](../config/manifest-simfabric-budget.schema.json), 12/12 tests pass.
-
-**Fused-dequant SUMMA wedge (Q4K-input, on-PE dequant).** Q4_K_M-quantized B is broadcast to PEs as raw bytes (~7× smaller fabric memcpy than f32-dense) and dequanted on-PE before SUMMA accumulation, instead of pre-dequanting on the host.
-
-Cell receipt at [`bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json`](../bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json) — `verdict=pass`, parity vs canonical Doppler dequant within float32 precision.
-
-Bound dispatch receipt at [`bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json`](../bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json) — `mode=compile_and_execute`, `cellParityPassed=true`, hash-linked to the cell receipt and the cslc invocation. Fabric-byte ratio (`baselineFabricBytes_f32_dense / wedgeFabricBytes_q4k_block256`) recorded structurally.
-
-Emitter at [`runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig`](../runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig); host-side B-tile q4k passthrough at [`bench/runners/csl-runners/int4ple_summa_layout.py`](../bench/runners/csl-runners/int4ple_summa_layout.py) (`b_tiles_from_q4k_bytes`); structural-pin tests at [`bench/tests/test_q4k_summa_receipt_parity.py`](../bench/tests/test_q4k_summa_receipt_parity.py) and [`bench/tests/test_int4ple_q4k_passthrough.py`](../bench/tests/test_int4ple_q4k_passthrough.py); CSL emit unit tests at [`runtime/zig/tests/wgsl/emit_csl_matmul_q4k_test.zig`](../runtime/zig/tests/wgsl/emit_csl_matmul_q4k_test.zig).
-
-Wedge mechanism is proven at small SUMMA shape; promotion to Gemma 4 31B's full compile sweep shape is named in the dispatch receipt's `remainingForFullClaim`. This is not a speed claim — simfabric is correctness-only — and the fabric-byte ratio is structural.
-
-## What's hardware-gated
-
-An on-cluster compile + dispatch run for the bound bundle delivers two things simfabric cannot:
-
-1. **Dispatch parity.** Runtime parity receipt vs the simulator, confirming the bundle dispatches the same on real silicon. Supersedes the canary-proxy calibration constant.
-
-2. **Speed.** Wall-clock tok/s for prefill and decode, comparable against published Gemma 4 31B inference references on competing accelerators.
-
-Simfabric is correctness-only. There is no way to measure speed without real silicon.
-
-A short multi-token inference run produces both. The bundle is hash-linked (host plan, CSL, fixture, expected-output digests).
-
-## Running the bundle on hardware
-
-The compiled artifacts referenced above live at `bench/out/r3-1-31b-manifest-fullgraph-compile-steps/` (~319 MB, 124 files): `host-plan.json`, `simulator-plan.json`, `runtime-config.json`, `memory-plan.json`, plus `compile/<kernel>/{layout,pe_program}.csl` for 17 kernel classes.
-
-The bundle directory is regeneration output, not source. It is gitignored under `bench/out/`, byte-stable regenerable from source.
-
-Regenerate with:
-
-```
-runtime/zig/zig-out/bin/doe-csl-host-plan-tool \
-  --input runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json \
-  --bundle-root bench/out/r3-1-31b-manifest-fullgraph-compile-steps \
-  --mode steps
-```
-
-After regeneration, `host-plan.json` digests to `hostPlanHash=88ea720740…` (full hash bound in the synthesizer receipt). Run `cslc` against each `compile/<kernel>/` directory.
-
-For an on-cluster run, the bundle plus the smoke config (`runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json`) and the frozen reference fixture (`bench/fixtures/r3-1-31b-doppler-frozen/`) ship as a single tarball on request.
-
-## Pipeline scope
-
-WGSL → TSIR → CSL is transformer-agnostic. The same path lowers any open-weight transformer with a clean reference implementation.
-
-Gemma 4 31B and Qwen 3.6 27B are now both bound at the non-hardware compile
-and receipt-gate scope. The remaining tail for both models is WSE execution
-evidence: L1 smoke, manifest-shape hardware parity, and prefill/decode timing.
+WGSL -> TSIR -> CSL is transformer-family agnostic across the two current proof targets. Gemma 4 31B and Qwen 3.6 27B are both bound at the non-hardware portability/execution scope; hardware execution, scale, and performance remain explicitly gated on WSE receipts.
