@@ -41,6 +41,11 @@ const BundleConfigJson = struct {
         pleWidth: ?u32 = null,
         pleVocabSize: ?u32 = null,
         partialRotaryFactor: f32 = 1.0,
+        /// mRoPE-interleaved 3D rotary section sizes. Optional; when
+        /// present must be a 3-element [text, height, width] array
+        /// summing to `headDim * partialRotaryFactor / 2` so the
+        /// per-section pair counts match num_pairs.
+        mropeSection: ?[3]u32 = null,
     };
 };
 
@@ -254,6 +259,7 @@ fn parseBundleModelConfig(allocator: std.mem.Allocator, payload: []const u8) !?h
         .ple_width = model_config.pleWidth,
         .ple_vocab_size = model_config.pleVocabSize,
         .partial_rotary_factor = model_config.partialRotaryFactor,
+        .mrope_section = model_config.mropeSection,
     };
 }
 
@@ -594,20 +600,21 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "height", 1);
         try appendParam(allocator, &params, "chunk_size", ceilDivU32(config.vocab_size, width));
     } else if (std.mem.eql(u8, pattern, "rope")) {
-        // num_pairs = head_dim * partial_rotary_factor / 2.
-        // Full rotary (factor=1.0) → head_dim/2 pairs; Qwen 3.x's
-        // partialRotaryFactor=0.25 at head_dim=256 → 32 pairs. The
-        // factor lives in `manifest.attention.rotary.partialRotaryFactor`
-        // and lands here via parseBundleModelConfig. This is the audit
-        // wiring delta: the kernel's `param num_pairs: i16;` must be
-        // sourced from manifest contract, not the previous head_dim/2
-        // default.
+        // num_pairs = head_dim * partial_rotary_factor / 2 (sourced
+        // from manifest.attention.rotary.partialRotaryFactor).
         const head_dim_f: f32 = @floatFromInt(config.head_dim);
         const num_pairs_f: f32 = head_dim_f * config.partial_rotary_factor / 2.0;
         const num_pairs: u32 = @intFromFloat(@round(num_pairs_f));
         try appendParam(allocator, &params, "width", plan.pe_grid_width);
         try appendParam(allocator, &params, "head_dim", config.head_dim);
         try appendParam(allocator, &params, "num_pairs", num_pairs);
+        // mrope-interleaved 3D rotary: T+H+W must == num_pairs.
+        if (config.mrope_section) |s| {
+            if (s[0] + s[1] + s[2] != num_pairs) return error.InvalidMRopeSection;
+            try appendParam(allocator, &params, "mrope_t_pairs", s[0]);
+            try appendParam(allocator, &params, "mrope_h_pairs", s[1]);
+            try appendParam(allocator, &params, "mrope_w_pairs", s[2]);
+        }
     }
     return try params.toOwnedSlice(allocator);
 }

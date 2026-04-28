@@ -16,6 +16,7 @@
     "attentionOutputGate": true,
     "outputGateType": "swish",
     "partialRotaryFactor": 0.25,
+    "mropeSection": [11, 11, 10],
     "ropeTheta": 10000000,
     "rmsNormEps": 0.000001
   },
@@ -28,8 +29,8 @@
   "scopeRestrictions": {
     "linearAttentionLayers": "named_blocker",
     "linearAttentionLayersDetail": "Qwen 3.6 27B is a hybrid architecture (full + linear attention). Manifest carries both linear_attn.{A_log,conv1d,dt_bias,in_proj_a/b/qkv/z,norm,out_proj} and self_attn.{q,k,v,o}_proj per layer. The TSIR/CSL emit path covers full-attention-only today; linear-attn (Mamba-style SSM with conv1d) has no TSIR body op. This smoke config exercises the full-attention layer pattern; linear-attn layers compile-attempt is a typed-blocker until a SemanticBodyOp.linear_attn body lands.",
-    "mropeInterleaved": "named_blocker",
-    "mropeInterleavedDetail": "Manifest carries mropeInterleaved=true with mropeSection=[11,11,10] (3D rotary for text/image/video). For text-only inference the smoke config falls back to standard 1D RoPE with partialRotaryFactor=0.25 (num_pairs = headDim * 0.25 / 2 = 32). True mrope lowering is a typed-blocker.",
+    "mropeInterleaved": "bound",
+    "mropeInterleavedDetail": "modelConfig.mropeSection=[11,11,10] is now plumbed through ModelConfig.mrope_section into rope compile params (mrope_t_pairs/mrope_h_pairs/mrope_w_pairs). The host validates T+H+W == num_pairs (32 at headDim=256, partialRotaryFactor=0.25). The kernel-side rope math is mrope-agnostic: cos/sin tables are generated host-side with per-section position multipliers folded in, and the kernel applies them per-pair. For text-only inference the image/video positions are zero so cos=1/sin=0 in those sections; the rotation reduces to standard 1D RoPE for the text section but the wiring is now in place for image/video bring-up.",
     "causalAttentionPrefill": "bound",
     "causalAttentionPrefillDetail": "AttentionScoresBody now accepts causal_mode in {.none, .causal, .sliding_window} (emit_kernel_body_attention.zig). Prefill receipts at manifest shape are unblocked from the body-op side; per-PE residency for attn_prefill at head_dim=256 (the 27B kv-axis-sharded redesign) is a separate Doe-gated item.",
     "attentionOutputGate": "bound",
