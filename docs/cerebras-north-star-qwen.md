@@ -35,8 +35,8 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 
 ## Doppler-gated (cross-repo)
 
-- [ ] Doppler end-to-end coherent output for Qwen 3.6 27B (audited as garbage non-deterministic on `feat/qwen-3-6-bringup`; prime suspect is the linear-attention runtime at L=0/1/2 — see `/tmp/qwen-l0-probes/` and `/tmp/qwen-l3-probes/` boundary captures in the Doppler-side handoff)
-- [ ] Frozen 4-of-4 TSIR boundary fixture capture (post_rmsnorm/post_qkv/post_attn/post_ffn at L=0) — waits on Doppler coherence
+- [x] Doppler end-to-end coherent output for Qwen 3.6 27B — root cause was the attention output gate routing `outputGateType="swish"` to `silu` instead of HF Qwen3_5's hardcoded `sigmoid(gate)` (sign-preserving silu vs unconditionally-positive sigmoid → sign-flipped post-attention output for tokens with negative gate values, cascading to nearly-uniform logits at scale). Fixed in Doppler `feat/qwen-3-6-bringup` commit `fc04ec5c`. Diagnostic produced by `bench/tools/hf_qwen_3_6_27b_l0_post_attn_diff.py`: L=0 SSM rel_l2≈0.030 (precision noise); L=3 full-attention pre-fix rel_l2≈1.365 with mean per-token correlation ≈ -0.96 (sign-flip pattern), post-fix rel_l2≈0.068.
+- [x] Frozen 4-of-4 TSIR boundary fixture capture — `bench/fixtures/r3-2-27b-doppler-frozen/` covers L=3 (first full-attention layer in Qwen 3.6 27B's `linear×3 → full` pattern; rung-7 contract probe enum `post_rmsnorm/post_qkv/post_attn/post_ffn` is fully populated for that layer). Captured by re-running Doppler `tools/run-program-bundle-reference.js --tsir-fixture-dir` post-sigmoid-fix; frozen via `bench/tools/freeze_qwen_3_6_27b_doppler_reference.py`. Validator binds: `verdict=bound`, `fixtureDigest=9c57150e98a95f6f...`, schema-valid (commit `2b6e3fbe3`).
 
 ## Doe-gated (no hardware)
 
@@ -46,9 +46,9 @@ External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qw
 - [x] Classifier + opToSpec wiring for `silu_gated` + `sigmoid_gated` + `o_gate`; smoke config rebound
 - [ ] **Reference interpreter** for the new TSIR body ops: `l2_normalize`, `conv1d_depthwise`, `linear_attention`. Schemas + emit bodies + emit-shape tests landed on this branch; the `tryLinearAttention` / `tryConv1DDepthwise` / `tryL2Normalize` numeric oracles in `runtime/zig/src/tsir/reference_interpreter.zig` are the bootstrap-canary follow-up that pins emit byte-identity against host-side numerics.
 - [ ] **mrope-3D kernel-side validation** — `mropeSection` is plumbed through ModelConfig + rope compile params (`1489759c9`); the kernel itself remains mrope-agnostic (cos/sin tables generated host-side with per-section position multipliers folded in). Bringing image / video positions to non-zero requires the host-side cos/sin generator to produce per-section frequencies, which is Doppler-side infrastructure.
-- [ ] Bounded multi-token decode chain receipt
-- [ ] Real-weight pin + smoke-contract audit
-- [ ] Cross-backend bootstrap canary for Qwen-specific ops (`silu_gated`/`sigmoid_gated`/`o_gate` already have a paired-gate canary; the new `linear_attention`/`conv1d_depthwise`/`l2_normalize` canaries gate on the reference-interpreter follow-up)
+- [x] Bounded multi-token decode chain receipt — `bench/tools/aggregate_qwen_3_6_27b_multi_token_decode_receipt.py` binds `bench/out/r3-2-27b-qwen-multi-token-decode/trace.json` into a typed receipt with `smokeConfigHash` + `traceHash` + per-kernel compile-dir digests; rung-1 receipt-hash-guard enforced (commit `25dcde355`).
+- [x] Real-weight pin + smoke-contract audit — `bench/tools/audit_qwen_3_6_27b_smoke_contract.py` walks `qwen-3-6-27b-smoke.json` against the live exec-v1 `opToSpec` table and against `config/qwen-3-6-27b-real-weight-fixture.json`; reports `verdict=bound` for the manifest-shape full-attention slice (37 steps, 0 violations, 10 weight-tile keys pinned; commit `25dcde355`).
+- [x] Cross-backend bootstrap canary for the wired gated ops — `runtime/zig/tests/wgsl/exec_v1_paired_gate_canary_test.zig` pins `silu_gated`/`sigmoid_gated`/`o_gate`/`gelu_gated` opToSpec dispatch + binding-shape contract (commit `22b16c7cc` + `25dcde355`). Canaries for the newly-landed `linear_attention`/`conv1d_depthwise`/`l2_normalize` body ops gate on the reference-interpreter follow-up above.
 
 ## Hardware-gated
 
