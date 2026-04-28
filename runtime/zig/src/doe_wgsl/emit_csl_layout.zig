@@ -606,14 +606,26 @@ pub fn emitFusedGemvLayout(
     try write(buf, pos, "                .in_dim_per_pe = in_dim_per_pe,\n");
     try write(buf, pos, "                .num_blocks_per_row = num_blocks_per_row,\n");
     try write(buf, pos, "            });\n\n");
-    // Per-row reduce routing (east-west within the same pe_y). Same
-    // as emitFusedGemvLayout — middle PEs are pass-through. See that
-    // function for the multi-PE chain-reduction limitation note (the
-    // csl-extras teardown/switch machinery is required for full
-    // width≥3 reduction; not yet inlined into this emit).
-    //   pe_x=0:       rx=RAMP, tx=EAST
-    //   pe_x=width-1: rx=WEST, tx=RAMP
-    //   middle:       rx=WEST, tx=EAST  (pass-through, KNOWN GAP)
+    // Per-row reduce routing (east-west within the same pe_y).
+    // Aligned with emit_csl_reduce_dist.zig: middle PEs add RAMP to
+    // rx so each middle PE's local partial reaches the chain via its
+    // own RAMP, not just the WEST→EAST pass-through. The previous
+    // form (`rx=.{WEST}, tx=.{EAST}`) made middle-PE recv DSDs block
+    // forever because no wavelets ever reached RAMP locally.
+    //   pe_x=0:       rx=RAMP,       tx=EAST
+    //   pe_x=width-1: rx=WEST,       tx=RAMP
+    //   middle:       rx=WEST+RAMP,  tx=EAST  (forward both west wavelets and own RAMP)
+    // The reducing PE (pe_x=width-1) consumes a recv DSD of width-1
+    // wavelets — one per upstream PE's local partial. Fabric ordering
+    // is fence-stable per chain because each color is a single FIFO.
+    //
+    // KNOWN REMAINING GAP: at width≥3 the chain still requires the
+    // csl-extras `collectives_2d/pe.csl` teardown/switch machinery to
+    // reconfigure the color after each PE's local task fires — without
+    // it, large-width chains can dead-end on RAMP backpressure when
+    // the receiver is slower than upstream sends. The width=2 cell
+    // (qwen-3-6-27b-cells/gemv_run.py) is unaffected and the routing
+    // change above is byte-aligned with emit_csl_reduce_dist.zig:90.
     try write(buf, pos, "            if (pe_x == 0) {\n");
     try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
     try write(buf, pos, "                    .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
@@ -624,7 +636,7 @@ pub fn emitFusedGemvLayout(
     try write(buf, pos, "                });\n");
     try write(buf, pos, "            } else {\n");
     try write(buf, pos, "                @set_color_config(pe_x, pe_y, reduce_color, .{\n");
-    try write(buf, pos, "                    .routes = .{ .rx = .{WEST}, .tx = .{EAST} },\n");
+    try write(buf, pos, "                    .routes = .{ .rx = .{WEST, RAMP}, .tx = .{EAST} },\n");
     try write(buf, pos, "                });\n");
     try write(buf, pos, "            }\n");
     try write(buf, pos, "        }\n");
