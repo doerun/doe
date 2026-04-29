@@ -37,9 +37,11 @@ pub fn emitCslConv1DDepthwise(
     const input = try body_emit.bindingForRole(func, .input);
     const weight = try body_emit.bindingForRole(func, .weight);
     const output = try body_emit.bindingForRole(func, .output);
-    try body_emit.requireElem(input, .f32);
-    try body_emit.requireElem(weight, .f32);
-    try body_emit.requireElem(output, .f32);
+    const elem = output.elem;
+    try body_emit.requireSupportedComputeElem(elem);
+    try body_emit.requireElem(input, elem);
+    try body_emit.requireElem(weight, elem);
+    try body_emit.requireElem(output, elem);
 
     const body = func.body.conv1d_depthwise orelse return error.InvalidBodyContract;
     if (body.channels == 0) return error.InvalidBodyContract;
@@ -49,35 +51,36 @@ pub fn emitCslConv1DDepthwise(
         body_emit.bindingForRole(func, .bias) catch return error.InvalidBodyContract
     else
         null;
-    if (bias_binding) |b| try body_emit.requireElem(b, .f32);
+    if (bias_binding) |b| try body_emit.requireElem(b, elem);
 
     const p = config.var_prefix;
+    const ty = body_emit.cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const channels: i16 = {d};\n", .{body.channels});
     try writer.print("const kernel_size: i16 = {d};\n", .{body.kernel_size});
     try writer.writeAll("param num_tokens: i16;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try body_emit.writeCslBufferArray(writer, p, input.name, "num_tokens * channels", "f32");
-    try body_emit.writeCslBufferArray(writer, p, weight.name, "channels * kernel_size", "f32");
-    try body_emit.writeCslBufferArray(writer, p, output.name, "num_tokens * channels", "f32");
+    try body_emit.writeCslBufferArray(writer, p, input.name, "num_tokens * channels", ty);
+    try body_emit.writeCslBufferArray(writer, p, weight.name, "channels * kernel_size", ty);
+    try body_emit.writeCslBufferArray(writer, p, output.name, "num_tokens * channels", ty);
     if (bias_binding) |b| {
-        try body_emit.writeCslBufferArray(writer, p, b.name, "channels", "f32");
+        try body_emit.writeCslBufferArray(writer, p, b.name, "channels", ty);
     }
-    try body_emit.writeCslBufferPointer(writer, p, input.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, weight.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, output.name, "f32");
-    if (bias_binding) |b| try body_emit.writeCslBufferPointer(writer, p, b.name, "f32");
+    try body_emit.writeCslBufferPointer(writer, p, input.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, weight.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, output.name, ty);
+    if (bias_binding) |b| try body_emit.writeCslBufferPointer(writer, p, b.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, num_tokens)) |t| {\n");
     try writer.writeAll("        for (@range(i16, channels)) |c| {\n");
     if (bias_binding) |b| {
         try writer.print(
-            "            var acc: f32 = {s}{s}[@as(u32, c)];\n",
-            .{ p, b.name },
+            "            var acc: {s} = {s}{s}[@as(u32, c)];\n",
+            .{ ty, p, b.name },
         );
     } else {
-        try writer.writeAll("            var acc: f32 = 0.0;\n");
+        try writer.print("            var acc: {s} = 0.0;\n", .{ty});
     }
     try writer.writeAll("            for (@range(i16, kernel_size)) |k| {\n");
     // Causal pad: kernel index k contributes from token (t - (kernel_size - 1 - k)).

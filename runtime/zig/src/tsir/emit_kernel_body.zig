@@ -126,6 +126,24 @@ pub const Config = struct {
 
 pub const default_config: Config = .{};
 
+// Track 2 dtype-routing helpers live in `emit_dtype_routing.zig` so
+// emit_kernel_body.zig stays under the 999-line cap. Re-exported here
+// for backward-compat callers that referenced them via this module.
+const dtype_routing = @import("emit_dtype_routing.zig");
+pub const cslElemName = dtype_routing.cslElemName;
+pub const wgslElemName = dtype_routing.wgslElemName;
+pub const isSupportedComputeElem = dtype_routing.isSupportedComputeElem;
+pub const writeWgslF16Enable = dtype_routing.writeWgslF16Enable;
+
+/// Reject compute dtypes the lowering does not yet support. Per-op
+/// emit functions call this with the lane dtype (derived from a
+/// canonical binding) before producing any source bytes. Returns
+/// `EmitError.UnsupportedScalarKind` so emit-body callers don't have
+/// to widen their error sets.
+pub fn requireSupportedComputeElem(elem: schema.ScalarKind) EmitError!void {
+    if (!dtype_routing.isSupportedComputeElem(elem)) return error.UnsupportedScalarKind;
+}
+
 pub fn emit(writer: anytype, func: schema.SemanticFunction, backend: Backend) EmitError!void {
     return emitWithConfig(writer, func, backend, &default_config);
 }
@@ -330,23 +348,26 @@ fn emitCslFusedGemv(writer: anytype, func: schema.SemanticFunction) EmitError!vo
     const matrix = try bindingForRole(func, .matrix);
     const vector = try bindingForRole(func, .vector);
     const output = try bindingForRole(func, .output);
-    try requireElem(matrix, .f32);
-    try requireElem(vector, .f32);
-    try requireElem(output, .f32);
+    const elem = output.elem;
+    try requireSupportedComputeElem(elem);
+    try requireElem(matrix, elem);
+    try requireElem(vector, elem);
+    try requireElem(output, elem);
+    const ty = cslElemName(elem);
 
     try writer.writeAll("param memcpy_params;\n");
     try writer.writeAll("param M: i16;\n");
     try writer.writeAll("param K: i16;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try writer.writeAll("var tsir_matrix: [M * K]f32 = @zeros([M * K]f32);\n");
-    try writer.writeAll("var tsir_vector: [K]f32 = @zeros([K]f32);\n");
-    try writer.writeAll("var tsir_output: [M]f32 = @zeros([M]f32);\n");
-    try writer.writeAll("var tsir_matrix_ptr: [*]f32 = &tsir_matrix;\n");
-    try writer.writeAll("var tsir_vector_ptr: [*]f32 = &tsir_vector;\n");
-    try writer.writeAll("var tsir_output_ptr: [*]f32 = &tsir_output;\n\n");
+    try writer.print("var tsir_matrix: [M * K]{s} = @zeros([M * K]{s});\n", .{ ty, ty });
+    try writer.print("var tsir_vector: [K]{s} = @zeros([K]{s});\n", .{ ty, ty });
+    try writer.print("var tsir_output: [M]{s} = @zeros([M]{s});\n", .{ ty, ty });
+    try writer.print("var tsir_matrix_ptr: [*]{s} = &tsir_matrix;\n", .{ty});
+    try writer.print("var tsir_vector_ptr: [*]{s} = &tsir_vector;\n", .{ty});
+    try writer.print("var tsir_output_ptr: [*]{s} = &tsir_output;\n\n", .{ty});
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, M)) |row| {\n");
-    try writer.writeAll("        var acc: f32 = 0.0;\n");
+    try writer.print("        var acc: {s} = 0.0;\n", .{ty});
     try writer.writeAll("        for (@range(i16, K)) |k| {\n");
     try writer.writeAll("            acc += tsir_matrix[@as(u32, row) * @as(u32, K) + @as(u32, k)] * tsir_vector[@as(u32, k)];\n");
     try writer.writeAll("        }\n");
@@ -365,30 +386,36 @@ fn emitCslRmsNorm(
     const input = try bindingForRole(func, .input);
     const scale = try bindingForRole(func, .scale);
     const output = try bindingForRole(func, .output);
-    try requireElem(input, .f32);
-    try requireElem(scale, .f32);
-    try requireElem(output, .f32);
+    const elem = output.elem;
+    try requireSupportedComputeElem(elem);
+    try requireElem(input, elem);
+    try requireElem(scale, elem);
+    try requireElem(output, elem);
     const rms = try rmsNormBody(func);
 
     const p = config.var_prefix;
+    const ty = cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     try writeCslHiddenSizeParam(writer, config);
     if (rms.epsilon.source == .uniform_field) {
         if (rms.epsilon.byte_offset != 4) return error.InvalidBodyContract;
+        // Epsilon is always carried as f32 in the uniform layout (4-byte
+        // wire format pinned by the kernel-body contract). Emit as f32
+        // and cast at use to preserve the compute-elem flow.
         try writer.writeAll("param epsilon: f32;\n");
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try writeCslSqrtNr(writer);
-    try writeCslBufferArray(writer, p, input.name, "hidden_size", "f32");
-    try writeCslBufferArray(writer, p, scale.name, "hidden_size", "f32");
-    try writeCslBufferArray(writer, p, output.name, "hidden_size", "f32");
-    try writeCslBufferPointer(writer, p, input.name, "f32");
-    try writeCslBufferPointer(writer, p, scale.name, "f32");
-    try writeCslBufferPointer(writer, p, output.name, "f32");
+    try writeCslSqrtNr(writer, elem);
+    try writeCslBufferArray(writer, p, input.name, "hidden_size", ty);
+    try writeCslBufferArray(writer, p, scale.name, "hidden_size", ty);
+    try writeCslBufferArray(writer, p, output.name, "hidden_size", ty);
+    try writeCslBufferPointer(writer, p, input.name, ty);
+    try writeCslBufferPointer(writer, p, scale.name, ty);
+    try writeCslBufferPointer(writer, p, output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
-    try writer.writeAll("    var sum_sq: f32 = 0.0;\n");
+    try writer.print("    var sum_sq: {s} = 0.0;\n", .{ty});
     try writer.writeAll("    for (@range(i16, hidden_size)) |i| {\n");
     try writer.print(
         "        const v = {s}{s}[@as(u32, i)];\n",
@@ -396,7 +423,7 @@ fn emitCslRmsNorm(
     );
     try writer.writeAll("        sum_sq += v * v;\n");
     try writer.writeAll("    }\n");
-    try writer.writeAll("    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
+    try writer.print("    const mean_sq = sum_sq / @as({s}, hidden_size);\n", .{ty});
     try writer.writeAll("    const inv_rms = 1.0 / sqrt_nr(mean_sq + ");
     try writeCslEpsilon(writer, rms.epsilon);
     try writer.writeAll(");\n");
@@ -431,10 +458,27 @@ fn writeCslHiddenSizeParam(writer: anytype, config: *const Config) !void {
     }
 }
 
-fn writeCslSqrtNr(writer: anytype) !void {
-    try writer.writeAll("fn sqrt_nr(x: f32) f32 {\n");
-    try writer.writeAll("    const y0: f32 = math.sqrt(x);\n");
-    try writer.writeAll("    return 0.5 * (y0 + x / y0);\n");
+fn writeCslSqrtNr(writer: anytype, elem: schema.ScalarKind) !void {
+    const ty = cslElemName(elem);
+    if (elem == .f32) {
+        // Preserve byte-identical f32 output: same line shape as before
+        // the dtype widening so the f32 lane keeps its byte-identity
+        // canary green.
+        try writer.writeAll("fn sqrt_nr(x: f32) f32 {\n");
+        try writer.writeAll("    const y0: f32 = math.sqrt(x);\n");
+        try writer.writeAll("    return 0.5 * (y0 + x / y0);\n");
+        try writer.writeAll("}\n\n");
+        return;
+    }
+    // For non-f32 lanes (f16 today) up-cast to f32 for the math.sqrt
+    // libm call and the Newton-Raphson refinement, then narrow back.
+    // Tensors stay in `elem`; this carve-out is the libm coverage
+    // detail flagged in the Track-2 design notes.
+    try writer.print("fn sqrt_nr(x: {s}) {s} {{\n", .{ ty, ty });
+    try writer.writeAll("    const x32: f32 = @as(f32, x);\n");
+    try writer.writeAll("    const y0: f32 = math.sqrt(x32);\n");
+    try writer.writeAll("    const refined: f32 = 0.5 * (y0 + x32 / y0);\n");
+    try writer.print("    return @as({s}, refined);\n", .{ty});
     try writer.writeAll("}\n\n");
 }
 
@@ -442,9 +486,12 @@ fn emitCslGather(writer: anytype, func: schema.SemanticFunction) EmitError!void 
     const indices = try bindingForRole(func, .indices);
     const table = try bindingForRole(func, .table);
     const output = try bindingForRole(func, .output);
+    const elem = output.elem;
+    try requireSupportedComputeElem(elem);
     try requireElem(indices, .u32);
-    try requireElem(table, .f32);
-    try requireElem(output, .f32);
+    try requireElem(table, elem);
+    try requireElem(output, elem);
+    const ty = cslElemName(elem);
 
     try writer.writeAll("param memcpy_params;\n");
     try writer.writeAll("param num_tokens: i16;\n");
@@ -452,11 +499,11 @@ fn emitCslGather(writer: anytype, func: schema.SemanticFunction) EmitError!void 
     try writer.writeAll("param vocab: i16;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("var tsir_indices: [num_tokens]u32 = @zeros([num_tokens]u32);\n");
-    try writer.writeAll("var tsir_table: [vocab * hidden]f32 = @zeros([vocab * hidden]f32);\n");
-    try writer.writeAll("var tsir_output: [num_tokens * hidden]f32 = @zeros([num_tokens * hidden]f32);\n");
+    try writer.print("var tsir_table: [vocab * hidden]{s} = @zeros([vocab * hidden]{s});\n", .{ ty, ty });
+    try writer.print("var tsir_output: [num_tokens * hidden]{s} = @zeros([num_tokens * hidden]{s});\n", .{ ty, ty });
     try writer.writeAll("var tsir_indices_ptr: [*]u32 = &tsir_indices;\n");
-    try writer.writeAll("var tsir_table_ptr: [*]f32 = &tsir_table;\n");
-    try writer.writeAll("var tsir_output_ptr: [*]f32 = &tsir_output;\n\n");
+    try writer.print("var tsir_table_ptr: [*]{s} = &tsir_table;\n", .{ty});
+    try writer.print("var tsir_output_ptr: [*]{s} = &tsir_output;\n\n", .{ty});
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, num_tokens)) |token| {\n");
     try writer.writeAll("        const row = tsir_indices[@as(u32, token)];\n");
@@ -482,20 +529,23 @@ fn emitCslResidualAdd(
     const summand_a = try bindingForRole(func, .summand_a);
     const summand_b = try bindingForRole(func, .summand_b);
     const output = try bindingForRole(func, .output);
-    try requireElem(summand_a, .f32);
-    try requireElem(summand_b, .f32);
-    try requireElem(output, .f32);
+    const elem = output.elem;
+    try requireSupportedComputeElem(elem);
+    try requireElem(summand_a, elem);
+    try requireElem(summand_b, elem);
+    try requireElem(output, elem);
 
     const p = config.var_prefix;
+    const ty = cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     try writeCslChunkSizeParam(writer, config);
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try writeCslBufferArray(writer, p, summand_a.name, "chunk_size", "f32");
-    try writeCslBufferArray(writer, p, summand_b.name, "chunk_size", "f32");
-    try writeCslBufferArray(writer, p, output.name, "chunk_size", "f32");
-    try writeCslBufferPointer(writer, p, summand_a.name, "f32");
-    try writeCslBufferPointer(writer, p, summand_b.name, "f32");
-    try writeCslBufferPointer(writer, p, output.name, "f32");
+    try writeCslBufferArray(writer, p, summand_a.name, "chunk_size", ty);
+    try writeCslBufferArray(writer, p, summand_b.name, "chunk_size", ty);
+    try writeCslBufferArray(writer, p, output.name, "chunk_size", ty);
+    try writeCslBufferPointer(writer, p, summand_a.name, ty);
+    try writeCslBufferPointer(writer, p, summand_b.name, ty);
+    try writeCslBufferPointer(writer, p, output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, chunk_size)) |i| {\n");
@@ -568,13 +618,16 @@ fn emitCslKvWrite(
     const key_cache = try bindingForRole(func, .key_cache);
     const val_cache = try bindingForRole(func, .value_cache);
     const position = try bindingForRole(func, .decode_position);
-    try requireElem(key_proj, .f32);
-    try requireElem(val_proj, .f32);
-    try requireElem(key_cache, .f32);
-    try requireElem(val_cache, .f32);
+    const elem = key_cache.elem;
+    try requireSupportedComputeElem(elem);
+    try requireElem(key_proj, elem);
+    try requireElem(val_proj, elem);
+    try requireElem(key_cache, elem);
+    try requireElem(val_cache, elem);
     try requireElem(position, .u32);
 
     const p = config.var_prefix;
+    const ty = cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     if (config.head_dim_default) |value| {
         try writer.print("param head_dim: i16 = {d};\n", .{value});
@@ -588,15 +641,15 @@ fn emitCslKvWrite(
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);\n");
-    try writeCslBufferArray(writer, p, key_proj.name, "head_dim", "f32");
-    try writeCslBufferArray(writer, p, val_proj.name, "head_dim", "f32");
-    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", "f32");
-    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", "f32");
+    try writeCslBufferArray(writer, p, key_proj.name, "head_dim", ty);
+    try writeCslBufferArray(writer, p, val_proj.name, "head_dim", ty);
+    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", ty);
+    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", ty);
     try writeCslBufferArray(writer, p, position.name, "1", "u32");
-    try writeCslBufferPointer(writer, p, key_proj.name, "f32");
-    try writeCslBufferPointer(writer, p, val_proj.name, "f32");
-    try writeCslBufferPointer(writer, p, key_cache.name, "f32");
-    try writeCslBufferPointer(writer, p, val_cache.name, "f32");
+    try writeCslBufferPointer(writer, p, key_proj.name, ty);
+    try writeCslBufferPointer(writer, p, val_proj.name, ty);
+    try writeCslBufferPointer(writer, p, key_cache.name, ty);
+    try writeCslBufferPointer(writer, p, val_cache.name, ty);
     try writeCslBufferPointer(writer, p, position.name, "u32");
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
@@ -639,12 +692,15 @@ fn emitCslKvRead(
     const val_cache = try bindingForRole(func, .value_cache);
     const key_output = try bindingForRole(func, .key_output);
     const val_output = try bindingForRole(func, .value_output);
-    try requireElem(key_cache, .f32);
-    try requireElem(val_cache, .f32);
-    try requireElem(key_output, .f32);
-    try requireElem(val_output, .f32);
+    const elem = key_cache.elem;
+    try requireSupportedComputeElem(elem);
+    try requireElem(key_cache, elem);
+    try requireElem(val_cache, elem);
+    try requireElem(key_output, elem);
+    try requireElem(val_output, elem);
 
     const p = config.var_prefix;
+    const ty = cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     if (config.head_dim_default) |value| {
         try writer.print("param head_dim: i16 = {d};\n", .{value});
@@ -664,14 +720,14 @@ fn emitCslKvRead(
     }
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const kv_cache_len: u32 = @as(u32, max_seq_len) * @as(u32, head_dim);\n");
-    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", "f32");
-    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", "f32");
-    try writeCslBufferArray(writer, p, key_output.name, "read_len * head_dim", "f32");
-    try writeCslBufferArray(writer, p, val_output.name, "read_len * head_dim", "f32");
-    try writeCslBufferPointer(writer, p, key_cache.name, "f32");
-    try writeCslBufferPointer(writer, p, val_cache.name, "f32");
-    try writeCslBufferPointer(writer, p, key_output.name, "f32");
-    try writeCslBufferPointer(writer, p, val_output.name, "f32");
+    try writeCslBufferArray(writer, p, key_cache.name, "kv_cache_len", ty);
+    try writeCslBufferArray(writer, p, val_cache.name, "kv_cache_len", ty);
+    try writeCslBufferArray(writer, p, key_output.name, "read_len * head_dim", ty);
+    try writeCslBufferArray(writer, p, val_output.name, "read_len * head_dim", ty);
+    try writeCslBufferPointer(writer, p, key_cache.name, ty);
+    try writeCslBufferPointer(writer, p, val_cache.name, ty);
+    try writeCslBufferPointer(writer, p, key_output.name, ty);
+    try writeCslBufferPointer(writer, p, val_output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, read_len)) |i| {\n");

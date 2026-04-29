@@ -54,6 +54,10 @@ if str(REPO_ROOT) not in sys.path:
 from bench.tools.validate_frozen_doppler_reference import (  # noqa: E402
     compute_fixture_digest as _validator_compute_fixture_digest,
 )
+from bench.tools._lane_dtype_profile import (  # noqa: E402
+    LaneDtypeProfileError,
+    canonical_dtype_profile,
+)
 
 TSIR_PROBE_NAMES = ("post_rmsnorm", "post_qkv", "post_attn", "post_ffn")
 
@@ -191,6 +195,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--prompt", type=str, default=None)
     p.add_argument("--decode-steps", type=int, default=None)
     p.add_argument(
+        "--source-doppler-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to the source Doppler manifest.json. When set, "
+            "the canonical dtypeProfile is read from "
+            "manifest.quantizationInfo (weights/embeddings/lmHead/compute/"
+            "variantTag) and embedded in the fixture manifest so the "
+            "validator can enforce --lane-key under --require-dtype-profile. "
+            "Required for new af16 / non-af32 lanes; legacy af32 fixtures "
+            "captured before this contract may omit it."
+        ),
+    )
+    p.add_argument(
         "--frozen-reason",
         type=str,
         default=(
@@ -259,6 +277,34 @@ def main() -> int:
         manifest["decodeSteps"] = int(args.decode_steps)
     if first_token_logits_block is not None:
         manifest["firstTokenLogits"] = first_token_logits_block
+    if args.source_doppler_manifest is not None:
+        if not args.source_doppler_manifest.is_file():
+            sys.stderr.write(
+                "build_frozen_doppler_reference_manifest: "
+                f"--source-doppler-manifest {args.source_doppler_manifest} "
+                "not found\n"
+            )
+            return 2
+        try:
+            source_manifest = json.loads(
+                args.source_doppler_manifest.read_text(encoding="utf-8")
+            )
+        except json.JSONDecodeError as err:
+            sys.stderr.write(
+                "build_frozen_doppler_reference_manifest: "
+                f"--source-doppler-manifest decode failed: {err}\n"
+            )
+            return 2
+        try:
+            manifest["dtypeProfile"] = canonical_dtype_profile(
+                source_manifest.get("quantizationInfo")
+            )
+        except LaneDtypeProfileError as err:
+            sys.stderr.write(
+                "build_frozen_doppler_reference_manifest: "
+                f"source-doppler-manifest dtypeProfile rejected: {err}\n"
+            )
+            return 2
 
     manifest_path = fixture_dir / "frozen-reference.manifest.json"
     manifest_path.write_text(

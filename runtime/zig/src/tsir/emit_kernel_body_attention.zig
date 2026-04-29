@@ -60,10 +60,12 @@ pub fn emitCslAttentionScores(
     const key = try body_emit.bindingForRole(func, .key);
     const value = try body_emit.bindingForRole(func, .value);
     const output = try body_emit.bindingForRole(func, .output);
-    try body_emit.requireElem(query, .f32);
-    try body_emit.requireElem(key, .f32);
-    try body_emit.requireElem(value, .f32);
-    try body_emit.requireElem(output, .f32);
+    const elem = output.elem;
+    try body_emit.requireSupportedComputeElem(elem);
+    try body_emit.requireElem(query, elem);
+    try body_emit.requireElem(key, elem);
+    try body_emit.requireElem(value, elem);
+    try body_emit.requireElem(output, elem);
 
     const attn = func.body.attention_scores orelse return error.InvalidBodyContract;
     if (attn.softmax_mode != .two_pass_stable) return error.InvalidBodyContract;
@@ -83,6 +85,7 @@ pub fn emitCslAttentionScores(
         .key = key,
         .value = value,
         .output = output,
+        .elem = elem,
         .head_dim = attn.head_dim,
         .scale = scale,
         .causal_mode = attn.causal_mode,
@@ -102,6 +105,7 @@ const AttnEmitContext = struct {
     key: schema.BufferBinding,
     value: schema.BufferBinding,
     output: schema.BufferBinding,
+    elem: schema.ScalarKind,
     head_dim: u32,
     scale: f64,
     causal_mode: schema.CausalMode,
@@ -109,6 +113,20 @@ const AttnEmitContext = struct {
     query_seq_len: u32,
     var_prefix: []const u8,
 };
+
+/// Mask sentinel for the elem-typed lane. f32 keeps the historical
+/// `-1.0e30`. f16 uses `-65504.0` (the most-negative finite f16); a
+/// larger magnitude would auto-saturate to -inf when CSL casts the
+/// comptime literal, which still works for softmax but is harder to
+/// reason about. -65504.0 is exactly representable and behaves
+/// identically under `exp(sc - max) ≈ 0` for any non-mask score.
+fn maskSentinel(elem: schema.ScalarKind) []const u8 {
+    return switch (elem) {
+        .f32 => "-1.0e30",
+        .f16 => "-65504.0",
+        else => "-1.0e30",
+    };
+}
 
 /// Emit the per-slot mask conditional that runs after `dot * attn_scale`
 /// has been computed. `k_global_expr` is the CSL expression that
@@ -122,7 +140,9 @@ fn emitCausalMask(
     causal_mode: schema.CausalMode,
     sliding_window_size: ?u32,
     k_global_expr: []const u8,
+    elem: schema.ScalarKind,
 ) body_emit.EmitError!void {
+    const sent = maskSentinel(elem);
     switch (causal_mode) {
         .none => {},
         .causal => {
@@ -132,7 +152,7 @@ fn emitCausalMask(
                 "        if ({s} > @as(u32, kv_len) - 1) {{\n",
                 .{k_global_expr},
             );
-            try writer.writeAll("            sc = -1.0e30;\n");
+            try writer.print("            sc = {s};\n", .{sent});
             try writer.writeAll("        }\n");
         },
         .sliding_window => {
@@ -142,7 +162,7 @@ fn emitCausalMask(
                 "        if (@as(u32, kv_len) > window_size and {s} < @as(u32, kv_len) - window_size) {{\n",
                 .{k_global_expr},
             );
-            try writer.writeAll("            sc = -1.0e30;\n");
+            try writer.print("            sc = {s};\n", .{sent});
             try writer.writeAll("        }\n");
         },
     }
@@ -156,52 +176,55 @@ fn emitCausalMask(
 ///   O[d]      = sum_k V[k, d] * (weights[k] / sum_e)
 fn emitFullPerPe(writer: anytype, ctx: AttnEmitContext) body_emit.EmitError!void {
     const p = ctx.var_prefix;
+    const ty = body_emit.cslElemName(ctx.elem);
+    const sent = maskSentinel(ctx.elem);
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const head_dim: i16 = {d};\n", .{ctx.head_dim});
     try writer.writeAll("param kv_len: i16;\n");
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    // CSL rejects bare integer literals where f32 is expected
+    // CSL rejects bare integer literals where the elem type is expected
     // (`expected type 'f32', got: 'comptime_int'`). Force a decimal
-    // point + exponent so the literal always parses as f32 — matches
+    // point + exponent so the literal always parses correctly — matches
     // the existing test assertion `try expectContains(csl, "const
-    // attn_scale: f32 = 1");` (still satisfied since "1" is a prefix).
-    try writer.print("const attn_scale: f32 = {e};\n", .{ctx.scale});
-    try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "head_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, ctx.key.name, "kv_len * head_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, ctx.value.name, "kv_len * head_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "head_dim", "f32");
-    try writer.writeAll("var attn_scores: [kv_len]f32 = @zeros([kv_len]f32);\n");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.query.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.key.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.value.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.output.name, "f32");
+    // attn_scale: f32 = 1");` for the f32 lane (still satisfied since
+    // "1" is a prefix).
+    try writer.print("const attn_scale: {s} = {e};\n", .{ ty, ctx.scale });
+    try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "head_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, ctx.key.name, "kv_len * head_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, ctx.value.name, "kv_len * head_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "head_dim", ty);
+    try writer.print("var attn_scores: [kv_len]{s} = @zeros([kv_len]{s});\n", .{ ty, ty });
+    try body_emit.writeCslBufferPointer(writer, p, ctx.query.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.key.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.value.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
-    try writer.writeAll("    var max_score: f32 = -1.0e30;\n");
+    try writer.print("    var max_score: {s} = {s};\n", .{ ty, sent });
     try writer.writeAll("    for (@range(i16, kv_len)) |k| {\n");
-    try writer.writeAll("        var dot: f32 = 0.0;\n");
+    try writer.print("        var dot: {s} = 0.0;\n", .{ty});
     try writer.writeAll("        for (@range(i16, head_dim)) |d| {\n");
     try writer.print(
         "            dot += {s}{s}[@as(u32, d)] * {s}{s}[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)];\n",
         .{ p, ctx.query.name, p, ctx.key.name },
     );
     try writer.writeAll("        }\n");
-    try writer.writeAll("        var sc: f32 = dot * attn_scale;\n");
-    try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "@as(u32, k)");
+    try writer.print("        var sc: {s} = dot * attn_scale;\n", .{ty});
+    try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "@as(u32, k)", ctx.elem);
     try writer.writeAll("        attn_scores[@as(u32, k)] = sc;\n");
     try writer.writeAll("        if (sc > max_score) {\n");
     try writer.writeAll("            max_score = sc;\n");
     try writer.writeAll("        }\n");
     try writer.writeAll("    }\n");
-    try writer.writeAll("    var sum_exp: f32 = 0.0;\n");
+    try writer.print("    var sum_exp: {s} = 0.0;\n", .{ty});
     try writer.writeAll("    for (@range(i16, kv_len)) |k| {\n");
     try writer.writeAll("        const e = math.exp(attn_scores[@as(u32, k)] - max_score);\n");
     try writer.writeAll("        attn_scores[@as(u32, k)] = e;\n");
     try writer.writeAll("        sum_exp += e;\n");
     try writer.writeAll("    }\n");
     try writer.writeAll("    for (@range(i16, head_dim)) |d| {\n");
-    try writer.writeAll("        var acc: f32 = 0.0;\n");
+    try writer.print("        var acc: {s} = 0.0;\n", .{ty});
     try writer.writeAll("        for (@range(i16, kv_len)) |k| {\n");
     try writer.print(
         "            acc += {s}{s}[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)] * (attn_scores[@as(u32, k)] / sum_exp);\n",
@@ -282,26 +305,28 @@ fn emitKvAxisSharded(
     if (config.attention_pe_id_source == .layout_coordinates) {
         try writer.writeAll("const layout_mod = @import_module(\"<layout>\");\n");
     }
-    try writer.print("const attn_scale: f32 = {e};\n", .{ctx.scale});
+    const ty = body_emit.cslElemName(ctx.elem);
+    const sent = maskSentinel(ctx.elem);
+    try writer.print("const attn_scale: {s} = {e};\n", .{ ty, ctx.scale });
     try writer.writeAll("const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);\n");
     try writer.writeAll("const partials_len: u32 = @as(u32, head_dim) + 2;\n");
     if (multi_q) {
-        try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "query_seq_len * @as(u32, head_dim)", "f32");
+        try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "query_seq_len * @as(u32, head_dim)", ty);
     } else {
-        try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "head_dim", "f32");
+        try body_emit.writeCslBufferArray(writer, p, ctx.query.name, "head_dim", ty);
     }
-    try body_emit.writeCslBufferArray(writer, p, ctx.key.name, "local_kv_len", "f32");
-    try body_emit.writeCslBufferArray(writer, p, ctx.value.name, "local_kv_len", "f32");
+    try body_emit.writeCslBufferArray(writer, p, ctx.key.name, "local_kv_len", ty);
+    try body_emit.writeCslBufferArray(writer, p, ctx.value.name, "local_kv_len", ty);
     if (multi_q) {
-        try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "query_seq_len * partials_len", "f32");
+        try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "query_seq_len * partials_len", ty);
     } else {
-        try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "partials_len", "f32");
+        try body_emit.writeCslBufferArray(writer, p, ctx.output.name, "partials_len", ty);
     }
-    try writer.writeAll("var attn_scores: [slots_per_pe]f32 = @zeros([slots_per_pe]f32);\n");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.query.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.key.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.value.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, ctx.output.name, "f32");
+    try writer.print("var attn_scores: [slots_per_pe]{s} = @zeros([slots_per_pe]{s});\n", .{ ty, ty });
+    try body_emit.writeCslBufferPointer(writer, p, ctx.query.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.key.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.value.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, ctx.output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     if (config.attention_pe_id_source == .layout_coordinates) {
@@ -329,28 +354,29 @@ fn emitKvAxisSharded(
         }
     }
     // Local pass 1: per-slot scores + local_max. Tail slots (gk >= kv_len)
-    // are masked to -inf so they cannot win the max and contribute 0
-    // weight after the exp. -1.0e30 is the same sentinel the single-PE
-    // path uses; tail slots get the same value pre-exp so their
-    // contribution to local_sum_exp is exp(-1e30 - local_max) ≈ 0.
-    try writer.print("{s}var local_max: f32 = -1.0e30;\n", .{indent});
+    // are masked to the negative sentinel so they cannot win the max and
+    // contribute 0 weight after the exp. The sentinel is dtype-aware:
+    // f32 keeps `-1.0e30`; f16 uses `-65504.0` (the largest finite
+    // negative f16) so tail slots get the same value pre-exp and
+    // contribute exp(sentinel - local_max) ≈ 0 after softmax.
+    try writer.print("{s}var local_max: {s} = {s};\n", .{ indent, ty, sent });
     try writer.print("{s}for (@range(i16, slots_per_pe)) |k| {{\n", .{indent});
     try writer.print("{s}    const gk: u32 = slot_base + @as(u32, k);\n", .{indent});
     try writer.print("{s}    if (gk >= @as(u32, kv_len)) {{\n", .{indent});
-    try writer.print("{s}        attn_scores[@as(u32, k)] = -1.0e30;\n", .{indent});
+    try writer.print("{s}        attn_scores[@as(u32, k)] = {s};\n", .{ indent, sent });
     try writer.print("{s}        continue;\n", .{indent});
     try writer.print("{s}    }}\n", .{indent});
-    try writer.print("{s}    var dot: f32 = 0.0;\n", .{indent});
+    try writer.print("{s}    var dot: {s} = 0.0;\n", .{ indent, ty });
     try writer.print("{s}    for (@range(i16, head_dim)) |d| {{\n", .{indent});
     try writer.print(
         "{s}        dot += {s}{s}[{s}] * {s}{s}[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)];\n",
         .{ indent, p, ctx.query.name, q_index_expr, p, ctx.key.name },
     );
     try writer.print("{s}    }}\n", .{indent});
-    try writer.print("{s}    var sc: f32 = dot * attn_scale;\n", .{indent});
+    try writer.print("{s}    var sc: {s} = dot * attn_scale;\n", .{ indent, ty });
     if (multi_q and ctx.causal_mode == .causal) {
         try writer.print("{s}    if (gk > q_pos) {{\n", .{indent});
-        try writer.print("{s}        sc = -1.0e30;\n", .{indent});
+        try writer.print("{s}        sc = {s};\n", .{ indent, sent });
         try writer.print("{s}    }}\n", .{indent});
     } else if (multi_q and ctx.causal_mode == .sliding_window) {
         const window = ctx.sliding_window_size.?;
@@ -359,10 +385,10 @@ fn emitKvAxisSharded(
             "{s}    if (@as(u32, kv_len) > window_size and gk < @as(u32, kv_len) - window_size) {{\n",
             .{indent},
         );
-        try writer.print("{s}        sc = -1.0e30;\n", .{indent});
+        try writer.print("{s}        sc = {s};\n", .{ indent, sent });
         try writer.print("{s}    }}\n", .{indent});
     } else if (!multi_q) {
-        try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "gk");
+        try emitCausalMask(writer, ctx.causal_mode, ctx.sliding_window_size, "gk", ctx.elem);
     }
     try writer.print("{s}    attn_scores[@as(u32, k)] = sc;\n", .{indent});
     try writer.print("{s}    if (sc > local_max) {{\n", .{indent});
@@ -370,9 +396,9 @@ fn emitKvAxisSharded(
     try writer.print("{s}    }}\n", .{indent});
     try writer.print("{s}}}\n", .{indent});
     // Local pass 2: weights + local_sum_exp. Tail slots produce
-    // weights[k] = exp(-1e30 - local_max) which is 0 within f32 so they
+    // weights[k] = exp(sentinel - local_max) which is dtype-zero so they
     // contribute nothing to local_sum_exp or local_O.
-    try writer.print("{s}var local_sum_exp: f32 = 0.0;\n", .{indent});
+    try writer.print("{s}var local_sum_exp: {s} = 0.0;\n", .{ indent, ty });
     try writer.print("{s}for (@range(i16, slots_per_pe)) |k| {{\n", .{indent});
     try writer.print("{s}    const e = math.exp(attn_scores[@as(u32, k)] - local_max);\n", .{indent});
     try writer.print("{s}    attn_scores[@as(u32, k)] = e;\n", .{indent});
@@ -382,7 +408,7 @@ fn emitKvAxisSharded(
     // The host stitch divides by global_sum_exp after rescaling each PE
     // by exp(local_max_i - global_max).
     try writer.print("{s}for (@range(i16, head_dim)) |d| {{\n", .{indent});
-    try writer.print("{s}    var acc: f32 = 0.0;\n", .{indent});
+    try writer.print("{s}    var acc: {s} = 0.0;\n", .{ indent, ty });
     try writer.print("{s}    for (@range(i16, slots_per_pe)) |k| {{\n", .{indent});
     try writer.print(
         "{s}        acc += {s}{s}[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)] * attn_scores[@as(u32, k)];\n",

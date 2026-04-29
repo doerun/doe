@@ -1,0 +1,66 @@
+{
+  "activations": {
+    "3": {
+      "post_attn": {
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ],
+        "path": "layer_3/post_attn.npy",
+        "sha256": "cdce5a4f1efbb4644e74160c44377cdacd62390e789a621fd677f78858f97030"
+      },
+      "post_ffn": {
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ],
+        "path": "layer_3/post_ffn.npy",
+        "sha256": "6e965c98261da02a6e240871a6e441384a345ec1146dd38cb5d1a8b9760eae13"
+      },
+      "post_qkv": {
+        "byteLength": 589952,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          8192
+        ],
+        "path": "layer_3/post_qkv.npy",
+        "sha256": "cfc2baaba338afbce62e6cc8f87665fa96305787c0c211b3ce06990a6f318978"
+      },
+      "post_rmsnorm": {
+        "byteLength": 368768,
+        "elemDtype": "float32",
+        "elemShape": [
+          18,
+          5120
+        ],
+        "path": "layer_3/post_rmsnorm.npy",
+        "sha256": "dffd21dd233e7e6fad06f46c3be414aa1a8435fa7770d357e5df031161ff2de4"
+      }
+    }
+  },
+  "artifactKind": "doe_frozen_doppler_reference_manifest",
+  "decodeSteps": 8,
+  "dtypeProfile": {
+    "compute": "f16",
+    "embeddings": "f16",
+    "lmHead": "q4k",
+    "variantTag": "q4k-eaf16",
+    "weights": "q4k"
+  },
+  "fixtureDigest": "6691d02d81736997072d04c39c4f9901da761f36a5d331aa9d8cb5cf24789272",
+  "frozenAt": "2026-04-29T17:29:27Z",
+  "frozenReason": "Captured via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; serves as the rung-5 frozen Doppler reference for the Doe manifest-shape simfabric proof plan.",
+  "modelId": "qwen-3-6-27b-q4k-eaf16",
+  "promptText": "The color of the sky is",
+  "schemaVersion": 1,
+  "transcript": {
+    "byteLength": 33751,
+    "path": "reference-report.json",
+    "sha256": "95b5108359b58eef15e6a7dd3d20ab9f02ea3e7c36928b8866a57bdccfda8666"
+  }
+}

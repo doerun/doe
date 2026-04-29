@@ -38,6 +38,10 @@ from bench.tools._receipt_hash_guard import (  # noqa: E402
     ReceiptHashSpineError,
     enforce_receipt_hash_spine,
 )
+from bench.tools._lane_dtype_profile import (  # noqa: E402
+    LaneDtypeProfileError,
+    canonical_dtype_profile,
+)
 from bench.tools.synthesize_full_graph_compile_attempt_receipt import (  # noqa: E402
     _sha256_file,
     compute_residency_analysis,
@@ -93,6 +97,19 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Sequence-size context to record for the manifest-shaped "
             "compile attempt."
+        ),
+    )
+    p.add_argument(
+        "--source-doppler-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional path to the source Doppler manifest.json. When set, "
+            "the canonical dtypeProfile (weights/embeddings/lmHead/compute/"
+            "variantTag) is read from manifest.quantizationInfo and embedded "
+            "in the receipt under `dtypeProfile`. Required for af16 / "
+            "non-af32 lane receipts so aggregators can split lanes "
+            "post-hoc by dtypeProfile.variantTag."
         ),
     )
     return p.parse_args()
@@ -264,6 +281,36 @@ def main() -> int:
 
     host_plan_hash = _sha256_file(args.host_plan)
 
+    dtype_profile: dict[str, str] | None = None
+    if args.source_doppler_manifest is not None:
+        if not args.source_doppler_manifest.is_file():
+            sys.stderr.write(
+                "synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt: "
+                f"--source-doppler-manifest {args.source_doppler_manifest} "
+                "not found\n"
+            )
+            return 2
+        try:
+            source_manifest = json.loads(
+                args.source_doppler_manifest.read_text(encoding="utf-8")
+            )
+        except json.JSONDecodeError as err:
+            sys.stderr.write(
+                "synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt: "
+                f"--source-doppler-manifest decode failed: {err}\n"
+            )
+            return 2
+        try:
+            dtype_profile = canonical_dtype_profile(
+                source_manifest.get("quantizationInfo")
+            )
+        except LaneDtypeProfileError as err:
+            sys.stderr.write(
+                "synthesize_qwen_3_6_27b_full_graph_compile_attempt_receipt: "
+                f"source-doppler-manifest dtypeProfile rejected: {err}\n"
+            )
+            return 2
+
     qwen_named_blockers_summary = (
         "Qwen 3.6 27B is a hybrid full + linear-attention architecture. "
         "This receipt covers the manifest host-plan inventory, including "
@@ -413,6 +460,7 @@ def main() -> int:
                 "schema.",
             ],
         },
+        **({"dtypeProfile": dtype_profile} if dtype_profile is not None else {}),
         "claim": {
             "scope": (
                 "Qwen 3.6 27B steps-mode full-graph compile target "

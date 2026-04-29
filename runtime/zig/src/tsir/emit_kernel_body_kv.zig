@@ -37,26 +37,29 @@ pub fn emitCslKvWriteSlotSharded(
     const key_cache = try body.bindingForRole(func, .key_cache);
     const val_cache = try body.bindingForRole(func, .value_cache);
     const position = try body.bindingForRole(func, .decode_position);
-    try body.requireElem(key_proj, .f32);
-    try body.requireElem(val_proj, .f32);
-    try body.requireElem(key_cache, .f32);
-    try body.requireElem(val_cache, .f32);
+    const elem = key_cache.elem;
+    try body.requireSupportedComputeElem(elem);
+    try body.requireElem(key_proj, elem);
+    try body.requireElem(val_proj, elem);
+    try body.requireElem(key_cache, elem);
+    try body.requireElem(val_cache, elem);
     try body.requireElem(position, .u32);
 
     const p = config.var_prefix;
+    const ty = body.cslElemName(elem);
     try writeKvHeader(writer, config);
     try writer.writeAll(
         "const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);\n",
     );
-    try body.writeCslBufferArray(writer, p, key_proj.name, "head_dim", "f32");
-    try body.writeCslBufferArray(writer, p, val_proj.name, "head_dim", "f32");
-    try body.writeCslBufferArray(writer, p, key_cache.name, "local_kv_len", "f32");
-    try body.writeCslBufferArray(writer, p, val_cache.name, "local_kv_len", "f32");
+    try body.writeCslBufferArray(writer, p, key_proj.name, "head_dim", ty);
+    try body.writeCslBufferArray(writer, p, val_proj.name, "head_dim", ty);
+    try body.writeCslBufferArray(writer, p, key_cache.name, "local_kv_len", ty);
+    try body.writeCslBufferArray(writer, p, val_cache.name, "local_kv_len", ty);
     try body.writeCslBufferArray(writer, p, position.name, "1", "u32");
-    try body.writeCslBufferPointer(writer, p, key_proj.name, "f32");
-    try body.writeCslBufferPointer(writer, p, val_proj.name, "f32");
-    try body.writeCslBufferPointer(writer, p, key_cache.name, "f32");
-    try body.writeCslBufferPointer(writer, p, val_cache.name, "f32");
+    try body.writeCslBufferPointer(writer, p, key_proj.name, ty);
+    try body.writeCslBufferPointer(writer, p, val_proj.name, ty);
+    try body.writeCslBufferPointer(writer, p, key_cache.name, ty);
+    try body.writeCslBufferPointer(writer, p, val_cache.name, ty);
     try body.writeCslBufferPointer(writer, p, position.name, "u32");
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
@@ -107,12 +110,15 @@ pub fn emitCslKvReadSlotSharded(
     const val_cache = try body.bindingForRole(func, .value_cache);
     const key_output = try body.bindingForRole(func, .key_output);
     const val_output = try body.bindingForRole(func, .value_output);
-    try body.requireElem(key_cache, .f32);
-    try body.requireElem(val_cache, .f32);
-    try body.requireElem(key_output, .f32);
-    try body.requireElem(val_output, .f32);
+    const elem = key_cache.elem;
+    try body.requireSupportedComputeElem(elem);
+    try body.requireElem(key_cache, elem);
+    try body.requireElem(val_cache, elem);
+    try body.requireElem(key_output, elem);
+    try body.requireElem(val_output, elem);
 
     const p = config.var_prefix;
+    const ty = body.cslElemName(elem);
     try writeKvHeader(writer, config);
     try writer.writeAll(
         "const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);\n",
@@ -121,14 +127,14 @@ pub fn emitCslKvReadSlotSharded(
     // plan stitches PE outputs into the logical [max_seq_len * head_dim]
     // contiguous cache, so read_start / read_len from the full-per-pe
     // path are not surfaced here. Slicing happens host-side.
-    try body.writeCslBufferArray(writer, p, key_cache.name, "local_kv_len", "f32");
-    try body.writeCslBufferArray(writer, p, val_cache.name, "local_kv_len", "f32");
-    try body.writeCslBufferArray(writer, p, key_output.name, "local_kv_len", "f32");
-    try body.writeCslBufferArray(writer, p, val_output.name, "local_kv_len", "f32");
-    try body.writeCslBufferPointer(writer, p, key_cache.name, "f32");
-    try body.writeCslBufferPointer(writer, p, val_cache.name, "f32");
-    try body.writeCslBufferPointer(writer, p, key_output.name, "f32");
-    try body.writeCslBufferPointer(writer, p, val_output.name, "f32");
+    try body.writeCslBufferArray(writer, p, key_cache.name, "local_kv_len", ty);
+    try body.writeCslBufferArray(writer, p, val_cache.name, "local_kv_len", ty);
+    try body.writeCslBufferArray(writer, p, key_output.name, "local_kv_len", ty);
+    try body.writeCslBufferArray(writer, p, val_output.name, "local_kv_len", ty);
+    try body.writeCslBufferPointer(writer, p, key_cache.name, ty);
+    try body.writeCslBufferPointer(writer, p, val_cache.name, ty);
+    try body.writeCslBufferPointer(writer, p, key_output.name, ty);
+    try body.writeCslBufferPointer(writer, p, val_output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.writeAll("    for (@range(i16, slots_per_pe)) |slot| {\n");

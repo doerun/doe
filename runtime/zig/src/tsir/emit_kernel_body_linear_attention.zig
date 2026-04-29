@@ -47,12 +47,14 @@ pub fn emitCslLinearAttention(
     const gate = try body_emit.bindingForRole(func, .gate);
     const linear_state = try body_emit.bindingForRole(func, .linear_state);
     const output = try body_emit.bindingForRole(func, .output);
-    try body_emit.requireElem(query, .f32);
-    try body_emit.requireElem(key, .f32);
-    try body_emit.requireElem(value, .f32);
-    try body_emit.requireElem(gate, .f32);
-    try body_emit.requireElem(linear_state, .f32);
-    try body_emit.requireElem(output, .f32);
+    const elem = output.elem;
+    try body_emit.requireSupportedComputeElem(elem);
+    try body_emit.requireElem(query, elem);
+    try body_emit.requireElem(key, elem);
+    try body_emit.requireElem(value, elem);
+    try body_emit.requireElem(gate, elem);
+    try body_emit.requireElem(linear_state, elem);
+    try body_emit.requireElem(output, elem);
     if (!linear_state.read_write) return error.InvalidBodyContract;
 
     const body = func.body.linear_attention orelse return error.InvalidBodyContract;
@@ -62,6 +64,7 @@ pub fn emitCslLinearAttention(
     if (body.has_dt_bias) return error.InvalidBodyContract;
 
     const p = config.var_prefix;
+    const ty = body_emit.cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const key_dim: i16 = {d};\n", .{body.key_dim});
     try writer.print("const value_dim: i16 = {d};\n", .{body.value_dim});
@@ -71,33 +74,33 @@ pub fn emitCslLinearAttention(
     // (rather than a body const) lets the host plan choose a sharding
     // factor without re-emitting the kernel.
     try writer.writeAll("param value_dim_per_pe: i16;\n");
-    try writer.writeAll("param a_log: f32;\n");
+    try writer.print("param a_log: {s};\n", .{ty});
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try body_emit.writeCslBufferArray(writer, p, query.name, "value_dim_per_pe", "f32");
-    try body_emit.writeCslBufferArray(writer, p, key.name, "key_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, value.name, "key_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, gate.name, "value_dim_per_pe", "f32");
-    try body_emit.writeCslBufferArray(writer, p, linear_state.name, "value_dim_per_pe * key_dim", "f32");
-    try body_emit.writeCslBufferArray(writer, p, output.name, "value_dim_per_pe", "f32");
-    try body_emit.writeCslBufferPointer(writer, p, query.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, key.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, value.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, gate.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, linear_state.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, output.name, "f32");
+    try body_emit.writeCslBufferArray(writer, p, query.name, "value_dim_per_pe", ty);
+    try body_emit.writeCslBufferArray(writer, p, key.name, "key_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, value.name, "key_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, gate.name, "value_dim_per_pe", ty);
+    try body_emit.writeCslBufferArray(writer, p, linear_state.name, "value_dim_per_pe * key_dim", ty);
+    try body_emit.writeCslBufferArray(writer, p, output.name, "value_dim_per_pe", ty);
+    try body_emit.writeCslBufferPointer(writer, p, query.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, key.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, value.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, gate.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, linear_state.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     // alpha = 1 - exp(-A_log) clamped to (0, 1) by the host's a_log >= 0
     // contract. exp(-A_log) is the per-step state retention; alpha is
     // the new-information weight in the SSM update.
-    try writer.writeAll("    const alpha: f32 = 1.0 - math.exp(-a_log);\n");
-    try writer.writeAll("    const decay: f32 = 1.0 - alpha;\n");
+    try writer.print("    const alpha: {s} = 1.0 - math.exp(-a_log);\n", .{ty});
+    try writer.print("    const decay: {s} = 1.0 - alpha;\n", .{ty});
     // Pass 1: for each value-dim row d this PE owns, compute scalar
     //   prev_dot = sum_k state[d, k] * k_in[k]
     // and the per-(d, k) delta and updated state.
     try writer.writeAll("    for (@range(i16, value_dim_per_pe)) |d| {\n");
-    try writer.writeAll("        var prev_dot: f32 = 0.0;\n");
+    try writer.print("        var prev_dot: {s} = 0.0;\n", .{ty});
     try writer.writeAll("        for (@range(i16, key_dim)) |k| {\n");
     try writer.print(
         "            prev_dot += {s}{s}[@as(u32, d) * @as(u32, key_dim) + @as(u32, k)] * {s}{s}[@as(u32, k)];\n",
@@ -105,25 +108,25 @@ pub fn emitCslLinearAttention(
     );
     try writer.writeAll("        }\n");
     try writer.print(
-        "        const q_d: f32 = {s}{s}[@as(u32, d)];\n",
-        .{ p, query.name },
+        "        const q_d: {s} = {s}{s}[@as(u32, d)];\n",
+        .{ ty, p, query.name },
     );
-    try writer.writeAll("        const correction: f32 = q_d - prev_dot;\n");
-    try writer.writeAll("        const scaled_correction: f32 = alpha * correction;\n");
+    try writer.print("        const correction: {s} = q_d - prev_dot;\n", .{ty});
+    try writer.print("        const scaled_correction: {s} = alpha * correction;\n", .{ty});
     try writer.writeAll("        for (@range(i16, key_dim)) |k| {\n");
     try writer.print(
-        "            const k_in: f32 = {s}{s}[@as(u32, k)];\n",
-        .{ p, key.name },
+        "            const k_in: {s} = {s}{s}[@as(u32, k)];\n",
+        .{ ty, p, key.name },
     );
     try writer.print(
         "            const idx: u32 = @as(u32, d) * @as(u32, key_dim) + @as(u32, k);\n",
         .{},
     );
     try writer.print(
-        "            const prev_state: f32 = {s}{s}[idx];\n",
-        .{ p, linear_state.name },
+        "            const prev_state: {s} = {s}{s}[idx];\n",
+        .{ ty, p, linear_state.name },
     );
-    try writer.writeAll("            const delta: f32 = scaled_correction * k_in;\n");
+    try writer.print("            const delta: {s} = scaled_correction * k_in;\n", .{ty});
     try writer.print(
         "            {s}{s}[idx] = decay * prev_state + delta;\n",
         .{ p, linear_state.name },
@@ -135,7 +138,7 @@ pub fn emitCslLinearAttention(
     // the DeltaNet `attentionOutputGate=sigmoid` form. The query value
     // is the residual carrier (input to FFN if the SSM were a no-op).
     try writer.writeAll("    for (@range(i16, value_dim_per_pe)) |d| {\n");
-    try writer.writeAll("        var acc: f32 = 0.0;\n");
+    try writer.print("        var acc: {s} = 0.0;\n", .{ty});
     try writer.writeAll("        for (@range(i16, key_dim)) |k| {\n");
     try writer.print(
         "            acc += {s}{s}[@as(u32, d) * @as(u32, key_dim) + @as(u32, k)] * {s}{s}[@as(u32, k)];\n",
@@ -143,10 +146,10 @@ pub fn emitCslLinearAttention(
     );
     try writer.writeAll("        }\n");
     try writer.print(
-        "        const g: f32 = {s}{s}[@as(u32, d)];\n",
-        .{ p, gate.name },
+        "        const g: {s} = {s}{s}[@as(u32, d)];\n",
+        .{ ty, p, gate.name },
     );
-    try writer.writeAll("        const sigmoid_g: f32 = 1.0 / (1.0 + math.exp(-g));\n");
+    try writer.print("        const sigmoid_g: {s} = 1.0 / (1.0 + math.exp(-g));\n", .{ty});
     try writer.print(
         "        {s}{s}[@as(u32, d)] = acc + sigmoid_g * {s}{s}[@as(u32, d)];\n",
         .{ p, output.name, p, query.name },

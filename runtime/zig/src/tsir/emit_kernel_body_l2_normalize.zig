@@ -24,26 +24,29 @@ pub fn emitCslL2Normalize(
 ) body_emit.EmitError!void {
     const input = try body_emit.bindingForRole(func, .input);
     const output = try body_emit.bindingForRole(func, .output);
-    try body_emit.requireElem(input, .f32);
-    try body_emit.requireElem(output, .f32);
+    const elem = output.elem;
+    try body_emit.requireSupportedComputeElem(elem);
+    try body_emit.requireElem(input, elem);
+    try body_emit.requireElem(output, elem);
 
     const body = func.body.l2_normalize orelse return error.InvalidBodyContract;
     if (body.hidden == 0) return error.InvalidBodyContract;
     if (body.eps < 0) return error.InvalidBodyContract;
 
     const p = config.var_prefix;
+    const ty = body_emit.cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     try writer.print("const hidden_size: i16 = {d};\n", .{body.hidden});
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
-    try writer.print("const l2_eps: f32 = {e};\n", .{body.eps});
-    try body_emit.writeCslBufferArray(writer, p, input.name, "hidden_size", "f32");
-    try body_emit.writeCslBufferArray(writer, p, output.name, "hidden_size", "f32");
-    try body_emit.writeCslBufferPointer(writer, p, input.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, output.name, "f32");
+    try writer.print("const l2_eps: {s} = {e};\n", .{ ty, body.eps });
+    try body_emit.writeCslBufferArray(writer, p, input.name, "hidden_size", ty);
+    try body_emit.writeCslBufferArray(writer, p, output.name, "hidden_size", ty);
+    try body_emit.writeCslBufferPointer(writer, p, input.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, output.name, ty);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
-    try writer.writeAll("    var sq: f32 = 0.0;\n");
+    try writer.print("    var sq: {s} = 0.0;\n", .{ty});
     try writer.writeAll("    for (@range(i16, hidden_size)) |d| {\n");
     try writer.print(
         "        const v = {s}{s}[@as(u32, d)];\n",

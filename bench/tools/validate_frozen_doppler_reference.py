@@ -52,6 +52,14 @@ from typing import Any
 import jsonschema
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.tools._lane_dtype_profile import (  # noqa: E402
+    LaneDtypeProfileError,
+    assert_lane_match,
+)
+
 SCHEMA_PATH = (
     REPO_ROOT / "config" / "doe-frozen-doppler-reference.schema.json"
 )
@@ -90,6 +98,26 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Where to write the validation report JSON. Defaults to stdout.",
+    )
+    p.add_argument(
+        "--lane-key",
+        default=None,
+        help=(
+            "Optional lane key (e.g. 'q4k-ehf16-af32', 'q4k-ehf16-af16'). "
+            "When set, requires the fixture manifest's "
+            "dtypeProfile.variantTag to match. Permissive when the fixture "
+            "carries no dtypeProfile (pre-existing legacy fixtures). Use "
+            "--require-dtype-profile to make the field's presence mandatory."
+        ),
+    )
+    p.add_argument(
+        "--require-dtype-profile",
+        action="store_true",
+        help=(
+            "Make `dtypeProfile` mandatory on the fixture manifest. Used "
+            "for new af16 / non-af32 lanes to prevent silent legacy-mode "
+            "validation. Has no effect unless --lane-key is also set."
+        ),
     )
     return p.parse_args()
 
@@ -263,7 +291,12 @@ def _validate_npy_metadata(
         )
 
 
-def validate_fixture(root: Path) -> dict[str, Any]:
+def validate_fixture(
+    root: Path,
+    *,
+    lane_key: str | None = None,
+    require_dtype_profile: bool = False,
+) -> dict[str, Any]:
     manifest_path = root / MANIFEST_FILENAME
     if not manifest_path.is_file():
         raise SystemExit(
@@ -278,6 +311,23 @@ def validate_fixture(root: Path) -> dict[str, Any]:
     ]
 
     violations: list[str] = []
+
+    fixture_dtype_profile = manifest.get("dtypeProfile")
+    lane_violations: list[str] = []
+    if lane_key is not None:
+        if require_dtype_profile and fixture_dtype_profile is None:
+            lane_violations.append(
+                f"laneKey={lane_key!r} required dtypeProfile on fixture "
+                "manifest but field is absent"
+            )
+        try:
+            assert_lane_match(
+                lane_key,
+                fixture_dtype_profile,
+                permissive_when_absent=not require_dtype_profile,
+            )
+        except LaneDtypeProfileError as err:
+            lane_violations.append(str(err))
 
     transcript = manifest.get("transcript", {})
     _validate_artifact("transcript", transcript, root, violations)
@@ -315,7 +365,10 @@ def validate_fixture(root: Path) -> dict[str, Any]:
         )
 
     bound = (
-        not schema_errors and not violations and not digest_violations
+        not schema_errors
+        and not violations
+        and not digest_violations
+        and not lane_violations
     )
     return {
         "schemaVersion": 1,
@@ -326,6 +379,9 @@ def validate_fixture(root: Path) -> dict[str, Any]:
         "schemaErrors": schema_errors,
         "artifactViolations": violations,
         "digestViolations": digest_violations,
+        "laneViolations": lane_violations,
+        "laneKeyExpected": lane_key,
+        "dtypeProfile": fixture_dtype_profile,
         "fixtureDigestCited": cited_digest,
         "fixtureDigestRecomputed": recomputed,
         "bound": bound,
@@ -337,7 +393,11 @@ def main() -> int:
     args = parse_args()
     root = args.root.resolve()
     try:
-        report = validate_fixture(root)
+        report = validate_fixture(
+            root,
+            lane_key=args.lane_key,
+            require_dtype_profile=args.require_dtype_profile,
+        )
     except SystemExit as err:
         print(str(err), file=sys.stderr)
         return 2

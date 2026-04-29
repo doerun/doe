@@ -247,10 +247,22 @@ fn parseBundleActivationDtype(allocator: std.mem.Allocator, payload: []const u8)
     const defaults = compute.defaults orelse return null;
     return defaults.activationDtype;
 }
-fn requireSupportedCslActivationDtype(dtype: ?[]const u8) !void {
+// CSL activation-dtype admission for the bundle session.
+//
+// Door-level admission is permissive for the dtypes Doe has lowering shape
+// for. f32 is the legacy lane and is fully supported. f16 is admitted as
+// a Track-2 work-in-progress lane: this gate intentionally lets the
+// session through, and individual op emit paths (`emit_kernel_body*.zig`)
+// hold the closed-fail surface via their `requireElem(_, .f32)` checks.
+// As Track-2 lands per-op f16 coverage, those op-level assertions are
+// where the dtype routing widens.
+//
+// Anything other than f32 / f16 is still rejected at the door — the
+// lowering surface has no shape for bf16 / int8 / etc. yet.
+fn admitCslActivationDtype(dtype: ?[]const u8) !void {
     const raw = dtype orelse return;
     if (std.mem.eql(u8, raw, "f32")) return;
-    if (std.mem.eql(u8, raw, "f16")) return error.UnsupportedActivationF16CslLowering;
+    if (std.mem.eql(u8, raw, "f16")) return;
     return error.InvalidArgument;
 }
 fn parseQuantFormat(raw: []const u8) ?host.ModelConfig.QuantFormat {
@@ -640,7 +652,7 @@ pub fn main() !void {
         },
     };
     const input_bytes = try readFileAllocAbsoluteAware(allocator, args.input_path, 1 << 20);
-    try requireSupportedCslActivationDtype(try parseBundleActivationDtype(allocator, input_bytes));
+    try admitCslActivationDtype(try parseBundleActivationDtype(allocator, input_bytes));
     var kernel_buf: [MAX_KERNELS]host.KernelSpec = undefined;
     var prefill_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
     var decode_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
@@ -740,7 +752,7 @@ test "parseBundleWeightMappings preserves artifact-backed RDRR tensor metadata" 
     try std.testing.expectEqualStrings("Q4_K_M", mappings[0].quant.format);
     try std.testing.expectEqualStrings("rdrr_int4ple", mappings[0].quant.encoding.?);
 }
-test "f16 activation sessions fail closed before CSL lowering" {
+test "csl activation dtype admission: f32 + f16 admitted at door, others rejected" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const payload =
@@ -756,9 +768,14 @@ test "f16 activation sessions fail closed before CSL lowering" {
     ;
     const dtype = try parseBundleActivationDtype(arena.allocator(), payload);
     try std.testing.expectEqualStrings("f16", dtype.?);
-    try std.testing.expectError(error.UnsupportedActivationF16CslLowering, requireSupportedCslActivationDtype(dtype));
-    try requireSupportedCslActivationDtype("f32");
-    try requireSupportedCslActivationDtype(null);
+    // f16 is admitted at the door; per-op fail-closed lives in the
+    // emit_kernel_body*.zig requireElem assertions until Track 2 lands
+    // per-op f16 coverage.
+    try admitCslActivationDtype(dtype);
+    try admitCslActivationDtype("f32");
+    try admitCslActivationDtype(null);
+    try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("bf16"));
+    try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("int8"));
 }
 test "buildCompileTargets emits phase variants for elementwise kernels" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

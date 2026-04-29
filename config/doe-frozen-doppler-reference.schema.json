@@ -37,6 +37,39 @@
       "description": "Optional RDRR conversion variant string (e.g. `text-q4k-ehf16-af32`).",
       "type": "string"
     },
+    "dtypeProfile": {
+      "description": "Canonical lane dtype profile sourced from the source Doppler manifest's `quantizationInfo`. Required for new lanes (af16, abf16, ...) so validators can enforce a `--lane-key` match against `variantTag` and prevent cross-lane fixture confusion. Optional for pre-existing af32 fixtures captured before this contract landed; validators accept those permissively. The contract is documented in `bench/tools/_lane_dtype_profile.py`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["weights", "embeddings", "compute", "variantTag"],
+      "properties": {
+        "weights": {
+          "description": "Weight quantization tag (e.g. 'q4k', 'f16').",
+          "type": "string",
+          "minLength": 1
+        },
+        "embeddings": {
+          "description": "Embedding-table dtype (e.g. 'f16', 'bf16').",
+          "type": "string",
+          "minLength": 1
+        },
+        "lmHead": {
+          "description": "LM head dtype (defaults to weights when absent).",
+          "type": "string",
+          "minLength": 1
+        },
+        "compute": {
+          "description": "Activation / math / accum / output dtype (e.g. 'f32', 'f16').",
+          "type": "string",
+          "minLength": 1
+        },
+        "variantTag": {
+          "description": "Canonical lane key denormalized from the per-role fields (e.g. 'q4k-ehf16-af32', 'q4k-ehf16-af16'). Used as the `--lane-key` match target.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "promptText": {
       "description": "Prompt text the fixture was captured against. Recorded so reviewers can reproduce; not used as a hash input.",
       "type": "string"

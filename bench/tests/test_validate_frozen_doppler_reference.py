@@ -16,6 +16,14 @@ from bench.tools.validate_frozen_doppler_reference import (  # noqa: E402
     compute_fixture_digest,
     validate_fixture,
 )
+from bench.tools._lane_dtype_profile import (  # noqa: E402
+    LaneDtypeProfileError,
+    assert_lane_match,
+    canonical_dtype_profile,
+    lane_key,
+    lane_suffix,
+    receipt_path_lane_suffix,
+)
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -243,6 +251,195 @@ class ValidateFixtureTest(unittest.TestCase):
             root = Path(scratch)
             with self.assertRaises(SystemExit):
                 validate_fixture(root)
+
+
+class LaneDtypeProfileHelperTest(unittest.TestCase):
+    """Cover the canonical-profile / lane-key / suffix helpers."""
+
+    AF32_QI = {
+        "weights": "q4k",
+        "embeddings": "f16",
+        "compute": "f32",
+        "layout": "row",
+        "variantTag": "q4k-ehf16-af32",
+    }
+    AF16_QI = {
+        "weights": "q4k",
+        "embeddings": "f16",
+        "compute": "f16",
+        "layout": "row",
+        "variantTag": "q4k-ehf16-af16",
+    }
+    QWEN_QI = {
+        "weights": "q4k",
+        "embeddings": "f16",
+        "lmHead": "q4k",
+        "compute": "f32",
+        "layout": "row",
+        "variantTag": "q4k-ef16-af32",
+    }
+
+    def test_canonical_profile_defaults_lmhead_to_weights(self) -> None:
+        profile = canonical_dtype_profile(self.AF32_QI)
+        self.assertEqual(profile["lmHead"], "q4k")
+        self.assertEqual(profile["compute"], "f32")
+        self.assertEqual(profile["variantTag"], "q4k-ehf16-af32")
+
+    def test_canonical_profile_preserves_explicit_lmhead(self) -> None:
+        profile = canonical_dtype_profile(self.QWEN_QI)
+        self.assertEqual(profile["lmHead"], "q4k")
+
+    def test_canonical_profile_rejects_missing_required(self) -> None:
+        bad = dict(self.AF32_QI)
+        del bad["variantTag"]
+        with self.assertRaises(LaneDtypeProfileError):
+            canonical_dtype_profile(bad)
+
+    def test_canonical_profile_rejects_none(self) -> None:
+        with self.assertRaises(LaneDtypeProfileError):
+            canonical_dtype_profile(None)
+
+    def test_lane_key_returns_variant_tag(self) -> None:
+        self.assertEqual(lane_key(self.AF16_QI), "q4k-ehf16-af16")
+
+    def test_lane_suffix_derives_from_compute(self) -> None:
+        self.assertEqual(lane_suffix(self.AF32_QI), "af32")
+        self.assertEqual(lane_suffix(self.AF16_QI), "af16")
+
+    def test_receipt_path_suffix_empty_for_af32(self) -> None:
+        # Pre-existing af32 receipt paths are NOT renamed; helper returns ''
+        # so new writers preserve legacy paths for the af32 lane.
+        self.assertEqual(receipt_path_lane_suffix(self.AF32_QI), "")
+
+    def test_receipt_path_suffix_set_for_af16(self) -> None:
+        self.assertEqual(receipt_path_lane_suffix(self.AF16_QI), "af16")
+
+    def test_assert_lane_match_passes_when_aligned(self) -> None:
+        profile = canonical_dtype_profile(self.AF16_QI)
+        assert_lane_match("q4k-ehf16-af16", profile)  # no raise
+
+    def test_assert_lane_match_raises_on_mismatch(self) -> None:
+        profile = canonical_dtype_profile(self.AF32_QI)
+        with self.assertRaises(LaneDtypeProfileError):
+            assert_lane_match("q4k-ehf16-af16", profile)
+
+    def test_assert_lane_match_permissive_when_absent(self) -> None:
+        # Default permissive behavior: legacy fixtures lacking dtypeProfile
+        # are accepted so they continue to bind.
+        assert_lane_match("q4k-ehf16-af32", None)  # no raise
+
+    def test_assert_lane_match_strict_when_required(self) -> None:
+        with self.assertRaises(LaneDtypeProfileError):
+            assert_lane_match(
+                "q4k-ehf16-af16", None, permissive_when_absent=False
+            )
+
+
+def _build_minimal_fixture_with_profile(
+    root: Path, dtype_profile: dict | None
+) -> dict:
+    """Build the minimal fixture and inject an optional dtypeProfile."""
+    manifest = _build_minimal_fixture(root)
+    if dtype_profile is not None:
+        manifest["dtypeProfile"] = dtype_profile
+        (root / "frozen-reference.manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    return manifest
+
+
+class ValidateFixtureLaneKeyTest(unittest.TestCase):
+    """Cover --lane-key / --require-dtype-profile behavior end-to-end."""
+
+    AF16_PROFILE = {
+        "weights": "q4k",
+        "embeddings": "f16",
+        "compute": "f16",
+        "variantTag": "q4k-ehf16-af16",
+    }
+    AF32_PROFILE = {
+        "weights": "q4k",
+        "embeddings": "f16",
+        "compute": "f32",
+        "variantTag": "q4k-ehf16-af32",
+    }
+
+    def test_legacy_fixture_binds_without_lane_key(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            _build_minimal_fixture_with_profile(root, None)
+            report = validate_fixture(root)
+            self.assertTrue(report["bound"], msg=report)
+            self.assertIsNone(report["dtypeProfile"])
+            self.assertEqual(report["laneViolations"], [])
+
+    def test_legacy_fixture_permissive_with_lane_key(self) -> None:
+        # Lane key set, no require flag, no dtypeProfile in fixture →
+        # permissive bind for backward compat with pre-contract fixtures.
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            _build_minimal_fixture_with_profile(root, None)
+            report = validate_fixture(
+                root, lane_key="q4k-ehf16-af32"
+            )
+            self.assertTrue(report["bound"], msg=report)
+            self.assertEqual(report["laneKeyExpected"], "q4k-ehf16-af32")
+
+    def test_legacy_fixture_rejected_when_dtype_profile_required(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            _build_minimal_fixture_with_profile(root, None)
+            report = validate_fixture(
+                root,
+                lane_key="q4k-ehf16-af16",
+                require_dtype_profile=True,
+            )
+            self.assertFalse(report["bound"], msg=report)
+            self.assertTrue(report["laneViolations"])
+
+    def test_dtype_profile_match_binds(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            _build_minimal_fixture_with_profile(root, self.AF16_PROFILE)
+            report = validate_fixture(
+                root,
+                lane_key="q4k-ehf16-af16",
+                require_dtype_profile=True,
+            )
+            self.assertTrue(report["bound"], msg=report)
+            self.assertEqual(report["dtypeProfile"], self.AF16_PROFILE)
+            self.assertEqual(report["laneViolations"], [])
+
+    def test_dtype_profile_mismatch_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            _build_minimal_fixture_with_profile(root, self.AF32_PROFILE)
+            report = validate_fixture(
+                root,
+                lane_key="q4k-ehf16-af16",
+                require_dtype_profile=True,
+            )
+            self.assertFalse(report["bound"], msg=report)
+            self.assertTrue(
+                any("lane key mismatch" in v for v in report["laneViolations"]),
+                msg=report["laneViolations"],
+            )
+
+    def test_dtype_profile_schema_required_fields(self) -> None:
+        # Schema enforces required fields on dtypeProfile when present —
+        # missing variantTag is a schema violation, not just a lane mismatch.
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            bad_profile = {
+                "weights": "q4k",
+                "embeddings": "f16",
+                "compute": "f16",
+            }
+            _build_minimal_fixture_with_profile(root, bad_profile)
+            report = validate_fixture(root)
+            self.assertFalse(report["bound"], msg=report)
+            self.assertFalse(report["schemaValid"])
 
 
 if __name__ == "__main__":

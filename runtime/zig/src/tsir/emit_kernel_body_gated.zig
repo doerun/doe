@@ -28,11 +28,14 @@ pub fn emitCsl(
     const gate = try body_emit.bindingForRole(func, .gate);
     const input = try body_emit.bindingForRole(func, .input);
     const output = try body_emit.bindingForRole(func, .output);
-    try body_emit.requireElem(gate, .f32);
-    try body_emit.requireElem(input, .f32);
-    try body_emit.requireElem(output, .f32);
+    const elem = output.elem;
+    try body_emit.requireSupportedComputeElem(elem);
+    try body_emit.requireElem(gate, elem);
+    try body_emit.requireElem(input, elem);
+    try body_emit.requireElem(output, elem);
 
     const p = config.var_prefix;
+    const ty = body_emit.cslElemName(elem);
     try writer.writeAll("param memcpy_params;\n");
     if (config.chunk_size_default) |value| {
         try writer.print("param chunk_size: i16 = {d};\n", .{value});
@@ -42,15 +45,15 @@ pub fn emitCsl(
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
     if (kind == .gelu) {
-        try writer.writeAll("const GELU_A: f32 = 0.7978845608028654;\n");
-        try writer.writeAll("const GELU_B: f32 = 0.044715;\n");
+        try writer.print("const GELU_A: {s} = 0.7978845608028654;\n", .{ty});
+        try writer.print("const GELU_B: {s} = 0.044715;\n", .{ty});
     }
-    try body_emit.writeCslBufferArray(writer, p, gate.name, "chunk_size", "f32");
-    try body_emit.writeCslBufferArray(writer, p, input.name, "chunk_size", "f32");
-    try body_emit.writeCslBufferArray(writer, p, output.name, "chunk_size", "f32");
-    try body_emit.writeCslBufferPointer(writer, p, gate.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, input.name, "f32");
-    try body_emit.writeCslBufferPointer(writer, p, output.name, "f32");
+    try body_emit.writeCslBufferArray(writer, p, gate.name, "chunk_size", ty);
+    try body_emit.writeCslBufferArray(writer, p, input.name, "chunk_size", ty);
+    try body_emit.writeCslBufferArray(writer, p, output.name, "chunk_size", ty);
+    try body_emit.writeCslBufferPointer(writer, p, gate.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, input.name, ty);
+    try body_emit.writeCslBufferPointer(writer, p, output.name, ty);
     try writer.writeAll("\n");
     // Each kind emits its own helper function name (`gelu` / `silu` /
     // `sigmoid`) rather than a generic `act`. This keeps existing
@@ -62,7 +65,7 @@ pub fn emitCsl(
         .silu => "silu",
         .sigmoid => "sigmoid",
     };
-    try writer.print("fn {s}(x: f32) f32 {{\n", .{fn_name});
+    try writer.print("fn {s}(x: {s}) {s} {{\n", .{ fn_name, ty, ty });
     switch (kind) {
         .gelu => {
             try writer.writeAll("    var inner = GELU_A * (x + GELU_B * x * x * x);\n");
@@ -77,7 +80,7 @@ pub fn emitCsl(
         .silu => {
             // silu(x) = x / (1 + exp(-x)). Clamp the negation to ±15 so
             // exp(-x) cannot blow up to inf for very negative x; the
-            // value of 1/(1+e^15) is f32-zero already.
+            // value of 1/(1+e^15) is f16/f32-zero already.
             try writer.writeAll("    var z = -x;\n");
             try writer.writeAll("    if (z < -15.0) z = -15.0;\n");
             try writer.writeAll("    if (z > 15.0) z = 15.0;\n");

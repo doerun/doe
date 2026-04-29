@@ -1,0 +1,66 @@
+{
+  "activations": {
+    "0": {
+      "post_attn": {
+        "byteLength": 408704,
+        "elemDtype": "float32",
+        "elemShape": [
+          19,
+          5376
+        ],
+        "path": "layer_0/post_attn.npy",
+        "sha256": "80f71f63857d2c4f1a768c7cefe0393b0d6ec5ae4c4cf17c6c15c7c8f6f836d6"
+      },
+      "post_ffn": {
+        "byteLength": 408704,
+        "elemDtype": "float32",
+        "elemShape": [
+          19,
+          5376
+        ],
+        "path": "layer_0/post_ffn.npy",
+        "sha256": "2da1459e9affbc64e1f8235fd94930c132a2831dbe8e32aeaefe474cb007be93"
+      },
+      "post_qkv": {
+        "byteLength": 1245312,
+        "elemDtype": "float32",
+        "elemShape": [
+          19,
+          16384
+        ],
+        "path": "layer_0/post_qkv.npy",
+        "sha256": "8f4657181c61bca0c9b121a4816295ec5881916f52112841598c7da1de81b6ab"
+      },
+      "post_rmsnorm": {
+        "byteLength": 408704,
+        "elemDtype": "float32",
+        "elemShape": [
+          19,
+          5376
+        ],
+        "path": "layer_0/post_rmsnorm.npy",
+        "sha256": "603934fa52bfbb124a5a90eabca9ca621e01ff83b1a904860943350760b398c8"
+      }
+    }
+  },
+  "artifactKind": "doe_frozen_doppler_reference_manifest",
+  "decodeSteps": 2,
+  "dtypeProfile": {
+    "compute": "f16",
+    "embeddings": "f16",
+    "lmHead": "q4k",
+    "variantTag": "q4k-ehf16-af16",
+    "weights": "q4k"
+  },
+  "fixtureDigest": "1b825f5d35cd828002eaabf0d9bfbdde96d81e58b43441ff601370afa3cdf8c3",
+  "frozenAt": "2026-04-29T17:27:47Z",
+  "frozenReason": "Captured via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; serves as the rung-5 frozen Doppler reference for the Doe manifest-shape simfabric proof plan.",
+  "modelId": "gemma-4-31b-it-text-q4k-ehf16-af16",
+  "promptText": "The color of the sky is",
+  "schemaVersion": 1,
+  "transcript": {
+    "byteLength": 30366,
+    "path": "reference-report.json",
+    "sha256": "70749a4ca90b1a64e5bffb694c1346fa78028533e6e3c63cc4e10013a07a17d5"
+  }
+}

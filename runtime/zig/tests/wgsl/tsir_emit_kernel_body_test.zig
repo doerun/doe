@@ -1412,3 +1412,179 @@ fn expectNotContains(haystack: []const u8, needle: []const u8) !void {
         return error.UnexpectedFragmentPresent;
     }
 }
+
+// ====================================================================
+// Track 2 — f16 lane emit coverage
+//
+// These tests pin the dtype-routing widening of the CSL emit modules
+// added 2026-04-29. Each test uses an f16-typed binding set and asserts
+// that the emitted CSL declares its buffers/pointers/accumulators as
+// `f16`, and that no stray `f32` typed declarations leak into the
+// output. f32 lane regression coverage is preserved by the existing
+// tests above; this block only proves the f16 lane works.
+// ====================================================================
+
+fn fusedGemvSemanticF16() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "M", .step = "1" },
+            .{ .name = "k", .lower_bound = "0", .upper_bound = "K", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &.{ 0, 0 }, .elem = .f16, .read_write = false },
+            .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f16, .read_write = false },
+            .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f16, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .matrix },
+            .{ .binding_index = 1, .role = .vector },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .output },
+            .{ .axis_index = 1, .role = .reduction },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .fused_gemv,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{ .op = .fused_gemv, .binding_roles = &data.body_bindings, .axis_roles = &data.body_axes },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+test "tsir csl fused_gemv emits f16 buffers/accum when bindings are f16" {
+    const allocator = std.testing.allocator;
+    const semantic = fusedGemvSemanticF16();
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const config = tsir.emit_kernel_body.Config{ .var_prefix = "tsir_" };
+    try tsir.emit_kernel_body.emitWithConfig(buf.writer(allocator), semantic, .csl, &config);
+    const csl = buf.items;
+    try expectContains(csl, "var tsir_matrix: [M * K]f16 = @zeros([M * K]f16);");
+    try expectContains(csl, "var tsir_vector: [K]f16 = @zeros([K]f16);");
+    try expectContains(csl, "var tsir_output: [M]f16 = @zeros([M]f16);");
+    try expectContains(csl, "var tsir_matrix_ptr: [*]f16 = &tsir_matrix;");
+    try expectContains(csl, "var acc: f16 = 0.0;");
+    // No f32 declarations in the f16 lane output for this op.
+    try expectNotContains(csl, "[M * K]f32");
+    try expectNotContains(csl, "[K]f32");
+    try expectNotContains(csl, "[M]f32");
+    try expectNotContains(csl, "var acc: f32");
+}
+
+fn rmsNormSemanticF16() tsir.schema.SemanticFunction {
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "d", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "hidden_size", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "input", .group = 0, .binding = 0, .logical_shape = &.{0}, .elem = .f16, .read_write = false },
+            .{ .name = "weight", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .f16, .read_write = false },
+            .{ .name = "output", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .f16, .read_write = true },
+            .{ .name = "u", .group = 0, .binding = 3, .logical_shape = &.{2}, .elem = .u32, .read_write = false },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .input },
+            .{ .binding_index = 1, .role = .scale },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .output },
+            .{ .axis_index = 1, .role = .reduction },
+        };
+    };
+    return .{
+        .name = "main",
+        .family_hint = .rms_norm,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{
+            .op = .rms_norm,
+            .binding_roles = &data.body_bindings,
+            .axis_roles = &data.body_axes,
+            .rms_norm = .{
+                .formula = .sum_squares_mean_epsilon_rsqrt_scale,
+                .reduction_target = .intermediate_scalar,
+                .hidden_extent_axis = 0,
+                .epsilon = .{ .source = .uniform_field, .binding_index = 3, .byte_offset = 4, .literal_f32 = null },
+            },
+        },
+        .source_digest = [_]u8{0} ** 32,
+    };
+}
+
+test "tsir csl rms_norm emits f16 sum_sq + sqrt_nr up-cast for f16 lane" {
+    const allocator = std.testing.allocator;
+    const semantic = rmsNormSemanticF16();
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const config = tsir.emit_kernel_body.Config{ .var_prefix = "tsir_" };
+    try tsir.emit_kernel_body.emitWithConfig(buf.writer(allocator), semantic, .csl, &config);
+    const csl = buf.items;
+    try expectContains(csl, "var tsir_input: [hidden_size]f16");
+    try expectContains(csl, "var tsir_output: [hidden_size]f16");
+    try expectContains(csl, "var sum_sq: f16 = 0.0;");
+    // sqrt_nr generated for the f16 lane: signature f16, internal f32
+    // libm call, narrow back to f16 — the only carve-out in the f16
+    // design (libm coverage detail).
+    try expectContains(csl, "fn sqrt_nr(x: f16) f16");
+    try expectContains(csl, "const x32: f32 = @as(f32, x);");
+    try expectContains(csl, "const y0: f32 = math.sqrt(x32);");
+    try expectContains(csl, "return @as(f16, refined);");
+    // mean_sq cast is f16
+    try expectContains(csl, "@as(f16, hidden_size)");
+    try expectNotContains(csl, "var sum_sq: f32");
+}
+
+test "tsir csl unsupported activation dtype rejected at compute-elem gate" {
+    // bf16 / int8 / etc. are not admitted today. Door admission in
+    // csl_host_plan_tool.zig only accepts f32 + f16; the emit-side
+    // gate is requireSupportedComputeElem, exercised here via a
+    // bf16 binding (intentionally invalid for current Track 2 scope).
+    const allocator = std.testing.allocator;
+    const data = struct {
+        const axes = [_]tsir.schema.IterationAxis{
+            .{ .name = "i", .lower_bound = "0", .upper_bound = "M", .step = "1" },
+            .{ .name = "k", .lower_bound = "0", .upper_bound = "K", .step = "1" },
+        };
+        const bindings = [_]tsir.schema.BufferBinding{
+            .{ .name = "W", .group = 0, .binding = 0, .logical_shape = &.{ 0, 0 }, .elem = .bf16, .read_write = false },
+            .{ .name = "x", .group = 0, .binding = 1, .logical_shape = &.{0}, .elem = .bf16, .read_write = false },
+            .{ .name = "y", .group = 0, .binding = 2, .logical_shape = &.{0}, .elem = .bf16, .read_write = true },
+        };
+        const body_bindings = [_]tsir.schema.SemanticBodyBinding{
+            .{ .binding_index = 0, .role = .matrix },
+            .{ .binding_index = 1, .role = .vector },
+            .{ .binding_index = 2, .role = .output },
+        };
+        const body_axes = [_]tsir.schema.SemanticBodyAxis{
+            .{ .axis_index = 0, .role = .output },
+            .{ .axis_index = 1, .role = .reduction },
+        };
+    };
+    const semantic = tsir.schema.SemanticFunction{
+        .name = "main",
+        .family_hint = .fused_gemv,
+        .axes = &data.axes,
+        .bindings = &data.bindings,
+        .reductions = &.{},
+        .collectives = &.{},
+        .body = .{ .op = .fused_gemv, .binding_roles = &data.body_bindings, .axis_roles = &data.body_axes },
+        .source_digest = [_]u8{0} ** 32,
+    };
+    var buf = std.ArrayList(u8){};
+    defer buf.deinit(allocator);
+    const config = tsir.emit_kernel_body.Config{ .var_prefix = "tsir_" };
+    try std.testing.expectError(
+        error.UnsupportedScalarKind,
+        tsir.emit_kernel_body.emitWithConfig(buf.writer(allocator), semantic, .csl, &config),
+    );
+}

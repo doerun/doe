@@ -53,12 +53,34 @@ DEFAULT_ROOT = REPO_ROOT / "bench/fixtures/r3-2-27b-doppler-frozen"
 DEFAULT_OUT = (
     REPO_ROOT / "bench/out/r3-2-27b-frozen-reference-validation/report.json"
 )
+# The current Qwen Doppler manifest (`qwen-3-6-27b-q4k-ehaf16`) declares
+# `quantizationInfo.variantTag = "q4k-ef16-af32"`. The lane-key default
+# tracks that tag so a future af16 sibling fixture cannot bind under the
+# Qwen-af32 validator unless --lane-key is explicitly overridden.
+DEFAULT_LANE_KEY = "q4k-ef16-af32"
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    p.add_argument(
+        "--lane-key",
+        default=DEFAULT_LANE_KEY,
+        help=(
+            "Lane key the fixture's dtypeProfile.variantTag must match. "
+            f"Defaults to {DEFAULT_LANE_KEY!r} (current Qwen af32 lane). "
+            "Override for af16 / non-af32 sibling fixtures."
+        ),
+    )
+    p.add_argument(
+        "--require-dtype-profile",
+        action="store_true",
+        help=(
+            "Make `dtypeProfile` mandatory on the fixture manifest. "
+            "Set when validating new af16 / non-af32 sibling fixtures."
+        ),
+    )
     return p.parse_args()
 
 
@@ -131,9 +153,14 @@ def main() -> int:
 
     if not manifest_path.is_file():
         receipt = _absent_receipt(root)
+        receipt["laneKeyExpected"] = args.lane_key
     else:
         try:
-            base = validate_fixture(root)
+            base = validate_fixture(
+                root,
+                lane_key=args.lane_key,
+                require_dtype_profile=args.require_dtype_profile,
+            )
         except SystemExit as err:
             sys.stderr.write(str(err) + "\n")
             return 2
@@ -148,6 +175,9 @@ def main() -> int:
             "schemaErrors": base["schemaErrors"],
             "artifactViolations": base["artifactViolations"],
             "digestViolations": base["digestViolations"],
+            "laneViolations": base["laneViolations"],
+            "laneKeyExpected": base["laneKeyExpected"],
+            "dtypeProfile": base["dtypeProfile"],
             "fixtureDigestCited": base["fixtureDigestCited"],
             "fixtureDigestRecomputed": base["fixtureDigestRecomputed"],
             "bound": base["bound"],
