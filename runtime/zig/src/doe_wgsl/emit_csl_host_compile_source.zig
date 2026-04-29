@@ -79,7 +79,7 @@ pub fn emitPatternSectionsForElem(
     try emitLayout(out, &pos, &module_ir, entry, pattern_info);
 
     try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
-    try emitPeProgram(out, &pos, &module_ir, entry, pattern_info);
+    try emitPeProgram(out, &pos, &module_ir, entry, pattern_info, elem);
 
     const validation_kind = try validationKind(pattern);
     if (elem == .f16) try rewriteF16CompileSourceInPlace(out, &pos);
@@ -198,6 +198,7 @@ fn emitPeProgram(
     module_ir: *const ir.Module,
     entry: ir.EntryPoint,
     pattern: classify.KernelPattern,
+    elem: ir.ScalarType,
 ) EmitError!void {
     switch (pattern) {
         .element_wise => |info| try elementwise.emit(out, pos, module_ir, entry, info),
@@ -211,7 +212,7 @@ fn emitPeProgram(
         .attention_tiled => |info| try attention.emitTiled(out, pos, module_ir, info),
         .dequant => |info| try dequant.emit(out, pos, module_ir, info),
         .sample => |info| try sample.emit(out, pos, module_ir, info),
-        .fused_gemv_dequant => |info| try fused.emit(out, pos, module_ir, info),
+        .fused_gemv_dequant => |info| try fused.emitForElem(out, pos, module_ir, info, elem),
         .attention_linear => |info| try linear_attn.emit(out, pos, module_ir, info),
         .kv_write => |info| try kv_cache.emitWrite(out, pos, module_ir, info),
         .kv_read => |info| try kv_cache.emitRead(out, pos, module_ir, info),
@@ -683,6 +684,13 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "-3.4028235e+38") == null);
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "var scratch_in: [2]u32") != null);
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "@bitcast(u32, scratch_in[1])") == null);
+
+    const gemv = try emitPatternSectionsForElem(std.testing.allocator, "fused_gemv_dequant", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.combined, "f32") == null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "mpi_x.gather(@as(u16, num_pes - 1)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "reduce_fadds") == null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial_bits: [out_dim_per_pe]u32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var acc: f16 = 0.0") != null);
 }
 
 test "host compile source emits semantic Gemma elementwise bodies" {

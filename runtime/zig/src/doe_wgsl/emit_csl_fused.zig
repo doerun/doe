@@ -49,13 +49,29 @@ pub fn emit(
     module: *const ir.Module,
     info: classify.FusedGemvDequantInfo,
 ) EmitError!void {
+    return emitForElem(buf, pos, module, info, .f32);
+}
+
+pub fn emitForElem(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.FusedGemvDequantInfo,
+    elem: ir.ScalarType,
+) EmitError!void {
+    const elem_name = try elemName(elem);
+    const is_f16 = elem == .f16;
     const act = module.globals.items[info.activation_global].name;
     const wgt = module.globals.items[info.weight_global].name;
     const out = module.globals.items[info.output_global].name;
 
     try W.write(buf, pos, "// PE program: fused GEMV + Q4K dequant (auto-generated from WGSL)\n");
     try W.write(buf, pos, "// Each PE dequants its weight slice and computes partial dot products.\n");
-    try W.write(buf, pos, "// collectives_2d reduce_fadds accumulates the final output vector.\n\n");
+    if (is_f16) {
+        try W.write(buf, pos, "// collectives_2d gather transports packed partials to the sink PE.\n\n");
+    } else {
+        try W.write(buf, pos, "// collectives_2d reduce_fadds accumulates the final output vector.\n\n");
+    }
 
     try W.write(buf, pos, "param c2d_params;\n");
     try W.write(buf, pos, "param memcpy_params;\n");
@@ -87,28 +103,39 @@ pub fn emit(
     try W.write(buf, pos, "const Q4K_BLOCK_BYTES_I16: i16 = 144;\n\n");
 
     // Buffers
-    try emitBuf(buf, pos, act, "[in_dim_per_pe]f32");
+    try emitBufForElem(buf, pos, act, "[in_dim_per_pe]", elem_name);
     try W.write(buf, pos, "var ");
     try W.write(buf, pos, wgt);
     try W.write(buf, pos, ": [out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8 = @zeros([out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8);\n");
-    try emitBuf(buf, pos, out, "[out_dim_per_pe]f32");
-    try W.write(buf, pos, "var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);\n\n");
+    try emitBufForElem(buf, pos, out, "[out_dim_per_pe]", elem_name);
+    try emitBufForElem(buf, pos, "partial", "[out_dim_per_pe]", elem_name);
+    if (is_f16) {
+        try W.write(buf, pos, "var partial_bits: [out_dim_per_pe]u32 = @zeros([out_dim_per_pe]u32);\n");
+        try W.write(buf, pos, "var gathered: [out_dim_per_pe * num_pes]u32 = @zeros([out_dim_per_pe * num_pes]u32);\n");
+    }
+    try W.write(buf, pos, "\n");
 
-    try emitPtr(buf, pos, act, "f32");
+    try emitPtr(buf, pos, act, elem_name);
     try W.write(buf, pos, "var ");
     try W.write(buf, pos, wgt);
     try W.write(buf, pos, "_ptr: [*]u8 = &");
     try W.write(buf, pos, wgt);
     try W.write(buf, pos, ";\n");
-    try emitPtr(buf, pos, out, "f32");
+    try emitPtr(buf, pos, out, elem_name);
     try W.write(buf, pos, "\n");
 
-    try W.write(buf, pos, "const reduce_done_id: local_task_id = @get_local_task_id(12);\n\n");
+    if (is_f16) {
+        try W.write(buf, pos, "const gather_done_id: local_task_id = @get_local_task_id(12);\n\n");
+    } else {
+        try W.write(buf, pos, "const reduce_done_id: local_task_id = @get_local_task_id(12);\n\n");
+    }
 
     // Phase 1: local partial dot products with on-the-fly dequant
     try W.write(buf, pos, "fn compute() void {\n");
     try W.write(buf, pos, "    for (@range(i16, out_dim_per_pe)) |row| {\n");
-    try W.write(buf, pos, "        var sum: f32 = 0.0;\n");
+    try W.write(buf, pos, "        var sum: ");
+    try W.write(buf, pos, elem_name);
+    try W.write(buf, pos, " = 0.0;\n");
     try W.write(buf, pos, "        const row_base = @as(u32, row) * @as(u32, num_blocks_per_row) * Q4K_BLOCK_BYTES;\n\n");
 
     try W.write(buf, pos, "        for (@range(i16, num_blocks_per_row)) |blk| {\n");
@@ -118,7 +145,9 @@ pub fn emit(
     try W.write(buf, pos, "[blk_base]) | (@as(u16, ");
     try W.write(buf, pos, wgt);
     try W.write(buf, pos, "[blk_base + 1]) << 8);\n");
-    try W.write(buf, pos, "            const d = @as(f32, @bitcast(f16, d_bits));\n");
+    try W.write(buf, pos, "            const d = @as(");
+    try W.write(buf, pos, elem_name);
+    try W.write(buf, pos, ", @bitcast(f16, d_bits));\n");
     try W.write(buf, pos, "            const data_off = blk_base + 16;\n");
     try W.write(buf, pos, "            const act_off = @as(u32, blk) * QK_K;\n\n");
 
@@ -126,8 +155,12 @@ pub fn emit(
     try W.write(buf, pos, "                const byte = ");
     try W.write(buf, pos, wgt);
     try W.write(buf, pos, "[data_off + i];\n");
-    try W.write(buf, pos, "                const lo = @as(f32, byte & 0x0F) * d;\n");
-    try W.write(buf, pos, "                const hi = @as(f32, byte >> 4) * d;\n");
+    try W.write(buf, pos, "                const lo = @as(");
+    try W.write(buf, pos, elem_name);
+    try W.write(buf, pos, ", byte & 0x0F) * d;\n");
+    try W.write(buf, pos, "                const hi = @as(");
+    try W.write(buf, pos, elem_name);
+    try W.write(buf, pos, ", byte >> 4) * d;\n");
     try W.write(buf, pos, "                sum += lo * ");
     try W.write(buf, pos, act);
     try W.write(buf, pos, "[act_off + i * 2];\n");
@@ -137,25 +170,62 @@ pub fn emit(
     try W.write(buf, pos, "            }\n");
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        partial[@as(u32, row)] = sum;\n");
+    if (is_f16) {
+        try W.write(buf, pos, "        partial_bits[@as(u32, row)] = @as(u32, @bitcast(u16, sum));\n");
+    }
     try W.write(buf, pos, "    }\n\n");
 
     try W.write(buf, pos, "    mpi_x.init();\n");
-    try W.write(buf, pos, "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &partial), @ptrcast([*]f32, &");
-    try W.write(buf, pos, out);
-    try W.write(buf, pos, "), @as(u16, out_dim_per_pe), reduce_done_id);\n");
+    if (is_f16) {
+        try W.write(buf, pos, "    mpi_x.gather(@as(u16, num_pes - 1), @ptrcast([*]u32, &partial_bits), @ptrcast([*]u32, &gathered), @as(u16, out_dim_per_pe), gather_done_id);\n");
+    } else {
+        try W.write(buf, pos, "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &partial), @ptrcast([*]f32, &");
+        try W.write(buf, pos, out);
+        try W.write(buf, pos, "), @as(u16, out_dim_per_pe), reduce_done_id);\n");
+    }
     try W.write(buf, pos, "}\n\n");
 
-    try W.write(buf, pos, "task reduce_done_task() void {\n");
-    try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
-    try W.write(buf, pos, "}\n\n");
+    if (is_f16) {
+        try W.write(buf, pos, "task gather_done_task() void {\n");
+        try W.write(buf, pos, "    if (pe_id == num_pes - 1) {\n");
+        try W.write(buf, pos, "        for (@range(i16, out_dim_per_pe)) |row| {\n");
+        try W.write(buf, pos, "            var acc: f16 = 0.0;\n");
+        try W.write(buf, pos, "            for (@range(i16, num_pes)) |src_pe| {\n");
+        try W.write(buf, pos, "                const idx = @as(u32, src_pe) * @as(u32, out_dim_per_pe) + @as(u32, row);\n");
+        try W.write(buf, pos, "                acc += @bitcast(f16, @as(u16, gathered[idx]));\n");
+        try W.write(buf, pos, "            }\n");
+        try W.write(buf, pos, "            ");
+        try W.write(buf, pos, out);
+        try W.write(buf, pos, "[@as(u32, row)] = acc;\n");
+        try W.write(buf, pos, "        }\n");
+        try W.write(buf, pos, "    }\n");
+        try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
+        try W.write(buf, pos, "}\n\n");
+    } else {
+        try W.write(buf, pos, "task reduce_done_task() void {\n");
+        try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
+        try W.write(buf, pos, "}\n\n");
+    }
 
     try W.write(buf, pos, "comptime {\n");
-    try W.write(buf, pos, "    @bind_local_task(reduce_done_task, reduce_done_id);\n");
+    if (is_f16) {
+        try W.write(buf, pos, "    @bind_local_task(gather_done_task, gather_done_id);\n");
+    } else {
+        try W.write(buf, pos, "    @bind_local_task(reduce_done_task, reduce_done_id);\n");
+    }
     try emitExport(buf, pos, act);
     try emitExportTyped(buf, pos, wgt);
     try emitExport(buf, pos, out);
     try W.write(buf, pos, "    @export_symbol(compute);\n");
     try W.write(buf, pos, "}\n");
+}
+
+fn elemName(elem: ir.ScalarType) EmitError![]const u8 {
+    return switch (elem) {
+        .f32 => "f32",
+        .f16 => "f16",
+        else => error.InvalidIr,
+    };
 }
 
 fn emitBuf(buf: []u8, pos: *usize, name: []const u8, ty: []const u8) EmitError!void {
@@ -165,6 +235,18 @@ fn emitBuf(buf: []u8, pos: *usize, name: []const u8, ty: []const u8) EmitError!v
     try W.write(buf, pos, ty);
     try W.write(buf, pos, " = @zeros(");
     try W.write(buf, pos, ty);
+    try W.write(buf, pos, ");\n");
+}
+
+fn emitBufForElem(buf: []u8, pos: *usize, name: []const u8, prefix: []const u8, elem: []const u8) EmitError!void {
+    try W.write(buf, pos, "var ");
+    try W.write(buf, pos, name);
+    try W.write(buf, pos, ": ");
+    try W.write(buf, pos, prefix);
+    try W.write(buf, pos, elem);
+    try W.write(buf, pos, " = @zeros(");
+    try W.write(buf, pos, prefix);
+    try W.write(buf, pos, elem);
     try W.write(buf, pos, ");\n");
 }
 
