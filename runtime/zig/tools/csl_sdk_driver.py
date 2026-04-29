@@ -398,6 +398,25 @@ _CSLC_FAILURE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "csl_compile_param_range_exceeded",
     ),
     (
+        re.compile(
+            r"@fmacs\([\s\S]*?"
+            r"expected type\(s\): DSD/DSR, DSD/DSR, DSD/DSR, f32"
+        ),
+        "csl_compile_f16_fmacs_unsupported",
+    ),
+    (
+        re.compile(r"expected type '\[\*\]f32', got: '\[\*\]f16'"),
+        "csl_compile_f16_reduce_fadds_unsupported",
+    ),
+    (
+        re.compile(r"cast from 'comptime_float' to 'f16' failed"),
+        "csl_compile_f16_literal_overflow",
+    ),
+    (
+        re.compile(r"expected equal bit width for operands, got: 16 and 32 bit"),
+        "csl_compile_f16_bitcast_width_mismatch",
+    ),
+    (
         re.compile(r"expected type '[^']+', got: '[^']+'"),
         "csl_compile_type_mismatch",
     ),

@@ -51,8 +51,17 @@ pub fn emitPatternSections(
     pattern: []const u8,
     out: []u8,
 ) EmitError!CompileSourceSections {
+    return emitPatternSectionsForElem(allocator, pattern, .f32, out);
+}
+
+pub fn emitPatternSectionsForElem(
+    allocator: std.mem.Allocator,
+    pattern: []const u8,
+    elem: ir.ScalarType,
+    out: []u8,
+) EmitError!CompileSourceSections {
     if (semantic_ops.isSemanticPattern(pattern)) {
-        return emitSemanticPatternSections(pattern, out);
+        return emitSemanticPatternSectionsForElem(pattern, elem, out);
     }
 
     const source = patternSource(pattern) orelse return error.UnsupportedPattern;
@@ -73,6 +82,7 @@ pub fn emitPatternSections(
     try emitPeProgram(out, &pos, &module_ir, entry, pattern_info);
 
     const validation_kind = try validationKind(pattern);
+    if (elem == .f16) try rewriteF16CompileSourceInPlace(out, &pos);
     const validation = validate.validatePattern(out[0..pos], validation_kind);
     if (!validation.valid) return error.InvalidIr;
 
@@ -85,6 +95,14 @@ pub fn emitPatternSections(
 }
 
 fn emitSemanticPatternSections(pattern: []const u8, out: []u8) EmitError!CompileSourceSections {
+    return emitSemanticPatternSectionsForElem(pattern, .f32, out);
+}
+
+fn emitSemanticPatternSectionsForElem(
+    pattern: []const u8,
+    elem: ir.ScalarType,
+    out: []u8,
+) EmitError!CompileSourceSections {
     var pos: usize = 0;
 
     try writeSection(out, &pos, spec.LAYOUT_FILENAME);
@@ -93,6 +111,7 @@ fn emitSemanticPatternSections(pattern: []const u8, out: []u8) EmitError!Compile
     try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
     try semantic_ops.emitPeProgram(out, &pos, pattern);
 
+    if (elem == .f16) try rewriteF16CompileSourceInPlace(out, &pos);
     const combined = out[0..pos];
     return .{
         .combined = combined,
@@ -260,6 +279,67 @@ pub fn sectionBody(csl: []const u8, filename: []const u8) ?[]const u8 {
     const body_start = header_index + marker.len;
     const next_header = std.mem.indexOfPos(u8, csl, body_start, spec.SECTION_SEPARATOR) orelse csl.len;
     return csl[body_start..next_header];
+}
+
+fn rewriteScalarTokenInPlace(bytes: []u8, from: []const u8, to: []const u8) void {
+    std.debug.assert(from.len == to.len);
+    var idx: usize = 0;
+    while (idx + from.len <= bytes.len) : (idx += 1) {
+        if (!std.mem.eql(u8, bytes[idx..][0..from.len], from)) continue;
+        const before_ident = idx > 0 and isIdentifierByte(bytes[idx - 1]);
+        const after_idx = idx + from.len;
+        const after_ident = after_idx < bytes.len and isIdentifierByte(bytes[after_idx]);
+        if (before_ident or after_ident) continue;
+        @memcpy(bytes[idx..][0..to.len], to);
+        idx += from.len - 1;
+    }
+}
+
+fn rewriteF16CompileSourceInPlace(buf: []u8, pos: *usize) EmitError!void {
+    rewriteScalarTokenInPlace(buf[0..pos.*], "f32", "f16");
+    try replaceAllInPlace(buf, pos, "-3.4028235e+38", "-65504.0");
+    try replaceAllInPlace(buf, pos, "-1.0e30", "-65504.0");
+    try replaceAllInPlace(buf, pos, "@bitcast(f16, u[1])", "@as(f16, 0.000001)");
+    try replaceAllInPlace(buf, pos, "var scratch_in: [2]f16 = @zeros([2]f16);", "var scratch_in: [2]u32 = @zeros([2]u32);");
+    try replaceAllInPlace(buf, pos, "var scratch_out: [2]f16 = @zeros([2]f16);", "var scratch_out: [2]u32 = @zeros([2]u32);");
+    try replaceAllInPlace(buf, pos, "scratch_out[0] = local_max_val;", "scratch_out[0] = @as(u32, @bitcast(u16, local_max_val));");
+    try replaceAllInPlace(buf, pos, "scratch_out[0] = best_val;", "scratch_out[0] = @as(u32, @bitcast(u16, best_val));");
+    try replaceAllInPlace(buf, pos, "scratch_out[1] = @bitcast(f16, local_max_idx);", "scratch_out[1] = local_max_idx;");
+    try replaceAllInPlace(buf, pos, "scratch_out[1] = @bitcast(f16, best_idx);", "scratch_out[1] = best_idx;");
+    try replaceAllInPlace(buf, pos, "const incoming_val = scratch_in[0];", "const incoming_val: f16 = @bitcast(f16, @as(u16, scratch_in[0]));");
+    try replaceAllInPlace(buf, pos, "const incoming_idx = @bitcast(u32, scratch_in[1]);", "const incoming_idx = scratch_in[1];");
+    try replaceAllInPlace(
+        buf,
+        pos,
+        "@fmacs(C_dsd, C_dsd, A_dsd, b_val);",
+        "for (@range(i16, Mt)) |ii| {\n                const c_idx = @as(u32, j) * @as(u32, Mt) + @as(u32, ii);\n                const a_idx = @as(u32, k) * @as(u32, Mt) + @as(u32, ii);\n                C_tile[c_idx] += Ap.*[a_idx] * b_val;\n            }",
+    );
+}
+
+fn replaceAllInPlace(buf: []u8, pos: *usize, from: []const u8, to: []const u8) EmitError!void {
+    var idx: usize = 0;
+    while (idx + from.len <= pos.*) {
+        if (!std.mem.eql(u8, buf[idx..][0..from.len], from)) {
+            idx += 1;
+            continue;
+        }
+        if (to.len > from.len) {
+            const growth = to.len - from.len;
+            if (pos.* + growth > buf.len) return error.OutputTooLarge;
+            std.mem.copyBackwards(u8, buf[idx + to.len .. pos.* + growth], buf[idx + from.len .. pos.*]);
+            pos.* += growth;
+        } else if (to.len < from.len) {
+            const shrink = from.len - to.len;
+            std.mem.copyForwards(u8, buf[idx + to.len .. pos.* - shrink], buf[idx + from.len .. pos.*]);
+            pos.* -= shrink;
+        }
+        @memcpy(buf[idx..][0..to.len], to);
+        idx += to.len;
+    }
+}
+
+fn isIdentifierByte(byte: u8) bool {
+    return std.ascii.isAlphanumeric(byte) or byte == '_';
 }
 
 fn writeSection(buf: []u8, pos: *usize, filename: []const u8) EmitError!void {
@@ -581,6 +661,28 @@ test "host compile source emits known HostPlan CSL families" {
         try std.testing.expect(std.mem.indexOf(u8, sections.layout, "@set_rectangle") != null);
         try std.testing.expect(std.mem.indexOf(u8, sections.pe_program, "@export_symbol(compute)") != null);
     }
+}
+
+test "host compile source routes af16 lane into f16 CSL source" {
+    var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
+
+    const rms = try emitPatternSectionsForElem(std.testing.allocator, "rms_norm", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "[*]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "[hidden_size]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.combined, "f32") == null);
+
+    const tiled = try emitPatternSectionsForElem(std.testing.allocator, "tiled_matmul", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.layout, "[*]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "[Mt * Kt]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.combined, "f32") == null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "@fmacs(C_dsd") == null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "C_tile[c_idx] += Ap.*[a_idx] * b_val") != null);
+
+    const sample_sections = try emitPatternSectionsForElem(std.testing.allocator, "sample", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "-65504.0") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "-3.4028235e+38") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "var scratch_in: [2]u32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "@bitcast(u32, scratch_in[1])") == null);
 }
 
 test "host compile source emits semantic Gemma elementwise bodies" {

@@ -265,6 +265,12 @@ fn admitCslActivationDtype(dtype: ?[]const u8) !void {
     if (std.mem.eql(u8, raw, "f16")) return;
     return error.InvalidArgument;
 }
+fn activationDtypeScalar(dtype: ?[]const u8) !wgsl.ir.ScalarType {
+    const raw = dtype orelse return .f32;
+    if (std.mem.eql(u8, raw, "f32")) return .f32;
+    if (std.mem.eql(u8, raw, "f16")) return .f16;
+    return error.InvalidArgument;
+}
 fn parseQuantFormat(raw: []const u8) ?host.ModelConfig.QuantFormat {
     if (std.mem.eql(u8, raw, "f16")) return .f16;
     if (std.mem.eql(u8, raw, "q4k")) return .q4k;
@@ -652,7 +658,9 @@ pub fn main() !void {
         },
     };
     const input_bytes = try readFileAllocAbsoluteAware(allocator, args.input_path, 1 << 20);
-    try admitCslActivationDtype(try parseBundleActivationDtype(allocator, input_bytes));
+    const activation_dtype = try parseBundleActivationDtype(allocator, input_bytes);
+    try admitCslActivationDtype(activation_dtype);
+    const activation_elem = try activationDtypeScalar(activation_dtype);
     var kernel_buf: [MAX_KERNELS]host.KernelSpec = undefined;
     var prefill_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
     var decode_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
@@ -696,7 +704,7 @@ pub fn main() !void {
         const runtime_config_path = try std.fs.path.join(allocator, &.{ bundle_root, "runtime-config.json" });
         const simulator_plan_path = try std.fs.path.join(allocator, &.{ bundle_root, "simulator-plan.json" });
         const launcher_path = try std.fs.path.join(allocator, &.{ bundle_root, "launch-simulator.sh" });
-        try materialize.materializeCompileSources(allocator, bundle_root, plan);
+        try materialize.materializeCompileSources(allocator, bundle_root, plan, activation_elem);
         try materialize.materializeTargetsMetadata(allocator, bundle_root, targets);
         try materialize.emitHostPlanFile(host_plan_path, plan, targets, cslc_plan);
         try materialize.emitMemoryPlanFile(memory_plan_path, memory);
@@ -776,6 +784,8 @@ test "csl activation dtype admission: f32 + f16 admitted at door, others rejecte
     try admitCslActivationDtype(null);
     try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("bf16"));
     try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("int8"));
+    try std.testing.expectEqual(wgsl.ir.ScalarType.f16, try activationDtypeScalar(dtype));
+    try std.testing.expectEqual(wgsl.ir.ScalarType.f32, try activationDtypeScalar(null));
 }
 test "buildCompileTargets emits phase variants for elementwise kernels" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

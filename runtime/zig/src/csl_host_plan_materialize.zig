@@ -113,11 +113,12 @@ pub fn materializeCompileSources(
     allocator: std.mem.Allocator,
     bundle_root: []const u8,
     plan: host.HostPlan,
+    elem: wgsl.ir.ScalarType,
 ) !void {
     try pruneStaleCompileSourceDirs(allocator, bundle_root, plan.kernels);
     var csl_buf: [wgsl.MAX_CSL_OUTPUT]u8 = undefined;
     for (plan.kernels) |kernel| {
-        const sections = try compile_source.emitPatternSections(allocator, kernel.pattern, &csl_buf);
+        const sections = try compile_source.emitPatternSectionsForElem(allocator, kernel.pattern, elem, &csl_buf);
         const layout_path = try std.fs.path.join(
             allocator,
             &.{ bundle_root, COMPILE_ROOT_NAME, kernel.name, "layout.csl" },

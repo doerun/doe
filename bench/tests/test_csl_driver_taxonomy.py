@@ -127,6 +127,45 @@ class ClassifyCslcFailureTests(unittest.TestCase):
         )
         self.assertEqual(code, "csl_compile_type_mismatch")
 
+    def test_f16_fmacs_unsupported(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:91:13: error: operand types do not match expectations\n"
+                "            @fmacs(C_dsd, C_dsd, A_dsd, b_val);\n"
+                "pe_program.csl:91:13: note: got type(s): mem1d_dsd, mem1d_dsd, mem1d_dsd, f16\n"
+                "pe_program.csl:91:13: note:     expected type(s): DSD/DSR, DSD/DSR, DSD/DSR, f32\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_f16_fmacs_unsupported")
+
+    def test_f16_reduce_fadds_unsupported(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:64:47: error: expected type '[*]f32', got: '[*]f16'\n"
+                "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f16, &partial), @ptrcast([*]f16, &output), @as(u16, out_dim_per_pe), reduce_done_id);\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_f16_reduce_fadds_unsupported")
+
+    def test_f16_literal_overflow(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:23:26: error: cast from 'comptime_float' to 'f16' failed\n"
+                "var local_max_val: f16 = -3.4028235e+38;\n"
+                "pe_program.csl:23:26: note: operand overflowed precision of 'f16'\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_f16_literal_overflow")
+
+    def test_f16_bitcast_width_mismatch(self) -> None:
+        code = classify_cslc_failure(
+            _with_stderr(
+                "pe_program.csl:75:56: error: expected equal bit width for operands, got: 16 and 32 bit(s)\n"
+                "        const inv_rms: f16 = (1.0 / sqrt_nr((mean_sq + @bitcast(f16, u[1]))));\n"
+            )
+        )
+        self.assertEqual(code, "csl_compile_f16_bitcast_width_mismatch")
+
     def test_arity_mismatch(self) -> None:
         code = classify_cslc_failure(
             _with_stderr(
