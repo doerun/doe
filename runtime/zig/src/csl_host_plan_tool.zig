@@ -21,6 +21,7 @@ const Args = struct {
 };
 const BundleConfigJson = struct {
     modelConfig: ?ModelConfigJson = null,
+    session: ?SessionJson = null,
     const ModelConfigJson = struct {
         hiddenDim: u32,
         numHeads: u32,
@@ -40,6 +41,15 @@ const BundleConfigJson = struct {
         pleVocabSize: ?u32 = null,
         partialRotaryFactor: f32 = 1.0,
         mropeSection: ?[3]u32 = null,
+    };
+    const SessionJson = struct {
+        compute: ?ComputeJson = null,
+        const ComputeJson = struct {
+            defaults: ?DefaultsJson = null,
+            const DefaultsJson = struct {
+                activationDtype: ?[]const u8 = null,
+            };
+        };
     };
 };
 const MAX_KERNELS: usize = 64;
@@ -226,6 +236,22 @@ fn parseBundleModelConfig(allocator: std.mem.Allocator, payload: []const u8) !?h
         .partial_rotary_factor = model_config.partialRotaryFactor,
         .mrope_section = model_config.mropeSection,
     };
+}
+fn parseBundleActivationDtype(allocator: std.mem.Allocator, payload: []const u8) !?[]const u8 {
+    const parsed = try std.json.parseFromSlice(BundleConfigJson, allocator, payload, .{
+        .ignore_unknown_fields = true,
+    });
+    defer parsed.deinit();
+    const session = parsed.value.session orelse return null;
+    const compute = session.compute orelse return null;
+    const defaults = compute.defaults orelse return null;
+    return defaults.activationDtype;
+}
+fn requireSupportedCslActivationDtype(dtype: ?[]const u8) !void {
+    const raw = dtype orelse return;
+    if (std.mem.eql(u8, raw, "f32")) return;
+    if (std.mem.eql(u8, raw, "f16")) return error.UnsupportedActivationF16CslLowering;
+    return error.InvalidArgument;
 }
 fn parseQuantFormat(raw: []const u8) ?host.ModelConfig.QuantFormat {
     if (std.mem.eql(u8, raw, "f16")) return .f16;
@@ -614,6 +640,7 @@ pub fn main() !void {
         },
     };
     const input_bytes = try readFileAllocAbsoluteAware(allocator, args.input_path, 1 << 20);
+    try requireSupportedCslActivationDtype(try parseBundleActivationDtype(allocator, input_bytes));
     var kernel_buf: [MAX_KERNELS]host.KernelSpec = undefined;
     var prefill_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
     var decode_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
@@ -712,6 +739,26 @@ test "parseBundleWeightMappings preserves artifact-backed RDRR tensor metadata" 
     try std.testing.expectEqual(@as(u64, 1536), mappings[0].tensor_shape[1]);
     try std.testing.expectEqualStrings("Q4_K_M", mappings[0].quant.format);
     try std.testing.expectEqualStrings("rdrr_int4ple", mappings[0].quant.encoding.?);
+}
+test "f16 activation sessions fail closed before CSL lowering" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "session": {
+        \\    "compute": {
+        \\      "defaults": {
+        \\        "activationDtype": "f16"
+        \\      }
+        \\    }
+        \\  }
+        \\}
+    ;
+    const dtype = try parseBundleActivationDtype(arena.allocator(), payload);
+    try std.testing.expectEqualStrings("f16", dtype.?);
+    try std.testing.expectError(error.UnsupportedActivationF16CslLowering, requireSupportedCslActivationDtype(dtype));
+    try requireSupportedCslActivationDtype("f32");
+    try requireSupportedCslActivationDtype(null);
 }
 test "buildCompileTargets emits phase variants for elementwise kernels" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
