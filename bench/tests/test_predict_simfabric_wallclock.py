@@ -137,6 +137,21 @@ class OutputBytesTest(unittest.TestCase):
         )
         self.assertEqual(out_bytes, 2 * 64 * 256 * 2)
 
+    def test_picks_manifest_shape_matmul_and_sample_outputs(self) -> None:
+        metadata = {
+            "exports": [
+                {"symbol": "a", "sizeExpr": "m * k", "elemType": "f32"},
+                {"symbol": "b", "sizeExpr": "k * n", "elemType": "f32"},
+                {"symbol": "c", "sizeExpr": "m * n", "elemType": "f32"},
+                {"symbol": "tokens", "sizeExpr": "1", "elemType": "u32"},
+                {"symbol": "val_cache", "sizeExpr": "kv * h", "elemType": "f16"},
+            ]
+        }
+        out_bytes = output_bytes_for_target(
+            metadata, {"m": 2, "n": 3, "k": 4, "kv": 5, "h": 6}
+        )
+        self.assertEqual(out_bytes, (2 * 3 * 4) + 4 + (5 * 6 * 2))
+
 
 def _write_target(
     compile_root: Path,

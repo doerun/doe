@@ -1,0 +1,26 @@
+{
+  "inputs": {
+    "input": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        1.0,
+        -2.0,
+        0.5,
+        3.0
+      ]
+    },
+    "u": {
+      "elem": "u32",
+      "shape": [
+        1
+      ],
+      "values": [
+        0
+      ]
+    }
+  },
+  "kernel": "ple_residual"
+}

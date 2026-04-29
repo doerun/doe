@@ -63,14 +63,16 @@ ELEM_BYTES = {
 }
 
 OUTPUT_SYMBOL_PATTERNS = (
+    "c",
     "output",
-    "logits",
     "key_cache",
+    "val_cache",
     "value_cache",
     "key_output",
     "value_output",
     "next_token",
     "sampled_token",
+    "tokens",
 )
 
 _AS_CAST_INLINE = re.compile(r"@as\([a-z0-9_]+,\s*([^)]+)\)")
@@ -357,8 +359,9 @@ def predict_wallclock(
             "notWhat": (
                 "Not a measured wallclock; cycle estimates depend on the "
                 "calibration constant from rung 3. Output-byte estimates "
-                "use the OUTPUT_SYMBOL_PATTERNS heuristic (output, logits, "
-                "key_cache, value_cache, ...) and may overcount for "
+                "use the OUTPUT_SYMBOL_PATTERNS heuristic (c, output, "
+                "key_cache, val_cache, value_cache, tokens, ...) "
+                "and may overcount for "
                 "kernels that mark KV state as read-write rather than "
                 "write-only."
             ),

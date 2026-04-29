@@ -1,0 +1,16 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.ssm_linear_attention",
+  "executionGraphHash": "sha256:a86b81bafe46dacd859ee1f14d56f5d74fa2f21a62fc50354f1030943128105d",
+  "source": {
+    "hash": "sha256:fd4d59d8a42fc9b3cf1f3b47ee47630ba91587f941f38ec12a021d83348c7d7b",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/ssm_linear_attention.json"
+  },
+  "kernelProbe": {
+    "outputElementCount": 0
+  },
+  "claim": {
+    "scope": "Manifest-shape probe input bootstrap for ssm_linear_attention.",
+    "notWhat": "Not a Doppler numeric reference. It only supplies deterministic input values for per-kernel CSL dispatch plumbing."
+  }
+}

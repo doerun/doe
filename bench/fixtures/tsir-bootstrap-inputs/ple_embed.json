@@ -1,0 +1,26 @@
+{
+  "inputs": {
+    "indices": {
+      "elem": "u32",
+      "shape": [
+        1
+      ],
+      "values": [
+        0
+      ]
+    },
+    "table": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.0,
+        0.25,
+        -0.5,
+        0.75
+      ]
+    }
+  },
+  "kernel": "ple_embed"
+}

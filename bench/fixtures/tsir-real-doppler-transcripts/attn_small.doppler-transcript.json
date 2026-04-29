@@ -1,0 +1,16 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.attn_small",
+  "executionGraphHash": "sha256:a86b81bafe46dacd859ee1f14d56f5d74fa2f21a62fc50354f1030943128105d",
+  "source": {
+    "hash": "sha256:755006bd79dd109ccd8e922889e160549a6c5297423fdbff03fb11e2670b14d4",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/attn_small.json"
+  },
+  "kernelProbe": {
+    "outputElementCount": 0
+  },
+  "claim": {
+    "scope": "Manifest-shape probe input bootstrap for attn_small.",
+    "notWhat": "Not a Doppler numeric reference. It only supplies deterministic input values for per-kernel CSL dispatch plumbing."
+  }
+}

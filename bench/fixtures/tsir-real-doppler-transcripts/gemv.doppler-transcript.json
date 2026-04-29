@@ -1,0 +1,16 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.gemv",
+  "executionGraphHash": "sha256:a86b81bafe46dacd859ee1f14d56f5d74fa2f21a62fc50354f1030943128105d",
+  "source": {
+    "hash": "sha256:4934f558a1bcd83f7d0fec6a839e423490e2082cf2fe14e59edaf4eab51e9c35",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/gemv.json"
+  },
+  "kernelProbe": {
+    "outputElementCount": 0
+  },
+  "claim": {
+    "scope": "Manifest-shape probe input bootstrap for gemv.",
+    "notWhat": "Not a Doppler numeric reference. It only supplies deterministic input values for per-kernel CSL dispatch plumbing."
+  }
+}

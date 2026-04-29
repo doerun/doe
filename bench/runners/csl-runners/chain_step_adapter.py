@@ -22,8 +22,10 @@ Per-tensor chunk_size override matters when a kernel has inputs of
 different per-PE sizes — e.g. gather: indices=num_tokens, table=rows*hidden.
 
 Dtype maps: f32 → MEMCPY_32BIT + np.float32; u32 → MEMCPY_32BIT +
-np.uint32. Chain payloads are 32-bit today by design; larger dtypes
-are a follow-up once the streaming executor lands.
+np.uint32; f16 → MEMCPY_16BIT + np.float16; u8 → MEMCPY_32BIT with a
+uint32 byte-preserving view. The f16 path lets the af16 manifest
+variants stage real per-kernel inputs through the SDK's native 16-bit
+memcpy without packing through u32.
 """
 
 from __future__ import annotations
@@ -44,6 +46,8 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 DTYPE_MAP = {
     "f32": (np.float32, MemcpyDataType.MEMCPY_32BIT),
     "u32": (np.uint32, MemcpyDataType.MEMCPY_32BIT),
+    "f16": (np.float16, MemcpyDataType.MEMCPY_16BIT),
+    "u8": (np.uint8, MemcpyDataType.MEMCPY_32BIT),
 }
 
 
@@ -88,6 +92,58 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _memcpy_payload_for_h2d(
+    *, path: str, dtype: str, chunk_size: int, pe_count: int
+) -> tuple[np.ndarray, MemcpyDataType, int]:
+    if dtype == "u8":
+        if chunk_size % 4 != 0:
+            raise ValueError(
+                f"u8 chunk_size {chunk_size} must be 4-aligned for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        raw = np.ascontiguousarray(np.load(path).ravel(), dtype=np.uint8)
+        expected = pe_count * chunk_size
+        if raw.size != expected:
+            raise ValueError(
+                f"u8 tensor {path} has {raw.size} bytes, expected {expected}"
+            )
+        return (
+            raw.view(np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            chunk_size // 4,
+        )
+    np_dtype, mcpy_dtype = DTYPE_MAP[dtype]
+    return (
+        np.load(path).astype(np_dtype, copy=False).ravel(),
+        mcpy_dtype,
+        chunk_size,
+    )
+
+
+def _memcpy_buffer_for_d2h(
+    *, dtype: str, chunk_size: int, pe_count: int
+) -> tuple[np.ndarray, MemcpyDataType, int, np.dtype]:
+    if dtype == "u8":
+        if chunk_size % 4 != 0:
+            raise ValueError(
+                f"u8 chunk_size {chunk_size} must be 4-aligned for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        return (
+            np.zeros(pe_count * (chunk_size // 4), dtype=np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            chunk_size // 4,
+            np.dtype(np.uint8),
+        )
+    np_dtype, mcpy_dtype = DTYPE_MAP[dtype]
+    return (
+        np.zeros(pe_count * chunk_size, dtype=np_dtype),
+        mcpy_dtype,
+        chunk_size,
+        np.dtype(np_dtype),
+    )
+
+
 def main() -> int:
     args = parse_args()
     width = args.width
@@ -102,12 +158,16 @@ def main() -> int:
 
     for spec in args.input:
         symbol, path, dtype, chunk_override = parse_spec(spec)
-        np_dtype, mcpy_dtype = DTYPE_MAP[dtype]
-        arr = np.load(path).astype(np_dtype, copy=False)
         sym_id = runner.get_id(symbol)
         this_chunk = chunk_override if chunk_override is not None else chunk_size
+        arr, mcpy_dtype, memcpy_chunk = _memcpy_payload_for_h2d(
+            path=path,
+            dtype=dtype,
+            chunk_size=this_chunk,
+            pe_count=pe_count,
+        )
         runner.memcpy_h2d(
-            sym_id, arr.ravel(), 0, 0, width, height, this_chunk,
+            sym_id, arr, 0, 0, width, height, memcpy_chunk,
             streaming=False, order=MemcpyOrder.ROW_MAJOR,
             data_type=mcpy_dtype, nonblock=False,
         )
@@ -117,15 +177,20 @@ def main() -> int:
     outputs: list[tuple[str, str, np.ndarray]] = []
     for spec in args.output:
         symbol, path, dtype, chunk_override = parse_spec(spec)
-        np_dtype, mcpy_dtype = DTYPE_MAP[dtype]
         this_chunk = chunk_override if chunk_override is not None else chunk_size
-        arr = np.zeros(pe_count * this_chunk, dtype=np_dtype)
+        arr, mcpy_dtype, memcpy_chunk, output_dtype = _memcpy_buffer_for_d2h(
+            dtype=dtype,
+            chunk_size=this_chunk,
+            pe_count=pe_count,
+        )
         sym_id = runner.get_id(symbol)
         runner.memcpy_d2h(
-            arr, sym_id, 0, 0, width, height, this_chunk,
+            arr, sym_id, 0, 0, width, height, memcpy_chunk,
             streaming=False, order=MemcpyOrder.ROW_MAJOR,
             data_type=mcpy_dtype, nonblock=False,
         )
+        if dtype == "u8":
+            arr = arr.view(np.uint8).astype(output_dtype, copy=False)
         outputs.append((symbol, path, arr))
 
     runner.stop()

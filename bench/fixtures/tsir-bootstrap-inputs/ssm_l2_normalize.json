@@ -1,0 +1,17 @@
+{
+  "inputs": {
+    "input": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.5,
+        -0.25,
+        0.125,
+        0.75
+      ]
+    }
+  },
+  "kernel": "ssm_l2_normalize"
+}

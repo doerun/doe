@@ -6,7 +6,7 @@ These are the input-tensor JSON artifacts consumed by the Zig
 Shape contract (enforced by `runtime/zig/src/tsir_bootstrap_oracle.zig`):
 
 - top-level: `{ "kernel": <name>, "inputs": { <buffer-name>: <buffer>, ... } }`
-- buffer: `{ "elem": "f32"|"f16"|"bf16"|"u32", "shape": [<u64>, ...], "values": [<num>, ...] }`
+- buffer: `{ "elem": "f32"|"f16"|"bf16"|"u32"|"u8", "shape": [<u64>, ...], "values": [<num>, ...] }`
   (or `"bytesHex": "<hex>"` in place of `values`)
 - kernels recognized: `fused_gemv`, `rms_norm`, `gather`
 
@@ -20,3 +20,9 @@ Paired with the manifest-entry fixtures in `../tsir-manifest-entries/` by
 kernel name. The parity canary (`bench/gates/nightly_tsir_parity_canary.py`)
 passes the input fixture via `--inputs` and the manifest entry via
 `--manifest-lowering-entry`.
+
+Additional manifest-shape probe fixtures in this directory are consumed by
+`bench/runners/csl-runners/manifest_kernel_probe_runner.py` through
+`../tsir-real-doppler-transcripts/`. Those fixtures are dispatch-plumbing
+inputs only; they are not bootstrap oracle kernels and do not make numerical
+Doppler parity claims.

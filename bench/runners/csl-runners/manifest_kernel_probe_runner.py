@@ -44,6 +44,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -94,6 +95,25 @@ DEFAULT_OUT_DIR = (
     REPO_ROOT
     / "bench/out/r3-1-31b-manifest-simfabric-per-kernel"
 )
+
+PROBE_TRANSCRIPT_ALIASES = {
+    "attn_decode_sliding": "attn_decode",
+    "gelu_decode": "gelu",
+    "gelu_prefill": "gelu",
+    "kv_write_shared": "kv_write",
+    "o_gate": "silu_gated",
+    "ple_proj": "tiled",
+    "ple_rmsnorm": "rmsnorm",
+    "residual_decode": "residual",
+    "residual_prefill": "residual",
+    "rmsnorm_decode": "rmsnorm",
+    "rmsnorm_prefill": "rmsnorm",
+}
+
+_LAYOUT_PARAM_DEFAULT_RE = re.compile(
+    r"\bparam\s+([A-Za-z_][A-Za-z0-9_]*)\s*:[^=;]+=\s*([0-9]+)\s*;"
+)
+_COMPILED_ELF_RE = re.compile(r"out_([0-9]+)_([0-9]+)\.elf$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -180,6 +200,11 @@ def find_probe_transcript(
     direct = probe_dir / f"{kernel}.doppler-transcript.json"
     if direct.is_file():
         return direct
+    alias = PROBE_TRANSCRIPT_ALIASES.get(kernel)
+    if alias:
+        alias_path = probe_dir / f"{alias}.doppler-transcript.json"
+        if alias_path.is_file():
+            return alias_path
     canonical = kernel.replace("_", "")
     for entry in probe_dir.glob("*.doppler-transcript.json"):
         stem = entry.name[: -len(".doppler-transcript.json")]
@@ -289,14 +314,93 @@ def materialize_probe_input(
 
 
 def _adapter_dtype_token(elem_type: str) -> str:
-    if elem_type in ("f32", "u32"):
+    if elem_type in ("f32", "u32", "f16", "u8"):
         return elem_type
     if elem_type == "i32":
         return "u32"
     raise LayoutReceiptError(
         f"chain_step_adapter does not support elemType {elem_type!r} yet "
-        "(only f32 and u32 are wired)."
+        "(wired: f32, u32, f16, u8)."
     )
+
+
+def _infer_grid_from_compile_dir(compile_dir: Path) -> dict[str, int]:
+    bin_dir = compile_dir / "bin"
+    if not bin_dir.is_dir():
+        return {}
+    max_x = -1
+    max_y = -1
+    for entry in bin_dir.iterdir():
+        match = _COMPILED_ELF_RE.match(entry.name)
+        if match is None:
+            continue
+        max_x = max(max_x, int(match.group(1)))
+        max_y = max(max_y, int(match.group(2)))
+    inferred: dict[str, int] = {}
+    if max_x >= 0:
+        inferred["width"] = max_x + 1
+    if max_y >= 0:
+        inferred["height"] = max_y + 1
+    return inferred
+
+
+def _merge_layout_param_defaults(
+    bindings: dict[str, int], layout_path: Path
+) -> None:
+    if not layout_path.is_file():
+        return
+    text = layout_path.read_text(encoding="utf-8")
+    for match in _LAYOUT_PARAM_DEFAULT_RE.finditer(text):
+        name = match.group(1)
+        if name not in bindings:
+            bindings[name] = int(match.group(2))
+
+
+def _merge_metadata_integer_constants(
+    bindings: dict[str, int], metadata: dict[str, Any]
+) -> None:
+    constants = list(metadata.get("compileTimeConstants") or [])
+    changed = True
+    while changed:
+        changed = False
+        for entry in constants:
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            expr = entry.get("expr")
+            if (
+                not isinstance(name, str)
+                or not name
+                or name in bindings
+                or not isinstance(expr, str)
+            ):
+                continue
+            try:
+                value = evaluate_size_expr(expr, bindings)
+            except SizeExprError:
+                continue
+            bindings[name] = int(value)
+            changed = True
+
+
+def _compile_bindings(
+    *,
+    target: dict[str, Any],
+    metadata: dict[str, Any],
+    compile_dir: Path,
+    layout_path: Path,
+) -> dict[str, int]:
+    bindings = {
+        str(k): int(v)
+        for k, v in (target.get("compileParams") or {}).items()
+        if isinstance(v, (int, float))
+    }
+    for name, value in _infer_grid_from_compile_dir(compile_dir).items():
+        bindings.setdefault(name, value)
+    _merge_layout_param_defaults(bindings, layout_path)
+    bindings.setdefault("height", 1)
+    _merge_metadata_integer_constants(bindings, metadata)
+    return bindings
 
 
 def _hash_output_files(records: list[dict[str, Any]]) -> None:
@@ -616,10 +720,14 @@ def run_one_kernel(
         )
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    compile_params = {
-        str(k): int(v)
-        for k, v in (target.get("compileParams") or {}).items()
-    }
+    compile_dir = compile_root / kernel
+    layout_path = effective_source_root / kernel / "layout.csl"
+    compile_params = _compile_bindings(
+        target=target,
+        metadata=metadata,
+        compile_dir=compile_dir,
+        layout_path=layout_path,
+    )
     width = int(compile_params.get("width") or 0)
     height = int(compile_params.get("height") or 1)
 
@@ -638,7 +746,7 @@ def run_one_kernel(
             per_symbol_strategy,
         ) = _materialize_inputs(
             kernel=kernel,
-            target=target,
+            target={"compileParams": compile_params},
             metadata=metadata,
             probe_inputs=probe_inputs,
             scratch_dir=scratch_dir,
@@ -665,7 +773,6 @@ def run_one_kernel(
 
     probe_metadata["perSymbolStrategy"] = per_symbol_strategy
 
-    compile_dir = compile_root / kernel
     command = build_dispatch_command(
         cs_python=cs_python,
         adapter=adapter,

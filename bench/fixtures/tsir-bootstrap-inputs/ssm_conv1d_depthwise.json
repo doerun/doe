@@ -1,0 +1,41 @@
+{
+  "inputs": {
+    "bias": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.0,
+        0.125,
+        -0.125,
+        0.25
+      ]
+    },
+    "input": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.5,
+        -0.25,
+        0.125,
+        0.75
+      ]
+    },
+    "weight": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.25,
+        -0.125,
+        0.5,
+        -0.25
+      ]
+    }
+  },
+  "kernel": "ssm_conv1d_depthwise"
+}

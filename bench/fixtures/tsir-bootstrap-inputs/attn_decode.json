@@ -1,0 +1,59 @@
+{
+  "inputs": {
+    "key": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.25,
+        -0.125,
+        0.5,
+        -0.25
+      ]
+    },
+    "position": {
+      "elem": "u32",
+      "shape": [
+        1
+      ],
+      "values": [
+        0
+      ]
+    },
+    "query": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        0.5,
+        -0.25,
+        0.125,
+        0.75
+      ]
+    },
+    "sliding_window": {
+      "elem": "u32",
+      "shape": [
+        1
+      ],
+      "values": [
+        0
+      ]
+    },
+    "val": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        -0.5,
+        0.25,
+        0.125,
+        -0.125
+      ]
+    }
+  },
+  "kernel": "attn_decode"
+}

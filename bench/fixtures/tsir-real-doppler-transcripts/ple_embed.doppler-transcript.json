@@ -1,0 +1,16 @@
+{
+  "schema": "doppler.reference-transcript/v1",
+  "kernelRef": "doe.tsir.real.ple_embed",
+  "executionGraphHash": "sha256:a86b81bafe46dacd859ee1f14d56f5d74fa2f21a62fc50354f1030943128105d",
+  "source": {
+    "hash": "sha256:318ee536291b1e5b7468a8c719a68f7213c6d00c1da4654ddc6af3d2914b14e9",
+    "fixturePath": "bench/fixtures/tsir-bootstrap-inputs/ple_embed.json"
+  },
+  "kernelProbe": {
+    "outputElementCount": 0
+  },
+  "claim": {
+    "scope": "Manifest-shape probe input bootstrap for ple_embed.",
+    "notWhat": "Not a Doppler numeric reference. It only supplies deterministic input values for per-kernel CSL dispatch plumbing."
+  }
+}

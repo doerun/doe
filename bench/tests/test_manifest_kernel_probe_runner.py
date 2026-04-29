@@ -134,6 +134,20 @@ class FindProbeTest(unittest.TestCase):
             )
             self.assertIsNotNone(found)
 
+    def test_declared_family_alias(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            (tmp_path / "residual.doppler-transcript.json").write_text(
+                "{}", encoding="utf-8"
+            )
+            found = runner.find_probe_transcript(
+                kernel="residual_prefill", probe_dir=tmp_path
+            )
+            self.assertIsNotNone(found)
+            assert found is not None
+            self.assertEqual(found.name, "residual.doppler-transcript.json")
+
     def test_absent(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -143,6 +157,57 @@ class FindProbeTest(unittest.TestCase):
                     kernel="ghost", probe_dir=tmp_path
                 )
             )
+
+
+class ManifestShapeProbeCoverageTest(unittest.TestCase):
+    def test_claimed_manifest_shape_kernels_have_probe_inputs(self) -> None:
+        runner = _load_runner_module()
+        kernels = (
+            "attn_decode",
+            "attn_decode_sliding",
+            "attn_prefill_kv_axis_sharded",
+            "attn_small",
+            "embed",
+            "gelu",
+            "gelu_decode",
+            "gelu_prefill",
+            "gemv",
+            "kv_write",
+            "kv_write_shared",
+            "o_gate",
+            "ple_embed",
+            "ple_proj",
+            "ple_residual",
+            "ple_rmsnorm",
+            "residual",
+            "residual_decode",
+            "residual_prefill",
+            "rmsnorm",
+            "rmsnorm_decode",
+            "rmsnorm_prefill",
+            "rope",
+            "rope_partial",
+            "sample",
+            "silu_gated",
+            "ssm_conv1d_depthwise",
+            "ssm_l2_normalize",
+            "ssm_linear_attention",
+            "tiled",
+        )
+        for kernel in kernels:
+            with self.subTest(kernel=kernel):
+                transcript = runner.find_probe_transcript(
+                    kernel=kernel,
+                    probe_dir=runner.DEFAULT_PROBE_DIR,
+                )
+                self.assertIsNotNone(transcript)
+                assert transcript is not None
+                _, metadata = runner.load_probe_inputs(transcript)
+                self.assertEqual(
+                    metadata["broadcastStrategy"],
+                    "tile_to_manifest_shape",
+                )
+                self.assertIsNotNone(metadata["inputFixtureHash"])
 
 
 class MaterializeProbeInputTest(unittest.TestCase):
@@ -198,6 +263,123 @@ class MaterializeProbeInputTest(unittest.TestCase):
             arr = np.load(path)
             self.assertEqual(arr.shape, (2,))
             self.assertTrue((arr == [1.0, 2.0]).all())
+
+    def test_f16_materializes_native_half(self) -> None:
+        # The af16 lane stages probe inputs through the SDK's native
+        # MEMCPY_16BIT path; the runner must write np.float16 directly
+        # rather than upcasting to f32 or packing to u32.
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            byte_len, strategy = runner.materialize_probe_input(
+                target_path=path,
+                pe_count=2,
+                per_pe_chunk=4,
+                elem_type="f16",
+                probe_values=[1.0, 2.0],
+            )
+            self.assertEqual(strategy, "tile")
+            import numpy as np
+            arr = np.load(path)
+            self.assertEqual(arr.dtype, np.float16)
+            self.assertEqual(arr.shape, (8,))
+            self.assertTrue((arr[::2] == np.float16(1.0)).all())
+            self.assertTrue((arr[1::2] == np.float16(2.0)).all())
+            # 2 bytes per element × 8 elements
+            self.assertEqual(byte_len, path.stat().st_size)
+
+    def test_u8_materializes_native_byte_array(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            byte_len, strategy = runner.materialize_probe_input(
+                target_path=path,
+                pe_count=1,
+                per_pe_chunk=8,
+                elem_type="u8",
+                probe_values=[16, 32, 48, 64],
+            )
+            self.assertEqual(strategy, "tile")
+            import numpy as np
+            arr = np.load(path)
+            self.assertEqual(arr.dtype, np.uint8)
+            self.assertEqual(arr.tolist(), [16, 32, 48, 64, 16, 32, 48, 64])
+            self.assertEqual(byte_len, path.stat().st_size)
+
+
+class AdapterDtypeTokenTest(unittest.TestCase):
+    def test_f32_passthrough(self) -> None:
+        runner = _load_runner_module()
+        self.assertEqual(runner._adapter_dtype_token("f32"), "f32")
+
+    def test_u32_passthrough(self) -> None:
+        runner = _load_runner_module()
+        self.assertEqual(runner._adapter_dtype_token("u32"), "u32")
+
+    def test_i32_remaps_to_u32(self) -> None:
+        runner = _load_runner_module()
+        self.assertEqual(runner._adapter_dtype_token("i32"), "u32")
+
+    def test_f16_passthrough(self) -> None:
+        # f16 is wired through the chain_step_adapter's MEMCPY_16BIT path.
+        runner = _load_runner_module()
+        self.assertEqual(runner._adapter_dtype_token("f16"), "f16")
+
+    def test_u8_passthrough(self) -> None:
+        runner = _load_runner_module()
+        self.assertEqual(runner._adapter_dtype_token("u8"), "u8")
+
+    def test_unsupported_dtype_raises_with_wired_set(self) -> None:
+        runner = _load_runner_module()
+        with self.assertRaises(runner.LayoutReceiptError) as ctx:
+            runner._adapter_dtype_token("i8")
+        msg = str(ctx.exception)
+        self.assertIn("i8", msg)
+        self.assertIn("f32", msg)
+        self.assertIn("u32", msg)
+        self.assertIn("f16", msg)
+        self.assertIn("u8", msg)
+
+
+class CompileBindingsTest(unittest.TestCase):
+    def test_merges_layout_defaults_metadata_constants_and_grid(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            compile_dir = tmp_path / "compiled" / "rope"
+            bin_dir = compile_dir / "bin"
+            bin_dir.mkdir(parents=True)
+            for x in range(3):
+                (bin_dir / f"out_{x}_0.elf").write_bytes(b"\x7fELF")
+            layout = tmp_path / "source" / "rope" / "layout.csl"
+            layout.parent.mkdir(parents=True)
+            layout.write_text(
+                "param width: i16;\n"
+                "param head_dim: i16 = 128;\n"
+                "param num_pairs: i16 = 64;\n",
+                encoding="utf-8",
+            )
+            metadata = {
+                "compileTimeConstants": [
+                    {
+                        "kind": "const",
+                        "name": "local",
+                        "type": "u32",
+                        "expr": "@as(u32, head_dim) * 2",
+                    }
+                ]
+            }
+            bindings = runner._compile_bindings(
+                target={"compileParams": {}},
+                metadata=metadata,
+                compile_dir=compile_dir,
+                layout_path=layout,
+            )
+            self.assertEqual(bindings["width"], 3)
+            self.assertEqual(bindings["height"], 1)
+            self.assertEqual(bindings["head_dim"], 128)
+            self.assertEqual(bindings["num_pairs"], 64)
+            self.assertEqual(bindings["local"], 256)
 
 
 class LoadProbeInputsTest(unittest.TestCase):

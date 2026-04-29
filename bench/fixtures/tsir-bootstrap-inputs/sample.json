@@ -1,0 +1,17 @@
+{
+  "inputs": {
+    "logits": {
+      "elem": "f32",
+      "shape": [
+        4
+      ],
+      "values": [
+        -0.25,
+        0.75,
+        0.5,
+        -1.0
+      ]
+    }
+  },
+  "kernel": "sample"
+}
