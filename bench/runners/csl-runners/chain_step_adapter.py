@@ -32,10 +32,13 @@ memcpy word carries exactly two half values.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
+
+os.environ.setdefault("CSL_SUPPRESS_SIMFAB_TRACE", "1")
 
 from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-in-module
     SdkRuntime,

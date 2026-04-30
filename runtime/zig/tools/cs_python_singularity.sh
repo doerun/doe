@@ -63,6 +63,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 DOE_REPO_REAL=$(realpath "$SCRIPT_DIR/../../..")
 WORKSPACE_REAL=$(realpath "$DOE_REPO_REAL/..")
 TMP_BIND="${TMPDIR:-/tmp}"
+export CSL_SUPPRESS_SIMFAB_TRACE="${CSL_SUPPRESS_SIMFAB_TRACE:-1}"
 
 # Optional scratch-cwd redirect: cslc, sim runners, and the SDK paint
 # flow all create scratch in the cwd (executables/, sim_stats.json,
@@ -90,7 +91,8 @@ for var in \
     DOE_CSLC_EXECUTABLE \
     DOE_CSL_SIM_RUNNER_EXECUTABLE \
     DOE_CSL_RUNTIME_TIMEOUT_SECONDS \
-    DOE_CSL_CMADDR
+    DOE_CSL_CMADDR \
+    CSL_SUPPRESS_SIMFAB_TRACE
 do
     val="${!var:-}"
     if [[ -n "$val" ]]; then

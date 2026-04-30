@@ -2,7 +2,7 @@
 
 External-facing snapshot of what is bound in-tree for Gemma 4 31B before WSE hardware. The Gemma path mirrors the Qwen 3.6 27B evidence trail at [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md); identical source-identity chain, parallel artifacts, and hardware-gated tail.
 
-The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json) binds both models to the same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes, budget hashes, and compile-blocker taxonomy.
+The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json) joins both models across the same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes, budget hashes, and compile-blocker taxonomy. The current full af16-required aggregate is fail-closed and records the unresolved af16 hash-spine issues in that receipt.
 
 ## Bound non-hardware scope
 
@@ -31,9 +31,14 @@ token-output success receipt.
 
 **Checkpointed session scratch trace.** The latest local real-session scratch
 trace is
-[`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json`](../bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json).
+[`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`](../bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json).
 It records checkpointed HostPlan execution progress and remains
 `checkpoint_stopped`; no WSE or transcript claim follows from it.
+
+**Current lm-head blocker.** The Gemma af16 per-kernel summary preserves a
+bound `sample` dispatch and a blocked `lm_head_prefill_stable` dispatch. The
+lm-head probe reaches direct SDK dispatch but times out with zero output bytes,
+so final_norm -> lm_head -> sample token-output evidence remains unbound.
 
 ## Simulator performance guardrail
 

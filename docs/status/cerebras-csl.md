@@ -8,36 +8,35 @@ This is a live topical status shard.
 - Dated history lives under `docs/status/archive/`.
 
 Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
-below are historical status, including the WS4 memory-blocker framing that was
-later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
-the Gemma 4 31B af16 HostPlan session path: PLE embedding and early PLE SUMMA
-projection copyback are now real-checkpointed, sample per-kernel dispatch is
-bound, and lm-head dispatch remains the token-output evidence blocker.
+below are historical status, including the WS4 memory-blocker framing. The
+active Gemma 4 31B af16 blocker is lm-head token-output evidence.
 
-## 2026-04-30 — f16 dtype gate v2 and checkpoint 80 evidence
+## 2026-04-30 — f16 dtype gate v2 and checkpoint 81 evidence
 
-`config/doe-csl-dtype-contracts.json` is now schema version 2. The schema
-requires Gemma `q4k-ehf16-af16` and Qwen `q4k-eaf16` f16 CSL contracts to
-declare activation, KV, kernel-output, lm-head, logits, sample-token,
-accumulation, and kernel-class dtype surfaces; Qwen also records its q/k norm,
-causal prefill attention, gated FFN, convolution, linear-attention/DeltaNet,
-SSM, and recurrence-carry obligations.
+`config/doe-csl-dtype-contracts.json` schema version 2 requires Gemma
+`q4k-ehf16-af16` and Qwen `q4k-eaf16` f16 CSL contracts to declare activation,
+KV, output, lm-head/logits/sample, accumulation, and kernel-class dtype
+surfaces, including Qwen q/k norm, causal prefill, gated FFN, convolution,
+linear-attention/DeltaNet, SSM, and recurrence-carry obligations.
 
-The Gemma and Qwen af16 per-kernel summaries were refreshed from matching
-host-plan receipts without inventing evidence. Sample is bound for both
-models. Gemma `lm_head_prefill_stable` and Qwen `lm_head_gemv_stable` remain
-blocked, so token-output evidence stays fail-closed.
+The Gemma and Qwen af16 per-kernel summaries were refreshed without inventing
+evidence. Sample is bound for both models. Gemma `lm_head_prefill_stable`
+clears the previous read-only f16 H2D adapter failure but remains blocked by a
+dispatch timeout with zero output bytes; Qwen `lm_head_gemv_stable` remains
+blocked. Token-output evidence stays fail-closed.
 
-`bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` now validates
-with the v2 `cslDtypeContract` and `inferenceEvidenceGate` result. Its only
-dispatch gate reason is `dispatch_evidence_lm_head_unbound`; session and
-transcript blockers remain.
+`bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` validates the
+v2 `cslDtypeContract`; its only dispatch gate reason is
+`dispatch_evidence_lm_head_unbound`, with session and transcript blockers
+still present.
 
-The real Gemma HostPlan checkpoint resume advanced through additional PLE
-projection checkpoints to
-`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json`.
+The real Gemma HostPlan checkpoint resume advanced to
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`.
 That scratch trace is `checkpoint_stopped`; it is not transcript evidence and
 does not bind the final_norm -> lm_head -> sample path.
+
+`bench/out/r3-cross-model-parity/receipt.json` was refreshed with Gemma/Qwen
+af16 lanes required and remains `unbound` on recorded hash-spine mismatches.
 
 ## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
 
