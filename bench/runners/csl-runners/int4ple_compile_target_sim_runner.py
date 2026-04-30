@@ -64,6 +64,7 @@ SCHEDULE_PREVIEW_COUNT = 4
 TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
 LAUNCH_STEP_ADAPTER = Path(__file__).with_name("int4ple_launch_step_adapter.py")
 EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
+DEFAULT_LAUNCH_TIMEOUT_SECONDS = 3600
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -103,6 +104,12 @@ def parse_args() -> argparse.Namespace:
         "for this launch index.",
     )
     parser.add_argument(
+        "--launch-timeout-seconds",
+        type=int,
+        default=DEFAULT_LAUNCH_TIMEOUT_SECONDS,
+        help="Per HostPlan launch-step subprocess timeout. Use 0 to disable.",
+    )
+    parser.add_argument(
         "--ignore-checkpoint",
         action="store_true",
         help="Run from launch 0 even if --resume-from-checkpoint points at a "
@@ -130,6 +137,15 @@ def load_json(path: Path) -> Any:
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def tail_lines(value: str | bytes | None, count: int) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    stripped = value.strip()
+    return stripped.splitlines()[-count:] if stripped else []
 
 
 def append_progress(path: Path, phase: str, **fields: Any) -> None:
@@ -1697,6 +1713,7 @@ def execute_hostplan_runtime(
     checkpoint_dir: Path | None = None,
     resume_state: Any = None,
     stop_after_launch: int = -1,
+    launch_timeout_seconds: int | None = DEFAULT_LAUNCH_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     runtime_dir = trace_path.parent / "hostplan-runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -1809,17 +1826,46 @@ def execute_hostplan_runtime(
                 "--progress-out",
                 str(progress_path),
             ]
-            completed = subprocess.run(
-                command,
-                check=False,
-                capture_output=True,
-                text=True,
+            timeout = (
+                launch_timeout_seconds
+                if launch_timeout_seconds is not None and launch_timeout_seconds > 0
+                else None
             )
+            try:
+                completed = subprocess.run(
+                    command,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                timeout_receipt = {
+                    "schemaVersion": 1,
+                    "artifactKind": "int4ple_launch_step_receipt",
+                    "status": "blocked",
+                    "blockers": ["launch_step_timeout"],
+                    "launchIndex": launch_index,
+                    "targetName": launch.get("targetName"),
+                    "timeoutSeconds": timeout,
+                    "stdoutTail": tail_lines(exc.stdout, 1),
+                    "stderrTail": tail_lines(exc.stderr, 1),
+                }
+                write_json(receipt_path, timeout_receipt)
+                executed_launches.append(timeout_receipt)
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_timeout",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    timeoutSeconds=timeout,
+                )
+                raise ValueError("launch_step_timeout") from exc
             if not receipt_path.is_file():
                 raise ValueError("launch_receipt_missing")
             launch_receipt = load_json(receipt_path)
-            launch_receipt["stdoutTail"] = completed.stdout.strip().splitlines()[-1:] if completed.stdout.strip() else []
-            launch_receipt["stderrTail"] = completed.stderr.strip().splitlines()[-1:] if completed.stderr.strip() else []
+            launch_receipt["stdoutTail"] = tail_lines(completed.stdout, 1)
+            launch_receipt["stderrTail"] = tail_lines(completed.stderr, 1)
             executed_launches.append(launch_receipt)
             if completed.returncode != 0 or launch_receipt.get("status") != "succeeded":
                 raise ValueError(
@@ -1875,6 +1921,7 @@ def execute_hostplan_runtime(
         "launches": executed_launches,
         "targetSessions": bootstrap.get("targetSessions") or [],
         "stoppedAtCheckpoint": stopped_at_checkpoint,
+        "launchTimeoutSeconds": launch_timeout_seconds,
     }
 
 
@@ -2190,6 +2237,7 @@ def main() -> int:
                 checkpoint_dir=checkpoint_dir,
                 resume_state=resume_state,
                 stop_after_launch=args.stop_after_launch,
+                launch_timeout_seconds=args.launch_timeout_seconds,
             )
             runtime_status = hostplan_executor_runtime.get("status")
             if runtime_status not in ("succeeded", "stopped_at_checkpoint"):

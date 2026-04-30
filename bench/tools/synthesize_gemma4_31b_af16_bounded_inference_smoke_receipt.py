@@ -354,6 +354,7 @@ def _streaming_trace_summary(streaming_trace_path: Path) -> dict[str, Any]:
         "status": trace.get("status"),
         "weightStaging": trace.get("weightStaging") or {},
         "perKernelRefresh": trace.get("perKernelRefresh") or {},
+        "realSessionRuntime": trace.get("realSessionRuntime") or {},
         "blockers": trace.get("blockers") or [],
     }
 
@@ -407,7 +408,19 @@ def _blockers(
             "class": cls,
             "detail": str(blocker.get("detail") or cls),
         })
-    if "combined_session_runtime_absent" not in trace_blocker_classes:
+    real_session = streaming_trace.get("realSessionRuntime") or {}
+    if real_session:
+        real_session_status = str(real_session.get("status") or "unknown")
+        if real_session_status != "output_ready":
+            blockers.append({
+                "class": "real_session_runtime_not_output_ready",
+                "detail": (
+                    "The Gemma 4 31B af16 session runtime contract is "
+                    f"present, but status is {real_session_status!r}; "
+                    "no token/logit/KV transcript is available for parity."
+                ),
+            })
+    elif "combined_session_runtime_absent" not in trace_blocker_classes:
         blockers.append({
             "class": "combined_session_runtime_absent",
             "detail": (

@@ -28,8 +28,16 @@ if str(RUNNER_DIR) not in sys.path:
 from int4ple_hostplan_execution_plan import build_hostplan_execution_plan  # noqa: E402
 from int4ple_hostplan_executor_validator import validate_hostplan_executor  # noqa: E402
 from int4ple_compile_target_sim_runner import (  # noqa: E402
+    DEFAULT_LAUNCH_TIMEOUT_SECONDS,
     execute_hostplan_runtime,
     execute_hostplan_runtime_bootstrap,
+)
+from int4ple_checkpoint import (  # noqa: E402
+    CheckpointError,
+    CheckpointMissingError,
+    compute_identity as compute_checkpoint_identity,
+    init_checkpoint,
+    load_checkpoint,
 )
 
 MODEL_ID = "gemma-4-31b-it-text-q4k-ehf16-af16"
@@ -104,6 +112,16 @@ def session_artifact_prefix(args: argparse.Namespace) -> str:
         getattr(args, "session_artifact_prefix", SESSION_ARTIFACT_PREFIX)
         or SESSION_ARTIFACT_PREFIX
     )
+
+
+def optional_resolved_path(args: argparse.Namespace, name: str) -> Path | None:
+    raw = getattr(args, name, None)
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text:
+        return None
+    return resolve(Path(text))
 
 
 def runtime_dtype(manifest_dtype: str) -> str:
@@ -1219,6 +1237,12 @@ def build_real_session_runtime(
     write_json(runtime_config_path, runtime_config)
     write_json(scheduler_path, scheduler)
     write_json(execution_plan_path, execution_plan)
+    checkpoint_dir = optional_resolved_path(args, "checkpoint_dir")
+    resume_dir = (
+        optional_resolved_path(args, "resume_from_checkpoint")
+        if not bool(getattr(args, "ignore_checkpoint", False))
+        else None
+    )
     result: dict[str, Any] = {
         "requested": bool(args.execute),
         "status": "planned",
@@ -1240,6 +1264,11 @@ def build_real_session_runtime(
         "executionPlanStatus": execution_plan.get("status"),
         "executionPlanBlockers": execution_plan.get("blockers") or [],
         "sampleFeedback": scheduler.get("sampleFeedback") or {},
+        "checkpoint": {
+            "checkpointDir": rel(checkpoint_dir) if checkpoint_dir else "",
+            "resumeFromCheckpoint": rel(resume_dir) if resume_dir else "",
+            "ignoreCheckpoint": bool(getattr(args, "ignore_checkpoint", False)),
+        },
     }
     blockers = [
         *[f"scheduler:{item}" for item in scheduler.get("blockers") or []],
@@ -1270,26 +1299,82 @@ def build_real_session_runtime(
             f"bootstrap:{item}" for item in bootstrap.get("blockers") or ["unknown"]
         ]
         return result
+    identity = compute_checkpoint_identity(
+        plan=plan,
+        plan_path=resolve(args.simulator_plan),
+        runtime_config=runtime_config,
+        runtime_config_path=runtime_config_path,
+        export=reference,
+        reference_export_path=session_dir / "reference-request.json",
+        runner_version=sha256_file(Path(__file__)),
+    )
+    result["checkpoint"]["identitySha256"] = sha256_json(identity)
+    resume_state = None
+    if resume_dir is not None:
+        try:
+            resume_state = load_checkpoint(
+                checkpoint_dir=resume_dir,
+                identity=identity,
+            )
+            result["checkpoint"]["resumeStatus"] = "loaded"
+            result["checkpoint"]["resumeStartIndex"] = resume_state.start_index
+            result["checkpoint"]["resumeBufferCount"] = len(
+                resume_state.buffer_files
+            )
+        except CheckpointMissingError:
+            result["checkpoint"]["resumeStatus"] = "missing_treated_as_empty"
+        except CheckpointError as exc:
+            result["status"] = "blocked"
+            result["blockers"] = [f"checkpoint:{getattr(exc, 'code', 'error')}"]
+            result["checkpoint"]["resumeStatus"] = "rejected"
+            result["checkpoint"]["resumeError"] = str(exc)
+            return result
+    if checkpoint_dir is not None:
+        try:
+            init_checkpoint(checkpoint_dir, identity)
+            result["checkpoint"]["checkpointStatus"] = "initialized"
+        except CheckpointError as exc:
+            result["status"] = "blocked"
+            result["blockers"] = [f"checkpoint:{getattr(exc, 'code', 'error')}"]
+            result["checkpoint"]["checkpointStatus"] = "rejected"
+            result["checkpoint"]["checkpointError"] = str(exc)
+            return result
     runtime = execute_hostplan_runtime(
         bootstrap=bootstrap,
         export=reference,
         progress_path=progress_path,
         cmaddr=args.cmaddr.strip() or None,
         trace_path=session_dir / "trace.json",
+        checkpoint_dir=checkpoint_dir,
+        resume_state=resume_state,
         stop_after_launch=args.stop_after_launch,
+        launch_timeout_seconds=getattr(
+            args,
+            "launch_timeout_seconds",
+            DEFAULT_LAUNCH_TIMEOUT_SECONDS,
+        ),
     )
     result["runtime"] = runtime
-    result["status"] = (
-        "output_ready" if runtime.get("status") == "succeeded" else "blocked"
-    )
-    if result["status"] != "output_ready":
+    runtime_status = str(runtime.get("status") or "")
+    if runtime_status == "succeeded":
+        result["status"] = "output_ready"
+    elif runtime_status == "stopped_at_checkpoint":
+        result["status"] = "checkpoint_stopped"
+        result["blockers"] = ["execution_stopped_at_checkpoint"]
+        result["checkpoint"] = {
+            "stopAfterLaunch": int(args.stop_after_launch),
+            "completedLaunchCount": len(runtime.get("launches") or []),
+        }
+    else:
+        result["status"] = "blocked"
+    if result["status"] == "blocked":
         runtime_blockers = runtime.get("blockers") or []
         if not runtime_blockers:
-            runtime_blockers = [str(runtime.get("status") or "unknown")]
+            runtime_blockers = [runtime_status or "unknown"]
         result["blockers"] = [
             f"runtime:{item}" for item in runtime_blockers
         ]
-    else:
+    elif result["status"] == "output_ready":
         transcript = build_runtime_transcript(
             session_dir=session_dir,
             runtime=runtime,

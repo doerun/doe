@@ -199,14 +199,16 @@ def _materialize_inputs(root: Path) -> dict[str, Path]:
                 "resolvedWeightCount": 4,
                 "unresolvedWeightKeys": [],
             },
+            "realSessionRuntime": {
+                "status": "ready_not_executed",
+                "blockers": ["execution_not_requested"],
+                "runtimeSchedulerPath": "session/runtime-scheduler.json",
+                "executionPlanPath": "session/hostplan-execution-plan.json",
+            },
             "blockers": [
                 {
                     "class": "sdk_python_import_failed",
                     "detail": "SDK container did not launch.",
-                },
-                {
-                    "class": "combined_session_runtime_absent",
-                    "detail": "No session transcript exists.",
                 },
             ],
         },
@@ -261,11 +263,15 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         )
         self.assertIn("sdk_python_import_failed", blocker_classes)
         self.assertIn(
-            "combined_session_runtime_absent",
+            "real_session_runtime_not_output_ready",
             blocker_classes,
         )
         self.assertFalse(
             receipt["dopplerReference"]["exactShapeMatchesRequested"]
+        )
+        self.assertEqual(
+            receipt["hostPlanStreamingTrace"]["realSessionRuntime"]["status"],
+            "ready_not_executed",
         )
 
     def test_matching_reference_shape_drops_shape_mismatch(self) -> None:
@@ -278,7 +284,7 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         )
         self.assertIn("sdk_python_import_failed", blocker_classes)
         self.assertIn(
-            "combined_session_runtime_absent",
+            "real_session_runtime_not_output_ready",
             blocker_classes,
         )
 
@@ -428,7 +434,7 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         )
         self.assertFalse(result.eligible, msg=[r.code for r in result.reasons])
         codes = {r.code for r in result.reasons}
-        self.assertIn("dispatch_evidence_lm_head_missing", codes)
+        self.assertIn("dispatch_evidence_lm_head_unbound", codes)
 
 
 if __name__ == "__main__":

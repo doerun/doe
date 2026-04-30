@@ -45,6 +45,7 @@ from bench.tools.int4ple_runtime_weight_mappings import (  # noqa: E402
     tensor_name_candidates_for_weight_key,
 )
 from gemma4_31b_af16_session_runtime import (  # noqa: E402
+    DEFAULT_LAUNCH_TIMEOUT_SECONDS,
     build_real_session_runtime,
 )
 
@@ -197,6 +198,29 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=-1,
         help="Stop the real session after persisting this launch index.",
+    )
+    parser.add_argument(
+        "--launch-timeout-seconds",
+        type=int,
+        default=DEFAULT_LAUNCH_TIMEOUT_SECONDS,
+        help="Per HostPlan launch-step subprocess timeout. Use 0 to disable.",
+    )
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        default=None,
+        help="Persist per-launch HostPlan checkpoints under this directory.",
+    )
+    parser.add_argument(
+        "--resume-from-checkpoint",
+        type=Path,
+        default=None,
+        help="Resume from a previously persisted HostPlan checkpoint.",
+    )
+    parser.add_argument(
+        "--ignore-checkpoint",
+        action="store_true",
+        help="Run from launch 0 even when --resume-from-checkpoint is set.",
     )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     return parser.parse_args()
@@ -1085,6 +1109,15 @@ def build_blockers(
             "detail": (
                 "The real prefill/decode session runtime contract could not "
                 "produce a token/logit/KV transcript on this run."
+            ),
+            "blockers": real_session.get("blockers", [])[:20],
+        })
+    elif real_session.get("status") == "checkpoint_stopped":
+        blockers.append({
+            "class": "execution_stopped_at_checkpoint",
+            "detail": (
+                "The real session runtime stopped at the requested launch "
+                "checkpoint before token/logit/KV transcript completion."
             ),
             "blockers": real_session.get("blockers", [])[:20],
         })

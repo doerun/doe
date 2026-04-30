@@ -571,6 +571,27 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
                 blocker_classes,
             )
 
+    def test_checkpoint_stop_is_not_reported_as_runtime_failure(self) -> None:
+        runner = _load_runner_module()
+        blockers = runner.build_blockers(
+            weight_plan={
+                "weightRootPresent": True,
+                "missingShards": [],
+                "sizeMismatches": [],
+                "unresolvedWeightKeys": [],
+            },
+            per_kernel={"blockedKernels": [], "staleDryRunOnly": False},
+            refresh={"requested": False, "status": "not_requested"},
+            real_session={
+                "status": "checkpoint_stopped",
+                "blockers": ["execution_stopped_at_checkpoint"],
+            },
+            execute=True,
+        )
+        blocker_classes = {blocker["class"] for blocker in blockers}
+        self.assertIn("execution_stopped_at_checkpoint", blocker_classes)
+        self.assertNotIn("real_session_runtime_blocked", blocker_classes)
+
 
 if __name__ == "__main__":
     unittest.main()

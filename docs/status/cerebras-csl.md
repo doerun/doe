@@ -13,6 +13,56 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-30 — HostPlan launch-step D2H stalls now fail closed
+
+Checkpoint resume reached the next HostPlan launch and entered the
+`launch_step_memcpy_d2h` phase for the resumed output copyback. D2H here means
+device-to-host: SDK runtime memory is being copied back into a host CPU buffer.
+That scratch resume was interrupted and remains non-promoted evidence.
+
+`int4ple_compile_target_sim_runner.py` now applies
+`--launch-timeout-seconds` to the HostPlan launch-step subprocess path. A
+timeout writes an `int4ple_launch_step_receipt` with
+`blockers=["launch_step_timeout"]`, records `hostplan_launch_timeout` in the
+progress log, and returns a typed runtime blocker instead of leaving the
+front-door runner parked in the copyback path. The Gemma 4 31B af16 streaming
+front door exposes the same flag through the real-session runtime. The default
+launch-step bound is raised for resumed D2H copyback attempts, while `0`
+continues to disable the bound for an explicitly unbounded run.
+
+This is a fail-closed execution taxonomy improvement only. It does not bind
+the current lm-head/sample per-kernel evidence, and it does not promote the
+scratch checkpoint-resume attempt to token/logit/KV transcript evidence.
+
+Tracked sharding follow-up: Owner Doe Cerebras runner. Next split targets are
+to move the HostPlan runtime subprocess/checkpoint launch loop out of
+`bench/runners/csl-runners/int4ple_compile_target_sim_runner.py`, and to move
+the Gemma af16 weight-key resolution helpers out of
+`bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py`.
+
+## 2026-04-30 — Gemma 4 31B af16 bounded-smoke blocker taxonomy follows session runtime
+
+The bounded-smoke synthesizer now carries `realSessionRuntime` through the
+HostPlan streaming trace summary and reports
+`real_session_runtime_not_output_ready` when the session-runtime contract is
+present but has not produced a token/logit/KV transcript. The legacy
+`combined_session_runtime_absent` blocker remains only for older traces that
+do not carry a real-session block.
+
+Focused coverage now expects the current per-kernel evidence gate to report
+`dispatch_evidence_lm_head_unbound` for the checked-in af16 target inventory:
+the lm-head target is present, but no lm-head dispatch receipt is bound. A
+current dry runner trace reaches `realSessionRuntime.status=ready_not_executed`
+with scheduler bound, executor validator passed, execution plan planned, and
+sample feedback bound; the remaining local blockers are per-kernel evidence and
+the explicit lack of SDK execution.
+
+A bounded `--execute --stop-after-launch 0` checkpoint run now reports
+`realSessionRuntime.status=checkpoint_stopped`, with SDK bootstrap ready for
+tensor movement and runtime status `stopped_at_checkpoint`. The top-level trace
+still remains blocked because per-kernel evidence is not bound and the run
+intentionally stops before transcript completion.
+
 ## 2026-04-29 — Gemma 4 31B af16 token-output contract gate lands
 
 The Gemma 4 31B execution-v1 smoke graph now carries explicit
