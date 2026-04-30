@@ -98,6 +98,35 @@ class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
         self.assertEqual(memcpy_elements_per_pe, 1)
         self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
 
+    def test_f16_h2d_copies_read_only_payload(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            np.save(path, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float16))
+            with mock.patch.object(
+                adapter,
+                "_load_writeable_mmap_or_copy",
+                return_value=np.load(path, mmap_mode="r").ravel(),
+            ):
+                payload, memcpy_dtype, memcpy_elements_per_pe = (
+                    adapter._memcpy_payload_for_h2d(
+                        path=path,
+                        dtype="f16",
+                        elements_per_pe=2,
+                        total_elements=4,
+                    )
+                )
+        self.assertEqual(payload.dtype, np.uint32)
+        self.assertTrue(payload.flags.writeable)
+        self.assertEqual(
+            memcpy_dtype,
+            adapter.MemcpyDataType.MEMCPY_32BIT,
+        )
+        self.assertEqual(memcpy_elements_per_pe, 1)
+        self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
+
 
 class HostPlanRuntimeTimeout(unittest.TestCase):
     def test_launch_step_timeout_is_typed_and_writes_receipt(self) -> None:

@@ -59,6 +59,12 @@ def _load_writeable_mmap_or_copy(path: str) -> np.ndarray:
         return np.load(path, mmap_mode="r").ravel()
 
 
+def _writeable_contiguous_array(raw: np.ndarray, dtype: np.dtype) -> np.ndarray:
+    if raw.dtype == dtype and raw.flags.c_contiguous and raw.flags.writeable:
+        return raw
+    return np.array(raw, dtype=dtype, copy=True, order="C")
+
+
 def parse_spec(spec: str) -> tuple[str, str, str, int | None]:
     parts = spec.split(":")
     if len(parts) == 2:
@@ -115,12 +121,7 @@ def _memcpy_payload_for_h2d(
             raise ValueError(
                 f"f16 tensor {path} has {raw.size} elements, expected {expected}"
             )
-        if (
-            raw.dtype != np.float16
-            or not raw.flags.c_contiguous
-            or not raw.flags.writeable
-        ):
-            raw = np.ascontiguousarray(raw, dtype=np.float16)
+        raw = _writeable_contiguous_array(raw, np.dtype(np.float16))
         return (
             raw.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,
@@ -138,12 +139,7 @@ def _memcpy_payload_for_h2d(
             raise ValueError(
                 f"u8 tensor {path} has {raw.size} bytes, expected {expected}"
             )
-        if (
-            raw.dtype != np.uint8
-            or not raw.flags.c_contiguous
-            or not raw.flags.writeable
-        ):
-            raw = np.ascontiguousarray(raw, dtype=np.uint8)
+        raw = _writeable_contiguous_array(raw, np.dtype(np.uint8))
         return (
             raw.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,

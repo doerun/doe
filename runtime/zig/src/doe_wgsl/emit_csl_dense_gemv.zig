@@ -64,6 +64,7 @@ pub fn emitPeProgram(buf: []u8, pos: *usize) EmitError!void {
     try W.write(buf, pos, "});\n\n");
     try W.write(buf, pos, "var activation: [in_dim_per_pe]f16 = @zeros([in_dim_per_pe]f16);\n");
     try W.write(buf, pos, "var weight: [out_dim_per_pe * in_dim_per_pe]f16 = @zeros([out_dim_per_pe * in_dim_per_pe]f16);\n");
+    try W.write(buf, pos, "var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);\n");
     try W.write(buf, pos, "var output: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);\n");
     try W.write(buf, pos, "\n");
     try W.write(buf, pos, "var activation_ptr: [*]f16 = &activation;\n");
@@ -78,10 +79,10 @@ pub fn emitPeProgram(buf: []u8, pos: *usize) EmitError!void {
     try W.write(buf, pos, "            const idx = row_base + @as(u32, col);\n");
     try W.write(buf, pos, "            sum += @as(f32, activation[@as(u32, col)]) * @as(f32, weight[idx]);\n");
     try W.write(buf, pos, "        }\n");
-    try W.write(buf, pos, "        output[@as(u32, row)] = sum;\n");
+    try W.write(buf, pos, "        partial[@as(u32, row)] = sum;\n");
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    mpi_x.init();\n");
-    try W.write(buf, pos, "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &output), @ptrcast([*]f32, &output), @as(u16, out_dim_per_pe), reduce_done_id);\n");
+    try W.write(buf, pos, "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &partial), @ptrcast([*]f32, &output), @as(u16, out_dim_per_pe), reduce_done_id);\n");
     try W.write(buf, pos, "}\n\n");
     try W.write(buf, pos, "task reduce_done_task() void {\n");
     try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");

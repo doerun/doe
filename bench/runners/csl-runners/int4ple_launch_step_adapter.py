@@ -80,6 +80,12 @@ def _load_writeable_mmap_or_copy(path: Path) -> np.ndarray:
         return np.load(path, allow_pickle=False, mmap_mode="r").ravel()
 
 
+def _writeable_contiguous_array(host: np.ndarray, dtype: np.dtype) -> np.ndarray:
+    if host.dtype == dtype and host.flags.c_contiguous and host.flags.writeable:
+        return host
+    return np.array(host, dtype=dtype, copy=True, order="C")
+
+
 def _memcpy_payload_for_h2d(
     *,
     path: Path,
@@ -98,12 +104,7 @@ def _memcpy_payload_for_h2d(
             raise ValueError(
                 f"array size mismatch for {path}: {host.size} != expected {total_elements}"
             )
-        if (
-            host.dtype != np.float16
-            or not host.flags.c_contiguous
-            or not host.flags.writeable
-        ):
-            host = np.ascontiguousarray(host, dtype=np.float16)
+        host = _writeable_contiguous_array(host, np.dtype(np.float16))
         return (
             host.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,

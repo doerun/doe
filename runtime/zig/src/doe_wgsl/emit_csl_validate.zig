@@ -316,6 +316,8 @@ fn validateFusedGemvDequant(csl: []const u8, result: *ValidationResult) void {
 fn validateDenseGemv(csl: []const u8, result: *ValidationResult) void {
     requireContains(csl, result, "dense GEMV", "dense_gemv missing dense GEMV marker");
     requireContains(csl, result, "reduce_fadds", "dense_gemv missing row reduction");
+    requireContains(csl, result, "var partial: [out_dim_per_pe]f32", "dense_gemv missing separate f32 partial buffer");
+    requireContains(csl, result, "@ptrcast([*]f32, &partial), @ptrcast([*]f32, &output)", "dense_gemv row reduction must not reduce output in place");
     requireContains(csl, result, "out_dim_per_pe", "dense_gemv missing output shard parameter");
     requireContains(csl, result, "[*]f32", "dense_gemv must export f32 logits");
 }

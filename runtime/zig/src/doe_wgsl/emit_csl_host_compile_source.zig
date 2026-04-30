@@ -716,6 +716,11 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "reduce_fadds") == null);
     try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial_bits: [out_dim_per_pe]u32") != null);
     try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var acc: f16 = 0.0") != null);
+
+    const dense = try emitPatternSectionsForElem(std.testing.allocator, "dense_gemv", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "var partial: [out_dim_per_pe]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@ptrcast([*]f32, &partial), @ptrcast([*]f32, &output)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@ptrcast([*]f32, &output), @ptrcast([*]f32, &output)") == null);
 }
 
 test "host compile source emits semantic Gemma elementwise bodies" {

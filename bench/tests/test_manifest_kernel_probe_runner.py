@@ -489,6 +489,28 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
         self.assertTrue(payload.flags.writeable)
         self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
 
+    def test_f16_h2d_copies_read_only_payload(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            np.save(path, np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float16))
+            with mock.patch.object(
+                adapter,
+                "_load_writeable_mmap_or_copy",
+                return_value=np.load(path, mmap_mode="r").ravel(),
+            ):
+                payload, _, _ = adapter._memcpy_payload_for_h2d(
+                    path=str(path),
+                    dtype="f16",
+                    chunk_size=2,
+                    pe_count=2,
+                )
+        self.assertEqual(payload.dtype, np.uint32)
+        self.assertTrue(payload.flags.writeable)
+        self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
+
     def test_f16_d2h_uses_32bit_buffer_with_f16_output_dtype(self) -> None:
         adapter = _load_chain_step_adapter_module()
         import numpy as np
