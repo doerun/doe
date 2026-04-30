@@ -1,6 +1,6 @@
 # Doe Cerebras North Star
 
-One Doppler-authored Gemma 4 31B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Layer B (full-graph compile) is closed. Layer C (manifest-shape simfabric execution) and the WSE hardware receipt are the remaining gates.
+One Doppler-authored Gemma 4 31B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Layer B full-graph compile is closed only for the emitted compile-target inventory. Token-output inference evidence is fail-closed until the HostPlan preserves the explicit post-layer logits path and every sample launch consumes a typed logits producer.
 
 External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md).
 
@@ -9,12 +9,12 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 | Layer | Shape | Required for hardware ask | Status |
 |---|---|---|---|
 | A. Real-canary CSL identity | Smoke | No (regression bookkeeping) | 24/24 pass across 6 kernels × 4 backends |
-| B. 31B manifest-shape full-graph compile | Manifest | Yes | **Closed.** 23/23 targets succeeded, `blocker.class="none"` |
-| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | Bounded chain runs end-to-end; manifest-shape NOT YET ATTEMPTED |
+| B. 31B manifest-shape full-graph compile | Manifest | Yes | **Closed for emitted compile inventory only.** Not token-output inference evidence unless the inventory includes the post-layer logits path |
+| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | **Blocked fail-closed.** Current token-output path requires explicit final-norm / lm-head / sample binding and a real session runtime |
 
 ## Bound today (no hardware)
 
-- [x] Full-graph compile receipt — `bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json` (`compileSucceededCount=23/23`, `hostPlanHash=88ea720740…`)
+- [x] Full-graph compile receipt — `bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json`; compile evidence for the emitted target inventory, not a token-output inference receipt
 - [x] Per-kernel byte-identity (1L vs 61L) — `bench/tests/test_one_layer_per_kernel_byte_identity.py` (2/2 pass, 17 shared kernels match)
 - [x] Frozen 4-of-4 TSIR boundary fixture — `bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/` (`fixtureDigest=8cc17070fedf9c…`); greedy decode of "The color of the sky is" → "blue"
 - [x] Frozen-reference validator — `bench/tools/validate_frozen_doppler_reference.py` (`schemaValid=true`, `bound=true`, `verdict="bound"`)
@@ -52,6 +52,18 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 - For one prompt, prefill + first-token logits hash matches frozen Doppler reference at L=1.
 - Manifest / HostPlan / CSL / reference-fixture hash chain unbroken end-to-end.
 
+## Active fail-closed queue
+
+These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the Cerebras simulator:
+
+1. Manifest-driven lm-head resolver: select a Q4K lm-head only when `lm_head.weight` exists; select tied F16 dense output only when `embed_tokens.weight` is a valid tied output tensor; otherwise emit a typed hard error.
+2. F16 dense tied lm-head kernel: implement the full-vocabulary logits producer with padded embedding handling instead of treating tied embeddings as Q4K weights.
+3. Explicit post-prefill and post-decode logits path: execution-v1 and HostPlan lowering must preserve final norm, lm-head, and sample for both prefill-generated and decode-generated tokens.
+4. Sample binding contract: every sample launch must consume the immediately preceding compatible logits producer, with dtype, shape, and layout validated; missing or incompatible logits is a typed blocker.
+5. Real session runtime: stage real weights, bind host I/O layout, launch serial kernels, carry KV cache state, feed sampled tokens into the next step, and emit logits/token transcript evidence.
+6. Artifact regeneration: regenerate HostPlan, compile receipts, per-kernel receipts, streaming traces, and bounded inference receipts; mark older pre-logits HostPlan families as superseded for inference claims.
+7. Regression gates: add fail-closed tests for graph-to-HostPlan inventory mismatch, sample-without-logits, invalid lm-head dtype selection, and prefill/decode feedback coverage.
+
 ## Integrity invariants
 
 - Every receipt cites the same manifest hash; mismatches are emit-time errors.
@@ -59,6 +71,8 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 - Shape substitution (e.g., `hidden_dim=1024` instead of 5120) is a separate receipt class.
 - The reference fixture is frozen — regeneration is a digest-changing event, not a silent refresh.
 - Every kernel dispatches at manifest shape (rung 4) before any parity claim.
+- Graph-to-HostPlan inventory equality is required for inference claims; dropping a source graph target must produce a typed unsupported result.
+- `sample` is never valid as token-output evidence without a typed logits input from the compatible lm-head launch.
 
 ## Optimization roadmap (post-hardware)
 

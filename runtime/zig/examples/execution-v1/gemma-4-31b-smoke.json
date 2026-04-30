@@ -160,6 +160,26 @@
       "kernelKey": "residual"
     },
     {
+      "name": "final_norm_prefill",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "norm"
+    },
+    {
+      "name": "lm_head_prefill",
+      "phase": "prefill",
+      "op": "matmul",
+      "kernelKey": "lm_head_prefill_stable",
+      "weightsKey": "lm_head"
+    },
+    {
+      "name": "sample_prefill",
+      "phase": "prefill",
+      "op": "sample",
+      "kernelKey": "sample"
+    },
+    {
       "name": "ple_gather",
       "phase": "decode",
       "op": "ple_gather",
@@ -314,8 +334,8 @@
     {
       "name": "lm_head",
       "phase": "decode",
-      "op": "matmul_q4k",
-      "kernelKey": "lm_head_gemv_stable",
+      "op": "matmul",
+      "kernelKey": "lm_head_prefill_stable",
       "weightsKey": "lm_head"
     },
     {

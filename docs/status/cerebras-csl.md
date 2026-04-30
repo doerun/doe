@@ -13,6 +13,34 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-29 — Gemma 4 31B af16 token-output evidence is fail-closed
+
+The Gemma 4 31B af16 HostPlan family that ends at `sample` without an explicit
+logits producer is superseded for inference claims. Receipts derived from that
+inventory remain compile/front-door evidence for the emitted targets, but they
+are not token-output prefill/decode evidence.
+
+The active queue is now contract-first:
+
+- add a manifest-driven lm-head resolver that distinguishes real Q4K
+  `lm_head.weight` from tied F16 `embed_tokens.weight`;
+- add the F16 dense tied-lm-head path and padded embedding handling before
+  using tied embeddings for logits;
+- make post-prefill and post-decode final-norm / lm-head / sample paths
+  explicit in execution-v1 and HostPlan lowering;
+- require every `sample` launch to consume a typed compatible logits producer,
+  with dtype, shape, and layout checked before receipts bind;
+- extend the real session runtime to stage weights, bind host I/O, launch the
+  serial HostPlan, carry KV cache, feed sampled tokens forward, and emit
+  transcript logits/tokens;
+- regenerate downstream HostPlan, compile, per-kernel, streaming, and bounded
+  inference artifacts after the contract lands.
+
+The corresponding queue and invariants are tracked in
+`docs/cerebras-north-star.md`. This is not a runner paper-over: the upstream
+graph-to-HostPlan inventory and sample-logits contracts must fail closed before
+any generated-token evidence can be promoted.
+
 ## 2026-04-29 — CSL emulator covers remaining 31B compile-target semantics
 
 `bench/tools/run_csl_webgpu_emulator.mjs` now recognizes every compile target

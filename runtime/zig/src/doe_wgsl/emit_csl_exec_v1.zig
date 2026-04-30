@@ -31,6 +31,7 @@ pub const LowerError = error{
     InvalidJson,
     UnknownOp,
     MalformedStep,
+    SampleLogitsProducerMissing,
     OutOfMemory,
 };
 
@@ -61,6 +62,7 @@ pub const AttentionType = enum {
 pub const ExecStep = struct {
     phase: ExecPhase,
     kind: ExecStepKind,
+    name: ?[]const u8 = null,
     op: []const u8,
     kernel_key: []const u8,
     weights_key: ?[]const u8 = null,
@@ -160,7 +162,7 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "ffn", .spec = .{ .pattern = "fused_ffn", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "kv_write", .spec = .{ .pattern = "kv_write", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "kv_read", .spec = .{ .pattern = "kv_read", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
-        .{ .op = "sample", .spec = .{ .pattern = "sample", .allow_prefill = false, .allow_decode = true, .kind = .sample } },
+        .{ .op = "sample", .spec = .{ .pattern = "sample", .allow_prefill = true, .allow_decode = true, .kind = .sample } },
         // Gemma 4: PLE composite — decomposes into gather + matmul + reduction + element_wise.
         // The host plan expands this into the four sub-steps; exec-v1 uses it as a scheduling marker.
         .{ .op = "ple_gather", .spec = .{ .pattern = "gather", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
@@ -327,6 +329,7 @@ fn parseNullableStringDup(allocator: std.mem.Allocator, value: ?std.json.Value) 
 fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) LowerError!ExecStep {
     const phase_text = try expectString(object.get("phase") orelse return error.InvalidJson);
     const op = try expectString(object.get("op") orelse return error.InvalidJson);
+    const name = try parseNullableStringDup(allocator, object.get("name"));
     const kernel_key = try allocator.dupe(u8, try expectString(object.get("kernelKey") orelse return error.InvalidJson));
     const op_spec = opToSpec(op) orelse return error.UnknownOp;
     const kind = if (object.get("kind")) |kind_value|
@@ -355,6 +358,7 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
     return .{
         .phase = try parsePhase(phase_text),
         .kind = kind,
+        .name = name,
         .op = op,
         .kernel_key = kernel_key,
         .weights_key = weights_key,
@@ -404,6 +408,7 @@ fn parseStepTuple(allocator: std.mem.Allocator, array: std.json.Array) LowerErro
     return .{
         .phase = phase,
         .kind = kind,
+        .name = null,
         .op = op,
         .kernel_key = kernel_key,
         .weights_key = weights_key,
@@ -466,6 +471,7 @@ fn parseManifestPhaseTuple(
     return .{
         .phase = phase,
         .kind = op_spec.kind,
+        .name = null,
         .op = op,
         .kernel_key = try allocator.dupe(u8, kernel_key_raw),
         .weights_key = if (tuple.items.len == 3)
@@ -530,7 +536,6 @@ fn validateStep(step: ExecStep, op_spec: OpSpec) LowerError!void {
     switch (step.phase) {
         .prefill => {
             if (!op_spec.allow_prefill) return error.MalformedStep;
-            if (step.kind == .sample) return error.MalformedStep;
         },
         .decode => {
             if (!op_spec.allow_decode) return error.MalformedStep;
@@ -552,6 +557,34 @@ fn validateStep(step: ExecStep, op_spec: OpSpec) LowerError!void {
     } else if (step.kv_cache_alias != null) {
         return error.MalformedStep;
     }
+}
+
+fn isLmHeadName(name: []const u8) bool {
+    return std.mem.eql(u8, name, "lm_head") or
+        std.mem.eql(u8, name, "lm_head_prefill") or
+        std.mem.startsWith(u8, name, "lm_head_");
+}
+
+fn isLmHeadKernel(kernel_key: []const u8) bool {
+    return std.mem.eql(u8, kernel_key, "lm_head") or
+        std.mem.startsWith(u8, kernel_key, "lm_head_");
+}
+
+fn isLogitsProducerStep(step: ExecStep, op_spec: OpSpec) bool {
+    if (step.kind != .compute) return false;
+    if (!std.mem.eql(u8, op_spec.pattern, "fused_gemv_dequant") and
+        !std.mem.eql(u8, op_spec.pattern, "tiled_matmul"))
+    {
+        return false;
+    }
+    if (step.name) |name| {
+        if (isLmHeadName(name)) return true;
+    }
+    if (isLmHeadKernel(step.kernel_key)) return true;
+    if (step.weights_key) |weights_key| {
+        if (std.mem.eql(u8, weights_key, "lm_head")) return true;
+    }
+    return false;
 }
 
 fn deriveAttentionTypeFromLayerPattern(layer_pattern: LayerPattern, layer_index: u32) host.LaunchAttentionType {
@@ -617,22 +650,31 @@ fn lowerToHostPlanWithMetadata(
     var saw_prefill_step = false;
     var saw_decode_step = false;
     var saw_decode_compute = false;
-    var saw_sample_step = false;
+    var prefill_closed_by_sample = false;
+    var decode_closed_by_sample = false;
+    var previous_prefill_was_logits = false;
+    var previous_decode_was_logits = false;
     var decode_attention_index: u32 = 0;
 
     for (steps) |step| {
-        if (saw_sample_step) return error.MalformedStep;
-
         const op_spec = opToSpec(step.op) orelse return error.UnknownOp;
         try validateStep(step, op_spec);
 
         switch (step.phase) {
             .prefill => {
                 if (saw_decode_step) return error.MalformedStep;
+                if (prefill_closed_by_sample) return error.MalformedStep;
+                if (step.kind == .sample and !previous_prefill_was_logits) {
+                    return error.SampleLogitsProducerMissing;
+                }
                 saw_prefill_step = true;
             },
             .decode => {
                 if (!saw_prefill_step) return error.MalformedStep;
+                if (decode_closed_by_sample) return error.MalformedStep;
+                if (step.kind == .sample and !previous_decode_was_logits) {
+                    return error.SampleLogitsProducerMissing;
+                }
                 saw_decode_step = true;
                 if (step.kind == .compute) {
                     saw_decode_compute = true;
@@ -692,6 +734,12 @@ fn lowerToHostPlanWithMetadata(
                     .kv_cache_alias = kv_cache_alias,
                 };
                 prefill_count += 1;
+                if (step.kind == .sample) {
+                    prefill_closed_by_sample = true;
+                    previous_prefill_was_logits = false;
+                } else {
+                    previous_prefill_was_logits = isLogitsProducerStep(step, op_spec);
+                }
             },
             .decode => {
                 if (decode_count >= decode_buf.len) return error.OutputTooLarge;
@@ -705,7 +753,10 @@ fn lowerToHostPlanWithMetadata(
                 };
                 decode_count += 1;
                 if (step.kind == .sample) {
-                    saw_sample_step = true;
+                    decode_closed_by_sample = true;
+                    previous_decode_was_logits = false;
+                } else {
+                    previous_decode_was_logits = isLogitsProducerStep(step, op_spec);
                 }
             },
         }
