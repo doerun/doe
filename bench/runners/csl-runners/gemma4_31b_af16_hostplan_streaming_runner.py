@@ -35,7 +35,10 @@ if str(REPO_ROOT) not in sys.path:
 if str(RUNNER_DIR) not in sys.path:
     sys.path.insert(0, str(RUNNER_DIR))
 
-from bench.tools._lane_dtype_profile import canonical_dtype_profile  # noqa: E402
+from bench.tools._lane_dtype_profile import (  # noqa: E402
+    canonical_dtype_profile,
+    csl_dtype_contract_for_profile,
+)
 from bench.tools._inference_evidence_gate import (  # noqa: E402
     evaluate_inference_evidence_gate,
 )
@@ -587,6 +590,10 @@ def build_weight_staging_plan(
         raise ValueError(
             f"expected lane {lane_key!r}, got {profile.get('variantTag')!r}"
         )
+    csl_dtype_contract = csl_dtype_contract_for_profile(
+        profile,
+        model_id=str(manifest.get("modelId") or ""),
+    )
 
     weight_root = resolve_weight_root(manifest_path, manifest)
     shards = manifest.get("shards") or []
@@ -668,6 +675,7 @@ def build_weight_staging_plan(
         "modelId": manifest.get("modelId"),
         "laneKey": profile["variantTag"],
         "dtypeProfile": profile,
+        "cslDtypeContract": csl_dtype_contract,
         "weightPackId": (manifest.get("artifactIdentity") or {}).get(
             "weightPackId"
         ),
@@ -1229,6 +1237,7 @@ def build_trace(args: argparse.Namespace) -> dict[str, Any]:
         "artifactKind": trace_artifact_kind,
         "modelId": expected_model_id,
         "laneKey": lane_key,
+        "cslDtypeContract": weight_plan["cslDtypeContract"],
         "executionTarget": "system" if args.cmaddr else "simfabric",
         "requestedExecution": {
             "prefillTokenCount": args.prefill_token_count,

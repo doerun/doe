@@ -178,6 +178,10 @@
       "data": "config/csl-runtime-fixtures.json"
     },
     {
+      "schema": "config/doe-csl-dtype-contracts.schema.json",
+      "data": "config/doe-csl-dtype-contracts.json"
+    },
+    {
       "schema": "config/doe-csl-reference-parity.schema.json",
       "data": "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json"
     },

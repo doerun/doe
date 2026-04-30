@@ -261,8 +261,10 @@ def runtime_mapping_from_sidecar(
     weight_key: str,
     path: Path,
     pe_count: int,
+    runtime_config: dict[str, Any],
 ) -> dict[str, Any]:
     size = path.stat().st_size
+    element_count = size // 4
     return {
         "shard": str(path.resolve()),
         "path": str(path.resolve()),
@@ -272,7 +274,11 @@ def runtime_mapping_from_sidecar(
         "dtype": "f32",
         "tensor": weight_key,
         "offsetBytes": 0,
-        "shape": [size // 4],
+        "shape": sidecar_shape_for_runtime(
+            weight_key=weight_key,
+            element_count=element_count,
+            runtime_config=runtime_config,
+        ),
         "quant": runtime_quant("F32"),
         "weightKey": weight_key,
         "tensorName": weight_key,
@@ -290,6 +296,26 @@ def runtime_mapping_from_sidecar(
             }
         ],
     }
+
+
+def sidecar_shape_for_runtime(
+    *,
+    weight_key: str,
+    element_count: int,
+    runtime_config: dict[str, Any],
+) -> list[int]:
+    model = runtime_config.get("modelConfig") or {}
+    try:
+        ple_width = int(model.get("pleWidth") or 0)
+    except (TypeError, ValueError):
+        ple_width = 0
+    if (
+        ".perLayerModelProjection.layer" in weight_key
+        and ple_width > 0
+        and element_count % ple_width == 0
+    ):
+        return [element_count // ple_width, ple_width]
+    return [element_count]
 
 
 def build_runtime_weight_mappings(
@@ -341,6 +367,7 @@ def build_runtime_weight_mappings(
                         weight_key=key,
                         path=path,
                         pe_count=pe_count,
+                        runtime_config=runtime_config,
                     )
                 )
                 sidecar_keys.append(key)
@@ -556,6 +583,22 @@ def build_real_session_scheduler(
     last_generated_token = "input:prompt_token_ids"
     last_logits = ""
     last_logits_launch_index: int | None = None
+    weight_shapes = {
+        str(item.get("weightKey") or item.get("tensor") or ""): (
+            item.get("shape") if isinstance(item.get("shape"), list) else []
+        )
+        for item in runtime_config.get("weightMappings") or []
+        if isinstance(item, dict)
+    }
+
+    def weight_matrix_dims(weight_key: Any) -> tuple[int | None, int | None]:
+        shape = weight_shapes.get(str(weight_key or "")) or []
+        if len(shape) < 2:
+            return None, None
+        try:
+            return int(shape[0]), int(shape[1])
+        except (TypeError, ValueError):
+            return None, None
 
     def touch_input(buffer: str, role: str, launch_index: int) -> None:
         item = lifetimes.setdefault(
@@ -654,15 +697,30 @@ def build_real_session_scheduler(
             add_input("indices", token_source, "tokenized_prompt", "runtime_prompt")
             add_input("table", f"weight:{step.get('weightKey')}", "weight", "weights")
             add_output("output", out, "activation", f"{kernel}.output")
+            if kernel == "ple_embed":
+                state["ple_gather"] = out
             current = out
         elif kernel in {"tiled", "ple_proj"}:
-            add_input("a", current, "activation", "activation_router")
+            matrix_n, matrix_k = weight_matrix_dims(weight_key)
+            source = (
+                state.get("ple_gather", current)
+                if kernel == "ple_proj"
+                else current
+            )
+            add_input(
+                "a",
+                source,
+                "activation",
+                "activation_router",
+                matrixCols=matrix_k,
+            )
             add_input("b", f"weight:{step.get('weightKey')}", "weight", "weights")
             add_output(
                 "c",
                 out,
                 "logits" if is_lm_head else "activation",
                 f"{kernel}.output",
+                matrixCols=matrix_n,
             )
             if is_lm_head:
                 decode_index = int(step.get("tokenIndex") or 0)
@@ -679,6 +737,8 @@ def build_real_session_scheduler(
                     }
                 )
             else:
+                if kernel == "ple_proj":
+                    state["ple_project"] = out
                 current = out
         elif kernel in {"gemv", *LM_HEAD_KERNELS}:
             add_input("activation", current, "activation", "activation_router")
@@ -708,9 +768,16 @@ def build_real_session_scheduler(
             else:
                 current = out
         elif kernel in {"rmsnorm", "ple_rmsnorm"}:
-            add_input("input", current, "activation", "activation_router")
+            norm_input = (
+                state.get("ple_project", current)
+                if kernel == "ple_rmsnorm"
+                else current
+            )
+            add_input("input", norm_input, "activation", "activation_router")
             add_input("weight", f"weight:{step.get('weightKey')}", "weight", "weights")
             add_output("output", out, "activation", f"{kernel}.output")
+            if kernel == "ple_rmsnorm":
+                state["ple_norm"] = out
             if name == "input_norm":
                 state["residual_base"] = current
             elif name == "post_attn_norm":
@@ -885,8 +952,14 @@ def build_real_session_scheduler(
             current = out
         elif kernel == "ple_residual":
             add_input("u", "state:decode_position", "position", "runtime_state")
-            add_input("input", current, "activation", "activation_router")
+            add_input(
+                "input",
+                state.get("ple_norm", current),
+                "activation",
+                "activation_router",
+            )
             add_output("output", out, "activation", "ple_residual.output")
+            state["ple_modulate"] = out
             current = out
         elif kernel == "gelu":
             add_input("input", current, "activation", "activation_router")

@@ -31,6 +31,24 @@ def _load_runner_module():
     return mod
 
 
+def _load_session_module():
+    name = "gemma4_31b_af16_session_runtime"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(
+        name,
+        REPO_ROOT
+        / "bench/runners/csl-runners/"
+        "gemma4_31b_af16_session_runtime.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
@@ -56,7 +74,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
             "quantizationInfo": {
                 "weights": "q4k",
                 "embeddings": "f16",
-                "lmHead": "f16",
+                "lmHead": "q4k",
                 "compute": "f16",
                 "variantTag": "q4k-ehf16-af16",
             },
@@ -408,6 +426,14 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertEqual(plan["sizeMismatches"], [])
             self.assertEqual(plan["unresolvedWeightKeys"], [])
             self.assertEqual(plan["resolvedWeightCount"], plan["requiredWeightCount"])
+            self.assertEqual(
+                plan["cslDtypeContract"]["fallbackPolicy"],
+                "forbid_implicit_af32",
+            )
+            self.assertEqual(
+                plan["cslDtypeContract"]["hostPlanActivationDtype"],
+                "f16",
+            )
             lm_head = next(
                 item for item in plan["requiredWeights"]
                 if item["weightKey"] == "lm_head"
@@ -464,6 +490,105 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertEqual(plan["prefillSteps"][-1]["name"], "sample_prefill")
             self.assertEqual(plan["decodeByToken"][0]["tokenIndex"], 1)
 
+    def test_session_scheduler_routes_ple_layers_by_layer_state(self) -> None:
+        session = _load_session_module()
+        dispatch_plan = {
+            "decodeTokenCount": 0,
+            "prefillSteps": [
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_gather",
+                    "kernelKey": "ple_embed",
+                    "weightKey": "per_layer_inputs.embedTokensPerLayer.layer0",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 1,
+                    "name": "ple_gather",
+                    "kernelKey": "ple_embed",
+                    "weightKey": "per_layer_inputs.embedTokensPerLayer.layer1",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_project",
+                    "kernelKey": "ple_proj",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer0"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 1,
+                    "name": "ple_project",
+                    "kernelKey": "ple_proj",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer1"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_norm",
+                    "kernelKey": "ple_rmsnorm",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerProjectionNorm.layer0"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 1,
+                    "name": "ple_norm",
+                    "kernelKey": "ple_rmsnorm",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerProjectionNorm.layer1"
+                    ),
+                },
+            ],
+            "decodeByToken": [],
+        }
+        runtime_config = {
+            "modelConfig": {"numLayers": 2, "pleWidth": 256},
+            "weightMappings": [
+                {
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer0"
+                    ),
+                    "shape": [4, 256],
+                },
+                {
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer1"
+                    ),
+                    "shape": [4, 256],
+                },
+            ],
+        }
+        scheduler = session.build_real_session_scheduler(
+            dispatch_plan=dispatch_plan,
+            runtime_config=runtime_config,
+        )
+        launches = scheduler["launches"]
+        self.assertEqual(
+            launches[2]["inputs"][0]["buffer"],
+            launches[0]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[3]["inputs"][0]["buffer"],
+            launches[1]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(launches[2]["inputs"][0]["matrixCols"], 256)
+        self.assertEqual(launches[2]["outputs"][0]["matrixCols"], 4)
+        self.assertEqual(
+            launches[4]["inputs"][0]["buffer"],
+            launches[2]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[5]["inputs"][0]["buffer"],
+            launches[3]["outputs"][0]["buffer"],
+        )
+
     def test_trace_records_current_blockers_without_refresh(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -496,6 +621,10 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertIn("manifest_kernel_dispatch_not_bound", blocker_classes)
             self.assertIn("execution_not_requested", blocker_classes)
             self.assertEqual(trace["perKernelRefresh"]["status"], "not_requested")
+            self.assertEqual(
+                trace["cslDtypeContract"]["fallbackPolicy"],
+                "forbid_implicit_af32",
+            )
             self.assertEqual(trace["realSessionRuntime"]["status"], "blocked")
             self.assertGreater(trace["realSessionRuntime"]["hostIoLayoutCount"], 0)
             scheduler = json.loads(

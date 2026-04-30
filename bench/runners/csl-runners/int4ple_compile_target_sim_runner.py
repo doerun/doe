@@ -1185,16 +1185,19 @@ def _materialize_weight_matrix_f32(
         raw = _read_weight_prefix_bytes(mapping, byte_count)
         values = dequantize_q4km_rowwise_bytes(raw, [source_rows, source_cols])
         return np.asarray(values, dtype=np.float32)
-    if nested_kind in {"f16_to_f32", "litert_axis_dequant"}:
+    if nested_kind in {"f16_to_f32", "f16_passthrough", "f16_to_f16", "litert_axis_dequant"}:
         raw = _read_weight_prefix_bytes(mapping, element_count * 2)
         return np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
-    if nested_kind == "bf16_to_f32":
+    if nested_kind in {"bf16_to_f32", "bf16_to_f16"}:
         raw = _read_weight_prefix_bytes(mapping, element_count * 2)
         bf16_words = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32, copy=False)
         return (bf16_words << 16).view(np.float32).copy()
     if nested_kind in {"", "none"} and str(mapping.get("dtype") or "") == "f32":
         raw = _read_weight_prefix_bytes(mapping, element_count * 4)
         return np.frombuffer(raw, dtype=np.float32).copy()
+    if nested_kind in {"", "none"} and str(mapping.get("dtype") or "") == "f16":
+        raw = _read_weight_prefix_bytes(mapping, element_count * 2)
+        return np.frombuffer(raw, dtype=np.float16).astype(np.float32, copy=True)
     raise ValueError(
         "unsupported_summa_weight_source_transform:"
         f"{mapping.get('weightKey') or mapping.get('tensor')}:{nested_kind or 'none'}"
@@ -1316,6 +1319,18 @@ def _materialize_weight_input(
                 f"weight_summa_tile_size_mismatch:{values.size}!={total_elements}"
             )
         return values
+    if dtype == "f16" and transform_kind == "weight_matrix_to_summa_tiles":
+        matrix = _materialize_weight_matrix_f32(mapping, source_transform)
+        values = _summa_b_tiles_from_weight_matrix(
+            matrix,
+            source_transform,
+            target_dtype=np.float16,
+        )
+        if values.size != total_elements:
+            raise ValueError(
+                f"weight_summa_tile_size_mismatch:{values.size}!={total_elements}"
+            )
+        return values
     if dtype == "q4k_block256" and transform_kind == "weight_matrix_to_summa_q4k_tiles":
         # Q4K passthrough: ship 144-byte blocks per 256-weight chunk to
         # the fabric without host-side dequant. The PE program runs
@@ -1349,6 +1364,35 @@ def _materialize_weight_input(
         values = np.tile(per_pe, broadcast) if broadcast > 1 else per_pe
         if values.size != total_elements:
             raise ValueError(f"weight_f16_to_f32_size_mismatch:{values.size}!={total_elements}")
+        return values
+    if dtype == "f16" and transform_kind in {"f16_passthrough", "f16_to_f16"}:
+        broadcast = _broadcast_factor_or_one(
+            mapping=mapping,
+            materialization=materialization,
+            source_byte_width=2,
+            total_elements=total_elements,
+        )
+        per_pe_elements = total_elements // broadcast
+        raw = _read_weight_prefix_bytes(mapping, per_pe_elements * 2)
+        per_pe = np.frombuffer(raw, dtype=np.float16).copy()
+        values = np.tile(per_pe, broadcast) if broadcast > 1 else per_pe
+        if values.size != total_elements:
+            raise ValueError(f"weight_f16_passthrough_size_mismatch:{values.size}!={total_elements}")
+        return values
+    if dtype == "f16" and transform_kind == "bf16_to_f16":
+        broadcast = _broadcast_factor_or_one(
+            mapping=mapping,
+            materialization=materialization,
+            source_byte_width=2,
+            total_elements=total_elements,
+        )
+        per_pe_elements = total_elements // broadcast
+        raw = _read_weight_prefix_bytes(mapping, per_pe_elements * 2)
+        bf16_words = np.frombuffer(raw, dtype=np.uint16).astype(np.uint32, copy=False)
+        per_pe = (bf16_words << 16).view(np.float32).astype(np.float16)
+        values = np.tile(per_pe, broadcast) if broadcast > 1 else per_pe
+        if values.size != total_elements:
+            raise ValueError(f"weight_bf16_to_f16_size_mismatch:{values.size}!={total_elements}")
         return values
     if dtype == "f32" and transform_kind == "bf16_to_f32":
         broadcast = _broadcast_factor_or_one(
@@ -1394,7 +1438,8 @@ def _materialize_constant_input(
         count = elements_per_pe
         pairs = np.arange(count, dtype=np.float32)
         values = np.cos(pairs) if buffer.endswith("cos_table") else np.sin(pairs)
-        return np.tile(values.astype(np.float32), pe_count)
+        target_dtype = np.float16 if dtype == "f16" else np.float32
+        return np.tile(values.astype(target_dtype), pe_count)
     if role == "position":
         value = 0
         if buffer.endswith("sliding_window"):
@@ -1403,7 +1448,8 @@ def _materialize_constant_input(
     if role == "uniform":
         return np.zeros(pe_count * max(1, elements_per_pe), dtype=np.uint32)
     if role == "kv_cache":
-        return np.zeros(pe_count * max(1, elements_per_pe), dtype=np.float32)
+        target_dtype = np.float16 if dtype == "f16" else np.float32
+        return np.zeros(pe_count * max(1, elements_per_pe), dtype=target_dtype)
     raise ValueError(f"unsupported_constant_input:{role}:{buffer}:{dtype}")
 
 
@@ -1416,7 +1462,16 @@ def _transform_existing_input(
         return host, {}
     transform_kind = str(source_transform.get("kind") or "")
     if transform_kind == "logical_matrix_to_summa_tiles":
-        values, rows = _summa_a_tiles_from_logical(host, source_transform)
+        target_dtype = (
+            np.float16
+            if str(materialization.get("dtype") or "") == "f16"
+            else np.float32
+        )
+        values, rows = _summa_a_tiles_from_logical(
+            host,
+            source_transform,
+            target_dtype=target_dtype,
+        )
         return values, {
             "rows": rows,
             "cols": _required_positive_int(source_transform, "sourceCols"),

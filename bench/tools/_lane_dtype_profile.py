@@ -34,6 +34,8 @@ be detected post-hoc even when paths drift.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 
@@ -42,6 +44,8 @@ class LaneDtypeProfileError(ValueError):
 
 
 _REQUIRED_FIELDS = ("weights", "embeddings", "compute", "variantTag")
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_CSL_CONTRACTS_PATH = _REPO_ROOT / "config/doe-csl-dtype-contracts.json"
 
 
 def canonical_dtype_profile(
@@ -137,3 +141,40 @@ def assert_lane_match(
             f"lane key mismatch: expected {expected_lane_key!r}, "
             f"fixture dtypeProfile.variantTag={actual!r}"
         )
+
+
+def load_csl_dtype_contracts(
+    path: Path = _DEFAULT_CSL_CONTRACTS_PATH,
+) -> dict[str, Any]:
+    """Load the Doe/Cerebras CSL dtype contract registry."""
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def csl_dtype_contract_for_profile(
+    dtype_profile: dict[str, Any],
+    *,
+    model_id: str | None = None,
+    contracts_path: Path = _DEFAULT_CSL_CONTRACTS_PATH,
+) -> dict[str, Any]:
+    """Return the Doe/Cerebras CSL dtype contract for a lane profile.
+
+    The match is explicit on `variantTag`, with optional modelId narrowing
+    when the contract lists concrete model ids.
+    """
+    variant_tag = str(dtype_profile.get("variantTag") or "")
+    if not variant_tag:
+        raise LaneDtypeProfileError("dtypeProfile.variantTag is absent")
+    registry = load_csl_dtype_contracts(contracts_path)
+    for contract in registry.get("contracts") or []:
+        if not isinstance(contract, dict):
+            continue
+        if contract.get("dopplerVariantTag") != variant_tag:
+            continue
+        model_ids = contract.get("modelIds") or []
+        if model_id is not None and model_ids and model_id not in model_ids:
+            continue
+        return json.loads(json.dumps(contract))
+    suffix = f" for modelId={model_id!r}" if model_id is not None else ""
+    raise LaneDtypeProfileError(
+        f"no Doe/Cerebras CSL dtype contract for variantTag={variant_tag!r}{suffix}"
+    )

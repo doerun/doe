@@ -31,6 +31,8 @@ def required_positive_int(mapping: dict[str, Any], key: str) -> int:
 def a_tiles_from_logical(
     host: np.ndarray,
     transform: dict[str, Any],
+    *,
+    target_dtype: np.dtype | type = np.float32,
 ) -> tuple[np.ndarray, int]:
     """Tile a logical row-major matrix into SUMMA A-side per-PE order.
 
@@ -54,8 +56,9 @@ def a_tiles_from_logical(
             "summa_a_logical_shape_exceeds_target:"
             f"{rows}x{source_cols}>{padded_rows}x{padded_cols}"
         )
-    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
-    padded[:rows, :source_cols] = host.astype(np.float32, copy=False).reshape(
+    dtype = np.dtype(target_dtype)
+    padded = np.zeros((padded_rows, padded_cols), dtype=dtype)
+    padded[:rows, :source_cols] = host.astype(dtype, copy=False).reshape(
         rows, source_cols
     )
     tiles = padded.reshape(
@@ -64,7 +67,7 @@ def a_tiles_from_logical(
         grid_width,
         tile_cols,
     ).transpose(0, 2, 3, 1)
-    return tiles.reshape(-1).astype(np.float32, copy=False), rows
+    return tiles.reshape(-1).astype(dtype, copy=False), rows
 
 
 QK_K_BLOCK_ELEMENTS = 256
@@ -141,6 +144,8 @@ def b_tiles_from_q4k_bytes(
 def b_tiles_from_weight_matrix(
     matrix_nk: np.ndarray,
     transform: dict[str, Any],
+    *,
+    target_dtype: np.dtype | type = np.float32,
 ) -> np.ndarray:
     """Tile a logical [N, K] weight matrix into SUMMA B-side per-PE order."""
     source_rows = required_positive_int(transform, "sourceRows")
@@ -161,9 +166,10 @@ def b_tiles_from_weight_matrix(
             "summa_b_logical_shape_exceeds_target:"
             f"{source_rows}x{source_cols}>{padded_rows}x{padded_cols}"
         )
-    padded = np.zeros((padded_rows, padded_cols), dtype=np.float32)
+    dtype = np.dtype(target_dtype)
+    padded = np.zeros((padded_rows, padded_cols), dtype=dtype)
     padded[:source_rows, :source_cols] = matrix_nk.astype(
-        np.float32,
+        dtype,
         copy=False,
     ).reshape(source_rows, source_cols)
     tiles = padded.reshape(
@@ -172,4 +178,4 @@ def b_tiles_from_weight_matrix(
         grid_height,
         tile_cols,
     ).transpose(2, 0, 1, 3)
-    return tiles.reshape(-1).astype(np.float32, copy=False)
+    return tiles.reshape(-1).astype(dtype, copy=False)

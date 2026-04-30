@@ -33,6 +33,7 @@ from bench.tools._lane_dtype_profile import (  # noqa: E402
     LaneDtypeProfileError,
     assert_lane_match,
     canonical_dtype_profile,
+    csl_dtype_contract_for_profile,
 )
 from bench.tools._receipt_hash_guard import (  # noqa: E402
     ReceiptHashSpineError,
@@ -469,6 +470,10 @@ def build_receipt(
     )
 
     dtype_profile = _load_dtype_profile(source_doppler_manifest)
+    csl_dtype_contract = csl_dtype_contract_for_profile(
+        dtype_profile,
+        model_id=MODEL_ID,
+    )
     reference = _reference_summary(
         frozen_reference_root,
         requested_prefill=prefill_token_count,
@@ -493,6 +498,7 @@ def build_receipt(
         "modelId": MODEL_ID,
         "laneKey": LANE_KEY,
         "dtypeProfile": dtype_profile,
+        "cslDtypeContract": csl_dtype_contract,
         "manifestPath": _display_path(source_doppler_manifest),
         "manifestSha256": _sha256_file(source_doppler_manifest),
         "referenceFixtureHash": reference["fixtureDigest"],

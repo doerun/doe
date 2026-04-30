@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_csl_dtype_contracts",
+  "contracts": [
+    {
+      "name": "gemma4_31b_q4k_ehf16_af16",
+      "backend": "cerebras_csl",
+      "modelIds": ["gemma-4-31b-it-text-q4k-ehf16-af16"],
+      "dopplerVariantTag": "q4k-ehf16-af16",
+      "hostPlanActivationDtype": "f16",
+      "fallbackPolicy": "forbid_implicit_af32",
+      "promotionState": "contract_declared_runtime_evidence_pending",
+      "weightsRefPolicy": {
+        "preserveIdentity": true,
+        "sharedQ4KWeightPacks": true,
+        "allowedStorageDtypes": ["u8_q4k", "f16"]
+      },
+      "hostTransfer": {
+        "f16Encoding": "ieee_binary16",
+        "logicalF16Transport": "memcpy32_packed_u32",
+        "d2hCopyback": "logical_dtype_preserved"
+      },
+      "dtypes": {
+        "activation": "f16",
+        "kvCache": "f16",
+        "kernelOutput": "f16",
+        "embeddingTable": "f16",
+        "q4kWeightStorage": "u8_q4k",
+        "lmHeadActivation": "f16",
+        "lmHeadWeight": "f16",
+        "logits": "f32",
+        "sampleTokenId": "u32"
+      },
+      "accumulationDtypes": {
+        "rmsNorm": "f16",
+        "rope": "f16",
+        "attention": "f16",
+        "summaMatmul": "f16",
+        "residual": "f16",
+        "gatedActivation": "f16",
+        "kvReadWrite": "f16",
+        "denseLmHead": "f32",
+        "sampleCompare": "f32"
+      },
+      "kernelClasses": [
+        {
+          "name": "rms_norm",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "tiled_matmul",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "dense_lm_head",
+          "inputDtype": "f16",
+          "outputDtype": "f32",
+          "accumulationDtype": "f32"
+        },
+        {
+          "name": "sample",
+          "inputDtype": "f32",
+          "outputDtype": "u32",
+          "accumulationDtype": "f32"
+        }
+      ]
+    },
+    {
+      "name": "qwen_3_6_27b_q4k_eaf16",
+      "backend": "cerebras_csl",
+      "modelIds": ["qwen-3-6-27b-q4k-eaf16"],
+      "dopplerVariantTag": "q4k-eaf16",
+      "hostPlanActivationDtype": "f16",
+      "fallbackPolicy": "forbid_implicit_af32",
+      "promotionState": "contract_declared_runtime_evidence_pending",
+      "weightsRefPolicy": {
+        "preserveIdentity": true,
+        "sharedQ4KWeightPacks": true,
+        "allowedStorageDtypes": ["u8_q4k", "f16", "bf16"]
+      },
+      "hostTransfer": {
+        "f16Encoding": "ieee_binary16",
+        "logicalF16Transport": "memcpy32_packed_u32",
+        "d2hCopyback": "logical_dtype_preserved"
+      },
+      "dtypes": {
+        "activation": "f16",
+        "kvCache": "f16",
+        "kernelOutput": "f16",
+        "embeddingTable": "f16",
+        "q4kWeightStorage": "u8_q4k",
+        "lmHeadWeight": "u8_q4k",
+        "logits": "f32",
+        "sampleTokenId": "u32",
+        "linearAttentionState": "f16",
+        "ssmState": "f16"
+      },
+      "accumulationDtypes": {
+        "rmsNorm": "f16",
+        "qkNorm": "f16",
+        "rope": "f16",
+        "causalPrefillAttention": "f16",
+        "summaMatmul": "f16",
+        "swiglu": "f16",
+        "conv1dDepthwise": "f16",
+        "linearAttention": "f16",
+        "ssmRecurrence": "f16",
+        "kvReadWrite": "f16",
+        "lmHeadGemv": "f32",
+        "sampleCompare": "f32"
+      },
+      "kernelClasses": [
+        {
+          "name": "qk_norm",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "silu_gated",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "conv1d_depthwise",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "linear_attention",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "lm_head_gemv",
+          "inputDtype": "f16",
+          "outputDtype": "f32",
+          "accumulationDtype": "f32"
+        }
+      ]
+    }
+  ]
+}

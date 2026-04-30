@@ -10,8 +10,49 @@ This is a live topical status shard.
 Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing that was
 later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
-the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
-attention compile blockers.
+the Gemma 4 31B af16 HostPlan session path: PLE embedding copyback is now
+real-checkpointed, and the current local probe is validating the first PLE
+SUMMA projection handoff before lm-head/sample evidence can promote.
+
+## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
+
+Doe now has an explicit Cerebras CSL dtype contract registry at
+`config/doe-csl-dtype-contracts.json`, validated by
+`config/doe-csl-dtype-contracts.schema.json` and wired through
+`config/schema-targets.json`. The Gemma `q4k-ehf16-af16` and Qwen
+`q4k-eaf16` contracts declare `hostPlanActivationDtype=f16`,
+`fallbackPolicy=forbid_implicit_af32`, f16 activation/KV/output transport,
+f32 logits/sample comparison where the kernels require it, and
+weightsRef identity preservation for shared Q4K packs.
+
+The Gemma af16 streaming trace and bounded-smoke receipt builder now carry
+`cslDtypeContract` next to the Doppler `dtypeProfile`; existing unpromoted
+bounded evidence cannot be regenerated until the current per-kernel gate binds
+`sample` and lm-head dispatch. The current checked-in receipt remains
+superseded by the gate rejection, not promoted by the contract metadata.
+
+Runtime staging now accepts f16 SUMMA A/B tiling and f16 constant state without
+silently widening to af32. The Zig HostPlan tool routes af16 compile-target
+metadata to f16 bindings and moved binding metadata into
+`runtime/zig/src/csl_host_plan_bindings.zig` so
+`runtime/zig/src/csl_host_plan_tool.zig` stays under the Zig source line cap.
+
+Real-session PLE routing now records each layer's own PLE gather, projection,
+and norm buffers instead of chaining layer outputs across the PLE batch. The
+first fresh checkpoint probe under the patched runner is
+`bench/out/scratch/gemma4_31b_af16-checkpoint-f16-e2e-plefix`; it must reach
+`ple_proj` before this entry can claim that the previous
+`transform_field_missing:sourceCols` blocker is cleared.
+
+Tracked sharding follow-up: Owner Doe Cerebras runner. Next split targets are
+to move HostPlan execution-plan materialization out of
+`bench/runners/csl-runners/int4ple_hostplan_execution_plan.py`, to move the
+HostPlan runtime subprocess/checkpoint launch loop out of
+`bench/runners/csl-runners/int4ple_compile_target_sim_runner.py`, to move the
+Gemma af16 session scheduler helpers out of
+`bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py`, and to move
+the Gemma af16 front-door trace assembly out of
+`bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py`.
 
 ## 2026-04-30 — HostPlan launch-step D2H stalls now fail closed
 

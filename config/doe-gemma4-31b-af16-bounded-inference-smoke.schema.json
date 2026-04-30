@@ -12,6 +12,7 @@
     "modelId",
     "laneKey",
     "dtypeProfile",
+    "cslDtypeContract",
     "manifestPath",
     "manifestSha256",
     "referenceFixtureHash",
@@ -51,6 +52,23 @@
         "lmHead": { "const": "q4k" },
         "compute": { "const": "f16" },
         "variantTag": { "const": "q4k-ehf16-af16" }
+      }
+    },
+    "cslDtypeContract": {
+      "type": "object",
+      "required": [
+        "backend",
+        "dopplerVariantTag",
+        "hostPlanActivationDtype",
+        "fallbackPolicy",
+        "dtypes",
+        "accumulationDtypes"
+      ],
+      "properties": {
+        "backend": { "const": "cerebras_csl" },
+        "dopplerVariantTag": { "const": "q4k-ehf16-af16" },
+        "hostPlanActivationDtype": { "const": "f16" },
+        "fallbackPolicy": { "const": "forbid_implicit_af32" }
       }
     },
     "manifestPath": { "type": "string", "minLength": 1 },

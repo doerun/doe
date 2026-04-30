@@ -250,6 +250,14 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         self.assertEqual(receipt["artifactKind"], ARTIFACT_KIND)
         self.assertEqual(receipt["laneKey"], LANE_KEY)
         self.assertEqual(receipt["dtypeProfile"]["compute"], "f16")
+        self.assertEqual(
+            receipt["cslDtypeContract"]["fallbackPolicy"],
+            "forbid_implicit_af32",
+        )
+        self.assertEqual(
+            receipt["cslDtypeContract"]["hostPlanActivationDtype"],
+            "f16",
+        )
         report = evaluate_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
         self.assertTrue(report.bound, msg=report.violations)
 

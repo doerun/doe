@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d4da.local/schemas/doe-csl-dtype-contracts.schema.json",
+  "title": "Doe Cerebras CSL dtype contracts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "contracts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doe_csl_dtype_contracts" },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "backend",
+          "modelIds",
+          "dopplerVariantTag",
+          "hostPlanActivationDtype",
+          "fallbackPolicy",
+          "promotionState",
+          "weightsRefPolicy",
+          "hostTransfer",
+          "dtypes",
+          "accumulationDtypes",
+          "kernelClasses"
+        ],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "backend": { "const": "cerebras_csl" },
+          "modelIds": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "dopplerVariantTag": { "type": "string", "minLength": 1 },
+          "hostPlanActivationDtype": { "const": "f16" },
+          "fallbackPolicy": { "const": "forbid_implicit_af32" },
+          "promotionState": {
+            "enum": [
+              "contract_declared_runtime_evidence_pending",
+              "bound_by_runtime_evidence"
+            ]
+          },
+          "weightsRefPolicy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "preserveIdentity",
+              "sharedQ4KWeightPacks",
+              "allowedStorageDtypes"
+            ],
+            "properties": {
+              "preserveIdentity": { "const": true },
+              "sharedQ4KWeightPacks": { "type": "boolean" },
+              "allowedStorageDtypes": {
+                "type": "array",
+                "items": {
+                  "enum": ["u8_q4k", "f16", "bf16"]
+                }
+              }
+            }
+          },
+          "hostTransfer": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["f16Encoding", "logicalF16Transport", "d2hCopyback"],
+            "properties": {
+              "f16Encoding": { "const": "ieee_binary16" },
+              "logicalF16Transport": { "const": "memcpy32_packed_u32" },
+              "d2hCopyback": { "const": "logical_dtype_preserved" }
+            }
+          },
+          "dtypes": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "accumulationDtypes": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "minLength": 1 }
+          },
+          "kernelClasses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "inputDtype", "outputDtype", "accumulationDtype"],
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "inputDtype": { "type": "string", "minLength": 1 },
+                "outputDtype": { "type": "string", "minLength": 1 },
+                "accumulationDtype": { "type": "string", "minLength": 1 },
+                "notes": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

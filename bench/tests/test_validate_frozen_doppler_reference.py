@@ -20,6 +20,7 @@ from bench.tools._lane_dtype_profile import (  # noqa: E402
     LaneDtypeProfileError,
     assert_lane_match,
     canonical_dtype_profile,
+    csl_dtype_contract_for_profile,
     lane_key,
     lane_suffix,
     receipt_path_lane_suffix,
@@ -333,6 +334,32 @@ class LaneDtypeProfileHelperTest(unittest.TestCase):
             assert_lane_match(
                 "q4k-ehf16-af16", None, permissive_when_absent=False
             )
+
+    def test_csl_dtype_contract_for_gemma_af16_forbids_af32_fallback(self) -> None:
+        profile = canonical_dtype_profile(self.AF16_QI)
+        contract = csl_dtype_contract_for_profile(
+            profile,
+            model_id="gemma-4-31b-it-text-q4k-ehf16-af16",
+        )
+        self.assertEqual(contract["backend"], "cerebras_csl")
+        self.assertEqual(contract["hostPlanActivationDtype"], "f16")
+        self.assertEqual(contract["fallbackPolicy"], "forbid_implicit_af32")
+        self.assertEqual(contract["accumulationDtypes"]["denseLmHead"], "f32")
+
+    def test_csl_dtype_contract_for_qwen_eaf16_covers_ssm_state(self) -> None:
+        profile = canonical_dtype_profile({
+            "weights": "q4k",
+            "embeddings": "f16",
+            "lmHead": "q4k",
+            "compute": "f16",
+            "variantTag": "q4k-eaf16",
+        })
+        contract = csl_dtype_contract_for_profile(
+            profile,
+            model_id="qwen-3-6-27b-q4k-eaf16",
+        )
+        self.assertEqual(contract["dtypes"]["ssmState"], "f16")
+        self.assertEqual(contract["accumulationDtypes"]["linearAttention"], "f16")
 
 
 def _build_minimal_fixture_with_profile(

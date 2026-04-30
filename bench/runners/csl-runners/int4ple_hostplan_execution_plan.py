@@ -17,7 +17,7 @@ from int4ple_binding_metadata import (
 
 _ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({"rmsnorm", "residual", "gelu"})
 _SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
-_SUMMA_TARGETS = frozenset({"tiled"})
+_SUMMA_TARGETS = frozenset({"tiled", "ple_proj"})
 
 
 def _resolve_phase_variant_target(
@@ -275,6 +275,14 @@ def _model_hidden_dim(runtime_config: dict[str, Any]) -> int:
         return 0
 
 
+def _model_ple_width(runtime_config: dict[str, Any]) -> int:
+    model = runtime_config.get("modelConfig") or {}
+    try:
+        return int(model.get("pleWidth") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _int_field(value: Any) -> int | None:
     try:
         parsed = int(value)
@@ -310,6 +318,7 @@ def _summa_source_transform(
     compile_params: dict[str, int],
     runtime_config: dict[str, Any],
     item: dict[str, Any],
+    dtype: str,
     weight_item: dict[str, Any] | None,
     source_transform: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
@@ -320,14 +329,18 @@ def _summa_source_transform(
         return source_transform
     symbol_key = symbol.lower()
     if symbol_key == "a" and role == "activation":
-        source_cols = _int_field(item.get("matrixCols")) or _model_hidden_dim(runtime_config)
+        source_cols = _int_field(item.get("matrixCols"))
+        if source_cols is None and target_name == "ple_proj":
+            source_cols = _model_ple_width(runtime_config)
+        if source_cols is None:
+            source_cols = _model_hidden_dim(runtime_config)
         if source_cols is None or source_cols <= 0:
             return source_transform
         return {
             "kind": "logical_matrix_to_summa_tiles",
             "matrixRole": "a",
-            "sourceDtype": "f32",
-            "targetDtype": "f32",
+            "sourceDtype": dtype,
+            "targetDtype": dtype,
             "sourceCols": source_cols,
             **params,
         }
@@ -345,6 +358,7 @@ def _summa_source_transform(
         return {
             "kind": "weight_matrix_to_summa_tiles",
             "matrixRole": "b",
+            "targetDtype": dtype,
             "sourceRows": shape[0],
             "sourceCols": shape[1],
             "sourceTransform": nested,
@@ -359,6 +373,7 @@ def _summa_output_transform(
     target_name: str,
     compile_params: dict[str, int],
     item: dict[str, Any],
+    dtype: str,
 ) -> dict[str, Any] | None:
     if target_name not in _SUMMA_TARGETS or symbol.lower() != "c":
         return None
@@ -371,8 +386,8 @@ def _summa_output_transform(
         "matrixRole": "c",
         "rowsFromInput": "a",
         "cols": output_cols,
-        "sourceDtype": "f32",
-        "targetDtype": "f32",
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
         **params,
     }
 
@@ -599,6 +614,24 @@ def _binding_materialization(
                 "sourceDtype": "u8_q4k",
                 "targetDtype": "f32",
             }
+        elif dtype == "f16" and str(weight_item.get("dtype") or "") == "f16":
+            source_transform = {
+                "kind": "f16_passthrough",
+                "sourceDtype": "f16",
+                "targetDtype": "f16",
+            }
+        elif dtype == "f16" and str(weight_item.get("dtype") or "") == "bf16":
+            source_transform = {
+                "kind": "bf16_to_f16",
+                "sourceDtype": "bf16",
+                "targetDtype": "f16",
+            }
+        elif dtype == "f16" and str(weight_item.get("dtype") or "") == "u8_q4k":
+            source_transform = {
+                "kind": "q4km_rowwise_to_f32",
+                "sourceDtype": "u8_q4k",
+                "targetDtype": "f32",
+            }
         elif dtype == "u32" and str(weight_item.get("dtype") or "") == "u8_q4k":
             source_transform = {
                 "kind": "u8_bytes_to_u32_words",
@@ -617,6 +650,7 @@ def _binding_materialization(
         compile_params=compile_params,
         runtime_config=runtime_config,
         item=item,
+        dtype=dtype,
         weight_item=weight_item,
         source_transform=source_transform,
     )
@@ -636,6 +670,7 @@ def _binding_materialization(
         target_name=target_name,
         compile_params=compile_params,
         item=item,
+        dtype=dtype,
     )
     metadata_detile = (binding_metadata or {}).get("detileTransform")
     if output_transform is None and isinstance(metadata_detile, dict):
