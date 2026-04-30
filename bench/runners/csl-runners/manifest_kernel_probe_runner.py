@@ -112,7 +112,7 @@ PROBE_TRANSCRIPT_ALIASES = {
     "rmsnorm_prefill": "rmsnorm",
 }
 
-DEVICE_ZERO_DEFAULT_INPUTS_BY_KERNEL = {
+ZERO_DEFAULT_H2D_INPUTS_BY_KERNEL = {
     "lm_head_gemv_stable": {"activation", "weight"},
     "lm_head_prefill_stable": {"activation", "weight"},
 }
@@ -631,24 +631,11 @@ def _materialize_inputs(
         elem_type = export.get("elemType", "f32")
         elem_bytes = ELEM_BYTES.get(elem_type, 4)
         symbol = export.get("symbol", "")
-        if symbol in DEVICE_ZERO_DEFAULT_INPUTS_BY_KERNEL.get(kernel, set()):
-            per_symbol_strategy[symbol] = "device_zero_default"
-            input_records.append(
-                {
-                    "symbol": symbol,
-                    "path": None,
-                    "elemType": elem_type,
-                    "elemBytes": elem_bytes,
-                    "perPeChunk": chunk,
-                    "totalElements": pe_count * chunk,
-                    "totalBytes": 0,
-                    "sha256": "",
-                    "probeStrategy": "device_zero_default",
-                }
-            )
-            continue
         path = scratch_dir / "in" / f"{symbol}.npy"
-        probe_vals = probe_inputs.get(symbol)
+        zero_default_h2d = symbol in ZERO_DEFAULT_H2D_INPUTS_BY_KERNEL.get(
+            kernel, set()
+        )
+        probe_vals = None if zero_default_h2d else probe_inputs.get(symbol)
         byte_len, strategy = materialize_probe_input(
             target_path=path,
             pe_count=pe_count,
@@ -656,6 +643,8 @@ def _materialize_inputs(
             elem_type=elem_type,
             probe_values=probe_vals,
         )
+        if zero_default_h2d:
+            strategy = "zero_default_h2d"
         per_symbol_strategy[symbol] = strategy
         h = hashlib.sha256()
         with path.open("rb") as handle:

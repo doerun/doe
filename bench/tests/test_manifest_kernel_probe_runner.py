@@ -343,7 +343,7 @@ class MaterializeProbeInputTest(unittest.TestCase):
             self.assertEqual(arr.tolist(), [16, 32, 48, 64, 16, 32, 48, 64])
             self.assertEqual(byte_len, path.stat().st_size)
 
-    def test_lm_head_probe_uses_device_zero_default_for_large_inputs(self) -> None:
+    def test_lm_head_probe_uses_explicit_zero_default_h2d_inputs(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
             scratch = Path(tmp) / "scratch"
@@ -374,15 +374,15 @@ class MaterializeProbeInputTest(unittest.TestCase):
                     scratch_dir=scratch,
                 )
             )
-        self.assertEqual(input_specs, [])
+        self.assertEqual(len(input_specs), 2)
         self.assertEqual(len(output_specs), 1)
-        self.assertEqual(strategies["activation"], "device_zero_default")
-        self.assertEqual(strategies["weight"], "device_zero_default")
+        self.assertEqual(strategies["activation"], "zero_default_h2d")
+        self.assertEqual(strategies["weight"], "zero_default_h2d")
         records_by_symbol = {record["symbol"]: record for record in inputs}
-        self.assertIsNone(records_by_symbol["activation"]["path"])
-        self.assertIsNone(records_by_symbol["weight"]["path"])
-        self.assertEqual(records_by_symbol["activation"]["totalBytes"], 0)
-        self.assertEqual(records_by_symbol["weight"]["totalBytes"], 0)
+        self.assertIsNotNone(records_by_symbol["activation"]["path"])
+        self.assertIsNotNone(records_by_symbol["weight"]["path"])
+        self.assertEqual(records_by_symbol["activation"]["totalBytes"], 64)
+        self.assertEqual(records_by_symbol["weight"]["totalBytes"], 64)
         self.assertEqual(outputs[0]["symbol"], "c")
 
 
