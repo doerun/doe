@@ -39,6 +39,7 @@ from int4ple_hostplan_executor_validator import (  # noqa: E402
 )
 from int4ple_embed_roi import (  # noqa: E402
     active_pe_ids_for_tokens,
+    build_embed_roi_spec,
     materialize_f16_embedding_table_slice,
 )
 
@@ -99,6 +100,20 @@ def clone_json(value: object) -> object:
 
 
 class Int4PleEmbedRoiTests(unittest.TestCase):
+    def test_embed_roi_launch_detection_includes_ple_embed(self) -> None:
+        base = {
+            "compileParams": {
+                "rows_per_pe": 5,
+                "hidden_size": 256,
+                "hidden_per_pe": 2,
+                "tokens_per_chunk": 16,
+            }
+        }
+
+        self.assertTrue(runner._is_embed_roi_launch({**base, "targetName": "embed"}))
+        self.assertTrue(runner._is_embed_roi_launch({**base, "targetName": "ple_embed"}))
+        self.assertFalse(runner._is_embed_roi_launch({**base, "targetName": "tiled"}))
+
     def test_active_pe_ids_follow_row_shards(self) -> None:
         tokens = np.array([0, 21, 22, 45, 99], dtype=np.uint32)
 
@@ -140,6 +155,65 @@ class Int4PleEmbedRoiTests(unittest.TestCase):
             table.reshape(2, 3),
             np.array([[3, 4, 5], [9, 10, 11]], dtype=np.float32),
         )
+
+    def test_embed_roi_spec_uses_compile_hidden_size(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            prompt = root / "tokens.u32"
+            np.array([1, 2], dtype=np.uint32).tofile(prompt)
+            shard = root / "weights.bin"
+            np.arange(80, dtype=np.float16).reshape(10, 8).tofile(shard)
+            launch = {
+                "compileDir": str(root / "compile" / "compiled" / "ple_embed"),
+                "launchFunction": "compute",
+                "launchIndex": 1,
+                "targetName": "ple_embed",
+                "compileParams": {
+                    "rows_per_pe": 1,
+                    "hidden_size": 4,
+                    "hidden_per_pe": 2,
+                    "tokens_per_chunk": 2,
+                },
+                "targetGeometry": {"width": 4, "height": 1, "peCount": 4},
+                "resolvedInputs": [
+                    {"symbol": "indices", "buffer": "input:prompt_token_ids"},
+                    {
+                        "symbol": "table",
+                        "buffer": "weight:ple",
+                        "materialization": {
+                            "weightMapping": {
+                                "shape": [10, 8],
+                                "byteSize": 160,
+                                "spans": [
+                                    {
+                                        "shardPath": str(shard),
+                                        "offset": 0,
+                                        "size": 160,
+                                    }
+                                ],
+                            }
+                        },
+                    },
+                ],
+                "resolvedOutputs": [
+                    {
+                        "symbol": "output",
+                        "buffer": "activation:ple",
+                        "materialization": {"dtype": "f32"},
+                    }
+                ],
+            }
+
+            spec_payload, _ = build_embed_roi_spec(
+                roi_dir=root / "roi",
+                launch=launch,
+                prompt_path=prompt,
+                output_buffer_path=root / "out.npy",
+            )
+
+        self.assertEqual(spec_payload["compileParams"]["hiddenSize"], 4)
+        self.assertEqual(spec_payload["output"]["shape"], [2, 4])
+        self.assertEqual(len(spec_payload["sublaunches"]), 2)
 
 
 def make_valid_executor_validator_fixture(

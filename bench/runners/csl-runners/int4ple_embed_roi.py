@@ -200,11 +200,18 @@ def build_embed_roi_spec(
     if not isinstance(weight_mapping, dict):
         raise ValueError("embed weight mapping missing")
     shape = weight_mapping.get("shape") or []
+    compile_hidden_size = int(compile_params.get("hidden_size") or 0)
     if len(shape) >= 2:
         vocab_size = int(shape[0])
-        hidden_size = int(shape[1])
+        backing_hidden_size = int(shape[1])
+        hidden_size = compile_hidden_size or backing_hidden_size
+        if hidden_size > backing_hidden_size:
+            raise ValueError(
+                "embed_compile_hidden_exceeds_weight_shape:"
+                f"{hidden_size}>{backing_hidden_size}"
+            )
     else:
-        hidden_size = int(compile_params.get("hidden_size") or 0)
+        hidden_size = compile_hidden_size
         byte_size = int(weight_mapping.get("byteSize") or 0)
         vocab_size = byte_size // max(1, hidden_size * FLOAT16_BYTES)
     rows_per_pe = int(compile_params.get("rows_per_pe") or 0)

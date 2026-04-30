@@ -65,6 +65,7 @@ TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py
 LAUNCH_STEP_ADAPTER = Path(__file__).with_name("int4ple_launch_step_adapter.py")
 EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
 DEFAULT_LAUNCH_TIMEOUT_SECONDS = 3600
+EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -1552,7 +1553,7 @@ def _stage_launch_arrays(
 
 
 def _is_embed_roi_launch(launch: dict[str, Any]) -> bool:
-    if str(launch.get("targetName") or "") != "embed":
+    if str(launch.get("targetName") or "") not in EMBED_ROI_TARGETS:
         return False
     params = launch.get("compileParams") or {}
     return all(
@@ -1569,7 +1570,8 @@ def _compile_embed_roi_target(
 ) -> Path:
     source_compile_dir = Path(str(launch.get("compileDir") or ""))
     compile_root = source_compile_dir.parent.parent
-    layout_path = compile_root / "embed" / "layout.csl"
+    target_name = str(launch.get("targetName") or "embed")
+    layout_path = compile_root / target_name / "layout.csl"
     output_dir = roi_dir / "compiled"
     params = roi_spec.get("compileParams") or {}
     compact_width = int(params.get("compactWidth") or 1)
