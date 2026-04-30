@@ -42,6 +42,10 @@ REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND = "dispatch_evidence_lm_head_unbound"
 _LM_HEAD_PREFIX = "lm_head"
 _SAMPLE_NAME = "sample"
 _BOUND_VERDICT = "bound"
+_DIRECT_DISPATCH_MODE = "monolithic_full_fabric"
+_DIRECT_LM_HEAD_SCOPE = "manifest_shape_direct_dispatch"
+_WIDTH_TILED_DISPATCH_MODE = "dense_gemv_width_tiled"
+_WIDTH_TILED_LM_HEAD_SCOPE = "full_vocab_host_reduced_width_row_tiles"
 
 
 @dataclass(frozen=True)
@@ -91,6 +95,47 @@ def _resolve_plan_root(host_plan: Mapping[str, object]) -> Mapping[str, object]:
     if isinstance(inner, Mapping):
         return inner
     return host_plan
+
+
+def _tile_dispatches_are_complete(entry: Mapping[str, object]) -> bool:
+    dispatches = entry.get("tileDispatches")
+    coverage = entry.get("tileCoverage")
+    if not isinstance(dispatches, Mapping):
+        return False
+    if not isinstance(coverage, Mapping):
+        return False
+    shape_safety = coverage.get("tileShapeSafety")
+    if not isinstance(shape_safety, Mapping):
+        return False
+    return (
+        int(dispatches.get("blockedCount") or 0) == 0
+        and int(dispatches.get("tileCount") or 0) > 0
+        and bool(coverage.get("covered"))
+        and bool(shape_safety.get("safe"))
+    )
+
+
+def _host_reduction_is_declared(entry: Mapping[str, object]) -> bool:
+    reduction = entry.get("hostReduction")
+    if not isinstance(reduction, Mapping):
+        return False
+    return str(reduction.get("kind") or "") == "sum_hidden_width_tiles"
+
+
+def _lm_head_entry_promotes(entry: Mapping[str, object]) -> bool:
+    if str(entry.get("verdict") or "") != _BOUND_VERDICT:
+        return False
+    mode = str(entry.get("dispatchMode") or "")
+    scope = str(entry.get("lmHeadEvidenceScope") or "")
+    if mode == _DIRECT_DISPATCH_MODE and scope == _DIRECT_LM_HEAD_SCOPE:
+        return True
+    if mode == _WIDTH_TILED_DISPATCH_MODE:
+        return (
+            scope == _WIDTH_TILED_LM_HEAD_SCOPE
+            and _tile_dispatches_are_complete(entry)
+            and _host_reduction_is_declared(entry)
+        )
+    return False
 
 
 def evaluate_inference_evidence_gate(
@@ -226,17 +271,19 @@ def evaluate_inference_evidence_gate(
                     "per-kernel summary has no lm-head entry; sample's "
                     "logits have no dispatch evidence.",
                 ))
-            elif not any(
-                str(e.get("verdict") or "") == _BOUND_VERDICT
-                for e in lm_head_entries
-            ):
-                lm_head_verdicts = sorted({
-                    str(e.get("verdict") or "") for e in lm_head_entries
+            elif not any(_lm_head_entry_promotes(e) for e in lm_head_entries):
+                observed = sorted({
+                    (
+                        f"{str(e.get('verdict') or '')}/"
+                        f"{str(e.get('dispatchMode') or '<missing>')}/"
+                        f"{str(e.get('lmHeadEvidenceScope') or '<missing>')}"
+                    )
+                    for e in lm_head_entries
                 })
                 reasons.append(GateReason(
                     REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND,
-                    "no lm-head per-kernel verdict is "
-                    f"'{_BOUND_VERDICT}'; observed: {lm_head_verdicts}.",
+                    "no lm-head per-kernel entry has promotable token-output "
+                    f"evidence; observed: {observed}.",
                 ))
 
     return GateResult(eligible=not reasons, reasons=tuple(reasons))

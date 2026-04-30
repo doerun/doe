@@ -37,8 +37,10 @@ It records checkpointed HostPlan execution progress and remains
 
 **Current lm-head blocker.** The Gemma af16 per-kernel summary preserves a
 bound `sample` dispatch and a blocked `lm_head_prefill_stable` dispatch. The
-lm-head probe reaches direct SDK dispatch but times out with zero output bytes,
-so final_norm -> lm_head -> sample token-output evidence remains unbound.
+claim path is `dense_gemv_width_tiled` with verified height-1 SDK partials,
+but the aggregate remains blocked on incomplete tile coverage. Diagnostic
+multi-row split-D2H tiles still wedge at `memcpy_d2h_start`, so final_norm ->
+lm_head -> sample token-output evidence remains unbound.
 
 ## Simulator performance guardrail
 

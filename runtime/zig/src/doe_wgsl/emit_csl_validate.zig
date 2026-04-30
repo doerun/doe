@@ -316,14 +316,15 @@ fn validateFusedGemvDequant(csl: []const u8, result: *ValidationResult) void {
 fn validateDenseGemv(csl: []const u8, result: *ValidationResult) void {
     requireContains(csl, result, "dense GEMV", "dense_gemv missing dense GEMV marker");
     requireContains(csl, result, "var partial: [out_dim_per_pe]f32", "dense_gemv missing separate f32 partial buffer");
-    requireContains(csl, result, "@mov32(reduce_out, scratch_out_dsd", "dense_gemv missing row-chain send");
-    requireContains(csl, result, "@mov32(scratch_in_dsd, reduce_in", "dense_gemv missing row-chain receive");
-    requireContains(csl, result, "if (pe_id != num_pes - 1)", "dense_gemv missing sink PE guard");
-    requireContains(csl, result, "@set_color_config", "dense_gemv missing row-chain color routing");
+    requireContains(csl, result, "param pe_y: i16;", "dense_gemv missing row coordinate parameter");
+    requireContains(csl, result, "<collectives_2d/pe>", "dense_gemv missing collectives_2d PE import");
+    requireContains(csl, result, "c2d_params", "dense_gemv missing collectives_2d params");
+    requireContains(csl, result, "unblock_completion_row", "dense_gemv missing single-row command-stream completion guard");
+    requireContains(csl, result, "reduce_fadds", "dense_gemv missing collectives_2d row reduction");
     requireContains(csl, result, "out_dim_per_pe", "dense_gemv missing output shard parameter");
     requireContains(csl, result, "[*]f32", "dense_gemv must export f32 logits");
-    if (std.mem.indexOf(u8, csl, "reduce_fadds") != null) {
-        addError(result, "dense_gemv must use explicit row-chain reduction, not collectives_2d reduce_fadds");
+    if (std.mem.indexOf(u8, csl, "@mov32(reduce_out, scratch_out_dsd") != null) {
+        addError(result, "dense_gemv must use collectives_2d reduce_fadds, not the hand-rolled row-chain send");
     }
 }
 

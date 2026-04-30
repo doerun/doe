@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-manifest-shape-per-kernel-dispatch-summary.schema.json",
+  "title": "Doe manifest-shape per-kernel dispatch summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptClass",
+    "hostPlanPath",
+    "hostPlanHash",
+    "kernels",
+    "totals"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_manifest_shape_per_kernel_dispatch_summary"
+    },
+    "receiptClass": {
+      "type": "string",
+      "const": "manifest_shape_per_kernel_dispatch_summary"
+    },
+    "hostPlanPath": { "type": "string", "minLength": 1 },
+    "hostPlanHash": { "type": "string", "minLength": 1 },
+    "kernels": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/kernelSummary" }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernelCount", "boundCount", "blockedCount"],
+      "properties": {
+        "kernelCount": { "type": "integer", "minimum": 0 },
+        "boundCount": { "type": "integer", "minimum": 0 },
+        "blockedCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "kernelSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernel",
+        "verdict",
+        "blocker",
+        "dispatchExitCode",
+        "dispatchTimedOut",
+        "dispatchWallclockNs",
+        "totalInputBytes",
+        "totalOutputBytes",
+        "outputDigest"
+      ],
+      "properties": {
+        "kernel": { "type": "string", "minLength": 1 },
+        "verdict": {
+          "type": "string",
+          "enum": ["bound", "blocked"]
+        },
+        "blocker": { "type": ["string", "null"] },
+        "dispatchMode": {
+          "type": "string",
+          "enum": [
+            "monolithic_full_fabric",
+            "dense_gemv_width_tiled",
+            "dense_gemv_row_tiled",
+            "resident_weight_session"
+          ]
+        },
+        "d2hMode": {
+          "type": "string",
+          "enum": ["single_region_copyback", "row_split_copyback"]
+        },
+        "lmHeadEvidenceScope": { "type": "string" },
+        "weightInputScope": { "type": "string" },
+        "weightResidencyMode": { "type": "string" },
+        "dispatchExitCode": { "type": ["integer", "null"] },
+        "dispatchTimedOut": { "type": "boolean" },
+        "dispatchWallclockNs": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "lastPhaseReached": { "type": "string" },
+        "failurePhase": { "type": "string" },
+        "totalInputBytes": { "type": "integer", "minimum": 0 },
+        "totalOutputBytes": { "type": "integer", "minimum": 0 },
+        "outputDigest": { "type": "string" },
+        "probeFixturePath": { "type": ["string", "null"] },
+        "tileCompile": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "tileDispatches": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "tileCoverage": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "hostReduction": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

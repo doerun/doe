@@ -48,7 +48,12 @@ def _good_per_kernel() -> dict:
     return {
         "kernels": [
             {"kernel": "embed", "verdict": "bound"},
-            {"kernel": "lm_head_gemv", "verdict": "bound"},
+            {
+                "kernel": "lm_head_gemv",
+                "verdict": "bound",
+                "dispatchMode": "monolithic_full_fabric",
+                "lmHeadEvidenceScope": "manifest_shape_direct_dispatch",
+            },
             {"kernel": "sample", "verdict": "bound"},
         ],
     }
@@ -211,6 +216,88 @@ class InferenceEvidenceGateTest(unittest.TestCase):
         for entry in evidence["kernels"]:
             if entry["kernel"] == "lm_head_gemv":
                 entry["verdict"] = "blocked"
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(), per_kernel_summary=evidence,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND, _codes(result))
+
+    def test_lm_head_bound_without_dispatch_mode_rejects(self) -> None:
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] == "lm_head_gemv":
+                entry.pop("dispatchMode")
+                entry.pop("lmHeadEvidenceScope")
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(), per_kernel_summary=evidence,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND, _codes(result))
+
+    def test_lm_head_width_tiled_requires_complete_contract(self) -> None:
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] == "lm_head_gemv":
+                entry["dispatchMode"] = "dense_gemv_width_tiled"
+                entry["lmHeadEvidenceScope"] = (
+                    "full_vocab_host_reduced_width_row_tiles"
+                )
+                entry["tileDispatches"] = {
+                    "tileCount": 2,
+                    "blockedCount": 1,
+                    "boundCount": 1,
+                }
+                entry["tileCoverage"] = {"covered": False}
+                entry["hostReduction"] = {"kind": "sum_hidden_width_tiles"}
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(), per_kernel_summary=evidence,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND, _codes(result))
+
+    def test_lm_head_width_tiled_promotes_with_complete_contract(self) -> None:
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] == "lm_head_gemv":
+                entry["dispatchMode"] = "dense_gemv_width_tiled"
+                entry["lmHeadEvidenceScope"] = (
+                    "full_vocab_host_reduced_width_row_tiles"
+                )
+                entry["tileDispatches"] = {
+                    "tileCount": 2,
+                    "blockedCount": 0,
+                    "boundCount": 2,
+                }
+                entry["tileCoverage"] = {
+                    "covered": True,
+                    "tileShapeSafety": {"safe": True},
+                }
+                entry["hostReduction"] = {"kind": "sum_hidden_width_tiles"}
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(), per_kernel_summary=evidence,
+        )
+        self.assertTrue(result.eligible)
+        self.assertEqual(result.reasons, ())
+
+    def test_lm_head_width_tiled_rejects_unsafe_shape(self) -> None:
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] == "lm_head_gemv":
+                entry["dispatchMode"] = "dense_gemv_width_tiled"
+                entry["lmHeadEvidenceScope"] = (
+                    "full_vocab_host_reduced_width_row_tiles"
+                )
+                entry["tileDispatches"] = {
+                    "tileCount": 2,
+                    "blockedCount": 0,
+                    "boundCount": 2,
+                }
+                entry["tileCoverage"] = {
+                    "covered": True,
+                    "tileShapeSafety": {"safe": False},
+                    "unsafeTileShapeAllowed": True,
+                }
+                entry["hostReduction"] = {"kind": "sum_hidden_width_tiles"}
         result = evaluate_inference_evidence_gate(
             host_plan=_good_host_plan(), per_kernel_summary=evidence,
         )

@@ -127,6 +127,43 @@ class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
         self.assertEqual(memcpy_elements_per_pe, 1)
         self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
 
+    def test_dense_gemv_transform_accepts_sink_column_copyback(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+        import numpy as np
+
+        transform = {
+            "kind": "dense_gemv_row_shards_to_logits",
+            "width": 4,
+            "height": 3,
+            "outDim": 20,
+            "outDimPerPe": 8,
+        }
+        compact = np.arange(24, dtype=np.float32)
+        logits = adapter._dense_gemv_row_shards_to_logits(compact, transform)
+        self.assertEqual(logits.tolist(), list(np.arange(20, dtype=np.float32)))
+
+    def test_dense_gemv_output_uses_sink_column_region(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        region = adapter._d2h_region_for_output(
+            output_transform={
+                "kind": "dense_gemv_row_shards_to_logits",
+                "width": 4,
+                "height": 3,
+                "outDim": 20,
+                "outDimPerPe": 8,
+            },
+            width=4,
+            height=3,
+        )
+
+        self.assertEqual(region, {
+            "x": 3,
+            "y": 0,
+            "width": 1,
+            "height": 3,
+        })
+
 
 class HostPlanRuntimeTimeout(unittest.TestCase):
     def test_launch_step_timeout_is_typed_and_writes_receipt(self) -> None:

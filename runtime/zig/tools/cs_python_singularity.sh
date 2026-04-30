@@ -62,7 +62,30 @@ PWD_REAL=$(realpath "$(pwd)")
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 DOE_REPO_REAL=$(realpath "$SCRIPT_DIR/../../..")
 WORKSPACE_REAL=$(realpath "$DOE_REPO_REAL/..")
-TMP_BIND="${TMPDIR:-/tmp}"
+CONTAINER_SCRATCH_ROOT="${DOE_CSL_CONTAINER_SCRATCH:-$DOE_REPO_REAL/bench/out/scratch/csl-container}"
+CONTAINER_TMP="${DOE_CSL_TMPDIR:-${DOE_CSL_CONTAINER_TMP:-$CONTAINER_SCRATCH_ROOT/tmp}}"
+CONTAINER_CACHE="${DOE_CSL_CONTAINER_CACHE:-$CONTAINER_SCRATCH_ROOT/cache}"
+if [[ "$CONTAINER_TMP" != /* ]]; then
+    CONTAINER_TMP="$DOE_REPO_REAL/$CONTAINER_TMP"
+fi
+if [[ "$CONTAINER_CACHE" != /* ]]; then
+    CONTAINER_CACHE="$DOE_REPO_REAL/$CONTAINER_CACHE"
+fi
+mkdir -p "$CONTAINER_TMP" "$CONTAINER_CACHE"
+CONTAINER_TMP=$(realpath "$CONTAINER_TMP")
+CONTAINER_CACHE=$(realpath "$CONTAINER_CACHE")
+if [[ -z "${TMPDIR:-}" || "${TMPDIR:-}" == "/tmp" ]]; then
+    export TMPDIR="$CONTAINER_TMP"
+fi
+if [[ -z "${APPTAINER_TMPDIR:-}" || "${APPTAINER_TMPDIR:-}" == "/tmp" ]]; then
+    export APPTAINER_TMPDIR="$CONTAINER_TMP"
+fi
+if [[ -z "${SINGULARITY_TMPDIR:-}" || "${SINGULARITY_TMPDIR:-}" == "/tmp" ]]; then
+    export SINGULARITY_TMPDIR="$CONTAINER_TMP"
+fi
+export APPTAINER_CACHEDIR="${APPTAINER_CACHEDIR:-$CONTAINER_CACHE}"
+export SINGULARITY_CACHEDIR="${SINGULARITY_CACHEDIR:-$CONTAINER_CACHE}"
+TMP_BIND="${TMPDIR:-$CONTAINER_TMP}"
 export CSL_SUPPRESS_SIMFAB_TRACE="${CSL_SUPPRESS_SIMFAB_TRACE:-1}"
 
 # Optional scratch-cwd redirect: cslc, sim runners, and the SDK paint

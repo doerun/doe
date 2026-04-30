@@ -718,12 +718,15 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var acc: f16 = 0.0") != null);
 
     const dense = try emitPatternSectionsForElem(std.testing.allocator, "dense_gemv", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, dense.layout, ".pe_y = @as(i16, pe_y)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.layout, "const c2d = @import_module(\"<collectives_2d/params>\")") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "param pe_y: i16;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "param c2d_params;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "fn unblock_completion_row() void") != null);
     try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "var partial: [out_dim_per_pe]f32") != null);
-    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@mov32(reduce_out, scratch_out_dsd") != null);
-    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@mov32(scratch_in_dsd, reduce_in") != null);
-    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "if (pe_id != num_pes - 1)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "reduce_fadds") == null);
-    try std.testing.expect(std.mem.indexOf(u8, dense.layout, "@set_color_config") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "mpi_x.reduce_fadds(@as(u16, num_pes - 1)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@mov32(reduce_out, scratch_out_dsd") == null);
+    try std.testing.expect(std.mem.indexOf(u8, dense.layout, "@set_color_config") == null);
 }
 
 test "host compile source emits semantic Gemma elementwise bodies" {

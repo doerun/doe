@@ -297,17 +297,13 @@ def run_fused_gemv_2d(
 
     runner.launch(compute_symbol, nonblock=False)
 
-    out_flat = np.zeros(width * height * out_dim_per_pe, dtype=np.float32)
+    out_flat = np.zeros(height * out_dim_per_pe, dtype=np.float32)
     runner.memcpy_d2h(
-        out_flat, out_id, 0, 0, width, height, out_dim_per_pe,
+        out_flat, out_id, width - 1, 0, 1, height, out_dim_per_pe,
         streaming=False, order=memcpy_order.ROW_MAJOR,
         data_type=memcpy_data_type.MEMCPY_32BIT, nonblock=False,
     )
-    # Reduce east-west: host keeps only sink PE (pe_x=width-1) values per
-    # pe_y row. D2H returned shape is (height, width, out_dim_per_pe)
-    # in row-major; slice pe_x=width-1.
-    out_per_pe = out_flat.reshape(height, width, out_dim_per_pe)
-    rows = out_per_pe[:, width - 1, :]  # (height, out_dim_per_pe)
+    rows = out_flat.reshape(height, out_dim_per_pe)
     full = rows.reshape(-1)[:out_dim_total].astype(np.float32, copy=False)
     return full.copy()
 

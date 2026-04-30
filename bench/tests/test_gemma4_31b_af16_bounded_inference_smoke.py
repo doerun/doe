@@ -176,7 +176,12 @@ def _materialize_inputs(root: Path) -> dict[str, Path]:
             },
             "kernels": [
                 {"kernel": "embed", "verdict": "bound"},
-                {"kernel": "lm_head_gemv", "verdict": "bound"},
+                {
+                    "kernel": "lm_head_gemv",
+                    "verdict": "bound",
+                    "dispatchMode": "monolithic_full_fabric",
+                    "lmHeadEvidenceScope": "manifest_shape_direct_dispatch",
+                },
                 {"kernel": "sample", "verdict": "bound"},
             ],
         },

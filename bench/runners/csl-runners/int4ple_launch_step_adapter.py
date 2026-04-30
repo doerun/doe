@@ -192,12 +192,40 @@ def _dense_gemv_row_shards_to_logits(
     height = _required_positive_int(transform, "height")
     out_dim = _required_positive_int(transform, "outDim")
     out_dim_per_pe = _required_positive_int(transform, "outDimPerPe")
-    expected = width * height * out_dim_per_pe
-    if host.size != expected:
-        raise ValueError(f"dense_gemv_output_size_mismatch:{host.size}!={expected}")
+    compact_expected = height * out_dim_per_pe
+    full_expected = width * compact_expected
+    if host.size == compact_expected:
+        logits = host.reshape(height, out_dim_per_pe).reshape(-1)
+        return logits[:out_dim].astype(np.float32, copy=False)
+    if host.size != full_expected:
+        raise ValueError(
+            "dense_gemv_output_size_mismatch:"
+            f"{host.size}!={compact_expected}|{full_expected}"
+        )
     root_x = width - 1
     logits = host.reshape(height, width, out_dim_per_pe)[:, root_x, :].reshape(-1)
     return logits[:out_dim].astype(np.float32, copy=False)
+
+
+def _d2h_region_for_output(
+    *,
+    output_transform: dict[str, Any],
+    width: int,
+    height: int,
+) -> dict[str, int]:
+    if str(output_transform.get("kind") or "") == "dense_gemv_row_shards_to_logits":
+        return {
+            "x": width - 1,
+            "y": 0,
+            "width": 1,
+            "height": height,
+        }
+    return {
+        "x": 0,
+        "y": 0,
+        "width": width,
+        "height": height,
+    }
 
 
 def main() -> int:
@@ -293,7 +321,18 @@ def main() -> int:
             dtype = str(item.get("dtype") or "")
             path = Path(str(item.get("path") or ""))
             elements_per_pe = int(item.get("elementsPerPe") or 0)
-            total_elements = width * height * elements_per_pe
+            output_transform = item.get("outputTransform") or {}
+            region = _d2h_region_for_output(
+                output_transform=output_transform
+                if isinstance(output_transform, dict)
+                else {},
+                width=width,
+                height=height,
+            )
+            d2h_elements = (
+                int(region["width"]) * int(region["height"]) * elements_per_pe
+            )
+            device_total_elements = width * height * elements_per_pe
             if not symbol or not dtype or not path:
                 blockers.append(f"output_spec_incomplete:{symbol or 'missing_symbol'}")
                 continue
@@ -301,7 +340,7 @@ def main() -> int:
                 _memcpy_buffer_for_d2h(
                     dtype=dtype,
                     elements_per_pe=elements_per_pe,
-                    total_elements=total_elements,
+                    total_elements=d2h_elements,
                 )
             )
             append_progress(
@@ -309,16 +348,18 @@ def main() -> int:
                 "launch_step_memcpy_d2h",
                 launchIndex=launch_index,
                 symbol=symbol,
-                elements=total_elements,
+                elements=d2h_elements,
+                deviceElements=device_total_elements,
+                region=region,
             )
             print(f"phase:memcpy_d2h:{symbol}", flush=True)
             runner.memcpy_d2h(
                 host,
                 int(runner.get_id(symbol)),
-                0,
-                0,
-                width,
-                height,
+                int(region["x"]),
+                int(region["y"]),
+                int(region["width"]),
+                int(region["height"]),
                 memcpy_elements_per_pe,
                 streaming=False,
                 order=MemcpyOrder.ROW_MAJOR,
@@ -327,7 +368,6 @@ def main() -> int:
             )
             if dtype == "f16":
                 host = host.view(logical_dtype).astype(logical_dtype, copy=False)
-            output_transform = item.get("outputTransform") or {}
             saved_host = host
             if isinstance(output_transform, dict):
                 transform_kind = str(output_transform.get("kind") or "")
@@ -344,7 +384,9 @@ def main() -> int:
                     "path": str(path),
                     "elementsPerPe": elements_per_pe,
                     "totalElements": int(saved_host.size),
-                    "deviceTotalElements": total_elements,
+                    "deviceTotalElements": device_total_elements,
+                    "d2hElements": d2h_elements,
+                    "deviceRegion": region,
                 }
             )
             if isinstance(output_transform, dict) and output_transform:

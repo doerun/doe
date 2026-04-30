@@ -11,6 +11,32 @@ Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is lm-head token-output evidence.
 
+## 2026-04-30 — lm-head D2H envelope and width-row tiling
+
+The generic chain-step adapter now emits `phase:*` breadcrumbs around SDK
+load/run, H2D, launch, D2H, and stop. For Gemma
+`lm_head_prefill_stable`, those breadcrumbs show the full `width=160,height=512`
+manifest target and smaller `height>1` row blocks reach `launch_complete` and
+then wedge in SDK D2H with zero output bytes.
+
+The real simfabric envelope found on this host is `height=1` with hidden-width tiles below the failing full width: `width=120,height=1` writes a real `partial.npy`, while `width=128,height=1` and full `width=160,height=1` wedge at D2H. The manifest runner now keeps lm-head evidence classes contract-visible: `monolithic_full_fabric`, `dense_gemv_width_tiled`, `dense_gemv_row_tiled`, and future `resident_weight_session` evidence do not share a silent gate path. Routine refresh keeps the monolithic path unless a tile mode is explicitly requested. Tiled receipts carry phase events, tile-shape D2H safety metadata, coverage, compile identity, weight input scope, and host-reduction metadata. The tiled planner clamps hidden-width chunks under the current simfabric element-count guard and only probes unsafe shapes through explicit diagnostic sweep mode.
+Width-row tiling can now resume only from verified partial sidecars that match
+the tile command, input hashes, compile identity, output hash, and shape-safety
+metadata; bare partial files still do not count. A dispatch-count budget can
+return a typed partial-coverage receipt for incremental SDK-host progress
+without promoting the aggregate.
+
+The SDK wrapper now defaults Singularity/Apptainer temp and cache paths to
+`bench/out/scratch/csl-container/` so SIF extraction does not consume tmpfs
+space. Failed tmpfs rootfs extraction sandboxes were cleared before the next
+lm-head evidence attempt.
+
+The full `lm_head_prefill_stable` governed receipt is still not bound. The official summary now records `dispatchMode=dense_gemv_width_tiled`, `blocker=dense_gemv_width_tile_dispatch_budget_exhausted`, `tileD2HMode=single_region_copyback`, `maxRowTileHeight=1`, and verified height-1 SDK partials; `sample` was refreshed against the regenerated HostPlan hash and remains bound.
+
+Diagnostic height-16 split-D2H tiles now carry durable `phase-trace.log` breadcrumbs and still wedge at `memcpy_d2h_start`; the dense-GEMV emitter now passes `pe_y`, gates command stream completion to row 0, and assigns row-specific reduction colors, but multi-row dense-GEMV tiles are not claim-eligible until a receipt proves D2H copyback completes.
+
+`runtime/zig/tools/cs_python_singularity.sh` now redirects default container tmp/cache under `bench/out/scratch/csl-container` so SIF extraction does not fill host `/tmp`. Focused coverage lives in `bench/tests/test_manifest_kernel_probe_runner.py` and `bench/tests/test_int4ple_hostplan_runtime_timeout.py`. Follow-up: split `manifest_kernel_probe_runner.py` materialization/receipt helpers and shard `manifest_dense_gemv_tiles.py`; both exceed the Python tooling cap.
+
 ## 2026-04-30 — f16 dtype gate v2 and checkpoint 81 evidence
 
 `config/doe-csl-dtype-contracts.json` schema version 2 requires Gemma
@@ -20,18 +46,19 @@ surfaces, including Qwen q/k norm, causal prefill, gated FFN, convolution,
 linear-attention/DeltaNet, SSM, and recurrence-carry obligations.
 
 The Gemma and Qwen af16 per-kernel summaries were refreshed without inventing
-evidence. Sample is bound for both models. Gemma `lm_head_prefill_stable`
-clears the previous read-only f16 H2D adapter failure but remains blocked by a
-dispatch timeout with zero output bytes; Qwen `lm_head_gemv_stable` remains
-blocked. Token-output evidence stays fail-closed.
+evidence. Sample is bound for both models. Gemma `lm_head_prefill_stable` now
+uses the dense-GEMV sink-column D2H region contract in per-kernel and session
+launch adapters, but the full manifest compile still times out before writing
+output bytes. A row-shard lm-head compile/run proves the smaller fabric path
+can produce real output; full token-output evidence now needs compile-time
+lm-head tiling plus aggregate tile receipts. Qwen remains blocked too.
 
 `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` validates the
 v2 `cslDtypeContract`; its only dispatch gate reason is
 `dispatch_evidence_lm_head_unbound`, with session and transcript blockers
 still present.
 
-The real Gemma HostPlan checkpoint resume advanced to
-`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`.
+The real Gemma HostPlan checkpoint resume advanced to `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`.
 That scratch trace is `checkpoint_stopped`; it is not transcript evidence and
 does not bind the final_norm -> lm_head -> sample path.
 
@@ -1145,32 +1172,6 @@ cycles 16 onward inline.**
   simulator wallclock vs simfabric per-launch cost, the TSIR-to-live-path
   wiring, and the parity-comparison data the simulator-evidence gate
   cannot yet produce.
-
-## Active blockers
-
-- Simulator wallclock: the 600s default
-  `INT4PLE_RUNTIME_RUNNER` timeout drains in three launches (embed +
-  rmsnorm_prefill + tiled-in-progress) for the gemma-3-1b regen. Either
-  raise the timeout to a value matched to per-kernel simfabric cost, or
-  audit embed's chunked-dispatch ROI (6 sublaunches × ~33 s each) before
-  asking the simulator to traverse the full prefill + decode tail.
-- TSIR live-path wiring: the live HostPlan still routes through
-  `emit_csl_semantic_ops.zig` and `emit_csl_kv_cache.zig` for the seven
-  ops the TSIR emitter now covers. Switching the live path through TSIR
-  needs symbol-export reconciliation (live exports `a` / `b` vs TSIR
-  `summand_a` / `summand_b`, etc.) and bootstrap fixtures the
-  `tsir-real-entries` directory does not yet carry for these ops.
-- Numeric parity: the `csl_simulator_evidence_gate` reports
-  `numericParity.status = unknown` because no Doppler reference logits /
-  KV digests are wired into the comparison path. Until that source is
-  attached, plumbing-pass is the strongest signal the gate can emit.
-- Stale doc assertion: the `reduction pattern` test in
-  `runtime/zig/src/doe_wgsl/emit_csl_host_compile_source.zig` asserts
-  `i < hidden_size` and `@range(u32, 64)` — both belong to the old
-  WGSL-derived reduction lowering. The semantic-emitter rmsnorm replaces
-  the loop with `for (@range(i16, hidden_size))` and inlines the Gemma
-  `1+w` offset directly. The test fails in `zig build test-wgsl` and is
-  unrelated to any active code change in this loop.
 
 ## Landed infrastructure
 

@@ -174,8 +174,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--refresh-timeout-seconds",
         type=int,
-        default=600,
-        help="Per-kernel subprocess timeout passed to the refresh runner.",
+        default=1800,
+        help=(
+            "Per-kernel subprocess timeout passed to the refresh runner. "
+            "Wide-output kernels use the HostPlan D2H region contract so "
+            "timeouts remain fail-closed diagnostics rather than claim logic."
+        ),
     )
     parser.add_argument(
         "--refresh-out-dir",

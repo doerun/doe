@@ -75,6 +75,75 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _tile_compile_param_digest(
+    *,
+    source_digest: str,
+    width: int,
+    tile_height: int,
+    out_dim_per_pe: int,
+    in_dim_per_pe: int,
+) -> str:
+    import manifest_dense_gemv_tiles as tiles
+
+    return tiles._compile_param_digest(
+        source_digest=source_digest,
+        width=width,
+        tile_height=tile_height,
+        out_dim_per_pe=out_dim_per_pe,
+        in_dim_per_pe=in_dim_per_pe,
+    )
+
+
+def _write_tile_compile_receipt(
+    *,
+    tile_dir: Path,
+    source_digest: str,
+    width: int,
+    tile_height: int,
+    out_dim_per_pe: int,
+    in_dim_per_pe: int,
+    layout_path: Path | None = None,
+) -> None:
+    import manifest_dense_gemv_tiles as tiles
+
+    command_digest = None
+    cslc = tiles.discover_cslc(None)
+    if cslc is not None and layout_path is not None:
+        command_digest = tiles._stable_digest(
+            tiles._compile_command(
+                cslc=cslc,
+                layout_path=layout_path,
+                output_dir=tile_dir,
+                width=width,
+                height=tile_height,
+                out_dim_per_pe=out_dim_per_pe,
+                in_dim_per_pe=in_dim_per_pe,
+            )
+        )
+    receipt = {
+        "compileParamDigest": _tile_compile_param_digest(
+            source_digest=source_digest,
+            width=width,
+            tile_height=tile_height,
+            out_dim_per_pe=out_dim_per_pe,
+            in_dim_per_pe=in_dim_per_pe,
+        ),
+        "inDimPerPe": in_dim_per_pe,
+        "outDimPerPe": out_dim_per_pe,
+        "sourceDigest": source_digest,
+        "tileHeight": tile_height,
+        "verdict": "bound",
+        "width": width,
+    }
+    if command_digest is not None:
+        receipt["commandDigest"] = command_digest
+    (tile_dir / "dense-gemv-tile-compile.json").write_text(
+        json.dumps(receipt, indent=2, sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def _make_kernel_dir(
     compile_root: Path,
     *,
@@ -385,6 +454,61 @@ class MaterializeProbeInputTest(unittest.TestCase):
         self.assertEqual(records_by_symbol["weight"]["totalBytes"], 64)
         self.assertEqual(outputs[0]["symbol"], "c")
 
+    def test_lm_head_prefill_output_uses_dense_gemv_sink_column_region(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            scratch = Path(tmp) / "scratch"
+            _, outputs, _, output_specs, _, _ = runner._materialize_inputs(
+                kernel="lm_head_prefill_stable",
+                target={
+                    "compileParams": {
+                        "width": 4,
+                        "height": 3,
+                        "out_dim": 24,
+                        "out_dim_per_pe": 8,
+                        "in_dim_per_pe": 2,
+                    }
+                },
+                metadata={
+                    "exports": [
+                        {
+                            "symbol": "activation",
+                            "elemType": "f16",
+                            "sizeExpr": "in_dim_per_pe",
+                        },
+                        {
+                            "symbol": "weight",
+                            "elemType": "f16",
+                            "sizeExpr": "out_dim_per_pe * in_dim_per_pe",
+                        },
+                        {
+                            "symbol": "output",
+                            "elemType": "f32",
+                            "sizeExpr": "out_dim_per_pe",
+                        },
+                    ]
+                },
+                probe_inputs={},
+                scratch_dir=scratch,
+            )
+        self.assertEqual(outputs[0]["deviceRegion"], {
+            "x": 3,
+            "y": 0,
+            "width": 1,
+            "height": 3,
+        })
+        self.assertEqual(outputs[0]["outputScope"], "dense_gemv_sink_column")
+        self.assertEqual(outputs[0]["deviceTotalElements"], 96)
+        self.assertEqual(outputs[0]["totalElements"], 24)
+        self.assertTrue(output_specs[0].endswith(":3,0,1,3"))
+        self.assertEqual(
+            runner._d2h_mode_for_outputs(
+                kernel="lm_head_prefill_stable",
+                output_records=outputs,
+            ),
+            "row_split_copyback",
+        )
+
 
 class AdapterDtypeTokenTest(unittest.TestCase):
     def test_f32_passthrough(self) -> None:
@@ -440,6 +564,20 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
             args = adapter.parse_args()
         self.assertEqual(args.input, [])
         self.assertEqual(args.output, ["output:/tmp/output.npy:f32:4"])
+
+    def test_parse_io_spec_accepts_output_region(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        parsed = adapter.parse_io_spec("output:/tmp/output.npy:f32:4:3,0,1,2")
+        self.assertEqual(parsed[0], "output")
+        self.assertEqual(parsed[1], "/tmp/output.npy")
+        self.assertEqual(parsed[2], "f32")
+        self.assertEqual(parsed[3], 4)
+        self.assertEqual(parsed[4], (3, 0, 1, 2))
+
+    def test_region_validation_rejects_outside_grid(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        with self.assertRaises(ValueError):
+            adapter._validate_region(region=(3, 0, 2, 1), width=4, height=1)
 
     def test_f16_h2d_uses_32bit_packed_payload(self) -> None:
         adapter = _load_chain_step_adapter_module()
@@ -558,6 +696,41 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
         self.assertEqual(saved.dtype, np.float32)
         self.assertEqual(saved.tolist(), [1.0, 2.0])
 
+    def test_split_d2h_rows_concatenates_row_major_output(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        class FakeRunner:
+            def get_id(self, symbol):
+                return symbol
+
+            def memcpy_d2h(
+                self,
+                arr,
+                sym_id,
+                x,
+                y,
+                width,
+                height,
+                chunk,
+                **kwargs,
+            ):
+                arr[:] = np.arange(arr.size, dtype=arr.dtype) + y * 10
+
+        with mock.patch.object(adapter, "_phase"):
+            symbol, path, arr = adapter._copy_d2h_output(
+                runner=FakeRunner(),
+                symbol="output",
+                path="/tmp/out.npy",
+                dtype="f32",
+                chunk_size=2,
+                region=(3, 5, 1, 3),
+                split_rows=True,
+            )
+        self.assertEqual(symbol, "output")
+        self.assertEqual(path, "/tmp/out.npy")
+        self.assertEqual(arr.tolist(), [50.0, 51.0, 60.0, 61.0, 70.0, 71.0])
+
 
 class CompileBindingsTest(unittest.TestCase):
     def test_merges_layout_defaults_metadata_constants_and_grid(self) -> None:
@@ -601,6 +774,19 @@ class CompileBindingsTest(unittest.TestCase):
 
 
 class SchedulingAndResumeTest(unittest.TestCase):
+    def test_lm_head_tiling_is_not_default_refresh_path(self) -> None:
+        runner = _load_runner_module()
+        with mock.patch.object(sys, "argv", ["manifest_kernel_probe_runner.py"]):
+            args = runner.parse_args()
+        self.assertEqual(args.dense_gemv_tile_height, 0)
+        self.assertIsNone(args.dense_gemv_hidden_tile_width)
+        self.assertFalse(args.dense_gemv_allow_unsafe_tile_shapes)
+        self.assertFalse(args.dense_gemv_reuse_verified_tile_partials)
+        self.assertEqual(args.dense_gemv_tile_dispatch_budget, 0)
+        self.assertEqual(args.dense_gemv_tile_dispatch_jobs, 1)
+        self.assertFalse(args.dense_gemv_batch_runtime)
+        self.assertEqual(args.dense_gemv_max_row_tile_height, 1)
+
     def test_heavy_first_orders_by_estimated_io(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -653,7 +839,7 @@ class SchedulingAndResumeTest(unittest.TestCase):
             )
             self.assertEqual([t["name"] for t in ordered], ["large", "small"])
 
-    def test_resume_reuses_bound_and_timeouts_not_dispatch_exit(self) -> None:
+    def test_resume_reuses_bound_not_blocked_or_timeout_by_default(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
             out_dir = Path(tmp)
@@ -701,15 +887,14 @@ class SchedulingAndResumeTest(unittest.TestCase):
                 json.dumps(timed_out, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
-            reused = runner.load_reusable_receipt(
-                kernel="embed",
-                out_dir=out_dir,
-                host_plan_hash="abc",
-                dry_run=False,
+            self.assertIsNone(
+                runner.load_reusable_receipt(
+                    kernel="embed",
+                    out_dir=out_dir,
+                    host_plan_hash="abc",
+                    dry_run=False,
+                )
             )
-            self.assertIsNotNone(reused)
-            assert reused is not None
-            self.assertTrue(reused["dispatchTimedOut"])
 
     def test_resume_can_preserve_blocked_dispatch_exit_when_requested(self) -> None:
         runner = _load_runner_module()
@@ -738,6 +923,96 @@ class SchedulingAndResumeTest(unittest.TestCase):
             self.assertIsNotNone(reused)
             assert reused is not None
             self.assertEqual(reused["blocker"], "dispatch_exit_code_1")
+
+    def test_lm_head_timeout_records_d2h_wedge_when_phase_reaches_copyback(self) -> None:
+        runner = _load_runner_module()
+        receipt = runner.build_kernel_receipt(
+            kernel="lm_head_prefill_stable",
+            compile_dir=Path("/tmp/compile/lm_head_prefill_stable"),
+            compile_params={"width": 4, "height": 3},
+            inputs=[
+                {
+                    "symbol": "activation",
+                    "totalBytes": 48,
+                },
+                {
+                    "symbol": "weight",
+                    "totalBytes": 384,
+                },
+            ],
+            outputs=[
+                {
+                    "symbol": "output",
+                    "totalBytes": 0,
+                    "sha256": "",
+                },
+            ],
+            probe={},
+            dispatch_command=[],
+            dispatch_exit_code=-1,
+            dispatch_stdout=(
+                "phase:load_complete\n"
+                "phase:run_complete\n"
+                "phase:launch_complete function=compute\n"
+                "phase:memcpy_d2h_start chunk=4 symbol=output words=12\n"
+            ),
+            dispatch_stderr="",
+            dispatch_timed_out=True,
+            dispatch_wallclock_ns=123,
+            host_plan_path=Path("/tmp/host-plan.json"),
+            host_plan_hash="abc",
+            cmaddr="",
+            blocker=None,
+        )
+
+        self.assertEqual(receipt["verdict"], "blocked")
+        self.assertEqual(
+            receipt["blocker"],
+            "sdk_d2h_output_transfer_wedged",
+        )
+        self.assertEqual(receipt["lastPhaseReached"], "memcpy_d2h_start")
+        self.assertEqual(receipt["failurePhase"], "memcpy_d2h_start")
+        self.assertTrue(
+            receipt["dispatchTimeoutEvidence"]["launchCompleted"],
+        )
+
+    def test_lm_head_timeout_records_residency_before_launch_complete(self) -> None:
+        runner = _load_runner_module()
+        receipt = runner.build_kernel_receipt(
+            kernel="lm_head_prefill_stable",
+            compile_dir=Path("/tmp/compile/lm_head_prefill_stable"),
+            compile_params={"width": 4, "height": 3},
+            inputs=[
+                {
+                    "symbol": "weight",
+                    "totalBytes": 384,
+                },
+            ],
+            outputs=[
+                {
+                    "symbol": "output",
+                    "totalBytes": 0,
+                    "sha256": "",
+                },
+            ],
+            probe={},
+            dispatch_command=[],
+            dispatch_exit_code=-1,
+            dispatch_stdout="phase:run_complete\nphase:launch_start function=compute\n",
+            dispatch_stderr="",
+            dispatch_timed_out=True,
+            dispatch_wallclock_ns=123,
+            host_plan_path=Path("/tmp/host-plan.json"),
+            host_plan_hash="abc",
+            cmaddr="",
+            blocker=None,
+        )
+
+        self.assertEqual(receipt["verdict"], "blocked")
+        self.assertEqual(
+            receipt["blocker"],
+            "launch_payload_weight_residency_missing",
+        )
 
 
 class LoadProbeInputsTest(unittest.TestCase):
@@ -968,6 +1243,1121 @@ class RunOneKernelTest(unittest.TestCase):
         self.assertEqual(receipt["dispatchExitCode"], 0)
         self.assertGreater(receipt["dispatchWallclockNs"], 0)
         self.assertGreater(receipt["totalOutputBytes"], 0)
+
+    def test_lm_head_dispatch_uses_row_tiled_aggregate(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            compile_root = tmp_path / "compile"
+            kernel_dir = compile_root / "lm_head_prefill_stable"
+            kernel_dir.mkdir(parents=True)
+            metadata = {
+                "exports": [
+                    {
+                        "symbol": "activation",
+                        "elemType": "f16",
+                        "sizeExpr": "in_dim_per_pe",
+                    },
+                    {
+                        "symbol": "weight",
+                        "elemType": "f16",
+                        "sizeExpr": "out_dim_per_pe * in_dim_per_pe",
+                    },
+                    {
+                        "symbol": "output",
+                        "elemType": "f32",
+                        "sizeExpr": "out_dim_per_pe",
+                    },
+                ]
+            }
+            (kernel_dir / "pe_program.metadata.json").write_text(
+                json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            (kernel_dir / "bin").mkdir()
+            (kernel_dir / "bin" / "out_2_1.elf").write_bytes(b"\x7fELF")
+            tile_dir = compile_root / "lm_head_prefill_stable_row_tile_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=3,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            host_plan_path = tmp_path / "host-plan.json"
+            host_plan_path.write_text(
+                json.dumps(
+                    {
+                        "compileTargets": [
+                            {
+                                "name": "lm_head_prefill_stable",
+                                "compileParams": {
+                                    "width": 3,
+                                    "height": 2,
+                                    "out_dim": 8,
+                                    "out_dim_per_pe": 4,
+                                    "in_dim_per_pe": 2,
+                                },
+                            }
+                        ]
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            probe_dir = tmp_path / "probes"
+            input_fixture = tmp_path / "inputs/lm_head.json"
+            _write_probe(
+                probe_dir=probe_dir,
+                kernel="lm_head_prefill_stable",
+                input_fixture_rel=str(input_fixture.relative_to(tmp_path)),
+                fixture_path=input_fixture,
+                inputs={
+                    "activation": [1.0, 2.0],
+                    "weight": [0.5, 1.5],
+                },
+            )
+            cs_python = tmp_path / "cs_python.sh"
+            cs_python.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            cs_python.chmod(0o755)
+            adapter = tmp_path / "adapter.py"
+            adapter.write_text("# stub\n", encoding="utf-8")
+            target = json.loads(host_plan_path.read_text(encoding="utf-8"))[
+                "compileTargets"
+            ][0]
+
+            def fake_dispatch(command, *, timeout_seconds):
+                import numpy as np
+
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    spec = command[i + 1]
+                    parts = spec.split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.arange(chunk * region_height, dtype=np.float32),
+                    )
+                return 0, "ok\n", "", False
+
+            original_repo_root = runner.REPO_ROOT
+            runner.REPO_ROOT = tmp_path
+            try:
+                receipt = runner.run_one_kernel(
+                    kernel="lm_head_prefill_stable",
+                    target=target,
+                    compile_root=compile_root,
+                    source_root=compile_root,
+                    probe_dir=probe_dir,
+                    host_plan_path=host_plan_path,
+                    host_plan_hash=_sha256_file(host_plan_path),
+                    out_dir=tmp_path / "out",
+                    cmaddr="",
+                    timeout_seconds=30,
+                    cs_python=cs_python,
+                    adapter=adapter,
+                    dry_run=False,
+                    cslc=None,
+                    dense_gemv_tile_height=1,
+                    dispatcher=fake_dispatch,
+                )
+            finally:
+                runner.REPO_ROOT = original_repo_root
+        self.assertEqual(receipt["verdict"], "bound")
+        self.assertEqual(receipt["dispatchMode"], "dense_gemv_row_tiled")
+        self.assertEqual(len(receipt["tileDispatches"]), 2)
+        self.assertTrue(receipt["tileCoverage"]["covered"])
+        self.assertEqual(receipt["outputs"][0]["aggregatedElements"], 8)
+        self.assertGreater(receipt["totalOutputBytes"], 0)
+
+    def test_lm_head_hidden_width_tiling_aggregates_partials(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            for width in (3, 2):
+                tile_dir = source_root / f"{kernel}_row_tile_w{width}_h2"
+                (tile_dir / "bin").mkdir(parents=True)
+                _write_tile_compile_receipt(
+                    tile_dir=tile_dir,
+                    source_digest=source_digest.hexdigest(),
+                    width=width,
+                    tile_height=2,
+                    out_dim_per_pe=4,
+                    in_dim_per_pe=2,
+                    layout_path=layout,
+                )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(2 * 5 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(2 * 5 * 8, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def fake_dispatch(command, *, timeout_seconds):
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    parts = command[i + 1].split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.ones(chunk * region_height, dtype=np.float32),
+                    )
+                return 0, "ok\n", "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 5,
+                    "height": 2,
+                    "out_dim": 8,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 2,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 8,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 4,
+                        "totalElements": 8,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=3,
+                max_row_tile_height=2,
+                dispatcher=fake_dispatch,
+            )
+            output_values = np.load(output).tolist()
+        assert result is not None
+        self.assertEqual(result.blocker, None)
+        self.assertEqual(result.dispatch_mode, "dense_gemv_width_tiled")
+        self.assertEqual(len(result.tile_dispatches), 2)
+        assert result.tile_coverage is not None
+        self.assertTrue(result.tile_coverage["covered"])
+        self.assertEqual(
+            result.output_records[0]["hostReduction"]["kind"],
+            "sum_hidden_width_tiles",
+        )
+        self.assertEqual(result.weight_input_scope, "hidden_width_slice")
+        self.assertEqual(result.weight_residency_mode, "per_tile_h2d_sliced")
+        self.assertEqual(output_values, [2.0] * 8)
+
+    def test_width_tiling_can_dispatch_independent_subprocesses(self) -> None:
+        runner = _load_runner_module()
+        import manifest_dense_gemv_tiles as tiles
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "source"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            for width in (3, 2):
+                tile_dir = source_root / f"{kernel}_row_tile_w{width}_h2"
+                (tile_dir / "bin").mkdir(parents=True)
+                _write_tile_compile_receipt(
+                    tile_dir=tile_dir,
+                    source_digest=source_digest.hexdigest(),
+                    width=width,
+                    tile_height=2,
+                    out_dim_per_pe=4,
+                    in_dim_per_pe=2,
+                    layout_path=layout,
+                )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(2 * 5 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(2 * 5 * 8, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+            commands_seen: list[list[str]] = []
+
+            def fake_run(command, *, timeout_seconds, cwd=None):
+                commands_seen.append(command)
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    parts = command[i + 1].split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.ones(chunk * region_height, dtype=np.float32),
+                    )
+                return 0, "phase:launch_complete\n", "", False
+
+            with mock.patch.object(tiles, "_run_command", side_effect=fake_run):
+                result = runner.run_dense_gemv_row_tiled(
+                    kernel=kernel,
+                    compile_root=source_root,
+                    source_root=source_root,
+                    compile_params={
+                        "width": 5,
+                        "height": 2,
+                        "out_dim": 8,
+                        "out_dim_per_pe": 4,
+                        "in_dim_per_pe": 2,
+                    },
+                    input_records=[
+                        {
+                            "symbol": "activation",
+                            "path": str(activation),
+                            "absolutePath": str(activation),
+                            "elemType": "f16",
+                            "perPeChunk": 2,
+                            "sha256": _sha256_file(activation),
+                            "totalBytes": activation.stat().st_size,
+                        },
+                        {
+                            "symbol": "weight",
+                            "path": str(weight),
+                            "absolutePath": str(weight),
+                            "elemType": "f16",
+                            "perPeChunk": 8,
+                            "sha256": _sha256_file(weight),
+                            "totalBytes": weight.stat().st_size,
+                        },
+                    ],
+                    output_records=[
+                        {
+                            "symbol": "output",
+                            "path": str(output),
+                            "absolutePath": str(output),
+                            "elemType": "f32",
+                            "perPeChunk": 4,
+                            "totalElements": 8,
+                            "totalBytes": 0,
+                            "sha256": "",
+                        }
+                    ],
+                    scratch_dir=tmp_path / "scratch",
+                    cs_python=tmp_path / "cs_python",
+                    adapter=tmp_path / "adapter.py",
+                    cmaddr="",
+                    timeout_seconds=30,
+                    repo_root=tmp_path,
+                    cslc=None,
+                    hidden_tile_width=3,
+                    tile_dispatch_jobs=2,
+                    max_row_tile_height=2,
+                )
+            output_values = np.load(output).tolist()
+
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertIsNone(result.blocker)
+        self.assertEqual(len(commands_seen), 2)
+        self.assertEqual(result.tile_coverage["tileDispatchJobs"], 2)
+        self.assertEqual(result.tile_compile["tileDispatchJobs"], 2)
+        self.assertTrue(
+            all(
+                t["executionMode"] == "independent_subprocess"
+                for t in result.tile_dispatches
+            )
+        )
+        self.assertEqual(output_values, [2.0] * 8)
+
+    def test_hidden_width_tiling_reuses_verified_partials_only(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "source"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_w1_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=1,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(4, dtype=np.float16))
+            np.save(weight, np.zeros(16, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+            inputs = [
+                {
+                    "symbol": "activation",
+                    "path": str(activation),
+                    "absolutePath": str(activation),
+                    "elemType": "f16",
+                    "perPeChunk": 2,
+                    "sha256": _sha256_file(activation),
+                    "totalBytes": activation.stat().st_size,
+                },
+                {
+                    "symbol": "weight",
+                    "path": str(weight),
+                    "absolutePath": str(weight),
+                    "elemType": "f16",
+                    "perPeChunk": 8,
+                    "sha256": _sha256_file(weight),
+                    "totalBytes": weight.stat().st_size,
+                },
+            ]
+            output_record = {
+                "symbol": "output",
+                "path": str(output),
+                "absolutePath": str(output),
+                "elemType": "f32",
+                "perPeChunk": 4,
+                "totalElements": 4,
+                "totalBytes": 0,
+                "sha256": "",
+            }
+
+            def write_partial(command, *, timeout_seconds):
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    parts = command[i + 1].split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(out_path, np.ones(chunk, dtype=np.float32))
+                return 0, "phase:launch_complete\n", "", False
+
+            first = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 2,
+                    "height": 1,
+                    "out_dim": 4,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=inputs,
+                output_records=[dict(output_record)],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=1,
+                dispatcher=write_partial,
+            )
+            assert first is not None
+            self.assertIsNone(first.blocker)
+
+            def fail_if_called(command, *, timeout_seconds):
+                raise AssertionError("verified partial should have been reused")
+
+            second = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 2,
+                    "height": 1,
+                    "out_dim": 4,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=inputs,
+                output_records=[dict(output_record)],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=1,
+                reuse_verified_tile_partials=True,
+                dispatcher=fail_if_called,
+            )
+            output_values = np.load(output).tolist()
+
+        assert second is not None
+        assert second.tile_coverage is not None
+        self.assertIsNone(second.blocker)
+        self.assertEqual(second.tile_coverage["reusedTileCount"], 2)
+        self.assertTrue(
+            all(t["reusedVerifiedPartial"] for t in second.tile_dispatches)
+        )
+        self.assertEqual(output_values, [2.0] * 4)
+
+    def test_hidden_width_tiling_clamps_to_safe_d2h_shape(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            for width in (127, 3):
+                tile_dir = source_root / f"{kernel}_row_tile_w{width}_h1"
+                (tile_dir / "bin").mkdir(parents=True)
+                _write_tile_compile_receipt(
+                    tile_dir=tile_dir,
+                    source_digest=source_digest.hexdigest(),
+                    width=width,
+                    tile_height=1,
+                    out_dim_per_pe=512,
+                    in_dim_per_pe=1,
+                    layout_path=layout,
+                )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(130, dtype=np.float16))
+            np.save(weight, np.zeros(130 * 512, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def fake_dispatch(command, *, timeout_seconds):
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    parts = command[i + 1].split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(out_path, np.ones(chunk, dtype=np.float32))
+                return 0, "phase:launch_complete\n", "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 130,
+                    "height": 1,
+                    "out_dim": 512,
+                    "out_dim_per_pe": 512,
+                    "in_dim_per_pe": 1,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 1,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 512,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 512,
+                        "totalElements": 512,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=200,
+                dispatcher=fake_dispatch,
+            )
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertIsNone(result.blocker)
+        self.assertEqual(
+            result.tile_coverage["requestedHiddenTileWidth"], 200
+        )
+        self.assertEqual(
+            result.tile_coverage["effectiveHiddenTileWidth"], 127
+        )
+        self.assertTrue(result.tile_coverage["tileShapeSafety"]["safe"])
+        self.assertEqual(
+            result.tile_coverage["hiddenWidthChunks"],
+            [
+                {"widthStart": 0, "width": 127, "maxRowTileHeight": 1},
+                {"widthStart": 127, "width": 3, "maxRowTileHeight": 1},
+            ],
+        )
+        self.assertTrue(
+            all(
+                t["tileShapeSafety"]["safe"]
+                for t in result.tile_dispatches
+            )
+        )
+
+    def test_row_tiling_refuses_unsafe_d2h_shape_by_default(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            called = False
+
+            def fake_dispatch(command, *, timeout_seconds):
+                nonlocal called
+                called = True
+                return 0, "", "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel="lm_head_prefill_stable",
+                compile_root=tmp_path / "compile",
+                source_root=tmp_path / "compile",
+                compile_params={
+                    "width": 128,
+                    "height": 1,
+                    "out_dim": 512,
+                    "out_dim_per_pe": 512,
+                    "in_dim_per_pe": 1,
+                },
+                input_records=[
+                    {"symbol": "activation"},
+                    {"symbol": "weight"},
+                ],
+                output_records=[{"symbol": "output", "path": "out.npy"}],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                tile_height=1,
+                dispatcher=fake_dispatch,
+            )
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertFalse(called)
+        self.assertEqual(
+            result.blocker,
+            "dense_gemv_tile_shape_exceeds_sdk_d2h_limit",
+        )
+        self.assertFalse(result.tile_coverage["tileShapeSafety"]["safe"])
+        self.assertEqual(
+            result.tile_coverage["tileShapeSafety"]["outputElements"],
+            65536,
+        )
+
+    def test_unsafe_tile_shape_requires_explicit_diagnostic_sweep(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=128,
+                tile_height=1,
+                out_dim_per_pe=512,
+                in_dim_per_pe=1,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(128, dtype=np.float16))
+            np.save(weight, np.zeros(128 * 512, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def fake_dispatch(command, *, timeout_seconds):
+                for i, token in enumerate(command):
+                    if token != "--output":
+                        continue
+                    parts = command[i + 1].split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(out_path, np.ones(chunk, dtype=np.float32))
+                return 0, "phase:launch_complete\n", "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 128,
+                    "height": 1,
+                    "out_dim": 512,
+                    "out_dim_per_pe": 512,
+                    "in_dim_per_pe": 1,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 1,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 512,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 512,
+                        "totalElements": 512,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                tile_height=1,
+                allow_unsafe_tile_shapes=True,
+                dispatcher=fake_dispatch,
+            )
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertIsNone(result.blocker)
+        self.assertFalse(result.tile_coverage["tileShapeSafety"]["safe"])
+        self.assertTrue(result.tile_coverage["unsafeTileShapeAllowed"])
+        self.assertEqual(result.tile_coverage["evidenceIntent"], "diagnostic_sweep")
+
+    def test_dense_gemv_tile_compile_reuse_requires_param_digest(self) -> None:
+        import manifest_dense_gemv_tiles as tiles
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source_dir = tmp_path / "source" / "lm_head_prefill_stable"
+            source_dir.mkdir(parents=True)
+            layout = source_dir / "layout.csl"
+            pe = source_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+
+            tile_dir = tmp_path / "compile" / "tile"
+            (tile_dir / "bin").mkdir(parents=True)
+            (tile_dir / "dense-gemv-tile-compile.json").write_text(
+                json.dumps(
+                    {
+                        "sourceDigest": source_digest.hexdigest(),
+                        "tileHeight": 1,
+                        "verdict": "bound",
+                        "width": 8,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            receipt, blocker = tiles._ensure_tile_compile(
+                cslc=None,
+                source_dir=source_dir,
+                tile_compile_dir=tile_dir,
+                width=8,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                timeout_seconds=1,
+                repo_root=tmp_path,
+            )
+            self.assertEqual(
+                blocker,
+                "cslc_unavailable_for_dense_gemv_tile_compile",
+            )
+            self.assertEqual(receipt["verdict"], "blocked")
+
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=8,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            receipt, blocker = tiles._ensure_tile_compile(
+                cslc=None,
+                source_dir=source_dir,
+                tile_compile_dir=tile_dir,
+                width=8,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                timeout_seconds=1,
+                repo_root=tmp_path,
+            )
+            self.assertIsNone(blocker)
+            self.assertTrue(receipt["reused"])
+
+    def test_width_tiling_does_not_count_stale_partial_after_failed_dispatch(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_w3_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=3,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(4 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(4 * 8, dtype=np.float16))
+            stale = (
+                tmp_path
+                / "scratch"
+                / "width-row-tiles"
+                / "x0000_w0003"
+                / "y0000"
+                / "out"
+                / "partial.npy"
+            )
+            stale.parent.mkdir(parents=True)
+            np.save(stale, np.ones(4, dtype=np.float32))
+
+            def failing_dispatch(command, *, timeout_seconds):
+                return 255, "", "container failed\n", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 4,
+                    "height": 1,
+                    "out_dim": 4,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 2,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 8,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(tmp_path / "scratch" / "out" / "output.npy"),
+                        "absolutePath": str(
+                            tmp_path / "scratch" / "out" / "output.npy"
+                        ),
+                        "elemType": "f32",
+                        "perPeChunk": 4,
+                        "totalElements": 4,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=3,
+                dispatcher=failing_dispatch,
+            )
+
+        assert result is not None
+        self.assertEqual(
+            result.blocker,
+            "dense_gemv_width_tile_dispatch_exit_code_255",
+        )
+        self.assertEqual(result.tile_dispatches[0]["output"]["totalBytes"], 0)
+        assert result.tile_coverage is not None
+        self.assertEqual(result.tile_coverage["completedTileCount"], 0)
+
+    def test_summary_preserves_dispatch_mode_and_tile_contract(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            host_plan_path = tmp_path / "host-plan.json"
+            host_plan_path.write_text("{}", encoding="utf-8")
+            receipt = runner.build_kernel_receipt(
+                kernel="lm_head_prefill_stable",
+                compile_dir=tmp_path / "compile",
+                compile_params={"width": 5, "height": 2},
+                inputs=[],
+                outputs=[
+                    {
+                        "symbol": "output",
+                        "totalBytes": 64,
+                        "sha256": "a" * 64,
+                        "hostReduction": {
+                            "kind": "sum_hidden_width_tiles",
+                        },
+                    }
+                ],
+                probe={},
+                dispatch_command=[],
+                dispatch_exit_code=0,
+                dispatch_stdout="phase:launch_complete\n",
+                dispatch_stderr="",
+                dispatch_timed_out=False,
+                dispatch_wallclock_ns=1,
+                dispatch_mode="dense_gemv_width_tiled",
+                host_plan_path=host_plan_path,
+                host_plan_hash=_sha256_file(host_plan_path),
+                cmaddr="",
+                blocker=None,
+            )
+            receipt["tileCoverage"] = {
+                "kind": "width_row_tiles",
+                "covered": True,
+            }
+            receipt["tileCompile"] = {
+                "mode": "dense_gemv_width_tiled",
+                "receipts": [
+                    {
+                        "verdict": "bound",
+                        "commandDigest": "b" * 64,
+                    }
+                ],
+            }
+            receipt["tileDispatches"] = [
+                {
+                    "executionMode": "batched_runtime",
+                    "exitCode": 0,
+                    "timedOut": False,
+                    "output": {
+                        "totalBytes": 64,
+                        "sha256": "c" * 64,
+                    },
+                }
+            ]
+            summary_path = runner.write_summary(
+                out_dir=tmp_path / "out",
+                receipts=[receipt],
+                host_plan_path=host_plan_path,
+                host_plan_hash=_sha256_file(host_plan_path),
+            )
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        entry = summary["kernels"][0]
+        self.assertEqual(entry["dispatchMode"], "dense_gemv_width_tiled")
+        self.assertEqual(
+            entry["lmHeadEvidenceScope"],
+            "full_vocab_host_reduced_width_row_tiles",
+        )
+        self.assertEqual(entry["tileDispatches"]["blockedCount"], 0)
+        self.assertEqual(
+            entry["tileDispatches"]["executionModes"],
+            ["batched_runtime"],
+        )
+        self.assertTrue(entry["tileCoverage"]["covered"])
+        self.assertEqual(
+            entry["hostReduction"]["kind"],
+            "sum_hidden_width_tiles",
+        )
+
+    def test_existing_receipts_can_feed_restricted_summary_refresh(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            host_plan_path = tmp_path / "host-plan.json"
+            host_plan_path.write_text("{}", encoding="utf-8")
+            host_plan_hash = _sha256_file(host_plan_path)
+            out_dir = tmp_path / "out"
+            sample = runner.build_kernel_receipt(
+                kernel="sample",
+                compile_dir=tmp_path / "compile",
+                compile_params={"width": 1, "height": 1},
+                inputs=[],
+                outputs=[],
+                probe={},
+                dispatch_command=[],
+                dispatch_exit_code=0,
+                dispatch_stdout="",
+                dispatch_stderr="",
+                dispatch_timed_out=False,
+                dispatch_wallclock_ns=1,
+                host_plan_path=host_plan_path,
+                host_plan_hash=host_plan_hash,
+                cmaddr="",
+                blocker=None,
+            )
+            runner.write_kernel_receipt(receipt=sample, out_dir=out_dir)
+            existing = runner.load_existing_receipts_for_summary(
+                out_dir=out_dir,
+                host_plan_hash=host_plan_hash,
+            )
+
+        self.assertIn("sample", existing)
+        self.assertEqual(existing["sample"]["verdict"], "bound")
 
     def test_rope_in_place_input_is_read_back_as_output(self) -> None:
         runner = _load_runner_module()

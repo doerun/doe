@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doe-manifest-shape-per-kernel-dispatch-receipt.schema.json",
+  "title": "Doe manifest-shape per-kernel dispatch receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptClass",
+    "comparisonMode",
+    "kernel",
+    "compileDir",
+    "compileParams",
+    "hostPlanPath",
+    "hostPlanHash",
+    "executionTarget",
+    "inputs",
+    "outputs",
+    "totalInputBytes",
+    "totalOutputBytes",
+    "outputDigest",
+    "dispatchExitCode",
+    "dispatchTimedOut",
+    "dispatchWallclockNs",
+    "subprocess",
+    "verdict",
+    "blocker",
+    "claim"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "doe_manifest_shape_per_kernel_dispatch_receipt"
+    },
+    "receiptClass": {
+      "type": "string",
+      "const": "manifest_shape_per_kernel_dispatch"
+    },
+    "comparisonMode": { "type": "string", "const": "no_oracle" },
+    "kernel": { "type": "string", "minLength": 1 },
+    "compileDir": { "type": "string", "minLength": 1 },
+    "compileParams": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "hostPlanPath": { "type": "string", "minLength": 1 },
+    "hostPlanHash": { "type": "string", "minLength": 1 },
+    "cmaddr": { "type": "string" },
+    "executionTarget": {
+      "type": "string",
+      "enum": ["simfabric", "system"]
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ioRecord" }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ioRecord" }
+    },
+    "totalInputBytes": { "type": "integer", "minimum": 0 },
+    "totalOutputBytes": { "type": "integer", "minimum": 0 },
+    "outputDigest": { "type": "string" },
+    "dispatchMode": {
+      "type": "string",
+      "enum": [
+        "monolithic_full_fabric",
+        "dense_gemv_width_tiled",
+        "dense_gemv_row_tiled",
+        "resident_weight_session"
+      ]
+    },
+    "d2hMode": {
+      "type": "string",
+      "enum": ["single_region_copyback", "row_split_copyback"]
+    },
+    "lmHeadEvidenceScope": { "type": "string" },
+    "weightInputScope": { "type": "string" },
+    "weightResidencyMode": { "type": "string" },
+    "dispatchExitCode": {
+      "type": ["integer", "null"]
+    },
+    "dispatchTimedOut": { "type": "boolean" },
+    "dispatchWallclockNs": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "phaseEvents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/phaseEvent" }
+    },
+    "phaseTracePath": { "type": "string" },
+    "lastPhaseReached": { "type": "string" },
+    "failurePhase": { "type": "string" },
+    "dispatchTimeoutEvidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tileCompile": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tileDispatches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "tileCoverage": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "subprocess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "stdoutTail", "stderrTail"],
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stdoutTail": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stderrTail": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["bound", "blocked"]
+    },
+    "blocker": {
+      "type": ["string", "null"]
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "notWhat"],
+      "properties": {
+        "scope": { "type": "string" },
+        "notWhat": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "ioRecord": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["symbol", "path", "totalBytes"],
+      "properties": {
+        "symbol": { "type": "string" },
+        "path": { "type": "string" },
+        "totalBytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "phaseEvent": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "required": ["phase"],
+      "properties": {
+        "phase": { "type": "string" }
+      }
+    }
+  }
+}

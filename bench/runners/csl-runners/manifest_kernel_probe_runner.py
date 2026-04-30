@@ -56,6 +56,9 @@ from typing import Any, Callable
 REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+RUNNER_DIR = Path(__file__).resolve().parent
+if str(RUNNER_DIR) not in sys.path:
+    sys.path.insert(0, str(RUNNER_DIR))
 
 from bench.tools._receipt_hash_guard import (  # noqa: E402
     ReceiptHashSpineError,
@@ -72,6 +75,7 @@ from bench.tools.run_manifest_shape_layout_receipt import (  # noqa: E402
     classify_exports,
     run_dispatch_subprocess,
 )
+from manifest_dense_gemv_tiles import run_dense_gemv_row_tiled  # noqa: E402
 
 
 CS_PYTHON_SINGULARITY = (
@@ -117,10 +121,24 @@ ZERO_DEFAULT_H2D_INPUTS_BY_KERNEL = {
     "lm_head_prefill_stable": {"activation", "weight"},
 }
 
+DENSE_GEMV_SINK_OUTPUT_KERNELS = {
+    "lm_head_gemv",
+    "lm_head_gemv_stable",
+    "lm_head_prefill_stable",
+}
+DIRECT_DISPATCH_MODE = "monolithic_full_fabric"
+SINGLE_REGION_D2H_MODE = "single_region_copyback"
+ROW_SPLIT_D2H_MODE = "row_split_copyback"
+LM_HEAD_DIRECT_EVIDENCE_SCOPE = "manifest_shape_direct_dispatch"
+LM_HEAD_WIDTH_TILED_EVIDENCE_SCOPE = "full_vocab_host_reduced_width_row_tiles"
+LM_HEAD_ROW_TILED_EVIDENCE_SCOPE = "full_vocab_row_tiled_direct_width"
+RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES = 1
+
 _LAYOUT_PARAM_DEFAULT_RE = re.compile(
     r"\bparam\s+([A-Za-z_][A-Za-z0-9_]*)\s*:[^=;]+=\s*([0-9]+)\s*;"
 )
 _COMPILED_ELF_RE = re.compile(r"out_([0-9]+)_([0-9]+)\.elf$")
+_PHASE_LINE_RE = re.compile(r"^phase:([^\s]+)(?:\s+(.*))?$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -157,13 +175,92 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--timeout-seconds",
         type=int,
-        default=600,
+        default=1800,
         help="Per-kernel subprocess timeout.",
     )
     p.add_argument(
         "--cs-python", type=Path, default=CS_PYTHON_SINGULARITY
     )
+    p.add_argument(
+        "--cslc",
+        type=Path,
+        default=None,
+        help="Optional cslc path for dense-GEMV row-tile compilation.",
+    )
     p.add_argument("--adapter", type=Path, default=CHAIN_STEP_ADAPTER)
+    p.add_argument(
+        "--dense-gemv-tile-height",
+        type=int,
+        default=0,
+        help=(
+            "Dense-GEMV lm-head row block height for compile-time tiled "
+            "dispatch evidence. Zero keeps the direct manifest dispatch path."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-hidden-tile-width",
+        type=int,
+        default=None,
+        help=(
+            "Dense-GEMV lm-head hidden-width block for explicit tiled "
+            "dispatch evidence. Omit to keep the direct manifest dispatch path."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-allow-unsafe-tile-shapes",
+        action="store_true",
+        help=(
+            "Diagnostic sweep mode only: allow dense-GEMV tiled dispatch "
+            "shapes that exceed the simfabric D2H element-count safety guard. "
+            "Receipts remain non-promoting unless tileShapeSafety.safe is true."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-reuse-verified-tile-partials",
+        action="store_true",
+        help=(
+            "Reuse existing dense-GEMV width-tile partials only when their "
+            "sidecar receipt matches the command, input hashes, compile "
+            "identity, output hash, and tile-shape safety metadata."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-tile-dispatch-budget",
+        type=int,
+        default=0,
+        help=(
+            "Maximum new dense-GEMV width-tile dispatches to run before "
+            "returning a typed partial-coverage receipt. Zero means no "
+            "runner-side dispatch-count bound."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-tile-dispatch-jobs",
+        type=int,
+        default=1,
+        help=(
+            "Number of independent dense-GEMV width-tile SDK subprocesses "
+            "to run when explicit hidden-width tiling is enabled."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-batch-runtime",
+        action="store_true",
+        help=(
+            "Opt into one SDK runtime process per dense-GEMV width/row tile "
+            "shape, with batch-json steps for each tile. Default stays one "
+            "independent subprocess per tile."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-max-row-tile-height",
+        type=int,
+        default=1,
+        help=(
+            "Maximum row count per dense-GEMV width tile when row-split "
+            "D2H is enabled. Zero allows a full-height width tile."
+        ),
+    )
     p.add_argument(
         "--dry-run",
         action="store_true",
@@ -229,6 +326,34 @@ def _try_relative(path: Path) -> str:
 
 def _tail(text: str, lines: int = 20) -> list[str]:
     return text.splitlines()[-lines:] if text else []
+
+
+def parse_phase_events(text: str) -> list[dict[str, str]]:
+    events: list[dict[str, str]] = []
+    for line in text.splitlines():
+        match = _PHASE_LINE_RE.match(line.strip())
+        if match is None:
+            continue
+        phase = match.group(1)
+        raw_fields = match.group(2) or ""
+        event = {"phase": phase}
+        for token in raw_fields.split():
+            if "=" not in token:
+                continue
+            key, value = token.split("=", 1)
+            event[key] = value
+        events.append(event)
+    return events
+
+
+def last_phase_reached(phase_events: list[dict[str, str]]) -> str:
+    if not phase_events:
+        return ""
+    return str(phase_events[-1].get("phase") or "")
+
+
+def _has_phase(phase_events: list[dict[str, str]], phase: str) -> bool:
+    return any(str(event.get("phase") or "") == phase for event in phase_events)
 
 
 def find_probe_transcript(
@@ -589,8 +714,6 @@ def load_reusable_receipt(
         return None
     if receipt.get("verdict") == "bound":
         return receipt
-    if receipt.get("dispatchTimedOut") is True:
-        return receipt
     if reuse_blocked and receipt.get("verdict") == "blocked":
         return receipt
     return None
@@ -609,6 +732,131 @@ def _hash_output_files(records: list[dict[str, Any]]) -> None:
             for chunk in iter(lambda: handle.read(1 << 20), b""):
                 h.update(chunk)
         record["sha256"] = h.hexdigest()
+
+
+def _dispatch_timeout_blocker(
+    *,
+    kernel: str,
+    inputs: list[dict[str, Any]],
+    total_output_bytes: int,
+    dispatch_mode: str,
+    last_phase: str,
+    launch_completed: bool,
+) -> str:
+    if (
+        dispatch_mode == DIRECT_DISPATCH_MODE
+        and kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        and total_output_bytes == 0
+    ):
+        weight_bytes = _weight_payload_bytes(inputs)
+        if (
+            weight_bytes >= RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES
+            and launch_completed
+            and last_phase == "memcpy_d2h_start"
+        ):
+            return "sdk_d2h_output_transfer_wedged"
+        if (
+            weight_bytes >= RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES
+            and last_phase in {"run_complete", "memcpy_h2d_complete", "launch_start"}
+        ):
+            return "launch_payload_weight_residency_missing"
+    return "dispatch_timed_out"
+
+
+def _weight_payload_bytes(inputs: list[dict[str, Any]]) -> int:
+    for record in inputs:
+        if str(record.get("symbol") or "").lower() == "weight":
+            return int(record.get("totalBytes") or 0)
+    return 0
+
+
+def _timeout_evidence(
+    *,
+    kernel: str,
+    inputs: list[dict[str, Any]],
+    total_output_bytes: int,
+    dispatch_mode: str,
+    last_phase: str,
+    launch_completed: bool,
+) -> dict[str, Any]:
+    weight_bytes = _weight_payload_bytes(inputs)
+    return {
+        "kernelClass": (
+            "dense_gemv_lm_head"
+            if kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
+            else "other"
+        ),
+        "dispatchMode": dispatch_mode,
+        "ordinaryH2DWeightPayload": dispatch_mode == DIRECT_DISPATCH_MODE,
+        "weightPayloadBytes": weight_bytes,
+        "weightPayloadMinBytes": RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES,
+        "weightPayloadClass": (
+            "nonzero_manifest_weight_h2d"
+            if weight_bytes >= RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES
+            else "absent_or_empty"
+        ),
+        "totalOutputBytes": total_output_bytes,
+        "lastPhaseReached": last_phase,
+        "launchCompleted": launch_completed,
+    }
+
+
+def _lm_head_evidence_scope(kernel: str, dispatch_mode: str) -> str:
+    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
+        return ""
+    if dispatch_mode == DIRECT_DISPATCH_MODE:
+        return LM_HEAD_DIRECT_EVIDENCE_SCOPE
+    if dispatch_mode == "dense_gemv_width_tiled":
+        return LM_HEAD_WIDTH_TILED_EVIDENCE_SCOPE
+    if dispatch_mode == "dense_gemv_row_tiled":
+        return LM_HEAD_ROW_TILED_EVIDENCE_SCOPE
+    return "unsupported_lm_head_dispatch_mode"
+
+
+def _dense_gemv_output_region(
+    *,
+    kernel: str,
+    symbol: str,
+    bindings: dict[str, int],
+) -> tuple[dict[str, int], str] | None:
+    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS or symbol.lower() != "output":
+        return None
+    width = int(bindings.get("width") or 0)
+    height = int(bindings.get("height") or 0)
+    if width <= 1 or height <= 0:
+        return None
+    return (
+        {
+            "x": width - 1,
+            "y": 0,
+            "width": 1,
+            "height": height,
+        },
+        "dense_gemv_sink_column",
+    )
+
+
+def _region_spec(region: dict[str, int]) -> str:
+    return (
+        f"{region['x']},{region['y']},"
+        f"{region['width']},{region['height']}"
+    )
+
+
+def _d2h_mode_for_outputs(
+    *,
+    kernel: str,
+    output_records: list[dict[str, Any]],
+) -> str:
+    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
+        return SINGLE_REGION_D2H_MODE
+    for record in output_records:
+        region = record.get("deviceRegion")
+        if not isinstance(region, dict):
+            continue
+        if int(region.get("height") or 0) > 1:
+            return ROW_SPLIT_D2H_MODE
+    return SINGLE_REGION_D2H_MODE
 
 
 def _materialize_inputs(
@@ -716,23 +964,39 @@ def _materialize_inputs(
         path = scratch_dir / "out" / f"{symbol}.npy"
         path.parent.mkdir(parents=True, exist_ok=True)
         total_elems = pe_count * chunk
-        output_records.append(
-            {
-                "symbol": symbol,
-                "path": _try_relative(path),
-                "elemType": elem_type,
-                "elemBytes": elem_bytes,
-                "perPeChunk": chunk,
-                "totalElements": total_elems,
-                "totalBytes": 0,
-                "sha256": "",
-                "absolutePath": str(path),
-            }
-        )
+        output_record = {
+            "symbol": symbol,
+            "path": _try_relative(path),
+            "elemType": elem_type,
+            "elemBytes": elem_bytes,
+            "perPeChunk": chunk,
+            "totalElements": total_elems,
+            "totalBytes": 0,
+            "sha256": "",
+            "absolutePath": str(path),
+        }
         adapter_dtype = _adapter_dtype_token(elem_type)
-        output_specs.append(
-            f"{symbol}:{path}:{adapter_dtype}:{chunk}"
+        region_info = _dense_gemv_output_region(
+            kernel=kernel,
+            symbol=str(symbol),
+            bindings=bindings,
         )
+        if region_info is not None:
+            region, scope = region_info
+            output_record["deviceRegion"] = region
+            output_record["outputScope"] = scope
+            output_record["deviceTotalElements"] = total_elems
+            output_record["totalElements"] = (
+                int(region["width"]) * int(region["height"]) * chunk
+            )
+            output_specs.append(
+                f"{symbol}:{path}:{adapter_dtype}:{chunk}:{_region_spec(region)}"
+            )
+        else:
+            output_specs.append(
+                f"{symbol}:{path}:{adapter_dtype}:{chunk}"
+            )
+        output_records.append(output_record)
 
     return (
         input_records,
@@ -758,6 +1022,9 @@ def build_kernel_receipt(
     dispatch_stderr: str,
     dispatch_timed_out: bool,
     dispatch_wallclock_ns: int | None,
+    dispatch_mode: str = DIRECT_DISPATCH_MODE,
+    d2h_mode: str = SINGLE_REGION_D2H_MODE,
+    phase_trace_path: Path | None = None,
     host_plan_path: Path,
     host_plan_hash: str,
     cmaddr: str,
@@ -771,11 +1038,27 @@ def build_kernel_receipt(
         if isinstance(digest, str) and digest:
             aggregate.update(digest.encode("ascii"))
     output_digest = aggregate.hexdigest() if outputs else ""
+    phase_events = parse_phase_events(dispatch_stdout)
+    last_phase = last_phase_reached(phase_events)
+    launch_completed = _has_phase(phase_events, "launch_complete")
+    failure_phase = last_phase if dispatch_timed_out else ""
+    weight_input_scope = ""
+    weight_residency_mode = ""
+    if kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS and dispatch_mode == DIRECT_DISPATCH_MODE:
+        weight_input_scope = "manifest_full_weight_payload"
+        weight_residency_mode = "per_dispatch_h2d"
 
     if blocker is None:
         if dispatch_exit_code != 0 or dispatch_timed_out:
             blocker = (
-                "dispatch_timed_out"
+                _dispatch_timeout_blocker(
+                    kernel=kernel,
+                    inputs=inputs,
+                    total_output_bytes=total_output_bytes,
+                    dispatch_mode=dispatch_mode,
+                    last_phase=last_phase,
+                    launch_completed=launch_completed,
+                )
                 if dispatch_timed_out
                 else f"dispatch_exit_code_{dispatch_exit_code}"
             )
@@ -784,7 +1067,7 @@ def build_kernel_receipt(
 
     verdict = "blocked" if blocker else "bound"
 
-    return {
+    receipt = {
         "schemaVersion": 1,
         "artifactKind": "doe_manifest_shape_per_kernel_dispatch_receipt",
         "receiptClass": "manifest_shape_per_kernel_dispatch",
@@ -802,9 +1085,21 @@ def build_kernel_receipt(
         "totalInputBytes": total_input_bytes,
         "totalOutputBytes": total_output_bytes,
         "outputDigest": output_digest,
+        "dispatchMode": dispatch_mode,
+        "d2hMode": d2h_mode,
+        "weightInputScope": weight_input_scope,
+        "weightResidencyMode": weight_residency_mode,
         "dispatchExitCode": dispatch_exit_code,
         "dispatchTimedOut": dispatch_timed_out,
         "dispatchWallclockNs": dispatch_wallclock_ns,
+        "phaseEvents": phase_events,
+        "lastPhaseReached": last_phase,
+        "failurePhase": failure_phase,
+        "phaseTracePath": (
+            _try_relative(phase_trace_path)
+            if phase_trace_path is not None
+            else ""
+        ),
         "subprocess": {
             "command": list(dispatch_command),
             "stdoutTail": _tail(dispatch_stdout),
@@ -830,6 +1125,19 @@ def build_kernel_receipt(
             ),
         },
     }
+    scope = _lm_head_evidence_scope(kernel, dispatch_mode)
+    if scope:
+        receipt["lmHeadEvidenceScope"] = scope
+    if dispatch_timed_out:
+        receipt["dispatchTimeoutEvidence"] = _timeout_evidence(
+            kernel=kernel,
+            inputs=inputs,
+            total_output_bytes=total_output_bytes,
+            dispatch_mode=dispatch_mode,
+            last_phase=last_phase,
+            launch_completed=launch_completed,
+        )
+    return receipt
 
 
 def run_one_kernel(
@@ -847,6 +1155,15 @@ def run_one_kernel(
     cs_python: Path,
     adapter: Path,
     dry_run: bool,
+    cslc: Path | None = None,
+    dense_gemv_tile_height: int = 0,
+    dense_gemv_hidden_tile_width: int | None = None,
+    dense_gemv_allow_unsafe_tile_shapes: bool = False,
+    dense_gemv_reuse_verified_tile_partials: bool = False,
+    dense_gemv_tile_dispatch_budget: int = 0,
+    dense_gemv_tile_dispatch_jobs: int = 1,
+    dense_gemv_max_row_tile_height: int = 16,
+    dense_gemv_batch_runtime: bool = False,
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
     effective_source_root = source_root if source_root is not None else compile_root
@@ -971,6 +1288,14 @@ def run_one_kernel(
         output_specs=output_specs,
         cmaddr=cmaddr,
     )
+    d2h_mode = _d2h_mode_for_outputs(
+        kernel=kernel,
+        output_records=output_records,
+    )
+    phase_trace_path = scratch_dir / "phase-trace.log"
+    command.extend(["--phase-trace", str(phase_trace_path)])
+    if d2h_mode == ROW_SPLIT_D2H_MODE:
+        command.append("--split-d2h-rows")
 
     if dry_run:
         for record in output_records:
@@ -1024,12 +1349,73 @@ def run_one_kernel(
             blocker=blocker,
         )
 
+    tiled = None
+    if dense_gemv_tile_height > 0 or dense_gemv_hidden_tile_width is not None:
+        tiled = run_dense_gemv_row_tiled(
+            kernel=kernel,
+            compile_root=compile_root,
+            source_root=effective_source_root,
+            compile_params=compile_params,
+            input_records=input_records,
+            output_records=output_records,
+            scratch_dir=scratch_dir,
+            cs_python=cs_python,
+            adapter=adapter,
+            cmaddr=cmaddr,
+            timeout_seconds=timeout_seconds,
+            repo_root=REPO_ROOT,
+            cslc=cslc,
+            tile_height=max(1, dense_gemv_tile_height),
+            hidden_tile_width=dense_gemv_hidden_tile_width,
+            allow_unsafe_tile_shapes=dense_gemv_allow_unsafe_tile_shapes,
+            reuse_verified_tile_partials=(
+                dense_gemv_reuse_verified_tile_partials
+            ),
+            tile_dispatch_budget=dense_gemv_tile_dispatch_budget,
+            tile_dispatch_jobs=dense_gemv_tile_dispatch_jobs,
+            max_row_tile_height=dense_gemv_max_row_tile_height,
+            batch_runtime=dense_gemv_batch_runtime,
+            dispatcher=dispatcher,
+        )
+    if tiled is not None:
+        for record in tiled.output_records:
+            record.pop("absolutePath", None)
+        receipt = build_kernel_receipt(
+            kernel=kernel,
+            compile_dir=compile_root / kernel,
+            compile_params=compile_params,
+            inputs=input_records,
+            outputs=tiled.output_records,
+            probe=probe_metadata,
+            dispatch_command=tiled.dispatch_command,
+            dispatch_exit_code=tiled.dispatch_exit_code,
+            dispatch_stdout=tiled.dispatch_stdout,
+            dispatch_stderr=tiled.dispatch_stderr,
+            dispatch_timed_out=tiled.dispatch_timed_out,
+            dispatch_wallclock_ns=tiled.dispatch_wallclock_ns,
+            dispatch_mode=tiled.dispatch_mode,
+            host_plan_path=host_plan_path,
+            host_plan_hash=host_plan_hash,
+            cmaddr=cmaddr,
+            blocker=tiled.blocker,
+        )
+        receipt["dispatchMode"] = tiled.dispatch_mode
+        receipt["tileCompile"] = tiled.tile_compile
+        receipt["tileDispatches"] = tiled.tile_dispatches
+        if getattr(tiled, "tile_coverage", None) is not None:
+            receipt["tileCoverage"] = tiled.tile_coverage
+        receipt["weightInputScope"] = tiled.weight_input_scope
+        receipt["weightResidencyMode"] = tiled.weight_residency_mode
+        return receipt
+
     runner = dispatcher or run_dispatch_subprocess
     started = time.monotonic_ns()
     exit_code, stdout, stderr, timed_out = runner(
         command, timeout_seconds=timeout_seconds
     )
     elapsed_ns = time.monotonic_ns() - started
+    if phase_trace_path.is_file():
+        stdout = stdout + "\n" + phase_trace_path.read_text(encoding="utf-8")
 
     _hash_output_files(output_records)
 
@@ -1046,6 +1432,8 @@ def run_one_kernel(
         dispatch_stderr=stderr,
         dispatch_timed_out=timed_out,
         dispatch_wallclock_ns=elapsed_ns,
+        d2h_mode=d2h_mode,
+        phase_trace_path=phase_trace_path,
         host_plan_path=host_plan_path,
         host_plan_hash=host_plan_hash,
         cmaddr=cmaddr,
@@ -1066,6 +1454,146 @@ def write_kernel_receipt(
     return path
 
 
+def _summarize_tile_compile(receipt: dict[str, Any]) -> dict[str, Any] | None:
+    compile_info = receipt.get("tileCompile")
+    if not isinstance(compile_info, dict):
+        return None
+    summary: dict[str, Any] = {}
+    for key in (
+        "mode",
+        "widthTileCount",
+        "verdict",
+        "blocker",
+        "width",
+        "tileHeight",
+        "outDimPerPe",
+        "inDimPerPe",
+        "commandDigest",
+        "reused",
+    ):
+        if key in compile_info:
+            summary[key] = compile_info[key]
+    receipts = compile_info.get("receipts")
+    if isinstance(receipts, list):
+        summary["receiptCount"] = len(receipts)
+        summary["blockedCount"] = sum(
+            1 for item in receipts
+            if isinstance(item, dict) and item.get("verdict") == "blocked"
+        )
+        summary["commandDigests"] = [
+            item.get("commandDigest")
+            for item in receipts
+            if isinstance(item, dict) and item.get("commandDigest")
+        ]
+    return summary
+
+
+def _summarize_tile_dispatches(receipt: dict[str, Any]) -> dict[str, Any] | None:
+    dispatches = receipt.get("tileDispatches")
+    if not isinstance(dispatches, list):
+        return None
+    output_digest = hashlib.sha256()
+    output_digest_count = 0
+    total_output_bytes = 0
+    blocked_count = 0
+    reused_count = 0
+    execution_modes: set[str] = set()
+    for item in dispatches:
+        if not isinstance(item, dict):
+            continue
+        mode = item.get("executionMode")
+        if isinstance(mode, str) and mode:
+            execution_modes.add(mode)
+        if item.get("reusedVerifiedPartial"):
+            reused_count += 1
+        if item.get("timedOut") or item.get("exitCode") not in (0, None):
+            blocked_count += 1
+        output = item.get("output")
+        if not isinstance(output, dict):
+            continue
+        total_output_bytes += int(output.get("totalBytes") or 0)
+        digest = output.get("sha256")
+        if isinstance(digest, str) and digest:
+            output_digest.update(digest.encode("ascii"))
+            output_digest_count += 1
+    summary = {
+        "tileCount": len(dispatches),
+        "blockedCount": blocked_count,
+        "boundCount": max(0, len(dispatches) - blocked_count),
+        "reusedCount": reused_count,
+        "totalOutputBytes": total_output_bytes,
+        "outputDigest": (
+            output_digest.hexdigest() if output_digest_count else ""
+        ),
+    }
+    if execution_modes:
+        summary["executionModes"] = sorted(execution_modes)
+    return summary
+
+
+def _first_output_field(
+    receipt: dict[str, Any],
+    field: str,
+) -> Any:
+    outputs = receipt.get("outputs")
+    if not isinstance(outputs, list) or not outputs:
+        return None
+    first = outputs[0]
+    if not isinstance(first, dict):
+        return None
+    return first.get(field)
+
+
+def _summary_entry(receipt: dict[str, Any]) -> dict[str, Any]:
+    dispatch_mode = receipt.get("dispatchMode") or DIRECT_DISPATCH_MODE
+    lm_head_scope = (
+        receipt.get("lmHeadEvidenceScope")
+        or _lm_head_evidence_scope(str(receipt["kernel"]), str(dispatch_mode))
+    )
+    weight_input_scope = receipt.get("weightInputScope") or ""
+    weight_residency_mode = receipt.get("weightResidencyMode") or ""
+    if (
+        str(receipt["kernel"]) in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        and dispatch_mode == DIRECT_DISPATCH_MODE
+    ):
+        weight_input_scope = weight_input_scope or "manifest_full_weight_payload"
+        weight_residency_mode = weight_residency_mode or "per_dispatch_h2d"
+    entry = {
+        "kernel": receipt["kernel"],
+        "verdict": receipt["verdict"],
+        "blocker": receipt["blocker"],
+        "dispatchMode": dispatch_mode,
+        "d2hMode": receipt.get("d2hMode") or SINGLE_REGION_D2H_MODE,
+        "lmHeadEvidenceScope": lm_head_scope,
+        "weightInputScope": weight_input_scope,
+        "weightResidencyMode": weight_residency_mode,
+        "dispatchExitCode": receipt["dispatchExitCode"],
+        "dispatchTimedOut": receipt["dispatchTimedOut"],
+        "dispatchWallclockNs": receipt["dispatchWallclockNs"],
+        "lastPhaseReached": receipt.get("lastPhaseReached") or "",
+        "failurePhase": receipt.get("failurePhase") or "",
+        "totalInputBytes": receipt["totalInputBytes"],
+        "totalOutputBytes": receipt["totalOutputBytes"],
+        "outputDigest": receipt["outputDigest"],
+        "probeFixturePath": (receipt.get("probe") or {}).get(
+            "fixturePath"
+        ),
+    }
+    tile_compile = _summarize_tile_compile(receipt)
+    if tile_compile is not None:
+        entry["tileCompile"] = tile_compile
+    tile_dispatches = _summarize_tile_dispatches(receipt)
+    if tile_dispatches is not None:
+        entry["tileDispatches"] = tile_dispatches
+    tile_coverage = receipt.get("tileCoverage")
+    if isinstance(tile_coverage, dict):
+        entry["tileCoverage"] = tile_coverage
+    host_reduction = _first_output_field(receipt, "hostReduction")
+    if isinstance(host_reduction, dict):
+        entry["hostReduction"] = host_reduction
+    return entry
+
+
 def write_summary(
     *,
     out_dir: Path,
@@ -1080,23 +1608,7 @@ def write_summary(
         "receiptClass": "manifest_shape_per_kernel_dispatch_summary",
         "hostPlanPath": _try_relative(host_plan_path),
         "hostPlanHash": host_plan_hash,
-        "kernels": [
-            {
-                "kernel": r["kernel"],
-                "verdict": r["verdict"],
-                "blocker": r["blocker"],
-                "dispatchExitCode": r["dispatchExitCode"],
-                "dispatchTimedOut": r["dispatchTimedOut"],
-                "dispatchWallclockNs": r["dispatchWallclockNs"],
-                "totalInputBytes": r["totalInputBytes"],
-                "totalOutputBytes": r["totalOutputBytes"],
-                "outputDigest": r["outputDigest"],
-                "probeFixturePath": (r.get("probe") or {}).get(
-                    "fixturePath"
-                ),
-            }
-            for r in receipts
-        ],
+        "kernels": [_summary_entry(r) for r in receipts],
         "totals": {
             "kernelCount": len(receipts),
             "boundCount": sum(
@@ -1116,10 +1628,57 @@ def write_summary(
     return path
 
 
+def load_existing_receipts_for_summary(
+    *,
+    out_dir: Path,
+    host_plan_hash: str,
+) -> dict[str, dict[str, Any]]:
+    receipts: dict[str, dict[str, Any]] = {}
+    if not out_dir.is_dir():
+        return receipts
+    for path in sorted(out_dir.glob("*.json")):
+        if path.name == "summary.json":
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        kernel = str(payload.get("kernel") or "")
+        if not kernel:
+            continue
+        if payload.get("hostPlanHash") != host_plan_hash:
+            continue
+        receipts[kernel] = payload
+    return receipts
+
+
 def main() -> int:
     args = parse_args()
     if args.jobs < 1:
         sys.stderr.write("manifest_kernel_probe_runner: --jobs must be >= 1\n")
+        return 2
+    if args.dense_gemv_tile_dispatch_jobs < 1:
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: "
+            "--dense-gemv-tile-dispatch-jobs must be >= 1\n"
+        )
+        return 2
+    if (
+        args.dense_gemv_batch_runtime
+        and args.dense_gemv_tile_dispatch_jobs != 1
+    ):
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: --dense-gemv-batch-runtime "
+            "requires --dense-gemv-tile-dispatch-jobs 1\n"
+        )
+        return 2
+    if args.dense_gemv_max_row_tile_height < 0:
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: "
+            "--dense-gemv-max-row-tile-height must be >= 0\n"
+        )
         return 2
     if not args.host_plan.is_file():
         sys.stderr.write(
@@ -1129,7 +1688,12 @@ def main() -> int:
         return 2
     host_plan = json.loads(args.host_plan.read_text(encoding="utf-8"))
     host_plan_hash = _sha256_file(args.host_plan)
-    targets = host_plan.get("compileTargets") or []
+    raw_targets = host_plan.get("compileTargets") or []
+    all_targets = [
+        target for target in raw_targets
+        if isinstance(target, dict) and target.get("name")
+    ]
+    targets = list(all_targets)
     if args.kernel:
         kernel_filter = set(args.kernel)
         targets = [t for t in targets if t.get("name") in kernel_filter]
@@ -1141,11 +1705,14 @@ def main() -> int:
             return 2
     source_root = args.source_root or args.compile_root
     targets = order_targets(
-        targets=[
-            target for target in targets
-            if isinstance(target, dict) and target.get("name")
-        ],
+        targets=targets,
         schedule=args.schedule,
+        compile_root=args.compile_root,
+        source_root=source_root,
+    )
+    summary_targets = order_targets(
+        targets=all_targets,
+        schedule="host-plan",
         compile_root=args.compile_root,
         source_root=source_root,
     )
@@ -1180,6 +1747,25 @@ def main() -> int:
             cs_python=args.cs_python,
             adapter=args.adapter,
             dry_run=args.dry_run,
+            cslc=args.cslc,
+            dense_gemv_tile_height=args.dense_gemv_tile_height,
+            dense_gemv_hidden_tile_width=args.dense_gemv_hidden_tile_width,
+            dense_gemv_allow_unsafe_tile_shapes=(
+                args.dense_gemv_allow_unsafe_tile_shapes
+            ),
+            dense_gemv_reuse_verified_tile_partials=(
+                args.dense_gemv_reuse_verified_tile_partials
+            ),
+            dense_gemv_tile_dispatch_budget=(
+                args.dense_gemv_tile_dispatch_budget
+            ),
+            dense_gemv_tile_dispatch_jobs=(
+                args.dense_gemv_tile_dispatch_jobs
+            ),
+            dense_gemv_max_row_tile_height=(
+                args.dense_gemv_max_row_tile_height
+            ),
+            dense_gemv_batch_runtime=args.dense_gemv_batch_runtime,
         )
         try:
             write_kernel_receipt(receipt=receipt, out_dir=args.out_dir)
@@ -1215,10 +1801,15 @@ def main() -> int:
         sys.stderr.write(f"manifest_kernel_probe_runner: {err}\n")
         return 2
 
+    summary_receipts_by_kernel = load_existing_receipts_for_summary(
+        out_dir=args.out_dir,
+        host_plan_hash=host_plan_hash,
+    )
+    summary_receipts_by_kernel.update(receipts_by_kernel)
     receipts = [
-        receipts_by_kernel[str(target["name"])]
-        for target in targets
-        if str(target["name"]) in receipts_by_kernel
+        summary_receipts_by_kernel[str(target["name"])]
+        for target in summary_targets
+        if str(target["name"]) in summary_receipts_by_kernel
     ]
 
     try:
