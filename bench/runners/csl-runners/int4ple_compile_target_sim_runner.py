@@ -327,6 +327,7 @@ def host_plan_executor_preflight(
         "tiled",
         "lm_head_gemv",
         "lm_head_gemv_stable",
+        "lm_head_prefill_stable",
         "attn_head256",
         "attn_head512",
         "sample",
@@ -420,12 +421,22 @@ def host_plan_executor_preflight(
     lm_head = (
         target_params.get("lm_head_gemv")
         or target_params.get("lm_head_gemv_stable")
+        or target_params.get("lm_head_prefill_stable")
         or {}
     )
     if lm_head:
-        logits_coverage = int(lm_head.get("width") or 0) * int(
-            lm_head.get("out_dim") or 0
-        )
+        if "out_dim_per_pe" in lm_head:
+            logits_coverage = int(lm_head.get("height") or 0) * int(
+                lm_head.get("out_dim_per_pe") or 0
+            )
+        elif "out_dim" in lm_head:
+            logits_coverage = int(lm_head.get("width") or 0) * int(
+                lm_head.get("out_dim") or 0
+            )
+        else:
+            logits_coverage = int(lm_head.get("P") or 0) * int(
+                lm_head.get("Nt") or 0
+            )
         require_minimum(
             blockers=blockers,
             checks=checks,
@@ -1173,6 +1184,67 @@ def _materialize_weight_matrix_f32(
     )
 
 
+def _dense_gemv_weight_shards(
+    mapping: dict[str, Any],
+    transform: dict[str, Any],
+) -> np.ndarray:
+    source_rows = _required_positive_int(transform, "sourceRows")
+    source_cols = _required_positive_int(transform, "sourceCols")
+    logical_cols = _required_positive_int(transform, "logicalCols")
+    width = _required_positive_int(transform, "width")
+    height = _required_positive_int(transform, "height")
+    out_dim = _required_positive_int(transform, "outDim")
+    out_dim_per_pe = _required_positive_int(transform, "outDimPerPe")
+    in_dim_per_pe = _required_positive_int(transform, "inDimPerPe")
+    if str(mapping.get("dtype") or "") != "f16":
+        raise ValueError(
+            "dense_gemv_weight_requires_f16:"
+            f"{mapping.get('weightKey') or mapping.get('tensor')}"
+        )
+    raw = _read_weight_prefix_bytes(mapping, source_rows * source_cols * 2)
+    matrix = np.frombuffer(raw, dtype=np.float16).reshape(source_rows, source_cols)
+    values = np.zeros(
+        (height, width, out_dim_per_pe, in_dim_per_pe),
+        dtype=np.float16,
+    )
+    for pe_y in range(height):
+        row_start = pe_y * out_dim_per_pe
+        row_end = min(row_start + out_dim_per_pe, out_dim, source_rows)
+        if row_end <= row_start:
+            continue
+        for pe_x in range(width):
+            col_start = pe_x * in_dim_per_pe
+            col_end = min(col_start + in_dim_per_pe, logical_cols, source_cols)
+            if col_end <= col_start:
+                continue
+            values[
+                pe_y,
+                pe_x,
+                : row_end - row_start,
+                : col_end - col_start,
+            ] = matrix[row_start:row_end, col_start:col_end]
+    return values.reshape(-1)
+
+
+def _dense_gemv_activation_shards(
+    host: np.ndarray,
+    transform: dict[str, Any],
+) -> np.ndarray:
+    width = _required_positive_int(transform, "width")
+    height = _required_positive_int(transform, "height")
+    in_dim_per_pe = _required_positive_int(transform, "inDimPerPe")
+    source_elements = _required_positive_int(transform, "sourceElements")
+    logical = np.asarray(host[:source_elements], dtype=np.float16)
+    values = np.zeros((height, width, in_dim_per_pe), dtype=np.float16)
+    for pe_x in range(width):
+        col_start = pe_x * in_dim_per_pe
+        col_end = min(col_start + in_dim_per_pe, logical.size)
+        if col_end <= col_start:
+            continue
+        values[:, pe_x, : col_end - col_start] = logical[col_start:col_end]
+    return values.reshape(-1)
+
+
 def _broadcast_factor_or_one(
     *,
     mapping: dict[str, Any],
@@ -1238,6 +1310,13 @@ def _materialize_weight_input(
         if values.size != total_elements:
             raise ValueError(
                 f"weight_summa_q4k_tile_byte_mismatch:{values.size}!={total_elements}"
+            )
+        return values
+    if dtype == "f16" and transform_kind == "tied_f16_embedding_to_dense_gemv_shards":
+        values = _dense_gemv_weight_shards(mapping, source_transform)
+        if values.size != total_elements:
+            raise ValueError(
+                f"weight_dense_gemv_shard_size_mismatch:{values.size}!={total_elements}"
             )
         return values
     if dtype == "f32" and transform_kind in {"f16_to_f32", "litert_axis_dequant"}:
@@ -1325,6 +1404,8 @@ def _transform_existing_input(
             "rows": rows,
             "cols": _required_positive_int(source_transform, "sourceCols"),
         }
+    if transform_kind == "logical_vector_to_dense_gemv_activation_shards":
+        return _dense_gemv_activation_shards(host, source_transform), {}
     return host, {}
 
 
@@ -1389,6 +1470,8 @@ def _stage_launch_arrays(
                 cache_buffer_file = role != "weight" and transform_kind not in {
                     "logical_matrix_to_summa_tiles",
                     "weight_matrix_to_summa_tiles",
+                    "logical_vector_to_dense_gemv_activation_shards",
+                    "tied_f16_embedding_to_dense_gemv_shards",
                 }
                 if not cache_buffer_file:
                     path = _staged_input_path(

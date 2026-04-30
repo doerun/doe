@@ -61,6 +61,17 @@ def tensor_name_candidates_for_weight_key(weight_key: str) -> list[str]:
                 ),
                 f"model.layers.{parts[1]}.self_attn.{parts[3]}.weight",
             ]
+        if len(parts) >= 4 and parts[2] == "linear_attn":
+            suffix = ".".join(parts[3:])
+            if suffix == "conv1d":
+                suffix = "conv1d.weight"
+            return [
+                (
+                    "model.language_model.layers."
+                    f"{parts[1]}.linear_attn.{suffix}"
+                ),
+                f"model.layers.{parts[1]}.linear_attn.{suffix}",
+            ]
         if len(parts) >= 4 and parts[2] == "mlp":
             return [
                 (

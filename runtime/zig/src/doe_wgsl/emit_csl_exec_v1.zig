@@ -572,8 +572,10 @@ fn isLmHeadKernel(kernel_key: []const u8) bool {
 
 fn isLogitsProducerStep(step: ExecStep, op_spec: OpSpec) bool {
     if (step.kind != .compute) return false;
-    if (!std.mem.eql(u8, op_spec.pattern, "fused_gemv_dequant") and
-        !std.mem.eql(u8, op_spec.pattern, "tiled_matmul"))
+    const pattern = stepPattern(step, op_spec);
+    if (!std.mem.eql(u8, pattern, "fused_gemv_dequant") and
+        !std.mem.eql(u8, pattern, "tiled_matmul") and
+        !std.mem.eql(u8, pattern, "dense_gemv"))
     {
         return false;
     }
@@ -585,6 +587,19 @@ fn isLogitsProducerStep(step: ExecStep, op_spec: OpSpec) bool {
         if (std.mem.eql(u8, weights_key, "lm_head")) return true;
     }
     return false;
+}
+
+fn stepPattern(step: ExecStep, op_spec: OpSpec) []const u8 {
+    if (std.mem.eql(u8, op_spec.pattern, "tiled_matmul")) {
+        if (step.name) |name| {
+            if (isLmHeadName(name)) return "dense_gemv";
+        }
+        if (isLmHeadKernel(step.kernel_key)) return "dense_gemv";
+        if (step.weights_key) |weights_key| {
+            if (std.mem.eql(u8, weights_key, "lm_head")) return "dense_gemv";
+        }
+    }
+    return op_spec.pattern;
 }
 
 fn deriveAttentionTypeFromLayerPattern(layer_pattern: LayerPattern, layer_index: u32) host.LaunchAttentionType {
@@ -682,7 +697,7 @@ fn lowerToHostPlanWithMetadata(
             },
         }
 
-        const pattern = op_spec.pattern;
+        const pattern = stepPattern(step, op_spec);
         const attention_layer_index: ?u32 = if (step.phase == .decode and std.mem.eql(u8, pattern, "attention_decode")) blk: {
             const index = decode_attention_index;
             decode_attention_index += 1;

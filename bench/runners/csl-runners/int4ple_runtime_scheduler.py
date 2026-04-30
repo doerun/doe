@@ -477,7 +477,7 @@ def bind_launch_dataflow(
             kernel_name
             in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
         )
-        is_tiled_kernel = kernel_name in {"tiled", "lm_head_prefill_stable"}
+        is_tiled_kernel = kernel_name == "tiled"
         if op_name in {"q_proj", "k_proj", "v_proj"} and layer_index is not None:
             source = str(layer_state.get("attn_input") or current_buffer())
         else:
@@ -922,9 +922,9 @@ def transcript_capture_schedule(
         phase = str(record.get("phase") or "")
         kernel_name = str(record.get("kernelName") or "")
         operation_name = str(record.get("operationName") or "")
-        if phase == "decode" and (
-            kernel_name in {"lm_head_gemv", "lm_head_gemv_stable"}
-            or operation_name == "lm_head"
+        if phase in {"prefill", "decode"} and (
+            kernel_name in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
+            or operation_name in {"lm_head", "lm_head_prefill"}
         ):
             record_decode_step = record.get("decodeStepIndex")
             if isinstance(record_decode_step, int):
@@ -946,7 +946,7 @@ def transcript_capture_schedule(
                         }
                     )
                     break
-        if phase == "decode" and kernel_name == "sample":
+        if phase in {"prefill", "decode"} and kernel_name == "sample":
             record_decode_step = record.get("decodeStepIndex")
             if isinstance(record_decode_step, int):
                 decode_step = record_decode_step

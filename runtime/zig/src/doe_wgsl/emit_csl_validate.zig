@@ -132,6 +132,7 @@ pub fn validatePattern(csl: []const u8, pattern: PatternKind) ValidationResult {
         .tiled_matmul => validateTiledMatmul(csl, &result),
         .tiled_matmul_q4k_dequant_b => validateTiledMatmulQ4k(csl, &result),
         .fused_gemv_dequant => validateFusedGemvDequant(csl, &result),
+        .dense_gemv => validateDenseGemv(csl, &result),
         .dequant => validateDequant(csl, &result),
         .rope => validateRope(csl, &result),
         .sample => validateSample(csl, &result),
@@ -226,6 +227,7 @@ pub const PatternKind = enum {
     tiled_matmul,
     tiled_matmul_q4k_dequant_b,
     fused_gemv_dequant,
+    dense_gemv,
     dequant,
     rope,
     sample,
@@ -309,6 +311,13 @@ fn validateTiledMatmulQ4k(csl: []const u8, result: *ValidationResult) void {
 
 fn validateFusedGemvDequant(csl: []const u8, result: *ValidationResult) void {
     requireContains(csl, result, "dequant", "fused_gemv_dequant missing dequantization");
+}
+
+fn validateDenseGemv(csl: []const u8, result: *ValidationResult) void {
+    requireContains(csl, result, "dense GEMV", "dense_gemv missing dense GEMV marker");
+    requireContains(csl, result, "reduce_fadds", "dense_gemv missing row reduction");
+    requireContains(csl, result, "out_dim_per_pe", "dense_gemv missing output shard parameter");
+    requireContains(csl, result, "[*]f32", "dense_gemv must export f32 logits");
 }
 
 fn validateDequant(csl: []const u8, result: *ValidationResult) void {

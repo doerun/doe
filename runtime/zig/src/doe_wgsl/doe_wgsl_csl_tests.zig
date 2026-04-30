@@ -1,5 +1,7 @@
 const std = @import("std");
 const csl_spec = @import("csl_spec.zig");
+const exec_v1 = @import("emit_csl_exec_v1.zig");
+const host = @import("emit_csl_host.zig");
 
 pub fn expectArrayLengthInComparisonCompiles(
     allocator: std.mem.Allocator,
@@ -193,4 +195,97 @@ pub fn expectVertexShaderRejectedForCsl(
     var out: [max_output]u8 = undefined;
     const result = translateToCslFn(allocator, source, &out);
     try std.testing.expectError(expected_error, result);
+}
+
+test "execution-v1 requires logits before sample in each phase" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "grid": { "width": 2, "height": 1 },
+        \\  "steps": [
+        \\    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed" },
+        \\    { "name": "sample_prefill", "phase": "prefill", "op": "sample", "kernelKey": "sample" }
+        \\  ]
+        \\}
+    ;
+    var kernel_buf: [4]host.KernelSpec = undefined;
+    var prefill_buf: [4]host.LaunchSpec = undefined;
+    var decode_buf: [4]host.LaunchSpec = undefined;
+    try std.testing.expectError(
+        error.SampleLogitsProducerMissing,
+        exec_v1.lowerJsonToHostPlan(
+            arena.allocator(),
+            payload,
+            &kernel_buf,
+            &prefill_buf,
+            &decode_buf,
+        ),
+    );
+}
+
+test "execution-v1 preserves explicit prefill and decode logits paths" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "grid": { "width": 2, "height": 1 },
+        \\  "steps": [
+        \\    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed" },
+        \\    { "name": "final_norm_prefill", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" },
+        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "sample_prefill", "phase": "prefill", "op": "sample", "kernelKey": "sample" },
+        \\    { "name": "q_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.q_proj" },
+        \\    { "name": "final_norm", "phase": "decode", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" },
+        \\    { "name": "lm_head", "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "sample", "phase": "decode", "op": "sample", "kernelKey": "sample" }
+        \\  ]
+        \\}
+    ;
+    var kernel_buf: [8]host.KernelSpec = undefined;
+    var prefill_buf: [8]host.LaunchSpec = undefined;
+    var decode_buf: [8]host.LaunchSpec = undefined;
+    const plan = try exec_v1.lowerJsonToHostPlan(
+        arena.allocator(),
+        payload,
+        &kernel_buf,
+        &prefill_buf,
+        &decode_buf,
+    );
+    try std.testing.expectEqual(@as(usize, 4), plan.prefill_launches.len);
+    try std.testing.expectEqual(@as(usize, 4), plan.decode_launches.len);
+    try std.testing.expectEqualStrings("dense_gemv", plan.kernels[2].pattern);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable", plan.prefill_launches[2].kernel_name);
+    try std.testing.expectEqualStrings("sample", plan.prefill_launches[3].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable", plan.decode_launches[2].kernel_name);
+    try std.testing.expectEqualStrings("sample", plan.decode_launches[3].kernel_name);
+}
+
+test "execution-v1 rejects compute after phase sample" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "grid": { "width": 2, "height": 1 },
+        \\  "steps": [
+        \\    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed" },
+        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "sample_prefill", "phase": "prefill", "op": "sample", "kernelKey": "sample" },
+        \\    { "name": "post_sample_norm", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" }
+        \\  ]
+        \\}
+    ;
+    var kernel_buf: [8]host.KernelSpec = undefined;
+    var prefill_buf: [8]host.LaunchSpec = undefined;
+    var decode_buf: [8]host.LaunchSpec = undefined;
+    try std.testing.expectError(
+        error.MalformedStep,
+        exec_v1.lowerJsonToHostPlan(
+            arena.allocator(),
+            payload,
+            &kernel_buf,
+            &prefill_buf,
+            &decode_buf,
+        ),
+    );
 }

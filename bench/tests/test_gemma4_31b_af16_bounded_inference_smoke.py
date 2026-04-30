@@ -13,12 +13,26 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from bench.tools._inference_evidence_gate import (  # noqa: E402
+    InferenceEvidenceGateError,
+    evaluate_inference_evidence_gate,
+)
 from bench.tools._receipt_hash_guard import evaluate_receipt_hash_spine  # noqa: E402
 from bench.tools.synthesize_gemma4_31b_af16_bounded_inference_smoke_receipt import (  # noqa: E402
     ARTIFACT_KIND,
     LANE_KEY,
     MODEL_ID,
     build_receipt,
+)
+
+
+REAL_HOST_PLAN_PATH = (
+    REPO_ROOT
+    / "bench/out/r3-1-31b-af16-manifest-fullgraph-compile-steps/host-plan.json"
+)
+REAL_PER_KERNEL_SUMMARY_PATH = (
+    REPO_ROOT
+    / "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/summary.json"
 )
 
 SCHEMA_PATH = (
@@ -125,11 +139,15 @@ def _materialize_inputs(root: Path) -> dict[str, Path]:
                 "peGrid": {"width": 246, "height": 236},
                 "kernels": [
                     {"name": "embed", "pattern": "gather"},
+                    {"name": "lm_head_gemv", "pattern": "fused_gemv_dequant"},
                     {"name": "sample", "pattern": "sample"},
                 ],
                 "phases": {
                     "prefill": [{"kernelName": "embed"}],
-                    "decode": [{"kernelName": "sample"}],
+                    "decode": [
+                        {"kernelName": "lm_head_gemv"},
+                        {"kernelName": "sample"},
+                    ],
                 },
             },
         },
@@ -152,21 +170,14 @@ def _materialize_inputs(root: Path) -> dict[str, Path]:
         {
             "artifactKind": "doe_manifest_kernel_probe_summary",
             "totals": {
-                "kernelCount": 2,
-                "boundCount": 0,
-                "blockedCount": 2,
+                "kernelCount": 3,
+                "boundCount": 3,
+                "blockedCount": 0,
             },
             "kernels": [
-                {
-                    "kernel": "embed",
-                    "verdict": "blocked",
-                    "blocker": "dry_run",
-                },
-                {
-                    "kernel": "sample",
-                    "verdict": "blocked",
-                    "blocker": "dry_run",
-                },
+                {"kernel": "embed", "verdict": "bound"},
+                {"kernel": "lm_head_gemv", "verdict": "bound"},
+                {"kernel": "sample", "verdict": "bound"},
             ],
         },
     )
@@ -270,6 +281,154 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
             "combined_session_runtime_absent",
             blocker_classes,
         )
+
+    def test_synthesizer_rejects_unbound_sample_dispatch(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        per_kernel = json.loads(
+            paths["per_kernel_summary"].read_text(encoding="utf-8")
+        )
+        for kernel in per_kernel["kernels"]:
+            if kernel["kernel"] == "sample":
+                kernel["verdict"] = "blocked"
+                kernel["blocker"] = "dispatch_exit_code_255"
+        per_kernel["totals"] = {
+            "kernelCount": 3, "boundCount": 2, "blockedCount": 1,
+        }
+        paths["per_kernel_summary"].write_text(
+            json.dumps(per_kernel, indent=2) + "\n", encoding="utf-8"
+        )
+        with self.assertRaises(InferenceEvidenceGateError) as ctx:
+            build_receipt(
+                source_doppler_manifest=paths["manifest"],
+                frozen_reference_root=paths["reference_root"],
+                compile_receipt=paths["compile_receipt"],
+                host_plan=paths["host_plan"],
+                per_kernel_summary=paths["per_kernel_summary"],
+                prefill_token_count=19,
+                decode_token_count=2,
+                streaming_trace=paths["streaming_trace"],
+            )
+        codes = {r.code for r in ctx.exception.result.reasons}
+        self.assertIn("dispatch_evidence_sample_unbound", codes)
+
+    def test_synthesizer_rejects_missing_lm_head_dispatch(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        per_kernel = json.loads(
+            paths["per_kernel_summary"].read_text(encoding="utf-8")
+        )
+        per_kernel["kernels"] = [
+            entry for entry in per_kernel["kernels"]
+            if entry["kernel"] != "lm_head_gemv"
+        ]
+        per_kernel["totals"] = {
+            "kernelCount": 2, "boundCount": 2, "blockedCount": 0,
+        }
+        paths["per_kernel_summary"].write_text(
+            json.dumps(per_kernel, indent=2) + "\n", encoding="utf-8"
+        )
+        with self.assertRaises(InferenceEvidenceGateError) as ctx:
+            build_receipt(
+                source_doppler_manifest=paths["manifest"],
+                frozen_reference_root=paths["reference_root"],
+                compile_receipt=paths["compile_receipt"],
+                host_plan=paths["host_plan"],
+                per_kernel_summary=paths["per_kernel_summary"],
+                prefill_token_count=19,
+                decode_token_count=2,
+                streaming_trace=paths["streaming_trace"],
+            )
+        codes = {r.code for r in ctx.exception.result.reasons}
+        self.assertTrue(
+            {
+                "dispatch_evidence_lm_head_missing",
+                "dispatch_evidence_lm_head_unbound",
+            }
+            & codes
+        )
+
+    def test_synthesizer_rejects_inventory_mismatch(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        inventory_path = Path(self.tmp.name) / "source-graph-inventory.json"
+        _write_json(
+            inventory_path,
+            {
+                "schemaVersion": 1,
+                "artifactKind": "doe_source_graph_inventory",
+                "requiredKernels": [
+                    "embed", "lm_head_gemv", "sample", "rmsnorm",
+                ],
+                "prefillTail": ["embed"],
+                "decodeTail": ["lm_head_gemv", "sample"],
+            },
+        )
+        with self.assertRaises(InferenceEvidenceGateError) as ctx:
+            build_receipt(
+                source_doppler_manifest=paths["manifest"],
+                frozen_reference_root=paths["reference_root"],
+                compile_receipt=paths["compile_receipt"],
+                host_plan=paths["host_plan"],
+                per_kernel_summary=paths["per_kernel_summary"],
+                source_graph_inventory=inventory_path,
+                prefill_token_count=19,
+                decode_token_count=2,
+                streaming_trace=paths["streaming_trace"],
+            )
+        codes = {r.code for r in ctx.exception.result.reasons}
+        self.assertIn("target_inventory_mismatch", codes)
+
+    def test_synthesizer_accepts_matching_inventory(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        inventory_path = Path(self.tmp.name) / "source-graph-inventory.json"
+        _write_json(
+            inventory_path,
+            {
+                "schemaVersion": 1,
+                "artifactKind": "doe_source_graph_inventory",
+                "requiredKernels": ["embed", "lm_head_gemv", "sample"],
+                "prefillTail": ["embed"],
+                "decodeTail": ["lm_head_gemv", "sample"],
+            },
+        )
+        receipt = build_receipt(
+            source_doppler_manifest=paths["manifest"],
+            frozen_reference_root=paths["reference_root"],
+            compile_receipt=paths["compile_receipt"],
+            host_plan=paths["host_plan"],
+            per_kernel_summary=paths["per_kernel_summary"],
+            source_graph_inventory=inventory_path,
+            prefill_token_count=19,
+            decode_token_count=2,
+            streaming_trace=paths["streaming_trace"],
+        )
+        self.assertEqual(receipt["artifactKind"], ARTIFACT_KIND)
+        inventory = receipt.get("sourceProgram", {}).get("sourceGraphInventory")
+        if inventory is None:
+            inventory = receipt.get("sourceGraphInventory")
+        self.assertIsNotNone(inventory)
+        self.assertTrue(inventory.get("present"))
+        self.assertEqual(
+            inventory.get("requiredKernels"),
+            ["embed", "lm_head_gemv", "sample"],
+        )
+
+    def test_inference_evidence_gate_rejects_current_unbound_lm_head(self) -> None:
+        if not REAL_HOST_PLAN_PATH.is_file() or not REAL_PER_KERNEL_SUMMARY_PATH.is_file():
+            self.skipTest("real af16 23-target artifacts not present")
+        host_plan = json.loads(REAL_HOST_PLAN_PATH.read_text(encoding="utf-8"))
+        per_kernel = json.loads(
+            REAL_PER_KERNEL_SUMMARY_PATH.read_text(encoding="utf-8")
+        )
+        result = evaluate_inference_evidence_gate(
+            host_plan=host_plan,
+            per_kernel_summary=per_kernel,
+        )
+        self.assertFalse(result.eligible, msg=[r.code for r in result.reasons])
+        codes = {r.code for r in result.reasons}
+        self.assertIn("dispatch_evidence_lm_head_missing", codes)
 
 
 if __name__ == "__main__":

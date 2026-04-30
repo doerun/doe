@@ -38,6 +38,10 @@ from bench.tools._receipt_hash_guard import (  # noqa: E402
     ReceiptHashSpineError,
     enforce_receipt_hash_spine,
 )
+from bench.tools._inference_evidence_gate import (  # noqa: E402
+    InferenceEvidenceGateError,
+    enforce_inference_evidence_gate,
+)
 
 MODEL_ID = "gemma-4-31b-it-text-q4k-ehf16-af16"
 LANE_KEY = "q4k-ehf16-af16"
@@ -55,6 +59,11 @@ DEFAULT_COMPILE_RECEIPT = (
 DEFAULT_HOST_PLAN = (
     REPO_ROOT
     / "bench/out/r3-1-31b-af16-manifest-fullgraph-compile-steps/host-plan.json"
+)
+DEFAULT_SOURCE_GRAPH_INVENTORY = (
+    REPO_ROOT
+    / "bench/out/r3-1-31b-af16-manifest-fullgraph-compile-steps/"
+    "source-graph-inventory.json"
 )
 DEFAULT_PER_KERNEL_SUMMARY = (
     REPO_ROOT
@@ -96,6 +105,11 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_COMPILE_RECEIPT,
     )
     parser.add_argument("--host-plan", type=Path, default=DEFAULT_HOST_PLAN)
+    parser.add_argument(
+        "--source-graph-inventory",
+        type=Path,
+        default=DEFAULT_SOURCE_GRAPH_INVENTORY,
+    )
     parser.add_argument(
         "--per-kernel-summary",
         type=Path,
@@ -288,6 +302,36 @@ def _per_kernel_summary(summary_path: Path) -> dict[str, Any]:
     }
 
 
+def _source_graph_inventory(
+    source_graph_inventory_path: Path,
+) -> dict[str, Any]:
+    path = _resolve(source_graph_inventory_path)
+    if not path.is_file():
+        return {
+            "path": _display_path(source_graph_inventory_path),
+            "present": False,
+            "requiredKernels": None,
+        }
+    payload = _load_json(path)
+    kernels = payload.get("requiredKernels")
+    required_kernels = (
+        [str(item) for item in kernels if str(item)]
+        if isinstance(kernels, list)
+        else None
+    )
+    return {
+        "path": _display_path(path),
+        "sha256": _sha256_file(path),
+        "present": True,
+        "artifactKind": payload.get("artifactKind"),
+        "source": payload.get("source"),
+        "sourceGraphSha256": payload.get("sourceGraphSha256"),
+        "requiredKernels": required_kernels,
+        "prefillTail": payload.get("prefillTail") or [],
+        "decodeTail": payload.get("decodeTail") or [],
+    }
+
+
 def _streaming_trace_summary(streaming_trace_path: Path) -> dict[str, Any]:
     path = _resolve(streaming_trace_path)
     if not path.is_file():
@@ -384,6 +428,7 @@ def build_receipt(
     per_kernel_summary: Path,
     prefill_token_count: int,
     decode_token_count: int,
+    source_graph_inventory: Path | None = None,
     streaming_trace: Path = DEFAULT_STREAMING_TRACE,
 ) -> dict[str, Any]:
     for label, path in (
@@ -394,6 +439,21 @@ def build_receipt(
         ("streaming runner", DEFAULT_STREAMING_RUNNER),
     ):
         _require_file(path, label)
+
+    source_inventory = (
+        _source_graph_inventory(source_graph_inventory)
+        if source_graph_inventory is not None
+        else {
+            "path": "",
+            "present": False,
+            "requiredKernels": None,
+        }
+    )
+    enforce_inference_evidence_gate(
+        host_plan=_load_json(host_plan),
+        per_kernel_summary=_load_json(per_kernel_summary),
+        source_graph_kernels=source_inventory.get("requiredKernels"),
+    )
 
     dtype_profile = _load_dtype_profile(source_doppler_manifest)
     reference = _reference_summary(
@@ -441,6 +501,7 @@ def build_receipt(
             "hostPlanHash": host_plan_info["sha256"],
             "peGrid": host_plan_info["peGrid"],
             "phaseKernelCounts": host_plan_info["phaseKernelCounts"],
+            "sourceGraphInventory": source_inventory,
         },
         "perKernelEvidence": kernel_info,
         "hostPlanStreamingTrace": streaming_info,
@@ -507,6 +568,7 @@ def main() -> int:
             compile_receipt=args.compile_receipt,
             host_plan=args.host_plan,
             per_kernel_summary=args.per_kernel_summary,
+            source_graph_inventory=args.source_graph_inventory,
             streaming_trace=args.streaming_trace,
             prefill_token_count=args.prefill_token_count,
             decode_token_count=args.decode_token_count,
@@ -517,6 +579,7 @@ def main() -> int:
         ValueError,
         LaneDtypeProfileError,
         ReceiptHashSpineError,
+        InferenceEvidenceGateError,
         jsonschema.ValidationError,
     ) as err:
         sys.stderr.write(

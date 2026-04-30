@@ -34,6 +34,7 @@ pub const emit_csl_rope = @import("emit_csl_rope.zig");
 pub const emit_csl_dequant = @import("emit_csl_dequant.zig");
 pub const emit_csl_sample = @import("emit_csl_sample.zig");
 pub const emit_csl_fused = @import("emit_csl_fused.zig");
+pub const emit_csl_dense_gemv = @import("emit_csl_dense_gemv.zig");
 pub const emit_csl_linear_attn = @import("emit_csl_linear_attn.zig");
 pub const emit_csl_kv_cache = @import("emit_csl_kv_cache.zig");
 pub const emit_csl_fused_ffn = @import("emit_csl_fused_ffn.zig");

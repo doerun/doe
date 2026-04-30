@@ -16,6 +16,7 @@ const dequant = @import("emit_csl_dequant.zig");
 const sample = @import("emit_csl_sample.zig");
 const fused = @import("emit_csl_fused.zig");
 const fused_ffn = @import("emit_csl_fused_ffn.zig");
+const dense_gemv = @import("emit_csl_dense_gemv.zig");
 const semantic_ops = @import("emit_csl_semantic_ops.zig");
 const validate = @import("emit_csl_validate.zig");
 const spec = @import("csl_spec.zig");
@@ -60,6 +61,9 @@ pub fn emitPatternSectionsForElem(
     elem: ir.ScalarType,
     out: []u8,
 ) EmitError!CompileSourceSections {
+    if (std.mem.eql(u8, pattern, "dense_gemv")) {
+        return emitDenseGemvSections(out);
+    }
     if (semantic_ops.isSemanticPattern(pattern)) {
         return emitSemanticPatternSectionsForElem(pattern, elem, out);
     }
@@ -86,6 +90,25 @@ pub fn emitPatternSectionsForElem(
     const validation = validate.validatePattern(out[0..pos], validation_kind);
     if (!validation.valid) return error.InvalidIr;
 
+    const combined = out[0..pos];
+    return .{
+        .combined = combined,
+        .layout = sectionBody(combined, spec.LAYOUT_FILENAME) orelse return error.InvalidIr,
+        .pe_program = sectionBody(combined, spec.PE_PROGRAM_FILENAME) orelse return error.InvalidIr,
+    };
+}
+
+fn emitDenseGemvSections(out: []u8) EmitError!CompileSourceSections {
+    var pos: usize = 0;
+
+    try writeSection(out, &pos, spec.LAYOUT_FILENAME);
+    try dense_gemv.emitLayout(out, &pos);
+
+    try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
+    try dense_gemv.emitPeProgram(out, &pos);
+
+    const validation = validate.validatePattern(out[0..pos], .dense_gemv);
+    if (!validation.valid) return error.InvalidIr;
     const combined = out[0..pos];
     return .{
         .combined = combined,
@@ -235,6 +258,7 @@ fn validationKind(pattern: []const u8) EmitError!validate.PatternKind {
     if (std.mem.eql(u8, pattern, "dequant")) return .dequant;
     if (std.mem.eql(u8, pattern, "sample")) return .sample;
     if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) return .fused_gemv_dequant;
+    if (std.mem.eql(u8, pattern, "dense_gemv")) return .dense_gemv;
     if (std.mem.eql(u8, pattern, "kv_write")) return .kv_write;
     if (std.mem.eql(u8, pattern, "kv_read")) return .kv_read;
     if (std.mem.eql(u8, pattern, "fused_ffn")) return .fused_ffn;
@@ -682,8 +706,9 @@ test "host compile source routes af16 lane into f16 CSL source" {
     const sample_sections = try emitPatternSectionsForElem(std.testing.allocator, "sample", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "-65504.0") != null);
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "-3.4028235e+38") == null);
-    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "var scratch_in: [2]u32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "var scratch_in") == null);
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "@bitcast(u32, scratch_in[1])") == null);
+    try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "output_token[0] = local_max_idx;") != null);
 
     const gemv = try emitPatternSectionsForElem(std.testing.allocator, "fused_gemv_dequant", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, gemv.combined, "f32") == null);

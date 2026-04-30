@@ -56,13 +56,13 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 
 These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the Cerebras simulator:
 
-1. Manifest-driven lm-head resolver: select a Q4K lm-head only when `lm_head.weight` exists; select tied F16 dense output only when `embed_tokens.weight` is a valid tied output tensor; otherwise emit a typed hard error.
-2. F16 dense tied lm-head kernel: implement the full-vocabulary logits producer with padded embedding handling instead of treating tied embeddings as Q4K weights.
-3. Explicit post-prefill and post-decode logits path: execution-v1 and HostPlan lowering must preserve final norm, lm-head, and sample for both prefill-generated and decode-generated tokens.
-4. Sample binding contract: every sample launch must consume the immediately preceding compatible logits producer, with dtype, shape, and layout validated; missing or incompatible logits is a typed blocker.
-5. Real session runtime: stage real weights, bind host I/O layout, launch serial kernels, carry KV cache state, feed sampled tokens into the next step, and emit logits/token transcript evidence.
-6. Artifact regeneration: regenerate HostPlan, compile receipts, per-kernel receipts, streaming traces, and bounded inference receipts; mark older pre-logits HostPlan families as superseded for inference claims.
-7. Regression gates: add fail-closed tests for graph-to-HostPlan inventory mismatch, sample-without-logits, invalid lm-head dtype selection, and prefill/decode feedback coverage.
+1. **Landed in source:** manifest-driven lm-head resolver rejects Q4K lm-head selection unless an explicit `lm_head.weight` exists, and accepts tied dense F16/BF16/F32 only through `embed_tokens.weight`.
+2. **Landed in source:** tied dense lm-head routes through the full-vocabulary `lm_head_prefill_stable` SUMMA target with one-row logits tiles and F16-to-F32 weight staging.
+3. **Landed in source:** the Gemma 4 31B execution-v1 smoke graph carries explicit final-norm / lm-head / sample tails for both prefill-generated and decode-generated tokens.
+4. **Landed in source:** HostPlan lowering rejects `sample` unless the immediately preceding same-phase step is a compatible logits producer; compute after same-phase sample also fails closed.
+5. **Open runtime step:** real session runtime must stage real weights, bind host I/O layout, launch serial kernels, carry KV cache state, feed sampled tokens into the next step, and emit logits/token transcript evidence.
+6. **Open artifact step:** regenerate HostPlan, compile receipts, per-kernel receipts, streaming traces, and bounded inference receipts; mark older pre-logits HostPlan families as superseded for inference claims.
+7. **Partially landed:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, and prefill/decode feedback shape; runtime/evidence tests still need regenerated artifacts.
 
 ## Integrity invariants
 

@@ -13,6 +13,32 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-29 — Gemma 4 31B af16 token-output contract gate lands
+
+The Gemma 4 31B execution-v1 smoke graph now carries explicit
+`final_norm -> lm_head -> sample` tails for both prefill-generated and
+decode-generated tokens. The lm-head route no longer treats tied F16
+`embed_tokens.weight` as a Q4K `lm_head.weight`; the runner-side resolver
+accepts tied dense F16/BF16/F32 embeddings only for the dense lm-head path and
+rejects Q4K lm-head selection unless an explicit Q4K `lm_head.weight` exists.
+
+HostPlan lowering now allows `sample` in prefill or decode only after an
+immediately preceding same-phase logits producer, and rejects compute after a
+same-phase sample. The tied dense route uses the full-vocabulary
+`lm_head_prefill_stable` SUMMA compile target; the generated target for the
+31B smoke graph covers the vocabulary with one-row logits tiles.
+
+Focused coverage now includes sample-without-logits, explicit prefill/decode
+logits tails, compute-after-sample rejection, invalid tied-F16-vs-Q4K lm-head
+selection, and prefill/decode dispatch expansion. `zig build test-wgsl`,
+`zig build csl-host-plan-tool`, and the focused Python runner/receipt tests
+pass locally.
+
+The remaining open gate is runtime/evidence: stage real weights, bind host
+I/O, run the serial HostPlan with KV state and sample feedback, then
+regenerate HostPlan-derived receipts. Older pre-logits HostPlan families stay
+superseded for token-output inference claims.
+
 ## 2026-04-29 — Gemma 4 31B af16 token-output evidence is fail-closed
 
 The Gemma 4 31B af16 HostPlan family that ends at `sample` without an explicit

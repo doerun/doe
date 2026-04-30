@@ -6,6 +6,8 @@ const host_plan = wgsl.emit_csl_host_plan;
 const host_runtime = wgsl.emit_csl_host_runtime;
 const mem_plan = wgsl.emit_csl_mem_plan;
 const simulator = wgsl.emit_csl_simulator;
+const csl_spec = @import("doe_wgsl/csl_spec.zig");
+const dense_gemv_host_plan = @import("csl_dense_gemv_host_plan.zig");
 const materialize = @import("csl_host_plan_materialize.zig");
 const Mode = enum {
     steps,
@@ -469,6 +471,9 @@ fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_pl
     if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
     }
+    if (std.mem.eql(u8, pattern, "dense_gemv")) {
+        return .{ .target_phase = target_phase, .bindings = &dense_gemv_host_plan.BINDINGS };
+    }
     return null;
 }
 fn compileTargetParams(
@@ -503,14 +508,27 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "tokens_per_chunk", @min(config.max_seq_len, @as(u32, 16)));
     } else if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         const is_ple = std.mem.startsWith(u8, target_name, "ple_");
-        const tile = if (is_ple) @as(u32, 16) else ceilDivU32(config.hidden_dim, 32);
-        const block = if (is_ple) @as(u32, 16) else @as(u32, 32);
+        const tile = if (is_ple)
+            @as(u32, 16)
+        else
+            ceilDivU32(config.hidden_dim, 32);
+        const block_m = if (is_ple) @as(u32, 16) else @as(u32, 32);
+        const block_k = block_m;
+        const block_n = block_m;
         try appendParam(allocator, &params, "width", tile);
         try appendParam(allocator, &params, "height", tile);
         try appendParam(allocator, &params, "P", tile);
-        try appendParam(allocator, &params, "Mt", block);
-        try appendParam(allocator, &params, "Kt", block);
-        try appendParam(allocator, &params, "Nt", block);
+        try appendParam(allocator, &params, "Mt", block_m);
+        try appendParam(allocator, &params, "Kt", block_k);
+        try appendParam(allocator, &params, "Nt", block_n);
+    } else if (std.mem.eql(u8, pattern, "dense_gemv")) {
+        const height = dense_gemv_host_plan.height(config.vocab_size);
+        const width = dense_gemv_host_plan.width(config.hidden_dim);
+        try appendParam(allocator, &params, "width", width);
+        try appendParam(allocator, &params, "height", height);
+        try appendParam(allocator, &params, "out_dim", config.vocab_size);
+        try appendParam(allocator, &params, "out_dim_per_pe", ceilDivU32(config.vocab_size, height));
+        try appendParam(allocator, &params, "in_dim_per_pe", dense_gemv_host_plan.inDimPerPe(config.hidden_dim));
     } else if (std.mem.eql(u8, pattern, "rms_norm") or
         std.mem.eql(u8, pattern, "reduction"))
     {
@@ -883,6 +901,43 @@ test "buildCompileTargets uses vocab output width for lm_head GEMV" {
     try std.testing.expectEqualStrings("lm_head_gemv_stable", targets[1].kernel_name);
     try std.testing.expectEqual(@as(u32, 64), targets[1].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 16), targets[1].compile_params[3].value);
+}
+test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const plan = host.HostPlan{
+        .pe_grid_width = 8,
+        .pe_grid_height = 4,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "lm_head_prefill_stable", .pattern = "dense_gemv", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    const config = host.ModelConfig{
+        .hidden_dim = 5120,
+        .num_heads = 32,
+        .head_dim = 160,
+        .num_layers = 1,
+        .vocab_size = 262144,
+        .max_seq_len = 16,
+        .quant_format = .q4k,
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, &target_buf);
+    try std.testing.expectEqual(@as(usize, 1), targets.len);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable", targets[0].kernel_name);
+    try std.testing.expectEqual(@as(u32, 160), targets[0].compile_params[0].value);
+    try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[1].value);
+    try std.testing.expectEqual(@as(u32, 262144), targets[0].compile_params[2].value);
+    try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[3].value);
+    try std.testing.expectEqual(@as(u32, 32), targets[0].compile_params[4].value);
+    const metadata = targets[0].metadata orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqualStrings("activation", metadata.bindings[0].symbol);
+    try std.testing.expectEqualStrings("weight", metadata.bindings[1].symbol);
+    try std.testing.expectEqualStrings("output", metadata.bindings[2].symbol);
+    try std.testing.expectEqualStrings("f16", metadata.bindings[0].elem_type);
+    try std.testing.expectEqualStrings("f32", metadata.bindings[2].elem_type);
 }
 test "buildCompileTargets uses Qwen linear SSM dims with state-sharded linear_attention" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

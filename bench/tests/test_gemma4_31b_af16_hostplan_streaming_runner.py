@@ -56,7 +56,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
             "quantizationInfo": {
                 "weights": "q4k",
                 "embeddings": "f16",
-                "lmHead": "q4k",
+                "lmHead": "f16",
                 "compute": "f16",
                 "variantTag": "q4k-ehf16-af16",
             },
@@ -72,7 +72,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
             "tensors": {
                 "model.language_model.embed_tokens.weight": {
                     "dtype": "F16",
-                    "shape": [4, 2],
+                    "shape": [8, 4],
                     "shard": 0,
                     "offset": 0,
                     "size": 16,
@@ -106,15 +106,6 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                     "role": "rmsnorm",
                     "layout": "row_major",
                 },
-                "model.language_model.lm_head.weight": {
-                    "dtype": "Q4_K_M",
-                    "shape": [8, 4],
-                    "shard": 0,
-                    "offset": 0,
-                    "size": 16,
-                    "role": "lm_head",
-                    "layout": "q4k_row_major",
-                },
             },
         },
     )
@@ -145,6 +136,26 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                     "kernelKey": "rmsnorm",
                 },
                 {
+                    "name": "final_norm_prefill",
+                    "phase": "prefill",
+                    "op": "rmsnorm",
+                    "kernelKey": "rmsnorm",
+                    "weightsKey": "norm",
+                },
+                {
+                    "name": "lm_head_prefill",
+                    "phase": "prefill",
+                    "op": "matmul",
+                    "kernelKey": "lm_head_prefill_stable",
+                    "weightsKey": "lm_head",
+                },
+                {
+                    "name": "sample_prefill",
+                    "phase": "prefill",
+                    "op": "sample",
+                    "kernelKey": "sample",
+                },
+                {
                     "name": "q_proj",
                     "phase": "decode",
                     "op": "matmul_q4k",
@@ -161,8 +172,8 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                 {
                     "name": "lm_head",
                     "phase": "decode",
-                    "op": "matmul_q4k",
-                    "kernelKey": "lm_head_gemv_stable",
+                    "op": "matmul",
+                    "kernelKey": "lm_head_prefill_stable",
                     "weightsKey": "lm_head",
                 },
                 {
@@ -180,11 +191,16 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
         {
             "hostPlan": {
                 "phases": {
-                    "prefill": [{"kernelName": "embed"}],
+                    "prefill": [
+                        {"kernelName": "embed"},
+                        {"kernelName": "rmsnorm"},
+                        {"kernelName": "lm_head_prefill_stable"},
+                        {"kernelName": "sample"},
+                    ],
                     "decode": [
                         {"kernelName": "gemv"},
                         {"kernelName": "rmsnorm"},
-                        {"kernelName": "lm_head_gemv_stable"},
+                        {"kernelName": "lm_head_prefill_stable"},
                         {"kernelName": "sample"},
                     ],
                 }
@@ -311,25 +327,25 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                         },
                     },
                     {
-                        "name": "lm_head_gemv_stable",
-                        "layout": "lm_head_gemv_stable/layout.csl",
-                        "peProgram": "lm_head_gemv_stable/pe.csl",
+                        "name": "lm_head_prefill_stable",
+                        "layout": "lm_head_prefill_stable/layout.csl",
+                        "peProgram": "lm_head_prefill_stable/pe.csl",
                         "compileParams": {"width": 1, "height": 1},
                         "metadata": {
                             "bindings": [
                                 {
-                                    "symbol": "activation",
+                                    "symbol": "a",
                                     "elemType": "f16",
                                     "perPeShape": {"elements": "1"},
                                 },
                                 {
-                                    "symbol": "weight",
-                                    "elemType": "u8",
+                                    "symbol": "b",
+                                    "elemType": "f32",
                                     "perPeShape": {"elements": "1"},
                                 },
                                 {
-                                    "symbol": "output",
-                                    "elemType": "f16",
+                                    "symbol": "c",
+                                    "elemType": "f32",
                                     "perPeShape": {"elements": "1"},
                                 },
                             ]
@@ -360,7 +376,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
             "hostIoLayout": [],
         },
     )
-    for target in ("embed", "gemv", "rmsnorm", "lm_head_gemv_stable", "sample"):
+    for target in ("embed", "gemv", "rmsnorm", "lm_head_prefill_stable", "sample"):
         _write_json(
             root / "compile" / "compiled" / target / "out.json",
             {"params": {"width": 1, "height": 1}},
@@ -392,6 +408,43 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertEqual(plan["sizeMismatches"], [])
             self.assertEqual(plan["unresolvedWeightKeys"], [])
             self.assertEqual(plan["resolvedWeightCount"], plan["requiredWeightCount"])
+            lm_head = next(
+                item for item in plan["requiredWeights"]
+                if item["weightKey"] == "lm_head"
+            )
+            self.assertEqual(lm_head["resolutionKind"], "manifest_tied_dense_lm_head")
+            self.assertEqual(
+                lm_head["matchedTensor"],
+                "model.language_model.embed_tokens.weight",
+            )
+
+    def test_weight_staging_rejects_q4k_lm_head_against_tied_f16(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _materialize_fixture(Path(tmp))
+            smoke = json.loads(paths["smoke"].read_text(encoding="utf-8"))
+            for step in smoke["steps"]:
+                if step.get("name") in {"lm_head", "lm_head_prefill"}:
+                    step["op"] = "matmul_q4k"
+                    step["kernelKey"] = "lm_head_gemv_stable"
+            paths["smoke"].write_text(
+                json.dumps(smoke, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            plan = runner.build_weight_staging_plan(
+                manifest_path=paths["manifest"],
+                smoke_config_path=paths["smoke"],
+            )
+            self.assertIn("lm_head", plan["unresolvedWeightKeys"])
+            lm_head = next(
+                item for item in plan["requiredWeights"]
+                if item["weightKey"] == "lm_head"
+            )
+            self.assertEqual(
+                lm_head["resolutionKind"],
+                "invalid_lm_head_dtype_selection",
+            )
+            self.assertEqual(lm_head["actualDtype"], "F16")
 
     def test_dispatch_plan_expands_prefill_and_decode_steps(self) -> None:
         runner = _load_runner_module()
@@ -407,6 +460,9 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertEqual(plan["decodeTokenCount"], 2)
             self.assertGreater(plan["prefillStepCount"], 0)
             self.assertGreater(plan["decodeStepCount"], 0)
+            self.assertEqual(plan["prefillSteps"][-2]["name"], "lm_head_prefill")
+            self.assertEqual(plan["prefillSteps"][-1]["name"], "sample_prefill")
+            self.assertEqual(plan["decodeByToken"][0]["tokenIndex"], 1)
 
     def test_trace_records_current_blockers_without_refresh(self) -> None:
         runner = _load_runner_module()

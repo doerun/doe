@@ -201,6 +201,26 @@
       "kernelKey": "residual"
     },
     {
+      "name": "final_norm_prefill",
+      "phase": "prefill",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "norm"
+    },
+    {
+      "name": "lm_head_prefill",
+      "phase": "prefill",
+      "op": "matmul_q4k",
+      "kernelKey": "lm_head_gemv_stable",
+      "weightsKey": "lm_head"
+    },
+    {
+      "name": "sample_prefill",
+      "phase": "prefill",
+      "op": "sample",
+      "kernelKey": "sample"
+    },
+    {
       "name": "input_norm",
       "phase": "decode",
       "op": "rmsnorm",
@@ -355,6 +375,20 @@
       "phase": "decode",
       "op": "residual",
       "kernelKey": "residual"
+    },
+    {
+      "name": "final_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "norm"
+    },
+    {
+      "name": "lm_head",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "lm_head_gemv_stable",
+      "weightsKey": "lm_head"
     },
     {
       "name": "sample",

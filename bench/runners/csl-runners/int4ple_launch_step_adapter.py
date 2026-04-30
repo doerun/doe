@@ -163,6 +163,22 @@ def _summa_c_tiles_to_logical(
     return logical[:rows, :cols].reshape(-1).astype(host.dtype, copy=False)
 
 
+def _dense_gemv_row_shards_to_logits(
+    host: np.ndarray,
+    transform: dict[str, Any],
+) -> np.ndarray:
+    width = _required_positive_int(transform, "width")
+    height = _required_positive_int(transform, "height")
+    out_dim = _required_positive_int(transform, "outDim")
+    out_dim_per_pe = _required_positive_int(transform, "outDimPerPe")
+    expected = width * height * out_dim_per_pe
+    if host.size != expected:
+        raise ValueError(f"dense_gemv_output_size_mismatch:{host.size}!={expected}")
+    root_x = width - 1
+    logits = host.reshape(height, width, out_dim_per_pe)[:, root_x, :].reshape(-1)
+    return logits[:out_dim].astype(np.float32, copy=False)
+
+
 def main() -> int:
     args = parse_args()
     spec_path = Path(args.spec)
@@ -296,6 +312,8 @@ def main() -> int:
                 transform_kind = str(output_transform.get("kind") or "")
                 if transform_kind == "summa_tiles_to_logical_matrix":
                     saved_host = _summa_c_tiles_to_logical(host, output_transform)
+                elif transform_kind == "dense_gemv_row_shards_to_logits":
+                    saved_host = _dense_gemv_row_shards_to_logits(host, output_transform)
             path.parent.mkdir(parents=True, exist_ok=True)
             np.save(path, saved_host)
             outputs.append(

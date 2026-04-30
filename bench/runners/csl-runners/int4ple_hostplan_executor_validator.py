@@ -14,11 +14,18 @@ NO_PRODUCER_INPUT_ROLES = frozenset(
         "kv_cache",
         "position_encoding",
         "position",
+        "linear_attention_state",
         "uniform",
     }
 )
 PRODUCED_INPUT_ROLES = frozenset({"activation", "logits", "generated_tokens"})
-OUTPUT_ROLES = frozenset({"activation", "logits", "generated_tokens"})
+OUTPUT_ROLES = frozenset({
+    "activation",
+    "logits",
+    "generated_tokens",
+    "kv_cache",
+    "linear_attention_state",
+})
 
 
 def _target_names(plan: dict[str, Any]) -> set[str]:

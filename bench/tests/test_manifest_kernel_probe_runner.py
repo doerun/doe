@@ -7,6 +7,7 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -342,6 +343,48 @@ class MaterializeProbeInputTest(unittest.TestCase):
             self.assertEqual(arr.tolist(), [16, 32, 48, 64, 16, 32, 48, 64])
             self.assertEqual(byte_len, path.stat().st_size)
 
+    def test_lm_head_probe_uses_device_zero_default_for_large_inputs(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            scratch = Path(tmp) / "scratch"
+            inputs, outputs, input_specs, output_specs, _, strategies = (
+                runner._materialize_inputs(
+                    kernel="lm_head_prefill_stable",
+                    target={"compileParams": {"width": 2, "height": 2}},
+                    metadata={
+                        "exports": [
+                            {
+                                "symbol": "activation",
+                                "elemType": "f16",
+                                "sizeExpr": "8",
+                            },
+                            {
+                                "symbol": "weight",
+                                "elemType": "u8",
+                                "sizeExpr": "16",
+                            },
+                            {
+                                "symbol": "c",
+                                "elemType": "f16",
+                                "sizeExpr": "8",
+                            },
+                        ]
+                    },
+                    probe_inputs={},
+                    scratch_dir=scratch,
+                )
+            )
+        self.assertEqual(input_specs, [])
+        self.assertEqual(len(output_specs), 1)
+        self.assertEqual(strategies["activation"], "device_zero_default")
+        self.assertEqual(strategies["weight"], "device_zero_default")
+        records_by_symbol = {record["symbol"]: record for record in inputs}
+        self.assertIsNone(records_by_symbol["activation"]["path"])
+        self.assertIsNone(records_by_symbol["weight"]["path"])
+        self.assertEqual(records_by_symbol["activation"]["totalBytes"], 0)
+        self.assertEqual(records_by_symbol["weight"]["totalBytes"], 0)
+        self.assertEqual(outputs[0]["symbol"], "c")
+
 
 class AdapterDtypeTokenTest(unittest.TestCase):
     def test_f32_passthrough(self) -> None:
@@ -377,6 +420,27 @@ class AdapterDtypeTokenTest(unittest.TestCase):
 
 
 class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
+    def test_parse_args_allows_device_default_inputs(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "chain_step_adapter.py",
+                "--compile-dir",
+                "compiled/lm_head",
+                "--width",
+                "2",
+                "--chunk-size",
+                "4",
+                "--output",
+                "output:/tmp/output.npy:f32:4",
+            ],
+        ):
+            args = adapter.parse_args()
+        self.assertEqual(args.input, [])
+        self.assertEqual(args.output, ["output:/tmp/output.npy:f32:4"])
+
     def test_f16_h2d_uses_32bit_packed_payload(self) -> None:
         adapter = _load_chain_step_adapter_module()
         import numpy as np

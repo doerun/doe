@@ -1,7 +1,7 @@
 #!/usr/bin/env cs_python
 """Generic single-step kernel adapter for the subprocess chain driver.
 
-Reads one or more input .npy tensors, memcpy_h2d's them to the named
+Reads zero or more input .npy tensors, memcpy_h2d's them to the named
 device symbols of a compiled CSL kernel, launches the kernel, then
 memcpy_d2h's the named output symbols into one or more output .npy
 files. Exits cleanly; the subprocess boundary resets SDK global state
@@ -87,7 +87,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument("--chunk-size", type=int, required=True)
-    p.add_argument("--input", action="append", required=True)
+    p.add_argument("--input", action="append", default=[])
     p.add_argument("--output", action="append", required=True)
     p.add_argument("--cmaddr", default="")
     return p.parse_args()

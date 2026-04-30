@@ -17,7 +17,7 @@ from int4ple_binding_metadata import (
 
 _ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({"rmsnorm", "residual", "gelu"})
 _SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
-_SUMMA_TARGETS = frozenset({"tiled", "lm_head_prefill_stable"})
+_SUMMA_TARGETS = frozenset({"tiled"})
 
 
 def _resolve_phase_variant_target(
@@ -244,7 +244,7 @@ def _compile_time_from_metadata(metadata_path: Path) -> dict[str, int]:
 
 
 def _memcpy_data_type(elem_type: str) -> str:
-    if elem_type in {"f16", "u16", "i16"}:
+    if elem_type in {"u16", "i16"}:
         return "MEMCPY_16BIT"
     return "MEMCPY_32BIT"
 
@@ -377,6 +377,85 @@ def _summa_output_transform(
     }
 
 
+def _dense_gemv_params(compile_params: dict[str, int]) -> dict[str, int] | None:
+    width = _int_field(compile_params.get("width"))
+    height = _int_field(compile_params.get("height"))
+    out_dim = _int_field(compile_params.get("out_dim"))
+    out_dim_per_pe = _int_field(compile_params.get("out_dim_per_pe"))
+    in_dim_per_pe = _int_field(compile_params.get("in_dim_per_pe"))
+    if None in {width, height, out_dim, out_dim_per_pe, in_dim_per_pe}:
+        return None
+    return {
+        "width": int(width),
+        "height": int(height),
+        "outDim": int(out_dim),
+        "outDimPerPe": int(out_dim_per_pe),
+        "inDimPerPe": int(in_dim_per_pe),
+    }
+
+
+def _dense_gemv_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    runtime_config: dict[str, Any],
+    weight_item: dict[str, Any] | None,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if target_name != "lm_head_prefill_stable":
+        return source_transform
+    params = _dense_gemv_params(compile_params)
+    if params is None:
+        return source_transform
+    symbol_key = symbol.lower()
+    if symbol_key == "activation" and role == "activation":
+        hidden_dim = _model_hidden_dim(runtime_config)
+        if hidden_dim <= 0:
+            return source_transform
+        return {
+            "kind": "logical_vector_to_dense_gemv_activation_shards",
+            "sourceDtype": "f16",
+            "targetDtype": "f16",
+            "sourceElements": hidden_dim,
+            **params,
+        }
+    if symbol_key == "weight" and role == "weight" and weight_item is not None:
+        shape = _normalized_shape(weight_item.get("shape") or [])
+        if len(shape) < 2:
+            return source_transform
+        return {
+            "kind": "tied_f16_embedding_to_dense_gemv_shards",
+            "sourceDtype": str(weight_item.get("dtype") or ""),
+            "targetDtype": "f16",
+            "sourceRows": shape[0],
+            "sourceCols": shape[1],
+            "logicalCols": _model_hidden_dim(runtime_config),
+            **params,
+        }
+    return source_transform
+
+
+def _dense_gemv_output_transform(
+    *,
+    symbol: str,
+    target_name: str,
+    compile_params: dict[str, int],
+) -> dict[str, Any] | None:
+    if target_name != "lm_head_prefill_stable" or symbol.lower() != "output":
+        return None
+    params = _dense_gemv_params(compile_params)
+    if params is None:
+        return None
+    return {
+        "kind": "dense_gemv_row_shards_to_logits",
+        "sourceDtype": "f32",
+        "targetDtype": "f32",
+        **params,
+    }
+
+
 def _memcpy_element_count(elem_type: str, raw_element_count: int) -> int:
     if elem_type == "u8":
         return max(1, (raw_element_count + 3) // 4)
@@ -406,7 +485,7 @@ def _target_geometry(
         "sample",
     }:
         height = 1
-    if target_name in {"tiled", "lm_head_prefill_stable"}:
+    if target_name == "tiled":
         tiled_p = int(compile_params.get("P") or 0)
         width = tiled_p
         height = tiled_p
@@ -541,6 +620,15 @@ def _binding_materialization(
         weight_item=weight_item,
         source_transform=source_transform,
     )
+    source_transform = _dense_gemv_source_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        runtime_config=runtime_config,
+        weight_item=weight_item,
+        source_transform=source_transform,
+    )
     if source_transform is None and isinstance(metadata_staging, dict):
         source_transform = metadata_staging
     output_transform = _summa_output_transform(
@@ -552,6 +640,13 @@ def _binding_materialization(
     metadata_detile = (binding_metadata or {}).get("detileTransform")
     if output_transform is None and isinstance(metadata_detile, dict):
         output_transform = metadata_detile
+    dense_output_transform = _dense_gemv_output_transform(
+        symbol=symbol,
+        target_name=target_name,
+        compile_params=compile_params,
+    )
+    if dense_output_transform is not None:
+        output_transform = dense_output_transform
     element_byte_width = _dtype_byte_width(dtype)
     planned_elements = elements_per_pe * target_geometry["peCount"]
     planned_bytes = planned_elements * element_byte_width

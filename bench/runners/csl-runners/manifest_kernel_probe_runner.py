@@ -101,6 +101,8 @@ PROBE_TRANSCRIPT_ALIASES = {
     "gelu_decode": "gelu",
     "gelu_prefill": "gelu",
     "kv_write_shared": "kv_write",
+    "lm_head_gemv_stable": "lm_head_gemv",
+    "lm_head_prefill_stable": "lm_head_gemv",
     "o_gate": "silu_gated",
     "ple_proj": "tiled",
     "ple_rmsnorm": "rmsnorm",
@@ -108,6 +110,11 @@ PROBE_TRANSCRIPT_ALIASES = {
     "residual_prefill": "residual",
     "rmsnorm_decode": "rmsnorm",
     "rmsnorm_prefill": "rmsnorm",
+}
+
+DEVICE_ZERO_DEFAULT_INPUTS_BY_KERNEL = {
+    "lm_head_gemv_stable": {"activation", "weight"},
+    "lm_head_prefill_stable": {"activation", "weight"},
 }
 
 _LAYOUT_PARAM_DEFAULT_RE = re.compile(
@@ -624,6 +631,22 @@ def _materialize_inputs(
         elem_type = export.get("elemType", "f32")
         elem_bytes = ELEM_BYTES.get(elem_type, 4)
         symbol = export.get("symbol", "")
+        if symbol in DEVICE_ZERO_DEFAULT_INPUTS_BY_KERNEL.get(kernel, set()):
+            per_symbol_strategy[symbol] = "device_zero_default"
+            input_records.append(
+                {
+                    "symbol": symbol,
+                    "path": None,
+                    "elemType": elem_type,
+                    "elemBytes": elem_bytes,
+                    "perPeChunk": chunk,
+                    "totalElements": pe_count * chunk,
+                    "totalBytes": 0,
+                    "sha256": "",
+                    "probeStrategy": "device_zero_default",
+                }
+            )
+            continue
         path = scratch_dir / "in" / f"{symbol}.npy"
         probe_vals = probe_inputs.get(symbol)
         byte_len, strategy = materialize_probe_input(

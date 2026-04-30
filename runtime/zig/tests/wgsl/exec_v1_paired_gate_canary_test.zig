@@ -131,6 +131,7 @@ test "lowerJsonToHostPlan accepts paired-gate ops with inputsFrom" {
         \\    { "phase": "prefill", "op": "matmul", "kernelKey": "tiled_up", "weightsKey": "up_proj" },
         \\    { "phase": "prefill", "op": "silu_gated", "kernelKey": "silu_gated", "inputsFrom": ["tiled_gate", "tiled_up"] },
         \\    { "phase": "decode", "op": "attention", "kernelKey": "attn_decode" },
+        \\    { "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
         \\    { "phase": "decode", "op": "sample", "kernelKey": "sampler", "kind": "sample" }
         \\  ]
         \\}
@@ -144,7 +145,7 @@ test "lowerJsonToHostPlan accepts paired-gate ops with inputsFrom" {
 
     const plan = try exec_v1.lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode);
     try std.testing.expect(plan.prefill_launches.len == 7);
-    try std.testing.expect(plan.decode_launches.len == 2);
+    try std.testing.expect(plan.decode_launches.len == 3);
 
     var saw_o_gate = false;
     var saw_silu_gated = false;
