@@ -405,15 +405,16 @@ fn buildCompileTargets(
     allocator: std.mem.Allocator,
     plan: host.HostPlan,
     model_config: ?host.ModelConfig,
+    activation_elem: wgsl.ir.ScalarType,
     out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
-        try appendCompileTarget(allocator, plan, model_config, out, &count, kernel.name, kernel.name, kernel.pattern, null);
+        try appendCompileTarget(allocator, plan, model_config, activation_elem, out, &count, kernel.name, kernel.name, kernel.pattern, null);
         if (isPhaseSpecializedKernel(kernel.name)) {
             for (PHASE_TARGET_SUFFIXES) |suffix| {
                 const phase_name = try std.fmt.allocPrint(allocator, "{s}_{s}", .{ kernel.name, suffix });
-                try appendCompileTarget(allocator, plan, model_config, out, &count, phase_name, kernel.name, kernel.pattern, suffix);
+                try appendCompileTarget(allocator, plan, model_config, activation_elem, out, &count, phase_name, kernel.name, kernel.pattern, suffix);
             }
         }
     }
@@ -423,6 +424,7 @@ fn appendCompileTarget(
     allocator: std.mem.Allocator,
     plan: host.HostPlan,
     model_config: ?host.ModelConfig,
+    activation_elem: wgsl.ir.ScalarType,
     out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
     count: *usize,
     target_name: []const u8,
@@ -435,7 +437,7 @@ fn appendCompileTarget(
         .kernel_name = target_name,
         .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
         .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
-        .metadata = compileTargetMetadata(pattern, phase orelse "base"),
+        .metadata = try compileTargetMetadata(allocator, pattern, phase orelse "base", activation_elem),
         .compile_params = try compileTargetParams(allocator, plan, model_config, target_name, pattern, phase),
         .compile_blocked_reason = null,
         .phase = phase,
@@ -443,38 +445,59 @@ fn appendCompileTarget(
     };
     count.* += 1;
 }
-fn compileTargetMetadata(pattern: []const u8, target_phase: []const u8) ?host_plan.CompileTargetMetadata {
+fn compileTargetMetadata(
+    allocator: std.mem.Allocator,
+    pattern: []const u8,
+    target_phase: []const u8,
+    activation_elem: wgsl.ir.ScalarType,
+) !?host_plan.CompileTargetMetadata {
     if (std.mem.eql(u8, pattern, "rms_norm") or std.mem.eql(u8, pattern, "reduction")) {
-        return .{ .target_phase = target_phase, .bindings = &RMSNORM_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &RMSNORM_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "residual")) {
-        return .{ .target_phase = target_phase, .bindings = &RESIDUAL_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &RESIDUAL_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "gelu")) {
-        return .{ .target_phase = target_phase, .bindings = &GELU_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &GELU_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "gelu_gated") or
         std.mem.eql(u8, pattern, "silu_gated") or
         std.mem.eql(u8, pattern, "sigmoid_gated"))
     {
-        return .{ .target_phase = target_phase, .bindings = &GATED_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &GATED_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "l2_normalize")) {
-        return .{ .target_phase = target_phase, .bindings = &L2_NORMALIZE_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &L2_NORMALIZE_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "conv1d_depthwise")) {
-        return .{ .target_phase = target_phase, .bindings = &CONV1D_DEPTHWISE_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &CONV1D_DEPTHWISE_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "linear_attention")) {
-        return .{ .target_phase = target_phase, .bindings = &LINEAR_ATTENTION_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &LINEAR_ATTENTION_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "tiled_matmul")) {
-        return .{ .target_phase = target_phase, .bindings = &TILED_BINDINGS };
+        return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &TILED_BINDINGS, activation_elem) };
     }
     if (std.mem.eql(u8, pattern, "dense_gemv")) {
         return .{ .target_phase = target_phase, .bindings = &dense_gemv_host_plan.BINDINGS };
     }
     return null;
+}
+fn laneBindings(
+    allocator: std.mem.Allocator,
+    bindings: []const host_plan.BindingMetadata,
+    activation_elem: wgsl.ir.ScalarType,
+) ![]const host_plan.BindingMetadata {
+    if (activation_elem == .f32) return bindings;
+    if (activation_elem != .f16) return error.InvalidArgument;
+    const routed = try allocator.alloc(host_plan.BindingMetadata, bindings.len);
+    for (bindings, 0..) |binding, idx| {
+        routed[idx] = binding;
+        if (std.mem.eql(u8, binding.elem_type, "f32")) {
+            routed[idx].elem_type = "f16";
+        }
+    }
+    return routed;
 }
 fn compileTargetParams(
     allocator: std.mem.Allocator,
