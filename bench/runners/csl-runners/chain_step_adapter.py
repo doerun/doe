@@ -174,6 +174,13 @@ def _memcpy_buffer_for_d2h(
     )
 
 
+def _save_outputs(outputs: list[tuple[str, str, np.ndarray]]) -> None:
+    for symbol, path, arr in outputs:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        np.save(path, arr)
+        print(f"[adapter] wrote {symbol} -> {path} ({arr.dtype} shape={arr.shape})")
+
+
 def main() -> int:
     args = parse_args()
     width = args.width
@@ -223,12 +230,9 @@ def main() -> int:
             arr = arr.view(output_dtype).astype(output_dtype, copy=False)
         outputs.append((symbol, path, arr))
 
-    runner.stop()
+    _save_outputs(outputs)
 
-    for symbol, path, arr in outputs:
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        np.save(path, arr)
-        print(f"[adapter] wrote {symbol} → {path} ({arr.dtype} shape={arr.shape})")
+    runner.stop()
 
     return 0
 

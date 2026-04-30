@@ -10,9 +10,10 @@ This is a live topical status shard.
 Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing that was
 later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
-the Gemma 4 31B af16 HostPlan session path: PLE embedding copyback is now
-real-checkpointed, and the current local probe is validating the first PLE
-SUMMA projection handoff before lm-head/sample evidence can promote.
+the Gemma 4 31B af16 HostPlan session path: PLE embedding and early PLE SUMMA
+projection copyback are now real-checkpointed, and the current local probe is
+rerunning manifest-shape lm-head/sample dispatch before bounded evidence can
+promote.
 
 ## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
 
@@ -39,10 +40,20 @@ metadata to f16 bindings and moved binding metadata into
 
 Real-session PLE routing now records each layer's own PLE gather, projection,
 and norm buffers instead of chaining layer outputs across the PLE batch. The
-first fresh checkpoint probe under the patched runner is
-`bench/out/scratch/gemma4_31b_af16-checkpoint-f16-e2e-plefix`; it must reach
-`ple_proj` before this entry can claim that the previous
-`transform_field_missing:sourceCols` blocker is cleared.
+fresh checkpoint probe under the patched runner at
+`bench/out/scratch/gemma4_31b_af16-checkpoint-f16-e2e-plefix` has persisted
+real `ple_proj` launch receipts for layers 0 through 3, with the latest trace
+at
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt64.json`.
+The layer 0 and layer 1 traces are
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt61.json`
+and
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt62.json`.
+That clears the previous `transform_field_missing:sourceCols` blocker for the
+first PLE SUMMA projection handoff. The run remains checkpoint-stopped before
+token/logit/KV transcript completion. The manifest-shape per-kernel rerun is
+currently refreshing lm-head and sample dispatch; until it writes a summary
+with bound receipts, bounded-smoke regeneration remains fail-closed.
 
 Tracked sharding follow-up: Owner Doe Cerebras runner. Next split targets are
 to move HostPlan execution-plan materialization out of

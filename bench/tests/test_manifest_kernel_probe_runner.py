@@ -497,6 +497,19 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
                     pe_count=1,
                 )
 
+    def test_save_outputs_persists_before_shutdown_boundary(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "out" / "x.npy"
+            adapter._save_outputs(
+                [("x", str(path), np.array([1.0, 2.0], dtype=np.float32))]
+            )
+            saved = np.load(path)
+        self.assertEqual(saved.dtype, np.float32)
+        self.assertEqual(saved.tolist(), [1.0, 2.0])
+
 
 class CompileBindingsTest(unittest.TestCase):
     def test_merges_layout_defaults_metadata_constants_and_grid(self) -> None:
