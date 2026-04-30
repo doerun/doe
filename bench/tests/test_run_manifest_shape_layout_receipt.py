@@ -16,6 +16,7 @@ from bench.tools.run_manifest_shape_layout_receipt import (  # noqa: E402
     build_dispatch_command,
     build_kernel_receipt,
     classify_exports,
+    run_dispatch_subprocess,
     run_one_kernel,
     synthesize_zero_input,
     write_kernel_receipt,
@@ -100,6 +101,28 @@ class SynthesizeZeroInputTest(unittest.TestCase):
             self.assertEqual(arr.dtype, np.float32)
             self.assertTrue((arr == 0).all())
             self.assertGreater(byte_len, 0)
+
+
+class RunDispatchSubprocessTest(unittest.TestCase):
+    def test_non_positive_timeout_disables_subprocess_deadline(self) -> None:
+        import subprocess
+        from unittest import mock
+
+        completed = subprocess.CompletedProcess(
+            args=["true"],
+            returncode=0,
+            stdout="ok",
+            stderr="",
+        )
+        with mock.patch.object(
+            subprocess,
+            "run",
+            return_value=completed,
+        ) as run:
+            result = run_dispatch_subprocess(["true"], timeout_seconds=0)
+
+        self.assertEqual(result, (0, "ok", "", False))
+        self.assertIsNone(run.call_args.kwargs["timeout"])
 
 
 class BuildKernelReceiptTest(unittest.TestCase):

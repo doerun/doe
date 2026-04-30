@@ -463,6 +463,32 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
         self.assertEqual(memcpy_chunk, 1)
         self.assertEqual(payload.view(np.float16).tolist(), source.tolist())
 
+    def test_f16_h2d_uses_mmap_backed_payload_when_layout_matches(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            source = np.lib.format.open_memmap(
+                path,
+                mode="w+",
+                dtype=np.float16,
+                shape=(4,),
+            )
+            source[:] = [1.0, 2.0, 3.0, 4.0]
+            source.flush()
+            del source
+            payload, _, _ = adapter._memcpy_payload_for_h2d(
+                path=str(path),
+                dtype="f16",
+                chunk_size=2,
+                pe_count=2,
+            )
+        self.assertIsInstance(payload, np.memmap)
+        self.assertEqual(payload.dtype, np.uint32)
+        self.assertTrue(payload.flags.writeable)
+        self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
+
     def test_f16_d2h_uses_32bit_buffer_with_f16_output_dtype(self) -> None:
         adapter = _load_chain_step_adapter_module()
         import numpy as np

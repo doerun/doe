@@ -337,23 +337,40 @@ def materialize_probe_input(
     total = pe_count * per_pe_chunk
     target_path.parent.mkdir(parents=True, exist_ok=True)
     if not probe_values:
-        arr = np.zeros(total, dtype=dtype)
+        arr = np.lib.format.open_memmap(
+            target_path,
+            mode="w+",
+            dtype=dtype,
+            shape=(total,),
+        )
+        arr[:] = 0
+        arr.flush()
+        del arr
         strategy = "zero"
     else:
         source_arr = np.asarray(probe_values, dtype=dtype)
         if source_arr.size == 0:
-            arr = np.zeros(total, dtype=dtype)
+            arr = np.lib.format.open_memmap(
+                target_path,
+                mode="w+",
+                dtype=dtype,
+                shape=(total,),
+            )
+            arr[:] = 0
+            arr.flush()
+            del arr
             strategy = "zero"
         elif source_arr.size >= total:
             arr = source_arr[:total].astype(dtype, copy=False)
+            np.save(target_path, arr)
             strategy = "truncate"
         else:
             reps = (total + source_arr.size - 1) // source_arr.size
             arr = np.tile(source_arr, reps)[:total].astype(
                 dtype, copy=False
             )
+            np.save(target_path, arr)
             strategy = "tile"
-    np.save(target_path, arr)
     return target_path.stat().st_size, strategy
 
 

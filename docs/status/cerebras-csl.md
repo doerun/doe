@@ -14,7 +14,7 @@ the Gemma 4 31B af16 HostPlan session path: PLE embedding and early PLE SUMMA
 projection copyback are now real-checkpointed, sample per-kernel dispatch is
 bound, and lm-head dispatch remains the token-output evidence blocker.
 
-## 2026-04-30 — f16 dtype gate v2 and checkpoint 70 evidence
+## 2026-04-30 — f16 dtype gate v2 and checkpoint 80 evidence
 
 `config/doe-csl-dtype-contracts.json` is now schema version 2. The schema
 requires Gemma `q4k-ehf16-af16` and Qwen `q4k-eaf16` f16 CSL contracts to
@@ -33,9 +33,9 @@ with the v2 `cslDtypeContract` and `inferenceEvidenceGate` result. Its only
 dispatch gate reason is `dispatch_evidence_lm_head_unbound`; session and
 transcript blockers remain.
 
-The real Gemma HostPlan checkpoint resume advanced from the previous PLE
-projection checkpoint to
-`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json`.
+The real Gemma HostPlan checkpoint resume advanced through additional PLE
+projection checkpoints to
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json`.
 That scratch trace is `checkpoint_stopped`; it is not transcript evidence and
 does not bind the final_norm -> lm_head -> sample path.
 

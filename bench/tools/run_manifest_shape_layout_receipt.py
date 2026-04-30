@@ -316,7 +316,7 @@ def run_dispatch_subprocess(
             command,
             capture_output=True,
             text=True,
-            timeout=timeout_seconds,
+            timeout=None if timeout_seconds <= 0 else timeout_seconds,
             env=env or os.environ.copy(),
             cwd=str(REPO_ROOT),
         )

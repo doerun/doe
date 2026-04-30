@@ -31,7 +31,7 @@ token-output success receipt.
 
 **Checkpointed session scratch trace.** The latest local real-session scratch
 trace is
-[`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json`](../bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json).
+[`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json`](../bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt80.json).
 It records checkpointed HostPlan execution progress and remains
 `checkpoint_stopped`; no WSE or transcript claim follows from it.
 

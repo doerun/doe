@@ -52,6 +52,13 @@ DTYPE_MAP = {
 }
 
 
+def _load_writeable_mmap_or_copy(path: str) -> np.ndarray:
+    try:
+        return np.load(path, mmap_mode="r+").ravel()
+    except (OSError, ValueError):
+        return np.load(path, mmap_mode="r").ravel()
+
+
 def parse_spec(spec: str) -> tuple[str, str, str, int | None]:
     parts = spec.split(":")
     if len(parts) == 2:
@@ -102,12 +109,18 @@ def _memcpy_payload_for_h2d(
                 f"f16 chunk_size {chunk_size} must be even for "
                 "MEMCPY_32BIT byte-preserving transfer"
             )
-        raw = np.ascontiguousarray(np.load(path).ravel(), dtype=np.float16)
+        raw = _load_writeable_mmap_or_copy(path)
         expected = pe_count * chunk_size
         if raw.size != expected:
             raise ValueError(
                 f"f16 tensor {path} has {raw.size} elements, expected {expected}"
             )
+        if (
+            raw.dtype != np.float16
+            or not raw.flags.c_contiguous
+            or not raw.flags.writeable
+        ):
+            raw = np.ascontiguousarray(raw, dtype=np.float16)
         return (
             raw.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,
@@ -119,12 +132,18 @@ def _memcpy_payload_for_h2d(
                 f"u8 chunk_size {chunk_size} must be 4-aligned for "
                 "MEMCPY_32BIT byte-preserving transfer"
             )
-        raw = np.ascontiguousarray(np.load(path).ravel(), dtype=np.uint8)
+        raw = _load_writeable_mmap_or_copy(path)
         expected = pe_count * chunk_size
         if raw.size != expected:
             raise ValueError(
                 f"u8 tensor {path} has {raw.size} bytes, expected {expected}"
             )
+        if (
+            raw.dtype != np.uint8
+            or not raw.flags.c_contiguous
+            or not raw.flags.writeable
+        ):
+            raw = np.ascontiguousarray(raw, dtype=np.uint8)
         return (
             raw.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,
