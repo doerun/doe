@@ -730,7 +730,7 @@ pub fn main() !void {
     };
     const model_config = (try parseBundleModelConfig(allocator, input_bytes));
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(allocator, plan, model_config, &target_buf);
+    const targets = try buildCompileTargets(allocator, plan, model_config, activation_elem, &target_buf);
     const cslc_plan = try host_plan.makeCslcPlan(args.cslc_executable);
     if (args.bundle_root) |bundle_root| {
         const resolved_model_config = model_config orelse return error.InvalidArgument;
@@ -849,7 +849,7 @@ test "buildCompileTargets emits phase variants for elementwise kernels" {
         .decode_launches = &[_]host.LaunchSpec{},
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(arena.allocator(), plan, null, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, null, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 4), targets.len);
     try std.testing.expectEqualStrings("rmsnorm", targets[0].kernel_name);
     try std.testing.expectEqualStrings("rmsnorm/layout.csl", targets[0].layout_path);
@@ -873,7 +873,7 @@ test "buildCompileTargets attaches structured binding metadata" {
         .decode_launches = &[_]host.LaunchSpec{},
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(arena.allocator(), plan, null, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, null, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 4), targets.len);
     const residual_metadata = targets[0].metadata.?;
     try std.testing.expectEqualStrings("base", residual_metadata.target_phase);
@@ -892,6 +892,35 @@ test "buildCompileTargets attaches structured binding metadata" {
         "summa_tiles_to_logical_matrix",
         tiled_metadata.bindings[2].detile_transform.?.kind,
     );
+}
+test "buildCompileTargets routes af16 metadata to f16 bindings" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "rmsnorm", .pattern = "rms_norm", .count = 1 },
+            .{ .name = "tiled", .pattern = "tiled_matmul", .count = 1 },
+            .{ .name = "lm_head_prefill_stable", .pattern = "dense_gemv", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+    const targets = try buildCompileTargets(arena.allocator(), plan, null, .f16, &target_buf);
+    const rmsnorm_metadata = targets[0].metadata.?;
+    try std.testing.expectEqualStrings("f16", rmsnorm_metadata.bindings[0].elem_type);
+    try std.testing.expectEqualStrings("f16", rmsnorm_metadata.bindings[1].elem_type);
+    try std.testing.expectEqualStrings("f16", rmsnorm_metadata.bindings[2].elem_type);
+    const tiled_metadata = targets[3].metadata.?;
+    try std.testing.expectEqualStrings("f16", tiled_metadata.bindings[0].elem_type);
+    try std.testing.expectEqualStrings("f16", tiled_metadata.bindings[1].elem_type);
+    try std.testing.expectEqualStrings("f16", tiled_metadata.bindings[2].elem_type);
+    const lm_head_metadata = targets[4].metadata.?;
+    try std.testing.expectEqualStrings("f16", lm_head_metadata.bindings[0].elem_type);
+    try std.testing.expectEqualStrings("f16", lm_head_metadata.bindings[1].elem_type);
+    try std.testing.expectEqualStrings("f32", lm_head_metadata.bindings[2].elem_type);
 }
 test "buildCompileTargets uses vocab output width for lm_head GEMV" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -916,7 +945,7 @@ test "buildCompileTargets uses vocab output width for lm_head GEMV" {
         .quant_format = .q4k,
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(arena.allocator(), plan, config, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 2), targets.len);
     try std.testing.expectEqualStrings("gemv", targets[0].kernel_name);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[2].value);
@@ -947,7 +976,7 @@ test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
         .quant_format = .q4k,
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(arena.allocator(), plan, config, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 1), targets.len);
     try std.testing.expectEqualStrings("lm_head_prefill_stable", targets[0].kernel_name);
     try std.testing.expectEqual(@as(u32, 160), targets[0].compile_params[0].value);
@@ -990,7 +1019,7 @@ test "buildCompileTargets uses Qwen linear SSM dims with state-sharded linear_at
         .quant_format = .q4k,
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
-    const targets = try buildCompileTargets(arena.allocator(), plan, config, &target_buf);
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 4), targets.len);
     try std.testing.expectEqual(@as(u32, 96), targets[0].compile_params[3].value);
     try std.testing.expectEqual(@as(u32, 7), targets[0].compile_params[4].value);
