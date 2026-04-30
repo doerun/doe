@@ -162,6 +162,14 @@
       "data": "examples/csl-operation-graph.gemv-streaming.sample.json"
     },
     {
+      "schema": "config/csl-webgpu-emulator-input.schema.json",
+      "data": "examples/csl-webgpu-emulator-input.sample.json"
+    },
+    {
+      "schema": "config/csl-webgpu-emulator-result.schema.json",
+      "data": "examples/csl-webgpu-emulator-result.sample.json"
+    },
+    {
       "schema": "config/csl-fixture-mirrors.schema.json",
       "data": "config/csl-fixture-mirrors.json"
     },

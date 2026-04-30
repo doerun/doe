@@ -22,7 +22,7 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 DTYPE_MAP = {
     "f32": (np.float32, MemcpyDataType.MEMCPY_32BIT),
     "u32": (np.uint32, MemcpyDataType.MEMCPY_32BIT),
-    "f16": (np.uint16, MemcpyDataType.MEMCPY_16BIT),
+    "f16": (np.float16, MemcpyDataType.MEMCPY_32BIT),
     "u16": (np.uint16, MemcpyDataType.MEMCPY_16BIT),
 }
 
@@ -71,6 +71,57 @@ def _load_array(path: Path, dtype: str, expected_size: int) -> np.ndarray:
             f"array size mismatch for {path}: {array.size} != expected {expected_size}"
         )
     return array
+
+
+def _memcpy_payload_for_h2d(
+    *,
+    path: Path,
+    dtype: str,
+    elements_per_pe: int,
+    total_elements: int,
+) -> tuple[np.ndarray, Any, int]:
+    if dtype == "f16":
+        if elements_per_pe % 2 != 0:
+            raise ValueError(
+                f"f16 elementsPerPe {elements_per_pe} must be even for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        host = _load_array(path, dtype, total_elements)
+        return (
+            np.ascontiguousarray(host, dtype=np.float16).view(np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            elements_per_pe // 2,
+        )
+    host = _load_array(path, dtype, total_elements)
+    _, memcpy_dtype = _dtype_config(dtype)
+    return host, memcpy_dtype, elements_per_pe
+
+
+def _memcpy_buffer_for_d2h(
+    *,
+    dtype: str,
+    elements_per_pe: int,
+    total_elements: int,
+) -> tuple[np.ndarray, Any, int, np.dtype]:
+    if dtype == "f16":
+        if elements_per_pe % 2 != 0:
+            raise ValueError(
+                f"f16 elementsPerPe {elements_per_pe} must be even for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        return (
+            np.zeros(total_elements // 2, dtype=np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            elements_per_pe // 2,
+            np.dtype(np.float16),
+        )
+    np_dtype, memcpy_dtype = _dtype_config(dtype)
+    return (
+        np.zeros(total_elements, dtype=np_dtype),
+        memcpy_dtype,
+        elements_per_pe,
+        np.dtype(np_dtype),
+    )
 
 
 def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
@@ -164,8 +215,12 @@ def main() -> int:
             if not symbol or not dtype or not path:
                 blockers.append(f"input_spec_incomplete:{symbol or 'missing_symbol'}")
                 continue
-            host = _load_array(path, dtype, total_elements)
-            _, memcpy_dtype = _dtype_config(dtype)
+            host, memcpy_dtype, memcpy_elements_per_pe = _memcpy_payload_for_h2d(
+                path=path,
+                dtype=dtype,
+                elements_per_pe=elements_per_pe,
+                total_elements=total_elements,
+            )
             append_progress(
                 progress_path,
                 "launch_step_memcpy_h2d",
@@ -181,7 +236,7 @@ def main() -> int:
                 0,
                 width,
                 height,
-                elements_per_pe,
+                memcpy_elements_per_pe,
                 streaming=False,
                 order=MemcpyOrder.ROW_MAJOR,
                 data_type=memcpy_dtype,
@@ -205,8 +260,13 @@ def main() -> int:
             if not symbol or not dtype or not path:
                 blockers.append(f"output_spec_incomplete:{symbol or 'missing_symbol'}")
                 continue
-            np_dtype, memcpy_dtype = _dtype_config(dtype)
-            host = np.zeros(total_elements, dtype=np_dtype)
+            host, memcpy_dtype, memcpy_elements_per_pe, logical_dtype = (
+                _memcpy_buffer_for_d2h(
+                    dtype=dtype,
+                    elements_per_pe=elements_per_pe,
+                    total_elements=total_elements,
+                )
+            )
             append_progress(
                 progress_path,
                 "launch_step_memcpy_d2h",
@@ -222,12 +282,14 @@ def main() -> int:
                 0,
                 width,
                 height,
-                elements_per_pe,
+                memcpy_elements_per_pe,
                 streaming=False,
                 order=MemcpyOrder.ROW_MAJOR,
                 data_type=memcpy_dtype,
                 nonblock=False,
             )
+            if dtype == "f16":
+                host = host.view(logical_dtype).astype(logical_dtype, copy=False)
             output_transform = item.get("outputTransform") or {}
             saved_host = host
             if isinstance(output_transform, dict):

@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/csl-webgpu-emulator-result.schema.json",
+  "title": "CSL WebGPU emulator result",
+  "description": "Receipt emitted by the restricted CSL-source-to-WebGPU semantic emulator. A succeeded receipt means the declared subset executed; a blocked receipt records the first unsupported or invalid contract boundary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "contract",
+    "input",
+    "requestedBackend",
+    "executedBackend",
+    "status",
+    "sourceInspection",
+    "execution",
+    "unsupported",
+    "resultSha256"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_webgpu_emulator_result" },
+    "contract": {
+      "type": "string",
+      "const": "csl_source_to_webgpu_semantic_emulation"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "operationGraphSha256",
+        "artifactKind",
+        "claimScope"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "operationGraphSha256": { "$ref": "#/$defs/sha256" },
+        "artifactKind": { "type": "string", "const": "csl_webgpu_emulator_input" },
+        "claimScope": {
+          "type": "string",
+          "const": "input_contract_only_not_execution"
+        }
+      }
+    },
+    "requestedBackend": {
+      "type": "string",
+      "enum": ["auto", "cpu", "webgpu"]
+    },
+    "executedBackend": {
+      "type": "string",
+      "enum": ["cpu", "webgpu", "none"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["succeeded", "blocked"]
+    },
+    "sourceInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compileTargetCount",
+        "exportedSymbolCount",
+        "operationCount",
+        "compileTargets"
+      ],
+      "properties": {
+        "compileTargetCount": { "type": "integer", "minimum": 0 },
+        "exportedSymbolCount": { "type": "integer", "minimum": 0 },
+        "operationCount": { "type": "integer", "minimum": 0 },
+        "compileTargets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compileTargetInspection" }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operations", "symbols", "state", "shaderModules"],
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/operationReceipt" }
+        },
+        "symbols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/symbolReceipt" },
+          "uniqueItems": true
+        },
+        "state": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/stateReceipt" },
+          "uniqueItems": true
+        },
+        "shaderModules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/shaderModuleReceipt" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "unsupported": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/blocker" }
+    },
+    "resultSha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "compileTargetInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "layoutSha256", "peProgramSha256", "semantic"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "pattern": { "type": "string", "minLength": 1 },
+        "layoutSha256": { "$ref": "#/$defs/sha256" },
+        "peProgramSha256": { "$ref": "#/$defs/sha256" },
+        "semantic": {
+          "type": "string",
+          "enum": [
+            "gather",
+            "residual_add",
+            "elementwise_identity",
+            "gelu",
+            "rms_norm",
+            "tiled_matmul",
+            "rope",
+            "attention_tiled",
+            "attention_decode",
+            "fused_gemv_dequant",
+            "kv_write",
+            "sample",
+            "noop_unblock",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "operationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "kind", "status", "backend"],
+      "properties": {
+        "operationId": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "status": {
+          "type": "string",
+          "enum": ["succeeded", "blocked", "skipped"]
+        },
+        "backend": {
+          "type": "string",
+          "enum": ["cpu", "webgpu", "host", "none"]
+        },
+        "deviceSymbol": { "type": "string", "minLength": 1 },
+        "functionName": { "type": "string", "minLength": 1 },
+        "semantic": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "outputFile": { "$ref": "#/$defs/fileReceipt" },
+        "blockerCode": { "type": "string", "minLength": 1 }
+      }
+    },
+    "fileReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "byteLength", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "symbolReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "byteLength", "sha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "stateReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "byteLength", "sha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "shaderModuleReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "backend", "sha256"],
+      "properties": {
+        "moduleId": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string", "enum": ["webgpu"] },
+        "semantic": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "operationId": { "type": "string", "minLength": 1 },
+        "deviceSymbol": { "type": "string", "minLength": 1 },
+        "functionName": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

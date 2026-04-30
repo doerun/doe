@@ -251,6 +251,72 @@ def claim_scope() -> dict[str, Any]:
     }
 
 
+def shape_contract(shape: dict[str, Any]) -> dict[str, int]:
+    return {
+        "headDim": int(shape["headDim"]),
+        "numAttentionHeads": 8,
+        "numKeyValueHeads": 1,
+        "groupedKvQueryHeadsPerKvHead": 8,
+    }
+
+
+def empty_executed_run(status: str, elapsed_ms: float | None) -> dict[str, Any]:
+    return {
+        "status": status,
+        "elapsedMs": elapsed_ms,
+        "runtimeStop": {
+            "reached": False,
+            "elapsedMs": None,
+            "error": status,
+        },
+        "failure": {
+            "errorType": status,
+            "message": status,
+            "completedQueryHeads": 0,
+        },
+        "sendReceiveCounts": {"sends": 0, "receives": 0},
+        "observedBytesTransferredTotal": 0,
+        "streamWaitMs": {"q": 0.0, "k": 0.0, "v": 0.0, "out": 0.0},
+        "numericalParity": {
+            "passed": False,
+            "maxAbsErr": 0.0,
+            "atol": 0.0,
+            "comparison": "bit_exact_np_array_equal",
+        },
+        "perQueryHead": [],
+    }
+
+
+def normalize_shape_run(
+    run: dict[str, Any],
+    *,
+    shape: dict[str, Any],
+    elapsed_ms: float,
+) -> dict[str, Any]:
+    run.setdefault("schemaVersion", 1)
+    run.setdefault(
+        "artifactKind",
+        "doe_gemma4_e2b_manifest_shape_attention_core_shape_run",
+    )
+    run.setdefault("attentionKind", shape["attentionKind"])
+    run["shape"] = {**shape_contract(shape), **(run.get("shape") or {})}
+    status = str(run.get("status") or "blocked:unknown")
+    executed = run.get("executedRun")
+    if not isinstance(executed, dict):
+        run["executedRun"] = empty_executed_run(status, elapsed_ms)
+    else:
+        executed.setdefault("status", status)
+        executed.setdefault("elapsedMs", elapsed_ms)
+        executed.setdefault("runtimeStop", {"reached": False})
+        executed.setdefault("perQueryHead", [])
+        parity = executed.setdefault("numericalParity", {})
+        parity.setdefault("passed", False)
+        parity.setdefault("maxAbsErr", 0.0)
+        parity.setdefault("atol", 0.0)
+        parity.setdefault("comparison", "bit_exact_np_array_equal")
+    return run
+
+
 def run_shape(
     args: argparse.Namespace,
     *,
@@ -265,17 +331,17 @@ def run_shape(
     )
     command = [
         str(cs_python),
-        rel(runner_path),
+        str(runner_path),
         "--attention-kind",
         str(shape["attentionKind"]),
         "--head-dim",
         str(shape["headDim"]),
         "--kernel-source",
-        args.kernel_source,
+        str(resolve(args.kernel_source)),
         "--compile-out",
-        rel(compile_out),
+        str(compile_out),
         "--out-json",
-        rel(shape_out),
+        str(shape_out),
     ]
     if args.cmaddr:
         command.extend(["--cmaddr", args.cmaddr])
@@ -305,7 +371,11 @@ def run_shape(
             ),
             "status": f"blocked:{failure_code}",
             "attentionKind": shape["attentionKind"],
-            "shape": {"headDim": shape["headDim"]},
+            "shape": shape_contract(shape),
+            "executedRun": empty_executed_run(
+                f"blocked:{failure_code}",
+                elapsed_ms,
+            ),
             "failureCode": failure_code,
             "subprocess": {
                 "returnCode": proc.returncode,
@@ -315,6 +385,7 @@ def run_shape(
             },
         }
     run = load_json(shape_out)
+    normalize_shape_run(run, shape=shape, elapsed_ms=elapsed_ms)
     if proc.returncode != 0:
         run["failureCode"] = classify_subprocess_failure(proc)
     run["subprocess"] = {

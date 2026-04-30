@@ -66,9 +66,10 @@ from bench.tools._receipt_hash_guard import (  # noqa: E402
     enforce_receipt_hash_spine,
 )
 from bench.tools.predict_simfabric_wallclock import (  # noqa: E402
-    OUTPUT_SYMBOL_PATTERNS,
     SizeExprError,
     evaluate_size_expr,
+    inout_symbols_for_kernel,
+    output_symbols_for_kernel,
 )
 
 
@@ -178,20 +179,27 @@ def _try_relative(path: Path) -> str:
 
 def classify_exports(
     exports: list[dict[str, Any]],
+    *,
+    kernel_name: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Partition exports into (inputs, outputs).
 
-    Outputs are detected via OUTPUT_SYMBOL_PATTERNS (the same heuristic
-    rung-2 uses). Bidirectional symbols (e.g. kv_cache for kernels that
-    both read and write) are treated as outputs — the layout receipt's
+    Outputs are detected through rung-2's shared symbol classifier.
+    Bidirectional symbols are treated as outputs — the layout receipt's
     point is that buffers move bytes; reading zero-filled state in is
     still valid plumbing.
     """
     inputs: list[dict[str, Any]] = []
     outputs: list[dict[str, Any]] = []
+    output_symbols = output_symbols_for_kernel(kernel_name)
+    inout_symbols = inout_symbols_for_kernel(kernel_name)
     for export in exports:
         symbol = export.get("symbol")
-        if symbol in OUTPUT_SYMBOL_PATTERNS:
+        if symbol in inout_symbols:
+            inputs.append(export)
+            outputs.append(export)
+            continue
+        if symbol in output_symbols:
             outputs.append(export)
         else:
             inputs.append(export)
@@ -455,7 +463,8 @@ def _materialize_inputs(
     height = int(bindings.get("height") or 1)
     pe_count = max(1, width * height)
     inputs_meta, outputs_meta = classify_exports(
-        list(metadata.get("exports") or [])
+        list(metadata.get("exports") or []),
+        kernel_name=kernel,
     )
 
     input_records: list[dict[str, Any]] = []

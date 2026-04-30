@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/csl-webgpu-emulator-input.schema.json",
+  "title": "CSL WebGPU emulator input",
+  "description": "Source-preserving input bundle for a future CSL-source-to-WebGPU semantic emulator. This is an emulator input contract only; it is not a WebGPU execution receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "contract",
+    "claimScope",
+    "emulator",
+    "sources",
+    "compileTargets",
+    "operationGraph",
+    "operationGraphSha256",
+    "hostInputs",
+    "validation"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_webgpu_emulator_input" },
+    "contract": {
+      "type": "string",
+      "const": "csl_source_to_webgpu_emulator_input"
+    },
+    "claimScope": {
+      "type": "string",
+      "const": "input_contract_only_not_execution"
+    },
+    "emulator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetSurface",
+        "hostController",
+        "deviceCompute",
+        "sourceMode",
+        "executionModel"
+      ],
+      "properties": {
+        "targetSurface": { "type": "string", "const": "webgpu" },
+        "hostController": { "type": "string", "const": "cpu" },
+        "deviceCompute": { "type": "string", "const": "webgpu_compute_passes" },
+        "sourceMode": { "type": "string", "const": "csl_source_subset" },
+        "executionModel": {
+          "type": "string",
+          "const": "ordered_host_operations_from_csl_operation_graph"
+        },
+        "supportedSubset": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleRoot",
+        "compileRoot",
+        "simulatorPlan",
+        "hostPlan",
+        "runtimeConfig"
+      ],
+      "properties": {
+        "bundleRoot": { "$ref": "#/$defs/pathOnly" },
+        "compileRoot": { "$ref": "#/$defs/pathOnly" },
+        "simulatorPlan": { "$ref": "#/$defs/fileRef" },
+        "hostPlan": { "$ref": "#/$defs/fileRef" },
+        "runtimeConfig": { "$ref": "#/$defs/fileRef" },
+        "driverResult": { "$ref": "#/$defs/fileRef" },
+        "operationGraphSource": {
+          "type": "string",
+          "enum": ["driver_result", "operation_graph_file"]
+        },
+        "operationGraphFile": { "$ref": "#/$defs/fileRef" }
+      }
+    },
+    "compileTargets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/compileTarget" },
+      "uniqueItems": true
+    },
+    "operationGraph": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "artifactKind",
+        "graphId",
+        "orchestrationMode",
+        "executionPattern",
+        "compile",
+        "exportedSymbols",
+        "operations"
+      ],
+      "properties": {
+        "artifactKind": { "type": "string", "const": "csl_operation_graph" }
+      },
+      "additionalProperties": true
+    },
+    "operationGraphSha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "hostInputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["unbound", "doppler_rdrr", "fixture_files"]
+        },
+        "programBundle": { "$ref": "#/$defs/fileRef" },
+        "rdrrManifest": { "$ref": "#/$defs/fileRef" },
+        "referenceTranscript": { "$ref": "#/$defs/fileRef" },
+        "fixtureFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/fixtureFile" },
+          "uniqueItems": true
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "fixture_files" } },
+            "required": ["mode"]
+          },
+          "then": { "required": ["fixtureFiles"] }
+        }
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "generatedBy", "blockers"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["input_ready", "blocked"]
+        },
+        "generatedBy": { "type": "string", "minLength": 1 },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "pathOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "typedValue": {
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "integer" },
+        { "type": "number" },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+    "compileTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "layout", "peProgram"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "layout": { "$ref": "#/$defs/fileRef" },
+        "peProgram": { "$ref": "#/$defs/fileRef" },
+        "layoutMetadata": { "$ref": "#/$defs/fileRef" },
+        "peProgramMetadata": { "$ref": "#/$defs/fileRef" },
+        "compileParams": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/typedValue" }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "driverStatus": {
+          "type": "string",
+          "enum": ["succeeded", "blocked", "failed", "not_run"]
+        },
+        "sourceWgslPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "fixtureFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceSymbol", "path", "sha256"],
+      "properties": {
+        "deviceSymbol": { "type": "string", "minLength": 1 },
+        "operationId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "byteLength": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

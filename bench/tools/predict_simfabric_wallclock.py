@@ -75,6 +75,11 @@ OUTPUT_SYMBOL_PATTERNS = (
     "tokens",
 )
 
+INOUT_SYMBOLS_BY_KERNEL = {
+    "rope": ("input",),
+    "rope_partial": ("input",),
+}
+
 _AS_CAST_INLINE = re.compile(r"@as\([a-z0-9_]+,\s*([^)]+)\)")
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _NUMBER_RE = re.compile(r"[+-]?\d+")
@@ -212,18 +217,21 @@ def evaluate_size_expr(
 def output_bytes_for_target(
     metadata: dict[str, Any],
     bindings: dict[str, int],
+    *,
+    kernel_name: str | None = None,
 ) -> int:
     """Sum the byte sizes of the target's output exports.
 
-    Outputs are detected by symbol name (exact match against
-    OUTPUT_SYMBOL_PATTERNS). Sized via sizeExpr × elem byte width.
-    Unknown symbols are skipped (counted as input/state). Unresolved
-    sizeExpr surfaces as 0 with the failure recorded in the receipt.
+    Outputs are detected by symbol name plus kernel-specific in-place
+    output contracts. Sized via sizeExpr × elem byte width. Unknown
+    symbols are skipped. Unresolved sizeExpr surfaces as 0 with the
+    failure recorded in the receipt.
     """
     total = 0
+    output_symbols = output_symbols_for_kernel(kernel_name)
     for export in metadata.get("exports") or []:
         symbol = export.get("symbol")
-        if symbol not in OUTPUT_SYMBOL_PATTERNS:
+        if symbol not in output_symbols:
             continue
         elem = export.get("elemType", "f32")
         elem_bytes = ELEM_BYTES.get(elem, 4)
@@ -234,6 +242,19 @@ def output_bytes_for_target(
             continue
         total += n_elems * elem_bytes
     return total
+
+
+def output_symbols_for_kernel(kernel_name: str | None) -> set[str]:
+    symbols = set(OUTPUT_SYMBOL_PATTERNS)
+    if kernel_name:
+        symbols.update(inout_symbols_for_kernel(kernel_name))
+    return symbols
+
+
+def inout_symbols_for_kernel(kernel_name: str | None) -> set[str]:
+    if not kernel_name:
+        return set()
+    return set(INOUT_SYMBOLS_BY_KERNEL.get(kernel_name, ()))
 
 
 def predict_wallclock(
@@ -282,7 +303,11 @@ def predict_wallclock(
             )
             continue
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
-        out_bytes = output_bytes_for_target(metadata, bindings)
+        out_bytes = output_bytes_for_target(
+            metadata,
+            bindings,
+            kernel_name=kernel_name,
+        )
         cycles_per_call = pattern_cycles.get(kernel_meta.get("pattern"))
         per_kernel.append(
             {

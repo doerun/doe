@@ -553,10 +553,14 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "value_dim", value_dim);
         try appendParam(allocator, &params, "value_dim_per_pe", value_dim_per_pe);
     } else if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) {
-        const out_dim_per_pe = ceilDivU32(config.hidden_dim, plan.pe_grid_height);
+        const out_dim = if (isLmHeadTarget(target_name))
+            ceilDivU32(config.vocab_size, plan.pe_grid_width)
+        else
+            config.hidden_dim;
+        const out_dim_per_pe = ceilDivU32(out_dim, plan.pe_grid_height);
         try appendParam(allocator, &params, "width", plan.pe_grid_width);
         try appendParam(allocator, &params, "height", plan.pe_grid_height);
-        try appendParam(allocator, &params, "out_dim", config.hidden_dim);
+        try appendParam(allocator, &params, "out_dim", out_dim);
         try appendParam(allocator, &params, "out_dim_per_pe", out_dim_per_pe);
         try appendParam(allocator, &params, "in_dim_per_pe", @min(config.hidden_dim, @as(u32, 512)));
         try appendParam(allocator, &params, "num_blocks_per_row", 2);
@@ -625,6 +629,9 @@ fn isPhaseSpecializedKernel(name: []const u8) bool {
         if (std.mem.eql(u8, name, kernel_name)) return true;
     }
     return false;
+}
+fn isLmHeadTarget(name: []const u8) bool {
+    return std.mem.eql(u8, name, "lm_head") or std.mem.startsWith(u8, name, "lm_head_");
 }
 fn buildStateBuffers(memory_plan: mem_plan.MemoryPlan, out: *[MAX_STATE_BUFFERS]host_runtime.StateBuffer) []const host_runtime.StateBuffer {
     var count: usize = 0;
@@ -844,6 +851,38 @@ test "buildCompileTargets attaches structured binding metadata" {
         "summa_tiles_to_logical_matrix",
         tiled_metadata.bindings[2].detile_transform.?.kind,
     );
+}
+test "buildCompileTargets uses vocab output width for lm_head GEMV" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const plan = host.HostPlan{
+        .pe_grid_width = 8,
+        .pe_grid_height = 4,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "gemv", .pattern = "fused_gemv_dequant", .count = 1 },
+            .{ .name = "lm_head_gemv_stable", .pattern = "fused_gemv_dequant", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    const config = host.ModelConfig{
+        .hidden_dim = 512,
+        .num_heads = 8,
+        .head_dim = 64,
+        .num_layers = 1,
+        .vocab_size = 512,
+        .max_seq_len = 16,
+        .quant_format = .q4k,
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, &target_buf);
+    try std.testing.expectEqual(@as(usize, 2), targets.len);
+    try std.testing.expectEqualStrings("gemv", targets[0].kernel_name);
+    try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[2].value);
+    try std.testing.expectEqual(@as(u32, 128), targets[0].compile_params[3].value);
+    try std.testing.expectEqualStrings("lm_head_gemv_stable", targets[1].kernel_name);
+    try std.testing.expectEqual(@as(u32, 64), targets[1].compile_params[2].value);
+    try std.testing.expectEqual(@as(u32, 16), targets[1].compile_params[3].value);
 }
 test "buildCompileTargets uses Qwen linear SSM dims with state-sharded linear_attention" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

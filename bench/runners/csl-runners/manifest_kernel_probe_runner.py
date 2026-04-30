@@ -41,6 +41,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import json
 import os
@@ -61,7 +62,6 @@ from bench.tools._receipt_hash_guard import (  # noqa: E402
     enforce_receipt_hash_spine,
 )
 from bench.tools.predict_simfabric_wallclock import (  # noqa: E402
-    OUTPUT_SYMBOL_PATTERNS,
     SizeExprError,
     evaluate_size_expr,
 )
@@ -163,6 +163,34 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Materialize probe-broadcast inputs and assemble the dispatch "
             "command without spawning cs_python."
+        ),
+    )
+    p.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help=(
+            "Number of independent per-kernel dispatch workers. Each worker "
+            "uses its own scratch/<kernel>/ directory and receipt JSON."
+        ),
+    )
+    p.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Reuse existing non-dry-run dispatch receipts whose hostPlanHash "
+            "matches the current host plan. Dry-run receipts are not reused "
+            "for non-dry-run dispatch."
+        ),
+    )
+    p.add_argument(
+        "--schedule",
+        choices=["host-plan", "heavy-first"],
+        default="host-plan",
+        help=(
+            "Kernel launch order. heavy-first uses metadata-estimated "
+            "manifest-shape input/output bytes so large kernels do not sit "
+            "behind smaller probes when --jobs is used."
         ),
     )
     return p.parse_args()
@@ -403,6 +431,135 @@ def _compile_bindings(
     return bindings
 
 
+def _metadata_path_for_kernel(
+    *,
+    kernel: str,
+    source_root: Path,
+) -> Path:
+    metadata_path = source_root / kernel / "pe_program.metadata.json"
+    if metadata_path.is_file():
+        return metadata_path
+    for suffix in ("_decode", "_prefill"):
+        if kernel.endswith(suffix):
+            base_kernel = kernel[: -len(suffix)]
+            base_path = source_root / base_kernel / "pe_program.metadata.json"
+            if base_path.is_file():
+                return base_path
+    return metadata_path
+
+
+def _layout_path_for_kernel(
+    *,
+    kernel: str,
+    source_root: Path,
+) -> Path:
+    layout_path = source_root / kernel / "layout.csl"
+    if layout_path.is_file():
+        return layout_path
+    for suffix in ("_decode", "_prefill"):
+        if kernel.endswith(suffix):
+            base_kernel = kernel[: -len(suffix)]
+            base_path = source_root / base_kernel / "layout.csl"
+            if base_path.is_file():
+                return base_path
+    return layout_path
+
+
+def estimate_target_io_bytes(
+    *,
+    target: dict[str, Any],
+    compile_root: Path,
+    source_root: Path,
+) -> int:
+    kernel = str(target.get("name") or "")
+    if not kernel:
+        return 0
+    metadata_path = _metadata_path_for_kernel(
+        kernel=kernel,
+        source_root=source_root,
+    )
+    if not metadata_path.is_file():
+        return 0
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        bindings = _compile_bindings(
+            target=target,
+            metadata=metadata,
+            compile_dir=compile_root / kernel,
+            layout_path=_layout_path_for_kernel(
+                kernel=kernel,
+                source_root=source_root,
+            ),
+        )
+        width = int(bindings.get("width") or 0)
+        height = int(bindings.get("height") or 1)
+        pe_count = max(1, width * height)
+        total = 0
+        for export in metadata.get("exports") or []:
+            if not isinstance(export, dict):
+                continue
+            chunk = int(
+                evaluate_size_expr(export.get("sizeExpr", ""), bindings)
+            )
+            elem_type = str(export.get("elemType", "f32"))
+            total += pe_count * chunk * ELEM_BYTES.get(elem_type, 4)
+        return total
+    except (OSError, ValueError, SizeExprError, json.JSONDecodeError):
+        return 0
+
+
+def order_targets(
+    *,
+    targets: list[dict[str, Any]],
+    schedule: str,
+    compile_root: Path,
+    source_root: Path,
+) -> list[dict[str, Any]]:
+    if schedule != "heavy-first":
+        return list(targets)
+    indexed = list(enumerate(targets))
+    indexed.sort(
+        key=lambda item: (
+            estimate_target_io_bytes(
+                target=item[1],
+                compile_root=compile_root,
+                source_root=source_root,
+            ),
+            -item[0],
+        ),
+        reverse=True,
+    )
+    return [target for _, target in indexed]
+
+
+def load_reusable_receipt(
+    *,
+    kernel: str,
+    out_dir: Path,
+    host_plan_hash: str,
+    dry_run: bool,
+) -> dict[str, Any] | None:
+    path = out_dir / f"{kernel}.json"
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+    if receipt.get("kernel") != kernel:
+        return None
+    if receipt.get("hostPlanHash") != host_plan_hash:
+        return None
+    blocker = receipt.get("blocker")
+    if dry_run:
+        return receipt if blocker == "dry_run" else None
+    if blocker == "dry_run":
+        return None
+    if receipt.get("verdict") == "bound":
+        return receipt
+    if receipt.get("dispatchTimedOut") is True:
+        return receipt
+    return None
+
+
 def _hash_output_files(records: list[dict[str, Any]]) -> None:
     for record in records:
         path = Path(record.pop("absolutePath", record["path"]))
@@ -441,7 +598,8 @@ def _materialize_inputs(
     height = int(bindings.get("height") or 1)
     pe_count = max(1, width * height)
     inputs_meta, outputs_meta = classify_exports(
-        list(metadata.get("exports") or [])
+        list(metadata.get("exports") or []),
+        kernel_name=kernel,
     )
 
     input_records: list[dict[str, Any]] = []
@@ -651,25 +809,10 @@ def run_one_kernel(
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
     effective_source_root = source_root if source_root is not None else compile_root
-    metadata_path = effective_source_root / kernel / "pe_program.metadata.json"
-    # Phase-variant kernels (`_decode` / `_prefill` suffix) often share
-    # source with their base kernel — the steps-mode driver runs cslc
-    # per variant with different compileParams (e.g. width=246 vs
-    # width=1) but emits only one source dir per base kernel name. If
-    # the variant's source is absent, fall back to the base kernel's
-    # metadata. The pe_program.metadata.json describes exports, which
-    # are kernel-structure (not shape) properties, so the fallback is
-    # safe.
-    if not metadata_path.is_file():
-        for suffix in ("_decode", "_prefill"):
-            if kernel.endswith(suffix):
-                base_kernel = kernel[: -len(suffix)]
-                base_metadata_path = (
-                    effective_source_root / base_kernel / "pe_program.metadata.json"
-                )
-                if base_metadata_path.is_file():
-                    metadata_path = base_metadata_path
-                    break
+    metadata_path = _metadata_path_for_kernel(
+        kernel=kernel,
+        source_root=effective_source_root,
+    )
     if not metadata_path.is_file():
         return build_kernel_receipt(
             kernel=kernel,
@@ -721,7 +864,10 @@ def run_one_kernel(
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     compile_dir = compile_root / kernel
-    layout_path = effective_source_root / kernel / "layout.csl"
+    layout_path = _layout_path_for_kernel(
+        kernel=kernel,
+        source_root=effective_source_root,
+    )
     compile_params = _compile_bindings(
         target=target,
         metadata=metadata,
@@ -899,6 +1045,7 @@ def write_summary(
                 "verdict": r["verdict"],
                 "blocker": r["blocker"],
                 "dispatchExitCode": r["dispatchExitCode"],
+                "dispatchTimedOut": r["dispatchTimedOut"],
                 "dispatchWallclockNs": r["dispatchWallclockNs"],
                 "totalInputBytes": r["totalInputBytes"],
                 "totalOutputBytes": r["totalOutputBytes"],
@@ -930,6 +1077,9 @@ def write_summary(
 
 def main() -> int:
     args = parse_args()
+    if args.jobs < 1:
+        sys.stderr.write("manifest_kernel_probe_runner: --jobs must be >= 1\n")
+        return 2
     if not args.host_plan.is_file():
         sys.stderr.write(
             f"manifest_kernel_probe_runner: host-plan absent at "
@@ -948,18 +1098,37 @@ def main() -> int:
                 f"--kernel filter {sorted(kernel_filter)!r}\n"
             )
             return 2
+    source_root = args.source_root or args.compile_root
+    targets = order_targets(
+        targets=[
+            target for target in targets
+            if isinstance(target, dict) and target.get("name")
+        ],
+        schedule=args.schedule,
+        compile_root=args.compile_root,
+        source_root=source_root,
+    )
 
-    receipts: list[dict[str, Any]] = []
+    receipts_by_kernel: dict[str, dict[str, Any]] = {}
     blocked_count = 0
-    for target in targets:
+    reused_count = 0
+
+    def run_target(target: dict[str, Any]) -> tuple[str, dict[str, Any], bool]:
         kernel = str(target.get("name") or "")
-        if not kernel:
-            continue
+        if args.resume:
+            reusable = load_reusable_receipt(
+                kernel=kernel,
+                out_dir=args.out_dir,
+                host_plan_hash=host_plan_hash,
+                dry_run=args.dry_run,
+            )
+            if reusable is not None:
+                return kernel, reusable, True
         receipt = run_one_kernel(
             kernel=kernel,
             target=target,
             compile_root=args.compile_root,
-            source_root=args.source_root or args.compile_root,
+            source_root=source_root,
             probe_dir=args.probe_dir,
             host_plan_path=args.host_plan,
             host_plan_hash=host_plan_hash,
@@ -973,14 +1142,42 @@ def main() -> int:
         try:
             write_kernel_receipt(receipt=receipt, out_dir=args.out_dir)
         except ReceiptHashSpineError as err:
-            sys.stderr.write(
-                f"manifest_kernel_probe_runner: kernel {kernel!r} hash "
-                f"spine rejected emit: {err}\n"
-            )
-            return 2
-        receipts.append(receipt)
-        if receipt["verdict"] == "blocked":
-            blocked_count += 1
+            raise RuntimeError(
+                f"kernel {kernel!r} hash spine rejected emit: {err}"
+            ) from err
+        return kernel, receipt, False
+
+    try:
+        if args.jobs == 1:
+            for target in targets:
+                kernel, receipt, reused = run_target(target)
+                receipts_by_kernel[kernel] = receipt
+                if reused:
+                    reused_count += 1
+                if receipt["verdict"] == "blocked":
+                    blocked_count += 1
+        else:
+            with ThreadPoolExecutor(max_workers=args.jobs) as executor:
+                futures = {
+                    executor.submit(run_target, target): str(target["name"])
+                    for target in targets
+                }
+                for future in as_completed(futures):
+                    kernel, receipt, reused = future.result()
+                    receipts_by_kernel[kernel] = receipt
+                    if reused:
+                        reused_count += 1
+                    if receipt["verdict"] == "blocked":
+                        blocked_count += 1
+    except RuntimeError as err:
+        sys.stderr.write(f"manifest_kernel_probe_runner: {err}\n")
+        return 2
+
+    receipts = [
+        receipts_by_kernel[str(target["name"])]
+        for target in targets
+        if str(target["name"]) in receipts_by_kernel
+    ]
 
     try:
         write_summary(
@@ -998,7 +1195,8 @@ def main() -> int:
 
     print(
         f"wrote {len(receipts)} per-kernel receipt(s) to {args.out_dir} "
-        f"(blocked={blocked_count})"
+        f"(blocked={blocked_count}, reused={reused_count}, jobs={args.jobs}, "
+        f"schedule={args.schedule})"
     )
     return 1 if blocked_count else 0
 

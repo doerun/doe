@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_webgpu_emulator_input",
+  "contract": "csl_source_to_webgpu_emulator_input",
+  "claimScope": "input_contract_only_not_execution",
+  "emulator": {
+    "targetSurface": "webgpu",
+    "hostController": "cpu",
+    "deviceCompute": "webgpu_compute_passes",
+    "sourceMode": "csl_source_subset",
+    "executionModel": "ordered_host_operations_from_csl_operation_graph",
+    "supportedSubset": [
+      "layout_exports",
+      "pe_program_source",
+      "memcpy_h2d",
+      "launch",
+      "memcpy_d2h",
+      "rpc_launch",
+      "tiled_matmul",
+      "rope",
+      "attention_tiled",
+      "attention_decode",
+      "fused_gemv_dequant",
+      "kv_write",
+      "sample"
+    ]
+  },
+  "sources": {
+    "bundleRoot": { "path": "bench/out/sample-csl-bundle" },
+    "compileRoot": { "path": "bench/out/sample-csl-bundle/compile" },
+    "simulatorPlan": {
+      "path": "bench/out/sample-csl-bundle/simulator-plan.json",
+      "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "hostPlan": {
+      "path": "bench/out/sample-csl-bundle/host-plan.json",
+      "sha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "runtimeConfig": {
+      "path": "bench/out/sample-csl-bundle/runtime-config.json",
+      "sha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "driverResult": {
+      "path": "bench/out/sample-csl-bundle/driver-result.json",
+      "sha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "operationGraphSource": "driver_result"
+  },
+  "compileTargets": [
+    {
+      "name": "gemv",
+      "layout": {
+        "path": "bench/out/sample-csl-bundle/compile/gemv/layout.csl",
+        "sha256": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "peProgram": {
+        "path": "bench/out/sample-csl-bundle/compile/gemv/pe_program.csl",
+        "sha256": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      },
+      "compileParams": {
+        "width": 32,
+        "height": 4
+      },
+      "driverStatus": "succeeded"
+    }
+  ],
+  "operationGraph": {
+    "schemaVersion": 1,
+    "artifactKind": "csl_operation_graph",
+    "graphId": "gemv-rpc-launch",
+    "orchestrationMode": "memcpy",
+    "executionPattern": "rpc_launch",
+    "sdkVersionFloor": "2.10.0",
+    "compile": {
+      "arch": "wse3",
+      "fabricDims": [39, 6],
+      "fabricOffsets": [4, 1],
+      "peGrid": { "width": 32, "height": 4 },
+      "channels": 1,
+      "memcpy": true,
+      "params": [
+        { "name": "width", "type": "i16", "value": 32 },
+        { "name": "height", "type": "i16", "value": 4 }
+      ],
+      "importPaths": [],
+      "outputDir": "compile/compiled/gemv",
+      "compileTargets": [
+        {
+          "name": "gemv",
+          "layout": "compile/gemv/layout.csl",
+          "peProgram": "compile/gemv/pe_program.csl",
+          "compileParams": {
+            "width": 32,
+            "height": 4
+          }
+        }
+      ]
+    },
+    "exportedSymbols": [
+      {
+        "name": "matrixData",
+        "type": "[*]f32",
+        "mutable": true,
+        "kind": "device_variable"
+      },
+      {
+        "name": "compute",
+        "type": "fn()void",
+        "mutable": false,
+        "kind": "device_function"
+      }
+    ],
+    "operations": [
+      {
+        "operationId": "h2d-matrixdata",
+        "kind": "memcpy_h2d",
+        "targetKind": "device_symbol",
+        "deviceSymbol": "matrixData",
+        "roi": { "x": 0, "y": 0, "width": 32, "height": 4 },
+        "elementsPerPE": 1,
+        "dataType": "MEMCPY_32BIT",
+        "order": "ROW_MAJOR",
+        "streaming": false,
+        "nonblock": true
+      },
+      {
+        "operationId": "launch-compute",
+        "kind": "launch",
+        "functionName": "compute",
+        "args": [],
+        "nonblock": false,
+        "unblockCheckpointRequired": true
+      }
+    ]
+  },
+  "operationGraphSha256": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "hostInputs": {
+    "mode": "unbound",
+    "notes": [
+      "No Doppler Program Bundle or RDRR manifest is bound in this sample."
+    ]
+  },
+  "validation": {
+    "status": "input_ready",
+    "generatedBy": "bench/tools/build_csl_webgpu_emulator_input.py",
+    "blockers": []
+  }
+}

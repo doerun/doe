@@ -68,6 +68,19 @@ class ClassifyExportsTest(unittest.TestCase):
             [e["symbol"] for e in outputs], ["key_cache", "value_cache"]
         )
 
+    def test_rope_input_is_in_place_output(self) -> None:
+        exports = [
+            {"symbol": "input"},
+            {"symbol": "cos_table"},
+            {"symbol": "sin_table"},
+        ]
+        inputs, outputs = classify_exports(exports, kernel_name="rope")
+        self.assertEqual(
+            [e["symbol"] for e in inputs],
+            ["input", "cos_table", "sin_table"],
+        )
+        self.assertEqual([e["symbol"] for e in outputs], ["input"])
+
 
 class SynthesizeZeroInputTest(unittest.TestCase):
     def test_writes_npy_with_expected_size(self) -> None:

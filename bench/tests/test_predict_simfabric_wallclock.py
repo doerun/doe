@@ -152,6 +152,22 @@ class OutputBytesTest(unittest.TestCase):
         )
         self.assertEqual(out_bytes, (2 * 3 * 4) + 4 + (5 * 6 * 2))
 
+    def test_picks_rope_in_place_input_output_by_kernel(self) -> None:
+        metadata = {
+            "exports": [
+                {"symbol": "input", "sizeExpr": "head_dim", "elemType": "f16"},
+                {"symbol": "cos_table", "sizeExpr": "pairs", "elemType": "f16"},
+                {"symbol": "sin_table", "sizeExpr": "pairs", "elemType": "f16"},
+            ]
+        }
+        self.assertEqual(output_bytes_for_target(metadata, {"head_dim": 160}), 0)
+        out_bytes = output_bytes_for_target(
+            metadata,
+            {"head_dim": 160, "pairs": 80},
+            kernel_name="rope",
+        )
+        self.assertEqual(out_bytes, 160 * 2)
+
 
 def _write_target(
     compile_root: Path,

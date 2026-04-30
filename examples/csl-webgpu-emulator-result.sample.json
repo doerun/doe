@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_webgpu_emulator_result",
+  "contract": "csl_source_to_webgpu_semantic_emulation",
+  "input": {
+    "path": "bench/out/sample-csl-bundle/csl-webgpu-emulator-input.json",
+    "sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "operationGraphSha256": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "artifactKind": "csl_webgpu_emulator_input",
+    "claimScope": "input_contract_only_not_execution"
+  },
+  "requestedBackend": "auto",
+  "executedBackend": "cpu",
+  "status": "succeeded",
+  "sourceInspection": {
+    "compileTargetCount": 1,
+    "exportedSymbolCount": 2,
+    "operationCount": 3,
+    "compileTargets": [
+      {
+        "name": "residual",
+        "pattern": "residual",
+        "layoutSha256": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "peProgramSha256": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "semantic": "residual_add"
+      }
+    ]
+  },
+  "execution": {
+    "operations": [
+      {
+        "operationId": "h2d-input",
+        "kind": "memcpy_h2d",
+        "status": "succeeded",
+        "backend": "host",
+        "deviceSymbol": "input",
+        "byteLength": 16,
+        "sha256": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      {
+        "operationId": "launch-compute",
+        "kind": "launch",
+        "status": "succeeded",
+        "backend": "cpu",
+        "functionName": "compute",
+        "semantic": "residual_add"
+      },
+      {
+        "operationId": "d2h-output",
+        "kind": "memcpy_d2h",
+        "status": "succeeded",
+        "backend": "host",
+        "deviceSymbol": "output",
+        "byteLength": 16,
+        "sha256": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "outputFile": {
+          "path": "bench/out/sample-csl-bundle/emulator-d2h/d2h-output-output.bin",
+          "byteLength": 16,
+          "sha256": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+      }
+    ],
+    "symbols": [
+      {
+        "name": "output",
+        "byteLength": 16,
+        "sha256": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    ],
+    "state": [],
+    "shaderModules": []
+  },
+  "unsupported": [],
+  "resultSha256": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}

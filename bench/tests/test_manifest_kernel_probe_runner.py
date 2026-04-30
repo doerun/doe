@@ -5,6 +5,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -25,6 +26,44 @@ def _load_runner_module():
     assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.modules["manifest_kernel_probe_runner"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _load_chain_step_adapter_module():
+    name = "chain_step_adapter_for_tests"
+    if name in sys.modules:
+        return sys.modules[name]
+    fake = types.ModuleType("sdkruntimepybind")
+
+    class _MemcpyDataType:
+        MEMCPY_32BIT = "MEMCPY_32BIT"
+        MEMCPY_16BIT = "MEMCPY_16BIT"
+
+    class _MemcpyOrder:
+        ROW_MAJOR = "ROW_MAJOR"
+
+    class _SdkRuntime:
+        pass
+
+    fake.MemcpyDataType = _MemcpyDataType
+    fake.MemcpyOrder = _MemcpyOrder
+    fake.SdkRuntime = _SdkRuntime
+    sys.modules.setdefault("cerebras", types.ModuleType("cerebras"))
+    sys.modules.setdefault("cerebras.sdk", types.ModuleType("cerebras.sdk"))
+    sys.modules.setdefault(
+        "cerebras.sdk.runtime",
+        types.ModuleType("cerebras.sdk.runtime"),
+    )
+    sys.modules["cerebras.sdk.runtime.sdkruntimepybind"] = fake
+    spec = importlib.util.spec_from_file_location(
+        name,
+        REPO_ROOT / "bench/runners/csl-runners/chain_step_adapter.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -265,9 +304,6 @@ class MaterializeProbeInputTest(unittest.TestCase):
             self.assertTrue((arr == [1.0, 2.0]).all())
 
     def test_f16_materializes_native_half(self) -> None:
-        # The af16 lane stages probe inputs through the SDK's native
-        # MEMCPY_16BIT path; the runner must write np.float16 directly
-        # rather than upcasting to f32 or packing to u32.
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "x.npy"
@@ -321,7 +357,6 @@ class AdapterDtypeTokenTest(unittest.TestCase):
         self.assertEqual(runner._adapter_dtype_token("i32"), "u32")
 
     def test_f16_passthrough(self) -> None:
-        # f16 is wired through the chain_step_adapter's MEMCPY_16BIT path.
         runner = _load_runner_module()
         self.assertEqual(runner._adapter_dtype_token("f16"), "f16")
 
@@ -339,6 +374,64 @@ class AdapterDtypeTokenTest(unittest.TestCase):
         self.assertIn("u32", msg)
         self.assertIn("f16", msg)
         self.assertIn("u8", msg)
+
+
+class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
+    def test_f16_h2d_uses_32bit_packed_payload(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            source = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float16)
+            np.save(path, source)
+            payload, memcpy_dtype, memcpy_chunk = adapter._memcpy_payload_for_h2d(
+                path=str(path),
+                dtype="f16",
+                chunk_size=2,
+                pe_count=2,
+            )
+        self.assertEqual(payload.dtype, np.uint32)
+        self.assertEqual(
+            memcpy_dtype,
+            adapter.MemcpyDataType.MEMCPY_32BIT,
+        )
+        self.assertEqual(memcpy_chunk, 1)
+        self.assertEqual(payload.view(np.float16).tolist(), source.tolist())
+
+    def test_f16_d2h_uses_32bit_buffer_with_f16_output_dtype(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        import numpy as np
+
+        buffer, memcpy_dtype, memcpy_chunk, output_dtype = (
+            adapter._memcpy_buffer_for_d2h(
+                dtype="f16",
+                chunk_size=2,
+                pe_count=2,
+            )
+        )
+        self.assertEqual(buffer.dtype, np.uint32)
+        self.assertEqual(
+            memcpy_dtype,
+            adapter.MemcpyDataType.MEMCPY_32BIT,
+        )
+        self.assertEqual(memcpy_chunk, 1)
+        self.assertEqual(output_dtype, np.dtype(np.float16))
+
+    def test_f16_rejects_odd_per_pe_chunk(self) -> None:
+        adapter = _load_chain_step_adapter_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            import numpy as np
+
+            np.save(path, np.array([1.0, 2.0, 3.0], dtype=np.float16))
+            with self.assertRaises(ValueError):
+                adapter._memcpy_payload_for_h2d(
+                    path=str(path),
+                    dtype="f16",
+                    chunk_size=3,
+                    pe_count=1,
+                )
 
 
 class CompileBindingsTest(unittest.TestCase):
@@ -380,6 +473,118 @@ class CompileBindingsTest(unittest.TestCase):
             self.assertEqual(bindings["head_dim"], 128)
             self.assertEqual(bindings["num_pairs"], 64)
             self.assertEqual(bindings["local"], 256)
+
+
+class SchedulingAndResumeTest(unittest.TestCase):
+    def test_heavy_first_orders_by_estimated_io(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            compile_root = tmp_path / "compiled"
+            source_root = tmp_path / "source"
+            _make_kernel_dir(
+                source_root,
+                name="small",
+                exports=[
+                    {
+                        "symbol": "input",
+                        "elemType": "f32",
+                        "sizeExpr": "1",
+                    },
+                    {
+                        "symbol": "output",
+                        "elemType": "f32",
+                        "sizeExpr": "1",
+                    },
+                ],
+            )
+            _make_kernel_dir(
+                source_root,
+                name="large",
+                exports=[
+                    {
+                        "symbol": "input",
+                        "elemType": "f32",
+                        "sizeExpr": "1024",
+                    },
+                    {
+                        "symbol": "output",
+                        "elemType": "f32",
+                        "sizeExpr": "1024",
+                    },
+                ],
+            )
+            (compile_root / "small").mkdir(parents=True)
+            (compile_root / "large").mkdir(parents=True)
+            targets = [
+                {"name": "small", "compileParams": {"width": 1, "height": 1}},
+                {"name": "large", "compileParams": {"width": 1, "height": 1}},
+            ]
+            ordered = runner.order_targets(
+                targets=targets,
+                schedule="heavy-first",
+                compile_root=compile_root,
+                source_root=source_root,
+            )
+            self.assertEqual([t["name"] for t in ordered], ["large", "small"])
+
+    def test_resume_reuses_bound_and_timeouts_not_dispatch_exit(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            base = {
+                "kernel": "embed",
+                "hostPlanHash": "abc",
+                "verdict": "blocked",
+                "blocker": "dry_run",
+                "dispatchExitCode": None,
+                "dispatchTimedOut": False,
+                "dispatchWallclockNs": None,
+            }
+            (out_dir / "embed.json").write_text(
+                json.dumps(base, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(
+                runner.load_reusable_receipt(
+                    kernel="embed",
+                    out_dir=out_dir,
+                    host_plan_hash="abc",
+                    dry_run=False,
+                )
+            )
+            real = dict(base)
+            real["blocker"] = "dispatch_exit_code_1"
+            real["dispatchExitCode"] = 1
+            (out_dir / "embed.json").write_text(
+                json.dumps(real, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(
+                runner.load_reusable_receipt(
+                    kernel="embed",
+                    out_dir=out_dir,
+                    host_plan_hash="abc",
+                    dry_run=False,
+                )
+            )
+            timed_out = dict(base)
+            timed_out["blocker"] = "dispatch_timed_out"
+            timed_out["dispatchExitCode"] = -1
+            timed_out["dispatchTimedOut"] = True
+            (out_dir / "embed.json").write_text(
+                json.dumps(timed_out, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            reused = runner.load_reusable_receipt(
+                kernel="embed",
+                out_dir=out_dir,
+                host_plan_hash="abc",
+                dry_run=False,
+            )
+            self.assertIsNotNone(reused)
+            assert reused is not None
+            self.assertTrue(reused["dispatchTimedOut"])
 
 
 class LoadProbeInputsTest(unittest.TestCase):
@@ -610,6 +815,114 @@ class RunOneKernelTest(unittest.TestCase):
         self.assertEqual(receipt["dispatchExitCode"], 0)
         self.assertGreater(receipt["dispatchWallclockNs"], 0)
         self.assertGreater(receipt["totalOutputBytes"], 0)
+
+    def test_rope_in_place_input_is_read_back_as_output(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            compile_root = tmp_path / "compile"
+            compile_root.mkdir(parents=True)
+            _make_kernel_dir(
+                compile_root,
+                name="rope",
+                exports=[
+                    {
+                        "symbol": "input",
+                        "elemType": "f16",
+                        "sizeExpr": "head_dim",
+                    },
+                    {
+                        "symbol": "cos_table",
+                        "elemType": "f16",
+                        "sizeExpr": "num_pairs",
+                    },
+                    {
+                        "symbol": "sin_table",
+                        "elemType": "f16",
+                        "sizeExpr": "num_pairs",
+                    },
+                ],
+            )
+            host_plan_path = tmp_path / "host-plan.json"
+            host_plan_path.write_text(
+                json.dumps(
+                    {
+                        "compileTargets": [
+                            {
+                                "name": "rope",
+                                "compileParams": {
+                                    "width": 1,
+                                    "height": 1,
+                                    "head_dim": 4,
+                                    "num_pairs": 2,
+                                },
+                            }
+                        ]
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            probe_dir = tmp_path / "probes"
+            input_fixture = tmp_path / "inputs/rope.json"
+            _write_probe(
+                probe_dir=probe_dir,
+                kernel="rope",
+                input_fixture_rel=str(input_fixture.relative_to(tmp_path)),
+                fixture_path=input_fixture,
+                inputs={
+                    "input": [1.0, 2.0, 3.0, 4.0],
+                    "cos_table": [1.0, 1.0],
+                    "sin_table": [0.0, 0.0],
+                },
+            )
+            cs_python = tmp_path / "cs_python.sh"
+            cs_python.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            cs_python.chmod(0o755)
+            adapter = tmp_path / "adapter.py"
+            adapter.write_text("# stub\n", encoding="utf-8")
+            target = json.loads(host_plan_path.read_text(encoding="utf-8"))[
+                "compileTargets"
+            ][0]
+            original_repo_root = runner.REPO_ROOT
+            runner.REPO_ROOT = tmp_path
+            try:
+                receipt = runner.run_one_kernel(
+                    kernel="rope",
+                    target=target,
+                    compile_root=compile_root,
+                    probe_dir=probe_dir,
+                    host_plan_path=host_plan_path,
+                    host_plan_hash=_sha256_file(host_plan_path),
+                    out_dir=tmp_path / "out",
+                    cmaddr="",
+                    timeout_seconds=30,
+                    cs_python=cs_python,
+                    adapter=adapter,
+                    dry_run=True,
+                )
+            finally:
+                runner.REPO_ROOT = original_repo_root
+        self.assertEqual(receipt["blocker"], "dry_run")
+        self.assertEqual([item["symbol"] for item in receipt["outputs"]], ["input"])
+        command = receipt["subprocess"]["command"]
+        self.assertIn("--input", command)
+        self.assertIn("--output", command)
+        input_specs = [
+            command[i + 1]
+            for i, token in enumerate(command)
+            if token == "--input"
+        ]
+        self.assertTrue(any(spec.startswith("input:") for spec in input_specs))
+        output_specs = [
+            command[i + 1]
+            for i, token in enumerate(command)
+            if token == "--output"
+        ]
+        self.assertEqual(len(output_specs), 1)
+        self.assertTrue(output_specs[0].startswith("input:"))
 
 
 if __name__ == "__main__":

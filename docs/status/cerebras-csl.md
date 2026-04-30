@@ -13,6 +13,156 @@ later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the tiled SUMMA `launchIndex=2` host D2H stall, not the earlier embed/lm-head/
 attention compile blockers.
 
+## 2026-04-29 — CSL emulator covers remaining 31B compile-target semantics
+
+`bench/tools/run_csl_webgpu_emulator.mjs` now recognizes every compile target
+in the current Gemma 4 31B af16 CSL bundle: tiled SUMMA matmul, RoPE, tiled
+prefill attention, decode attention, Q4K fused GEMV, KV cache write, and
+sample. The CPU semantic backend executes each family against raw fixture H2D
+buffers, including PE-local flash-attention state for `compute`/`finalize` and
+Q4K byte dequantization for fused GEMV. Result receipts now expose hashes for
+source-defined internal state under `execution.state`. The WebGPU backend has
+matching generated WGSL for the same families and creates hidden GPU buffers
+for source-defined attention state when explicit `--backend webgpu` execution
+is available.
+
+The real 31B bundle still blocks at H2D fixture binding when no Doppler/RDRR or
+raw fixtures are supplied; this is an input-materialization blocker, not an
+unsupported CSL semantic in the source inspector.
+
+## 2026-04-29 — Gemma 4 31B af16 session runner sharding follow-up
+
+`bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py`
+now carries the CLI front door, weightsRef staging, dispatch expansion,
+real-session scheduler, runtime-config materialization, host I/O layout
+emission, and trace assembly. This exceeds the Python benchmark-tooling shard
+threshold.
+
+Owner: Doe Cerebras runner. Next split target:
+`bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py` should own the
+real-session scheduler, weight mappings, host I/O layout, runtime-config
+writing, serial launch binding, KV schedule, and sample feedback assembly.
+The existing streaming runner should keep CLI parsing, refresh orchestration,
+and final trace aggregation.
+
+## 2026-04-29 — CSL emulator records D2H artifacts and simple element-wise bodies
+
+`bench/tools/run_csl_webgpu_emulator.mjs` now accepts `--d2h-out-dir` and writes
+each `memcpy_d2h` payload as a byte artifact, with the file path, byte length,
+and sha256 recorded on the operation receipt. This gives emulator parity checks
+a concrete file surface instead of forcing every consumer to trust only the
+inline hash.
+
+The source inspector also recognizes the simple DOE-emitted `element_wise`
+identity body used by the current 31B `ple_residual` target:
+`output[idx] = input[idx] * 1.0`. The semantic runs on both CPU and generated
+WGSL/WebGPU backends under the explicit `elementwise_identity` label.
+
+## 2026-04-29 — E2B attention-core receipt drift fixed
+
+`bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py` now invokes the
+shape runner with absolute repo paths when running through the SDK Python
+wrapper. This prevents the container scratch CWD from turning
+`bench/runners/csl-runners/gemma4_e2b_manifest_attention_core.py` into a
+nonexistent scratch-relative path. Blocked shape-run fallbacks also carry the
+schema-required shape fields and `executedRun.numericalParity.comparison`, so a
+real SDK failure remains a valid blocked receipt instead of corrupting the
+schema gate.
+
+The E2B manifest-shape attention-core receipt, Doppler capture-to-CSL lowering
+receipt, and E2B model runtime receipt were regenerated from the fixed path.
+The model receipt now links the current attention-core and lowering artifact
+hashes, and `bench/tools/validate_e2b_receipt_links.py` passes.
+
+## 2026-04-29 — Restricted CSL WebGPU emulator runner lands
+
+`bench/tools/run_csl_webgpu_emulator.mjs` now consumes
+`csl_webgpu_emulator_input` artifacts and emits
+`config/csl-webgpu-emulator-result.schema.json` receipts. The runner models the
+ordered host operation graph, binds raw fixture H2D files by device symbol,
+tracks per-symbol hashes, and executes supported launches on either the CPU
+semantic backend or the Doe Node WebGPU backend when requested and available.
+
+The supported CSL source subset is explicit: `gather`, `residual_add`, `gelu`,
+`rms_norm`, and no-op `sys_mod.unblock_cmd_stream()` launches. Missing fixtures,
+unsupported operation kinds, unsupported CSL source, and unimplemented
+Doppler/RDRR materialization all produce blocked receipts with typed blockers;
+the runner does not fabricate tensor inputs or promote a receipt to simulator or
+hardware parity.
+
+## 2026-04-29 — CSL WebGPU emulator input contract lands
+
+`config/csl-webgpu-emulator-input.schema.json` now defines the source-preserving
+input bundle for a future CSL-source-to-WebGPU semantic emulator. The contract
+binds the existing HostPlan bundle surface (`host-plan.json`,
+`runtime-config.json`, `simulator-plan.json`), per-target `layout.csl` and
+`pe_program.csl` source hashes, the synthesized `csl_operation_graph`, and
+optional Doppler Program Bundle / RDRR manifest / reference transcript identity.
+
+`bench/tools/build_csl_webgpu_emulator_input.py` builds that artifact from an
+existing CSL bundle plus driver result. The status is explicitly
+`input_contract_only_not_execution`: no WebGPU execution, CSL simfabric parity,
+or hardware claim is created by this artifact. It gives the upcoming emulator
+a normalized source contract instead of requiring it to infer layout, launches,
+copy regions, and source hashes from scattered files.
+
+## 2026-04-29 — Gemma 4 31B af16 bounded inference smoke contract
+
+`bench/tools/synthesize_gemma4_31b_af16_bounded_inference_smoke_receipt.py`
+now emits the Gemma 4 31B af16 bounded simulator-smoke receipt at
+`bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json`.
+
+The receipt is schema-validated by
+`config/doe-gemma4-31b-af16-bounded-inference-smoke.schema.json` and
+hash-links the af16 Doppler manifest, the af16 frozen Doppler fixture, the
+af16 HostPlan compile receipt, and the current manifest-shape per-kernel
+summary. It records the caller-selected prefill/decode budget and the exact
+blocked taxonomy instead of inventing a CSL token sequence. The source-side
+blockers for incomplete weight-symbol mapping and stale dry-run per-kernel
+summaries are now cleared in the runner trace; the receipt carries the
+remaining host/runtime blockers from the streaming trace.
+
+`bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py`
+now owns the Gemma 4 31B af16 real-inference front door: it resolves
+`weightsRef` to the primary weight pack, checks shard presence, resolves all
+execution-v1 weight symbols, expands the prefill/decode schedule, and exposes
+the af16 per-kernel refresh command. The trace records all 31B af16 shards as
+present and every required weight key as resolved, with explicit policy
+records for architecture-disabled PLE projection-norm inputs and 31B
+linear-attention layers that intentionally lack `v_proj`. The current
+per-kernel summary is dry-run-only; when a refresh is requested and the SDK
+container cannot launch, the bounded receipt reports the SDK preflight
+failure rather than treating the stale dry-run summary as the active source
+blocker. The remaining runtime blocker is the combined session executor that
+binds cross-kernel tensors and KV cache state and emits the token/logit/KV
+transcript.
+
+`bench/runners/csl-runners/manifest_kernel_probe_runner.py` now supports
+source-preserving refresh controls for future reruns: `--jobs` runs
+independent kernel probes in parallel, `--resume` reuses existing non-dry-run
+dispatch receipts with the current HostPlan hash when they are already bound
+or reached the timeout taxonomy, and
+`--schedule heavy-first` orders targets by metadata-estimated manifest-shape
+I/O size so large kernels can start before smaller probes. The Gemma af16
+front door passes those controls through via `--refresh-jobs`,
+`--refresh-resume`, `--refresh-schedule`, and
+`--refresh-timeout-seconds`. `--cmaddr` remains the explicit real-fabric path;
+custom `--host-plan`, `--compile-root`, and `--refresh-out-dir` remain the way
+to run a shape-reduced debug lane without mixing it with the manifest-shape
+claim receipts.
+
+The first SDK-capable refresh exposed source-side probe issues that are now
+fixed in the runner path. `bench/runners/csl-runners/chain_step_adapter.py`
+packs logical `f16` tensors through 32-bit memcpy words because this SDK rejects
+16-bit memcpy calls. `rope` / `rope_partial` are in-place kernels, so the shared
+rung-2/rung-4 classifier treats `input` as the output symbol for those kernels;
+the predictor, layout receipt, and probe runner now agree on the same d2h
+contract. The summary entries now carry `dispatchTimedOut` so timeout taxonomy
+is visible without opening each per-kernel receipt. Existing refreshed receipts
+under `bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/` predate those
+fixes; rerun the refresh command on the SDK-capable host to replace the
+dispatch-exit blockers with current evidence.
+
 ## 2026-04-28 — Evidence runner blocks stale attention-core receipts
 
 `bench/tools/run_gemma4_e2b_manifest_shape_attention_core.py` now removes the

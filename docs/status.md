@@ -67,6 +67,16 @@ history.
   `bench/tools/bind_shared_execution_parity.py`. This lands the Doe WebGPU
   receipt shape and pairwise contract parity plumbing, but KV/cache evidence
   for the WebGPU lane and the real CSL executor still remain open.
+- The CSL source-to-WebGPU emulator now has a schema-backed input/result
+  surface and a restricted semantic runner:
+  `config/csl-webgpu-emulator-input.schema.json`,
+  `config/csl-webgpu-emulator-result.schema.json`,
+  `bench/tools/build_csl_webgpu_emulator_input.py`, and
+  `bench/tools/run_csl_webgpu_emulator.mjs`. It executes fixture-bound
+  operation graphs for the supported CSL subset, including the current 31B
+  tiled matmul, RoPE, attention, fused GEMV, KV write, and sample families, and
+  emits blocked receipts for unsupported source or unmaterialized Doppler/RDRR
+  tensors; it is not a simulator or hardware parity claim.
 - The CSL emitter floor has moved to Cerebras SDK 2.10. Generated PE programs
   now use the SDK 2.10 untyped parameter form for `memcpy_params` /
   `c2d_params`, fabric DSDs bind colors through explicit queues instead of

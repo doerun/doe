@@ -305,6 +305,20 @@
       "attentionType": "global"
     },
     {
+      "name": "final_norm",
+      "phase": "decode",
+      "op": "rmsnorm",
+      "kernelKey": "rmsnorm",
+      "weightsKey": "norm"
+    },
+    {
+      "name": "lm_head",
+      "phase": "decode",
+      "op": "matmul_q4k",
+      "kernelKey": "lm_head_gemv_stable",
+      "weightsKey": "lm_head"
+    },
+    {
       "name": "sample",
       "phase": "decode",
       "op": "sample",

@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://d4da.local/schemas/doe-gemma4-31b-af16-bounded-inference-smoke.schema.json",
+  "title": "Doe Gemma 4 31B af16 bounded inference smoke receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptClass",
+    "comparisonMode",
+    "modelId",
+    "laneKey",
+    "dtypeProfile",
+    "manifestPath",
+    "manifestSha256",
+    "referenceFixtureHash",
+    "requestedSmoke",
+    "dopplerReference",
+    "sourceProgram",
+    "perKernelEvidence",
+    "hostPlanStreamingTrace",
+    "executionPlan",
+    "status",
+    "blockers",
+    "claim"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": {
+      "const": "doe_gemma4_31b_af16_bounded_inference_smoke_receipt"
+    },
+    "receiptClass": {
+      "const": "manifest_shape_bounded_inference_smoke"
+    },
+    "comparisonMode": { "const": "parity" },
+    "modelId": { "const": "gemma-4-31b-it-text-q4k-ehf16-af16" },
+    "laneKey": { "const": "q4k-ehf16-af16" },
+    "dtypeProfile": {
+      "type": "object",
+      "required": [
+        "weights",
+        "embeddings",
+        "lmHead",
+        "compute",
+        "variantTag"
+      ],
+      "properties": {
+        "weights": { "const": "q4k" },
+        "embeddings": { "const": "f16" },
+        "lmHead": { "const": "q4k" },
+        "compute": { "const": "f16" },
+        "variantTag": { "const": "q4k-ehf16-af16" }
+      }
+    },
+    "manifestPath": { "type": "string", "minLength": 1 },
+    "manifestSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "referenceFixtureHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "hostPlanPath": { "type": "string", "minLength": 1 },
+    "hostPlanHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "requestedSmoke": {
+      "type": "object",
+      "required": ["prefillTokenCount", "decodeTokenCount"],
+      "properties": {
+        "prefillTokenCount": { "type": "integer", "minimum": 1 },
+        "decodeTokenCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "dopplerReference": {
+      "type": "object",
+      "required": [
+        "fixtureRoot",
+        "manifestPath",
+        "manifestSha256",
+        "transcriptPath",
+        "transcriptSha256",
+        "fixtureDigest",
+        "prompt",
+        "output",
+        "exactShapeMatchesRequested"
+      ],
+      "properties": {
+        "exactShapeMatchesRequested": { "type": "boolean" }
+      }
+    },
+    "sourceProgram": {
+      "type": "object",
+      "required": [
+        "compileReceiptPath",
+        "compileReceiptSha256",
+        "compileTargetCount",
+        "compileSucceededCount",
+        "hostPlanPath",
+        "hostPlanHash"
+      ],
+      "properties": {
+        "compileTargetCount": { "type": "integer", "minimum": 0 },
+        "compileSucceededCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "perKernelEvidence": {
+      "type": "object",
+      "required": ["summaryPath", "summarySha256", "totals"],
+      "properties": {
+        "summaryPath": { "type": "string", "minLength": 1 },
+        "summarySha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "blockerCounts": { "type": "object" },
+        "staleDryRunOnly": { "type": "boolean" }
+      }
+    },
+    "hostPlanStreamingTrace": {
+      "type": "object",
+      "required": ["path", "present", "blockers"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "present": { "type": "boolean" },
+        "status": {
+          "enum": [
+            "blocked",
+            "output_ready"
+          ]
+        },
+        "blockers": { "type": "array" }
+      }
+    },
+    "executionPlan": {
+      "type": "object",
+      "required": [
+        "kind",
+        "runnerPath",
+        "runnerSha256",
+        "stateRequirements",
+        "dispatchSequence"
+      ],
+      "properties": {
+        "runnerPath": { "type": "string", "minLength": 1 },
+        "runnerSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "blocked",
+        "ready_for_sdk_host",
+        "output_ready"
+      ]
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["class", "detail"]
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": ["scope", "notWhat", "summary"]
+    }
+  }
+}

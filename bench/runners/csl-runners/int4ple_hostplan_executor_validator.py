@@ -88,6 +88,24 @@ def _append_missing_fields(
             )
 
 
+def _symbol_table_candidates(resolved: dict[str, Any]) -> list[dict[str, Any]]:
+    bindings = resolved.get("bindings")
+    if isinstance(bindings, list):
+        return [item for item in bindings if isinstance(item, dict)]
+    return [resolved]
+
+
+def _candidate_matches_item(
+    candidate: dict[str, Any],
+    item: dict[str, Any],
+) -> bool:
+    return all(candidate.get(field) == item.get(field) for field in (
+        "buffer",
+        "role",
+        "access",
+    ))
+
+
 def _validate_binding_items(
     *,
     blockers: list[str],
@@ -127,8 +145,13 @@ def _validate_binding_items(
                     f"{symbol}"
                 )
             else:
+                candidates = _symbol_table_candidates(resolved)
+                if any(_candidate_matches_item(candidate, item) for candidate in candidates):
+                    parsed.append(item)
+                    continue
+                first = candidates[0] if candidates else resolved
                 for field in ("buffer", "role", "access"):
-                    if resolved.get(field) != item.get(field):
+                    if first.get(field) != item.get(field):
                         blockers.append(
                             f"launch[{launch_index}].{side}[{item_index}]."
                             f"{field}_mismatch:{symbol}"

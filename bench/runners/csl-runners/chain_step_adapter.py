@@ -22,10 +22,11 @@ Per-tensor chunk_size override matters when a kernel has inputs of
 different per-PE sizes — e.g. gather: indices=num_tokens, table=rows*hidden.
 
 Dtype maps: f32 → MEMCPY_32BIT + np.float32; u32 → MEMCPY_32BIT +
-np.uint32; f16 → MEMCPY_16BIT + np.float16; u8 → MEMCPY_32BIT with a
-uint32 byte-preserving view. The f16 path lets the af16 manifest
-variants stage real per-kernel inputs through the SDK's native 16-bit
-memcpy without packing through u32.
+np.uint32; f16 → MEMCPY_32BIT with a uint32 byte-preserving view; u8 →
+MEMCPY_32BIT with a uint32 byte-preserving view. The f16 path keeps the
+logical tensor dtype as np.float16 while satisfying SDK memcpy calls that
+require 32-bit host words. f16 per-PE chunk sizes must be even so each
+memcpy word carries exactly two half values.
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ from cerebras.sdk.runtime.sdkruntimepybind import (  # pylint: disable=no-name-i
 DTYPE_MAP = {
     "f32": (np.float32, MemcpyDataType.MEMCPY_32BIT),
     "u32": (np.uint32, MemcpyDataType.MEMCPY_32BIT),
-    "f16": (np.float16, MemcpyDataType.MEMCPY_16BIT),
+    "f16": (np.float16, MemcpyDataType.MEMCPY_32BIT),
     "u8": (np.uint8, MemcpyDataType.MEMCPY_32BIT),
 }
 
@@ -95,6 +96,23 @@ def parse_args() -> argparse.Namespace:
 def _memcpy_payload_for_h2d(
     *, path: str, dtype: str, chunk_size: int, pe_count: int
 ) -> tuple[np.ndarray, MemcpyDataType, int]:
+    if dtype == "f16":
+        if chunk_size % 2 != 0:
+            raise ValueError(
+                f"f16 chunk_size {chunk_size} must be even for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        raw = np.ascontiguousarray(np.load(path).ravel(), dtype=np.float16)
+        expected = pe_count * chunk_size
+        if raw.size != expected:
+            raise ValueError(
+                f"f16 tensor {path} has {raw.size} elements, expected {expected}"
+            )
+        return (
+            raw.view(np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            chunk_size // 2,
+        )
     if dtype == "u8":
         if chunk_size % 4 != 0:
             raise ValueError(
@@ -123,6 +141,18 @@ def _memcpy_payload_for_h2d(
 def _memcpy_buffer_for_d2h(
     *, dtype: str, chunk_size: int, pe_count: int
 ) -> tuple[np.ndarray, MemcpyDataType, int, np.dtype]:
+    if dtype == "f16":
+        if chunk_size % 2 != 0:
+            raise ValueError(
+                f"f16 chunk_size {chunk_size} must be even for "
+                "MEMCPY_32BIT byte-preserving transfer"
+            )
+        return (
+            np.zeros(pe_count * (chunk_size // 2), dtype=np.uint32),
+            MemcpyDataType.MEMCPY_32BIT,
+            chunk_size // 2,
+            np.dtype(np.float16),
+        )
     if dtype == "u8":
         if chunk_size % 4 != 0:
             raise ValueError(
@@ -189,8 +219,8 @@ def main() -> int:
             streaming=False, order=MemcpyOrder.ROW_MAJOR,
             data_type=mcpy_dtype, nonblock=False,
         )
-        if dtype == "u8":
-            arr = arr.view(np.uint8).astype(output_dtype, copy=False)
+        if dtype in ("f16", "u8"):
+            arr = arr.view(output_dtype).astype(output_dtype, copy=False)
         outputs.append((symbol, path, arr))
 
     runner.stop()
