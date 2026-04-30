@@ -42,6 +42,7 @@ from bench.tools._receipt_hash_guard import (  # noqa: E402
 from bench.tools._inference_evidence_gate import (  # noqa: E402
     InferenceEvidenceGateError,
     enforce_inference_evidence_gate,
+    evaluate_inference_evidence_gate,
 )
 
 MODEL_ID = "gemma-4-31b-it-text-q4k-ehf16-af16"
@@ -125,6 +126,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--prefill-token-count", type=int, default=2)
     parser.add_argument("--decode-token-count", type=int, default=2)
+    parser.add_argument(
+        "--emit-blocked-on-evidence-gate",
+        action="store_true",
+        help=(
+            "Emit a blocked receipt carrying inferenceEvidenceGate reasons "
+            "when token-output dispatch evidence is incomplete."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -366,19 +375,38 @@ def _blockers(
     compile_summary: dict[str, Any],
     kernel_summary: dict[str, Any],
     streaming_trace: dict[str, Any],
+    inference_gate: dict[str, Any],
 ) -> list[dict[str, str]]:
     blockers: list[dict[str, str]] = []
+    blocker_classes: set[str] = set()
     if (
         compile_summary["compileTargetCount"]
         != compile_summary["compileSucceededCount"]
     ):
-        blockers.append({
+        blocker = {
             "class": "manifest_shape_compile_not_clean",
             "detail": (
                 "The af16 HostPlan compile receipt does not report every "
                 "target as compiled successfully."
             ),
-        })
+        }
+        blockers.append(blocker)
+        blocker_classes.add(blocker["class"])
+    if inference_gate.get("eligible") is not True:
+        for reason in inference_gate.get("reasons") or []:
+            if not isinstance(reason, dict):
+                continue
+            code = str(reason.get("code") or "")
+            if not code:
+                continue
+            cls = f"inference_evidence_gate.{code}"
+            if cls in blocker_classes:
+                continue
+            blockers.append({
+                "class": cls,
+                "detail": str(reason.get("detail") or code),
+            })
+            blocker_classes.add(cls)
     trace_blocker_classes = {
         str(blocker.get("class"))
         for blocker in streaming_trace.get("blockers") or []
@@ -390,7 +418,7 @@ def _blockers(
     if kernel_summary["blockedKernels"] and not (
         refresh_blocked and stale_dry_run_only
     ):
-        blockers.append({
+        blocker = {
             "class": "manifest_kernel_dispatch_not_bound",
             "detail": (
                 "The af16 per-kernel summary still contains non-bound "
@@ -398,38 +426,52 @@ def _blockers(
                 "suite on an SDK host and refresh the summary before "
                 "using it as execution evidence."
             ),
-        })
+        }
+        if blocker["class"] not in blocker_classes:
+            blockers.append(blocker)
+            blocker_classes.add(blocker["class"])
     for blocker in streaming_trace.get("blockers") or []:
         if not isinstance(blocker, dict):
             continue
         cls = str(blocker.get("class") or "")
-        if not cls or cls in {"manifest_kernel_dispatch_not_bound"}:
+        if (
+            not cls
+            or cls in {"manifest_kernel_dispatch_not_bound"}
+            or cls in blocker_classes
+        ):
             continue
         blockers.append({
             "class": cls,
             "detail": str(blocker.get("detail") or cls),
         })
+        blocker_classes.add(cls)
     real_session = streaming_trace.get("realSessionRuntime") or {}
     if real_session:
         real_session_status = str(real_session.get("status") or "unknown")
         if real_session_status != "output_ready":
-            blockers.append({
+            blocker = {
                 "class": "real_session_runtime_not_output_ready",
                 "detail": (
                     "The Gemma 4 31B af16 session runtime contract is "
                     f"present, but status is {real_session_status!r}; "
                     "no token/logit/KV transcript is available for parity."
                 ),
-            })
+            }
+            if blocker["class"] not in blocker_classes:
+                blockers.append(blocker)
+                blocker_classes.add(blocker["class"])
     elif "combined_session_runtime_absent" not in trace_blocker_classes:
-        blockers.append({
+        blocker = {
             "class": "combined_session_runtime_absent",
             "detail": (
                 "The Gemma 4 31B af16 HostPlan streaming front door is "
                 "present, but it has not produced a token/logit/KV "
                 "transcript from a session-scoped SDK execution."
             ),
-        })
+        }
+        if blocker["class"] not in blocker_classes:
+            blockers.append(blocker)
+            blocker_classes.add(blocker["class"])
     return blockers
 
 
@@ -444,6 +486,7 @@ def build_receipt(
     decode_token_count: int,
     source_graph_inventory: Path | None = None,
     streaming_trace: Path = DEFAULT_STREAMING_TRACE,
+    emit_blocked_on_evidence_gate: bool = False,
 ) -> dict[str, Any]:
     for label, path in (
         ("source Doppler manifest", source_doppler_manifest),
@@ -463,11 +506,21 @@ def build_receipt(
             "requiredKernels": None,
         }
     )
-    enforce_inference_evidence_gate(
+    inference_gate_result = evaluate_inference_evidence_gate(
         host_plan=_load_json(host_plan),
         per_kernel_summary=_load_json(per_kernel_summary),
         source_graph_kernels=source_inventory.get("requiredKernels"),
     )
+    if (
+        not inference_gate_result.eligible
+        and not emit_blocked_on_evidence_gate
+    ):
+        enforce_inference_evidence_gate(
+            host_plan=_load_json(host_plan),
+            per_kernel_summary=_load_json(per_kernel_summary),
+            source_graph_kernels=source_inventory.get("requiredKernels"),
+        )
+    inference_gate = inference_gate_result.to_dict()
 
     dtype_profile = _load_dtype_profile(source_doppler_manifest)
     csl_dtype_contract = csl_dtype_contract_for_profile(
@@ -488,10 +541,11 @@ def build_receipt(
         compile_summary=compile_info,
         kernel_summary=kernel_info,
         streaming_trace=streaming_info,
+        inference_gate=inference_gate,
     )
     status = "blocked" if blockers else "ready_for_sdk_host"
     receipt = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "artifactKind": ARTIFACT_KIND,
         "receiptClass": "manifest_shape_bounded_inference_smoke",
         "comparisonMode": "parity",
@@ -523,6 +577,7 @@ def build_receipt(
             "sourceGraphInventory": source_inventory,
         },
         "perKernelEvidence": kernel_info,
+        "inferenceEvidenceGate": inference_gate,
         "hostPlanStreamingTrace": streaming_info,
         "executionPlan": {
             "kind": "session_scoped_hostplan_streaming_runner",
@@ -591,6 +646,7 @@ def main() -> int:
             streaming_trace=args.streaming_trace,
             prefill_token_count=args.prefill_token_count,
             decode_token_count=args.decode_token_count,
+            emit_blocked_on_evidence_gate=args.emit_blocked_on_evidence_gate,
         )
         validate_receipt(receipt, args.schema)
     except (

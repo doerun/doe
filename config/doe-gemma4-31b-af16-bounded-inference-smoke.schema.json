@@ -20,6 +20,7 @@
     "dopplerReference",
     "sourceProgram",
     "perKernelEvidence",
+    "inferenceEvidenceGate",
     "hostPlanStreamingTrace",
     "executionPlan",
     "status",
@@ -27,7 +28,7 @@
     "claim"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "artifactKind": {
       "const": "doe_gemma4_31b_af16_bounded_inference_smoke_receipt"
     },
@@ -57,18 +58,99 @@
     "cslDtypeContract": {
       "type": "object",
       "required": [
+        "name",
         "backend",
         "dopplerVariantTag",
         "hostPlanActivationDtype",
         "fallbackPolicy",
         "dtypes",
-        "accumulationDtypes"
+        "accumulationDtypes",
+        "kernelClasses"
       ],
       "properties": {
+        "name": { "const": "gemma4_31b_q4k_ehf16_af16" },
         "backend": { "const": "cerebras_csl" },
         "dopplerVariantTag": { "const": "q4k-ehf16-af16" },
         "hostPlanActivationDtype": { "const": "f16" },
-        "fallbackPolicy": { "const": "forbid_implicit_af32" }
+        "fallbackPolicy": { "const": "forbid_implicit_af32" },
+        "dtypes": {
+          "type": "object",
+          "required": [
+            "activation",
+            "kvCache",
+            "kernelOutput",
+            "embeddingTable",
+            "q4kWeightStorage",
+            "lmHeadActivation",
+            "lmHeadWeight",
+            "logits",
+            "sampleTokenId"
+          ],
+          "properties": {
+            "activation": { "const": "f16" },
+            "kvCache": { "const": "f16" },
+            "kernelOutput": { "const": "f16" },
+            "embeddingTable": { "const": "f16" },
+            "q4kWeightStorage": { "const": "u8_q4k" },
+            "lmHeadActivation": { "const": "f16" },
+            "lmHeadWeight": { "const": "f16" },
+            "logits": { "const": "f32" },
+            "sampleTokenId": { "const": "u32" }
+          }
+        },
+        "accumulationDtypes": {
+          "type": "object",
+          "required": [
+            "rmsNorm",
+            "rope",
+            "attention",
+            "summaMatmul",
+            "residual",
+            "gatedActivation",
+            "kvReadWrite",
+            "fusedGemv",
+            "denseLmHead",
+            "sampleCompare"
+          ],
+          "properties": {
+            "rmsNorm": { "const": "f16" },
+            "rope": { "const": "f16" },
+            "attention": { "const": "f16" },
+            "summaMatmul": { "const": "f16" },
+            "residual": { "const": "f16" },
+            "gatedActivation": { "const": "f16" },
+            "kvReadWrite": { "const": "f16" },
+            "fusedGemv": { "const": "f16" },
+            "denseLmHead": { "const": "f32" },
+            "sampleCompare": { "const": "f32" }
+          }
+        },
+        "kernelClasses": {
+          "type": "array",
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "properties": { "name": { "const": "dense_lm_head" } }
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": { "name": { "const": "sample" } }
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": { "name": { "const": "kv_read_write" } }
+              },
+              "minContains": 1
+            }
+          ]
+        }
       }
     },
     "manifestPath": { "type": "string", "minLength": 1 },
@@ -136,6 +218,24 @@
         },
         "blockerCounts": { "type": "object" },
         "staleDryRunOnly": { "type": "boolean" }
+      }
+    },
+    "inferenceEvidenceGate": {
+      "type": "object",
+      "required": ["eligible", "reasons"],
+      "properties": {
+        "eligible": { "type": "boolean" },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["code", "detail"],
+            "properties": {
+              "code": { "type": "string", "minLength": 1 },
+              "detail": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
       }
     },
     "hostPlanStreamingTrace": {

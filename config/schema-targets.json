@@ -182,6 +182,10 @@
       "data": "config/doe-csl-dtype-contracts.json"
     },
     {
+      "schema": "config/doe-gemma4-31b-af16-bounded-inference-smoke.schema.json",
+      "data": "bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json"
+    },
+    {
       "schema": "config/doe-csl-reference-parity.schema.json",
       "data": "examples/doe-csl-reference-parity.gemma-4-e2b-layer-block.sample.json"
     },

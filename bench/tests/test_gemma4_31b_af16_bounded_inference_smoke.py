@@ -326,6 +326,41 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         codes = {r.code for r in ctx.exception.result.reasons}
         self.assertIn("dispatch_evidence_sample_unbound", codes)
 
+    def test_synthesizer_can_emit_blocked_gate_receipt(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        per_kernel = json.loads(
+            paths["per_kernel_summary"].read_text(encoding="utf-8")
+        )
+        for kernel in per_kernel["kernels"]:
+            if kernel["kernel"] == "sample":
+                kernel["verdict"] = "blocked"
+                kernel["blocker"] = "dispatch_exit_code_255"
+        per_kernel["totals"] = {
+            "kernelCount": 3, "boundCount": 2, "blockedCount": 1,
+        }
+        paths["per_kernel_summary"].write_text(
+            json.dumps(per_kernel, indent=2) + "\n", encoding="utf-8"
+        )
+        receipt = build_receipt(
+            source_doppler_manifest=paths["manifest"],
+            frozen_reference_root=paths["reference_root"],
+            compile_receipt=paths["compile_receipt"],
+            host_plan=paths["host_plan"],
+            per_kernel_summary=paths["per_kernel_summary"],
+            prefill_token_count=19,
+            decode_token_count=2,
+            streaming_trace=paths["streaming_trace"],
+            emit_blocked_on_evidence_gate=True,
+        )
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertFalse(receipt["inferenceEvidenceGate"]["eligible"])
+        blocker_classes = {b["class"] for b in receipt["blockers"]}
+        self.assertIn(
+            "inference_evidence_gate.dispatch_evidence_sample_unbound",
+            blocker_classes,
+        )
+
     def test_synthesizer_rejects_missing_lm_head_dispatch(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         paths = _materialize_inputs(Path(self.tmp.name))
