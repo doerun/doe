@@ -35,8 +35,7 @@ The real Gemma HostPlan checkpoint resume advanced to
 That scratch trace is `checkpoint_stopped`; it is not transcript evidence and
 does not bind the final_norm -> lm_head -> sample path.
 
-`bench/out/r3-cross-model-parity/receipt.json` was refreshed with Gemma/Qwen
-af16 lanes required and remains `unbound` on recorded hash-spine mismatches.
+`bench/out/r3-cross-model-parity/receipt.json` was refreshed with Gemma/Qwen af16 lanes required; it remains `unbound` on Gemma budget and Qwen hash-spine blockers.
 
 ## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
 
