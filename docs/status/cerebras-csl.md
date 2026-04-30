@@ -11,9 +11,33 @@ Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing that was
 later narrowed by the Gemma 3 1B compile fixes. The active execution blocker is
 the Gemma 4 31B af16 HostPlan session path: PLE embedding and early PLE SUMMA
-projection copyback are now real-checkpointed, and the current local probe is
-rerunning manifest-shape lm-head/sample dispatch before bounded evidence can
-promote.
+projection copyback are now real-checkpointed, sample per-kernel dispatch is
+bound, and lm-head dispatch remains the token-output evidence blocker.
+
+## 2026-04-30 — f16 dtype gate v2 and checkpoint 70 evidence
+
+`config/doe-csl-dtype-contracts.json` is now schema version 2. The schema
+requires Gemma `q4k-ehf16-af16` and Qwen `q4k-eaf16` f16 CSL contracts to
+declare activation, KV, kernel-output, lm-head, logits, sample-token,
+accumulation, and kernel-class dtype surfaces; Qwen also records its q/k norm,
+causal prefill attention, gated FFN, convolution, linear-attention/DeltaNet,
+SSM, and recurrence-carry obligations.
+
+The Gemma and Qwen af16 per-kernel summaries were refreshed from matching
+host-plan receipts without inventing evidence. Sample is bound for both
+models. Gemma `lm_head_prefill_stable` and Qwen `lm_head_gemv_stable` remain
+blocked, so token-output evidence stays fail-closed.
+
+`bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` now validates
+with the v2 `cslDtypeContract` and `inferenceEvidenceGate` result. Its only
+dispatch gate reason is `dispatch_evidence_lm_head_unbound`; session and
+transcript blockers remain.
+
+The real Gemma HostPlan checkpoint resume advanced from the previous PLE
+projection checkpoint to
+`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json`.
+That scratch trace is `checkpoint_stopped`; it is not transcript evidence and
+does not bind the final_norm -> lm_head -> sample path.
 
 ## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
 
@@ -28,9 +52,9 @@ weightsRef identity preservation for shared Q4K packs.
 
 The Gemma af16 streaming trace and bounded-smoke receipt builder now carry
 `cslDtypeContract` next to the Doppler `dtypeProfile`; existing unpromoted
-bounded evidence cannot be regenerated until the current per-kernel gate binds
-`sample` and lm-head dispatch. The current checked-in receipt remains
-superseded by the gate rejection, not promoted by the contract metadata.
+bounded evidence cannot promote until the current per-kernel gate binds
+lm-head dispatch. The checked-in bounded receipt remains blocked by the
+inference evidence gate, not promoted by the contract metadata.
 
 Runtime staging now accepts f16 SUMMA A/B tiling and f16 constant state without
 silently widening to af32. The Zig HostPlan tool routes af16 compile-target
@@ -51,9 +75,9 @@ and
 `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt62.json`.
 That clears the previous `transform_field_missing:sourceCols` blocker for the
 first PLE SUMMA projection handoff. The run remains checkpoint-stopped before
-token/logit/KV transcript completion. The manifest-shape per-kernel rerun is
-currently refreshing lm-head and sample dispatch; until it writes a summary
-with bound receipts, bounded-smoke regeneration remains fail-closed.
+token/logit/KV transcript completion. The manifest-shape per-kernel summary
+now preserves the bound sample receipt and the blocked lm-head receipt; until
+lm-head binds, bounded-smoke evidence remains fail-closed.
 
 Tracked sharding follow-up: Owner Doe Cerebras runner. Next split targets are
 to move HostPlan execution-plan materialization out of

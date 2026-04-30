@@ -10,7 +10,7 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 |---|---|---|---|
 | A. Real-canary CSL identity | Smoke | No (regression bookkeeping) | 24/24 pass across 6 kernels × 4 backends |
 | B. 31B manifest-shape full-graph compile | Manifest | Yes | **Closed for emitted compile inventory only.** Not token-output inference evidence unless the inventory includes the post-layer logits path |
-| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | **Blocked fail-closed.** Current token-output path requires explicit final-norm / lm-head / sample binding and a real session runtime |
+| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | **Blocked fail-closed.** Sample dispatch is bound, lm-head dispatch is still unbound, and the real session remains checkpoint-stopped before transcript output |
 
 ## Bound today (no hardware)
 
@@ -60,9 +60,9 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 2. **Landed in source:** tied dense lm-head routes through the full-vocabulary `lm_head_prefill_stable` SUMMA target with one-row logits tiles and F16-to-F32 weight staging.
 3. **Landed in source:** the Gemma 4 31B execution-v1 smoke graph carries explicit final-norm / lm-head / sample tails for both prefill-generated and decode-generated tokens.
 4. **Landed in source:** HostPlan lowering rejects `sample` unless the immediately preceding same-phase step is a compatible logits producer; compute after same-phase sample also fails closed.
-5. **Open runtime step:** real session runtime must stage real weights, bind host I/O layout, launch serial kernels, carry KV cache state, feed sampled tokens into the next step, and emit logits/token transcript evidence.
-6. **Open artifact step:** regenerate HostPlan, compile receipts, per-kernel receipts, streaming traces, and bounded inference receipts; mark older pre-logits HostPlan families as superseded for inference claims.
-7. **Partially landed:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, and prefill/decode feedback shape; runtime/evidence tests still need regenerated artifacts.
+5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches serial checkpointed kernels, and carries scheduler state. The latest scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json`; it is checkpoint-stopped and has no token/logit/KV transcript.
+6. **Partially landed artifact step:** the f16 CSL dtype contract and bounded-smoke schema are gate-covered, and the current bounded receipt records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound`. The sample dispatch receipt is bound; lm-head dispatch and transcript evidence remain open blockers.
+7. **Landed in source:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, prefill/decode feedback shape, f16 dtype contract drift, and blocked-receipt bounded evidence emission.
 
 ## Integrity invariants
 

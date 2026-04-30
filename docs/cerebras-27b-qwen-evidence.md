@@ -20,6 +20,23 @@ The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json
 
 **Cross-model parity gate.** [`bench/tools/aggregate_cross_model_parity.py`](../bench/tools/aggregate_cross_model_parity.py) joins Gemma 4 31B and Qwen 3.6 27B receipts, asserts shared toolchain and contract identity, and writes [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json). [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py) runs this gate by default.
 
+**Fail-closed eaf16 CSL dtype contract.** The Qwen f16 CSL dtype contract lives
+in [`config/doe-csl-dtype-contracts.json`](../config/doe-csl-dtype-contracts.json)
+and forbids implicit af32 fallback for activation, KV, output, lm-head
+activation, Q4K lm-head weight storage, logits, sample, and accumulation
+roles. The contract also makes the Qwen-only blockers visible: causal prefill
+attention, q/k norm, SwiGLU/gated FFN, depthwise convolution, linear
+attention, DeltaNet, SSM recurrence state, and recurrence carry must stay f16
+unless a future schema migration says otherwise.
+
+**Current Qwen token-output blockers.** The refreshed af16 per-kernel summary
+under [`bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/summary.json`](../bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/summary.json)
+preserves the bound sample receipt and the blocked `lm_head_gemv_stable`
+receipt. Qwen token-output evidence remains blocked until lm-head dispatch,
+causal prefill attention, q/k norm, gated FFN, depthwise convolution, linear
+attention/DeltaNet/SSM state, and recurrence-carry receipts are bound to the
+HostPlan/CSL execution path.
+
 ## Simulator performance guardrail
 
 Manifest-shape simfabric is a correctness and budget guardrail, not a WSE latency claim. [`bench/tools/predict_simfabric_wallclock.py`](../bench/tools/predict_simfabric_wallclock.py) and [`bench/tools/check_simfabric_budget_gate.py`](../bench/tools/check_simfabric_budget_gate.py) keep the Qwen predicted-cycle envelope under the shared calibrated ceiling in [`config/manifest-simfabric-budget.json`](../config/manifest-simfabric-budget.json). Real performance claims remain gated on WSE receipts.

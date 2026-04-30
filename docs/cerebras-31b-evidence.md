@@ -20,6 +20,21 @@ The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json
 
 **Cross-model parity gate.** [`bench/tools/aggregate_cross_model_parity.py`](../bench/tools/aggregate_cross_model_parity.py) joins Gemma 4 31B and Qwen 3.6 27B receipts, asserts shared toolchain and contract identity, and writes [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json). [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py) runs this gate by default.
 
+**Fail-closed af16 HostPlan evidence.** The Gemma f16 CSL dtype contract lives
+in [`config/doe-csl-dtype-contracts.json`](../config/doe-csl-dtype-contracts.json)
+and forbids implicit af32 fallback for activation, KV, output, lm-head, logits,
+sample, and accumulation roles. The current bounded receipt at
+[`bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json`](../bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json)
+validates that contract and records the inference gate result. It is blocked
+on lm-head dispatch evidence and session transcript absence; it is not a
+token-output success receipt.
+
+**Checkpointed session scratch trace.** The latest local real-session scratch
+trace is
+[`bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json`](../bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt70.json).
+It records checkpointed HostPlan execution progress and remains
+`checkpoint_stopped`; no WSE or transcript claim follows from it.
+
 ## Simulator performance guardrail
 
 Manifest-shape simfabric is a correctness and budget guardrail, not a WSE latency claim. [`bench/tools/check_simfabric_budget_gate.py`](../bench/tools/check_simfabric_budget_gate.py) keeps the Gemma envelope under the shared calibrated ceiling in [`config/manifest-simfabric-budget.json`](../config/manifest-simfabric-budget.json). Real performance claims remain gated on WSE receipts.
