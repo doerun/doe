@@ -73,6 +73,13 @@ def _load_array(path: Path, dtype: str, expected_size: int) -> np.ndarray:
     return array
 
 
+def _load_writeable_mmap_or_copy(path: Path) -> np.ndarray:
+    try:
+        return np.load(path, allow_pickle=False, mmap_mode="r+").ravel()
+    except (OSError, ValueError):
+        return np.load(path, allow_pickle=False, mmap_mode="r").ravel()
+
+
 def _memcpy_payload_for_h2d(
     *,
     path: Path,
@@ -86,9 +93,19 @@ def _memcpy_payload_for_h2d(
                 f"f16 elementsPerPe {elements_per_pe} must be even for "
                 "MEMCPY_32BIT byte-preserving transfer"
             )
-        host = _load_array(path, dtype, total_elements)
+        host = _load_writeable_mmap_or_copy(path)
+        if host.size != total_elements:
+            raise ValueError(
+                f"array size mismatch for {path}: {host.size} != expected {total_elements}"
+            )
+        if (
+            host.dtype != np.float16
+            or not host.flags.c_contiguous
+            or not host.flags.writeable
+        ):
+            host = np.ascontiguousarray(host, dtype=np.float16)
         return (
-            np.ascontiguousarray(host, dtype=np.float16).view(np.uint32),
+            host.view(np.uint32),
             MemcpyDataType.MEMCPY_32BIT,
             elements_per_pe // 2,
         )

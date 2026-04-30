@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -23,6 +24,79 @@ assert spec is not None
 assert spec.loader is not None
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
+
+
+def _load_launch_step_adapter_module():
+    name = "int4ple_launch_step_adapter_for_tests"
+    if name in sys.modules:
+        return sys.modules[name]
+    fake = types.ModuleType("sdkruntimepybind")
+
+    class _MemcpyDataType:
+        MEMCPY_32BIT = "MEMCPY_32BIT"
+        MEMCPY_16BIT = "MEMCPY_16BIT"
+
+    class _MemcpyOrder:
+        ROW_MAJOR = "ROW_MAJOR"
+
+    class _SdkRuntime:
+        pass
+
+    fake.MemcpyDataType = _MemcpyDataType
+    fake.MemcpyOrder = _MemcpyOrder
+    fake.SdkRuntime = _SdkRuntime
+    sys.modules.setdefault("cerebras", types.ModuleType("cerebras"))
+    sys.modules.setdefault("cerebras.sdk", types.ModuleType("cerebras.sdk"))
+    sys.modules.setdefault(
+        "cerebras.sdk.runtime",
+        types.ModuleType("cerebras.sdk.runtime"),
+    )
+    sys.modules["cerebras.sdk.runtime.sdkruntimepybind"] = fake
+    adapter_spec = importlib.util.spec_from_file_location(
+        name,
+        RUNNER_DIR / "int4ple_launch_step_adapter.py",
+    )
+    assert adapter_spec is not None
+    assert adapter_spec.loader is not None
+    mod = importlib.util.module_from_spec(adapter_spec)
+    sys.modules[name] = mod
+    adapter_spec.loader.exec_module(mod)
+    return mod
+
+
+class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
+    def test_f16_h2d_uses_writeable_mmap_payload_when_layout_matches(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.npy"
+            source = np.lib.format.open_memmap(
+                path,
+                mode="w+",
+                dtype=np.float16,
+                shape=(4,),
+            )
+            source[:] = [1.0, 2.0, 3.0, 4.0]
+            source.flush()
+            del source
+            payload, memcpy_dtype, memcpy_elements_per_pe = (
+                adapter._memcpy_payload_for_h2d(
+                    path=path,
+                    dtype="f16",
+                    elements_per_pe=2,
+                    total_elements=4,
+                )
+            )
+        self.assertIsInstance(payload, np.memmap)
+        self.assertEqual(payload.dtype, np.uint32)
+        self.assertTrue(payload.flags.writeable)
+        self.assertEqual(
+            memcpy_dtype,
+            adapter.MemcpyDataType.MEMCPY_32BIT,
+        )
+        self.assertEqual(memcpy_elements_per_pe, 1)
+        self.assertEqual(payload.view(np.float16).tolist(), [1.0, 2.0, 3.0, 4.0])
 
 
 class HostPlanRuntimeTimeout(unittest.TestCase):
