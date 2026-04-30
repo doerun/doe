@@ -663,6 +663,34 @@ class SchedulingAndResumeTest(unittest.TestCase):
             assert reused is not None
             self.assertTrue(reused["dispatchTimedOut"])
 
+    def test_resume_can_preserve_blocked_dispatch_exit_when_requested(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            receipt = {
+                "kernel": "embed",
+                "hostPlanHash": "abc",
+                "verdict": "blocked",
+                "blocker": "dispatch_exit_code_1",
+                "dispatchExitCode": 1,
+                "dispatchTimedOut": False,
+                "dispatchWallclockNs": 100,
+            }
+            (out_dir / "embed.json").write_text(
+                json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            reused = runner.load_reusable_receipt(
+                kernel="embed",
+                out_dir=out_dir,
+                host_plan_hash="abc",
+                dry_run=False,
+                reuse_blocked=True,
+            )
+            self.assertIsNotNone(reused)
+            assert reused is not None
+            self.assertEqual(reused["blocker"], "dispatch_exit_code_1")
+
 
 class LoadProbeInputsTest(unittest.TestCase):
     def test_resolves_via_source_fixture_path(self) -> None:

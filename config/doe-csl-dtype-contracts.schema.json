@@ -6,98 +6,517 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "artifactKind", "contracts"],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "artifactKind": { "const": "doe_csl_dtype_contracts" },
     "contracts": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "backend",
-          "modelIds",
-          "dopplerVariantTag",
-          "hostPlanActivationDtype",
-          "fallbackPolicy",
-          "promotionState",
-          "weightsRefPolicy",
-          "hostTransfer",
-          "dtypes",
-          "accumulationDtypes",
-          "kernelClasses"
-        ],
-        "properties": {
-          "name": { "type": "string", "minLength": 1 },
-          "backend": { "const": "cerebras_csl" },
-          "modelIds": {
-            "type": "array",
-            "items": { "type": "string", "minLength": 1 }
-          },
-          "dopplerVariantTag": { "type": "string", "minLength": 1 },
-          "hostPlanActivationDtype": { "const": "f16" },
-          "fallbackPolicy": { "const": "forbid_implicit_af32" },
-          "promotionState": {
-            "enum": [
-              "contract_declared_runtime_evidence_pending",
-              "bound_by_runtime_evidence"
-            ]
-          },
-          "weightsRefPolicy": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "preserveIdentity",
-              "sharedQ4KWeightPacks",
-              "allowedStorageDtypes"
-            ],
+      "items": { "$ref": "#/$defs/Contract" }
+    }
+  },
+  "$defs": {
+    "DtypeToken": {
+      "enum": ["f16", "f32", "u32", "u8_q4k", "bf16"]
+    },
+    "F16AccumulationDtype": {
+      "const": "f16"
+    },
+    "F32AccumulationDtype": {
+      "const": "f32"
+    },
+    "Dtypes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activation",
+        "kvCache",
+        "kernelOutput",
+        "embeddingTable",
+        "q4kWeightStorage",
+        "lmHeadActivation",
+        "lmHeadWeight",
+        "logits",
+        "sampleTokenId"
+      ],
+      "properties": {
+        "activation": { "const": "f16" },
+        "kvCache": { "const": "f16" },
+        "kernelOutput": { "const": "f16" },
+        "embeddingTable": { "const": "f16" },
+        "q4kWeightStorage": { "const": "u8_q4k" },
+        "lmHeadActivation": { "const": "f16" },
+        "lmHeadWeight": { "enum": ["f16", "u8_q4k"] },
+        "logits": { "const": "f32" },
+        "sampleTokenId": { "const": "u32" },
+        "linearAttentionState": { "const": "f16" },
+        "ssmState": { "const": "f16" },
+        "recurrenceCarry": { "const": "f16" }
+      }
+    },
+    "AccumulationDtypes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rmsNorm": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "qkNorm": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "rope": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "attention": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "causalPrefillAttention": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "summaMatmul": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "residual": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "gatedActivation": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "swiglu": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "conv1dDepthwise": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "linearAttention": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "deltaNet": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "ssmRecurrence": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "recurrenceCarry": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "kvReadWrite": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "fusedGemv": { "$ref": "#/$defs/F16AccumulationDtype" },
+        "denseLmHead": { "$ref": "#/$defs/F32AccumulationDtype" },
+        "lmHeadGemv": { "$ref": "#/$defs/F32AccumulationDtype" },
+        "sampleCompare": { "$ref": "#/$defs/F32AccumulationDtype" }
+      }
+    },
+    "KernelClassName": {
+      "enum": [
+        "rms_norm",
+        "qk_norm",
+        "rope",
+        "attention",
+        "causal_prefill_attention",
+        "residual",
+        "tiled_matmul",
+        "fused_gemv",
+        "silu_gated",
+        "conv1d_depthwise",
+        "linear_attention",
+        "delta_net",
+        "ssm_recurrence",
+        "kv_read_write",
+        "dense_lm_head",
+        "lm_head_gemv",
+        "sample"
+      ]
+    },
+    "KernelClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "inputDtype", "outputDtype", "accumulationDtype"],
+      "properties": {
+        "name": { "$ref": "#/$defs/KernelClassName" },
+        "inputDtype": { "$ref": "#/$defs/DtypeToken" },
+        "outputDtype": { "$ref": "#/$defs/DtypeToken" },
+        "accumulationDtype": { "$ref": "#/$defs/DtypeToken" },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
             "properties": {
-              "preserveIdentity": { "const": true },
-              "sharedQ4KWeightPacks": { "type": "boolean" },
-              "allowedStorageDtypes": {
-                "type": "array",
-                "items": {
-                  "enum": ["u8_q4k", "f16", "bf16"]
-                }
+              "name": {
+                "enum": [
+                  "rms_norm",
+                  "qk_norm",
+                  "rope",
+                  "attention",
+                  "causal_prefill_attention",
+                  "residual",
+                  "tiled_matmul",
+                  "fused_gemv",
+                  "silu_gated",
+                  "conv1d_depthwise",
+                  "linear_attention",
+                  "delta_net",
+                  "ssm_recurrence",
+                  "kv_read_write"
+                ]
               }
             }
           },
-          "hostTransfer": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["f16Encoding", "logicalF16Transport", "d2hCopyback"],
+          "then": {
             "properties": {
-              "f16Encoding": { "const": "ieee_binary16" },
-              "logicalF16Transport": { "const": "memcpy32_packed_u32" },
-              "d2hCopyback": { "const": "logical_dtype_preserved" }
+              "inputDtype": { "const": "f16" },
+              "outputDtype": { "const": "f16" },
+              "accumulationDtype": { "const": "f16" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": { "enum": ["dense_lm_head", "lm_head_gemv"] }
             }
           },
-          "dtypes": {
-            "type": "object",
-            "additionalProperties": { "type": "string", "minLength": 1 }
+          "then": {
+            "properties": {
+              "inputDtype": { "const": "f16" },
+              "outputDtype": { "const": "f32" },
+              "accumulationDtype": { "const": "f32" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": { "const": "sample" }
+            }
           },
-          "accumulationDtypes": {
-            "type": "object",
-            "additionalProperties": { "type": "string", "minLength": 1 }
+          "then": {
+            "properties": {
+              "inputDtype": { "const": "f32" },
+              "outputDtype": { "const": "u32" },
+              "accumulationDtype": { "const": "f32" }
+            }
+          }
+        }
+      ]
+    },
+    "WeightsRefPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preserveIdentity",
+        "sharedQ4KWeightPacks",
+        "allowedStorageDtypes"
+      ],
+      "properties": {
+        "preserveIdentity": { "const": true },
+        "sharedQ4KWeightPacks": { "const": true },
+        "allowedStorageDtypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": ["u8_q4k", "f16", "bf16"]
+          }
+        }
+      }
+    },
+    "HostTransfer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["f16Encoding", "logicalF16Transport", "d2hCopyback"],
+      "properties": {
+        "f16Encoding": { "const": "ieee_binary16" },
+        "logicalF16Transport": { "const": "memcpy32_packed_u32" },
+        "d2hCopyback": { "const": "logical_dtype_preserved" }
+      }
+    },
+    "RequiredKernelRmsNorm": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "rms_norm" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelQkNorm": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "qk_norm" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelRope": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "rope" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelAttention": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "attention" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelCausalPrefillAttention": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "causal_prefill_attention" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelResidual": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "residual" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelTiledMatmul": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "tiled_matmul" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelFusedGemv": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "fused_gemv" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelSiluGated": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "silu_gated" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelConv1dDepthwise": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "conv1d_depthwise" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelLinearAttention": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "linear_attention" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelDeltaNet": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "delta_net" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelSsmRecurrence": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "ssm_recurrence" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelKvReadWrite": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "kv_read_write" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelDenseLmHead": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "dense_lm_head" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelLmHeadGemv": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "lm_head_gemv" } }
+      },
+      "minContains": 1
+    },
+    "RequiredKernelSample": {
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "const": "sample" } }
+      },
+      "minContains": 1
+    },
+    "Contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "backend",
+        "modelIds",
+        "dopplerVariantTag",
+        "hostPlanActivationDtype",
+        "fallbackPolicy",
+        "promotionState",
+        "weightsRefPolicy",
+        "hostTransfer",
+        "dtypes",
+        "accumulationDtypes",
+        "kernelClasses"
+      ],
+      "properties": {
+        "name": {
+          "enum": [
+            "gemma4_31b_q4k_ehf16_af16",
+            "qwen_3_6_27b_q4k_eaf16"
+          ]
+        },
+        "backend": { "const": "cerebras_csl" },
+        "modelIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "dopplerVariantTag": {
+          "enum": ["q4k-ehf16-af16", "q4k-eaf16"]
+        },
+        "hostPlanActivationDtype": { "const": "f16" },
+        "fallbackPolicy": { "const": "forbid_implicit_af32" },
+        "promotionState": {
+          "enum": [
+            "contract_declared_runtime_evidence_pending",
+            "bound_by_runtime_evidence"
+          ]
+        },
+        "weightsRefPolicy": { "$ref": "#/$defs/WeightsRefPolicy" },
+        "hostTransfer": { "$ref": "#/$defs/HostTransfer" },
+        "dtypes": { "$ref": "#/$defs/Dtypes" },
+        "accumulationDtypes": { "$ref": "#/$defs/AccumulationDtypes" },
+        "kernelClasses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/KernelClass" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "name": { "const": "gemma4_31b_q4k_ehf16_af16" }
+            }
           },
-          "kernelClasses": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["name", "inputDtype", "outputDtype", "accumulationDtype"],
-              "properties": {
-                "name": { "type": "string", "minLength": 1 },
-                "inputDtype": { "type": "string", "minLength": 1 },
-                "outputDtype": { "type": "string", "minLength": 1 },
-                "accumulationDtype": { "type": "string", "minLength": 1 },
-                "notes": { "type": "string" }
+          "then": {
+            "properties": {
+              "modelIds": {
+                "contains": {
+                  "const": "gemma-4-31b-it-text-q4k-ehf16-af16"
+                },
+                "minContains": 1
+              },
+              "dopplerVariantTag": { "const": "q4k-ehf16-af16" },
+              "dtypes": {
+                "properties": {
+                  "lmHeadWeight": { "const": "f16" }
+                }
+              },
+              "accumulationDtypes": {
+                "required": [
+                  "rmsNorm",
+                  "rope",
+                  "attention",
+                  "summaMatmul",
+                  "residual",
+                  "gatedActivation",
+                  "kvReadWrite",
+                  "fusedGemv",
+                  "denseLmHead",
+                  "sampleCompare"
+                ]
+              },
+              "kernelClasses": {
+                "allOf": [
+                  { "$ref": "#/$defs/RequiredKernelRmsNorm" },
+                  { "$ref": "#/$defs/RequiredKernelRope" },
+                  { "$ref": "#/$defs/RequiredKernelAttention" },
+                  { "$ref": "#/$defs/RequiredKernelResidual" },
+                  { "$ref": "#/$defs/RequiredKernelTiledMatmul" },
+                  { "$ref": "#/$defs/RequiredKernelFusedGemv" },
+                  { "$ref": "#/$defs/RequiredKernelKvReadWrite" },
+                  { "$ref": "#/$defs/RequiredKernelDenseLmHead" },
+                  { "$ref": "#/$defs/RequiredKernelSample" }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": { "const": "qwen_3_6_27b_q4k_eaf16" }
+            }
+          },
+          "then": {
+            "properties": {
+              "modelIds": {
+                "contains": {
+                  "const": "qwen-3-6-27b-q4k-eaf16"
+                },
+                "minContains": 1
+              },
+              "dopplerVariantTag": { "const": "q4k-eaf16" },
+              "dtypes": {
+                "required": [
+                  "activation",
+                  "kvCache",
+                  "kernelOutput",
+                  "embeddingTable",
+                  "q4kWeightStorage",
+                  "lmHeadActivation",
+                  "lmHeadWeight",
+                  "logits",
+                  "sampleTokenId",
+                  "linearAttentionState",
+                  "ssmState",
+                  "recurrenceCarry"
+                ],
+                "properties": {
+                  "lmHeadWeight": { "const": "u8_q4k" }
+                }
+              },
+              "accumulationDtypes": {
+                "required": [
+                  "rmsNorm",
+                  "qkNorm",
+                  "rope",
+                  "causalPrefillAttention",
+                  "summaMatmul",
+                  "residual",
+                  "swiglu",
+                  "conv1dDepthwise",
+                  "linearAttention",
+                  "deltaNet",
+                  "ssmRecurrence",
+                  "recurrenceCarry",
+                  "kvReadWrite",
+                  "fusedGemv",
+                  "lmHeadGemv",
+                  "sampleCompare"
+                ]
+              },
+              "kernelClasses": {
+                "allOf": [
+                  { "$ref": "#/$defs/RequiredKernelRmsNorm" },
+                  { "$ref": "#/$defs/RequiredKernelQkNorm" },
+                  { "$ref": "#/$defs/RequiredKernelRope" },
+                  { "$ref": "#/$defs/RequiredKernelCausalPrefillAttention" },
+                  { "$ref": "#/$defs/RequiredKernelResidual" },
+                  { "$ref": "#/$defs/RequiredKernelTiledMatmul" },
+                  { "$ref": "#/$defs/RequiredKernelFusedGemv" },
+                  { "$ref": "#/$defs/RequiredKernelSiluGated" },
+                  { "$ref": "#/$defs/RequiredKernelConv1dDepthwise" },
+                  { "$ref": "#/$defs/RequiredKernelLinearAttention" },
+                  { "$ref": "#/$defs/RequiredKernelDeltaNet" },
+                  { "$ref": "#/$defs/RequiredKernelSsmRecurrence" },
+                  { "$ref": "#/$defs/RequiredKernelKvReadWrite" },
+                  { "$ref": "#/$defs/RequiredKernelLmHeadGemv" },
+                  { "$ref": "#/$defs/RequiredKernelSample" }
+                ]
               }
             }
           }
         }
-      }
+      ]
     }
   }
 }

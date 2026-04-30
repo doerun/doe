@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "artifactKind": "doe_csl_dtype_contracts",
   "contracts": [
     {
@@ -39,6 +39,7 @@
         "residual": "f16",
         "gatedActivation": "f16",
         "kvReadWrite": "f16",
+        "fusedGemv": "f16",
         "denseLmHead": "f32",
         "sampleCompare": "f32"
       },
@@ -50,7 +51,37 @@
           "accumulationDtype": "f16"
         },
         {
+          "name": "rope",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "attention",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "residual",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
           "name": "tiled_matmul",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "fused_gemv",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "kv_read_write",
           "inputDtype": "f16",
           "outputDtype": "f16",
           "accumulationDtype": "f16"
@@ -93,11 +124,13 @@
         "kernelOutput": "f16",
         "embeddingTable": "f16",
         "q4kWeightStorage": "u8_q4k",
+        "lmHeadActivation": "f16",
         "lmHeadWeight": "u8_q4k",
         "logits": "f32",
         "sampleTokenId": "u32",
         "linearAttentionState": "f16",
-        "ssmState": "f16"
+        "ssmState": "f16",
+        "recurrenceCarry": "f16"
       },
       "accumulationDtypes": {
         "rmsNorm": "f16",
@@ -105,17 +138,57 @@
         "rope": "f16",
         "causalPrefillAttention": "f16",
         "summaMatmul": "f16",
+        "residual": "f16",
         "swiglu": "f16",
         "conv1dDepthwise": "f16",
         "linearAttention": "f16",
+        "deltaNet": "f16",
         "ssmRecurrence": "f16",
+        "recurrenceCarry": "f16",
         "kvReadWrite": "f16",
+        "fusedGemv": "f16",
         "lmHeadGemv": "f32",
         "sampleCompare": "f32"
       },
       "kernelClasses": [
         {
+          "name": "rms_norm",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
           "name": "qk_norm",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "rope",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "causal_prefill_attention",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "residual",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "tiled_matmul",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "fused_gemv",
           "inputDtype": "f16",
           "outputDtype": "f16",
           "accumulationDtype": "f16"
@@ -139,9 +212,33 @@
           "accumulationDtype": "f16"
         },
         {
+          "name": "delta_net",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "ssm_recurrence",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "kv_read_write",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
           "name": "lm_head_gemv",
           "inputDtype": "f16",
           "outputDtype": "f32",
+          "accumulationDtype": "f32"
+        },
+        {
+          "name": "sample",
+          "inputDtype": "f32",
+          "outputDtype": "u32",
           "accumulationDtype": "f32"
         }
       ]

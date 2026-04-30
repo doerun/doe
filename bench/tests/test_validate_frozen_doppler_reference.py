@@ -344,7 +344,25 @@ class LaneDtypeProfileHelperTest(unittest.TestCase):
         self.assertEqual(contract["backend"], "cerebras_csl")
         self.assertEqual(contract["hostPlanActivationDtype"], "f16")
         self.assertEqual(contract["fallbackPolicy"], "forbid_implicit_af32")
+        self.assertEqual(contract["dtypes"]["activation"], "f16")
+        self.assertEqual(contract["dtypes"]["kvCache"], "f16")
+        self.assertEqual(contract["dtypes"]["kernelOutput"], "f16")
         self.assertEqual(contract["accumulationDtypes"]["denseLmHead"], "f32")
+        self.assertEqual(contract["accumulationDtypes"]["fusedGemv"], "f16")
+        kernel_classes = {entry["name"] for entry in contract["kernelClasses"]}
+        self.assertTrue(
+            {
+                "rms_norm",
+                "rope",
+                "attention",
+                "residual",
+                "tiled_matmul",
+                "fused_gemv",
+                "kv_read_write",
+                "dense_lm_head",
+                "sample",
+            }.issubset(kernel_classes)
+        )
 
     def test_csl_dtype_contract_for_qwen_eaf16_covers_ssm_state(self) -> None:
         profile = canonical_dtype_profile({
@@ -359,7 +377,65 @@ class LaneDtypeProfileHelperTest(unittest.TestCase):
             model_id="qwen-3-6-27b-q4k-eaf16",
         )
         self.assertEqual(contract["dtypes"]["ssmState"], "f16")
+        self.assertEqual(contract["dtypes"]["recurrenceCarry"], "f16")
         self.assertEqual(contract["accumulationDtypes"]["linearAttention"], "f16")
+        self.assertEqual(contract["accumulationDtypes"]["deltaNet"], "f16")
+        self.assertEqual(contract["accumulationDtypes"]["lmHeadGemv"], "f32")
+        kernel_classes = {entry["name"] for entry in contract["kernelClasses"]}
+        self.assertTrue(
+            {
+                "causal_prefill_attention",
+                "qk_norm",
+                "silu_gated",
+                "conv1d_depthwise",
+                "linear_attention",
+                "delta_net",
+                "ssm_recurrence",
+                "kv_read_write",
+                "lm_head_gemv",
+                "sample",
+            }.issubset(kernel_classes)
+        )
+
+    def test_csl_dtype_contract_rejects_activation_af32_drift(self) -> None:
+        profile = canonical_dtype_profile(self.AF16_QI)
+        registry = json.loads(
+            (REPO_ROOT / "config/doe-csl-dtype-contracts.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        registry["contracts"][0]["dtypes"]["activation"] = "f32"
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "contracts.json"
+            path.write_text(json.dumps(registry), encoding="utf-8")
+            with self.assertRaises(LaneDtypeProfileError):
+                csl_dtype_contract_for_profile(
+                    profile,
+                    model_id="gemma-4-31b-it-text-q4k-ehf16-af16",
+                    contracts_path=path,
+                )
+
+    def test_csl_dtype_contract_rejects_missing_kernel_class(self) -> None:
+        profile = canonical_dtype_profile(self.AF16_QI)
+        registry = json.loads(
+            (REPO_ROOT / "config/doe-csl-dtype-contracts.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        registry["contracts"][0]["kernelClasses"] = [
+            entry
+            for entry in registry["contracts"][0]["kernelClasses"]
+            if entry["name"] != "kv_read_write"
+        ]
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "contracts.json"
+            path.write_text(json.dumps(registry), encoding="utf-8")
+            with self.assertRaises(LaneDtypeProfileError):
+                csl_dtype_contract_for_profile(
+                    profile,
+                    model_id="gemma-4-31b-it-text-q4k-ehf16-af16",
+                    contracts_path=path,
+                )
 
 
 def _build_minimal_fixture_with_profile(

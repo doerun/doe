@@ -191,6 +191,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     p.add_argument(
+        "--reuse-blocked",
+        action="store_true",
+        help=(
+            "With --resume, reuse existing blocked non-dry-run receipts too. "
+            "This refreshes summaries while preserving explicit blockers "
+            "instead of rerunning those kernels."
+        ),
+    )
+    p.add_argument(
         "--schedule",
         choices=["host-plan", "heavy-first"],
         default="host-plan",
@@ -545,6 +554,7 @@ def load_reusable_receipt(
     out_dir: Path,
     host_plan_hash: str,
     dry_run: bool,
+    reuse_blocked: bool = False,
 ) -> dict[str, Any] | None:
     path = out_dir / f"{kernel}.json"
     try:
@@ -563,6 +573,8 @@ def load_reusable_receipt(
     if receipt.get("verdict") == "bound":
         return receipt
     if receipt.get("dispatchTimedOut") is True:
+        return receipt
+    if reuse_blocked and receipt.get("verdict") == "blocked":
         return receipt
     return None
 
@@ -1133,6 +1145,7 @@ def main() -> int:
                 out_dir=args.out_dir,
                 host_plan_hash=host_plan_hash,
                 dry_run=args.dry_run,
+                reuse_blocked=args.reuse_blocked,
             )
             if reusable is not None:
                 return kernel, reusable, True
