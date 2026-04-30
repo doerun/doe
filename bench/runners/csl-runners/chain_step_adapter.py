@@ -314,6 +314,7 @@ def _copy_d2h_output(
     chunk_size: int,
     region: tuple[int, int, int, int],
     split_rows: bool,
+    step_index: int,
 ) -> tuple[str, str, np.ndarray]:
     region_x, region_y, region_width, region_height = region
     sym_id = runner.get_id(symbol)
@@ -328,6 +329,7 @@ def _copy_d2h_output(
             row_y = region_y + row_offset
             _phase(
                 "memcpy_d2h_start",
+                step=step_index,
                 symbol=symbol,
                 x=region_x,
                 y=row_y,
@@ -350,6 +352,7 @@ def _copy_d2h_output(
             )
             _phase(
                 "memcpy_d2h_complete",
+                step=step_index,
                 symbol=symbol,
                 rowOffset=row_offset,
             )
@@ -370,6 +373,7 @@ def _copy_d2h_output(
     )
     _phase(
         "memcpy_d2h_start",
+        step=step_index,
         symbol=symbol,
         x=region_x,
         y=region_y,
@@ -389,7 +393,7 @@ def _copy_d2h_output(
         streaming=False, order=MemcpyOrder.ROW_MAJOR,
         data_type=mcpy_dtype, nonblock=False,
     )
-    _phase("memcpy_d2h_complete", symbol=symbol)
+    _phase("memcpy_d2h_complete", step=step_index, symbol=symbol)
     return (
         symbol,
         path,
@@ -505,6 +509,7 @@ def main() -> int:
                     chunk_size=this_chunk,
                     region=region_tuple,
                     split_rows=args.split_d2h_rows,
+                    step_index=step_index,
                 )
             )
 

@@ -196,6 +196,31 @@ class TileShapeSafetyTest(unittest.TestCase):
             "phase-trace.log",
         )
 
+    def test_batch_phase_events_are_step_scoped(self) -> None:
+        events = M._parse_phase_events(
+            "\n".join(
+                [
+                    "phase:step_start step=0",
+                    "phase:memcpy_d2h_complete step=0 symbol=output",
+                    "phase:step_complete step=0",
+                    "phase:step_start step=1",
+                    "phase:memcpy_d2h_complete step=1 symbol=output",
+                    "phase:step_complete step=1",
+                    "phase:stop_complete",
+                ]
+            )
+        )
+        scoped = M._phase_events_for_batch_step(events, 1)
+        self.assertEqual(
+            [event["phase"] for event in scoped],
+            [
+                "step_start",
+                "memcpy_d2h_complete",
+                "step_complete",
+            ],
+        )
+        self.assertTrue(all(event.get("step") == "1" for event in scoped))
+
 
 if __name__ == "__main__":
     unittest.main()

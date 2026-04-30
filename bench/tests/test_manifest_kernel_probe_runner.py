@@ -726,6 +726,7 @@ class ChainStepAdapterMemcpyPackingTest(unittest.TestCase):
                 chunk_size=2,
                 region=(3, 5, 1, 3),
                 split_rows=True,
+                step_index=0,
             )
         self.assertEqual(symbol, "output")
         self.assertEqual(path, "/tmp/out.npy")
@@ -785,6 +786,7 @@ class SchedulingAndResumeTest(unittest.TestCase):
         self.assertEqual(args.dense_gemv_tile_dispatch_budget, 0)
         self.assertEqual(args.dense_gemv_tile_dispatch_jobs, 1)
         self.assertFalse(args.dense_gemv_batch_runtime)
+        self.assertEqual(args.dense_gemv_batch_runtime_step_budget, 0)
         self.assertEqual(args.dense_gemv_max_row_tile_height, 1)
 
     def test_heavy_first_orders_by_estimated_io(self) -> None:
@@ -1500,12 +1502,467 @@ class RunOneKernelTest(unittest.TestCase):
         assert result.tile_coverage is not None
         self.assertTrue(result.tile_coverage["covered"])
         self.assertEqual(
+            result.tile_coverage["partialArtifacts"][
+                "tilePartialReceiptsOnDisk"
+            ],
+            2,
+        )
+        self.assertEqual(
+            result.tile_coverage["partialArtifacts"][
+                "verifiedFreshEmitterPartials"
+            ],
+            2,
+        )
+        self.assertEqual(
+            result.tile_coverage["verifiedReusablePartials"],
+            0,
+        )
+        self.assertEqual(
+            result.tile_coverage["firstFreshEmitterPartial"]["rowStart"],
+            0,
+        )
+        self.assertEqual(
+            result.tile_coverage["canonicalTilePartialAnchor"]["rowStart"],
+            0,
+        )
+        self.assertFalse(
+            result.tile_coverage["canonicalTilePartialAnchor"][
+                "reusedVerifiedPartial"
+            ]
+        )
+        self.assertEqual(
             result.output_records[0]["hostReduction"]["kind"],
             "sum_hidden_width_tiles",
         )
         self.assertEqual(result.weight_input_scope, "hidden_width_slice")
         self.assertEqual(result.weight_residency_mode, "per_tile_h2d_sliced")
         self.assertEqual(output_values, [2.0] * 8)
+
+    def test_width_tiling_batch_runtime_chunks_steps(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_w1_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=1,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(4 * 2 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(4 * 2 * 8, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def fake_batch_dispatch(command, *, timeout_seconds):
+                batch_path = Path(command[command.index("--batch-json") + 1])
+                trace_path = Path(command[command.index("--phase-trace") + 1])
+                batch = json.loads(batch_path.read_text(encoding="utf-8"))
+                phase_lines: list[str] = []
+                for step_index, step in enumerate(batch["steps"]):
+                    phase_lines.append(f"phase:step_start step={step_index}")
+                    phase_lines.append(
+                        f"phase:launch_complete function=compute step={step_index}"
+                    )
+                    spec = step["outputs"][0]
+                    parts = spec.split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.ones(chunk * region_height, dtype=np.float32),
+                    )
+                    phase_lines.append(
+                        f"phase:memcpy_d2h_complete step={step_index} "
+                        "symbol=output"
+                    )
+                    phase_lines.append(f"phase:step_complete step={step_index}")
+                phase_text = "\n".join(phase_lines) + "\n"
+                trace_path.write_text(phase_text, encoding="utf-8")
+                return 0, phase_text, "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 2,
+                    "height": 4,
+                    "out_dim": 16,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 2,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 8,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 4,
+                        "totalElements": 16,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=1,
+                max_row_tile_height=1,
+                batch_runtime=True,
+                batch_runtime_step_budget=2,
+                dispatcher=fake_batch_dispatch,
+            )
+            output_values = np.load(output).tolist()
+
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertIsNone(result.blocker)
+        self.assertTrue(result.tile_coverage["covered"])
+        self.assertEqual(result.tile_coverage["batchRuntimeStepBudget"], 2)
+        self.assertEqual(len(result.tile_dispatches), 8)
+        self.assertEqual(
+            len({tile["batchPath"] for tile in result.tile_dispatches}),
+            4,
+        )
+        self.assertEqual(
+            [tile["batchStepIndex"] for tile in result.tile_dispatches],
+            [0, 1, 0, 1, 0, 1, 0, 1],
+        )
+        self.assertTrue(
+            all(
+                tile["lastPhaseReached"] == "step_complete"
+                for tile in result.tile_dispatches
+            )
+        )
+        self.assertEqual(
+            result.tile_coverage["partialArtifacts"][
+                "tilePartialReceiptsOnDisk"
+            ],
+            8,
+        )
+        self.assertEqual(output_values, [2.0] * 16)
+
+    def test_width_tiling_batch_budget_runs_all_selected_tiles(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_w1_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=1,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(5 * 1 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(5 * 1 * 8, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def fake_batch_dispatch(command, *, timeout_seconds):
+                batch_path = Path(command[command.index("--batch-json") + 1])
+                trace_path = Path(command[command.index("--phase-trace") + 1])
+                batch = json.loads(batch_path.read_text(encoding="utf-8"))
+                phase_lines: list[str] = []
+                for step_index, step in enumerate(batch["steps"]):
+                    phase_lines.append(f"phase:step_start step={step_index}")
+                    spec = step["outputs"][0]
+                    parts = spec.split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.ones(chunk * region_height, dtype=np.float32),
+                    )
+                    phase_lines.append(
+                        f"phase:memcpy_d2h_complete step={step_index} "
+                        "symbol=output"
+                    )
+                    phase_lines.append(f"phase:step_complete step={step_index}")
+                phase_text = "\n".join(phase_lines) + "\n"
+                trace_path.write_text(phase_text, encoding="utf-8")
+                return 0, phase_text, "", False
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 1,
+                    "height": 5,
+                    "out_dim": 20,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 2,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 8,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 4,
+                        "totalElements": 20,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=1,
+                tile_dispatch_budget=3,
+                max_row_tile_height=1,
+                batch_runtime=True,
+                batch_runtime_step_budget=2,
+                dispatcher=fake_batch_dispatch,
+            )
+
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertEqual(
+            result.blocker,
+            "dense_gemv_width_tile_dispatch_budget_exhausted",
+        )
+        self.assertTrue(result.tile_coverage["dispatchBudgetExhausted"])
+        self.assertEqual(result.tile_coverage["completedTileCount"], 3)
+        self.assertEqual(len(result.tile_dispatches), 3)
+        self.assertEqual(
+            len({tile["batchPath"] for tile in result.tile_dispatches}),
+            2,
+        )
+
+    def test_width_tiling_batch_timeout_keeps_completed_tile_receipts(self) -> None:
+        runner = _load_runner_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            kernel = "lm_head_prefill_stable"
+            source_root = tmp_path / "compile"
+            kernel_dir = source_root / kernel
+            kernel_dir.mkdir(parents=True)
+            layout = kernel_dir / "layout.csl"
+            pe = kernel_dir / "pe_program.csl"
+            layout.write_text("// layout\n", encoding="utf-8")
+            pe.write_text("// pe\n", encoding="utf-8")
+            source_digest = hashlib.sha256()
+            source_digest.update(_sha256_file(layout).encode("ascii"))
+            source_digest.update(_sha256_file(pe).encode("ascii"))
+            tile_dir = source_root / f"{kernel}_row_tile_w1_h1"
+            (tile_dir / "bin").mkdir(parents=True)
+            _write_tile_compile_receipt(
+                tile_dir=tile_dir,
+                source_digest=source_digest.hexdigest(),
+                width=1,
+                tile_height=1,
+                out_dim_per_pe=4,
+                in_dim_per_pe=2,
+                layout_path=layout,
+            )
+            full_dir = tmp_path / "scratch" / "in"
+            full_dir.mkdir(parents=True)
+            activation = full_dir / "activation.npy"
+            weight = full_dir / "weight.npy"
+            np.save(activation, np.zeros(4 * 1 * 2, dtype=np.float16))
+            np.save(weight, np.zeros(4 * 1 * 8, dtype=np.float16))
+            output = tmp_path / "scratch" / "out" / "output.npy"
+
+            def partial_then_stall(command, *, timeout_seconds):
+                batch_path = Path(command[command.index("--batch-json") + 1])
+                trace_path = Path(command[command.index("--phase-trace") + 1])
+                batch = json.loads(batch_path.read_text(encoding="utf-8"))
+                phase_lines: list[str] = []
+                for step_index, step in enumerate(batch["steps"][:2]):
+                    phase_lines.append(f"phase:step_start step={step_index}")
+                    spec = step["outputs"][0]
+                    parts = spec.split(":")
+                    out_path = Path(parts[1])
+                    chunk = int(parts[3])
+                    region_height = int(parts[4].split(",")[3])
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(
+                        out_path,
+                        np.ones(chunk * region_height, dtype=np.float32),
+                    )
+                    phase_lines.append(
+                        f"phase:memcpy_d2h_complete step={step_index} "
+                        "symbol=output"
+                    )
+                    phase_lines.append(f"phase:step_complete step={step_index}")
+                phase_lines.append("phase:step_start step=2")
+                phase_lines.append(
+                    "phase:memcpy_d2h_start step=2 symbol=output"
+                )
+                phase_text = "\n".join(phase_lines) + "\n"
+                trace_path.write_text(phase_text, encoding="utf-8")
+                return -1, phase_text, "", True
+
+            result = runner.run_dense_gemv_row_tiled(
+                kernel=kernel,
+                compile_root=source_root,
+                source_root=source_root,
+                compile_params={
+                    "width": 1,
+                    "height": 4,
+                    "out_dim": 16,
+                    "out_dim_per_pe": 4,
+                    "in_dim_per_pe": 2,
+                },
+                input_records=[
+                    {
+                        "symbol": "activation",
+                        "path": str(activation),
+                        "absolutePath": str(activation),
+                        "elemType": "f16",
+                        "perPeChunk": 2,
+                        "sha256": _sha256_file(activation),
+                        "totalBytes": activation.stat().st_size,
+                    },
+                    {
+                        "symbol": "weight",
+                        "path": str(weight),
+                        "absolutePath": str(weight),
+                        "elemType": "f16",
+                        "perPeChunk": 8,
+                        "sha256": _sha256_file(weight),
+                        "totalBytes": weight.stat().st_size,
+                    },
+                ],
+                output_records=[
+                    {
+                        "symbol": "output",
+                        "path": str(output),
+                        "absolutePath": str(output),
+                        "elemType": "f32",
+                        "perPeChunk": 4,
+                        "totalElements": 16,
+                        "totalBytes": 0,
+                        "sha256": "",
+                    }
+                ],
+                scratch_dir=tmp_path / "scratch",
+                cs_python=tmp_path / "cs_python",
+                adapter=tmp_path / "adapter.py",
+                cmaddr="",
+                timeout_seconds=30,
+                repo_root=tmp_path,
+                cslc=None,
+                hidden_tile_width=1,
+                max_row_tile_height=1,
+                batch_runtime=True,
+                dispatcher=partial_then_stall,
+            )
+
+        assert result is not None
+        assert result.tile_coverage is not None
+        self.assertEqual(
+            result.blocker,
+            "dense_gemv_width_tile_batch_dispatch_timed_out",
+        )
+        self.assertEqual(result.tile_coverage["completedTileCount"], 2)
+        self.assertEqual(
+            result.tile_coverage["partialArtifacts"][
+                "tilePartialReceiptsOnDisk"
+            ],
+            2,
+        )
+        self.assertEqual(len(result.tile_dispatches), 3)
+        self.assertEqual(
+            result.tile_dispatches[-1]["lastPhaseReached"],
+            "memcpy_d2h_start",
+        )
 
     def test_width_tiling_can_dispatch_independent_subprocesses(self) -> None:
         runner = _load_runner_module()
@@ -1769,6 +2226,30 @@ class RunOneKernelTest(unittest.TestCase):
         assert second.tile_coverage is not None
         self.assertIsNone(second.blocker)
         self.assertEqual(second.tile_coverage["reusedTileCount"], 2)
+        self.assertEqual(
+            second.tile_coverage["partialArtifacts"][
+                "tilePartialReceiptsOnDisk"
+            ],
+            2,
+        )
+        self.assertEqual(
+            second.tile_coverage["verifiedReusablePartials"],
+            2,
+        )
+        self.assertEqual(
+            second.tile_coverage["verifiedFreshEmitterPartials"],
+            0,
+        )
+        self.assertIsNone(second.tile_coverage["firstFreshEmitterPartial"])
+        self.assertEqual(
+            second.tile_coverage["canonicalTilePartialAnchor"]["rowStart"],
+            0,
+        )
+        self.assertTrue(
+            second.tile_coverage["canonicalTilePartialAnchor"][
+                "reusedVerifiedPartial"
+            ]
+        )
         self.assertTrue(
             all(t["reusedVerifiedPartial"] for t in second.tile_dispatches)
         )

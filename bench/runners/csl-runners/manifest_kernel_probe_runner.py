@@ -220,7 +220,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Reuse existing dense-GEMV width-tile partials only when their "
-            "sidecar receipt matches the command, input hashes, compile "
+            "tile partial receipt matches the command, input hashes, compile "
             "identity, output hash, and tile-shape safety metadata."
         ),
     )
@@ -250,6 +250,15 @@ def parse_args() -> argparse.Namespace:
             "Opt into one SDK runtime process per dense-GEMV width/row tile "
             "shape, with batch-json steps for each tile. Default stays one "
             "independent subprocess per tile."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-batch-runtime-step-budget",
+        type=int,
+        default=0,
+        help=(
+            "Maximum dense-GEMV width-tile batch-json steps per SDK runtime "
+            "process. Zero keeps one batch per width/row tile shape."
         ),
     )
     p.add_argument(
@@ -1164,6 +1173,7 @@ def run_one_kernel(
     dense_gemv_tile_dispatch_jobs: int = 1,
     dense_gemv_max_row_tile_height: int = 16,
     dense_gemv_batch_runtime: bool = False,
+    dense_gemv_batch_runtime_step_budget: int = 0,
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
     effective_source_root = source_root if source_root is not None else compile_root
@@ -1375,6 +1385,7 @@ def run_one_kernel(
             tile_dispatch_jobs=dense_gemv_tile_dispatch_jobs,
             max_row_tile_height=dense_gemv_max_row_tile_height,
             batch_runtime=dense_gemv_batch_runtime,
+            batch_runtime_step_budget=dense_gemv_batch_runtime_step_budget,
             dispatcher=dispatcher,
         )
     if tiled is not None:
@@ -1414,7 +1425,7 @@ def run_one_kernel(
         command, timeout_seconds=timeout_seconds
     )
     elapsed_ns = time.monotonic_ns() - started
-    if phase_trace_path.is_file():
+    if phase_trace_path.is_file() and not parse_phase_events(stdout):
         stdout = stdout + "\n" + phase_trace_path.read_text(encoding="utf-8")
 
     _hash_output_files(output_records)
@@ -1680,6 +1691,12 @@ def main() -> int:
             "--dense-gemv-max-row-tile-height must be >= 0\n"
         )
         return 2
+    if args.dense_gemv_batch_runtime_step_budget < 0:
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: "
+            "--dense-gemv-batch-runtime-step-budget must be >= 0\n"
+        )
+        return 2
     if not args.host_plan.is_file():
         sys.stderr.write(
             f"manifest_kernel_probe_runner: host-plan absent at "
@@ -1766,6 +1783,9 @@ def main() -> int:
                 args.dense_gemv_max_row_tile_height
             ),
             dense_gemv_batch_runtime=args.dense_gemv_batch_runtime,
+            dense_gemv_batch_runtime_step_budget=(
+                args.dense_gemv_batch_runtime_step_budget
+            ),
         )
         try:
             write_kernel_receipt(receipt=receipt, out_dir=args.out_dir)

@@ -34,6 +34,22 @@ DEFAULT_SPLIT_D2H_ROW_TILE_HEIGHT = 1
 SDK_D2H_ELEMENT_COUNT_LIMIT = 65536
 
 
+def _batch_step_groups(
+    pending: list[dict[str, Any]],
+    step_budget: int,
+) -> list[list[dict[str, Any]]]:
+    if step_budget <= 0:
+        return [pending]
+    return [
+        pending[start : start + step_budget]
+        for start in range(0, len(pending), step_budget)
+    ]
+
+
+def _batch_step_completed(phase_events: list[dict[str, str]]) -> bool:
+    return any(event.get("phase") == "step_complete" for event in phase_events)
+
+
 def is_safe_tile_shape(
     *,
     width: int,
@@ -305,6 +321,64 @@ def _load_verified_tile_partial(
     return output if actual == expected else None
 
 
+def _tile_partial_anchor(
+    *,
+    entry: dict[str, Any],
+    repo_root: Path,
+    kind: str,
+) -> dict[str, Any] | None:
+    if entry.get("exitCode") != 0 or bool(entry.get("timedOut")):
+        return None
+    output = entry.get("output")
+    if not isinstance(output, dict):
+        return None
+    if int(output.get("totalBytes") or 0) <= 0:
+        return None
+    receipt_path_raw = output.get("tilePartialReceiptPath")
+    receipt_path = (
+        repo_root / str(receipt_path_raw)
+        if isinstance(receipt_path_raw, str)
+        else None
+    )
+    receipt = {}
+    if receipt_path is not None and receipt_path.is_file():
+        try:
+            receipt = _load_json(receipt_path)
+        except (OSError, ValueError):
+            receipt = {}
+    return {
+        "kind": kind,
+        "tileIndex": int(entry.get("tileIndex") or 0),
+        "widthStart": int(entry.get("widthStart") or 0),
+        "width": int(entry.get("width") or 0),
+        "rowStart": int(entry.get("rowStart") or 0),
+        "rowCount": int(entry.get("rowCount") or 0),
+        "reusedVerifiedPartial": bool(entry.get("reusedVerifiedPartial")),
+        "output": output,
+        "phaseTracePath": str(entry.get("phaseTracePath") or ""),
+        "commandDigest": str(receipt.get("commandDigest") or ""),
+        "compileParamDigest": str(receipt.get("compileParamDigest") or ""),
+        "compileCommandDigest": str(receipt.get("compileCommandDigest") or ""),
+        "tileShapeSafety": entry.get("tileShapeSafety") or {},
+    }
+
+
+def _first_current_emitter_partial(
+    *,
+    tile_dispatches: list[dict[str, Any]],
+    repo_root: Path,
+) -> dict[str, Any] | None:
+    for entry in tile_dispatches:
+        anchor = _tile_partial_anchor(
+            entry=entry,
+            repo_root=repo_root,
+            kind="first_verified_current_emitter_tile_partial",
+        )
+        if anchor is not None:
+            return anchor
+    return None
+
+
 def _first_fresh_emitter_partial(
     *,
     tile_dispatches: list[dict[str, Any]],
@@ -313,43 +387,13 @@ def _first_fresh_emitter_partial(
     for entry in tile_dispatches:
         if bool(entry.get("reusedVerifiedPartial")):
             continue
-        if entry.get("exitCode") != 0 or bool(entry.get("timedOut")):
-            continue
-        output = entry.get("output")
-        if not isinstance(output, dict):
-            continue
-        if int(output.get("totalBytes") or 0) <= 0:
-            continue
-        receipt_path_raw = output.get("tilePartialReceiptPath")
-        receipt_path = (
-            repo_root / str(receipt_path_raw)
-            if isinstance(receipt_path_raw, str)
-            else None
+        anchor = _tile_partial_anchor(
+            entry=entry,
+            repo_root=repo_root,
+            kind="first_fresh_emitter_partial",
         )
-        receipt = {}
-        if receipt_path is not None and receipt_path.is_file():
-            try:
-                receipt = _load_json(receipt_path)
-            except (OSError, ValueError):
-                receipt = {}
-        return {
-            "kind": "first_fresh_emitter_partial",
-            "tileIndex": int(entry.get("tileIndex") or 0),
-            "widthStart": int(entry.get("widthStart") or 0),
-            "width": int(entry.get("width") or 0),
-            "rowStart": int(entry.get("rowStart") or 0),
-            "rowCount": int(entry.get("rowCount") or 0),
-            "output": output,
-            "phaseTracePath": str(entry.get("phaseTracePath") or ""),
-            "commandDigest": str(receipt.get("commandDigest") or ""),
-            "compileParamDigest": str(
-                receipt.get("compileParamDigest") or ""
-            ),
-            "compileCommandDigest": str(
-                receipt.get("compileCommandDigest") or ""
-            ),
-            "tileShapeSafety": entry.get("tileShapeSafety") or {},
-        }
+        if anchor is not None:
+            return anchor
     return None
 
 
@@ -408,6 +452,19 @@ def _last_phase(phase_events: list[dict[str, str]]) -> str:
     if not phase_events:
         return ""
     return str(phase_events[-1].get("phase") or "")
+
+
+def _phase_events_for_batch_step(
+    phase_events: list[dict[str, str]],
+    step_index: int,
+) -> list[dict[str, str]]:
+    step_key = str(step_index)
+    filtered = [
+        event
+        for event in phase_events
+        if str(event.get("step") or "") == step_key
+    ]
+    return filtered if filtered else phase_events
 
 
 def _relative(path: Path, repo_root: Path) -> str:
@@ -1002,13 +1059,20 @@ def _run_batch_for_pending_tiles(
     batch_command: list[str],
     timeout_seconds: int,
     repo_root: Path,
+    dispatcher: DispatchFn | None,
 ) -> tuple[int, str, str, bool, int]:
     started = time.monotonic_ns()
-    exit_code, stdout, stderr, timed_out = _run_command(
-        batch_command,
-        timeout_seconds=timeout_seconds,
-        cwd=repo_root,
-    )
+    if dispatcher is None:
+        exit_code, stdout, stderr, timed_out = _run_command(
+            batch_command,
+            timeout_seconds=timeout_seconds,
+            cwd=repo_root,
+        )
+    else:
+        exit_code, stdout, stderr, timed_out = dispatcher(
+            batch_command,
+            timeout_seconds=timeout_seconds,
+        )
     return exit_code, stdout, stderr, timed_out, time.monotonic_ns() - started
 
 
@@ -1039,6 +1103,8 @@ def _run_dense_gemv_width_tiled_batched(
     tile_shape_safety: dict[str, Any],
     tile_split_d2h_rows: bool,
     max_row_tile_height: int,
+    batch_runtime_step_budget: int,
+    dispatcher: DispatchFn | None,
 ) -> DenseGemvTileRun:
     import numpy as np
 
@@ -1060,6 +1126,7 @@ def _run_dense_gemv_width_tiled_batched(
     new_dispatch_count = 0
     aggregate_started = time.monotonic_ns()
     blocker: str | None = None
+    budget_exhausted = False
     dispatch_exit_code: int | None = 0
     dispatch_timed_out = False
     aggregate = np.zeros((full_height, out_dim_per_pe), dtype=np.float32)
@@ -1205,8 +1272,7 @@ def _run_dense_gemv_width_tiled_batched(
             reused_tile_count += 1
             continue
         if tile_dispatch_budget > 0 and new_dispatch_count >= tile_dispatch_budget:
-            blocker = "dense_gemv_width_tile_dispatch_budget_exhausted"
-            dispatch_exit_code = None
+            budget_exhausted = True
             break
         partial_path.unlink(missing_ok=True)
         _tile_partial_receipt_path(partial_path).unlink(missing_ok=True)
@@ -1234,142 +1300,173 @@ def _run_dense_gemv_width_tiled_batched(
         if not pending:
             continue
         width_count, row_count = shape_key
-        first_outputs = pending[0]["outputs"]
-        batch_dir = (
-            scratch_dir
-            / "width-row-batches"
-            / f"w{width_count:04d}_h{row_count:04d}"
-        )
-        batch_path = batch_dir / "batch.json"
-        batch_phase_trace_path = batch_dir / "phase-trace.log"
-        batch_dir.mkdir(parents=True, exist_ok=True)
-        batch_payload = {
-            "schemaVersion": 1,
-            "artifactKind": "doe_dense_gemv_width_tile_batch",
-            "steps": [
-                {"inputs": item["inputs"], "outputs": item["outputs"]}
-                for item in pending
-            ],
-        }
-        batch_path.write_text(_json_dumps(batch_payload), encoding="utf-8")
-        dummy_output_spec = str(first_outputs[0])
-        batch_command = _batch_dispatch_command(
-            cs_python=cs_python,
-            adapter=adapter,
-            compile_dir=compile_dirs_by_shape[shape_key],
-            width=width_count,
-            height=row_count,
-            in_dim_per_pe=in_dim_per_pe,
-            batch_path=batch_path,
-            dummy_output_spec=dummy_output_spec,
-            cmaddr=cmaddr,
-            split_d2h_rows=tile_split_d2h_rows and row_count > 1,
-            phase_trace_path=batch_phase_trace_path,
-        )
-        commands.append(batch_command)
-        exit_code, stdout, stderr, timed_out, elapsed_ns = (
-            _run_batch_for_pending_tiles(
-                pending=pending,
-                batch_command=batch_command,
-                timeout_seconds=timeout_seconds,
-                repo_root=repo_root,
+        groups = _batch_step_groups(pending, batch_runtime_step_budget)
+        for batch_group_index, batch_pending in enumerate(groups):
+            first_outputs = batch_pending[0]["outputs"]
+            batch_root = (
+                scratch_dir
+                / "width-row-batches"
+                / f"w{width_count:04d}_h{row_count:04d}"
             )
-        )
-        stdout_parts.extend(_tail(stdout, lines=4))
-        stderr_parts.extend(_tail(stderr, lines=4))
-        if batch_phase_trace_path.is_file():
-            stdout = (
-                stdout
-                + "\n"
-                + batch_phase_trace_path.read_text(encoding="utf-8")
-            )
-        phase_events = _parse_phase_events(stdout)
-        batch_blocker: str | None = None
-        if timed_out:
-            batch_blocker = "dense_gemv_width_tile_batch_dispatch_timed_out"
-            blocker = batch_blocker
-            dispatch_exit_code = -1
-            dispatch_timed_out = True
-        elif exit_code != 0:
-            batch_blocker = (
-                f"dense_gemv_width_tile_batch_dispatch_exit_code_{exit_code}"
-            )
-            blocker = batch_blocker
-            dispatch_exit_code = exit_code
-
-        for item in pending:
-            partial_path = item["partialPath"]
-            partial_record = {
-                "path": _relative(partial_path, repo_root),
-                "totalBytes": partial_path.stat().st_size
-                if partial_path.is_file()
-                else 0,
-                "sha256": sha256_file(partial_path)
-                if partial_path.is_file()
-                else "",
+            if batch_runtime_step_budget > 0:
+                batch_dir = batch_root / f"g{batch_group_index:04d}"
+            else:
+                batch_dir = batch_root
+            batch_path = batch_dir / "batch.json"
+            batch_phase_trace_path = batch_dir / "phase-trace.log"
+            batch_dir.mkdir(parents=True, exist_ok=True)
+            batch_payload = {
+                "schemaVersion": 1,
+                "artifactKind": "doe_dense_gemv_width_tile_batch",
+                "batchGroupIndex": batch_group_index,
+                "batchRuntimeStepBudget": batch_runtime_step_budget,
+                "steps": [
+                    {"inputs": item["inputs"], "outputs": item["outputs"]}
+                    for item in batch_pending
+                ],
             }
-            row_start = int(item["rowStart"])
-            item_row_count = int(item["rowCount"])
-            entry_blocked = batch_blocker is not None
-            if not entry_blocked and int(partial_record["totalBytes"]) <= 0:
-                blocker = "dense_gemv_width_tile_output_empty"
+            batch_path.write_text(_json_dumps(batch_payload), encoding="utf-8")
+            dummy_output_spec = str(first_outputs[0])
+            batch_command = _batch_dispatch_command(
+                cs_python=cs_python,
+                adapter=adapter,
+                compile_dir=compile_dirs_by_shape[shape_key],
+                width=width_count,
+                height=row_count,
+                in_dim_per_pe=in_dim_per_pe,
+                batch_path=batch_path,
+                dummy_output_spec=dummy_output_spec,
+                cmaddr=cmaddr,
+                split_d2h_rows=tile_split_d2h_rows and row_count > 1,
+                phase_trace_path=batch_phase_trace_path,
+            )
+            commands.append(batch_command)
+            exit_code, stdout, stderr, timed_out, elapsed_ns = (
+                _run_batch_for_pending_tiles(
+                    pending=batch_pending,
+                    batch_command=batch_command,
+                    timeout_seconds=timeout_seconds,
+                    repo_root=repo_root,
+                    dispatcher=dispatcher,
+                )
+            )
+            stdout_parts.extend(_tail(stdout, lines=4))
+            stderr_parts.extend(_tail(stderr, lines=4))
+            phase_text = stdout
+            if batch_phase_trace_path.is_file():
+                phase_text = batch_phase_trace_path.read_text(encoding="utf-8")
+            phase_events = _parse_phase_events(phase_text)
+            batch_blocker: str | None = None
+            if timed_out:
+                batch_blocker = "dense_gemv_width_tile_batch_dispatch_timed_out"
+                blocker = batch_blocker
+                dispatch_exit_code = -1
+                dispatch_timed_out = True
+            elif exit_code != 0:
+                batch_blocker = (
+                    f"dense_gemv_width_tile_batch_dispatch_exit_code_{exit_code}"
+                )
+                blocker = batch_blocker
                 dispatch_exit_code = exit_code
-                entry_blocked = True
-            tile_dispatches.append(
-                {
-                    "tileIndex": len(tile_dispatches),
-                    "widthStart": int(item["widthStart"]),
-                    "width": int(item["width"]),
-                    "rowStart": row_start,
-                    "rowCount": item_row_count,
-                    "activation": item["activation"],
-                    "weight": item["weight"],
-                    "output": partial_record,
-                    "command": item["command"],
-                    "batchCommand": batch_command,
-                    "executionMode": "batched_runtime",
-                    "tileD2HMode": (
-                        "row_split_copyback"
-                        if item.get("splitD2HRows")
-                        else "single_region_copyback"
+
+            for batch_step_index, item in enumerate(batch_pending):
+                partial_path = item["partialPath"]
+                partial_record = {
+                    "path": _relative(partial_path, repo_root),
+                    "totalBytes": partial_path.stat().st_size
+                    if partial_path.is_file()
+                    else 0,
+                    "sha256": sha256_file(partial_path)
+                    if partial_path.is_file()
+                    else "",
+                    "tilePartialReceiptPath": _relative(
+                        _tile_partial_receipt_path(partial_path),
+                        repo_root,
                     ),
-                    "exitCode": -1 if timed_out else exit_code,
-                    "timedOut": timed_out,
-                    "wallclockNs": elapsed_ns,
-                    "tileShapeSafety": item["tileShapeSafety"],
-                    "unsafeTileShapeAllowed": allow_unsafe_tile_shapes,
-                    "reusedVerifiedPartial": False,
-                    "phaseEvents": phase_events,
-                    "lastPhaseReached": _last_phase(phase_events),
-                    "stdoutTail": _tail(stdout),
-                    "stderrTail": _tail(stderr),
                 }
-            )
-            if entry_blocked:
+                row_start = int(item["rowStart"])
+                item_row_count = int(item["rowCount"])
+                item_phase_events = _phase_events_for_batch_step(
+                    phase_events,
+                    batch_step_index,
+                )
+                step_completed = _batch_step_completed(item_phase_events)
+                entry_blocked = False
+                if batch_blocker is not None and not step_completed:
+                    entry_blocked = True
+                if int(partial_record["totalBytes"]) <= 0:
+                    if batch_blocker is None or step_completed:
+                        blocker = "dense_gemv_width_tile_output_empty"
+                        dispatch_exit_code = exit_code
+                    entry_blocked = True
+                tile_dispatches.append(
+                    {
+                        "tileIndex": len(tile_dispatches),
+                        "widthStart": int(item["widthStart"]),
+                        "width": int(item["width"]),
+                        "rowStart": row_start,
+                        "rowCount": item_row_count,
+                        "activation": item["activation"],
+                        "weight": item["weight"],
+                        "output": partial_record,
+                        "command": item["command"],
+                        "batchCommand": batch_command,
+                        "batchGroupIndex": batch_group_index,
+                        "batchStepIndex": batch_step_index,
+                        "batchPath": _relative(batch_path, repo_root),
+                        "phaseTracePath": _relative(
+                            batch_phase_trace_path,
+                            repo_root,
+                        ),
+                        "executionMode": "batched_runtime",
+                        "tileD2HMode": (
+                            "row_split_copyback"
+                            if item.get("splitD2HRows")
+                            else "single_region_copyback"
+                        ),
+                        "exitCode": -1 if timed_out else exit_code,
+                        "timedOut": timed_out,
+                        "wallclockNs": elapsed_ns,
+                        "tileShapeSafety": item["tileShapeSafety"],
+                        "unsafeTileShapeAllowed": allow_unsafe_tile_shapes,
+                        "reusedVerifiedPartial": False,
+                        "phaseEvents": item_phase_events,
+                        "lastPhaseReached": _last_phase(item_phase_events),
+                        "stdoutTail": _tail(stdout),
+                        "stderrTail": _tail(stderr),
+                    }
+                )
+                if entry_blocked:
+                    break
+                _write_tile_partial_receipt(
+                    partial_path=partial_path,
+                    command=item["command"],
+                    activation=item["activation"],
+                    weight=item["weight"],
+                    output=partial_record,
+                    compile_receipt=item["compileReceipt"],
+                    tile_shape_safety=item["tileShapeSafety"],
+                    width_start=int(item["widthStart"]),
+                    width_count=int(item["width"]),
+                    row_start=row_start,
+                    row_count=item_row_count,
+                )
+                aggregate[
+                    row_start : row_start + item_row_count,
+                    :,
+                ] += np.load(partial_path).astype(
+                    np.float32,
+                    copy=False,
+                ).reshape(item_row_count, out_dim_per_pe)
+                partial_paths.append(partial_path)
+            if blocker is not None:
                 break
-            _write_tile_partial_receipt(
-                partial_path=partial_path,
-                command=item["command"],
-                activation=item["activation"],
-                weight=item["weight"],
-                output=partial_record,
-                compile_receipt=item["compileReceipt"],
-                tile_shape_safety=item["tileShapeSafety"],
-                width_start=int(item["widthStart"]),
-                width_count=int(item["width"]),
-                row_start=row_start,
-                row_count=item_row_count,
-            )
-            aggregate[
-                row_start : row_start + item_row_count,
-                :,
-            ] += np.load(partial_path).astype(
-                np.float32,
-                copy=False,
-            ).reshape(item_row_count, out_dim_per_pe)
-            partial_paths.append(partial_path)
         if blocker is not None:
             break
+
+    if blocker is None and budget_exhausted:
+        blocker = "dense_gemv_width_tile_dispatch_budget_exhausted"
+        dispatch_exit_code = None
 
     if blocker is None:
         logits = aggregate.reshape(-1)[:out_dim].astype(np.float32, copy=False)
@@ -1419,6 +1516,19 @@ def _run_dense_gemv_width_tiled_batched(
 
     aggregate_elapsed_ns = time.monotonic_ns() - aggregate_started
     expected_tile_count = len(planned_tiles)
+    partial_artifacts = _tile_partial_artifact_counts(
+        tile_root=scratch_dir / "width-row-tiles",
+        accepted_count=len(partial_paths),
+        reused_count=reused_tile_count,
+    )
+    first_fresh = _first_fresh_emitter_partial(
+        tile_dispatches=tile_dispatches,
+        repo_root=repo_root,
+    )
+    canonical_anchor = _first_current_emitter_partial(
+        tile_dispatches=tile_dispatches,
+        repo_root=repo_root,
+    )
     tile_coverage = {
         "kind": "width_row_tiles",
         "fullWidth": width,
@@ -1452,9 +1562,25 @@ def _run_dense_gemv_width_tiled_batched(
         "expectedTileCount": expected_tile_count,
         "completedTileCount": len(partial_paths),
         "reusedTileCount": reused_tile_count,
+        "verifiedReusablePartials": partial_artifacts[
+            "verifiedReusablePartials"
+        ],
+        "verifiedFreshEmitterPartials": partial_artifacts[
+            "verifiedFreshEmitterPartials"
+        ],
+        "verifiedAcceptedPartials": partial_artifacts[
+            "verifiedAcceptedPartials"
+        ],
+        "tilePartialReceiptsOnDisk": partial_artifacts[
+            "tilePartialReceiptsOnDisk"
+        ],
+        "partialArtifacts": partial_artifacts,
+        "canonicalTilePartialAnchor": canonical_anchor,
+        "firstFreshEmitterPartial": first_fresh,
         "dispatchedTileCount": len(tile_dispatches) - reused_tile_count,
         "dispatchBudget": tile_dispatch_budget,
         "batchRuntime": True,
+        "batchRuntimeStepBudget": batch_runtime_step_budget,
         "tileDispatchJobs": 1,
         "maxRowTileHeight": max_row_tile_height,
         "tileD2HMode": (
@@ -1463,7 +1589,8 @@ def _run_dense_gemv_width_tiled_batched(
             else "single_region_copyback"
         ),
         "dispatchBudgetExhausted": (
-            blocker == "dense_gemv_width_tile_dispatch_budget_exhausted"
+            budget_exhausted
+            and blocker == "dense_gemv_width_tile_dispatch_budget_exhausted"
         ),
         "coversFullHiddenWidth": sum(count for _, count in chunks) == width,
         "coversFullRows": len(partial_paths) == expected_tile_count,
@@ -1488,6 +1615,7 @@ def _run_dense_gemv_width_tiled_batched(
             "reuseVerifiedTilePartials": reuse_verified_tile_partials,
             "dispatchBudget": tile_dispatch_budget,
             "batchRuntime": True,
+            "batchRuntimeStepBudget": batch_runtime_step_budget,
             "maxRowTileHeight": max_row_tile_height,
             "tileD2HMode": (
                 "row_split_copyback"
@@ -1534,6 +1662,7 @@ def _run_dense_gemv_width_tiled(
     tile_dispatch_jobs: int,
     max_row_tile_height: int,
     batch_runtime: bool,
+    batch_runtime_step_budget: int,
     dispatcher: DispatchFn | None,
 ) -> DenseGemvTileRun:
     import numpy as np
@@ -1690,6 +1819,8 @@ def _run_dense_gemv_width_tiled(
             tile_shape_safety=tile_shape_safety,
             tile_split_d2h_rows=tile_split_d2h_rows,
             max_row_tile_height=max_row_tile_height,
+            batch_runtime_step_budget=batch_runtime_step_budget,
+            dispatcher=dispatcher,
         )
     compile_receipts: list[dict[str, Any]] = []
     compile_receipts_by_shape: dict[tuple[int, int], dict[str, Any]] = {}
@@ -1718,14 +1849,15 @@ def _run_dense_gemv_width_tiled(
         stdout = str(result["stdout"])
         stderr = str(result["stderr"])
         phase_trace_path = Path(item["phaseTracePath"])
+        phase_text = stdout
         if phase_trace_path.is_file():
-            stdout = stdout + "\n" + phase_trace_path.read_text(encoding="utf-8")
+            phase_text = phase_trace_path.read_text(encoding="utf-8")
         exit_code = int(result["exitCode"])
         timed_out = bool(result["timedOut"])
         elapsed_ns = int(result["wallclockNs"])
         stdout_parts.extend(_tail(stdout, lines=4))
         stderr_parts.extend(_tail(stderr, lines=4))
-        phase_events = _parse_phase_events(stdout)
+        phase_events = _parse_phase_events(phase_text)
         partial_path = Path(item["partialPath"])
         partial_record = {
             "path": _relative(partial_path, repo_root),
@@ -2072,6 +2204,19 @@ def _run_dense_gemv_width_tiled(
 
     aggregate_elapsed_ns = time.monotonic_ns() - aggregate_started
     expected_tile_count = len(planned_tiles)
+    partial_artifacts = _tile_partial_artifact_counts(
+        tile_root=scratch_dir / "width-row-tiles",
+        accepted_count=len(partial_paths),
+        reused_count=reused_tile_count,
+    )
+    first_fresh = _first_fresh_emitter_partial(
+        tile_dispatches=tile_dispatches,
+        repo_root=repo_root,
+    )
+    canonical_anchor = _first_current_emitter_partial(
+        tile_dispatches=tile_dispatches,
+        repo_root=repo_root,
+    )
     tile_coverage = {
         "kind": "width_row_tiles",
         "fullWidth": width,
@@ -2105,6 +2250,21 @@ def _run_dense_gemv_width_tiled(
         "expectedTileCount": expected_tile_count,
         "completedTileCount": len(partial_paths),
         "reusedTileCount": reused_tile_count,
+        "verifiedReusablePartials": partial_artifacts[
+            "verifiedReusablePartials"
+        ],
+        "verifiedFreshEmitterPartials": partial_artifacts[
+            "verifiedFreshEmitterPartials"
+        ],
+        "verifiedAcceptedPartials": partial_artifacts[
+            "verifiedAcceptedPartials"
+        ],
+        "tilePartialReceiptsOnDisk": partial_artifacts[
+            "tilePartialReceiptsOnDisk"
+        ],
+        "partialArtifacts": partial_artifacts,
+        "canonicalTilePartialAnchor": canonical_anchor,
+        "firstFreshEmitterPartial": first_fresh,
         "dispatchedTileCount": len(tile_dispatches) - reused_tile_count,
         "dispatchBudget": tile_dispatch_budget,
         "tileDispatchJobs": max(1, int(tile_dispatch_jobs)),
@@ -2184,6 +2344,7 @@ def run_dense_gemv_row_tiled(
     tile_dispatch_jobs: int = 1,
     max_row_tile_height: int = DEFAULT_SPLIT_D2H_ROW_TILE_HEIGHT,
     batch_runtime: bool = False,
+    batch_runtime_step_budget: int = 0,
     dispatcher: DispatchFn | None = None,
 ) -> DenseGemvTileRun | None:
     if kernel not in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}:
@@ -2224,6 +2385,7 @@ def run_dense_gemv_row_tiled(
             tile_dispatch_jobs=tile_dispatch_jobs,
             max_row_tile_height=max_row_tile_height,
             batch_runtime=batch_runtime,
+            batch_runtime_step_budget=batch_runtime_step_budget,
             dispatcher=dispatcher,
         )
     tile_height = max(1, min(tile_height, full_height))
