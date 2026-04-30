@@ -50,6 +50,19 @@ def _batch_step_completed(phase_events: list[dict[str, str]]) -> bool:
     return any(event.get("phase") == "step_complete" for event in phase_events)
 
 
+def _batch_group_dir_name(
+    batch_group_index: int,
+    batch_pending: list[dict[str, Any]],
+) -> str:
+    first = batch_pending[0]
+    last = batch_pending[-1]
+    return (
+        f"g{batch_group_index:04d}"
+        f"_x{int(first['widthStart']):04d}_w{int(first['width']):04d}"
+        f"_y{int(first['rowStart']):04d}_y{int(last['rowStart']):04d}"
+    )
+
+
 def is_safe_tile_shape(
     *,
     width: int,
@@ -1309,17 +1322,27 @@ def _run_dense_gemv_width_tiled_batched(
                 / f"w{width_count:04d}_h{row_count:04d}"
             )
             if batch_runtime_step_budget > 0:
-                batch_dir = batch_root / f"g{batch_group_index:04d}"
+                batch_dir = batch_root / _batch_group_dir_name(
+                    batch_group_index,
+                    batch_pending,
+                )
             else:
                 batch_dir = batch_root
             batch_path = batch_dir / "batch.json"
             batch_phase_trace_path = batch_dir / "phase-trace.log"
             batch_dir.mkdir(parents=True, exist_ok=True)
+            batch_tile_range = {
+                "widthStart": int(batch_pending[0]["widthStart"]),
+                "width": width_count,
+                "rowStart": int(batch_pending[0]["rowStart"]),
+                "rowEndInclusive": int(batch_pending[-1]["rowStart"]),
+            }
             batch_payload = {
                 "schemaVersion": 1,
                 "artifactKind": "doe_dense_gemv_width_tile_batch",
                 "batchGroupIndex": batch_group_index,
                 "batchRuntimeStepBudget": batch_runtime_step_budget,
+                "batchTileRange": batch_tile_range,
                 "steps": [
                     {"inputs": item["inputs"], "outputs": item["outputs"]}
                     for item in batch_pending
@@ -1413,6 +1436,7 @@ def _run_dense_gemv_width_tiled_batched(
                         "batchCommand": batch_command,
                         "batchGroupIndex": batch_group_index,
                         "batchStepIndex": batch_step_index,
+                        "batchTileRange": batch_tile_range,
                         "batchPath": _relative(batch_path, repo_root),
                         "phaseTracePath": _relative(
                             batch_phase_trace_path,

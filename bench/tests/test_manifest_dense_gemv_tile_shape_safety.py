@@ -221,6 +221,28 @@ class TileShapeSafetyTest(unittest.TestCase):
         )
         self.assertTrue(all(event.get("step") == "1" for event in scoped))
 
+    def test_batch_group_dir_name_includes_tile_range(self) -> None:
+        self.assertEqual(
+            M._batch_group_dir_name(
+                3,
+                [
+                    {
+                        "widthStart": 0,
+                        "width": 120,
+                        "rowStart": 105,
+                        "rowCount": 1,
+                    },
+                    {
+                        "widthStart": 0,
+                        "width": 120,
+                        "rowStart": 120,
+                        "rowCount": 1,
+                    },
+                ],
+            ),
+            "g0003_x0000_w0120_y0105_y0120",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
