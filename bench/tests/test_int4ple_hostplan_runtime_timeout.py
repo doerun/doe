@@ -164,8 +164,139 @@ class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
             "height": 3,
         })
 
+    def test_summa_output_uses_compact_logical_region(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        region = adapter._d2h_region_for_output(
+            output_transform={
+                "kind": "summa_tiles_to_logical_matrix",
+                "rows": 19,
+                "cols": 4,
+                "gridHeight": 16,
+                "gridWidth": 16,
+                "tileRows": 16,
+                "tileCols": 16,
+            },
+            width=16,
+            height=16,
+        )
+
+        self.assertEqual(region, {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2,
+        })
+
+    def test_summa_output_splits_multi_row_copyback(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        regions = adapter._d2h_regions_for_output(
+            output_transform={
+                "kind": "summa_tiles_to_logical_matrix",
+                "rows": 19,
+                "cols": 4,
+                "gridHeight": 16,
+                "gridWidth": 16,
+                "tileRows": 16,
+                "tileCols": 16,
+            },
+            width=16,
+            height=16,
+        )
+
+        self.assertEqual(regions, [
+            {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1,
+            },
+            {
+                "x": 0,
+                "y": 1,
+                "width": 1,
+                "height": 1,
+            },
+        ])
+
+    def test_summa_transform_accepts_compact_region_copyback(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+        import numpy as np
+
+        transform = {
+            "kind": "summa_tiles_to_logical_matrix",
+            "rows": 19,
+            "cols": 4,
+            "paddedRows": 256,
+            "paddedCols": 256,
+            "gridHeight": 16,
+            "gridWidth": 16,
+            "tileRows": 16,
+            "tileCols": 16,
+        }
+        region = {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2,
+        }
+        host = np.arange(2 * 1 * 16 * 16, dtype=np.float32)
+        logical = adapter._summa_c_tiles_to_logical(
+            host,
+            transform,
+            region=region,
+        )
+
+        expected = host.reshape(2, 1, 16, 16).transpose(0, 3, 1, 2).reshape(32, 16)
+        self.assertEqual(logical.tolist(), expected[:19, :4].reshape(-1).tolist())
+
 
 class HostPlanRuntimeTimeout(unittest.TestCase):
+    def test_compact_ple_proj_mode_only_intercepts_ple_proj(self) -> None:
+        self.assertTrue(
+            runner._is_compact_ple_proj_launch(
+                {"targetName": "ple_proj"},
+                "compact_summa_session",
+            )
+        )
+        self.assertFalse(
+            runner._is_compact_ple_proj_launch(
+                {"targetName": "ple_proj"},
+                "monolithic_summa",
+            )
+        )
+        self.assertFalse(
+            runner._is_compact_ple_proj_launch(
+                {"targetName": "tiled"},
+                "compact_summa_session",
+            )
+        )
+
+    def test_compact_ple_proj_transforms_match_compiled_shape(self) -> None:
+        a_transform = runner._compact_ple_proj_source_transform(
+            matrix_role="a",
+            source_cols=256,
+        )
+        b_transform = runner._compact_ple_proj_source_transform(
+            matrix_role="b",
+            source_cols=256,
+            source_rows=4,
+        )
+        output_transform = runner._compact_ple_proj_output_transform(
+            rows=19,
+            cols=4,
+        )
+
+        self.assertEqual(a_transform["gridWidth"], 2)
+        self.assertEqual(a_transform["gridHeight"], 2)
+        self.assertEqual(a_transform["tileRows"], 16)
+        self.assertEqual(a_transform["tileReduction"], 128)
+        self.assertEqual(b_transform["paddedCols"], 32)
+        self.assertEqual(b_transform["tileCols"], 16)
+        self.assertEqual(output_transform["paddedRows"], 32)
+        self.assertEqual(output_transform["paddedCols"], 32)
+
     def test_session_lm_head_tiled_mode_intercepts_launch(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

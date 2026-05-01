@@ -164,6 +164,8 @@ def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
 def _summa_c_tiles_to_logical(
     host: np.ndarray,
     transform: dict[str, Any],
+    *,
+    region: dict[str, int] | None = None,
 ) -> np.ndarray:
     rows = _required_positive_int(transform, "rows")
     cols = _required_positive_int(transform, "cols")
@@ -173,21 +175,54 @@ def _summa_c_tiles_to_logical(
     grid_width = _required_positive_int(transform, "gridWidth")
     tile_rows = _required_positive_int(transform, "tileRows")
     tile_cols = _required_positive_int(transform, "tileCols")
+    region = region or {
+        "x": 0,
+        "y": 0,
+        "width": grid_width,
+        "height": grid_height,
+    }
+    region_x = int(region.get("x") or 0)
+    region_y = int(region.get("y") or 0)
+    region_width = int(region.get("width") or 0)
+    region_height = int(region.get("height") or 0)
+    if region_width <= 0 or region_height <= 0:
+        raise ValueError("summa_c_region_empty")
+    if region_x < 0 or region_y < 0:
+        raise ValueError("summa_c_region_negative")
+    if region_x + region_width > grid_width or region_y + region_height > grid_height:
+        raise ValueError("summa_c_region_exceeds_grid")
     if rows > padded_rows or cols > padded_cols:
         raise ValueError(
             "summa_c_logical_shape_exceeds_target:"
             f"{rows}x{cols}>{padded_rows}x{padded_cols}"
         )
-    expected = grid_height * grid_width * tile_rows * tile_cols
+    expected = region_height * region_width * tile_rows * tile_cols
     if host.size != expected:
         raise ValueError(f"summa_c_tile_size_mismatch:{host.size}!={expected}")
-    logical = host.reshape(
-        grid_height,
-        grid_width,
+    region_logical = host.reshape(
+        region_height,
+        region_width,
         tile_cols,
         tile_rows,
-    ).transpose(0, 3, 1, 2).reshape(padded_rows, padded_cols)
-    return logical[:rows, :cols].reshape(-1).astype(host.dtype, copy=False)
+    ).transpose(0, 3, 1, 2).reshape(
+        region_height * tile_rows,
+        region_width * tile_cols,
+    )
+    row_start = region_y * tile_rows
+    col_start = region_x * tile_cols
+    row_end = row_start + region_logical.shape[0]
+    col_end = col_start + region_logical.shape[1]
+    if rows > row_end or cols > col_end:
+        raise ValueError(
+            "summa_c_region_does_not_cover_logical_output:"
+            f"{rows}x{cols}>{row_end}x{col_end}"
+        )
+    row_offset = max(0, -row_start)
+    col_offset = max(0, -col_start)
+    return region_logical[
+        row_offset : row_offset + rows,
+        col_offset : col_offset + cols,
+    ].reshape(-1).astype(host.dtype, copy=False)
 
 
 def _dense_gemv_row_shards_to_logits(
@@ -219,12 +254,26 @@ def _d2h_region_for_output(
     width: int,
     height: int,
 ) -> dict[str, int]:
-    if str(output_transform.get("kind") or "") == "dense_gemv_row_shards_to_logits":
+    transform_kind = str(output_transform.get("kind") or "")
+    if transform_kind == "dense_gemv_row_shards_to_logits":
         return {
             "x": width - 1,
             "y": 0,
             "width": 1,
             "height": height,
+        }
+    if transform_kind == "summa_tiles_to_logical_matrix":
+        rows = _required_positive_int(output_transform, "rows")
+        cols = _required_positive_int(output_transform, "cols")
+        tile_rows = _required_positive_int(output_transform, "tileRows")
+        tile_cols = _required_positive_int(output_transform, "tileCols")
+        region_width = min(width, max(1, (cols + tile_cols - 1) // tile_cols))
+        region_height = min(height, max(1, (rows + tile_rows - 1) // tile_rows))
+        return {
+            "x": 0,
+            "y": 0,
+            "width": region_width,
+            "height": region_height,
         }
     return {
         "x": 0,
@@ -232,6 +281,33 @@ def _d2h_region_for_output(
         "width": width,
         "height": height,
     }
+
+
+def _d2h_regions_for_output(
+    *,
+    output_transform: dict[str, Any],
+    width: int,
+    height: int,
+) -> list[dict[str, int]]:
+    region = _d2h_region_for_output(
+        output_transform=output_transform,
+        width=width,
+        height=height,
+    )
+    if (
+        str(output_transform.get("kind") or "") == "summa_tiles_to_logical_matrix"
+        and int(region["height"]) > 1
+    ):
+        return [
+            {
+                "x": int(region["x"]),
+                "y": y,
+                "width": int(region["width"]),
+                "height": 1,
+            }
+            for y in range(int(region["y"]), int(region["y"]) + int(region["height"]))
+        ]
+    return [region]
 
 
 def main() -> int:
@@ -351,6 +427,13 @@ def main() -> int:
                 width=width,
                 height=height,
             )
+            regions = _d2h_regions_for_output(
+                output_transform=output_transform
+                if isinstance(output_transform, dict)
+                else {},
+                width=width,
+                height=height,
+            )
             d2h_elements = (
                 int(region["width"]) * int(region["height"]) * elements_per_pe
             )
@@ -358,43 +441,71 @@ def main() -> int:
             if not symbol or not dtype or not path:
                 blockers.append(f"output_spec_incomplete:{symbol or 'missing_symbol'}")
                 continue
-            host, memcpy_dtype, memcpy_elements_per_pe, logical_dtype = (
-                _memcpy_buffer_for_d2h(
+            raw_hosts: list[np.ndarray] = []
+            np_dtype, _ = _dtype_config(dtype)
+            logical_dtype = np.dtype(np_dtype)
+            for region_index, copy_region in enumerate(regions):
+                copy_elements = (
+                    int(copy_region["width"])
+                    * int(copy_region["height"])
+                    * elements_per_pe
+                )
+                host_part, memcpy_dtype, memcpy_elements_per_pe, logical_dtype = (
+                    _memcpy_buffer_for_d2h(
+                        dtype=dtype,
+                        elements_per_pe=elements_per_pe,
+                        total_elements=copy_elements,
+                    )
+                )
+                append_progress(
+                    progress_path,
+                    "launch_step_memcpy_d2h",
+                    launchIndex=launch_index,
+                    symbol=symbol,
+                    elements=copy_elements,
+                    deviceElements=device_total_elements,
+                    region=copy_region,
+                    regionIndex=region_index,
+                    regionCount=len(regions),
+                )
+                print(f"phase:memcpy_d2h:{symbol}:{region_index}", flush=True)
+                runner.memcpy_d2h(
+                    host_part,
+                    int(runner.get_id(symbol)),
+                    int(copy_region["x"]),
+                    int(copy_region["y"]),
+                    int(copy_region["width"]),
+                    int(copy_region["height"]),
+                    memcpy_elements_per_pe,
+                    streaming=False,
+                    order=MemcpyOrder.ROW_MAJOR,
+                    data_type=memcpy_dtype,
+                    nonblock=False,
+                )
+                raw_hosts.append(host_part)
+            if raw_hosts:
+                host = (
+                    raw_hosts[0]
+                    if len(raw_hosts) == 1
+                    else np.concatenate(raw_hosts)
+                )
+            else:
+                host, _, _, logical_dtype = _memcpy_buffer_for_d2h(
                     dtype=dtype,
                     elements_per_pe=elements_per_pe,
-                    total_elements=d2h_elements,
+                    total_elements=0,
                 )
-            )
-            append_progress(
-                progress_path,
-                "launch_step_memcpy_d2h",
-                launchIndex=launch_index,
-                symbol=symbol,
-                elements=d2h_elements,
-                deviceElements=device_total_elements,
-                region=region,
-            )
-            print(f"phase:memcpy_d2h:{symbol}", flush=True)
-            runner.memcpy_d2h(
-                host,
-                int(runner.get_id(symbol)),
-                int(region["x"]),
-                int(region["y"]),
-                int(region["width"]),
-                int(region["height"]),
-                memcpy_elements_per_pe,
-                streaming=False,
-                order=MemcpyOrder.ROW_MAJOR,
-                data_type=memcpy_dtype,
-                nonblock=False,
-            )
             if dtype == "f16":
                 host = host.view(logical_dtype).astype(logical_dtype, copy=False)
             saved_host = host
             if isinstance(output_transform, dict):
                 transform_kind = str(output_transform.get("kind") or "")
                 if transform_kind == "summa_tiles_to_logical_matrix":
-                    saved_host = _summa_c_tiles_to_logical(host, output_transform)
+                    saved_host = _summa_c_tiles_to_logical(
+                        host,
+                        output_transform,
+                        region=region,
+                    )
                 elif transform_kind == "dense_gemv_row_shards_to_logits":
                     saved_host = _dense_gemv_row_shards_to_logits(host, output_transform)
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -416,6 +527,8 @@ def main() -> int:
                     "sha256Kind": "array_tobytes_c_order",
                 }
             )
+            if len(regions) > 1:
+                outputs[-1]["deviceRegions"] = regions
             if isinstance(output_transform, dict) and output_transform:
                 outputs[-1]["outputTransform"] = output_transform
         receipt["outputs"] = outputs

@@ -49,6 +49,12 @@ LM_HEAD_KERNELS = frozenset({
     "lm_head_gemv_stable",
     "lm_head_prefill_stable",
 })
+PER_LAYER_INPUT_KERNELS = frozenset({
+    "ple_embed",
+    "ple_proj",
+    "ple_rmsnorm",
+    "ple_residual",
+})
 
 
 def resolve(path: Path) -> Path:
@@ -571,18 +577,26 @@ def build_real_session_scheduler(
     *,
     dispatch_plan: dict[str, Any],
     runtime_config: dict[str, Any],
+    architecture_disabled_weight_keys: list[str] | None = None,
+    per_layer_input_block_enabled: bool = True,
 ) -> dict[str, Any]:
     launches: list[dict[str, Any]] = []
     blockers: list[str] = []
     sample_feedback_edges: list[dict[str, Any]] = []
     kv_operations: list[dict[str, Any]] = []
     transcript_emitters: list[dict[str, Any]] = []
+    elided_operations: list[dict[str, Any]] = []
     lifetimes: dict[str, dict[str, Any]] = {}
     current = "input:prompt_token_ids"
     layer_state: dict[int, dict[str, str]] = {}
     last_generated_token = "input:prompt_token_ids"
     last_logits = ""
     last_logits_launch_index: int | None = None
+    disabled_weight_keys = {
+        str(item)
+        for item in architecture_disabled_weight_keys or []
+        if str(item)
+    }
     weight_shapes = {
         str(item.get("weightKey") or item.get("tensor") or ""): (
             item.get("shape") if isinstance(item.get("shape"), list) else []
@@ -649,6 +663,22 @@ def build_real_session_scheduler(
         inputs: list[dict[str, Any]] = []
         outputs: list[dict[str, Any]] = []
 
+        def elide_operation(reason: str, *, input_buffer: str = "") -> None:
+            elided_operations.append(
+                {
+                    "phase": step["phase"],
+                    "layerIndex": layer_idx,
+                    "decodeStepIndex": step.get("tokenIndex"),
+                    "operationName": name,
+                    "kernelName": kernel,
+                    "weightKey": weight_key,
+                    "reason": reason,
+                    "inputBuffer": input_buffer,
+                    "aliasRole": "current_activation",
+                    "aliasBuffer": input_buffer,
+                }
+            )
+
         def add_input(
             symbol: str,
             buffer_name: str,
@@ -688,6 +718,12 @@ def build_real_session_scheduler(
             touch_output(buffer_name, role, launch_index)
 
         out = output_buffer(step, launch_index)
+        if kernel in PER_LAYER_INPUT_KERNELS and not per_layer_input_block_enabled:
+            elide_operation(
+                "architecture_disabled_per_layer_input_block",
+                input_buffer=current if kernel == "ple_residual" else "",
+            )
+            return
         if kernel in {"embed", "ple_embed"}:
             token_source = (
                 "input:prompt_token_ids"
@@ -702,11 +738,16 @@ def build_real_session_scheduler(
             current = out
         elif kernel in {"tiled", "ple_proj"}:
             matrix_n, matrix_k = weight_matrix_dims(weight_key)
-            source = (
-                state.get("ple_gather", current)
-                if kernel == "ple_proj"
-                else current
-            )
+            if kernel == "ple_proj":
+                source = state.get("ple_gather", current)
+            elif name in {"q_proj", "k_proj", "v_proj"}:
+                source = state.get("attn_norm", current)
+            elif name in {"gate_proj", "up_proj"}:
+                source = state.get("ffn_norm", current)
+            elif name == "down_proj":
+                source = state.get("activation", current)
+            else:
+                source = current
             add_input(
                 "a",
                 source,
@@ -739,9 +780,23 @@ def build_real_session_scheduler(
             else:
                 if kernel == "ple_proj":
                     state["ple_project"] = out
-                current = out
+                    current = out
+                elif name in {"q_proj", "k_proj", "v_proj"}:
+                    state[name[0]] = out
+                elif name in {"gate_proj", "up_proj"}:
+                    state[name] = out
+                else:
+                    current = out
         elif kernel in {"gemv", *LM_HEAD_KERNELS}:
-            add_input("activation", current, "activation", "activation_router")
+            if name in {"q_proj", "k_proj", "v_proj"}:
+                source = state.get("attn_norm", current)
+            elif name in {"gate_proj", "up_proj"}:
+                source = state.get("ffn_norm", current)
+            elif name == "down_proj":
+                source = state.get("activation", current)
+            else:
+                source = current
+            add_input("activation", source, "activation", "activation_router")
             add_input("weight", f"weight:{weight_key}", "weight", "weights")
             add_output(
                 "output",
@@ -751,6 +806,8 @@ def build_real_session_scheduler(
             )
             if name in {"q_proj", "k_proj", "v_proj"}:
                 state[name[0]] = out
+            elif name in {"gate_proj", "up_proj"}:
+                state[name] = out
             if is_lm_head:
                 decode_index = int(step.get("tokenIndex") or 0)
                 last_logits = out
@@ -766,13 +823,28 @@ def build_real_session_scheduler(
                     }
                 )
             else:
-                current = out
+                if name not in {
+                    "q_proj",
+                    "k_proj",
+                    "v_proj",
+                    "gate_proj",
+                    "up_proj",
+                }:
+                    current = out
         elif kernel in {"rmsnorm", "ple_rmsnorm"}:
             norm_input = (
                 state.get("ple_project", current)
                 if kernel == "ple_rmsnorm"
                 else current
             )
+            if kernel == "ple_rmsnorm" and str(weight_key or "") in disabled_weight_keys:
+                state["ple_norm"] = norm_input
+                current = norm_input
+                elide_operation(
+                    "architecture_disabled_session_input",
+                    input_buffer=norm_input,
+                )
+                return
             add_input("input", norm_input, "activation", "activation_router")
             add_input("weight", f"weight:{step.get('weightKey')}", "weight", "weights")
             add_output("output", out, "activation", f"{kernel}.output")
@@ -780,8 +852,10 @@ def build_real_session_scheduler(
                 state["ple_norm"] = out
             if name == "input_norm":
                 state["residual_base"] = current
+                state["attn_norm"] = out
             elif name == "post_attn_norm":
                 state["ffn_residual_base"] = current
+                state["ffn_norm"] = out
             elif name == "q_norm":
                 state["q"] = out
             elif name == "k_norm":
@@ -805,7 +879,8 @@ def build_real_session_scheduler(
             )
             add_output("input", out, "activation", "rope.output")
             state[source_key] = out
-            current = out
+            if name not in {"rope_q", "rope_k"}:
+                current = out
         elif kernel in {
             "attn_small",
             "attn_decode",
@@ -962,8 +1037,10 @@ def build_real_session_scheduler(
             state["ple_modulate"] = out
             current = out
         elif kernel == "gelu":
-            add_input("input", current, "activation", "activation_router")
+            gelu_input = state.get("gate_proj") or current
+            add_input("input", gelu_input, "activation", "activation_router")
             add_output("output", out, "activation", "gelu.output")
+            state["activation"] = out
             current = out
         elif kernel == "sample":
             if not last_logits:
@@ -1066,7 +1143,9 @@ def build_real_session_scheduler(
         "runtimeExpansion": {
             "decodeIterationCount": int(dispatch_plan["decodeTokenCount"]),
             "runtimeLaunchCount": len(launches),
+            "elidedOperationCount": len(elided_operations),
         },
+        "elidedOperations": elided_operations,
         "activationRouting": {
             "status": "bound",
             "bufferCount": len(lifetimes),
@@ -1297,6 +1376,13 @@ def build_real_session_runtime(
     scheduler = build_real_session_scheduler(
         dispatch_plan=dispatch_plan,
         runtime_config=runtime_config,
+        architecture_disabled_weight_keys=[
+            str(item)
+            for item in weight_plan.get("architectureDisabledWeightKeys") or []
+        ],
+        per_layer_input_block_enabled=bool(
+            (weight_plan.get("perLayerInputBlock") or {}).get("enabled", True)
+        ),
     )
     scheduler_record = {
         "path": str(args.host_plan),
@@ -1460,6 +1546,10 @@ def build_real_session_runtime(
             getattr(args, "session_lm_head_tile_jobs", 1)
         ),
         session_embed_roi_jobs=int(getattr(args, "session_embed_roi_jobs", 1)),
+        session_ple_proj_dispatch_mode=str(
+            getattr(args, "session_ple_proj_dispatch_mode", "monolithic_summa")
+            or "monolithic_summa"
+        ),
         session_lm_head_batch_runtime=bool(
             getattr(args, "session_lm_head_batch_runtime", False)
         ),

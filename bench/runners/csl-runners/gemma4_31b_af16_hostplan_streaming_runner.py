@@ -59,6 +59,7 @@ SESSION_ARTIFACT_PREFIX = "gemma4_31b_af16"
 PLE_EMBED_KEY_PREFIX = "per_layer_inputs.embedTokensPerLayer.layer"
 PLE_PROJECTION_KEY_PREFIX = "per_layer_inputs.perLayerModelProjection.layer"
 PLE_PROJECTION_NORM_KEY_PREFIX = "per_layer_inputs.perLayerProjectionNorm.layer"
+PER_LAYER_INPUT_KEY_PREFIX = "per_layer_inputs."
 LINEAR_ATTENTION_POLICY = "skip-with-layout-metadata"
 MODEL_LEVEL_PREFILL_STEPS = frozenset({
     "final_norm_prefill",
@@ -235,6 +236,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="Parallel jobs for independent real-session embed/PLE ROI launches.",
+    )
+    parser.add_argument(
+        "--session-ple-proj-dispatch-mode",
+        choices=["monolithic_summa", "compact_summa_session"],
+        default="monolithic_summa",
+        help="Execution mode for real-session PLE projection launches.",
     )
     parser.add_argument(
         "--session-lm-head-batch-runtime",
@@ -494,14 +501,19 @@ def is_linear_attention_absent_v_projection(
     )
 
 
-def is_architecture_disabled_ple_projection_norm(
+def per_layer_input_block_enabled(architecture: dict[str, Any]) -> bool:
+    hidden = int(architecture.get("hiddenSizePerLayerInput") or 0)
+    return hidden > 0
+
+
+def is_architecture_disabled_per_layer_input_weight(
     weight_key: str,
     architecture: dict[str, Any],
 ) -> bool:
-    if not weight_key.startswith(PLE_PROJECTION_NORM_KEY_PREFIX):
-        return False
-    hidden = int(architecture.get("hiddenSizePerLayerInput") or 0)
-    return hidden <= 0
+    return (
+        weight_key.startswith(PER_LAYER_INPUT_KEY_PREFIX)
+        and not per_layer_input_block_enabled(architecture)
+    )
 
 
 def is_linear_attention_session_state_key(weight_key: str) -> bool:
@@ -520,6 +532,15 @@ def resolve_required_weight(
 ) -> dict[str, Any]:
     matched_tensor = next((c for c in candidates if c in tensors), None)
     matched_file = next((c for c in candidates if (weight_root / c).is_file()), None)
+    if is_architecture_disabled_per_layer_input_weight(weight_key, architecture):
+        return {
+            "weightKey": weight_key,
+            "candidates": candidates,
+            "matchedTensor": None,
+            "matchedFile": None,
+            "resolutionKind": "architecture_disabled_session_input",
+            "resolved": True,
+        }
     if matched_tensor:
         if weight_key == "lm_head":
             tensor = tensors.get(matched_tensor) or {}
@@ -586,15 +607,6 @@ def resolve_required_weight(
             "matchedFile": None,
             "resolutionKind": "linear_attention_absent_v_projection",
             "linearAttentionPolicy": LINEAR_ATTENTION_POLICY,
-            "resolved": True,
-        }
-    if is_architecture_disabled_ple_projection_norm(weight_key, architecture):
-        return {
-            "weightKey": weight_key,
-            "candidates": candidates,
-            "matchedTensor": None,
-            "matchedFile": None,
-            "resolutionKind": "architecture_disabled_session_input",
             "resolved": True,
         }
     if is_linear_attention_session_state_key(weight_key):
@@ -667,6 +679,7 @@ def build_weight_staging_plan(
 
     tensors = manifest.get("tensors") or {}
     architecture = manifest.get("architecture") or {}
+    ple_hidden = int(architecture.get("hiddenSizePerLayerInput") or 0)
     linear_attention_layers = linear_attention_layers_from_tensors(tensors)
     linear_attention_layer_set = set(linear_attention_layers)
     self_attention_layers = self_attention_layers_from_tensors(tensors)
@@ -713,6 +726,11 @@ def build_weight_staging_plan(
     unresolved = [
         key for key, record in required.items() if not record["resolved"]
     ]
+    architecture_disabled_weight_keys = [
+        key
+        for key, record in required.items()
+        if record.get("resolutionKind") == "architecture_disabled_session_input"
+    ]
     return {
         "mode": "weightsRef_resident_session",
         "manifestPath": rel(manifest_path),
@@ -737,11 +755,16 @@ def build_weight_staging_plan(
         "modelLayerCount": num_layers,
         "linearAttentionLayers": linear_attention_layers,
         "selfAttentionLayers": self_attention_layers,
+        "perLayerInputBlock": {
+            "enabled": per_layer_input_block_enabled(architecture),
+            "hiddenSizePerLayerInput": ple_hidden,
+        },
         "requiredWeightCount": len(required),
         "resolvedWeightCount": sum(
             1 for record in required.values() if record["resolved"]
         ),
         "unresolvedWeightKeys": unresolved,
+        "architectureDisabledWeightKeys": architecture_disabled_weight_keys,
         "requiredWeights": list(required.values()),
     }
 
@@ -793,60 +816,134 @@ def build_dispatch_plan(
             return list(self_attention_layers)
         return list(range(num_layers))
 
+    def expand_model_step(
+        step: dict[str, Any],
+        *,
+        phase: str,
+        token_index: int | None = None,
+    ) -> dict[str, Any]:
+        return {
+            "phase": phase,
+            "layer": None,
+            "tokenIndex": token_index,
+            "name": step.get("name"),
+            "kernelKey": step.get("kernelKey"),
+            "weightKey": infer_weight_key_for_step(step, 0),
+        }
+
+    def expand_layer_step(
+        step: dict[str, Any],
+        *,
+        phase: str,
+        layer_index: int,
+        token_index: int | None = None,
+    ) -> dict[str, Any]:
+        record = {
+            "phase": phase,
+            "layer": layer_index,
+            "name": step.get("name"),
+            "kernelKey": step.get("kernelKey"),
+            "weightKey": infer_weight_key_for_step(step, layer_index),
+        }
+        if token_index is not None:
+            record["tokenIndex"] = token_index
+        return record
+
+    def expand_phase_steps(
+        template: list[dict[str, Any]],
+        *,
+        phase: str,
+        token_index: int | None = None,
+    ) -> list[dict[str, Any]]:
+        expanded: list[dict[str, Any]] = []
+        layer_steps: list[dict[str, Any]] = []
+        suffix_steps: list[dict[str, Any]] = []
+        seen_layer_step = False
+        for step in template:
+            is_model_step = (
+                step.get("kernelKey") == "embed"
+                or (
+                    is_model_level_prefill_step(step)
+                    if phase == "prefill"
+                    else is_model_level_decode_step(step)
+                )
+            )
+            if is_model_step:
+                if seen_layer_step:
+                    suffix_steps.append(step)
+                else:
+                    expanded.append(
+                        expand_model_step(
+                            step,
+                            phase=phase,
+                            token_index=(
+                                0
+                                if step.get("kernelKey") == "sample"
+                                and phase == "prefill"
+                                else token_index
+                            ),
+                        )
+                    )
+                continue
+            seen_layer_step = True
+            layer_steps.append(step)
+
+        for layer_index in range(num_layers):
+            for step in layer_steps:
+                if layer_index not in layers_for_step(step):
+                    continue
+                expanded.append(
+                    expand_layer_step(
+                        step,
+                        phase=phase,
+                        layer_index=layer_index,
+                        token_index=token_index,
+                    )
+                )
+
+        for step in suffix_steps:
+            expanded.append(
+                expand_model_step(
+                    step,
+                    phase=phase,
+                    token_index=(
+                        0
+                        if step.get("kernelKey") == "sample"
+                        and phase == "prefill"
+                        else token_index
+                    ),
+                )
+            )
+        return expanded
+
     prefill: list[dict[str, Any]] = []
-    for step in prefill_template:
-        if step.get("kernelKey") == "embed" or is_model_level_prefill_step(step):
-            prefill.append({
-                "phase": "prefill",
-                "layer": None,
-                "tokenIndex": 0 if step.get("kernelKey") == "sample" else None,
-                "name": step.get("name"),
-                "kernelKey": step.get("kernelKey"),
-                "weightKey": infer_weight_key_for_step(step, 0),
-            })
-            continue
-        for layer_index in layers_for_step(step):
-            prefill.append({
-                "phase": "prefill",
-                "layer": layer_index,
-                "name": step.get("name"),
-                "kernelKey": step.get("kernelKey"),
-                "weightKey": infer_weight_key_for_step(step, layer_index),
-            })
+    prefill.extend(
+        expand_phase_steps(
+            prefill_template,
+            phase="prefill",
+        )
+    )
 
     decode_by_token: list[dict[str, Any]] = []
     for token_index in range(1, decode_token_count):
-        token_steps: list[dict[str, Any]] = []
-        for step in decode_template:
-            if step.get("kernelKey") == "sample":
-                continue
-            if is_model_level_decode_step(step):
-                token_steps.append({
-                    "phase": "decode",
-                    "tokenIndex": token_index,
-                    "layer": None,
-                    "name": step.get("name"),
-                    "kernelKey": step.get("kernelKey"),
-                    "weightKey": infer_weight_key_for_step(step, 0),
-                })
-                continue
-            for layer_index in layers_for_step(step):
-                token_steps.append({
-                    "phase": "decode",
-                    "tokenIndex": token_index,
-                    "layer": layer_index,
-                    "name": step.get("name"),
-                    "kernelKey": step.get("kernelKey"),
-                    "weightKey": infer_weight_key_for_step(step, layer_index),
-                })
-        token_steps.append({
-            "phase": "decode",
-            "tokenIndex": token_index,
-            "layer": None,
-            "name": "sample",
-            "kernelKey": "sample",
-            "weightKey": None,
-        })
+        token_steps = expand_phase_steps(
+            [
+                step for step in decode_template
+                if step.get("kernelKey") != "sample"
+            ],
+            phase="decode",
+            token_index=token_index,
+        )
+        token_steps.append(
+            {
+                "phase": "decode",
+                "tokenIndex": token_index,
+                "layer": None,
+                "name": "sample",
+                "kernelKey": "sample",
+                "weightKey": None,
+            }
+        )
         decode_by_token.append({
             "tokenIndex": token_index,
             "steps": token_steps,

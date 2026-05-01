@@ -69,10 +69,12 @@ CHAIN_STEP_ADAPTER = Path(__file__).with_name("chain_step_adapter.py")
 EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
 DEFAULT_LAUNCH_TIMEOUT_SECONDS = 3600
 SESSION_LM_HEAD_DISPATCH_MODES = ("monolithic", "dense_gemv_width_tiled_session")
+SESSION_PLE_PROJ_DISPATCH_MODES = ("monolithic_summa", "compact_summa_session")
 DEFAULT_SESSION_LM_HEAD_TILE_WIDTH = 120
 DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
 DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
+PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
@@ -141,6 +143,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="Parallel jobs for independent session embed/PLE ROI launches.",
+    )
+    parser.add_argument(
+        "--session-ple-proj-dispatch-mode",
+        choices=SESSION_PLE_PROJ_DISPATCH_MODES,
+        default="monolithic_summa",
+        help="Execution mode for session PLE projection launches.",
     )
     parser.add_argument(
         "--session-lm-head-batch-runtime",
@@ -1768,6 +1776,361 @@ def _is_session_tiled_lm_head_launch(
     )
 
 
+def _is_compact_ple_proj_launch(launch: dict[str, Any], mode: str) -> bool:
+    return (
+        mode == "compact_summa_session"
+        and str(launch.get("targetName") or "") in PLE_PROJ_TARGETS
+    )
+
+
+def _compact_ple_proj_source_transform(
+    *,
+    matrix_role: str,
+    source_cols: int,
+    source_rows: int | None = None,
+) -> dict[str, Any]:
+    transform: dict[str, Any] = {
+        "gridHeight": 2,
+        "gridWidth": 2,
+        "kind": (
+            "weight_matrix_to_summa_tiles"
+            if matrix_role == "b"
+            else "logical_matrix_to_summa_tiles"
+        ),
+        "matrixRole": matrix_role,
+        "paddedReduction": 256,
+        "sourceCols": source_cols,
+        "targetDtype": "f32",
+    }
+    if matrix_role == "a":
+        transform.update({
+            "paddedRows": 32,
+            "sourceDtype": "f32",
+            "tileReduction": 128,
+            "tileRows": 16,
+        })
+    else:
+        transform.update({
+            "paddedCols": 32,
+            "sourceDtype": "f32",
+            "sourceRows": source_rows or 4,
+            "sourceTransform": {"kind": "none"},
+            "tileCols": 16,
+            "tileReduction": 128,
+        })
+    return transform
+
+
+def _compact_ple_proj_output_transform(*, rows: int, cols: int) -> dict[str, Any]:
+    return {
+        "cols": cols,
+        "gridHeight": 2,
+        "gridWidth": 2,
+        "kind": "summa_tiles_to_logical_matrix",
+        "matrixRole": "c",
+        "paddedCols": 32,
+        "paddedReduction": 256,
+        "paddedRows": 32,
+        "rows": rows,
+        "sourceDtype": "f32",
+        "targetDtype": "f32",
+        "tileCols": 16,
+        "tileReduction": 128,
+        "tileRows": 16,
+    }
+
+
+def _compile_compact_ple_proj_target(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+) -> tuple[Path, dict[str, Any]]:
+    source_compile_dir = Path(str(launch.get("compileDir") or ""))
+    compile_root = source_compile_dir.parent.parent
+    layout_path = compile_root / "ple_proj" / "layout.csl"
+    output_dir = runtime_dir / "ple-proj-compact" / "p0002_mt0016_kt0128_nt0016"
+    compiled_dir = output_dir / "compiled"
+    params = {
+        "P": 2,
+        "Mt": 16,
+        "Kt": 128,
+        "Nt": 16,
+        "fabricWidth": 9,
+        "fabricHeight": 4,
+        "fabricOffsetX": 4,
+        "fabricOffsetY": 1,
+    }
+    if (compiled_dir / "out.json").is_file():
+        return compiled_dir, {**params, "reused": True}
+    command = [
+        cslc_executable(),
+        str(layout_path),
+        "--arch=wse3",
+        f"--fabric-dims={params['fabricWidth']},{params['fabricHeight']}",
+        f"--fabric-offsets={params['fabricOffsetX']},{params['fabricOffsetY']}",
+        "--channels=1",
+        "--params=P:2,Mt:16,Kt:128,Nt:16",
+        "-o",
+        str(compiled_dir),
+        "--memcpy",
+    ]
+    scratch_cwd = output_dir / "scratch"
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(scratch_cwd),
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "unknown"
+        raise ValueError(f"compact_ple_proj_compile_failed:{detail[-400:]}")
+    return compiled_dir, {
+        **params,
+        "reused": False,
+        "stdoutTail": completed.stdout.strip().splitlines()[-3:],
+        "stderrTail": completed.stderr.strip().splitlines()[-3:],
+    }
+
+
+def _binding_for_symbol(
+    bindings: list[Any],
+    symbol: str,
+    *,
+    launch_index: int,
+) -> dict[str, Any]:
+    for binding in bindings:
+        if isinstance(binding, dict) and str(binding.get("symbol") or "") == symbol:
+            return binding
+    raise ValueError(f"launch[{launch_index}].binding_missing:{symbol}")
+
+
+def _compact_ple_proj_materialization(
+    materialization: dict[str, Any],
+    *,
+    source_transform: dict[str, Any],
+    planned_element_count: int,
+    elements_per_pe: int,
+) -> dict[str, Any]:
+    return {
+        **materialization,
+        "dtype": "f32",
+        "elemType": "f32",
+        "elementsPerPe": elements_per_pe,
+        "plannedElementCount": planned_element_count,
+        "sourceTransform": source_transform,
+        "targetGeometry": {
+            "height": 2,
+            "peCount": 4,
+            "width": 2,
+        },
+    }
+
+
+def _execute_compact_ple_proj_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    compile_dir, compile_identity = _compile_compact_ple_proj_target(
+        runtime_dir=runtime_dir,
+        launch=launch,
+    )
+    a_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "a",
+        launch_index=launch_index,
+    )
+    b_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "b",
+        launch_index=launch_index,
+    )
+    c_binding = _binding_for_symbol(
+        launch.get("resolvedOutputs") or [],
+        "c",
+        launch_index=launch_index,
+    )
+    a_buffer = str(a_binding.get("buffer") or "")
+    c_buffer = str(c_binding.get("buffer") or "")
+    if a_buffer not in buffer_files:
+        raise ValueError(f"compact_ple_proj_input_missing:{a_buffer}")
+    activation = np.load(buffer_files[a_buffer], allow_pickle=False).ravel()
+    a_materialization = a_binding.get("materialization") or {}
+    a_source = a_materialization.get("sourceTransform") or {}
+    source_cols = int(a_source.get("sourceCols") or a_binding.get("matrixCols") or 256)
+    if source_cols <= 0:
+        raise ValueError("compact_ple_proj_source_cols_missing")
+    rows = int(activation.size // source_cols)
+    if rows <= 0:
+        raise ValueError("compact_ple_proj_activation_rows_missing")
+    a_transform = _compact_ple_proj_source_transform(
+        matrix_role="a",
+        source_cols=source_cols,
+    )
+    a_values, _rows = _summa_a_tiles_from_logical(
+        activation,
+        a_transform,
+        target_dtype=np.float32,
+    )
+    b_materialization = b_binding.get("materialization") or {}
+    b_source = b_materialization.get("sourceTransform") or {}
+    source_rows = int(b_source.get("sourceRows") or c_binding.get("matrixCols") or 4)
+    b_transform = _compact_ple_proj_source_transform(
+        matrix_role="b",
+        source_cols=source_cols,
+        source_rows=source_rows,
+    )
+    b_values = _materialize_weight_input(
+        _compact_ple_proj_materialization(
+            b_materialization,
+            source_transform=b_transform,
+            planned_element_count=8192,
+            elements_per_pe=2048,
+        )
+    )
+    launch_dir = runtime_dir / "ple-proj-compact" / f"launch-{launch_index:04d}"
+    a_path = launch_dir / "inputs" / "a.npy"
+    b_path = launch_dir / "inputs" / "b.npy"
+    a_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(a_path, a_values)
+    np.save(b_path, b_values)
+    output_path = _buffer_path(runtime_dir, c_buffer)
+    output_transform = _compact_ple_proj_output_transform(
+        rows=rows,
+        cols=source_rows,
+    )
+    spec = {
+        "compileDir": str(compile_dir),
+        "launchFunction": launch.get("launchFunction") or "compute",
+        "launchIndex": launch_index,
+        "cmaddr": cmaddr or "",
+        "targetGeometry": {
+            "height": 2,
+            "peCount": 4,
+            "width": 2,
+        },
+        "inputs": [
+            {
+                "symbol": "a",
+                "buffer": a_buffer,
+                "role": "activation",
+                "path": str(a_path),
+                "dtype": "f32",
+                "elemType": "f32",
+                "elementsPerPe": 2048,
+                "sourceTransform": a_transform,
+            },
+            {
+                "symbol": "b",
+                "buffer": str(b_binding.get("buffer") or ""),
+                "role": "weight",
+                "path": str(b_path),
+                "dtype": "f32",
+                "elemType": "f32",
+                "elementsPerPe": 2048,
+                "sourceTransform": b_transform,
+            },
+        ],
+        "outputs": [
+            {
+                "symbol": "c",
+                "buffer": c_buffer,
+                "role": "activation",
+                "path": str(output_path),
+                "dtype": "f32",
+                "elemType": "f32",
+                "elementsPerPe": 256,
+                "outputTransform": output_transform,
+            }
+        ],
+    }
+    spec_path = _launch_spec_path(runtime_dir, launch_index)
+    receipt_path = _launch_receipt_path(runtime_dir, launch_index)
+    write_json(spec_path, spec)
+    append_progress(
+        progress_path,
+        "session_ple_proj_compact_start",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        dispatchMode="compact_summa_session",
+        rows=rows,
+        cols=source_rows,
+    )
+    command = [
+        cs_python_executable(),
+        str(LAUNCH_STEP_ADAPTER),
+        "--spec",
+        str(spec_path),
+        "--receipt-out",
+        str(receipt_path),
+        "--progress-out",
+        str(progress_path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        receipt = {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_launch_step_receipt",
+            "status": "blocked",
+            "blockers": ["compact_ple_proj_timeout"],
+            "launchIndex": launch_index,
+            "targetName": launch.get("targetName"),
+            "dispatchMode": "compact_summa_session",
+            "compileIdentity": compile_identity,
+            "inputBuffers": [
+                {
+                    "name": a_buffer,
+                    "role": "activation",
+                    "path": str(a_path),
+                    "sha256": sha256_file(a_path),
+                    "sha256Kind": "npy_file_bytes",
+                },
+            ],
+            "stdoutTail": tail_lines(exc.stdout, 1),
+            "stderrTail": tail_lines(exc.stderr, 1),
+        }
+        write_json(receipt_path, receipt)
+        raise ValueError("compact_ple_proj_timeout") from exc
+    if not receipt_path.is_file():
+        raise ValueError("compact_ple_proj_receipt_missing")
+    receipt = load_json(receipt_path)
+    if not isinstance(receipt.get("inputBuffers"), list):
+        receipt["inputBuffers"] = _staged_input_buffer_records(spec["inputs"])
+    receipt["targetName"] = launch.get("targetName")
+    receipt["dispatchMode"] = "compact_summa_session"
+    receipt["compileIdentity"] = compile_identity
+    receipt["stdoutTail"] = tail_lines(completed.stdout, 1)
+    receipt["stderrTail"] = tail_lines(completed.stderr, 1)
+    write_json(receipt_path, receipt)
+    append_progress(
+        progress_path,
+        "session_ple_proj_compact_complete",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        status=receipt.get("status"),
+        blocker=";".join(receipt.get("blockers") or []),
+    )
+    if completed.returncode != 0 or receipt.get("status") != "succeeded":
+        raise ValueError(
+            "; ".join(receipt.get("blockers") or ["compact_ple_proj_failed"])
+        )
+    return receipt
+
+
 def _execute_dense_gemv_tiled_session_launch(
     *,
     runtime_dir: Path,
@@ -2171,6 +2534,7 @@ def execute_hostplan_runtime(
     session_lm_head_tile_width: int = DEFAULT_SESSION_LM_HEAD_TILE_WIDTH,
     session_lm_head_tile_jobs: int = DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
     session_embed_roi_jobs: int = 1,
+    session_ple_proj_dispatch_mode: str = "monolithic_summa",
     session_lm_head_batch_runtime: bool = False,
     session_lm_head_batch_runtime_step_budget: int = DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
     session_lm_head_tile_dispatch_budget: int = 0,
@@ -2328,6 +2692,58 @@ def execute_hostplan_runtime(
                         launch=launch,
                         launch_receipt=launch_receipt,
                         staged_outputs=embed_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
+            if _is_compact_ple_proj_launch(
+                launch,
+                session_ple_proj_dispatch_mode,
+            ):
+                buffer_keys_before = set(buffer_files.keys())
+                launch_receipt = _execute_compact_ple_proj_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    buffer_files=buffer_files,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                )
+                executed_launches.append(launch_receipt)
+                for output in launch.get("resolvedOutputs") or []:
+                    if isinstance(output, dict) and output.get("buffer"):
+                        buffer_files[str(output["buffer"])] = _buffer_path(
+                            runtime_dir,
+                            str(output["buffer"]),
+                        )
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="compact_summa_session",
+                )
+                if checkpoint_dir is not None:
+                    new_outputs = [
+                        {
+                            "buffer": key,
+                            "path": str(buffer_files[key]),
+                            "dtype": "unknown",
+                            "shape": [],
+                        }
+                        for key in sorted(set(buffer_files.keys()) - buffer_keys_before)
+                    ]
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=new_outputs,
                         launch_identity=_compute_launch_identity(launch, {}),
                         started_at_unix=launch_started_at,
                     )
@@ -2548,6 +2964,9 @@ def execute_hostplan_runtime(
         },
         "sessionEmbedRoi": {
             "jobs": max(1, int(session_embed_roi_jobs)),
+        },
+        "sessionPleProjDispatch": {
+            "mode": session_ple_proj_dispatch_mode,
         },
     }
 
@@ -2869,6 +3288,7 @@ def main() -> int:
                 session_lm_head_tile_width=args.session_lm_head_tile_width,
                 session_lm_head_tile_jobs=args.session_lm_head_tile_jobs,
                 session_embed_roi_jobs=args.session_embed_roi_jobs,
+                session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
                 session_lm_head_batch_runtime=args.session_lm_head_batch_runtime,
                 session_lm_head_batch_runtime_step_budget=(
                     args.session_lm_head_batch_runtime_step_budget

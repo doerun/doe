@@ -472,6 +472,39 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             )
             self.assertEqual(lm_head["actualDtype"], "F16")
 
+    def test_weight_plan_records_architecture_disabled_ple_norm(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _materialize_fixture(Path(tmp))
+            smoke = json.loads(paths["smoke"].read_text(encoding="utf-8"))
+            smoke["steps"].insert(
+                2,
+                {
+                    "name": "ple_norm",
+                    "phase": "prefill",
+                    "op": "rmsnorm",
+                    "kernelKey": "ple_rmsnorm",
+                    "weightsKey": "per_layer_inputs.perLayerProjectionNorm",
+                },
+            )
+            paths["smoke"].write_text(
+                json.dumps(smoke, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            plan = runner.build_weight_staging_plan(
+                manifest_path=paths["manifest"],
+                smoke_config_path=paths["smoke"],
+            )
+            self.assertIn(
+                "per_layer_inputs.perLayerProjectionNorm.layer0",
+                plan["architectureDisabledWeightKeys"],
+            )
+            self.assertIn(
+                "per_layer_inputs.perLayerModelProjection.layer0",
+                plan["architectureDisabledWeightKeys"],
+            )
+            self.assertFalse(plan["perLayerInputBlock"]["enabled"])
+
     def test_dispatch_plan_expands_prefill_and_decode_steps(self) -> None:
         runner = _load_runner_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -489,6 +522,37 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             self.assertEqual(plan["prefillSteps"][-2]["name"], "lm_head_prefill")
             self.assertEqual(plan["prefillSteps"][-1]["name"], "sample_prefill")
             self.assertEqual(plan["decodeByToken"][0]["tokenIndex"], 1)
+
+    def test_dispatch_plan_expands_layer_steps_in_layer_major_order(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            paths = _materialize_fixture(Path(tmp))
+            plan = runner.build_dispatch_plan(
+                smoke_config_path=paths["smoke"],
+                host_plan_path=paths["host_plan"],
+                prefill_token_count=2,
+                decode_token_count=1,
+                model_layer_count=2,
+            )
+            self.assertEqual(
+                [
+                    (
+                        step["name"],
+                        step["layer"],
+                    )
+                    for step in plan["prefillSteps"]
+                ],
+                [
+                    ("embed_tokens", None),
+                    ("ple_project", 0),
+                    ("input_norm", 0),
+                    ("ple_project", 1),
+                    ("input_norm", 1),
+                    ("final_norm_prefill", None),
+                    ("lm_head_prefill", None),
+                    ("sample_prefill", None),
+                ],
+            )
 
     def test_session_scheduler_routes_ple_layers_by_layer_state(self) -> None:
         session = _load_session_module()
@@ -587,6 +651,258 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
         self.assertEqual(
             launches[5]["inputs"][0]["buffer"],
             launches[3]["outputs"][0]["buffer"],
+        )
+
+    def test_session_scheduler_fans_out_attention_projections_from_norm(self) -> None:
+        session = _load_session_module()
+        dispatch_plan = {
+            "decodeTokenCount": 0,
+            "prefillSteps": [
+                {
+                    "phase": "prefill",
+                    "layer": None,
+                    "name": "embed_tokens",
+                    "kernelKey": "embed",
+                    "weightKey": "embed_tokens",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "input_norm",
+                    "kernelKey": "rmsnorm",
+                    "weightKey": "layer.0.input_layernorm",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "q_proj",
+                    "kernelKey": "tiled",
+                    "weightKey": "layer.0.self_attn.q_proj",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "k_proj",
+                    "kernelKey": "tiled",
+                    "weightKey": "layer.0.self_attn.k_proj",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "v_proj",
+                    "kernelKey": "tiled",
+                    "weightKey": "layer.0.self_attn.v_proj",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "rope_q",
+                    "kernelKey": "rope",
+                    "weightKey": None,
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "rope_k",
+                    "kernelKey": "rope",
+                    "weightKey": None,
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "attention",
+                    "kernelKey": "attn_small",
+                    "weightKey": None,
+                },
+            ],
+            "decodeByToken": [],
+        }
+        runtime_config = {
+            "modelConfig": {"numLayers": 1},
+            "weightMappings": [
+                {"weightKey": "layer.0.self_attn.q_proj", "shape": [4, 4]},
+                {"weightKey": "layer.0.self_attn.k_proj", "shape": [4, 4]},
+                {"weightKey": "layer.0.self_attn.v_proj", "shape": [4, 4]},
+            ],
+        }
+        scheduler = session.build_real_session_scheduler(
+            dispatch_plan=dispatch_plan,
+            runtime_config=runtime_config,
+        )
+        launches = scheduler["launches"]
+        norm = launches[1]["outputs"][0]["buffer"]
+        self.assertEqual(launches[2]["inputs"][0]["buffer"], norm)
+        self.assertEqual(launches[3]["inputs"][0]["buffer"], norm)
+        self.assertEqual(launches[4]["inputs"][0]["buffer"], norm)
+        self.assertEqual(
+            launches[5]["inputs"][0]["buffer"],
+            launches[2]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[6]["inputs"][0]["buffer"],
+            launches[3]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[7]["inputs"][0]["buffer"],
+            launches[5]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[7]["inputs"][1]["buffer"],
+            launches[6]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            launches[7]["inputs"][2]["buffer"],
+            launches[4]["outputs"][0]["buffer"],
+        )
+
+    def test_session_scheduler_elides_disabled_ple_rmsnorm(self) -> None:
+        session = _load_session_module()
+        dispatch_plan = {
+            "decodeTokenCount": 0,
+            "prefillSteps": [
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_gather",
+                    "kernelKey": "ple_embed",
+                    "weightKey": "per_layer_inputs.embedTokensPerLayer.layer0",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_project",
+                    "kernelKey": "ple_proj",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer0"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_norm",
+                    "kernelKey": "ple_rmsnorm",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerProjectionNorm.layer0"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_residual",
+                    "kernelKey": "ple_residual",
+                    "weightKey": None,
+                },
+            ],
+            "decodeByToken": [],
+        }
+        runtime_config = {
+            "modelConfig": {"numLayers": 1, "pleWidth": 256},
+            "weightMappings": [
+                {
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer0"
+                    ),
+                    "shape": [4, 256],
+                },
+            ],
+        }
+        scheduler = session.build_real_session_scheduler(
+            dispatch_plan=dispatch_plan,
+            runtime_config=runtime_config,
+            architecture_disabled_weight_keys=[
+                "per_layer_inputs.perLayerProjectionNorm.layer0"
+            ],
+        )
+        launches = scheduler["launches"]
+        self.assertEqual(
+            [launch["kernelName"] for launch in launches],
+            ["ple_embed", "ple_proj", "ple_residual"],
+        )
+        self.assertEqual(
+            launches[2]["inputs"][1]["buffer"],
+            launches[1]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            scheduler["runtimeExpansion"]["elidedOperationCount"],
+            1,
+        )
+        self.assertEqual(
+            scheduler["elidedOperations"][0]["reason"],
+            "architecture_disabled_session_input",
+        )
+
+    def test_session_scheduler_elides_disabled_per_layer_input_block(self) -> None:
+        session = _load_session_module()
+        dispatch_plan = {
+            "decodeTokenCount": 0,
+            "prefillSteps": [
+                {
+                    "phase": "prefill",
+                    "layer": None,
+                    "name": "embed_tokens",
+                    "kernelKey": "embed",
+                    "weightKey": "embed_tokens",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_gather",
+                    "kernelKey": "ple_embed",
+                    "weightKey": "per_layer_inputs.embedTokensPerLayer.layer0",
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_project",
+                    "kernelKey": "ple_proj",
+                    "weightKey": (
+                        "per_layer_inputs.perLayerModelProjection.layer0"
+                    ),
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "ple_modulate",
+                    "kernelKey": "ple_residual",
+                    "weightKey": None,
+                },
+                {
+                    "phase": "prefill",
+                    "layer": 0,
+                    "name": "input_norm",
+                    "kernelKey": "rmsnorm",
+                    "weightKey": "model.language_model.layers.0.input_layernorm",
+                },
+            ],
+            "decodeByToken": [],
+        }
+        scheduler = session.build_real_session_scheduler(
+            dispatch_plan=dispatch_plan,
+            runtime_config={
+                "modelConfig": {"numLayers": 1},
+                "weightMappings": [],
+            },
+            per_layer_input_block_enabled=False,
+        )
+        launches = scheduler["launches"]
+        self.assertEqual(
+            [launch["kernelName"] for launch in launches],
+            ["embed", "rmsnorm"],
+        )
+        self.assertEqual(
+            launches[1]["inputs"][0]["buffer"],
+            launches[0]["outputs"][0]["buffer"],
+        )
+        self.assertEqual(
+            scheduler["runtimeExpansion"]["elidedOperationCount"],
+            3,
+        )
+        self.assertEqual(
+            {
+                item["reason"]
+                for item in scheduler["elidedOperations"]
+            },
+            {"architecture_disabled_per_layer_input_block"},
         )
 
     def test_trace_records_current_blockers_without_refresh(self) -> None:
