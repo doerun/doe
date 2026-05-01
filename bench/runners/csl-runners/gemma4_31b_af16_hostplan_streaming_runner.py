@@ -77,7 +77,7 @@ DEFAULT_SOURCE_MANIFEST = (
     / "doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
 )
 DEFAULT_SMOKE_CONFIG = (
-    REPO_ROOT / "runtime/zig/examples/execution-v1/gemma-4-31b-smoke.json"
+    REPO_ROOT / "runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json"
 )
 DEFAULT_HOST_PLAN = (
     REPO_ROOT

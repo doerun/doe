@@ -15,9 +15,24 @@ from int4ple_binding_metadata import (
     target_phase,
 )
 
-_ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({"rmsnorm", "residual", "gelu"})
+_ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({
+    "rmsnorm",
+    "residual",
+    "gelu",
+    "gelu_gated",
+    "silu_gated",
+    "sigmoid_gated",
+})
 _SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
-_SUMMA_TARGETS = frozenset({"tiled", "ple_proj"})
+_SUMMA_TARGETS = frozenset({"tiled", "tiled_31b", "ple_proj"})
+_ROW_PARALLEL_TARGETS = frozenset({
+    "rmsnorm_prefill",
+    "residual_prefill",
+    "gelu_prefill",
+    "gelu_gated_prefill",
+    "silu_gated_prefill",
+    "sigmoid_gated_prefill",
+})
 
 
 def _resolve_phase_variant_target(
@@ -392,6 +407,62 @@ def _summa_output_transform(
     }
 
 
+def _row_parallel_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    target_geometry: dict[str, int],
+    elements_per_pe: int,
+    dtype: str,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if source_transform is not None:
+        return source_transform
+    if target_name not in _ROW_PARALLEL_TARGETS:
+        return source_transform
+    if role != "activation" or symbol not in {"input", "residual", "gate"}:
+        return source_transform
+    pe_count = int(target_geometry.get("peCount") or 0)
+    if pe_count <= 1 or elements_per_pe <= 0:
+        return source_transform
+    return {
+        "kind": "logical_matrix_to_pe_rows",
+        "matrixRole": symbol,
+        "sourceCols": elements_per_pe,
+        "targetRows": pe_count,
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
+def _row_parallel_output_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    elements_per_pe: int,
+    dtype: str,
+    output_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if output_transform is not None:
+        return output_transform
+    if target_name not in _ROW_PARALLEL_TARGETS:
+        return output_transform
+    if role != "activation" or symbol not in {"output", "input"}:
+        return output_transform
+    if elements_per_pe <= 0:
+        return output_transform
+    return {
+        "kind": "pe_rows_to_logical_matrix",
+        "matrixRole": symbol,
+        "rowsFromInput": "input",
+        "cols": elements_per_pe,
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
 def _dense_gemv_params(compile_params: dict[str, int]) -> dict[str, int] | None:
     width = _int_field(compile_params.get("width"))
     height = _int_field(compile_params.get("height"))
@@ -663,6 +734,15 @@ def _binding_materialization(
         weight_item=weight_item,
         source_transform=source_transform,
     )
+    source_transform = _row_parallel_source_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        target_geometry=target_geometry,
+        elements_per_pe=elements_per_pe,
+        dtype=dtype,
+        source_transform=source_transform,
+    )
     if source_transform is None and isinstance(metadata_staging, dict):
         source_transform = metadata_staging
     output_transform = _summa_output_transform(
@@ -682,6 +762,14 @@ def _binding_materialization(
     )
     if dense_output_transform is not None:
         output_transform = dense_output_transform
+    output_transform = _row_parallel_output_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        elements_per_pe=elements_per_pe,
+        dtype=dtype,
+        output_transform=output_transform,
+    )
     element_byte_width = _dtype_byte_width(dtype)
     planned_elements = elements_per_pe * target_geometry["peCount"]
     planned_bytes = planned_elements * element_byte_width

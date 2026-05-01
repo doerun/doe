@@ -1330,6 +1330,32 @@ def _dense_gemv_activation_shards(
     return values.reshape(-1)
 
 
+def _logical_matrix_to_pe_rows(
+    host: np.ndarray,
+    transform: dict[str, Any],
+    *,
+    target_dtype: np.dtype | type,
+) -> tuple[np.ndarray, int]:
+    source_cols = _required_positive_int(transform, "sourceCols")
+    target_rows = _required_positive_int(transform, "targetRows")
+    if host.size % source_cols != 0:
+        raise ValueError(
+            f"pe_rows_logical_size_mismatch:{host.size}%{source_cols}"
+        )
+    rows = host.size // source_cols
+    if rows > target_rows:
+        raise ValueError(
+            f"pe_rows_logical_rows_exceed_target:{rows}>{target_rows}"
+        )
+    dtype = np.dtype(target_dtype)
+    padded = np.zeros((target_rows, source_cols), dtype=dtype)
+    padded[:rows, :source_cols] = host.astype(dtype, copy=False).reshape(
+        rows,
+        source_cols,
+    )
+    return padded.reshape(-1).astype(dtype, copy=False), rows
+
+
 def _broadcast_factor_or_one(
     *,
     mapping: dict[str, Any],
@@ -1543,6 +1569,21 @@ def _transform_existing_input(
         }
     if transform_kind == "logical_vector_to_dense_gemv_activation_shards":
         return _dense_gemv_activation_shards(host, source_transform), {}
+    if transform_kind == "logical_matrix_to_pe_rows":
+        target_dtype = (
+            np.float16
+            if str(materialization.get("dtype") or "") == "f16"
+            else np.float32
+        )
+        values, rows = _logical_matrix_to_pe_rows(
+            host,
+            source_transform,
+            target_dtype=target_dtype,
+        )
+        return values, {
+            "rows": rows,
+            "cols": _required_positive_int(source_transform, "sourceCols"),
+        }
     return host, {}
 
 

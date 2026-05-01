@@ -9,7 +9,7 @@ const host = @import("emit_csl_host.zig");
 const spec = @import("csl_spec.zig");
 
 const PHASE_TARGET_SUFFIXES = [_][]const u8{ "_prefill", "_decode" };
-const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu" };
+const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu", "gelu_gated", "silu_gated", "sigmoid_gated" };
 
 pub const EmitError = error{
     OutputTooLarge,

@@ -55,6 +55,7 @@ PER_LAYER_INPUT_KERNELS = frozenset({
     "ple_rmsnorm",
     "ple_residual",
 })
+SUMMA_KERNELS = frozenset({"tiled", "tiled_31b", "ple_proj"})
 
 
 def resolve(path: Path) -> Path:
@@ -736,7 +737,7 @@ def build_real_session_scheduler(
             if kernel == "ple_embed":
                 state["ple_gather"] = out
             current = out
-        elif kernel in {"tiled", "ple_proj"}:
+        elif kernel in SUMMA_KERNELS:
             matrix_n, matrix_k = weight_matrix_dims(weight_key)
             if kernel == "ple_proj":
                 source = state.get("ple_gather", current)
@@ -1006,11 +1007,16 @@ def build_real_session_scheduler(
             )
             add_output("output", out, "activation", f"{kernel}.output")
             current = out
-        elif kernel in {"o_gate", "silu_gated"}:
-            add_input("input", current, "activation", "activation_router")
-            gate_source = state.get("gate_proj") or state.get("up_proj") or current
+        elif kernel in {"o_gate", "silu_gated", "gelu_gated", "sigmoid_gated"}:
+            input_source = state.get("up_proj") if kernel == "gelu_gated" else current
+            if not input_source:
+                input_source = current
+            gate_source = state.get("gate_proj") or current
             add_input("gate", gate_source, "activation", "activation_router")
+            add_input("input", input_source, "activation", "activation_router")
             add_output("output", out, "activation", f"{kernel}.output")
+            if name == "activation":
+                state["activation"] = out
             current = out
         elif kernel == "residual":
             residual = (

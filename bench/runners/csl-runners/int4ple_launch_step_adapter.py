@@ -275,6 +275,14 @@ def _d2h_region_for_output(
             "width": region_width,
             "height": region_height,
         }
+    if transform_kind == "pe_rows_to_logical_matrix":
+        rows = _required_positive_int(output_transform, "rows")
+        return {
+            "x": 0,
+            "y": 0,
+            "width": min(width, rows),
+            "height": 1,
+        }
     return {
         "x": 0,
         "y": 0,
@@ -308,6 +316,18 @@ def _d2h_regions_for_output(
             for y in range(int(region["y"]), int(region["y"]) + int(region["height"]))
         ]
     return [region]
+
+
+def _pe_rows_to_logical_matrix(
+    host: np.ndarray,
+    output_transform: dict[str, Any],
+) -> np.ndarray:
+    rows = _required_positive_int(output_transform, "rows")
+    cols = _required_positive_int(output_transform, "cols")
+    expected = rows * cols
+    if host.size < expected:
+        raise ValueError(f"pe_rows_output_size_mismatch:{host.size}<{expected}")
+    return host[:expected].reshape(rows, cols).reshape(-1)
 
 
 def main() -> int:
@@ -508,6 +528,8 @@ def main() -> int:
                     )
                 elif transform_kind == "dense_gemv_row_shards_to_logits":
                     saved_host = _dense_gemv_row_shards_to_logits(host, output_transform)
+                elif transform_kind == "pe_rows_to_logical_matrix":
+                    saved_host = _pe_rows_to_logical_matrix(host, output_transform)
             path.parent.mkdir(parents=True, exist_ok=True)
             np.save(path, saved_host)
             outputs.append(

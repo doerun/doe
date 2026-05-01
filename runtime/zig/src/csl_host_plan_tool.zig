@@ -57,7 +57,7 @@ const BundleConfigJson = struct {
 };
 const MAX_KERNELS: usize = 64;
 const PHASE_TARGET_SUFFIXES = [_][]const u8{ "prefill", "decode" };
-const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu" };
+const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu", "gelu_gated", "silu_gated", "sigmoid_gated" };
 const PHASE_COMPILE_TARGET_COUNT: usize = PHASE_TARGET_SUFFIXES.len * PHASE_SPECIALIZED_KERNELS.len;
 const MAX_COMPILE_TARGETS: usize = MAX_KERNELS + PHASE_COMPILE_TARGET_COUNT;
 const MAX_LAUNCHES: usize = 1024;
@@ -409,19 +409,33 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "tokens_per_chunk", @min(config.max_seq_len, @as(u32, 16)));
     } else if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         const is_ple = std.mem.startsWith(u8, target_name, "ple_");
-        const tile = if (is_ple)
-            @as(u32, 16)
-        else
-            ceilDivU32(config.hidden_dim, 32);
-        const block_m = if (is_ple) @as(u32, 16) else @as(u32, 32);
-        const block_k = block_m;
-        const block_n = block_m;
-        try appendParam(allocator, &params, "width", tile);
-        try appendParam(allocator, &params, "height", tile);
-        try appendParam(allocator, &params, "P", tile);
-        try appendParam(allocator, &params, "Mt", block_m);
-        try appendParam(allocator, &params, "Kt", block_k);
-        try appendParam(allocator, &params, "Nt", block_n);
+        if (std.mem.eql(u8, target_name, "tiled_31b")) {
+            const p = @as(u32, 512);
+            const q_dim = config.num_heads * config.head_dim;
+            const kv_dim = (config.num_key_value_heads orelse config.num_heads) * config.head_dim;
+            const ffn_dim = config.hidden_dim * config.ffn_expansion_factor;
+            const max_feature_dim = @max(@max(config.hidden_dim, q_dim), @max(kv_dim, ffn_dim));
+            try appendParam(allocator, &params, "width", p);
+            try appendParam(allocator, &params, "height", p);
+            try appendParam(allocator, &params, "P", p);
+            try appendParam(allocator, &params, "Mt", ceilDivU32(config.max_seq_len, p));
+            try appendParam(allocator, &params, "Kt", ceilDivU32(max_feature_dim, p));
+            try appendParam(allocator, &params, "Nt", ceilDivU32(max_feature_dim, p));
+        } else {
+            const tile = if (is_ple)
+                @as(u32, 16)
+            else
+                ceilDivU32(config.hidden_dim, 32);
+            const block_m = if (is_ple) @as(u32, 16) else @as(u32, 32);
+            const block_k = block_m;
+            const block_n = block_m;
+            try appendParam(allocator, &params, "width", tile);
+            try appendParam(allocator, &params, "height", tile);
+            try appendParam(allocator, &params, "P", tile);
+            try appendParam(allocator, &params, "Mt", block_m);
+            try appendParam(allocator, &params, "Kt", block_k);
+            try appendParam(allocator, &params, "Nt", block_n);
+        }
     } else if (std.mem.eql(u8, pattern, "dense_gemv")) {
         const height = dense_gemv_host_plan.height(config.vocab_size);
         const width = dense_gemv_host_plan.width(config.hidden_dim);
