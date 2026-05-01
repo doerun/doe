@@ -239,6 +239,15 @@ def parse_args() -> argparse.Namespace:
         help="Parallel jobs for independent real-session embed/PLE ROI launches.",
     )
     parser.add_argument(
+        "--session-embed-roi-hidden-per-pe",
+        type=int,
+        default=0,
+        help=(
+            "Override hidden elements per PE for real-session embed ROI "
+            "launches; 0 uses the HostPlan compile parameter."
+        ),
+    )
+    parser.add_argument(
         "--session-prefill-q4k-gemv-jobs",
         type=int,
         default=1,

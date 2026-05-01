@@ -64,16 +64,24 @@ it has 17 prompt tokens and generated tokens
 `[236812, 1018, 236812, 578, 236743, 236778, 236810, 236825]`, rendering
 `4**4 = 256`, with `kvCacheEvidence.status=output_ready`.
 
-Real 31B HostPlan session active blocker is the frozen Doppler evidence
-target, not the generic two-token stress path: prompt
-`The color of the sky is`, Doppler prompt-token hash
-`85b8d0e590815c3e97f346806977853e3d0528a232fd7c781d1e9cfcb92a8b55`,
-first generated token `9503` (`blue`), and decode step-1 stop token
-`106`. The active run uses a fresh frozen-sky checkpoint/session tree
-with `prefill-token-count=19` and `decode-token-count=2`, so the
-acceptance evidence is measured against the Doppler transcript digests
-for generated tokens, logits, lm-head/sample dispatch, and KV cache
-state.
+The preferred small non-chat diagnostic is now BOS plus compact raw sky text:
+`<bos>sky color is`. It has four prompt tokens
+`[2, 16012, 2258, 563]` and the two-step Doppler receipt
+`bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/doppler_int4ple_reference_export.json`
+generates `[3730, 236761]`, rendering ` blue.`, with
+`kvCacheEvidence.status=output_ready`. This keeps the chat wrapper out
+while preserving a sane model start token and a short, checkable answer.
+The seven-token `<bos>The color of the sky is` receipt remains available at
+`bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-prefill-decode2/doppler_int4ple_reference_export.json`.
+
+Real 31B HostPlan session active front is now the small non-chat Doppler
+parity target `<bos>sky color is`, using the Doppler receipt
+`bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/doppler_int4ple_reference_export.json`
+as the generated-token/logits/KV oracle and the simfabric session tree
+`bench/out/r3-1-31b-af16-hostplan-session-bos-raw-sky-color-is`. The
+frozen-sky session/checkpoint tree is preserved as historical acceptance
+state, but the live simfabric lane moved to the compact BOS sky target to
+reach complete prefill+decode transcript evidence first.
 
 The earlier generic two-token launch-2 tiled_31b Q4K projection remains
 plumbing evidence only. It proved that the full 512x512 SUMMA sim
@@ -94,10 +102,14 @@ probe validated `output_pe_rows=4` with four row-split D2H rows and a
 448-element f16 tile output; the session runner exposes it as
 `--session-prefill-q4k-gemv-output-pe-rows`. Sharded batch adapters are
 recorded in the batch manifest, but this simfabric host stalls
-concurrent Q4K shards at `SdkRuntime.run()`, so the frozen-sky run keeps
+concurrent Q4K shards at `SdkRuntime.run()`, so the active compact run keeps
 one Q4K shard with durable partial reuse. The Q4K shard count remains
 explicit as `--session-prefill-q4k-gemv-jobs` so embed ROI and lm-head
 tile parallelism stay separate from this simulator D2H envelope.
+The session runner now also exposes
+`--session-embed-roi-hidden-per-pe` for clean retries of the embed ROI
+launch; it is guarded by a per-PE buffer budget check and records the
+override in the embed ROI spec instead of changing the chunking silently.
 Checkpoint resume now has an explicit
 `--allow-checkpoint-runner-drift` mode for orchestration-only runner
 edits; it still validates manifest/config/compile-target identity and

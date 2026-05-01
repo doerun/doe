@@ -13,6 +13,8 @@ import numpy as np
 
 FLOAT16_BYTES = 2
 FLOAT32_BYTES = 4
+UINT32_BYTES = 4
+EMBED_ROI_PE_MEMORY_BYTES = 48 * 1024
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -153,6 +155,38 @@ def materialize_f16_embedding_table_slice(
     return table
 
 
+def select_embed_roi_hidden_per_pe(
+    *,
+    hostplan_hidden_per_pe: int,
+    hidden_per_pe_override: int,
+    rows_per_pe: int,
+    tokens_per_chunk: int,
+    hidden_size: int,
+) -> int:
+    if hostplan_hidden_per_pe <= 0:
+        raise ValueError("embed hostplan hidden_per_pe must be positive")
+    if hidden_per_pe_override <= 0:
+        return hostplan_hidden_per_pe
+    if hidden_per_pe_override > hidden_size:
+        raise ValueError(
+            "embed hidden_per_pe override exceeds hidden_size:"
+            f"{hidden_per_pe_override}>{hidden_size}"
+        )
+    table_output_bytes = (
+        (rows_per_pe + tokens_per_chunk)
+        * hidden_per_pe_override
+        * FLOAT16_BYTES
+    )
+    indices_bytes = tokens_per_chunk * UINT32_BYTES
+    total_bytes = table_output_bytes + indices_bytes
+    if total_bytes > EMBED_ROI_PE_MEMORY_BYTES:
+        raise ValueError(
+            "embed hidden_per_pe override exceeds pe memory budget:"
+            f"{total_bytes}>{EMBED_ROI_PE_MEMORY_BYTES}"
+        )
+    return hidden_per_pe_override
+
+
 def array_link(path: Path, array: np.ndarray) -> dict[str, Any]:
     data = array.tobytes(order="C")
     return {
@@ -169,6 +203,7 @@ def build_embed_roi_spec(
     launch: dict[str, Any],
     prompt_path: Path,
     output_buffer_path: Path,
+    hidden_per_pe_override: int = 0,
 ) -> tuple[dict[str, Any], str]:
     compile_params = launch.get("compileParams") or {}
     geometry = launch.get("targetGeometry") or {}
@@ -215,7 +250,7 @@ def build_embed_roi_spec(
         byte_size = int(weight_mapping.get("byteSize") or 0)
         vocab_size = byte_size // max(1, hidden_size * FLOAT16_BYTES)
     rows_per_pe = int(compile_params.get("rows_per_pe") or 0)
-    hidden_per_pe = int(compile_params.get("hidden_per_pe") or 0)
+    hostplan_hidden_per_pe = int(compile_params.get("hidden_per_pe") or 0)
     tokens_per_chunk = int(compile_params.get("tokens_per_chunk") or 0)
     original_width = int(geometry.get("width") or compile_params.get("width") or 1)
     original_height = int(geometry.get("height") or compile_params.get("height") or 1)
@@ -223,13 +258,20 @@ def build_embed_roi_spec(
     if min(
         rows_per_pe,
         hidden_size,
-        hidden_per_pe,
+        hostplan_hidden_per_pe,
         tokens_per_chunk,
         original_width,
         original_height,
         original_pe_count,
     ) <= 0:
         raise ValueError("embed compile params incomplete for ROI execution")
+    hidden_per_pe = select_embed_roi_hidden_per_pe(
+        hostplan_hidden_per_pe=hostplan_hidden_per_pe,
+        hidden_per_pe_override=hidden_per_pe_override,
+        rows_per_pe=rows_per_pe,
+        tokens_per_chunk=tokens_per_chunk,
+        hidden_size=hidden_size,
+    )
 
     tokens = load_token_ids(prompt_path)
     chunks = token_chunks(tokens, tokens_per_chunk)
@@ -363,6 +405,8 @@ def build_embed_roi_spec(
             "rowsPerPe": rows_per_pe,
             "hiddenSize": hidden_size,
             "hiddenPerPe": hidden_per_pe,
+            "hostplanHiddenPerPe": hostplan_hidden_per_pe,
+            "hiddenPerPeOverride": max(0, int(hidden_per_pe_override)),
             "tokensPerChunk": tokens_per_chunk,
             "vocabSize": vocab_size,
             "compactWidth": compact_width,

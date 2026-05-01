@@ -1564,6 +1564,9 @@ def build_real_session_runtime(
             getattr(args, "session_lm_head_tile_jobs", 1)
         ),
         session_embed_roi_jobs=int(getattr(args, "session_embed_roi_jobs", 1)),
+        session_embed_roi_hidden_per_pe=int(
+            getattr(args, "session_embed_roi_hidden_per_pe", 0)
+        ),
         session_prefill_q4k_gemv_jobs=int(
             getattr(args, "session_prefill_q4k_gemv_jobs", 1)
         ),

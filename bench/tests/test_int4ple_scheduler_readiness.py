@@ -215,6 +215,127 @@ class Int4PleEmbedRoiTests(unittest.TestCase):
         self.assertEqual(spec_payload["output"]["shape"], [2, 4])
         self.assertEqual(len(spec_payload["sublaunches"]), 2)
 
+    def test_embed_roi_spec_accepts_explicit_hidden_per_pe_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            prompt = root / "tokens.u32"
+            np.array([1, 2], dtype=np.uint32).tofile(prompt)
+            shard = root / "weights.bin"
+            np.arange(80, dtype=np.float16).reshape(10, 8).tofile(shard)
+            launch = {
+                "compileDir": str(root / "compile" / "compiled" / "embed"),
+                "launchFunction": "compute",
+                "launchIndex": 0,
+                "targetName": "embed",
+                "compileParams": {
+                    "rows_per_pe": 1,
+                    "hidden_size": 8,
+                    "hidden_per_pe": 2,
+                    "tokens_per_chunk": 2,
+                },
+                "targetGeometry": {"width": 4, "height": 1, "peCount": 4},
+                "resolvedInputs": [
+                    {"symbol": "indices", "buffer": "input:prompt_token_ids"},
+                    {
+                        "symbol": "table",
+                        "buffer": "weight:embed",
+                        "materialization": {
+                            "weightMapping": {
+                                "shape": [10, 8],
+                                "byteSize": 160,
+                                "spans": [
+                                    {
+                                        "shardPath": str(shard),
+                                        "offset": 0,
+                                        "size": 160,
+                                    }
+                                ],
+                            }
+                        },
+                    },
+                ],
+                "resolvedOutputs": [
+                    {
+                        "symbol": "output",
+                        "buffer": "activation:embed",
+                        "materialization": {"dtype": "f32"},
+                    }
+                ],
+            }
+
+            spec_payload, _ = build_embed_roi_spec(
+                roi_dir=root / "roi",
+                launch=launch,
+                prompt_path=prompt,
+                output_buffer_path=root / "out.npy",
+                hidden_per_pe_override=4,
+            )
+
+        self.assertEqual(spec_payload["compileParams"]["hiddenPerPe"], 4)
+        self.assertEqual(spec_payload["compileParams"]["hostplanHiddenPerPe"], 2)
+        self.assertEqual(spec_payload["compileParams"]["hiddenPerPeOverride"], 4)
+        self.assertEqual(len(spec_payload["sublaunches"]), 2)
+
+    def test_embed_roi_spec_rejects_oversized_hidden_per_pe_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            prompt = root / "tokens.u32"
+            np.array([1], dtype=np.uint32).tofile(prompt)
+            shard = root / "weights.bin"
+            np.arange(80, dtype=np.float16).reshape(10, 8).tofile(shard)
+            launch = {
+                "compileDir": str(root / "compile" / "compiled" / "embed"),
+                "launchFunction": "compute",
+                "launchIndex": 0,
+                "targetName": "embed",
+                "compileParams": {
+                    "rows_per_pe": 1,
+                    "hidden_size": 8,
+                    "hidden_per_pe": 2,
+                    "tokens_per_chunk": 2,
+                },
+                "targetGeometry": {"width": 4, "height": 1, "peCount": 4},
+                "resolvedInputs": [
+                    {"symbol": "indices", "buffer": "input:prompt_token_ids"},
+                    {
+                        "symbol": "table",
+                        "buffer": "weight:embed",
+                        "materialization": {
+                            "weightMapping": {
+                                "shape": [10, 8],
+                                "byteSize": 160,
+                                "spans": [
+                                    {
+                                        "shardPath": str(shard),
+                                        "offset": 0,
+                                        "size": 160,
+                                    }
+                                ],
+                            }
+                        },
+                    },
+                ],
+                "resolvedOutputs": [
+                    {
+                        "symbol": "output",
+                        "buffer": "activation:embed",
+                        "materialization": {"dtype": "f32"},
+                    }
+                ],
+            }
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "embed hidden_per_pe override exceeds hidden_size",
+            ):
+                build_embed_roi_spec(
+                    roi_dir=root / "roi",
+                    launch=launch,
+                    prompt_path=prompt,
+                    output_buffer_path=root / "out.npy",
+                    hidden_per_pe_override=16,
+                )
+
 
 def make_valid_executor_validator_fixture(
     root: Path,

@@ -156,6 +156,15 @@ def parse_args() -> argparse.Namespace:
         help="Parallel jobs for independent session embed/PLE ROI launches.",
     )
     parser.add_argument(
+        "--session-embed-roi-hidden-per-pe",
+        type=int,
+        default=0,
+        help=(
+            "Override hidden elements per PE for session embed ROI launches; "
+            "0 uses the HostPlan compile parameter."
+        ),
+    )
+    parser.add_argument(
         "--session-prefill-q4k-gemv-jobs",
         type=int,
         default=1,
@@ -3251,6 +3260,7 @@ def _execute_embed_roi_launch(
     export: dict[str, Any],
     progress_path: Path,
     cmaddr: str | None,
+    hidden_per_pe_override: int = 0,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
     output_binding = next(
@@ -3274,6 +3284,7 @@ def _execute_embed_roi_launch(
         launch=launch,
         prompt_path=prompt_path,
         output_buffer_path=output_path,
+        hidden_per_pe_override=max(0, int(hidden_per_pe_override)),
     )
     roi_compile_dir = _compile_embed_roi_target(
         launch=launch,
@@ -3416,6 +3427,7 @@ def _execute_embed_roi_launch_group(
     progress_path: Path,
     cmaddr: str | None,
     jobs: int,
+    hidden_per_pe_override: int = 0,
 ) -> list[dict[str, Any]]:
     def run_one(launch: dict[str, Any]) -> dict[str, Any]:
         local_buffer_files = dict(buffer_files)
@@ -3427,6 +3439,7 @@ def _execute_embed_roi_launch_group(
             export=export,
             progress_path=progress_path,
             cmaddr=cmaddr,
+            hidden_per_pe_override=hidden_per_pe_override,
         )
         output = receipt.get("output") or {}
         output_buffer = str(output.get("buffer") or "")
@@ -3581,6 +3594,7 @@ def execute_hostplan_runtime(
     session_lm_head_tile_width: int = DEFAULT_SESSION_LM_HEAD_TILE_WIDTH,
     session_lm_head_tile_jobs: int = DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
     session_embed_roi_jobs: int = 1,
+    session_embed_roi_hidden_per_pe: int = 0,
     session_prefill_q4k_gemv_jobs: int = 1,
     session_prefill_q4k_gemv_output_pe_rows: int = (
         DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS
@@ -3666,6 +3680,10 @@ def execute_hostplan_runtime(
                         progress_path=progress_path,
                         cmaddr=cmaddr,
                         jobs=max(1, int(session_embed_roi_jobs)),
+                        hidden_per_pe_override=max(
+                            0,
+                            int(session_embed_roi_hidden_per_pe),
+                        ),
                     )
                     for result in group_results:
                         peer_launch = result["launch"]
@@ -3716,6 +3734,10 @@ def execute_hostplan_runtime(
                     export=export,
                     progress_path=progress_path,
                     cmaddr=cmaddr,
+                    hidden_per_pe_override=max(
+                        0,
+                        int(session_embed_roi_hidden_per_pe),
+                    ),
                 )
                 executed_launches.append(launch_receipt)
                 executed_count += 1
@@ -4096,6 +4118,7 @@ def execute_hostplan_runtime(
         },
         "sessionEmbedRoi": {
             "jobs": max(1, int(session_embed_roi_jobs)),
+            "hiddenPerPeOverride": max(0, int(session_embed_roi_hidden_per_pe)),
         },
         "sessionPrefillQ4kGemv": {
             "jobs": max(1, int(session_prefill_q4k_gemv_jobs)),
@@ -4432,6 +4455,9 @@ def main() -> int:
                 session_lm_head_tile_width=args.session_lm_head_tile_width,
                 session_lm_head_tile_jobs=args.session_lm_head_tile_jobs,
                 session_embed_roi_jobs=args.session_embed_roi_jobs,
+                session_embed_roi_hidden_per_pe=(
+                    args.session_embed_roi_hidden_per_pe
+                ),
                 session_prefill_q4k_gemv_jobs=args.session_prefill_q4k_gemv_jobs,
                 session_prefill_q4k_gemv_output_pe_rows=(
                     args.session_prefill_q4k_gemv_output_pe_rows
