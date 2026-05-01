@@ -213,6 +213,47 @@ def parse_args() -> argparse.Namespace:
         help="Per HostPlan launch-step subprocess timeout. Use 0 to disable.",
     )
     parser.add_argument(
+        "--session-lm-head-dispatch-mode",
+        choices=["monolithic", "dense_gemv_width_tiled_session"],
+        default="monolithic",
+        help="Execution mode for real-session lm-head launches.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-width",
+        type=int,
+        default=120,
+        help="Hidden-width tile for dense_gemv_width_tiled_session.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-jobs",
+        type=int,
+        default=1,
+        help="Parallel tile subprocess count for dense_gemv_width_tiled_session.",
+    )
+    parser.add_argument(
+        "--session-embed-roi-jobs",
+        type=int,
+        default=1,
+        help="Parallel jobs for independent real-session embed/PLE ROI launches.",
+    )
+    parser.add_argument(
+        "--session-lm-head-batch-runtime",
+        action="store_true",
+        help="Run session lm-head tiles through the batched SDK adapter.",
+    )
+    parser.add_argument(
+        "--session-lm-head-batch-runtime-step-budget",
+        type=int,
+        default=16,
+        help="Tile step group size for session lm-head batched runtime.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-dispatch-budget",
+        type=int,
+        default=0,
+        help="Stop session lm-head tile dispatch after this many fresh tiles; 0 means unbounded.",
+    )
+    parser.add_argument(
         "--checkpoint-dir",
         type=Path,
         default=None,

@@ -787,7 +787,26 @@ class SchedulingAndResumeTest(unittest.TestCase):
         self.assertEqual(args.dense_gemv_tile_dispatch_jobs, 1)
         self.assertFalse(args.dense_gemv_batch_runtime)
         self.assertEqual(args.dense_gemv_batch_runtime_step_budget, 0)
+        self.assertIsNone(args.dense_gemv_tile_y_range)
+        self.assertFalse(args.dense_gemv_partial_only_worker)
+        self.assertEqual(args.dense_gemv_worker_id, "")
+        self.assertIsNone(args.dense_gemv_worker_receipt_dir)
+        self.assertFalse(args.dense_gemv_finalize_from_tile_receipts)
         self.assertEqual(args.dense_gemv_max_row_tile_height, 1)
+
+    def test_tile_y_range_parser(self) -> None:
+        runner = _load_runner_module()
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "manifest_kernel_probe_runner.py",
+                "--dense-gemv-tile-y-range",
+                "12:34",
+            ],
+        ):
+            args = runner.parse_args()
+        self.assertEqual(args.dense_gemv_tile_y_range, (12, 34))
 
     def test_heavy_first_orders_by_estimated_io(self) -> None:
         runner = _load_runner_module()
@@ -2192,6 +2211,15 @@ class RunOneKernelTest(unittest.TestCase):
             )
             assert first is not None
             self.assertIsNone(first.blocker)
+            for receipt_path in (tmp_path / "scratch").rglob(
+                "partial.tile-receipt.json"
+            ):
+                payload = json.loads(receipt_path.read_text(encoding="utf-8"))
+                payload["workerId"] = "worker-y0000-y0001"
+                receipt_path.write_text(
+                    json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
 
             def fail_if_called(command, *, timeout_seconds):
                 raise AssertionError("verified partial should have been reused")

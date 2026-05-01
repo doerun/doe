@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -45,6 +46,11 @@ def load_json(path: Path) -> Any:
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def array_sha256(path: Path) -> str:
+    array = np.load(path, allow_pickle=False).ravel()
+    return hashlib.sha256(array.tobytes(order="C")).hexdigest()
 
 
 def append_progress(path: Path | None, phase: str, **fields: Any) -> None:
@@ -243,6 +249,7 @@ def main() -> int:
         "launchFunction": str(spec.get("launchFunction") or "compute"),
         "launchIndex": int(spec.get("launchIndex") or 0),
         "blockers": blockers,
+        "inputBuffers": [],
         "outputs": [],
     }
 
@@ -268,6 +275,7 @@ def main() -> int:
         append_progress(progress_path, "launch_step_run", launchIndex=launch_index)
         print("phase:run", flush=True)
         runner.run()
+        input_buffers: list[dict[str, Any]] = []
         for item in spec.get("inputs") or []:
             if not isinstance(item, dict):
                 blockers.append("input_spec_not_object")
@@ -280,6 +288,19 @@ def main() -> int:
             if not symbol or not dtype or not path:
                 blockers.append(f"input_spec_incomplete:{symbol or 'missing_symbol'}")
                 continue
+            input_buffers.append(
+                {
+                    "name": str(item.get("buffer") or symbol),
+                    "symbol": symbol,
+                    "role": str(item.get("role") or "input"),
+                    "path": str(path),
+                    "dtype": dtype,
+                    "elementsPerPe": elements_per_pe,
+                    "totalElements": total_elements,
+                    "sha256": array_sha256(path),
+                    "sha256Kind": "array_tobytes_c_order",
+                }
+            )
             host, memcpy_dtype, memcpy_elements_per_pe = _memcpy_payload_for_h2d(
                 path=path,
                 dtype=dtype,
@@ -307,6 +328,7 @@ def main() -> int:
                 data_type=memcpy_dtype,
                 nonblock=False,
             )
+        receipt["inputBuffers"] = input_buffers
         if blockers:
             raise ValueError("; ".join(blockers))
         append_progress(progress_path, "launch_step_launch", launchIndex=launch_index)
@@ -380,6 +402,7 @@ def main() -> int:
             outputs.append(
                 {
                     "symbol": symbol,
+                    "buffer": str(item.get("buffer") or symbol),
                     "dtype": dtype,
                     "path": str(path),
                     "elementsPerPe": elements_per_pe,
@@ -387,6 +410,10 @@ def main() -> int:
                     "deviceTotalElements": device_total_elements,
                     "d2hElements": d2h_elements,
                     "deviceRegion": region,
+                    "sha256": hashlib.sha256(
+                        saved_host.tobytes(order="C")
+                    ).hexdigest(),
+                    "sha256Kind": "array_tobytes_c_order",
                 }
             )
             if isinstance(output_transform, dict) and output_transform:

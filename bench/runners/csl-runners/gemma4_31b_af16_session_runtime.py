@@ -1179,6 +1179,7 @@ def build_runtime_transcript(
     generated_tokens: list[dict[str, Any]] = []
     logits_digests: list[dict[str, Any]] = []
     kv_digests: list[dict[str, Any]] = []
+    lm_head_dispatches: list[dict[str, Any]] = []
 
     for receipt in runtime.get("launches") or []:
         if not isinstance(receipt, dict):
@@ -1205,7 +1206,27 @@ def build_runtime_transcript(
                 record["tokenId"] = _read_first_u32(path)
                 generated_tokens.append(record)
             elif role == "logits":
+                record["dispatchMode"] = str(
+                    receipt.get("dispatchMode") or "monolithic_full_fabric"
+                )
+                if isinstance(receipt.get("sessionTileIdentity"), dict):
+                    record["sessionTileIdentity"] = receipt[
+                        "sessionTileIdentity"
+                    ]
+                if isinstance(receipt.get("tileCoverage"), dict):
+                    record["tileCoverage"] = receipt["tileCoverage"]
                 logits_digests.append(record)
+                lm_head_dispatches.append(
+                    {
+                        "launchIndex": launch_index,
+                        "dispatchMode": record["dispatchMode"],
+                        "buffer": binding.get("buffer"),
+                        "sessionTileIdentity": record.get(
+                            "sessionTileIdentity",
+                            {},
+                        ),
+                    }
+                )
             elif role == "kv_cache":
                 kv_digests.append(record)
 
@@ -1218,6 +1239,7 @@ def build_runtime_transcript(
         "generatedTokenIds": [item.get("tokenId") for item in generated_tokens],
         "generatedTokenDigests": generated_tokens,
         "logitsDigests": logits_digests,
+        "lmHeadDispatches": lm_head_dispatches,
         "kvCache": {
             "mode": "runtime_captured",
             "digestCount": len(kv_digests),
@@ -1426,6 +1448,27 @@ def build_real_session_runtime(
             "launch_timeout_seconds",
             DEFAULT_LAUNCH_TIMEOUT_SECONDS,
         ),
+        session_lm_head_dispatch_mode=getattr(
+            args,
+            "session_lm_head_dispatch_mode",
+            "monolithic",
+        ),
+        session_lm_head_tile_width=int(
+            getattr(args, "session_lm_head_tile_width", 120)
+        ),
+        session_lm_head_tile_jobs=int(
+            getattr(args, "session_lm_head_tile_jobs", 1)
+        ),
+        session_embed_roi_jobs=int(getattr(args, "session_embed_roi_jobs", 1)),
+        session_lm_head_batch_runtime=bool(
+            getattr(args, "session_lm_head_batch_runtime", False)
+        ),
+        session_lm_head_batch_runtime_step_budget=int(
+            getattr(args, "session_lm_head_batch_runtime_step_budget", 16)
+        ),
+        session_lm_head_tile_dispatch_budget=int(
+            getattr(args, "session_lm_head_tile_dispatch_budget", 0)
+        ),
     )
     result["runtime"] = runtime
     runtime_status = str(runtime.get("status") or "")
@@ -1464,6 +1507,7 @@ def build_real_session_runtime(
                 "requestedDecodeSteps",
                 "actualDecodeSteps",
                 "generatedTokenIds",
+                "lmHeadDispatches",
                 "kvCache",
             )
         }

@@ -37,6 +37,58 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def sha256_json(value: Any) -> str:
+    payload = json.dumps(value, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def embed_roi_input_buffers(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    prompt = spec.get("prompt") or {}
+    records: list[dict[str, Any]] = []
+    if isinstance(prompt, dict):
+        records.append(
+            {
+                "name": "prompt",
+                "role": "prompt_tokens",
+                "path": str(prompt.get("path") or ""),
+                "dtype": "u32",
+                "totalElements": int(prompt.get("tokenCount") or 0),
+                "sha256": str(prompt.get("sha256") or ""),
+                "sha256Kind": "raw_file_bytes",
+            }
+        )
+    tile_inputs = []
+    for sublaunch_index, sublaunch in enumerate(spec.get("sublaunches") or []):
+        if not isinstance(sublaunch, dict):
+            continue
+        for pe in sublaunch.get("peTables") or []:
+            if not isinstance(pe, dict):
+                continue
+            indices = pe.get("indices") or {}
+            table = pe.get("table") or {}
+            if not isinstance(indices, dict) or not isinstance(table, dict):
+                continue
+            tile_inputs.append(
+                {
+                    "sublaunchIndex": sublaunch_index,
+                    "x": int(pe.get("x") or 0),
+                    "y": int(pe.get("y") or 0),
+                    "indicesSha256": str(indices.get("sha256") or ""),
+                    "tableSha256": str(table.get("sha256") or ""),
+                }
+            )
+    records.append(
+        {
+            "name": "embed_roi_materialized_inputs",
+            "role": "weights_and_indices",
+            "totalElements": len(tile_inputs),
+            "sha256": sha256_json(tile_inputs),
+            "sha256Kind": "sha256_json_tile_input_list",
+        }
+    )
+    return records
+
+
 def append_progress(path: Path | None, phase: str, **fields: Any) -> None:
     if path is None:
         return
@@ -81,6 +133,7 @@ def main() -> int:
         "launchFunction": str(spec.get("launchFunction") or "compute"),
         "launchIndex": launch_index,
         "blockers": blockers,
+        "inputBuffers": embed_roi_input_buffers(spec),
         "sublaunchCount": len(spec.get("sublaunches") or []),
         "output": output,
     }
@@ -229,6 +282,7 @@ def main() -> int:
         np.save(output_path, compact)
         receipt["completedSublaunches"] = completed_sublaunches
         receipt["output"]["sha256"] = hashlib.sha256(compact.tobytes(order="C")).hexdigest()
+        receipt["output"]["sha256Kind"] = "array_tobytes_c_order"
     except Exception as exc:  # pragma: no cover - SDK subprocess evidence
         blockers.append(f"embed_roi_failed:{type(exc).__name__}:{str(exc)[:200]}")
     finally:

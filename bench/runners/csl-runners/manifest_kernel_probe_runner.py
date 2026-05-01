@@ -141,6 +141,29 @@ _COMPILED_ELF_RE = re.compile(r"out_([0-9]+)_([0-9]+)\.elf$")
 _PHASE_LINE_RE = re.compile(r"^phase:([^\s]+)(?:\s+(.*))?$")
 
 
+def parse_tile_y_range(raw: str) -> tuple[int, int]:
+    match = re.fullmatch(r"(\d+):(\d+)", raw.strip())
+    if match is None:
+        raise argparse.ArgumentTypeError(
+            "expected START:END with non-negative integer bounds"
+        )
+    start = int(match.group(1))
+    end = int(match.group(2))
+    if start >= end:
+        raise argparse.ArgumentTypeError("START must be less than END")
+    return start, end
+
+
+def worker_id_from_range(
+    tile_y_range: tuple[int, int] | None,
+    fallback: str,
+) -> str:
+    if tile_y_range is None:
+        return fallback
+    start, end = tile_y_range
+    return f"y{start:04d}_y{end:04d}"
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--host-plan", type=Path, default=DEFAULT_HOST_PLAN)
@@ -259,6 +282,51 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Maximum dense-GEMV width-tile batch-json steps per SDK runtime "
             "process. Zero keeps one batch per width/row tile shape."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-tile-y-range",
+        type=parse_tile_y_range,
+        default=None,
+        metavar="START:END",
+        help=(
+            "Restrict dense-GEMV width-row tile execution to rowStart in "
+            "[START, END). Keeps all hidden-width chunks for each selected "
+            "row. Use with partial-only worker mode for parallel fanout."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-partial-only-worker",
+        action="store_true",
+        help=(
+            "Write dense-GEMV tile partial receipts and a worker receipt, "
+            "but do not update canonical per-kernel or summary receipts."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-worker-id",
+        default="",
+        help=(
+            "Optional identifier for --dense-gemv-partial-only-worker "
+            "receipts. Defaults to the tile y-range."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-worker-receipt-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Optional root for partial-only worker receipts. Defaults to "
+            "<out-dir>/worker-receipts."
+        ),
+    )
+    p.add_argument(
+        "--dense-gemv-finalize-from-tile-receipts",
+        action="store_true",
+        help=(
+            "Do not dispatch missing dense-GEMV tiles. Verify existing tile "
+            "partial receipts, then emit the canonical aggregate receipt if "
+            "coverage is complete or a typed incomplete-coverage receipt."
         ),
     )
     p.add_argument(
@@ -1174,6 +1242,9 @@ def run_one_kernel(
     dense_gemv_max_row_tile_height: int = 16,
     dense_gemv_batch_runtime: bool = False,
     dense_gemv_batch_runtime_step_budget: int = 0,
+    dense_gemv_tile_y_range: tuple[int, int] | None = None,
+    dense_gemv_finalize_from_tile_receipts: bool = False,
+    dense_gemv_worker_id: str = "",
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
     effective_source_root = source_root if source_root is not None else compile_root
@@ -1386,6 +1457,11 @@ def run_one_kernel(
             max_row_tile_height=dense_gemv_max_row_tile_height,
             batch_runtime=dense_gemv_batch_runtime,
             batch_runtime_step_budget=dense_gemv_batch_runtime_step_budget,
+            tile_y_range=dense_gemv_tile_y_range,
+            finalize_from_tile_receipts=(
+                dense_gemv_finalize_from_tile_receipts
+            ),
+            worker_id=dense_gemv_worker_id,
             dispatcher=dispatcher,
         )
     if tiled is not None:
@@ -1458,6 +1534,28 @@ def write_kernel_receipt(
     out_dir.mkdir(parents=True, exist_ok=True)
     enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
     path = out_dir / f"{receipt['kernel']}.json"
+    path.write_text(
+        json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_worker_receipt(
+    *,
+    receipt: dict[str, Any],
+    out_dir: Path,
+    worker_id: str,
+) -> Path:
+    worker_root = out_dir / "worker-receipts" / str(receipt["kernel"])
+    worker_root.mkdir(parents=True, exist_ok=True)
+    receipt["workerReceipt"] = {
+        "kind": "dense_gemv_partial_only_worker",
+        "workerId": worker_id,
+    }
+    enforce_receipt_hash_spine(receipt, repo_root=REPO_ROOT)
+    safe_worker_id = re.sub(r"[^A-Za-z0-9_.-]+", "_", worker_id)
+    path = worker_root / f"{safe_worker_id}.json"
     path.write_text(
         json.dumps(receipt, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -1697,6 +1795,40 @@ def main() -> int:
             "--dense-gemv-batch-runtime-step-budget must be >= 0\n"
         )
         return 2
+    if args.dense_gemv_partial_only_worker:
+        if args.dense_gemv_tile_y_range is None:
+            sys.stderr.write(
+                "manifest_kernel_probe_runner: "
+                "--dense-gemv-partial-only-worker requires "
+                "--dense-gemv-tile-y-range\n"
+            )
+            return 2
+        if not args.kernel or len(args.kernel) != 1:
+            sys.stderr.write(
+                "manifest_kernel_probe_runner: "
+                "--dense-gemv-partial-only-worker requires one --kernel\n"
+            )
+            return 2
+    if (
+        args.dense_gemv_finalize_from_tile_receipts
+        and args.dense_gemv_tile_y_range is not None
+    ):
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: "
+            "--dense-gemv-finalize-from-tile-receipts cannot be combined "
+            "with --dense-gemv-tile-y-range\n"
+        )
+        return 2
+    if (
+        args.dense_gemv_finalize_from_tile_receipts
+        and not args.dense_gemv_reuse_verified_tile_partials
+    ):
+        sys.stderr.write(
+            "manifest_kernel_probe_runner: "
+            "--dense-gemv-finalize-from-tile-receipts requires "
+            "--dense-gemv-reuse-verified-tile-partials\n"
+        )
+        return 2
     if not args.host_plan.is_file():
         sys.stderr.write(
             f"manifest_kernel_probe_runner: host-plan absent at "
@@ -1786,9 +1918,48 @@ def main() -> int:
             dense_gemv_batch_runtime_step_budget=(
                 args.dense_gemv_batch_runtime_step_budget
             ),
+            dense_gemv_tile_y_range=args.dense_gemv_tile_y_range,
+            dense_gemv_finalize_from_tile_receipts=(
+                args.dense_gemv_finalize_from_tile_receipts
+            ),
+            dense_gemv_worker_id=(
+                args.dense_gemv_worker_id
+                or worker_id_from_range(
+                    args.dense_gemv_tile_y_range,
+                    fallback=kernel,
+                )
+                if args.dense_gemv_partial_only_worker
+                else ""
+            ),
         )
         try:
-            write_kernel_receipt(receipt=receipt, out_dir=args.out_dir)
+            if args.dense_gemv_partial_only_worker:
+                worker_root = (
+                    args.dense_gemv_worker_receipt_dir
+                    or args.out_dir
+                )
+                worker_id = (
+                    args.dense_gemv_worker_id
+                    or worker_id_from_range(
+                        args.dense_gemv_tile_y_range,
+                        fallback=kernel,
+                    )
+                )
+                receipt["denseGemvWorker"] = {
+                    "kind": "partial_only_worker",
+                    "workerId": worker_id,
+                    "tileYRange": {
+                        "start": args.dense_gemv_tile_y_range[0],
+                        "endExclusive": args.dense_gemv_tile_y_range[1],
+                    },
+                }
+                write_worker_receipt(
+                    receipt=receipt,
+                    out_dir=worker_root,
+                    worker_id=worker_id,
+                )
+            else:
+                write_kernel_receipt(receipt=receipt, out_dir=args.out_dir)
         except ReceiptHashSpineError as err:
             raise RuntimeError(
                 f"kernel {kernel!r} hash spine rejected emit: {err}"
@@ -1820,6 +1991,25 @@ def main() -> int:
     except RuntimeError as err:
         sys.stderr.write(f"manifest_kernel_probe_runner: {err}\n")
         return 2
+
+    if args.dense_gemv_partial_only_worker:
+        worker_root = args.dense_gemv_worker_receipt_dir or args.out_dir
+        print(
+            f"wrote {len(receipts_by_kernel)} dense-GEMV worker receipt(s) "
+            f"under {worker_root / 'worker-receipts'} "
+            f"(blocked={blocked_count}, reused={reused_count}, "
+            f"jobs={args.jobs}, schedule={args.schedule})"
+        )
+        expected_blockers = {
+            None,
+            "dense_gemv_width_tile_y_range_partial_coverage",
+            "dense_gemv_width_tile_dispatch_budget_exhausted",
+        }
+        unexpected = [
+            r.get("blocker") for r in receipts_by_kernel.values()
+            if r.get("blocker") not in expected_blockers
+        ]
+        return 1 if unexpected else 0
 
     summary_receipts_by_kernel = load_existing_receipts_for_summary(
         out_dir=args.out_dir,

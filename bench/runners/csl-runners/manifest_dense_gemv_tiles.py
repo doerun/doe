@@ -63,6 +63,28 @@ def _batch_group_dir_name(
     )
 
 
+def _tile_y_range_dict(
+    tile_y_range: tuple[int, int] | None,
+) -> dict[str, int] | None:
+    if tile_y_range is None:
+        return None
+    start, end = tile_y_range
+    return {"start": int(start), "endExclusive": int(end)}
+
+
+def _filter_tiles_by_y_range(
+    planned_tiles: list[dict[str, int]],
+    tile_y_range: tuple[int, int] | None,
+) -> list[dict[str, int]]:
+    if tile_y_range is None:
+        return planned_tiles
+    start, end = tile_y_range
+    return [
+        tile for tile in planned_tiles
+        if start <= int(tile["rowStart"]) < end
+    ]
+
+
 def is_safe_tile_shape(
     *,
     width: int,
@@ -274,8 +296,10 @@ def _tile_partial_receipt_payload(
     width_count: int,
     row_start: int,
     row_count: int,
+    worker_id: str = "",
+    receipt_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return {
+    payload = {
         "schemaVersion": 1,
         "artifactKind": "doe_dense_gemv_width_tile_partial_receipt",
         "commandDigest": _stable_digest(command),
@@ -291,6 +315,11 @@ def _tile_partial_receipt_payload(
         "rowStart": row_start,
         "rowCount": row_count,
     }
+    if worker_id:
+        payload["workerId"] = worker_id
+    if receipt_identity:
+        payload["receiptIdentity"] = receipt_identity
+    return payload
 
 
 def _load_verified_tile_partial(
@@ -305,6 +334,7 @@ def _load_verified_tile_partial(
     width_count: int,
     row_start: int,
     row_count: int,
+    receipt_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     receipt_path = _tile_partial_receipt_path(partial_path)
     if not partial_path.is_file() or not receipt_path.is_file():
@@ -326,12 +356,16 @@ def _load_verified_tile_partial(
         width_count=width_count,
         row_start=row_start,
         row_count=row_count,
+        receipt_identity=receipt_identity,
     )
     try:
         actual = _load_json(receipt_path)
     except (OSError, ValueError):
         return None
-    return output if actual == expected else None
+    for key, value in expected.items():
+        if actual.get(key) != value:
+            return None
+    return output
 
 
 def _tile_partial_anchor(
@@ -423,6 +457,8 @@ def _write_tile_partial_receipt(
     width_count: int,
     row_start: int,
     row_count: int,
+    worker_id: str = "",
+    receipt_identity: dict[str, Any] | None = None,
 ) -> None:
     receipt_path = _tile_partial_receipt_path(partial_path)
     receipt_path.write_text(
@@ -438,6 +474,8 @@ def _write_tile_partial_receipt(
                 width_count=width_count,
                 row_start=row_start,
                 row_count=row_count,
+                worker_id=worker_id,
+                receipt_identity=receipt_identity,
             )
         ),
         encoding="utf-8",
@@ -1113,10 +1151,15 @@ def _run_dense_gemv_width_tiled_batched(
     tile_dispatch_budget: int,
     chunks: list[tuple[int, int]],
     planned_tiles: list[dict[str, int]],
+    full_expected_tile_count: int,
     tile_shape_safety: dict[str, Any],
     tile_split_d2h_rows: bool,
     max_row_tile_height: int,
     batch_runtime_step_budget: int,
+    tile_y_range: tuple[int, int] | None,
+    finalize_from_tile_receipts: bool,
+    worker_id: str,
+    receipt_identity: dict[str, Any] | None,
     dispatcher: DispatchFn | None,
 ) -> DenseGemvTileRun:
     import numpy as np
@@ -1132,6 +1175,7 @@ def _run_dense_gemv_width_tiled_batched(
     pending_by_shape: dict[tuple[int, int], list[dict[str, Any]]] = {}
     commands: list[list[str]] = []
     tile_dispatches: list[dict[str, Any]] = []
+    tile_y_range_meta = _tile_y_range_dict(tile_y_range)
     stdout_parts: list[str] = []
     stderr_parts: list[str] = []
     partial_paths: list[Path] = []
@@ -1243,6 +1287,7 @@ def _run_dense_gemv_width_tiled_batched(
                 width_count=width_count,
                 row_start=row_start,
                 row_count=row_count,
+                receipt_identity=receipt_identity,
             )
         if reused_output is not None:
             tile_dispatches.append(
@@ -1284,6 +1329,10 @@ def _run_dense_gemv_width_tiled_batched(
             partial_paths.append(partial_path)
             reused_tile_count += 1
             continue
+        if finalize_from_tile_receipts:
+            blocker = "dense_gemv_width_tile_receipts_incomplete"
+            dispatch_exit_code = None
+            break
         if tile_dispatch_budget > 0 and new_dispatch_count >= tile_dispatch_budget:
             budget_exhausted = True
             break
@@ -1437,6 +1486,7 @@ def _run_dense_gemv_width_tiled_batched(
                         "batchGroupIndex": batch_group_index,
                         "batchStepIndex": batch_step_index,
                         "batchTileRange": batch_tile_range,
+                        "workerId": worker_id,
                         "batchPath": _relative(batch_path, repo_root),
                         "phaseTracePath": _relative(
                             batch_phase_trace_path,
@@ -1474,6 +1524,8 @@ def _run_dense_gemv_width_tiled_batched(
                     width_count=int(item["width"]),
                     row_start=row_start,
                     row_count=item_row_count,
+                    worker_id=worker_id,
+                    receipt_identity=receipt_identity,
                 )
                 aggregate[
                     row_start : row_start + item_row_count,
@@ -1490,6 +1542,9 @@ def _run_dense_gemv_width_tiled_batched(
 
     if blocker is None and budget_exhausted:
         blocker = "dense_gemv_width_tile_dispatch_budget_exhausted"
+        dispatch_exit_code = None
+    if blocker is None and tile_y_range is not None:
+        blocker = "dense_gemv_width_tile_y_range_partial_coverage"
         dispatch_exit_code = None
 
     if blocker is None:
@@ -1566,8 +1621,13 @@ def _run_dense_gemv_width_tiled_batched(
         "evidenceIntent": (
             "diagnostic_sweep"
             if allow_unsafe_tile_shapes
+            else "partial_tile_worker"
+            if tile_y_range is not None
             else "claim_eligible_tile_aggregate"
         ),
+        "tileYRange": tile_y_range_meta,
+        "workerId": worker_id,
+        "receiptIdentity": receipt_identity or {},
         "hiddenWidthChunks": [
             {
                 "widthStart": start,
@@ -1583,6 +1643,7 @@ def _run_dense_gemv_width_tiled_batched(
             }
             for start, count in chunks
         ],
+        "fullExpectedTileCount": full_expected_tile_count,
         "expectedTileCount": expected_tile_count,
         "completedTileCount": len(partial_paths),
         "reusedTileCount": reused_tile_count,
@@ -1605,6 +1666,7 @@ def _run_dense_gemv_width_tiled_batched(
         "dispatchBudget": tile_dispatch_budget,
         "batchRuntime": True,
         "batchRuntimeStepBudget": batch_runtime_step_budget,
+        "finalizeFromTileReceipts": finalize_from_tile_receipts,
         "tileDispatchJobs": 1,
         "maxRowTileHeight": max_row_tile_height,
         "tileD2HMode": (
@@ -1617,7 +1679,10 @@ def _run_dense_gemv_width_tiled_batched(
             and blocker == "dense_gemv_width_tile_dispatch_budget_exhausted"
         ),
         "coversFullHiddenWidth": sum(count for _, count in chunks) == width,
-        "coversFullRows": len(partial_paths) == expected_tile_count,
+        "coversTileYRange": len(partial_paths) == expected_tile_count,
+        "coversFullRows": (
+            tile_y_range is None and len(partial_paths) == expected_tile_count
+        ),
         "covered": blocker is None and len(partial_paths) == expected_tile_count,
     }
     return DenseGemvTileRun(
@@ -1640,6 +1705,7 @@ def _run_dense_gemv_width_tiled_batched(
             "dispatchBudget": tile_dispatch_budget,
             "batchRuntime": True,
             "batchRuntimeStepBudget": batch_runtime_step_budget,
+            "finalizeFromTileReceipts": finalize_from_tile_receipts,
             "maxRowTileHeight": max_row_tile_height,
             "tileD2HMode": (
                 "row_split_copyback"
@@ -1649,8 +1715,13 @@ def _run_dense_gemv_width_tiled_batched(
             "evidenceIntent": (
                 "diagnostic_sweep"
                 if allow_unsafe_tile_shapes
+                else "partial_tile_worker"
+                if tile_y_range is not None
                 else "claim_eligible_tile_aggregate"
             ),
+            "tileYRange": tile_y_range_meta,
+            "workerId": worker_id,
+            "receiptIdentity": receipt_identity or {},
             "widthTileCount": len(chunks),
             "batchShapeCount": len(pending_by_shape),
             "receipts": compile_receipts,
@@ -1687,6 +1758,10 @@ def _run_dense_gemv_width_tiled(
     max_row_tile_height: int,
     batch_runtime: bool,
     batch_runtime_step_budget: int,
+    tile_y_range: tuple[int, int] | None,
+    finalize_from_tile_receipts: bool,
+    worker_id: str,
+    receipt_identity: dict[str, Any] | None,
     dispatcher: DispatchFn | None,
 ) -> DenseGemvTileRun:
     import numpy as np
@@ -1774,7 +1849,7 @@ def _run_dense_gemv_width_tiled(
         not allow_unsafe_tile_shapes and max_row_tile_height != 1
     )
     chunks = _width_chunks(width, effective_hidden_tile_width)
-    planned_tiles = _planned_width_row_tiles(
+    all_planned_tiles = _planned_width_row_tiles(
         width=width,
         full_height=full_height,
         hidden_tile_width=effective_hidden_tile_width,
@@ -1782,6 +1857,10 @@ def _run_dense_gemv_width_tiled(
         allow_unsafe_tile_shapes=allow_unsafe_tile_shapes,
         split_d2h_rows=tile_split_d2h_rows,
         max_row_tile_height=max_row_tile_height,
+    )
+    planned_tiles = _filter_tiles_by_y_range(
+        all_planned_tiles,
+        tile_y_range,
     )
     tile_shape_safety = _width_row_tile_shape_summary(
         planned_tiles=planned_tiles,
@@ -1803,6 +1882,7 @@ def _run_dense_gemv_width_tiled(
                 "kind": "width_row_tiles",
                 "fullWidth": width,
                 "fullHeight": full_height,
+                "tileYRange": _tile_y_range_dict(tile_y_range),
                 "rowTileHeights": [],
                 "requestedHiddenTileWidth": hidden_tile_width,
                 "effectiveHiddenTileWidth": effective_hidden_tile_width,
@@ -1840,10 +1920,15 @@ def _run_dense_gemv_width_tiled(
             tile_dispatch_budget=tile_dispatch_budget,
             chunks=chunks,
             planned_tiles=planned_tiles,
+            full_expected_tile_count=len(all_planned_tiles),
             tile_shape_safety=tile_shape_safety,
             tile_split_d2h_rows=tile_split_d2h_rows,
             max_row_tile_height=max_row_tile_height,
             batch_runtime_step_budget=batch_runtime_step_budget,
+            tile_y_range=tile_y_range,
+            finalize_from_tile_receipts=finalize_from_tile_receipts,
+            worker_id=worker_id,
+            receipt_identity=receipt_identity,
             dispatcher=dispatcher,
         )
     compile_receipts: list[dict[str, Any]] = []
@@ -1954,6 +2039,7 @@ def _run_dense_gemv_width_tiled(
             width_count=width_count,
             row_start=row_start,
             row_count=row_count,
+            receipt_identity=receipt_identity,
         )
         aggregate[
             row_start : row_start + row_count,
@@ -2063,6 +2149,7 @@ def _run_dense_gemv_width_tiled(
                 width_count=width_count,
                 row_start=row_start,
                 row_count=row_count,
+                receipt_identity=receipt_identity,
             )
         if reused_output is not None:
             tile_dispatches.append(
@@ -2256,6 +2343,7 @@ def _run_dense_gemv_width_tiled(
             if allow_unsafe_tile_shapes
             else "claim_eligible_tile_aggregate"
         ),
+        "receiptIdentity": receipt_identity or {},
         "hiddenWidthChunks": [
             {
                 "widthStart": start,
@@ -2334,6 +2422,7 @@ def _run_dense_gemv_width_tiled(
                 if allow_unsafe_tile_shapes
                 else "claim_eligible_tile_aggregate"
             ),
+            "receiptIdentity": receipt_identity or {},
             "widthTileCount": len(chunks),
             "tileDispatchJobs": max(1, int(tile_dispatch_jobs)),
             "receipts": compile_receipts,
@@ -2369,6 +2458,10 @@ def run_dense_gemv_row_tiled(
     max_row_tile_height: int = DEFAULT_SPLIT_D2H_ROW_TILE_HEIGHT,
     batch_runtime: bool = False,
     batch_runtime_step_budget: int = 0,
+    tile_y_range: tuple[int, int] | None = None,
+    finalize_from_tile_receipts: bool = False,
+    worker_id: str = "",
+    receipt_identity: dict[str, Any] | None = None,
     dispatcher: DispatchFn | None = None,
 ) -> DenseGemvTileRun | None:
     if kernel not in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}:
@@ -2410,6 +2503,10 @@ def run_dense_gemv_row_tiled(
             max_row_tile_height=max_row_tile_height,
             batch_runtime=batch_runtime,
             batch_runtime_step_budget=batch_runtime_step_budget,
+            tile_y_range=tile_y_range,
+            finalize_from_tile_receipts=finalize_from_tile_receipts,
+            worker_id=worker_id,
+            receipt_identity=receipt_identity,
             dispatcher=dispatcher,
         )
     tile_height = max(1, min(tile_height, full_height))

@@ -166,11 +166,233 @@ class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
 
 
 class HostPlanRuntimeTimeout(unittest.TestCase):
-    def test_launch_step_timeout_is_typed_and_writes_receipt(self) -> None:
+    def test_session_lm_head_tiled_mode_intercepts_launch(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             progress_path = tmp / "progress.jsonl"
             trace_path = tmp / "trace.json"
+            output_path = tmp / "hostplan-runtime" / "buffers" / "logits.npy"
+            bootstrap = {
+                "launches": [
+                    {
+                        "launchIndex": 4,
+                        "targetName": "lm_head_prefill_stable",
+                        "launchFunction": "compute",
+                        "compileDir": str(tmp / "compile" / "compiled" / "lm_head_prefill_stable"),
+                        "compileParams": {
+                            "width": 160,
+                            "height": 512,
+                            "out_dim": 262144,
+                            "out_dim_per_pe": 512,
+                            "in_dim_per_pe": 32,
+                        },
+                        "targetGeometry": {"width": 160, "height": 512},
+                    }
+                ],
+                "targetSessions": [],
+            }
+
+            def fake_stage_launch_arrays(**_kwargs: object) -> tuple[list[dict], list[dict]]:
+                return [
+                    {
+                        "symbol": "activation",
+                        "buffer": "activation:prefill:0003:global:final_norm",
+                        "path": str(tmp / "activation.npy"),
+                        "dtype": "f16",
+                        "elemType": "f16",
+                        "elementsPerPe": 32,
+                    },
+                    {
+                        "symbol": "weight",
+                        "buffer": "weight:lm_head",
+                        "path": str(tmp / "weight.npy"),
+                        "dtype": "f16",
+                        "elemType": "f16",
+                        "elementsPerPe": 16384,
+                    },
+                ], [
+                    {
+                        "symbol": "output",
+                        "buffer": "activation:prefill:0004:global:lm_head",
+                        "path": str(output_path),
+                        "dtype": "f32",
+                        "elemType": "f32",
+                        "elementsPerPe": 512,
+                    }
+                ]
+
+            def fake_session_tiled_launch(**_kwargs: object) -> dict:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_bytes(b"NUMPY")
+                return {
+                    "schemaVersion": 1,
+                    "artifactKind": "int4ple_launch_step_receipt",
+                    "status": "succeeded",
+                    "blockers": [],
+                    "launchIndex": 4,
+                    "targetName": "lm_head_prefill_stable",
+                    "dispatchMode": "dense_gemv_width_tiled_session",
+                    "outputs": [
+                        {
+                            "symbol": "output",
+                            "buffer": "activation:prefill:0004:global:lm_head",
+                            "path": str(output_path),
+                        }
+                    ],
+                }
+
+            with (
+                mock.patch.object(
+                    runner,
+                    "_stage_launch_arrays",
+                    side_effect=fake_stage_launch_arrays,
+                ),
+                mock.patch.object(
+                    runner,
+                    "_execute_dense_gemv_tiled_session_launch",
+                    side_effect=fake_session_tiled_launch,
+                ) as tiled_mock,
+                mock.patch.object(runner.subprocess, "run") as run_mock,
+            ):
+                result = runner.execute_hostplan_runtime(
+                    bootstrap=bootstrap,
+                    export={},
+                    progress_path=progress_path,
+                    cmaddr=None,
+                    trace_path=trace_path,
+                    session_lm_head_dispatch_mode="dense_gemv_width_tiled_session",
+                )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["executedLaunchCount"], 1)
+            self.assertEqual(
+                result["launches"][0]["dispatchMode"],
+                "dense_gemv_width_tiled_session",
+            )
+            self.assertEqual(
+                result["sessionLmHeadDispatch"]["mode"],
+                "dense_gemv_width_tiled_session",
+            )
+            receipt_path = (
+                trace_path.parent
+                / "hostplan-runtime"
+                / "launch-receipts"
+                / "launch-0004.json"
+            )
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                receipt["dispatchMode"],
+                "dense_gemv_width_tiled_session",
+            )
+            self.assertEqual(tiled_mock.call_count, 1)
+            run_mock.assert_not_called()
+
+    def test_independent_embed_roi_launches_can_run_as_parallel_group(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            progress_path = tmp / "progress.jsonl"
+            trace_path = tmp / "trace.json"
+            checkpoint_dir = tmp / "checkpoints"
+            runner._init_checkpoint(checkpoint_dir, {"test": "identity"})
+
+            def launch(idx: int) -> dict:
+                return {
+                    "launchIndex": idx,
+                    "targetName": "ple_embed",
+                    "compileParams": {
+                        "rows_per_pe": 1,
+                        "hidden_size": 2,
+                        "hidden_per_pe": 1,
+                        "tokens_per_chunk": 1,
+                    },
+                    "inputBindings": [
+                        {
+                            "role": "tokenized_prompt",
+                            "buffer": "input:prompt_token_ids",
+                        },
+                        {
+                            "role": "weight",
+                            "buffer": f"weight:layer{idx}",
+                        },
+                    ],
+                    "resolvedOutputs": [
+                        {
+                            "symbol": "output",
+                            "buffer": f"activation:prefill:{idx:04d}:layer{idx}",
+                        }
+                    ],
+                }
+
+            bootstrap = {"launches": [launch(0), launch(1)], "targetSessions": []}
+
+            def fake_embed_roi_launch(**kwargs: object) -> dict:
+                launch_spec = kwargs["launch"]
+                runtime_dir = Path(str(kwargs["runtime_dir"]))
+                buffer_files = kwargs["buffer_files"]
+                idx = int(launch_spec["launchIndex"])
+                output_buffer = launch_spec["resolvedOutputs"][0]["buffer"]
+                output_path = runtime_dir / "buffers" / f"out-{idx}.bin"
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_bytes(f"out-{idx}".encode("utf-8"))
+                buffer_files[output_buffer] = output_path
+                return {
+                    "schemaVersion": 1,
+                    "artifactKind": "int4ple_embed_roi_launch_receipt",
+                    "status": "succeeded",
+                    "blockers": [],
+                    "launchIndex": idx,
+                    "targetName": "ple_embed",
+                    "output": {
+                        "buffer": output_buffer,
+                        "path": str(output_path),
+                        "dtype": "f32",
+                        "shape": [1, 2],
+                    },
+                }
+
+            with mock.patch.object(
+                runner,
+                "_execute_embed_roi_launch",
+                side_effect=fake_embed_roi_launch,
+            ) as embed_mock:
+                result = runner.execute_hostplan_runtime(
+                    bootstrap=bootstrap,
+                    export={},
+                    progress_path=progress_path,
+                    cmaddr=None,
+                    trace_path=trace_path,
+                    checkpoint_dir=checkpoint_dir,
+                    session_embed_roi_jobs=2,
+                )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["executedLaunchCount"], 2)
+            self.assertEqual(result["sessionEmbedRoi"]["jobs"], 2)
+            self.assertEqual(embed_mock.call_count, 2)
+
+            manifest = json.loads(
+                (checkpoint_dir / "manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                [entry["launchIndex"] for entry in manifest["completedLaunches"]],
+                [0, 1],
+            )
+
+            phases = [
+                json.loads(line)["phase"]
+                for line in progress_path.read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertIn("hostplan_embed_roi_parallel_group_start", phases)
+            self.assertIn("hostplan_embed_roi_parallel_group_complete", phases)
+
+    def test_launch_step_timeout_is_typed_and_writes_receipt(self) -> None:
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            progress_path = tmp / "progress.jsonl"
+            trace_path = tmp / "trace.json"
+            input_path = tmp / "hostplan-runtime" / "buffers" / "input.npy"
             bootstrap = {
                 "launches": [
                     {
@@ -186,8 +408,20 @@ class HostPlanRuntimeTimeout(unittest.TestCase):
 
             def fake_stage_launch_arrays(**kwargs: object) -> tuple[list[dict], list[dict]]:
                 runtime_dir = Path(str(kwargs["runtime_dir"]))
+                input_path.parent.mkdir(parents=True, exist_ok=True)
+                np.save(input_path, np.array([1.0, 2.0], dtype=np.float32))
                 output_path = runtime_dir / "buffers" / "output.npy"
-                return [], [
+                return [
+                    {
+                        "symbol": "activation",
+                        "buffer": "activation:prefill:0000:global:embed_tokens",
+                        "role": "activation",
+                        "path": str(input_path),
+                        "dtype": "f32",
+                        "elemType": "f32",
+                        "elementsPerPe": 2,
+                    }
+                ], [
                     {
                         "symbol": "output",
                         "buffer": "activation:prefill:0000:global:ple_embed",
@@ -240,6 +474,12 @@ class HostPlanRuntimeTimeout(unittest.TestCase):
             )
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             self.assertEqual(receipt["blockers"], ["launch_step_timeout"])
+            self.assertEqual(
+                receipt["inputBuffers"][0]["name"],
+                "activation:prefill:0000:global:embed_tokens",
+            )
+            self.assertEqual(receipt["inputBuffers"][0]["role"], "activation")
+            self.assertEqual(receipt["inputBuffers"][0]["totalElements"], 2)
 
             phases = [
                 json.loads(line)["phase"]

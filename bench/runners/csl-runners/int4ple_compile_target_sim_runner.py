@@ -11,6 +11,7 @@ artifacts.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -59,13 +60,20 @@ from int4ple_checkpoint import (
     load_checkpoint as _load_checkpoint,
     persist_launch_checkpoint as _persist_launch_checkpoint,
 )
+from manifest_dense_gemv_tiles import run_dense_gemv_row_tiled
 
 SCHEDULE_PREVIEW_COUNT = 4
 TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
 LAUNCH_STEP_ADAPTER = Path(__file__).with_name("int4ple_launch_step_adapter.py")
+CHAIN_STEP_ADAPTER = Path(__file__).with_name("chain_step_adapter.py")
 EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
 DEFAULT_LAUNCH_TIMEOUT_SECONDS = 3600
+SESSION_LM_HEAD_DISPATCH_MODES = ("monolithic", "dense_gemv_width_tiled_session")
+DEFAULT_SESSION_LM_HEAD_TILE_WIDTH = 120
+DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
+DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
+SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -109,6 +117,47 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=DEFAULT_LAUNCH_TIMEOUT_SECONDS,
         help="Per HostPlan launch-step subprocess timeout. Use 0 to disable.",
+    )
+    parser.add_argument(
+        "--session-lm-head-dispatch-mode",
+        choices=SESSION_LM_HEAD_DISPATCH_MODES,
+        default="monolithic",
+        help="Execution mode for session lm-head launches.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-width",
+        type=int,
+        default=DEFAULT_SESSION_LM_HEAD_TILE_WIDTH,
+        help="Hidden-width tile used by dense_gemv_width_tiled_session.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-jobs",
+        type=int,
+        default=DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
+        help="Parallel tile subprocess count for dense_gemv_width_tiled_session.",
+    )
+    parser.add_argument(
+        "--session-embed-roi-jobs",
+        type=int,
+        default=1,
+        help="Parallel jobs for independent session embed/PLE ROI launches.",
+    )
+    parser.add_argument(
+        "--session-lm-head-batch-runtime",
+        action="store_true",
+        help="Run session lm-head tiles through the batched SDK adapter.",
+    )
+    parser.add_argument(
+        "--session-lm-head-batch-runtime-step-budget",
+        type=int,
+        default=DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
+        help="Tile step group size for session lm-head batched runtime.",
+    )
+    parser.add_argument(
+        "--session-lm-head-tile-dispatch-budget",
+        type=int,
+        default=0,
+        help="Stop session lm-head tile dispatch after this many fresh tiles; 0 means unbounded.",
     )
     parser.add_argument(
         "--ignore-checkpoint",
@@ -162,6 +211,14 @@ def append_progress(path: Path, phase: str, **fields: Any) -> None:
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def cs_python_executable() -> str:
@@ -1585,8 +1642,10 @@ def _stage_launch_arrays(
             staged_item = {
                 "symbol": symbol,
                 "buffer": buffer_name,
+                "role": role,
                 "path": str(path),
                 "dtype": str(materialization.get("dtype") or ""),
+                "elemType": str(materialization.get("elemType") or ""),
                 "elementsPerPe": int(materialization.get("elementsPerPe") or 0),
             }
             if side == "input" and isinstance(materialization.get("sourceTransform"), dict):
@@ -1605,6 +1664,223 @@ def _stage_launch_arrays(
                 staged_item["outputTransform"] = output_transform
             staged.append(staged_item)
     return staged_inputs, staged_outputs
+
+
+def _staged_tile_record(item: dict[str, Any]) -> dict[str, Any]:
+    path = Path(str(item.get("path") or ""))
+    record = {
+        "symbol": str(item.get("symbol") or ""),
+        "buffer": str(item.get("buffer") or ""),
+        "path": str(path),
+        "absolutePath": str(path),
+        "elemType": str(item.get("elemType") or item.get("dtype") or "f32"),
+        "perPeChunk": int(item.get("elementsPerPe") or 0),
+        "totalBytes": path.stat().st_size if path.is_file() else 0,
+        "sha256": sha256_file(path) if path.is_file() else "",
+    }
+    try:
+        record["totalElements"] = int(np.load(path, mmap_mode="r").size)
+    except (OSError, ValueError):
+        record["totalElements"] = 0
+    return record
+
+
+def _staged_input_buffer_records(
+    staged_inputs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for item in staged_inputs:
+        path = Path(str(item.get("path") or ""))
+        record = {
+            "name": str(item.get("buffer") or item.get("symbol") or ""),
+            "symbol": str(item.get("symbol") or ""),
+            "role": str(item.get("role") or "input"),
+            "path": str(path),
+            "dtype": str(item.get("elemType") or item.get("dtype") or ""),
+            "elementsPerPe": int(item.get("elementsPerPe") or 0),
+            "sha256Kind": "array_tobytes_c_order",
+        }
+        if path.is_file():
+            try:
+                array = np.load(path, allow_pickle=False).ravel()
+                record["totalElements"] = int(array.size)
+                record["sha256"] = hashlib.sha256(
+                    array.tobytes(order="C")
+                ).hexdigest()
+            except (OSError, ValueError):
+                record["totalElements"] = 0
+                record["sha256"] = ""
+        else:
+            record["totalElements"] = 0
+            record["sha256"] = ""
+        records.append(record)
+    return records
+
+
+def _session_state_hash_payload(
+    *,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    staged_inputs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    input_records = [_staged_tile_record(item) for item in staged_inputs]
+    activation = next(
+        (
+            item
+            for item in input_records
+            if str(item.get("symbol") or "") == "activation"
+        ),
+        {},
+    )
+    state_records = []
+    for buffer, path in sorted(buffer_files.items()):
+        if not (buffer.startswith("state:") or buffer.startswith("tokens:")):
+            continue
+        state_records.append(
+            {
+                "buffer": buffer,
+                "path": str(path),
+                "sha256": sha256_file(path) if path.is_file() else "",
+                "totalBytes": path.stat().st_size if path.is_file() else 0,
+            }
+        )
+    payload = {
+        "launchIndex": int(launch.get("launchIndex") or 0),
+        "targetName": str(launch.get("targetName") or ""),
+        "sessionStepId": (
+            f"launch:{int(launch.get('launchIndex') or 0)}:"
+            f"{str(launch.get('targetName') or '')}"
+        ),
+        "inputActivationSha256": str(activation.get("sha256") or ""),
+        "stateBuffers": state_records,
+    }
+    payload["sessionStateSha256"] = sha256_json(payload)
+    return payload
+
+
+def _is_session_tiled_lm_head_launch(
+    launch: dict[str, Any],
+    mode: str,
+) -> bool:
+    return (
+        mode == "dense_gemv_width_tiled_session"
+        and str(launch.get("targetName") or "") in SESSION_TILED_LM_HEAD_TARGETS
+    )
+
+
+def _execute_dense_gemv_tiled_session_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    staged_inputs: list[dict[str, Any]],
+    staged_outputs: list[dict[str, Any]],
+    buffer_files: dict[str, Path],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int,
+    hidden_tile_width: int,
+    tile_jobs: int,
+    batch_runtime: bool,
+    batch_runtime_step_budget: int,
+    tile_dispatch_budget: int,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    target_name = str(launch.get("targetName") or "")
+    compile_dir = Path(str(launch.get("compileDir") or ""))
+    compile_root = compile_dir.parent
+    source_root = compile_root.parent
+    state_payload = _session_state_hash_payload(
+        launch=launch,
+        buffer_files=buffer_files,
+        staged_inputs=staged_inputs,
+    )
+    input_records = [_staged_tile_record(item) for item in staged_inputs]
+    output_records = [_staged_tile_record(item) for item in staged_outputs]
+    receipt_identity = {
+        "identityKind": "session_dense_gemv_width_tile",
+        "sessionStepId": state_payload["sessionStepId"],
+        "sessionStateSha256": state_payload["sessionStateSha256"],
+        "inputActivationSha256": state_payload["inputActivationSha256"],
+        "targetName": target_name,
+        "launchIndex": launch_index,
+    }
+    scratch_dir = runtime_dir / "session-dense-gemv-tiles" / f"launch-{launch_index:04d}"
+    append_progress(
+        progress_path,
+        "session_lm_head_tiled_start",
+        launchIndex=launch_index,
+        target=target_name,
+        dispatchMode="dense_gemv_width_tiled_session",
+        sessionStateSha256=state_payload["sessionStateSha256"],
+    )
+    tiled = run_dense_gemv_row_tiled(
+        kernel=target_name,
+        compile_root=compile_root,
+        source_root=source_root,
+        compile_params=dict(launch.get("compileParams") or {}),
+        input_records=input_records,
+        output_records=output_records,
+        scratch_dir=scratch_dir,
+        cs_python=Path(cs_python_executable()),
+        adapter=CHAIN_STEP_ADAPTER,
+        cmaddr=cmaddr or "",
+        timeout_seconds=timeout_seconds,
+        repo_root=REPO_ROOT,
+        cslc=Path(cslc_executable()),
+        hidden_tile_width=hidden_tile_width,
+        allow_unsafe_tile_shapes=False,
+        reuse_verified_tile_partials=True,
+        tile_dispatch_budget=tile_dispatch_budget,
+        tile_dispatch_jobs=max(1, int(tile_jobs)),
+        max_row_tile_height=1,
+        batch_runtime=batch_runtime,
+        batch_runtime_step_budget=batch_runtime_step_budget,
+        receipt_identity=receipt_identity,
+    )
+    if tiled is None:
+        raise ValueError("session_lm_head_tiled_unavailable")
+    outputs = []
+    for output in tiled.output_records:
+        outputs.append(
+            {
+                "symbol": output.get("symbol"),
+                "buffer": output.get("buffer"),
+                "path": output.get("absolutePath") or output.get("path"),
+                "dtype": output.get("elemType"),
+                "sha256": output.get("sha256"),
+                "totalBytes": output.get("totalBytes"),
+            }
+        )
+    blockers = []
+    if tiled.blocker is not None:
+        blockers.append(str(tiled.blocker))
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_launch_step_receipt",
+        "status": "blocked" if blockers else "succeeded",
+        "blockers": blockers,
+        "launchIndex": launch_index,
+        "targetName": target_name,
+        "dispatchMode": "dense_gemv_width_tiled_session",
+        "inputBuffers": _staged_input_buffer_records(staged_inputs),
+        "sessionTileIdentity": receipt_identity,
+        "sessionState": state_payload,
+        "tileCoverage": tiled.tile_coverage,
+        "tileCompile": tiled.tile_compile,
+        "tileDispatches": tiled.tile_dispatches,
+        "outputs": outputs,
+        "stdoutTail": tiled.dispatch_stdout.splitlines()[-3:],
+        "stderrTail": tiled.dispatch_stderr.splitlines()[-3:],
+    }
+    append_progress(
+        progress_path,
+        "session_lm_head_tiled_complete",
+        launchIndex=launch_index,
+        target=target_name,
+        status=receipt["status"],
+        blocker=";".join(blockers),
+    )
+    return receipt
 
 
 def _is_embed_roi_launch(launch: dict[str, Any]) -> bool:
@@ -1746,6 +2022,19 @@ def _execute_embed_roi_launch(
     if not receipt_path.is_file():
         raise ValueError("embed_roi_launch_receipt_missing")
     receipt = load_json(receipt_path)
+    if not isinstance(receipt.get("inputBuffers"), list):
+        prompt = roi_spec.get("prompt") or {}
+        receipt["inputBuffers"] = [
+            {
+                "name": "prompt",
+                "role": "prompt_tokens",
+                "path": str(prompt.get("path") or ""),
+                "dtype": "u32",
+                "totalElements": int(prompt.get("tokenCount") or 0),
+                "sha256": str(prompt.get("sha256") or ""),
+                "sha256Kind": "raw_file_bytes",
+            }
+        ]
     receipt["stdoutTail"] = (
         completed.stdout.strip().splitlines()[-3:] if completed.stdout.strip() else []
     )
@@ -1754,10 +2043,117 @@ def _execute_embed_roi_launch(
     )
     receipt["roiSpecPath"] = str(spec_path)
     receipt["roiSpecSha256"] = roi_digest
+    write_json(receipt_path, receipt)
     if completed.returncode != 0 or receipt.get("status") != "succeeded":
         raise ValueError("; ".join(receipt.get("blockers") or ["embed_roi_launch_failed"]))
     buffer_files[output_buffer] = output_path
     return receipt
+
+
+def _launch_input_buffers(launch: dict[str, Any]) -> set[str]:
+    buffers: set[str] = set()
+    for binding in launch.get("inputBindings") or []:
+        if isinstance(binding, dict) and binding.get("buffer"):
+            buffers.add(str(binding["buffer"]))
+    return buffers
+
+
+def _launch_output_buffers(launch: dict[str, Any]) -> set[str]:
+    buffers: set[str] = set()
+    for key in ("resolvedOutputs", "outputBindings"):
+        for binding in launch.get(key) or []:
+            if isinstance(binding, dict) and binding.get("buffer"):
+                buffers.add(str(binding["buffer"]))
+    return buffers
+
+
+def _embed_roi_launch_is_independent(launch: dict[str, Any]) -> bool:
+    if not _is_embed_roi_launch(launch):
+        return False
+    for binding in launch.get("inputBindings") or []:
+        if not isinstance(binding, dict):
+            return False
+        role = str(binding.get("role") or "")
+        buffer = str(binding.get("buffer") or "")
+        if role in {"tokenized_prompt", "weight"}:
+            continue
+        if buffer.startswith("input:") or buffer.startswith("weight:"):
+            continue
+        return False
+    return bool(_launch_output_buffers(launch))
+
+
+def _collect_parallel_embed_roi_group(
+    launches: list[Any],
+    start_position: int,
+    *,
+    stop_after_launch: int,
+    max_jobs: int,
+) -> list[dict[str, Any]]:
+    if max_jobs <= 1:
+        return []
+    group: list[dict[str, Any]] = []
+    produced_buffers: set[str] = set()
+    for candidate in launches[start_position:]:
+        if not isinstance(candidate, dict):
+            break
+        launch_index = int(candidate.get("launchIndex") or 0)
+        if stop_after_launch >= 0 and launch_index > stop_after_launch:
+            break
+        if not _embed_roi_launch_is_independent(candidate):
+            break
+        if produced_buffers & _launch_input_buffers(candidate):
+            break
+        outputs = _launch_output_buffers(candidate)
+        if produced_buffers & outputs:
+            break
+        group.append(candidate)
+        produced_buffers.update(outputs)
+        if len(group) >= max_jobs:
+            break
+    return group if len(group) > 1 else []
+
+
+def _execute_embed_roi_launch_group(
+    *,
+    runtime_dir: Path,
+    group: list[dict[str, Any]],
+    buffer_files: dict[str, Path],
+    export: dict[str, Any],
+    progress_path: Path,
+    cmaddr: str | None,
+    jobs: int,
+) -> list[dict[str, Any]]:
+    def run_one(launch: dict[str, Any]) -> dict[str, Any]:
+        local_buffer_files = dict(buffer_files)
+        started_at_unix = time.time()
+        receipt = _execute_embed_roi_launch(
+            runtime_dir=runtime_dir,
+            launch=launch,
+            buffer_files=local_buffer_files,
+            export=export,
+            progress_path=progress_path,
+            cmaddr=cmaddr,
+        )
+        output = receipt.get("output") or {}
+        output_buffer = str(output.get("buffer") or "")
+        output_path = Path(str(output.get("path") or ""))
+        if not output_buffer or not output_path.is_file():
+            raise ValueError("embed_roi_parallel_output_missing")
+        return {
+            "launch": launch,
+            "receipt": receipt,
+            "startedAtUnix": started_at_unix,
+            "output": {
+                "buffer": output_buffer,
+                "path": str(output_path),
+                "dtype": output.get("dtype", "unknown"),
+                "shape": output.get("shape", []),
+            },
+        }
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+        return list(pool.map(run_one, group))
 
 
 def execute_hostplan_runtime(
@@ -1771,6 +2167,13 @@ def execute_hostplan_runtime(
     resume_state: Any = None,
     stop_after_launch: int = -1,
     launch_timeout_seconds: int | None = DEFAULT_LAUNCH_TIMEOUT_SECONDS,
+    session_lm_head_dispatch_mode: str = "monolithic",
+    session_lm_head_tile_width: int = DEFAULT_SESSION_LM_HEAD_TILE_WIDTH,
+    session_lm_head_tile_jobs: int = DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
+    session_embed_roi_jobs: int = 1,
+    session_lm_head_batch_runtime: bool = False,
+    session_lm_head_batch_runtime_step_budget: int = DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
+    session_lm_head_tile_dispatch_budget: int = 0,
 ) -> dict[str, Any]:
     runtime_dir = trace_path.parent / "hostplan-runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -1790,11 +2193,14 @@ def execute_hostplan_runtime(
             bufferCount=len(buffer_files),
         )
     stopped_at_checkpoint = False
-    for launch in launches:
+    parallel_embed_roi_done: set[int] = set()
+    for launch_position, launch in enumerate(launches):
         if not isinstance(launch, dict):
             blockers.append("launch_not_object")
             break
         launch_index = int(launch.get("launchIndex") or executed_count)
+        if launch_index in parallel_embed_roi_done:
+            continue
         if launch_index < start_index:
             append_progress(
                 progress_path,
@@ -1813,6 +2219,80 @@ def execute_hostplan_runtime(
         )
         try:
             if _is_embed_roi_launch(launch):
+                parallel_group = _collect_parallel_embed_roi_group(
+                    launches,
+                    launch_position,
+                    stop_after_launch=stop_after_launch,
+                    max_jobs=max(1, int(session_embed_roi_jobs)),
+                )
+                if parallel_group:
+                    group_indices = [
+                        int(item.get("launchIndex") or 0)
+                        for item in parallel_group
+                    ]
+                    append_progress(
+                        progress_path,
+                        "hostplan_embed_roi_parallel_group_start",
+                        launchIndices=group_indices,
+                        jobs=max(1, int(session_embed_roi_jobs)),
+                    )
+                    for peer in parallel_group[1:]:
+                        append_progress(
+                            progress_path,
+                            "hostplan_launch_start",
+                            launchIndex=int(peer.get("launchIndex") or 0),
+                            target=peer.get("targetName"),
+                        )
+                    group_results = _execute_embed_roi_launch_group(
+                        runtime_dir=runtime_dir,
+                        group=parallel_group,
+                        buffer_files=buffer_files,
+                        export=export,
+                        progress_path=progress_path,
+                        cmaddr=cmaddr,
+                        jobs=max(1, int(session_embed_roi_jobs)),
+                    )
+                    for result in group_results:
+                        peer_launch = result["launch"]
+                        peer_index = int(peer_launch.get("launchIndex") or 0)
+                        launch_receipt = result["receipt"]
+                        executed_launches.append(launch_receipt)
+                        output = result["output"]
+                        buffer_files[str(output["buffer"])] = Path(
+                            str(output["path"])
+                        )
+                        executed_count += 1
+                        append_progress(
+                            progress_path,
+                            "hostplan_launch_complete",
+                            launchIndex=peer_index,
+                            target=peer_launch.get("targetName"),
+                            status="succeeded",
+                            dispatchMode="embed_roi_parallel_group",
+                        )
+                        if checkpoint_dir is not None:
+                            _persist_launch_checkpoint(
+                                checkpoint_dir=checkpoint_dir,
+                                launch_index=peer_index,
+                                launch=peer_launch,
+                                launch_receipt=launch_receipt,
+                                staged_outputs=[output],
+                                launch_identity=_compute_launch_identity(
+                                    peer_launch,
+                                    {},
+                                ),
+                                started_at_unix=float(result["startedAtUnix"]),
+                            )
+                    parallel_embed_roi_done.update(group_indices[1:])
+                    append_progress(
+                        progress_path,
+                        "hostplan_embed_roi_parallel_group_complete",
+                        launchIndices=group_indices,
+                    )
+                    if stop_after_launch >= 0 and group_indices[-1] >= stop_after_launch:
+                        stopped_at_checkpoint = True
+                        break
+                    continue
                 buffer_keys_before = set(buffer_files.keys())
                 launch_receipt = _execute_embed_roi_launch(
                     runtime_dir=runtime_dir,
@@ -1861,6 +2341,79 @@ def execute_hostplan_runtime(
                 buffer_files=buffer_files,
                 export=export,
             )
+            if _is_session_tiled_lm_head_launch(
+                launch,
+                session_lm_head_dispatch_mode,
+            ):
+                buffer_keys_before = set(buffer_files.keys())
+                launch_receipt = _execute_dense_gemv_tiled_session_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    staged_inputs=staged_inputs,
+                    staged_outputs=staged_outputs,
+                    buffer_files=buffer_files,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=(
+                        launch_timeout_seconds
+                        if launch_timeout_seconds is not None
+                        and launch_timeout_seconds > 0
+                        else DEFAULT_LAUNCH_TIMEOUT_SECONDS
+                    ),
+                    hidden_tile_width=session_lm_head_tile_width,
+                    tile_jobs=session_lm_head_tile_jobs,
+                    batch_runtime=session_lm_head_batch_runtime,
+                    batch_runtime_step_budget=(
+                        session_lm_head_batch_runtime_step_budget
+                    ),
+                    tile_dispatch_budget=session_lm_head_tile_dispatch_budget,
+                )
+                write_json(
+                    _launch_receipt_path(runtime_dir, launch_index),
+                    launch_receipt,
+                )
+                executed_launches.append(launch_receipt)
+                if launch_receipt.get("status") != "succeeded":
+                    raise ValueError(
+                        "; ".join(
+                            launch_receipt.get("blockers")
+                            or ["session_lm_head_tiled_failed"]
+                        )
+                    )
+                for output in staged_outputs:
+                    buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="dense_gemv_width_tiled_session",
+                )
+                if checkpoint_dir is not None:
+                    new_outputs = [
+                        {
+                            "buffer": key,
+                            "path": str(buffer_files[key]),
+                            "dtype": "unknown",
+                            "shape": [],
+                        }
+                        for key in sorted(set(buffer_files.keys()) - buffer_keys_before)
+                    ]
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=new_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
             receipt_path = _launch_receipt_path(runtime_dir, launch_index)
             spec_path = _launch_spec_path(runtime_dir, launch_index)
             launch_spec = {
@@ -1904,6 +2457,7 @@ def execute_hostplan_runtime(
                     "blockers": ["launch_step_timeout"],
                     "launchIndex": launch_index,
                     "targetName": launch.get("targetName"),
+                    "inputBuffers": _staged_input_buffer_records(staged_inputs),
                     "timeoutSeconds": timeout,
                     "stdoutTail": tail_lines(exc.stdout, 1),
                     "stderrTail": tail_lines(exc.stderr, 1),
@@ -1921,8 +2475,13 @@ def execute_hostplan_runtime(
             if not receipt_path.is_file():
                 raise ValueError("launch_receipt_missing")
             launch_receipt = load_json(receipt_path)
+            if not isinstance(launch_receipt.get("inputBuffers"), list):
+                launch_receipt["inputBuffers"] = _staged_input_buffer_records(
+                    staged_inputs
+                )
             launch_receipt["stdoutTail"] = tail_lines(completed.stdout, 1)
             launch_receipt["stderrTail"] = tail_lines(completed.stderr, 1)
+            write_json(receipt_path, launch_receipt)
             executed_launches.append(launch_receipt)
             if completed.returncode != 0 or launch_receipt.get("status") != "succeeded":
                 raise ValueError(
@@ -1979,6 +2538,17 @@ def execute_hostplan_runtime(
         "targetSessions": bootstrap.get("targetSessions") or [],
         "stoppedAtCheckpoint": stopped_at_checkpoint,
         "launchTimeoutSeconds": launch_timeout_seconds,
+        "sessionLmHeadDispatch": {
+            "mode": session_lm_head_dispatch_mode,
+            "tileWidth": session_lm_head_tile_width,
+            "tileJobs": session_lm_head_tile_jobs,
+            "batchRuntime": session_lm_head_batch_runtime,
+            "batchRuntimeStepBudget": session_lm_head_batch_runtime_step_budget,
+            "tileDispatchBudget": session_lm_head_tile_dispatch_budget,
+        },
+        "sessionEmbedRoi": {
+            "jobs": max(1, int(session_embed_roi_jobs)),
+        },
     }
 
 
@@ -2295,6 +2865,17 @@ def main() -> int:
                 resume_state=resume_state,
                 stop_after_launch=args.stop_after_launch,
                 launch_timeout_seconds=args.launch_timeout_seconds,
+                session_lm_head_dispatch_mode=args.session_lm_head_dispatch_mode,
+                session_lm_head_tile_width=args.session_lm_head_tile_width,
+                session_lm_head_tile_jobs=args.session_lm_head_tile_jobs,
+                session_embed_roi_jobs=args.session_embed_roi_jobs,
+                session_lm_head_batch_runtime=args.session_lm_head_batch_runtime,
+                session_lm_head_batch_runtime_step_budget=(
+                    args.session_lm_head_batch_runtime_step_budget
+                ),
+                session_lm_head_tile_dispatch_budget=(
+                    args.session_lm_head_tile_dispatch_budget
+                ),
             )
             runtime_status = hostplan_executor_runtime.get("status")
             if runtime_status not in ("succeeded", "stopped_at_checkpoint"):

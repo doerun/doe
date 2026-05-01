@@ -243,6 +243,20 @@ class TileShapeSafetyTest(unittest.TestCase):
             "g0003_x0000_w0120_y0105_y0120",
         )
 
+    def test_filter_tiles_by_y_range_keeps_all_width_chunks(self) -> None:
+        planned = [
+            {"widthStart": 0, "width": 120, "rowStart": 0, "rowCount": 1},
+            {"widthStart": 120, "width": 40, "rowStart": 0, "rowCount": 1},
+            {"widthStart": 0, "width": 120, "rowStart": 1, "rowCount": 1},
+            {"widthStart": 120, "width": 40, "rowStart": 1, "rowCount": 1},
+            {"widthStart": 0, "width": 120, "rowStart": 2, "rowCount": 1},
+            {"widthStart": 120, "width": 40, "rowStart": 2, "rowCount": 1},
+        ]
+        filtered = M._filter_tiles_by_y_range(planned, (1, 2))
+        self.assertEqual(len(filtered), 2)
+        self.assertEqual({tile["widthStart"] for tile in filtered}, {0, 120})
+        self.assertEqual({tile["rowStart"] for tile in filtered}, {1})
+
 
 if __name__ == "__main__":
     unittest.main()
