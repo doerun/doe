@@ -73,6 +73,7 @@ SESSION_PLE_PROJ_DISPATCH_MODES = ("monolithic_summa", "compact_summa_session")
 DEFAULT_SESSION_LM_HEAD_TILE_WIDTH = 120
 DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
 DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
+DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS = 1
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
@@ -82,7 +83,6 @@ Q4K_BLOCK_ELEMENTS = 256
 Q4K_BLOCK_BYTES = 144
 PREFILL_GEMV_IN_DIM_PER_PE = 512
 PREFILL_GEMV_OUT_DIM_PER_PE = 112
-PREFILL_GEMV_OUTPUT_PE_ROWS = 1
 PREFILL_GEMV_FABRIC_WEST_RESERVED = 4
 PREFILL_GEMV_FABRIC_EAST_RESERVED = 3
 PREFILL_GEMV_FABRIC_NORTH_RESERVED = 1
@@ -160,6 +160,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="Parallel batch shards for session prefill Q4K GEMV launches.",
+    )
+    parser.add_argument(
+        "--session-prefill-q4k-gemv-output-pe-rows",
+        type=int,
+        default=DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
+        help="Output PE rows per session prefill Q4K GEMV launch tile.",
     )
     parser.add_argument(
         "--session-ple-proj-dispatch-mode",
@@ -1896,10 +1902,11 @@ def _compile_tiled_q4k_gemv_target(
     runtime_dir: Path,
     launch: dict[str, Any],
     source_cols: int,
+    output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
 ) -> tuple[Path, dict[str, Any]]:
     in_dim_per_pe = PREFILL_GEMV_IN_DIM_PER_PE
     out_dim_per_pe = PREFILL_GEMV_OUT_DIM_PER_PE
-    output_pe_rows = PREFILL_GEMV_OUTPUT_PE_ROWS
+    output_pe_rows = max(1, int(output_pe_rows))
     width = _ceil_div(source_cols, in_dim_per_pe)
     blocks_per_pe = _prefill_gemv_blocks_per_pe(in_dim_per_pe)
     source_compile_dir = Path(str(launch.get("compileDir") or ""))
@@ -2139,6 +2146,7 @@ def _execute_tiled_q4k_gemv_launch(
     cmaddr: str | None,
     timeout_seconds: int | None,
     jobs: int,
+    output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
     a_binding = _binding_for_symbol(
@@ -2188,6 +2196,7 @@ def _execute_tiled_q4k_gemv_launch(
         runtime_dir=runtime_dir,
         launch=launch,
         source_cols=source_cols,
+        output_pe_rows=output_pe_rows,
     )
     width = int(compile_identity["width"])
     height = int(compile_identity["height"])
@@ -3573,6 +3582,9 @@ def execute_hostplan_runtime(
     session_lm_head_tile_jobs: int = DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
     session_embed_roi_jobs: int = 1,
     session_prefill_q4k_gemv_jobs: int = 1,
+    session_prefill_q4k_gemv_output_pe_rows: int = (
+        DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS
+    ),
     session_ple_proj_dispatch_mode: str = "monolithic_summa",
     session_lm_head_batch_runtime: bool = False,
     session_lm_head_batch_runtime_step_budget: int = DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
@@ -3750,6 +3762,10 @@ def execute_hostplan_runtime(
                     cmaddr=cmaddr,
                     timeout_seconds=launch_timeout_seconds,
                     jobs=max(1, int(session_prefill_q4k_gemv_jobs)),
+                    output_pe_rows=max(
+                        1,
+                        int(session_prefill_q4k_gemv_output_pe_rows),
+                    ),
                 )
                 executed_launches.append(launch_receipt)
                 output = launch_receipt.get("output") or {}
@@ -4083,6 +4099,10 @@ def execute_hostplan_runtime(
         },
         "sessionPrefillQ4kGemv": {
             "jobs": max(1, int(session_prefill_q4k_gemv_jobs)),
+            "outputPeRows": max(
+                1,
+                int(session_prefill_q4k_gemv_output_pe_rows),
+            ),
         },
         "sessionPleProjDispatch": {
             "mode": session_ple_proj_dispatch_mode,
@@ -4413,6 +4433,9 @@ def main() -> int:
                 session_lm_head_tile_jobs=args.session_lm_head_tile_jobs,
                 session_embed_roi_jobs=args.session_embed_roi_jobs,
                 session_prefill_q4k_gemv_jobs=args.session_prefill_q4k_gemv_jobs,
+                session_prefill_q4k_gemv_output_pe_rows=(
+                    args.session_prefill_q4k_gemv_output_pe_rows
+                ),
                 session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
                 session_lm_head_batch_runtime=args.session_lm_head_batch_runtime,
                 session_lm_head_batch_runtime_step_budget=(

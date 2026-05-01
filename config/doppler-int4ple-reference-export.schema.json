@@ -131,6 +131,7 @@
       }
     },
     "decodeTranscript": { "$ref": "#/$defs/decodeTranscript" },
+    "kvCacheEvidence": { "$ref": "#/$defs/kvCacheEvidence" },
     "producer": {
       "type": "object",
       "additionalProperties": false,
@@ -224,6 +225,10 @@
         "source": { "type": "string" }
       }
     },
+    "digestOrPending": {
+      "type": "string",
+      "pattern": "^(pending|sha256:[0-9a-f]{64}|[0-9a-f]{64})$"
+    },
     "decodeTranscript": {
       "type": "object",
       "additionalProperties": false,
@@ -290,6 +295,32 @@
         "logitsDigests": {
           "type": "array",
           "items": { "$ref": "#/$defs/decodeLogitsDigest" }
+        }
+      }
+    },
+    "kvCacheEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "realKvCache", "blocker"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["not_captured", "output_ready"]
+        },
+        "realKvCache": { "type": "boolean" },
+        "blocker": { "type": "string" },
+        "mode": { "type": "string", "minLength": 1 },
+        "layout": { "type": ["string", "null"] },
+        "kvDtype": { "type": ["string", "null"] },
+        "byteDigest": { "$ref": "#/$defs/digestOrPending" },
+        "layerDigestCount": { "type": "integer", "minimum": 0 },
+        "seqLen": { "type": "integer", "minimum": 0 },
+        "byteDigests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
         }
       }
     },

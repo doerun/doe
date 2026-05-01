@@ -1567,6 +1567,9 @@ def build_real_session_runtime(
         session_prefill_q4k_gemv_jobs=int(
             getattr(args, "session_prefill_q4k_gemv_jobs", 1)
         ),
+        session_prefill_q4k_gemv_output_pe_rows=int(
+            getattr(args, "session_prefill_q4k_gemv_output_pe_rows", 1)
+        ),
         session_ple_proj_dispatch_mode=str(
             getattr(args, "session_ple_proj_dispatch_mode", "monolithic_summa")
             or "monolithic_summa"

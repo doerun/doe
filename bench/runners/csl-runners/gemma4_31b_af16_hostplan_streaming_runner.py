@@ -245,6 +245,12 @@ def parse_args() -> argparse.Namespace:
         help="Parallel batch shards for real-session prefill Q4K GEMV launches.",
     )
     parser.add_argument(
+        "--session-prefill-q4k-gemv-output-pe-rows",
+        type=int,
+        default=1,
+        help="Output PE rows per real-session prefill Q4K GEMV launch tile.",
+    )
+    parser.add_argument(
         "--session-ple-proj-dispatch-mode",
         choices=["monolithic_summa", "compact_summa_session"],
         default="monolithic_summa",

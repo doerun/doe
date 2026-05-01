@@ -158,9 +158,8 @@ function main() {
     { name: 'q_proj_prefill', semantic: 'tiled_matmul', params: { width: 1, height: 1, P: 1, Mt: PROMPT_TOKENS, Kt: HIDDEN, Nt: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'k_proj_prefill', semantic: 'tiled_matmul', params: { width: 1, height: 1, P: 1, Mt: PROMPT_TOKENS, Kt: HIDDEN, Nt: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'v_proj_prefill', semantic: 'tiled_matmul', params: { width: 1, height: 1, P: 1, Mt: PROMPT_TOKENS, Kt: HIDDEN, Nt: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
-    { name: 'attn_compute_prefill', semantic: 'attention_tiled', params: { width: 1, height: 1, head_dim: HEAD_DIM, q_len_per_pe: PROMPT_TOKENS, block_size: PROMPT_TOKENS, scale: 1.0 / Math.sqrt(HEAD_DIM), ...VIZ_PREFILL_HIDDEN } },
+    { name: 'attn_prefill', semantic: 'attention_tiled', params: { width: 1, height: 1, head_dim: HEAD_DIM, q_len_per_pe: PROMPT_TOKENS, block_size: PROMPT_TOKENS, scale: 1.0 / Math.sqrt(HEAD_DIM), ...VIZ_PREFILL_HIDDEN } },
     { name: 'kv_write_prefill', semantic: 'kv_write', params: { width: 1, height: 1, head_dim: HEAD_DIM, max_seq_len: MAX_SEQ_LEN } },
-    { name: 'attn_finalize_prefill', semantic: 'attention_tiled', params: { width: 1, height: 1, head_dim: HEAD_DIM, q_len_per_pe: PROMPT_TOKENS, block_size: PROMPT_TOKENS, scale: 1.0 / Math.sqrt(HEAD_DIM), ...VIZ_PREFILL_HIDDEN } },
     { name: 'o_proj_prefill', semantic: 'tiled_matmul', params: { width: 1, height: 1, P: 1, Mt: PROMPT_TOKENS, Kt: HIDDEN, Nt: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'attn_residual_prefill', semantic: 'residual_add', params: { width: 1, height: 1, chunk_size: PROMPT_TOKENS * HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'norm2_prefill', semantic: 'rms_norm', params: { width: 1, height: 1, hidden_size: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
@@ -170,7 +169,7 @@ function main() {
     { name: 'ffn_residual_prefill', semantic: 'residual_add', params: { width: 1, height: 1, chunk_size: PROMPT_TOKENS * HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'final_norm_prefill', semantic: 'rms_norm', params: { width: 1, height: 1, hidden_size: HIDDEN, ...VIZ_PREFILL_HIDDEN } },
     { name: 'lm_head_prefill', semantic: 'tiled_matmul', params: { width: 1, height: 1, P: 1, Mt: PROMPT_TOKENS, Kt: HIDDEN, Nt: VOCAB, ...VIZ_PREFILL_VOCAB } },
-    { name: 'sample_prefill', semantic: 'sample', params: { width: 1, chunk_size: PROMPT_TOKENS * VOCAB } },
+    { name: 'sample_prefill', semantic: 'sample', params: { width: 1, chunk_size: VOCAB, total_rows: PROMPT_TOKENS, last_row_only: true } },
 
     { name: 'embed_decode', semantic: 'gather', params: { tokens_per_chunk: 1, hidden_per_pe: HIDDEN, rows_per_pe: VOCAB, width: 1, height: 1 } },
     { name: 'norm1_decode', semantic: 'rms_norm', params: { width: 1, height: 1, hidden_size: HIDDEN } },
@@ -270,11 +269,11 @@ function main() {
   ops.push(launchOp('p1.v_proj', 'v_proj_prefill', { a: 'x_n', b: 'v_w', c: 'v_act' }));
   ops.push({
     operationId: 'p1.attn_compute', kind: 'launch', functionName: 'compute', args: [], nonblock: false, unblockCheckpointRequired: true,
-    target: 'attn_compute_prefill', symbolBindings: { query: 'q', key: 'k_act', val: 'v_act', output: 'attn_out' },
+    target: 'attn_prefill', symbolBindings: { query: 'q', key: 'k_act', val: 'v_act', output: 'attn_out' },
   });
   ops.push({
     operationId: 'p1.attn_finalize', kind: 'launch', functionName: 'finalize', args: [], nonblock: false, unblockCheckpointRequired: true,
-    target: 'attn_finalize_prefill', symbolBindings: { query: 'q', key: 'k_act', val: 'v_act', output: 'attn_out' },
+    target: 'attn_prefill', symbolBindings: { query: 'q', key: 'k_act', val: 'v_act', output: 'attn_out' },
   });
   ops.push(launchOp('p1.o_proj', 'o_proj_prefill', { a: 'attn_out', b: 'o_w', c: 'attn_proj' }));
   ops.push(launchOp('p1.attn_residual', 'attn_residual_prefill', { input: 'attn_proj', residual: 'x', output: 'x_res' }));
@@ -305,6 +304,11 @@ function main() {
   ops.push(launchOp('d1.lm_head', 'lm_head_decode', { a: 'final_x_d_n', b: 'lm_head_w', c: 'logits_decode' }));
   ops.push(launchOp('d1.sample', 'sample_decode', { logits: 'logits_decode', tokens: 'tokens_decode_out' }));
 
+  for (const sym of ['x', 'x_n', 'q', 'k_act', 'v_act', 'attn_out', 'attn_proj', 'x_res', 'x_res_n', 'up', 'up_g', 'mlp_out', 'final_x', 'final_x_n']) {
+    if (symbols[sym]) {
+      ops.push(memcpyOp(`d2h-${sym}`, 'memcpy_d2h', sym, symbols[sym].bytes, 'MEMCPY_32BIT', false));
+    }
+  }
   ops.push(memcpyOp('d2h-logits', 'memcpy_d2h', 'logits', symbols.logits.bytes, 'MEMCPY_32BIT', false));
   ops.push(memcpyOp('d2h-tokens_out', 'memcpy_d2h', 'tokens_out', symbols.tokens_out.bytes, 'MEMCPY_32BIT', false));
   ops.push(memcpyOp('d2h-logits_decode', 'memcpy_d2h', 'logits_decode', symbols.logits_decode.bytes, 'MEMCPY_32BIT', false));
@@ -376,7 +380,26 @@ function main() {
 
   const inputPath = resolve(outRoot, 'demo-input.json');
   writeFileSync(inputPath, JSON.stringify(input, null, 2), 'utf-8');
+
+  const metaPath = resolve(outRoot, 'demo-meta.json');
+  const meta = {
+    schemaVersion: 1,
+    artifactKind: 'csl_kernel_demo_meta',
+    title: 'Mini-transformer end-to-end (Doppler correctness prompt)',
+    prompt: PROMPT_STRING,
+    promptIds: PROMPT_IDS,
+    promptTokens: PROMPT_TOKENS,
+    decodeTokens: DECODE_TOKENS,
+    vocab: VOCAB,
+    hidden: HIDDEN,
+    headDim: HEAD_DIM,
+    ffn: FFN,
+    notes: 'Synthetic random weights — token IDs are illustrative, not Doppler-bound. The structural pipeline (embed → norm → q/k/v/o → attention → residual → norm → up/gelu/down → residual → final-norm → lm-head → sample) runs end to end on the WebGPU emulator.',
+  };
+  writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+
   process.stderr.write(`wrote demo emulator input → ${repoRel(inputPath)}\n`);
+  process.stderr.write(`wrote demo meta → ${repoRel(metaPath)}\n`);
   process.stderr.write(`compile targets: ${kernels.length}, operations: ${ops.length}, fixtures: ${fixtureFiles.length}\n`);
 }
 

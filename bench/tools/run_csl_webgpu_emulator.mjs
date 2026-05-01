@@ -506,17 +506,22 @@ function executeGeluCpu(symbols) {
   }
 }
 
-function executeRmsNormCpu(symbols) {
+function executeRmsNormCpu(symbols, target) {
   const input = float32View(symbols.get('input'), 'input');
   const weight = float32View(symbols.get('weight'), 'weight');
   const output = float32View(symbols.get('output'), 'output');
-  let sumSq = 0.0;
-  for (let i = 0; i < output.length; i += 1) {
-    sumSq += input[i] * input[i];
-  }
-  const invRms = 1.0 / Math.sqrt(sumSq / output.length + 0.000001);
-  for (let i = 0; i < output.length; i += 1) {
-    output[i] = input[i] * invRms * (1.0 + weight[i]);
+  const hiddenSize = target ? integerParam(target, 'hidden_size', weight.length) : weight.length;
+  const rowLen = hiddenSize > 0 ? hiddenSize : weight.length;
+  for (let row = 0; row < output.length; row += rowLen) {
+    let sumSq = 0.0;
+    for (let i = 0; i < rowLen; i += 1) {
+      const v = input[row + i];
+      sumSq += v * v;
+    }
+    const invRms = 1.0 / Math.sqrt(sumSq / rowLen + 0.000001);
+    for (let i = 0; i < rowLen; i += 1) {
+      output[row + i] = input[row + i] * invRms * (1.0 + weight[i]);
+    }
   }
 }
 
@@ -840,24 +845,36 @@ function executeSampleCpu(symbols, target) {
   const chunkSize = integerParam(target, 'chunk_size', logits.length / Math.max(1, width));
   const temperature = numericParam(target, 'temperature', 1.0);
   const softcap = numericParam(target, 'softcap', 0.0);
+  const lastRowOnly = boolParam(target, 'last_row_only', false);
+  const totalRows = integerParam(target, 'total_rows', width);
+  if (lastRowOnly) {
+    assertElementCount('logits', logits.length, totalRows * chunkSize);
+    assertElementCount('tokens', tokens.length, 1);
+    let bestVal = F32_NEG_MAX;
+    let bestIdx = 0;
+    const base = (totalRows - 1) * chunkSize;
+    for (let i = 0; i < chunkSize; i += 1) {
+      let value = logits[base + i];
+      if (softcap !== 0.0) value = softcap * Math.tanh(value / softcap);
+      value /= temperature;
+      if (value > bestVal) { bestVal = value; bestIdx = i; }
+    }
+    tokens[0] = bestIdx;
+    return;
+  }
   assertElementCount('logits', logits.length, width * chunkSize);
   assertElementCount('tokens', tokens.length, width);
-  let bestVal = F32_NEG_MAX;
-  let bestIdx = 0;
   for (let pe = 0; pe < width; pe += 1) {
+    let bestVal = F32_NEG_MAX;
+    let bestIdx = 0;
     for (let i = 0; i < chunkSize; i += 1) {
       let value = logits[pe * chunkSize + i];
       if (softcap !== 0.0) value = softcap * Math.tanh(value / softcap);
       value /= temperature;
-      const idx = pe * chunkSize + i;
-      if (value > bestVal) {
-        bestVal = value;
-        bestIdx = idx;
-      }
+      if (value > bestVal) { bestVal = value; bestIdx = i; }
     }
+    tokens[pe] = bestIdx;
   }
-  tokens.fill(0);
-  tokens[Math.max(0, width - 1)] = bestIdx;
 }
 
 function executeLaunchCpu(symbols, target, operation, state) {
@@ -867,7 +884,7 @@ function executeLaunchCpu(symbols, target, operation, state) {
     return executeElementwiseIdentityCpu(symbols);
   }
   if (target.semantic === 'gelu') return executeGeluCpu(symbols);
-  if (target.semantic === 'rms_norm') return executeRmsNormCpu(symbols);
+  if (target.semantic === 'rms_norm') return executeRmsNormCpu(symbols, target);
   if (target.semantic === 'gather') return executeGatherCpu(symbols, target);
   if (target.semantic === 'tiled_matmul') return executeTiledMatmulCpu(symbols, target);
   if (target.semantic === 'rope') return executeRopeCpu(symbols, target);

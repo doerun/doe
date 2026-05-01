@@ -908,16 +908,14 @@ async function main() {
       kvCacheEvidence,
       ...(decodeTranscript ? { decodeTranscript } : {}),
       producer: {
-        runtime: 'doppler_js_webgpu',
+        runtime: 'doppler_node_webgpu',
         toolPath: repoRelative(SCRIPT_PATH),
         dopplerRoot,
         runtimeProfile: args.runtimeProfile,
-        jsHost: process.versions?.bun ? 'bun' : 'node',
         webgpuProvider: bootstrap.provider ?? 'node-webgpu',
         kernelPathId: stats.kernelPathId ?? harness.pipeline.resolvedKernelPath?.id ?? null,
         kernelPathSource:
           stats.kernelPathSource ?? harness.pipeline.kernelPathSource ?? null,
-        kernelPathPolicy: runtimeConfig.inference?.kernelPathPolicy ?? null,
         nodeVersion: process.version,
         emittedAt: new Date().toISOString(),
       },

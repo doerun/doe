@@ -41,6 +41,29 @@ correctness ask.
 
 ## 2026-05-01 — Active end-to-end front: frozen Doppler sky prompt, decode step 1
 
+Diagnostic smaller-target receipt now exists for one raw prefill token plus
+one real decode step. `bench/tools/export_doppler_int4ple_reference.mjs`
+emits schema-valid `producer.runtime=doppler_node_webgpu` receipts and the
+reference-export schema now admits the Doppler KV byte-digest proof under
+`kvCacheEvidence`. The generated diagnostic receipt is
+`bench/out/doppler-reference/gemma-4-31b-af16-raw1-prefill-decode1/doppler_int4ple_reference_export.json`;
+it uses `--no-chat-template`, prompt `The`, tokenized prompt `[818]`,
+`decodeStepsRequested=2`, generated tokens `[236774, 236780]`, and
+`kvCacheEvidence.status=output_ready`. This is a shrink-wrapped
+prefill+decode diagnostic target; it does not supersede the frozen Doppler
+sky acceptance target unless the active gate is deliberately retargeted.
+
+The arithmetic probe split is explicit: raw `4**4=` is four prompt tokens
+`[236812, 1018, 236812, 236784]`, but the Doppler greedy continuation repeats
+the pattern (`[236812, 236784, 236812, 236784]`) rather than producing
+`256`. The gated receipt is
+`bench/out/doppler-reference/gemma-4-31b-af16-raw-4pow4-prefill-decode/doppler_int4ple_reference_export.json`.
+The semantically useful arithmetic receipt is the chat-template run
+`bench/out/doppler-reference/gemma-4-31b-af16-chat-4pow4-prefill-decode/doppler_int4ple_reference_export.json`;
+it has 17 prompt tokens and generated tokens
+`[236812, 1018, 236812, 578, 236743, 236778, 236810, 236825]`, rendering
+`4**4 = 256`, with `kvCacheEvidence.status=output_ready`.
+
 Real 31B HostPlan session active blocker is the frozen Doppler evidence
 target, not the generic two-token stress path: prompt
 `The color of the sky is`, Doppler prompt-token hash
@@ -65,13 +88,16 @@ rms_norm f16 output as 21 D2H-addressable chunks in
 single-buffer f16 pack landed for the TSIR emit lane in the new
 `runtime/zig/src/tsir/emit_csl_f16_pack.zig` and is wired into
 `runtime/zig/src/tsir/emit_kernel_body.zig::emitCslRmsNorm`. For the
-tiled_31b Q4K projection, the working shape is height-1 f16 row-split
-copyback from the GEMV sink column. Sharded batch adapters are recorded
-in the batch manifest, but this simfabric host stalls on concurrent
-Q4K D2H, so the frozen-sky run keeps one Q4K shard with durable partial
-reuse. The Q4K shard count is explicit as
-`--session-prefill-q4k-gemv-jobs` so embed ROI and lm-head tile
-parallelism stay separate from this simulator D2H envelope.
+tiled_31b Q4K projection, the current faster path is height-4 f16
+row-split copyback from the GEMV sink column. A single-tile runtime
+probe validated `output_pe_rows=4` with four row-split D2H rows and a
+448-element f16 tile output; the session runner exposes it as
+`--session-prefill-q4k-gemv-output-pe-rows`. Sharded batch adapters are
+recorded in the batch manifest, but this simfabric host stalls
+concurrent Q4K shards at `SdkRuntime.run()`, so the frozen-sky run keeps
+one Q4K shard with durable partial reuse. The Q4K shard count remains
+explicit as `--session-prefill-q4k-gemv-jobs` so embed ROI and lm-head
+tile parallelism stay separate from this simulator D2H envelope.
 Checkpoint resume now has an explicit
 `--allow-checkpoint-runner-drift` mode for orchestration-only runner
 edits; it still validates manifest/config/compile-target identity and

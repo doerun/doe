@@ -82,10 +82,92 @@
     select, input[type=range] { font: inherit; }
     .stage {
       display: grid;
-      grid-template-columns: 1fr 320px;
+      grid-template-columns: minmax(0, 1fr) 280px 320px;
       gap: 14px;
     }
+    @media (max-width: 1280px) { .stage { grid-template-columns: minmax(0, 1fr) 320px; } .stage .storyboard-col { grid-column: 1 / -1; } }
     @media (max-width: 980px) { .stage { grid-template-columns: 1fr; } }
+    .storyboard-card { padding: 14px 14px 12px; }
+    .storyboard-card h3 { margin: 0 0 10px; font-size: 14px; }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 22px 1fr max-content;
+      gap: 6px;
+      align-items: center;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1.25;
+    }
+    .stage-row:hover { background: var(--chip); color: var(--ink); }
+    .stage-row .stage-idx {
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 10px;
+      text-align: right;
+      color: var(--muted);
+    }
+    .stage-row .stage-name {
+      font-weight: 500;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-row .stage-shape {
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .stage-row.current {
+      background: #fbf6e6;
+      border-color: var(--tile-outline, #b89c66);
+      color: var(--ink);
+    }
+    .stage-row.current .stage-name { color: var(--tile-active, #9a3da6); }
+    .stage-row.done .stage-idx { color: var(--good); }
+    .stage-row.pending .stage-name { color: var(--muted); font-weight: 400; }
+    .stage-group {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 10px 0 4px 4px;
+    }
+    .stage-group:first-child { margin-top: 0; }
+    .storyboard-flow {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .storyboard-flow .label { color: var(--muted); font-size: 11px; }
+    .storyboard-flow .prompt-text { font-family: "SF Mono", "Menlo", monospace; font-size: 12px; color: var(--accent); margin-bottom: 4px; }
+    .storyboard-flow .arrow { color: var(--muted); margin: 0 4px; }
+    .storyboard-flow .out-token { font-family: "SF Mono", "Menlo", monospace; color: var(--tile-active, #9a3da6); font-weight: 600; }
+    .storyboard-active-tensor {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .storyboard-active-tensor .label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+    .tensor-row {
+      display: flex; gap: 4px; flex-wrap: wrap;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 11px;
+      padding: 3px 0;
+    }
+    .tensor-cell {
+      padding: 2px 5px;
+      background: var(--chip);
+      border-radius: 3px;
+      min-width: 38px;
+      text-align: right;
+    }
+    .tensor-row .tag { color: var(--muted); padding: 2px 0; min-width: 28px; }
     .canvas-wrap {
       background: var(--paper);
       border: 1px solid var(--line);
@@ -200,6 +282,28 @@
     }
     .trace-toggle { font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
     .trace-toggle:hover { color: var(--ink); }
+    .demo-meta {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbf6e6;
+      display: none;
+    }
+    .demo-meta.visible { display: block; }
+    .demo-meta .title { font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+    .demo-meta .flow {
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 14px;
+      color: var(--ink);
+      margin: 6px 0;
+      letter-spacing: 0.01em;
+    }
+    .demo-meta .flow .prompt { color: var(--accent); font-weight: 600; }
+    .demo-meta .flow .arrow { color: var(--muted); margin: 0 8px; }
+    .demo-meta .flow .token { color: var(--tile-active, #9a3da6); font-weight: 600; }
+    .demo-meta .ids { font-size: 11px; color: var(--muted); font-family: "SF Mono", "Menlo", "Consolas", monospace; }
+    .demo-meta .note { font-size: 11px; color: var(--muted); margin-top: 6px; font-style: italic; }
   </style>
 </head>
 <body>
@@ -218,15 +322,16 @@
       </div>
     </div>
     <div class="info-line" id="traceInfo"></div>
+    <div class="demo-meta" id="demoMeta"></div>
     <div class="info-line" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
       <strong>Run live on this device (real WebGPU):</strong>
       <span id="webgpuStatus" class="muted">checking…</span>
       &nbsp;·&nbsp;
-      Pattern: <select id="livePattern"><option value="summa">SUMMA tiled_matmul</option></select>
-      P=<input id="liveP" type="number" min="2" max="12" value="4" style="width:50px">
+      Pattern: <select id="livePattern"><option value="summa">SUMMA tiled_matmul</option><option value="mini">Mini-transformer prefill+decode</option></select>
+      <span id="summaInputs">P=<input id="liveP" type="number" min="2" max="12" value="4" style="width:50px">
       Mt=<input id="liveMt" type="number" min="1" max="16" value="4" style="width:50px">
       Kt=<input id="liveKt" type="number" min="1" max="16" value="4" style="width:50px">
-      Nt=<input id="liveNt" type="number" min="1" max="16" value="4" style="width:50px">
+      Nt=<input id="liveNt" type="number" min="1" max="16" value="4" style="width:50px"></span>
       <button id="runLiveBtn" class="primary">Run live</button>
       <span id="liveProgress" class="muted"></span>
     </div>
@@ -262,6 +367,15 @@
         <div class="legend" id="legend"></div>
       </div>
     </div>
+
+    <aside class="storyboard-col">
+      <div class="card storyboard-card" id="storyboardCard" style="display:none">
+        <h3>Pipeline</h3>
+        <div id="storyboardStages"></div>
+        <div class="storyboard-flow" id="storyboardFlow"></div>
+        <div class="storyboard-active-tensor" id="storyboardActiveTensor"></div>
+      </div>
+    </aside>
 
     <aside>
       <div class="card">
@@ -322,6 +436,11 @@ const els = {
   demoGemv: document.getElementById('demoGemvBtn'),
   demoFull: document.getElementById('demoFullBtn'),
   traceInfo: document.getElementById('traceInfo'),
+  demoMeta: document.getElementById('demoMeta'),
+  storyboardCard: document.getElementById('storyboardCard'),
+  storyboardStages: document.getElementById('storyboardStages'),
+  storyboardFlow: document.getElementById('storyboardFlow'),
+  storyboardActiveTensor: document.getElementById('storyboardActiveTensor'),
   kernelMeta: document.getElementById('kernelMeta'),
   phaseMeta: document.getElementById('phaseMeta'),
   peInspect: document.getElementById('peInspect'),
@@ -350,6 +469,8 @@ function loadTrace(trace) {
   renderKernelMeta();
   renderLegend();
   renderTraceInfo();
+  renderDemoMeta();
+  renderStoryboard();
   renderTraceList();
   resizeCanvas();
   redraw();
@@ -627,6 +748,37 @@ function drawGrid(geom) {
         ctx.stroke();
         ctx.setLineDash([]);
       }
+
+      // Numeric content inside the tile, when room allows.
+      if (geom.cell >= 36 && acc && Array.isArray(acc.head) && acc.head.length) {
+        const cx = px + w / 2;
+        const cy = py + h / 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const headValues = acc.head.slice(0, geom.cell >= 80 ? 4 : geom.cell >= 60 ? 3 : 2);
+        const fontSize = geom.cell >= 110 ? 12 : geom.cell >= 70 ? 11 : 10;
+        ctx.font = `${fontSize}px "SF Mono", "Menlo", monospace`;
+        ctx.fillStyle = '#1f1c17';
+        const lineH = fontSize + 2;
+        const totalH = headValues.length * lineH + lineH; // +1 for label
+        const startY = cy - totalH / 2 + lineH / 2;
+        ctx.fillStyle = '#5e553e';
+        ctx.fillText(`PE(${x},${y})`, cx, startY);
+        ctx.fillStyle = '#1f1c17';
+        for (let i = 0; i < headValues.length; i += 1) {
+          const val = headValues[i];
+          const text = Number.isFinite(val) ? val.toFixed(2) : 'NaN';
+          ctx.fillText(text, cx, startY + (i + 1) * lineH);
+        }
+      } else if (geom.cell >= 24 && acc && typeof acc.absMax === 'number') {
+        // Compact mode: just show absMax
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const fontSize = geom.cell >= 32 ? 10 : 9;
+        ctx.font = `${fontSize}px "SF Mono", "Menlo", monospace`;
+        ctx.fillStyle = '#1f1c17';
+        ctx.fillText(Number.isFinite(acc.absMax) ? acc.absMax.toFixed(2) : '·', px + w / 2, py + h / 2);
+      }
     }
   }
 
@@ -709,6 +861,8 @@ function redraw() {
   renderPhaseMeta();
   renderInspect();
   updateTraceListHighlight();
+  updateStoryboardHighlight();
+  renderStoryboardActiveTensor();
   renderTraceJson();
   els.scrubLabel.textContent = `${state.phaseIdx + 1} / ${state.trace.phases.length}`;
 }
@@ -776,6 +930,161 @@ function renderTraceInfo() {
   els.traceInfo.textContent = `${phaseCount} phases · ${k.fabric.width}×${k.fabric.height} fabric · pattern ${k.pattern}` + (state.trace.notWhat ? ` · ${state.trace.notWhat}` : '');
 }
 
+function renderDemoMeta() {
+  const meta = state.trace && state.trace.demoMeta;
+  if (!meta) {
+    els.demoMeta.classList.remove('visible');
+    els.demoMeta.innerHTML = '';
+    return;
+  }
+  const promptHtml = `<span class="prompt">${(meta.prompt || '').replace(/</g, '&lt;')}</span>`;
+  const decodeId = meta.sampledDecodeToken;
+  const argmax = meta.decodeLogitsArgmax;
+  const tokenLabel = meta.logitsAreFinite
+    ? `id ${argmax}`
+    : `id ${decodeId} <span class="muted">(placeholder)</span>`;
+  const tokenHtml = `<span class="token">${tokenLabel}</span>`;
+  const idsHtml = meta.promptIds
+    ? `prompt ids: [${meta.promptIds.join(', ')}] · decode: 1 token`
+    : '';
+  const note = meta.samplerNote ? `<div class="note">${meta.samplerNote}</div>` : '';
+  els.demoMeta.innerHTML = `
+    <div class="title">${(meta.title || 'Demo').replace(/</g, '&lt;')}</div>
+    <div class="flow">${promptHtml}<span class="arrow">→</span>${tokenHtml}</div>
+    <div class="ids">${idsHtml}</div>
+    ${note}
+  `;
+  els.demoMeta.classList.add('visible');
+}
+
+const STAGE_GROUPS = [
+  { title: 'Prefill', match: /prefill$|^embed_prefill|_prefill$|^p1\./ },
+  { title: 'Decode', match: /decode$|^embed_decode|_decode$|^d1\./ },
+  { title: 'Live', match: /live|done|init/ },
+];
+
+function classifyStage(phaseLabelOrName) {
+  const s = String(phaseLabelOrName || '');
+  if (/decode/i.test(s)) return 'Decode';
+  if (/prefill/i.test(s)) return 'Prefill';
+  return 'Live';
+}
+
+function stageDisplayName(phase, idx) {
+  const lbl = phase.label || phase.kernel || phase.phase || `phase ${idx}`;
+  // Heuristic: pull a short token before any colon or dash
+  const m = String(lbl).match(/^[\w./-]+/);
+  return m ? m[0] : `phase ${idx}`;
+}
+
+function renderStoryboard() {
+  if (!state.trace || !state.trace.phases || state.trace.phases.length < 2) {
+    els.storyboardCard.style.display = 'none';
+    return;
+  }
+  const meta = state.trace.demoMeta;
+  // Only show storyboard for traces that have >2 phases AND demoMeta or pipeline-shaped labels
+  const looksLikePipeline = meta || state.trace.kernel?.pattern === 'emulator_chain' || state.trace.kernel?.pattern === 'mini_transformer_live';
+  if (!looksLikePipeline) {
+    els.storyboardCard.style.display = 'none';
+    return;
+  }
+  els.storyboardCard.style.display = 'block';
+
+  const groups = new Map();
+  state.trace.phases.forEach((phase, idx) => {
+    const grp = classifyStage(phase.label || phase.kernel || phase.phase);
+    if (!groups.has(grp)) groups.set(grp, []);
+    groups.get(grp).push({ phase, idx });
+  });
+
+  const html = [];
+  const groupOrder = ['Live', 'Prefill', 'Decode'];
+  for (const g of groupOrder) {
+    if (!groups.has(g)) continue;
+    html.push(`<div class="stage-group">${g}</div>`);
+    for (const { phase, idx } of groups.get(g)) {
+      const name = stageDisplayName(phase, idx).replace(/</g, '&lt;');
+      const fab = phase.fabric || state.trace.kernel.fabric || { width: 1, height: 1 };
+      const shape = `${fab.width}×${fab.height}`;
+      html.push(
+        `<div class="stage-row pending" data-idx="${idx}">` +
+          `<span class="stage-idx">${idx}</span>` +
+          `<span class="stage-name">${name}</span>` +
+          `<span class="stage-shape">${shape}</span>` +
+        `</div>`
+      );
+    }
+  }
+  els.storyboardStages.innerHTML = html.join('');
+  els.storyboardStages.querySelectorAll('.stage-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      pause();
+      setPhase(Number(row.dataset.idx));
+    });
+  });
+
+  // Flow line at the bottom of the storyboard.
+  const promptText = meta?.prompt ? `"${meta.prompt}"` : '(no prompt)';
+  const promptIds = Array.isArray(meta?.promptIds) ? `[${meta.promptIds.join(', ')}]` : '';
+  const sampledP = meta?.sampledPrefillToken;
+  const sampledD = meta?.sampledDecodeToken;
+  const argmax = meta?.decodeLogitsArgmax;
+  const finiteFlag = meta?.logitsAreFinite ?? null;
+  const promptLine = `<div class="prompt-text">${promptText}</div><div class="label">${promptIds}</div>`;
+  const tokenLine = (sampledP != null || sampledD != null)
+    ? `<div style="margin-top:6px"><span class="label">sample</span> <span class="arrow">→</span><span class="out-token">prefill ${sampledP ?? '?'}</span><span class="arrow">·</span><span class="out-token">decode ${sampledD ?? argmax ?? '?'}</span>${finiteFlag === false ? ' <span class="label">(placeholder)</span>' : ''}</div>`
+    : '';
+  els.storyboardFlow.innerHTML = `<div class="label">prompt</div>${promptLine}${tokenLine}`;
+}
+
+function updateStoryboardHighlight() {
+  if (!els.storyboardStages || !state.trace) return;
+  const rows = els.storyboardStages.querySelectorAll('.stage-row');
+  rows.forEach((r) => r.classList.remove('current', 'done', 'pending'));
+  rows.forEach((r) => {
+    const idx = Number(r.dataset.idx);
+    if (idx < state.phaseIdx) r.classList.add('done');
+    else if (idx === state.phaseIdx) r.classList.add('current');
+    else r.classList.add('pending');
+  });
+  const cur = els.storyboardStages.querySelector('.stage-row.current');
+  if (cur) {
+    const cardRect = els.storyboardCard.getBoundingClientRect();
+    const rowRect = cur.getBoundingClientRect();
+    if (rowRect.top < cardRect.top || rowRect.bottom > cardRect.bottom) {
+      cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+}
+
+function renderStoryboardActiveTensor() {
+  if (!els.storyboardActiveTensor || !state.trace) return;
+  const phase = state.trace.phases[state.phaseIdx];
+  if (!phase || !phase.peDelta || !phase.peDelta.length) {
+    els.storyboardActiveTensor.innerHTML = '';
+    return;
+  }
+  const fab = phase.fabric || state.trace.kernel.fabric || { width: 1, height: 1 };
+  // Build a row of small numeric cells for up to first 6 PEs of the active phase.
+  const peEntries = phase.peDelta.slice(0, 6);
+  const bufferName = (peEntries[0] && peEntries[0].buffers && Object.keys(peEntries[0].buffers)[0]) || 'output';
+  const rows = peEntries.map((e) => {
+    const buf = e.buffers?.[bufferName];
+    const head = (buf && Array.isArray(buf.head)) ? buf.head : [];
+    const cells = head.slice(0, 4).map((v) => `<span class="tensor-cell">${Number.isFinite(v) ? v.toFixed(2) : 'NaN'}</span>`).join('');
+    return `<div class="tensor-row"><span class="tag">PE${e.pe?.[0] ?? '?'}</span>${cells}</div>`;
+  });
+  const moreNote = phase.peDelta.length > peEntries.length
+    ? `<div class="label" style="margin-top:4px">… ${phase.peDelta.length - peEntries.length} more PEs</div>`
+    : '';
+  els.storyboardActiveTensor.innerHTML = `
+    <div class="label">${bufferName} · fabric ${fab.width}×${fab.height} · phase ${state.phaseIdx}</div>
+    ${rows.join('')}
+    ${moreNote}
+  `;
+}
+
 els.canvas.addEventListener('click', (ev) => {
   if (!state.trace) return;
   const rect = els.canvas.getBoundingClientRect();
@@ -838,7 +1147,7 @@ async function loadDemo(url) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     loadTrace(await res.json());
   } catch (e) {
-    alert(`Demo trace not found at ${url}\n\nGenerate it first:\n  node bench/tools/build_csl_kernel_trace.mjs --kernel summa_tiled_matmul --param P=4 --param Mt=4 --param Kt=4 --param Nt=4 --out bench/out/scratch/csl-kernel-traces/summa-p4.json\n  node bench/tools/build_csl_kernel_trace.mjs --kernel fused_gemv_dequant --param width=11 --param height=16 --param out_dim_per_pe=8 --param in_dim_per_pe=32 --param num_blocks_per_row=1 --out bench/out/scratch/csl-kernel-traces/gemv-launch2.json\n\nOr use "Load trace" to pick a JSON.`);
+    alert(`Demo trace not found at ${url}\n\nGenerate it first:\n  node bench/tools/build_csl_kernel_trace.mjs --kernel summa_tiled_matmul --param P=4 --param Mt=4 --param Kt=4 --param Nt=4 --out bench/out/scratch/csl-kernel-traces/summa-p4.json\n  node bench/tools/build_csl_kernel_trace.mjs --kernel fused_gemv_dequant --param width=11 --param height=16 --param out_dim_per_pe=8 --param in_dim_per_pe=32 --param num_blocks_per_row=1 --out bench/out/scratch/csl-kernel-traces/gemv-launch2.json\n  node bench/tools/build_demo_kernel_trace.mjs\n\nOr use "Load trace" to pick a JSON.`);
   }
 }
 
@@ -1125,8 +1434,481 @@ async function runLiveSumma(device) {
   loadTrace(trace);
 }
 
+const MINI_VOCAB = 32;
+const MINI_HIDDEN = 16;
+const MINI_HEAD_DIM = 16;
+const MINI_FFN = 32;
+const MINI_PROMPT = 'The color of the sky is';
+const MINI_PROMPT_IDS = [20, 3, 15, 20, 19, 9];
+
+const WGSL_GATHER = `
+struct P { tokens: u32, hidden: u32, vocab: u32 };
+@group(0) @binding(0) var<storage, read> table: array<f32>;
+@group(0) @binding(1) var<storage, read> ids: array<u32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+@group(0) @binding(3) var<uniform> p: P;
+@compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.hidden || g.y >= p.tokens) { return; }
+  let id = ids[g.y];
+  out[g.y * p.hidden + g.x] = table[id * p.hidden + g.x];
+}`;
+
+const WGSL_RMSNORM = `
+struct P { tokens: u32, hidden: u32 };
+@group(0) @binding(0) var<storage, read> x: array<f32>;
+@group(0) @binding(1) var<storage, read> w: array<f32>;
+@group(0) @binding(2) var<storage, read_write> y: array<f32>;
+@group(0) @binding(3) var<uniform> p: P;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.tokens) { return; }
+  let base = g.x * p.hidden;
+  var ss: f32 = 0.0;
+  for (var i: u32 = 0u; i < p.hidden; i = i + 1u) { let v = x[base + i]; ss = ss + v * v; }
+  let inv = inverseSqrt(ss / f32(p.hidden) + 1e-6);
+  for (var i: u32 = 0u; i < p.hidden; i = i + 1u) { y[base + i] = x[base + i] * inv * w[i]; }
+}`;
+
+const WGSL_MATMUL = `
+struct P { M: u32, K: u32, N: u32 };
+@group(0) @binding(0) var<storage, read> a: array<f32>;
+@group(0) @binding(1) var<storage, read> b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+@group(0) @binding(3) var<uniform> p: P;
+@compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.N || g.y >= p.M) { return; }
+  var acc: f32 = 0.0;
+  for (var k: u32 = 0u; k < p.K; k = k + 1u) {
+    acc = acc + a[g.y * p.K + k] * b[k * p.N + g.x];
+  }
+  c[g.y * p.N + g.x] = acc;
+}`;
+
+const WGSL_ATTN = `
+struct P { tokens: u32, head_dim: u32, scale: f32, _pad: u32 };
+@group(0) @binding(0) var<storage, read> q: array<f32>;
+@group(0) @binding(1) var<storage, read> k: array<f32>;
+@group(0) @binding(2) var<storage, read> v: array<f32>;
+@group(0) @binding(3) var<storage, read_write> o: array<f32>;
+@group(0) @binding(4) var<uniform> p: P;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.tokens) { return; }
+  let i = g.x;
+  var mx: f32 = -1e30;
+  for (var j: u32 = 0u; j <= i; j = j + 1u) {
+    var s: f32 = 0.0;
+    for (var d: u32 = 0u; d < p.head_dim; d = d + 1u) {
+      s = s + q[i * p.head_dim + d] * k[j * p.head_dim + d];
+    }
+    s = s * p.scale;
+    if (s > mx) { mx = s; }
+  }
+  var sum: f32 = 0.0;
+  for (var j: u32 = 0u; j <= i; j = j + 1u) {
+    var s: f32 = 0.0;
+    for (var d: u32 = 0u; d < p.head_dim; d = d + 1u) {
+      s = s + q[i * p.head_dim + d] * k[j * p.head_dim + d];
+    }
+    sum = sum + exp(s * p.scale - mx);
+  }
+  for (var d: u32 = 0u; d < p.head_dim; d = d + 1u) {
+    var acc: f32 = 0.0;
+    for (var j: u32 = 0u; j <= i; j = j + 1u) {
+      var s: f32 = 0.0;
+      for (var dk: u32 = 0u; dk < p.head_dim; dk = dk + 1u) {
+        s = s + q[i * p.head_dim + dk] * k[j * p.head_dim + dk];
+      }
+      let w = exp(s * p.scale - mx) / sum;
+      acc = acc + w * v[j * p.head_dim + d];
+    }
+    o[i * p.head_dim + d] = acc;
+  }
+}`;
+
+const WGSL_RESIDUAL = `
+struct P { n: u32 };
+@group(0) @binding(0) var<storage, read_write> x: array<f32>;
+@group(0) @binding(1) var<storage, read> add: array<f32>;
+@group(0) @binding(2) var<uniform> p: P;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.n) { return; }
+  x[g.x] = x[g.x] + add[g.x];
+}`;
+
+const WGSL_GELU = `
+struct P { n: u32 };
+@group(0) @binding(0) var<storage, read_write> x: array<f32>;
+@group(0) @binding(1) var<uniform> p: P;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= p.n) { return; }
+  let v = x[g.x];
+  x[g.x] = 0.5 * v * (1.0 + tanh(0.7978845608 * (v + 0.044715 * v * v * v)));
+}`;
+
+const WGSL_ARGMAX = `
+struct P { n: u32 };
+@group(0) @binding(0) var<storage, read> logits: array<f32>;
+@group(0) @binding(1) var<storage, read_write> out: array<u32>;
+@group(0) @binding(2) var<uniform> p: P;
+@compute @workgroup_size(1) fn main() {
+  var best: u32 = 0u;
+  var bv: f32 = -1e30;
+  for (var i: u32 = 0u; i < p.n; i = i + 1u) {
+    let v = logits[i];
+    if (v > bv) { bv = v; best = i; }
+  }
+  out[0] = best;
+}`;
+
+function makeBuf(device, sizeBytes, usage) {
+  return device.createBuffer({ size: Math.max(16, sizeBytes), usage });
+}
+function storageBuf(device, bytes) {
+  return makeBuf(device, bytes, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
+}
+function uniformU32(device, vals) {
+  const arr = new Uint32Array(vals.length < 4 ? 4 : vals.length);
+  vals.forEach((v, i) => { arr[i] = v >>> 0; });
+  const buf = makeBuf(device, arr.byteLength, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
+  device.queue.writeBuffer(buf, 0, arr);
+  return buf;
+}
+function uniformMixed(device, struct) {
+  // struct: array of {kind:'u32'|'f32', value: number}
+  const padded = struct.length < 4 ? [...struct, ...Array(4 - struct.length).fill({ kind: 'u32', value: 0 })] : struct;
+  const buf = new ArrayBuffer(padded.length * 4);
+  const u = new Uint32Array(buf);
+  const f = new Float32Array(buf);
+  padded.forEach((e, i) => { if (e.kind === 'f32') f[i] = e.value; else u[i] = e.value >>> 0; });
+  const gpuBuf = makeBuf(device, buf.byteLength, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
+  device.queue.writeBuffer(gpuBuf, 0, new Uint8Array(buf));
+  return gpuBuf;
+}
+
+function makePipeline(device, code) {
+  const module = device.createShaderModule({ code });
+  return device.createComputePipeline({ layout: 'auto', compute: { module, entryPoint: 'main' } });
+}
+
+function dispatch(device, pipeline, bindEntries, gx, gy = 1, gz = 1) {
+  const bg = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: bindEntries.map((b, i) => ({ binding: i, resource: { buffer: b } })),
+  });
+  const enc = device.createCommandEncoder();
+  const pass = enc.beginComputePass();
+  pass.setPipeline(pipeline);
+  pass.setBindGroup(0, bg);
+  pass.dispatchWorkgroups(gx, gy, gz);
+  pass.end();
+  device.queue.submit([enc.finish()]);
+}
+
+function fabricFor(tokens) { return { width: tokens, height: 1 }; }
+
+function makeRowsPeDelta(view, tokens, perToken, name) {
+  const out = [];
+  for (let t = 0; t < tokens; t += 1) {
+    out.push({ pe: [t, 0], buffers: { [name]: summarizeRange(view, t * perToken, perToken) } });
+  }
+  return out;
+}
+
+function makeSinglePeDelta(view, name) {
+  return [{ pe: [0, 0], buffers: { [name]: summarizeRange(view, 0, view.length) } }];
+}
+
+async function runLiveMini(device) {
+  liveEls.runBtn.disabled = true;
+  liveEls.progress.textContent = 'allocating mini-transformer buffers…';
+  await new Promise((r) => setTimeout(r, 0));
+
+  const TOK = MINI_PROMPT_IDS.length;
+  const H = MINI_HIDDEN;
+  const HD = MINI_HEAD_DIM;
+  const F = MINI_FFN;
+  const V = MINI_VOCAB;
+
+  let s = 0xb17f00;
+  const rand = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return ((s & 0xffff) / 0xffff - 0.5) * 0.4; };
+  const fill = (n) => { const a = new Float32Array(n); for (let i = 0; i < n; i += 1) a[i] = rand(); return a; };
+  const ones = (n) => { const a = new Float32Array(n); a.fill(1.0); return a; };
+
+  const embedTable = fill(V * H);
+  const norm1W = ones(H), norm2W = ones(H), normFW = ones(H);
+  const wQ = fill(H * H), wK = fill(H * H), wV = fill(H * H), wO = fill(H * H);
+  const wUp = fill(H * F), wDown = fill(F * H);
+  const wLM = fill(H * V);
+
+  const buf = (data) => {
+    const b = storageBuf(device, data.byteLength);
+    device.queue.writeBuffer(b, 0, data);
+    return b;
+  };
+  const empty = (bytes) => storageBuf(device, bytes);
+
+  const bEmbed = buf(embedTable);
+  const bN1W = buf(norm1W), bN2W = buf(norm2W), bNFW = buf(normFW);
+  const bWQ = buf(wQ), bWK = buf(wK), bWV = buf(wV), bWO = buf(wO);
+  const bWUp = buf(wUp), bWDown = buf(wDown), bWLM = buf(wLM);
+
+  const idsArr = new Uint32Array(TOK + 1);
+  MINI_PROMPT_IDS.forEach((v, i) => { idsArr[i] = v; });
+  const bIds = buf(new Float32Array(idsArr.buffer));
+  // Note: WGSL gather reads ids as u32; reuse buffer with both views okay since we wrote raw u32 bytes.
+
+  const bX = empty(TOK * H * 4);
+  const bX1 = empty(TOK * H * 4);
+  const bQ = empty(TOK * H * 4);
+  const bK = empty(TOK * H * 4);
+  const bVv = empty(TOK * H * 4);
+  const bAttn = empty(TOK * H * 4);
+  const bAttnO = empty(TOK * H * 4);
+  const bFfnUp = empty(TOK * F * 4);
+  const bFfnDown = empty(TOK * H * 4);
+  const bLogits = empty(TOK * V * 4);
+  const bToken = makeBuf(device, 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC);
+  // decode buffers (last-token slice)
+  const bDecX = empty(H * 4);
+  const bDecXn = empty(H * 4);
+  const bDecQ = empty(H * 4);
+  const bDecK = empty((TOK + 1) * H * 4); // extends prefill K
+  const bDecV = empty((TOK + 1) * H * 4);
+  const bDecAttnO = empty(H * 4);
+  const bDecLogits = empty(V * 4);
+  const bDecToken = makeBuf(device, 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC);
+
+  const piGather = makePipeline(device, WGSL_GATHER);
+  const piNorm = makePipeline(device, WGSL_RMSNORM);
+  const piMM = makePipeline(device, WGSL_MATMUL);
+  const piAttn = makePipeline(device, WGSL_ATTN);
+  const piRes = makePipeline(device, WGSL_RESIDUAL);
+  const piGelu = makePipeline(device, WGSL_GELU);
+  const piArgmax = makePipeline(device, WGSL_ARGMAX);
+
+  const phases = [];
+  const pushPhase = (label, kernel, fabric, peDelta, flows = []) => {
+    phases.push({ phase: kernel, label, fabric, peDelta, flows });
+  };
+
+  pushPhase(`Init: prompt "${MINI_PROMPT}" → ids [${MINI_PROMPT_IDS.join(', ')}]`, 'init', fabricFor(TOK), []);
+
+  const updateProg = (msg) => { liveEls.progress.textContent = msg; return new Promise((r) => setTimeout(r, 0)); };
+
+  // ----- prefill chain -----
+  await updateProg('embed lookup');
+  dispatch(device, piGather, [bEmbed, bIds, bX, uniformU32(device, [TOK, H, V])], Math.ceil(H / 8), Math.ceil(TOK / 8));
+  let back = await readbackBuffer(device, bX, TOK * H * 4);
+  pushPhase('embed_prefill: token IDs → hidden via real WGSL gather', 'embed_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x'));
+
+  await updateProg('rmsnorm 1');
+  dispatch(device, piNorm, [bX, bN1W, bX1, uniformU32(device, [TOK, H])], Math.ceil(TOK / 64));
+  back = await readbackBuffer(device, bX1, TOK * H * 4);
+  pushPhase('norm1_prefill: RMS norm per row (real WGSL)', 'norm1_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x_n'));
+
+  for (const [proj, w, dst, label] of [['q', bWQ, bQ, 'q_proj_prefill'], ['k', bWK, bK, 'k_proj_prefill'], ['v', bWV, bVv, 'v_proj_prefill']]) {
+    await updateProg(`${proj}-proj`);
+    dispatch(device, piMM, [bX1, w, dst, uniformU32(device, [TOK, H, H])], Math.ceil(H / 8), Math.ceil(TOK / 8));
+    back = await readbackBuffer(device, dst, TOK * H * 4);
+    pushPhase(`${label}: hidden·W_${proj} = ${proj} (real WGSL matmul ${TOK}×${H}·${H}×${H})`, label, fabricFor(TOK), makeRowsPeDelta(back, TOK, H, proj));
+  }
+
+  await updateProg('causal attention');
+  const attnUni = uniformMixed(device, [{ kind: 'u32', value: TOK }, { kind: 'u32', value: HD }, { kind: 'f32', value: 1.0 / Math.sqrt(HD) }, { kind: 'u32', value: 0 }]);
+  dispatch(device, piAttn, [bQ, bK, bVv, bAttn, attnUni], Math.ceil(TOK / 64));
+  back = await readbackBuffer(device, bAttn, TOK * H * 4);
+  pushPhase('attn_compute_prefill: causal Q·Kᵀ → softmax → V (real WGSL)', 'attn_compute_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'attn'));
+
+  await updateProg('o-proj');
+  dispatch(device, piMM, [bAttn, bWO, bAttnO, uniformU32(device, [TOK, H, H])], Math.ceil(H / 8), Math.ceil(TOK / 8));
+  back = await readbackBuffer(device, bAttnO, TOK * H * 4);
+  pushPhase('o_proj_prefill: attn·W_o (real WGSL matmul)', 'o_proj_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'attn_o'));
+
+  await updateProg('attn residual');
+  dispatch(device, piRes, [bX, bAttnO, uniformU32(device, [TOK * H])], Math.ceil((TOK * H) / 64));
+  back = await readbackBuffer(device, bX, TOK * H * 4);
+  pushPhase('attn_residual_prefill: x = x + attn_o (real WGSL)', 'attn_residual_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x'));
+
+  await updateProg('rmsnorm 2');
+  dispatch(device, piNorm, [bX, bN2W, bX1, uniformU32(device, [TOK, H])], Math.ceil(TOK / 64));
+  back = await readbackBuffer(device, bX1, TOK * H * 4);
+  pushPhase('norm2_prefill: RMS norm', 'norm2_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x_n'));
+
+  await updateProg('up-proj');
+  dispatch(device, piMM, [bX1, bWUp, bFfnUp, uniformU32(device, [TOK, H, F])], Math.ceil(F / 8), Math.ceil(TOK / 8));
+  back = await readbackBuffer(device, bFfnUp, TOK * F * 4);
+  pushPhase(`up_proj_prefill: hidden·W_up → ffn (real WGSL ${TOK}×${H}·${H}×${F})`, 'up_proj_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, F, 'ffn'));
+
+  await updateProg('gelu');
+  dispatch(device, piGelu, [bFfnUp, uniformU32(device, [TOK * F])], Math.ceil((TOK * F) / 64));
+  back = await readbackBuffer(device, bFfnUp, TOK * F * 4);
+  pushPhase('gelu_prefill: tanh-approx GeLU (real WGSL)', 'gelu_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, F, 'ffn'));
+
+  await updateProg('down-proj');
+  dispatch(device, piMM, [bFfnUp, bWDown, bFfnDown, uniformU32(device, [TOK, F, H])], Math.ceil(H / 8), Math.ceil(TOK / 8));
+  back = await readbackBuffer(device, bFfnDown, TOK * H * 4);
+  pushPhase('down_proj_prefill: ffn·W_down → hidden (real WGSL)', 'down_proj_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'ffn_o'));
+
+  await updateProg('ffn residual');
+  dispatch(device, piRes, [bX, bFfnDown, uniformU32(device, [TOK * H])], Math.ceil((TOK * H) / 64));
+  back = await readbackBuffer(device, bX, TOK * H * 4);
+  pushPhase('ffn_residual_prefill: x = x + ffn_o (real WGSL)', 'ffn_residual_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x'));
+
+  await updateProg('final norm');
+  dispatch(device, piNorm, [bX, bNFW, bX1, uniformU32(device, [TOK, H])], Math.ceil(TOK / 64));
+  back = await readbackBuffer(device, bX1, TOK * H * 4);
+  pushPhase('final_norm_prefill: RMS norm', 'final_norm_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, H, 'x_n'));
+
+  await updateProg('lm-head prefill');
+  dispatch(device, piMM, [bX1, bWLM, bLogits, uniformU32(device, [TOK, H, V])], Math.ceil(V / 8), Math.ceil(TOK / 8));
+  back = await readbackBuffer(device, bLogits, TOK * V * 4);
+  pushPhase(`lm_head_prefill: hidden·W_lm → logits (real WGSL ${TOK}×${H}·${H}×${V})`, 'lm_head_prefill', fabricFor(TOK), makeRowsPeDelta(back, TOK, V, 'logits'));
+
+  await updateProg('argmax sample (last token)');
+  // Sample from last token's logits row.
+  const enc = device.createCommandEncoder();
+  const lastRow = storageBuf(device, V * 4);
+  enc.copyBufferToBuffer(bLogits, (TOK - 1) * V * 4, lastRow, 0, V * 4);
+  device.queue.submit([enc.finish()]);
+  dispatch(device, piArgmax, [lastRow, bToken, uniformU32(device, [V])], 1);
+  const tokBytes = await readbackBuffer(device, bToken, 4);
+  const sampledPrefill = new Uint32Array(tokBytes.buffer)[0];
+  pushPhase(`sample_prefill: argmax(logits[last row]) = token ${sampledPrefill}`, 'sample_prefill', { width: 1, height: 1 }, [{ pe: [0, 0], buffers: { token: { mean: sampledPrefill, absMax: sampledPrefill, head: [sampledPrefill] } } }]);
+
+  // ----- decode chain -----
+  // Take the sampled token, embed it, walk through one more layer step, sample again.
+  await updateProg('decode: embed lookup');
+  const decIds = new Uint32Array([sampledPrefill]);
+  const bDecIds = buf(new Float32Array(decIds.buffer));
+  dispatch(device, piGather, [bEmbed, bDecIds, bDecX, uniformU32(device, [1, H, V])], Math.ceil(H / 8), 1);
+  back = await readbackBuffer(device, bDecX, H * 4);
+  pushPhase(`embed_decode: token ${sampledPrefill} → hidden (real WGSL gather)`, 'embed_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'x'));
+
+  await updateProg('decode: rmsnorm 1');
+  dispatch(device, piNorm, [bDecX, bN1W, bDecXn, uniformU32(device, [1, H])], 1);
+  back = await readbackBuffer(device, bDecXn, H * 4);
+  pushPhase('norm1_decode: RMS norm', 'norm1_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'x_n'));
+
+  await updateProg('decode: q-proj');
+  dispatch(device, piMM, [bDecXn, bWQ, bDecQ, uniformU32(device, [1, H, H])], Math.ceil(H / 8), 1);
+  back = await readbackBuffer(device, bDecQ, H * 4);
+  pushPhase('q_proj_decode: hidden·W_q (real WGSL 1×H matmul)', 'q_proj_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'q'));
+
+  await updateProg('decode: k/v concat into KV cache');
+  // Build extended K/V: [prefill K | decode K_t]; for visualization we just copy prefill K into extended buffer + new row.
+  const enc2 = device.createCommandEncoder();
+  enc2.copyBufferToBuffer(bK, 0, bDecK, 0, TOK * H * 4);
+  enc2.copyBufferToBuffer(bVv, 0, bDecV, 0, TOK * H * 4);
+  device.queue.submit([enc2.finish()]);
+  // Project decode K, V from decode hidden:
+  const tmpDecK = storageBuf(device, H * 4);
+  const tmpDecV = storageBuf(device, H * 4);
+  dispatch(device, piMM, [bDecXn, bWK, tmpDecK, uniformU32(device, [1, H, H])], Math.ceil(H / 8), 1);
+  dispatch(device, piMM, [bDecXn, bWV, tmpDecV, uniformU32(device, [1, H, H])], Math.ceil(H / 8), 1);
+  const enc3 = device.createCommandEncoder();
+  enc3.copyBufferToBuffer(tmpDecK, 0, bDecK, TOK * H * 4, H * 4);
+  enc3.copyBufferToBuffer(tmpDecV, 0, bDecV, TOK * H * 4, H * 4);
+  device.queue.submit([enc3.finish()]);
+  back = await readbackBuffer(device, tmpDecK, H * 4);
+  pushPhase(`kv_write_decode: append decode K, V to KV cache (now ${TOK + 1} rows)`, 'kv_write_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'kv_t'));
+
+  await updateProg('decode: attention over KV');
+  // Reuse attention shader: tokens=1 (query) but it iterates j up to i. Pass tokens=TOK+1 with q as 1-row by laying it at row TOK.
+  // Simpler path: build a length-1 q buffer alone and a custom kernel — but we'll reuse by making q occupy first row of a temp buffer of length TOK+1 mapped so that i=TOK reads decode q.
+  // Quick approach: dispatch attention with tokens=TOK+1 using a qExt buffer where row TOK = decode q and earlier rows = prefill q (already present in bQ, but cache+decode q only one row meaningful for argmax).
+  // Build qExt by copying bQ (TOK rows) and bDecQ (1 row) into a new buf:
+  const bQExt = storageBuf(device, (TOK + 1) * H * 4);
+  const bAttnExt = storageBuf(device, (TOK + 1) * H * 4);
+  const enc4 = device.createCommandEncoder();
+  enc4.copyBufferToBuffer(bQ, 0, bQExt, 0, TOK * H * 4);
+  enc4.copyBufferToBuffer(bDecQ, 0, bQExt, TOK * H * 4, H * 4);
+  device.queue.submit([enc4.finish()]);
+  const attnDecUni = uniformMixed(device, [{ kind: 'u32', value: TOK + 1 }, { kind: 'u32', value: HD }, { kind: 'f32', value: 1.0 / Math.sqrt(HD) }, { kind: 'u32', value: 0 }]);
+  dispatch(device, piAttn, [bQExt, bDecK, bDecV, bAttnExt, attnDecUni], Math.ceil((TOK + 1) / 64));
+  // Pull just last row as the decode attention output
+  const enc5 = device.createCommandEncoder();
+  enc5.copyBufferToBuffer(bAttnExt, TOK * H * 4, bDecAttnO, 0, H * 4);
+  device.queue.submit([enc5.finish()]);
+  back = await readbackBuffer(device, bDecAttnO, H * 4);
+  pushPhase(`attn_decode: causal attention over ${TOK + 1} tokens, returning last row (real WGSL)`, 'attn_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'attn'));
+
+  // o-proj decode
+  await updateProg('decode: o-proj');
+  const bDecAttnOProj = storageBuf(device, H * 4);
+  dispatch(device, piMM, [bDecAttnO, bWO, bDecAttnOProj, uniformU32(device, [1, H, H])], Math.ceil(H / 8), 1);
+  // residual: x = x + attn_o
+  dispatch(device, piRes, [bDecX, bDecAttnOProj, uniformU32(device, [H])], Math.ceil(H / 64));
+  back = await readbackBuffer(device, bDecX, H * 4);
+  pushPhase('attn_residual_decode: x = x + o-proj(attn) (real WGSL)', 'attn_residual_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'x'));
+
+  // norm2 + ffn + norm_f + lm-head + argmax for decode
+  await updateProg('decode: norm2 + ffn');
+  dispatch(device, piNorm, [bDecX, bN2W, bDecXn, uniformU32(device, [1, H])], 1);
+  const bDecFfnUp = storageBuf(device, F * 4);
+  const bDecFfnDown = storageBuf(device, H * 4);
+  dispatch(device, piMM, [bDecXn, bWUp, bDecFfnUp, uniformU32(device, [1, H, F])], Math.ceil(F / 8), 1);
+  dispatch(device, piGelu, [bDecFfnUp, uniformU32(device, [F])], Math.ceil(F / 64));
+  dispatch(device, piMM, [bDecFfnUp, bWDown, bDecFfnDown, uniformU32(device, [1, F, H])], Math.ceil(H / 8), 1);
+  dispatch(device, piRes, [bDecX, bDecFfnDown, uniformU32(device, [H])], Math.ceil(H / 64));
+  back = await readbackBuffer(device, bDecX, H * 4);
+  pushPhase('ffn_residual_decode: norm + up + gelu + down + residual (real WGSL chain)', 'ffn_residual_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'x'));
+
+  await updateProg('decode: final norm + lm-head');
+  dispatch(device, piNorm, [bDecX, bNFW, bDecXn, uniformU32(device, [1, H])], 1);
+  dispatch(device, piMM, [bDecXn, bWLM, bDecLogits, uniformU32(device, [1, H, V])], Math.ceil(V / 8), 1);
+  back = await readbackBuffer(device, bDecLogits, V * 4);
+  pushPhase(`lm_head_decode: hidden·W_lm → logits[${V}] (real WGSL)`, 'lm_head_decode', { width: 1, height: 1 }, makeSinglePeDelta(back, 'logits'));
+
+  await updateProg('decode: argmax sample');
+  dispatch(device, piArgmax, [bDecLogits, bDecToken, uniformU32(device, [V])], 1);
+  const decTokBytes = await readbackBuffer(device, bDecToken, 4);
+  const sampledDecode = new Uint32Array(decTokBytes.buffer)[0];
+  pushPhase(`sample_decode: argmax(decode logits) = token ${sampledDecode}`, 'sample_decode', { width: 1, height: 1 }, [{ pe: [0, 0], buffers: { token: { mean: sampledDecode, absMax: sampledDecode, head: [sampledDecode] } } }]);
+
+  pushPhase(`Done · prompt "${MINI_PROMPT}" → prefill last sample ${sampledPrefill} → decode sample ${sampledDecode}`, 'done', fabricFor(TOK), []);
+
+  // Cleanup transient buffers: just let GC collect (WebGPU buffers will be destroyed with closure).
+  liveEls.progress.textContent = `done · ${phases.length} phases · prefill=${sampledPrefill} decode=${sampledDecode}`;
+  liveEls.runBtn.disabled = false;
+
+  const trace = {
+    schemaVersion: 1,
+    artifactKind: 'csl_kernel_trace',
+    kernel: {
+      pattern: 'mini_transformer_live',
+      params: { tokens: TOK, hidden: H, head_dim: HD, ffn: F, vocab: V, decode_tokens: 1 },
+      fabric: fabricFor(TOK),
+      buffers: ['x', 'x_n', 'q', 'k', 'v', 'attn', 'attn_o', 'ffn', 'ffn_o', 'logits', 'token', 'kv_t'],
+      semantics: 'Live WebGPU mini-transformer prefill + 1-token decode. Every phase is a real GPU dispatch (gather, RMS norm, matmul, causal attention, residual add, GeLU, argmax). Random weights — token IDs are illustrative, not Doppler-bound.',
+    },
+    notWhat: 'Synthetic random weights. Arithmetic is the real WebGPU compute pipeline output, not Cerebras simfabric or hardware.',
+    demoMeta: {
+      schemaVersion: 1,
+      artifactKind: 'csl_kernel_demo_meta',
+      title: 'Mini-transformer live (real WebGPU)',
+      prompt: MINI_PROMPT,
+      promptIds: MINI_PROMPT_IDS,
+      promptTokens: TOK,
+      decodeTokens: 1,
+      vocab: V, hidden: H, headDim: HD, ffn: F,
+      sampledPrefillToken: sampledPrefill,
+      sampledDecodeToken: sampledDecode,
+      decodeLogitsArgmax: sampledDecode,
+      logitsAreFinite: true,
+      samplerNote: `live argmax → prefill=${sampledPrefill}, decode=${sampledDecode}`,
+      notes: 'Every phase is a real GPU dispatch through the WGSL compute pipelines defined in this viewer.',
+    },
+    phases,
+  };
+  loadTrace(trace);
+}
+
 let liveDevice = null;
 detectWebGpu().then((g) => { if (g) liveDevice = g.device; });
+
+const summaInputsEl = document.getElementById('summaInputs');
+liveEls.pattern.addEventListener('change', () => {
+  summaInputsEl.style.display = liveEls.pattern.value === 'summa' ? '' : 'none';
+});
 
 liveEls.runBtn.addEventListener('click', async () => {
   if (!liveDevice) {
@@ -1134,13 +1916,13 @@ liveEls.runBtn.addEventListener('click', async () => {
     return;
   }
   const pattern = liveEls.pattern.value;
-  if (pattern === 'summa') {
-    try { await runLiveSumma(liveDevice); }
-    catch (e) {
-      console.error(e);
-      liveEls.progress.textContent = `error: ${e.message}`;
-      liveEls.runBtn.disabled = false;
-    }
+  try {
+    if (pattern === 'summa') await runLiveSumma(liveDevice);
+    else if (pattern === 'mini') await runLiveMini(liveDevice);
+  } catch (e) {
+    console.error(e);
+    liveEls.progress.textContent = `error: ${e.message}`;
+    liveEls.runBtn.disabled = false;
   }
 });
 
