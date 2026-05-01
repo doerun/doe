@@ -27,6 +27,7 @@ function parseArgs(argv) {
     out: null,
     backend: 'auto',
     d2hOutDir: null,
+    kernelTrace: null,
   };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -42,6 +43,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--d2h-out-dir') {
       args.d2hOutDir = next;
+      i += 1;
+    } else if (arg === '--kernel-trace') {
+      args.kernelTrace = next;
       i += 1;
     } else {
       throw new Error(`unrecognized argument: ${arg}`);
@@ -180,9 +184,10 @@ function buildSymbolTable(input) {
   const symbols = new Map();
   for (const symbol of input.operationGraph.exportedSymbols) {
     if (symbol.kind === 'device_variable') {
+      const preallocBytes = Number.isInteger(symbol.byteLength) && symbol.byteLength > 0 ? symbol.byteLength : 0;
       symbols.set(symbol.name, {
         name: symbol.name,
-        bytes: new Uint8Array(0),
+        bytes: new Uint8Array(preallocBytes),
       });
     }
   }
@@ -280,10 +285,11 @@ function inferSemantic(pattern, source) {
     return 'fused_gemv_dequant';
   }
   if (
-    source.includes('key_cache') &&
-    source.includes('val_cache') &&
-    source.includes('key_proj') &&
-    source.includes('val_proj')
+    pattern === 'kv_write' ||
+    (source.includes('key_cache') &&
+     source.includes('val_cache') &&
+     source.includes('key_proj') &&
+     source.includes('val_proj'))
   ) {
     return 'kv_write';
   }
@@ -326,11 +332,25 @@ function inspectSources(input) {
   };
 }
 
-function targetForLaunch(input, inspection) {
+function targetForLaunch(input, inspection, operation) {
+  if (operation && operation.target) {
+    const found = inspection.compileTargets.find((t) => t.name === operation.target);
+    if (found) return found;
+  }
   const graphTargets = input.operationGraph.compile?.compileTargets ?? [];
   const targetName = graphTargets[0]?.name ?? input.compileTargets[0]?.name;
   return inspection.compileTargets.find((target) => target.name === targetName)
     ?? inspection.compileTargets[0];
+}
+
+function bindSymbols(symbols, bindings) {
+  if (!bindings) return symbols;
+  const resolve = (name) => bindings[name] || name;
+  return {
+    get: (name) => symbols.get(resolve(name)),
+    set: (name, value) => symbols.set(resolve(name), value),
+    has: (name) => symbols.has(resolve(name)),
+  };
 }
 
 function float32View(symbol, name) {
@@ -1489,6 +1509,83 @@ function stateReceipts(state) {
   }));
 }
 
+function kernelTraceFabric(target) {
+  const cp = target.compileParams || {};
+  if (Number.isInteger(cp.viz_fabric_width) && Number.isInteger(cp.viz_fabric_height)
+      && cp.viz_fabric_width > 0 && cp.viz_fabric_height > 0) {
+    return { width: cp.viz_fabric_width, height: cp.viz_fabric_height };
+  }
+  if (target.semantic === 'tiled_matmul') {
+    const P = integerParam(target, 'P');
+    return { width: P, height: P };
+  }
+  const width = Math.max(1, Number(cp.width ?? 1));
+  const height = Math.max(1, Number(cp.height ?? 1));
+  return { width, height };
+}
+
+function kernelTraceOutputSpec(target) {
+  const cp = target.compileParams || {};
+  const baseSpec = (() => {
+    switch (target.semantic) {
+      case 'tiled_matmul': return { name: 'c', elementsPerPe: integerParam(target, 'Mt') * integerParam(target, 'Nt') };
+      case 'fused_gemv_dequant': return { name: 'output', elementsPerPe: integerParam(target, 'out_dim_per_pe') };
+      case 'attention_tiled': return { name: 'output', elementsPerPe: integerParamAlias(target, 'q_len_per_pe', 'q_len') * integerParam(target, 'head_dim') };
+      case 'attention_decode': return { name: 'output', elementsPerPe: integerParam(target, 'head_dim') };
+      case 'rope': return { name: 'input', elementsPerPe: integerParam(target, 'head_dim', 1) };
+      case 'rms_norm':
+      case 'residual_add':
+      case 'gelu':
+      case 'elementwise_identity':
+      case 'gather':
+        return { name: 'output', elementsPerPe: 1 };
+      case 'kv_write': return { name: 'key_cache', elementsPerPe: integerParam(target, 'head_dim') };
+      case 'sample': return { name: 'tokens', elementsPerPe: 1 };
+      default: return { name: null, elementsPerPe: 1 };
+    }
+  })();
+  if (Number.isInteger(cp.viz_elements_per_pe) && cp.viz_elements_per_pe > 0) {
+    return { name: baseSpec.name, elementsPerPe: cp.viz_elements_per_pe };
+  }
+  return baseSpec;
+}
+
+function summarizeBufferRange(buf, base, len) {
+  if (!buf || len <= 0) return { mean: 0, absMax: 0, head: [] };
+  const view = new Float32Array(buf.buffer, buf.byteOffset + base * BYTES_PER_WORD, len);
+  let sum = 0;
+  let absMax = 0;
+  for (let i = 0; i < len; i += 1) {
+    const v = view[i];
+    if (Number.isFinite(v)) {
+      sum += v;
+      const a = Math.abs(v);
+      if (a > absMax) absMax = a;
+    }
+  }
+  const headLen = Math.min(4, len);
+  const head = Array.from(view.subarray(0, headLen)).map((v) => Number(v.toFixed(4)));
+  return { mean: Number((sum / Math.max(1, len)).toFixed(4)), absMax: Number(absMax.toFixed(4)), head };
+}
+
+function buildPeDelta(symbols, name, fabric, elementsPerPe) {
+  if (!name) return [];
+  const sym = symbols.get(name);
+  if (!sym) return [];
+  const out = [];
+  for (let y = 0; y < fabric.height; y += 1) {
+    for (let x = 0; x < fabric.width; x += 1) {
+      const pe = y * fabric.width + x;
+      const base = pe * elementsPerPe;
+      out.push({
+        pe: [x, y],
+        buffers: { [name]: summarizeBufferRange(sym.bytes, base, elementsPerPe) },
+      });
+    }
+  }
+  return out;
+}
+
 async function runEmulator(inputPath, input, requestedBackend, options = {}) {
   const inspection = inspectSources(input);
   const symbols = buildSymbolTable(input);
@@ -1498,6 +1595,8 @@ async function runEmulator(inputPath, input, requestedBackend, options = {}) {
   const unsupported = [];
   const shaderModules = [];
   const inputSha = sha256File(inputPath);
+  const kernelTracePhases = options.kernelTracePath ? [] : null;
+  let firstFabric = null;
 
   let executedBackend = requestedBackend;
   let webgpu = null;
@@ -1609,11 +1708,11 @@ async function runEmulator(inputPath, input, requestedBackend, options = {}) {
       continue;
     }
     if (operation.kind === 'launch') {
-      const target = targetForLaunch(input, inspection);
+      const target = targetForLaunch(input, inspection, operation);
       if (!target || target.semantic === 'unsupported') {
         pushBlocked(operation, blocker(
           'unsupported_csl_launch_semantic',
-          `unsupported launch ${operation.functionName}`,
+          `unsupported launch ${operation.functionName} (target=${operation.target ?? '?'})`,
           {
             operationId: operation.operationId,
             functionName: operation.functionName,
@@ -1622,18 +1721,20 @@ async function runEmulator(inputPath, input, requestedBackend, options = {}) {
         continue;
       }
       try {
+        const launchSymbols = bindSymbols(symbols, operation.symbolBindings);
         if (executedBackend === 'webgpu') {
           await executeLaunchWebGpu(
             webgpu.device,
             webgpuBuffers,
-            symbols,
+            launchSymbols,
             state,
             target,
             operation,
             shaderModules,
+            operation.symbolBindings,
           );
         } else if (executedBackend === 'cpu') {
-          executeLaunchCpu(symbols, target, operation, state);
+          executeLaunchCpu(launchSymbols, target, operation, state);
         } else {
           throw new Error('no executable backend selected');
         }
@@ -1645,6 +1746,26 @@ async function runEmulator(inputPath, input, requestedBackend, options = {}) {
           functionName: operation.functionName,
           semantic: target.semantic,
         });
+        if (kernelTracePhases) {
+          const fabric = kernelTraceFabric(target);
+          if (!firstFabric) firstFabric = fabric;
+          const outputSpec = kernelTraceOutputSpec(target);
+          const traceSymbolName = operation.symbolBindings?.[outputSpec.name] ?? outputSpec.name;
+          kernelTracePhases.push({
+            phase: target.semantic,
+            label: `launch ${operation.operationId} → ${target.name} (${target.semantic}, fabric ${fabric.width}×${fabric.height}, fn ${operation.functionName ?? 'compute'})`,
+            fabric,
+            peDelta: buildPeDelta(symbols, traceSymbolName, fabric, outputSpec.elementsPerPe),
+            flows: [],
+            launch: {
+              operationId: operation.operationId,
+              targetName: target.name,
+              functionName: operation.functionName,
+              outputSymbol: traceSymbolName,
+              elementsPerPe: outputSpec.elementsPerPe,
+            },
+          });
+        }
       } catch (err) {
         pushBlocked(operation, blocker(
           'launch_execution_failed',
@@ -1725,6 +1846,31 @@ async function runEmulator(inputPath, input, requestedBackend, options = {}) {
     resultSha256: RESULT_PLACEHOLDER_HASH,
   };
   receipt.resultSha256 = resultHash(receipt);
+  if (kernelTracePhases && options.kernelTracePath) {
+    const introPhase = {
+      phase: 'init',
+      label: `Emulator chain trace · ${kernelTracePhases.length} launches · backend=${executedBackend}`,
+      fabric: firstFabric || { width: 1, height: 1 },
+      peDelta: [],
+      flows: [],
+    };
+    const trace = {
+      schemaVersion: 1,
+      artifactKind: 'csl_kernel_trace',
+      kernel: {
+        pattern: 'emulator_chain',
+        params: { launches: kernelTracePhases.length, backend: executedBackend },
+        fabric: firstFabric || { width: 1, height: 1 },
+        buffers: ['output'],
+        semantics: 'Chain trace from a real csl-webgpu-emulator run. Each phase is one launch event with post-launch per-PE output summary at the kernel\'s active fabric rectangle. Source: bench/tools/run_csl_webgpu_emulator.mjs --kernel-trace.',
+      },
+      notWhat: 'Per-launch coarse-grain animation. Within-kernel broadcast/fmac/reduce steps are not decomposed; use bench/tools/build_csl_kernel_trace.mjs for fine-grained per-step traces.',
+      phases: [introPhase, ...kernelTracePhases],
+    };
+    mkdirSync(dirname(options.kernelTracePath), { recursive: true });
+    writeFileSync(options.kernelTracePath, JSON.stringify(trace), 'utf-8');
+    process.stderr.write(`wrote kernel trace: ${repoRelative(options.kernelTracePath)} (${trace.phases.length} phases)\n`);
+  }
   return receipt;
 }
 
@@ -1740,7 +1886,10 @@ async function main() {
     inputPath,
     input,
     args.backend,
-    { d2hOutDir: args.d2hOutDir },
+    {
+      d2hOutDir: args.d2hOutDir,
+      kernelTracePath: args.kernelTrace ? resolve(args.kernelTrace) : null,
+    },
   );
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf-8');

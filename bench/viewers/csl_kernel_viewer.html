@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSL kernel viewer</title>
+  <style>
+    :root {
+      --bg: #f6f3eb;
+      --paper: #fffdf8;
+      --ink: #1d1a16;
+      --muted: #6f675e;
+      --line: #d8cdbf;
+      --accent: #0f6d73;
+      --good: #1d7a43;
+      --bad: #b8472b;
+      --warn: #a96b00;
+      --chip: #efe4d4;
+      --tile-base: #f3e6c0;
+      --tile-outline: #b89c66;
+      --tile-active: #9a3da6;
+      --tile-active-glow: #c466d4;
+      --buf-a: #b8472b;
+      --buf-b: #0f6d73;
+      --buf-c: #9a3da6;
+      --buf-act: #b87333;
+      --buf-out: #9a3da6;
+      --buf-partial: #b87333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top right, #e9f4f0 0, transparent 28%),
+        radial-gradient(circle at bottom left, #f4ead7 0, transparent 26%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    main { max-width: 1280px; margin: 0 auto; padding: 24px 20px 64px; }
+    h1, h2, h3 { margin: 0 0 8px; line-height: 1.1; letter-spacing: -0.02em; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 20px; margin-top: 18px; }
+    h3 { font-size: 15px; margin-top: 12px; color: var(--muted); font-weight: 600; }
+    p { margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 12px 24px rgba(40, 28, 14, 0.06);
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .header-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .file-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button, label.btn {
+      font: inherit;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover, label.btn:hover { background: var(--chip); }
+    button.primary { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+    button.primary:hover { background: #0a575c; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    select, input[type=range] { font: inherit; }
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 14px;
+    }
+    @media (max-width: 980px) { .stage { grid-template-columns: 1fr; } }
+    .canvas-wrap {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 12px 24px rgba(40, 28, 14, 0.06);
+      position: relative;
+    }
+    canvas { display: block; width: 100%; height: auto; background: #fbf8f0; border-radius: 10px; }
+    .phase-label {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fbf8f0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 14px;
+      min-height: 40px;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .scrub {
+      flex: 1 1 200px;
+      min-width: 160px;
+    }
+    .scrub input { width: 100%; }
+    .speed-group { display: inline-flex; gap: 4px; }
+    .speed-group button { padding: 4px 10px; font-size: 13px; }
+    .speed-group button.active { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+    .step-btns { display: inline-flex; gap: 4px; }
+    .step-btns button { padding: 4px 10px; font-size: 13px; }
+    .play-btn { padding: 6px 18px; font-size: 16px; }
+    .meta { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px; }
+    .meta dt { color: var(--muted); }
+    .meta dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+    .pe-inspect dt { font-weight: 600; }
+    .pe-inspect .row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; font-variant-numeric: tabular-nums; font-size: 12px; }
+    .pe-inspect .row .k { color: var(--muted); }
+    .empty { color: var(--muted); font-style: italic; }
+    .info-line { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    code { font-family: "SF Mono", "Menlo", "Consolas", monospace; font-size: 12px; background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+    .trace-card { display: flex; flex-direction: column; }
+    .trace-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .trace-list {
+      max-height: 540px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbf8f0;
+      padding: 4px 0;
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 11px;
+      scroll-behavior: smooth;
+    }
+    .trace-row {
+      padding: 3px 8px;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 40px max-content 1fr;
+      gap: 6px;
+      align-items: center;
+      border-left: 3px solid transparent;
+      color: var(--ink);
+    }
+    .trace-row:hover { background: var(--chip); }
+    .trace-row.current {
+      background: #e9f4f0;
+      border-left-color: var(--accent);
+    }
+    .trace-row .idx { color: var(--muted); text-align: right; }
+    .trace-row .phase-tag {
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--chip);
+      color: var(--ink);
+      font-size: 10px;
+      letter-spacing: 0.02em;
+    }
+    .trace-row.current .phase-tag { background: var(--accent); color: var(--paper); }
+    .trace-row .ph-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--muted);
+    }
+    .trace-row.current .ph-label { color: var(--ink); }
+    .trace-json {
+      margin-top: 8px;
+      max-height: 240px;
+      overflow: auto;
+      background: #fbf8f0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 11px;
+      white-space: pre;
+      tab-size: 2;
+    }
+    .trace-toggle { font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+    .trace-toggle:hover { color: var(--ink); }
+  </style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="header-row">
+      <div>
+        <h1>CSL kernel viewer</h1>
+        <p class="muted" id="kernelTagline">No trace loaded. Pick a JSON produced by <code>bench/tools/build_csl_kernel_trace.mjs</code> or <code>run_csl_webgpu_emulator.mjs --kernel-trace</code>.</p>
+      </div>
+      <div class="file-controls">
+        <label class="btn">Load trace<input type="file" id="fileInput" accept=".json" style="display:none"></label>
+        <button id="demoSummaBtn">Demo: SUMMA P=4</button>
+        <button id="demoGemvBtn">Demo: GEMV launch-2</button>
+        <button id="demoFullBtn">Demo: full mini-transformer</button>
+      </div>
+    </div>
+    <div class="info-line" id="traceInfo"></div>
+    <div class="info-line" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+      <strong>Run live on this device (real WebGPU):</strong>
+      <span id="webgpuStatus" class="muted">checking…</span>
+      &nbsp;·&nbsp;
+      Pattern: <select id="livePattern"><option value="summa">SUMMA tiled_matmul</option></select>
+      P=<input id="liveP" type="number" min="2" max="12" value="4" style="width:50px">
+      Mt=<input id="liveMt" type="number" min="1" max="16" value="4" style="width:50px">
+      Kt=<input id="liveKt" type="number" min="1" max="16" value="4" style="width:50px">
+      Nt=<input id="liveNt" type="number" min="1" max="16" value="4" style="width:50px">
+      <button id="runLiveBtn" class="primary">Run live</button>
+      <span id="liveProgress" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="canvas-wrap">
+        <canvas id="grid"></canvas>
+        <div class="phase-label" id="phaseLabel">Load a trace to begin.</div>
+        <div class="controls">
+          <div class="step-btns">
+            <button id="firstBtn" title="First phase">⏮</button>
+            <button id="prevBtn" title="Previous phase">◀</button>
+          </div>
+          <button id="playBtn" class="primary play-btn" title="Play/Pause">▶</button>
+          <div class="step-btns">
+            <button id="nextBtn" title="Next phase">▶</button>
+            <button id="lastBtn" title="Last phase">⏭</button>
+          </div>
+          <div class="scrub">
+            <input type="range" id="scrub" min="0" max="0" value="0" step="1">
+            <div class="info-line"><span id="scrubLabel">0 / 0</span></div>
+          </div>
+          <div class="speed-group" id="speedGroup">
+            <button data-speed="0.25">0.25×</button>
+            <button data-speed="0.5">0.5×</button>
+            <button data-speed="1" class="active">1×</button>
+            <button data-speed="2">2×</button>
+            <button data-speed="4">4×</button>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <h3>Kernel</h3>
+        <dl class="meta" id="kernelMeta"></dl>
+      </div>
+      <div class="card">
+        <h3>Phase</h3>
+        <dl class="meta" id="phaseMeta"></dl>
+      </div>
+      <div class="card">
+        <h3>PE inspector</h3>
+        <div class="pe-inspect" id="peInspect">
+          <p class="empty">Click a PE on the grid to inspect.</p>
+        </div>
+      </div>
+      <div class="card trace-card">
+        <div class="trace-header">
+          <h3>Phase trace</h3>
+          <span class="trace-toggle" id="traceJsonToggle">expand current ▾</span>
+        </div>
+        <div class="trace-list" id="traceList"></div>
+        <pre class="trace-json" id="traceJson" style="display:none"></pre>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+const state = {
+  trace: null,
+  phaseIdx: 0,
+  playing: false,
+  speed: 1,
+  peStates: new Map(),
+  selected: null,
+  canvasSize: { w: 800, h: 600 },
+  flowAnimT: 0,
+  lastTickAt: 0,
+  msPerPhase: 1000,
+};
+
+const els = {
+  canvas: document.getElementById('grid'),
+  phaseLabel: document.getElementById('phaseLabel'),
+  scrub: document.getElementById('scrub'),
+  scrubLabel: document.getElementById('scrubLabel'),
+  playBtn: document.getElementById('playBtn'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  firstBtn: document.getElementById('firstBtn'),
+  lastBtn: document.getElementById('lastBtn'),
+  speedGroup: document.getElementById('speedGroup'),
+  fileInput: document.getElementById('fileInput'),
+  demoSumma: document.getElementById('demoSummaBtn'),
+  demoGemv: document.getElementById('demoGemvBtn'),
+  demoFull: document.getElementById('demoFullBtn'),
+  traceInfo: document.getElementById('traceInfo'),
+  kernelMeta: document.getElementById('kernelMeta'),
+  phaseMeta: document.getElementById('phaseMeta'),
+  peInspect: document.getElementById('peInspect'),
+  legend: document.getElementById('legend'),
+  kernelTagline: document.getElementById('kernelTagline'),
+  traceList: document.getElementById('traceList'),
+  traceJson: document.getElementById('traceJson'),
+  traceJsonToggle: document.getElementById('traceJsonToggle'),
+};
+
+const traceState = { jsonExpanded: false };
+
+const ctx = els.canvas.getContext('2d');
+
+function peKey(x, y) { return `${x},${y}`; }
+
+function loadTrace(trace) {
+  state.trace = trace;
+  state.phaseIdx = 0;
+  state.peStates = new Map();
+  state.selected = null;
+  applyPhasesUpTo(0);
+  els.scrub.min = '0';
+  els.scrub.max = String(trace.phases.length - 1);
+  els.scrub.value = '0';
+  renderKernelMeta();
+  renderLegend();
+  renderTraceInfo();
+  renderTraceList();
+  resizeCanvas();
+  redraw();
+}
+
+function renderTraceList() {
+  if (!state.trace) { els.traceList.innerHTML = ''; return; }
+  const rows = state.trace.phases.map((p, i) => {
+    const tag = p.phase || '';
+    const stepStr = p.step !== undefined ? `·${p.step}` : '';
+    const labelStr = (p.label || '').replace(/</g, '&lt;');
+    return `<div class="trace-row" data-idx="${i}"><span class="idx">${i}</span><span class="phase-tag">${tag}${stepStr}</span><span class="ph-label">${labelStr}</span></div>`;
+  });
+  els.traceList.innerHTML = rows.join('');
+  els.traceList.querySelectorAll('.trace-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      pause();
+      setPhase(Number(row.dataset.idx));
+    });
+  });
+}
+
+function updateTraceListHighlight() {
+  if (!state.trace) return;
+  const rows = els.traceList.querySelectorAll('.trace-row');
+  rows.forEach((r) => r.classList.remove('current'));
+  const cur = rows[state.phaseIdx];
+  if (cur) {
+    cur.classList.add('current');
+    const listRect = els.traceList.getBoundingClientRect();
+    const rowRect = cur.getBoundingClientRect();
+    if (rowRect.top < listRect.top || rowRect.bottom > listRect.bottom) {
+      const offset = cur.offsetTop - els.traceList.clientHeight / 2 + cur.clientHeight / 2;
+      els.traceList.scrollTop = Math.max(0, offset);
+    }
+  }
+}
+
+function renderTraceJson() {
+  if (!traceState.jsonExpanded || !state.trace) {
+    els.traceJson.style.display = 'none';
+    return;
+  }
+  const phase = state.trace.phases[state.phaseIdx];
+  if (!phase) { els.traceJson.textContent = ''; return; }
+  els.traceJson.style.display = 'block';
+  const compact = compactPhaseForDisplay(phase);
+  els.traceJson.textContent = JSON.stringify(compact, null, 2);
+}
+
+function compactPhaseForDisplay(phase) {
+  const out = { phase: phase.phase };
+  if (phase.step !== undefined) out.step = phase.step;
+  if (phase.active) out.active = phase.active;
+  out.label = phase.label;
+  if (phase.flows && phase.flows.length) out.flows = phase.flows;
+  if (phase.peDelta) {
+    if (phase.peDelta.length <= 8) {
+      out.peDelta = phase.peDelta;
+    } else {
+      out.peDelta = [...phase.peDelta.slice(0, 6), `…${phase.peDelta.length - 6} more entries`];
+    }
+  }
+  return out;
+}
+
+function applyPhasesUpTo(targetIdx) {
+  state.peStates = new Map();
+  for (let i = 0; i <= targetIdx; i += 1) {
+    const phase = state.trace.phases[i];
+    if (!phase || !phase.peDelta) continue;
+    for (const entry of phase.peDelta) {
+      const key = peKey(entry.pe[0], entry.pe[1]);
+      const existing = state.peStates.get(key) || { pe: entry.pe, buffers: {} };
+      Object.assign(existing.buffers, entry.buffers);
+      state.peStates.set(key, existing);
+    }
+  }
+}
+
+function setPhase(idx) {
+  if (!state.trace) return;
+  const clamped = Math.max(0, Math.min(state.trace.phases.length - 1, idx));
+  if (clamped < state.phaseIdx) {
+    applyPhasesUpTo(clamped);
+  } else {
+    for (let i = state.phaseIdx + 1; i <= clamped; i += 1) {
+      const phase = state.trace.phases[i];
+      if (!phase || !phase.peDelta) continue;
+      for (const entry of phase.peDelta) {
+        const key = peKey(entry.pe[0], entry.pe[1]);
+        const existing = state.peStates.get(key) || { pe: entry.pe, buffers: {} };
+        Object.assign(existing.buffers, entry.buffers);
+        state.peStates.set(key, existing);
+      }
+    }
+  }
+  state.phaseIdx = clamped;
+  els.scrub.value = String(clamped);
+  const phase = state.trace.phases[clamped];
+  const fab = (phase && phase.fabric) || state.trace.kernel.fabric;
+  if (state.lastFabricKey !== `${fab.width}x${fab.height}`) {
+    state.lastFabricKey = `${fab.width}x${fab.height}`;
+    resizeCanvas();
+  }
+  redraw();
+}
+
+function play() {
+  if (!state.trace) return;
+  state.playing = true;
+  state.lastTickAt = performance.now();
+  els.playBtn.textContent = '❚❚';
+}
+function pause() {
+  state.playing = false;
+  els.playBtn.textContent = '▶';
+}
+function togglePlay() { state.playing ? pause() : play(); }
+
+function setSpeed(s) {
+  state.speed = s;
+  state.msPerPhase = 1000 / s;
+  for (const btn of els.speedGroup.querySelectorAll('button')) {
+    btn.classList.toggle('active', Number(btn.dataset.speed) === s);
+  }
+}
+
+function tick(now) {
+  state.flowAnimT = (now / 1000) % 1e6;
+  if (state.playing && state.trace) {
+    const dt = now - state.lastTickAt;
+    if (dt >= state.msPerPhase) {
+      state.lastTickAt = now;
+      const next = state.phaseIdx + 1;
+      if (next >= state.trace.phases.length) {
+        pause();
+      } else {
+        setPhase(next);
+      }
+    }
+  }
+  redraw();
+  requestAnimationFrame(tick);
+}
+
+function resizeCanvas() {
+  const wrap = els.canvas.parentElement;
+  const w = Math.max(320, wrap.clientWidth - 28);
+  let h = Math.round(w * 0.62);
+  if (state.trace) {
+    const fab = currentFabric();
+    const aspect = fab.width / fab.height;
+    h = Math.round(w / Math.max(0.5, Math.min(2.5, aspect)));
+  }
+  state.canvasSize = { w, h };
+  const dpr = window.devicePixelRatio || 1;
+  els.canvas.style.width = `${w}px`;
+  els.canvas.style.height = `${h}px`;
+  els.canvas.width = Math.round(w * dpr);
+  els.canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function bufferColor(name) {
+  const map = { a: 'var(--buf-a)', b: 'var(--buf-b)', c: 'var(--buf-c)', activation: 'var(--buf-act)', output: 'var(--buf-out)', partial: 'var(--buf-partial)' };
+  return getCSSVar(map[name] || 'var(--accent)');
+}
+
+function getCSSVar(v) {
+  if (!v.startsWith('var(')) return v;
+  const name = v.slice(4, -1);
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#000';
+}
+
+function currentFabric() {
+  const phase = state.trace?.phases?.[state.phaseIdx];
+  return (phase && phase.fabric) || state.trace?.kernel?.fabric || { width: 1, height: 1 };
+}
+
+function fabricGeom() {
+  const fab = currentFabric();
+  const padding = 36;
+  const cellW = (state.canvasSize.w - padding * 2) / fab.width;
+  const cellH = (state.canvasSize.h - padding * 2) / fab.height;
+  const cell = Math.min(cellW, cellH);
+  const gridW = cell * fab.width;
+  const gridH = cell * fab.height;
+  const ox = (state.canvasSize.w - gridW) / 2;
+  const oy = (state.canvasSize.h - gridH) / 2;
+  return { ox, oy, cell, fab };
+}
+
+function peCenter(geom, x, y) {
+  return { cx: geom.ox + x * geom.cell + geom.cell / 2, cy: geom.oy + y * geom.cell + geom.cell / 2 };
+}
+
+function colorIntensity(buffer) {
+  if (!buffer) return 0;
+  const m = Math.min(1, Math.abs(buffer.absMax || 0) / 6);
+  return m;
+}
+
+function lerpColor(c1, c2, t) {
+  const p1 = parseHex(c1);
+  const p2 = parseHex(c2);
+  return `rgb(${Math.round(p1[0] + (p2[0] - p1[0]) * t)},${Math.round(p1[1] + (p2[1] - p1[1]) * t)},${Math.round(p1[2] + (p2[2] - p1[2]) * t)})`;
+}
+
+function parseHex(c) {
+  if (c.startsWith('rgb')) {
+    return c.match(/\d+/g).map(Number);
+  }
+  const m = c.replace('#', '');
+  return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)];
+}
+
+function pickPrimaryBufferName() {
+  const phase = state.trace?.phases?.[state.phaseIdx];
+  const seen = new Set();
+  if (phase && phase.peDelta) {
+    for (const e of phase.peDelta) for (const k of Object.keys(e.buffers || {})) seen.add(k);
+  }
+  const buffers = state.trace.kernel.buffers || [];
+  const candidates = ['c', 'output', 'partial', 'tokens', 'key_cache'];
+  for (const c of candidates) if (seen.has(c)) return c;
+  for (const c of candidates) if (buffers.includes(c)) return c;
+  return [...seen][0] || buffers[buffers.length - 1] || null;
+}
+
+function drawGrid(geom) {
+  const phase = state.trace.phases[state.phaseIdx];
+  const accumulatorName = pickPrimaryBufferName();
+  const baseFill = getCSSVar('var(--tile-base)');
+  const activityColor = getCSSVar('var(--tile-active)');
+  const activityGlow = getCSSVar('var(--tile-active-glow)');
+  const outlineColor = getCSSVar('var(--tile-outline)');
+
+  for (let y = 0; y < geom.fab.height; y += 1) {
+    for (let x = 0; x < geom.fab.width; x += 1) {
+      const peState = state.peStates.get(peKey(x, y));
+      const acc = peState && peState.buffers && peState.buffers[accumulatorName];
+      const intensity = colorIntensity(acc);
+      const fill = intensity > 0 ? lerpColor(baseFill, activityColor, Math.min(1, intensity * 1.2)) : baseFill;
+      const px = geom.ox + x * geom.cell + 1;
+      const py = geom.oy + y * geom.cell + 1;
+      const w = geom.cell - 2;
+      const h = geom.cell - 2;
+      const r = Math.min(4, geom.cell * 0.15);
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      roundRect(ctx, px, py, w, h, r);
+      ctx.fill();
+      ctx.strokeStyle = outlineColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      const isActive = phase && phase.active && phase.active.x === x && phase.active.y === y;
+      const isSelected = state.selected && state.selected.x === x && state.selected.y === y;
+      if (isActive) {
+        ctx.strokeStyle = activityColor;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = activityGlow;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        roundRect(ctx, px, py, w, h, r);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      if (isSelected) {
+        ctx.strokeStyle = '#1d1a16';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        roundRect(ctx, px, py, w, h, r);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
+  ctx.fillStyle = getCSSVar('var(--muted)');
+  ctx.font = '11px "SF Mono", monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  if (geom.cell >= 18) {
+    for (let x = 0; x < geom.fab.width; x += 1) {
+      ctx.fillText(String(x), geom.ox + x * geom.cell + geom.cell / 2, geom.oy - 14);
+    }
+    ctx.textAlign = 'right';
+    for (let y = 0; y < geom.fab.height; y += 1) {
+      ctx.fillText(String(y), geom.ox - 8, geom.oy + y * geom.cell + geom.cell / 2);
+    }
+  }
+}
+
+function drawFlows(geom) {
+  const phase = state.trace.phases[state.phaseIdx];
+  if (!phase || !phase.flows || !phase.flows.length) return;
+  const dashOffset = -((state.flowAnimT * 60) % 12);
+  for (const flow of phase.flows) {
+    const a = peCenter(geom, flow.from[0], flow.from[1]);
+    const b = peCenter(geom, flow.to[0], flow.to[1]);
+    const color = bufferColor(flow.buffer);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.lineDashOffset = dashOffset;
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(a.cx, a.cy);
+    ctx.lineTo(b.cx, b.cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+    ctx.globalAlpha = 1;
+    drawArrowhead(ctx, b.cx, b.cy, Math.atan2(b.cy - a.cy, b.cx - a.cx), color);
+  }
+}
+
+function drawArrowhead(ctx, x, y, angle, color) {
+  const size = 6;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - size * Math.cos(angle - 0.4), y - size * Math.sin(angle - 0.4));
+  ctx.lineTo(x - size * Math.cos(angle + 0.4), y - size * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+}
+
+function redraw() {
+  ctx.fillStyle = '#fbf8f0';
+  ctx.fillRect(0, 0, state.canvasSize.w, state.canvasSize.h);
+  if (!state.trace) {
+    ctx.fillStyle = getCSSVar('var(--muted)');
+    ctx.font = '14px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Load a trace to begin.', state.canvasSize.w / 2, state.canvasSize.h / 2);
+    return;
+  }
+  const geom = fabricGeom();
+  drawGrid(geom);
+  drawFlows(geom);
+  renderPhaseLabel();
+  renderPhaseMeta();
+  renderInspect();
+  updateTraceListHighlight();
+  renderTraceJson();
+  els.scrubLabel.textContent = `${state.phaseIdx + 1} / ${state.trace.phases.length}`;
+}
+
+function renderPhaseLabel() {
+  const phase = state.trace.phases[state.phaseIdx];
+  els.phaseLabel.textContent = phase ? phase.label : '';
+}
+
+function renderKernelMeta() {
+  const k = state.trace.kernel;
+  const params = Object.entries(k.params || {}).map(([n, v]) => `<dt>${n}</dt><dd>${v}</dd>`).join('');
+  els.kernelMeta.innerHTML = `
+    <dt>pattern</dt><dd>${k.pattern}</dd>
+    <dt>fabric</dt><dd>${k.fabric.width} × ${k.fabric.height} = ${k.fabric.width * k.fabric.height} PEs</dd>
+    ${params}
+  `;
+  els.kernelTagline.innerHTML = k.semantics ? `<span class="muted">${k.semantics}</span>` : '';
+}
+
+function renderPhaseMeta() {
+  const phase = state.trace.phases[state.phaseIdx];
+  if (!phase) { els.phaseMeta.innerHTML = ''; return; }
+  let html = `<dt>phase</dt><dd>${phase.phase}</dd>`;
+  if (phase.step !== undefined) html += `<dt>step</dt><dd>${phase.step}</dd>`;
+  if (phase.active) html += `<dt>active</dt><dd>(${phase.active.x}, ${phase.active.y})</dd>`;
+  if (phase.flows && phase.flows.length) html += `<dt>flows</dt><dd>${phase.flows.length}</dd>`;
+  if (phase.peDelta) html += `<dt>peDelta</dt><dd>${phase.peDelta.length}</dd>`;
+  els.phaseMeta.innerHTML = html;
+}
+
+function renderInspect() {
+  if (!state.selected) {
+    els.peInspect.innerHTML = '<p class="empty">Click a PE on the grid to inspect.</p>';
+    return;
+  }
+  const key = peKey(state.selected.x, state.selected.y);
+  const peState = state.peStates.get(key);
+  const header = `<dt>PE</dt><dd>(${state.selected.x}, ${state.selected.y})</dd>`;
+  if (!peState || !peState.buffers) {
+    els.peInspect.innerHTML = `<dl class="meta">${header}</dl><p class="empty">No state yet at this phase.</p>`;
+    return;
+  }
+  const rows = [];
+  for (const [name, buf] of Object.entries(peState.buffers)) {
+    rows.push(`<div class="row"><span class="k">${name}.absMax</span><span>${buf.absMax}</span></div>`);
+    rows.push(`<div class="row"><span class="k">${name}.mean</span><span>${buf.mean}</span></div>`);
+    if (buf.head && buf.head.length) {
+      rows.push(`<div class="row"><span class="k">${name}.head</span><span>[${buf.head.map((v) => v.toFixed(3)).join(', ')}]</span></div>`);
+    }
+  }
+  els.peInspect.innerHTML = `<dl class="meta">${header}</dl>${rows.join('')}`;
+}
+
+function renderLegend() {
+  const buffers = state.trace.kernel.buffers || [];
+  const items = buffers.map((b) => `<span><span class="swatch" style="background:${bufferColor(b)}"></span>${b}</span>`);
+  items.push(`<span><span class="swatch" style="background:${getCSSVar('var(--accent)')}"></span>active PE</span>`);
+  els.legend.innerHTML = items.join('');
+}
+
+function renderTraceInfo() {
+  const k = state.trace.kernel;
+  const phaseCount = state.trace.phases.length;
+  els.traceInfo.textContent = `${phaseCount} phases · ${k.fabric.width}×${k.fabric.height} fabric · pattern ${k.pattern}` + (state.trace.notWhat ? ` · ${state.trace.notWhat}` : '');
+}
+
+els.canvas.addEventListener('click', (ev) => {
+  if (!state.trace) return;
+  const rect = els.canvas.getBoundingClientRect();
+  const cx = ev.clientX - rect.left;
+  const cy = ev.clientY - rect.top;
+  const geom = fabricGeom();
+  if (cx < geom.ox || cy < geom.oy || cx > geom.ox + geom.cell * geom.fab.width || cy > geom.oy + geom.cell * geom.fab.height) {
+    state.selected = null;
+  } else {
+    const x = Math.floor((cx - geom.ox) / geom.cell);
+    const y = Math.floor((cy - geom.oy) / geom.cell);
+    state.selected = { x, y };
+  }
+  redraw();
+});
+
+els.scrub.addEventListener('input', (ev) => {
+  setPhase(Number(ev.target.value));
+});
+els.playBtn.addEventListener('click', togglePlay);
+els.firstBtn.addEventListener('click', () => { pause(); setPhase(0); });
+els.prevBtn.addEventListener('click', () => { pause(); setPhase(state.phaseIdx - 1); });
+els.nextBtn.addEventListener('click', () => { pause(); setPhase(state.phaseIdx + 1); });
+els.lastBtn.addEventListener('click', () => { pause(); if (state.trace) setPhase(state.trace.phases.length - 1); });
+els.speedGroup.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-speed]');
+  if (btn) setSpeed(Number(btn.dataset.speed));
+});
+els.fileInput.addEventListener('change', (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { loadTrace(JSON.parse(r.result)); }
+    catch (e) { alert('failed to parse trace: ' + e.message); }
+  };
+  r.readAsText(f);
+});
+
+document.addEventListener('keydown', (ev) => {
+  if (!state.trace) return;
+  if (ev.key === ' ') { ev.preventDefault(); togglePlay(); }
+  else if (ev.key === 'ArrowLeft') { pause(); setPhase(state.phaseIdx - 1); }
+  else if (ev.key === 'ArrowRight') { pause(); setPhase(state.phaseIdx + 1); }
+  else if (ev.key === 'Home') { pause(); setPhase(0); }
+  else if (ev.key === 'End') { pause(); setPhase(state.trace.phases.length - 1); }
+});
+
+window.addEventListener('resize', () => { resizeCanvas(); redraw(); });
+
+els.traceJsonToggle.addEventListener('click', () => {
+  traceState.jsonExpanded = !traceState.jsonExpanded;
+  els.traceJsonToggle.textContent = traceState.jsonExpanded ? 'collapse current ▴' : 'expand current ▾';
+  renderTraceJson();
+});
+
+async function loadDemo(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadTrace(await res.json());
+  } catch (e) {
+    alert(`Demo trace not found at ${url}\n\nGenerate it first:\n  node bench/tools/build_csl_kernel_trace.mjs --kernel summa_tiled_matmul --param P=4 --param Mt=4 --param Kt=4 --param Nt=4 --out bench/out/scratch/csl-kernel-traces/summa-p4.json\n  node bench/tools/build_csl_kernel_trace.mjs --kernel fused_gemv_dequant --param width=11 --param height=16 --param out_dim_per_pe=8 --param in_dim_per_pe=32 --param num_blocks_per_row=1 --out bench/out/scratch/csl-kernel-traces/gemv-launch2.json\n\nOr use "Load trace" to pick a JSON.`);
+  }
+}
+
+els.demoSumma.addEventListener('click', () => loadDemo('../out/scratch/csl-kernel-traces/summa-p4.json'));
+els.demoGemv.addEventListener('click', () => loadDemo('../out/scratch/csl-kernel-traces/gemv-launch2.json'));
+els.demoFull.addEventListener('click', () => loadDemo('../out/scratch/csl-kernel-traces/full-model-demo.json'));
+
+const liveEls = {
+  webgpuStatus: document.getElementById('webgpuStatus'),
+  pattern: document.getElementById('livePattern'),
+  P: document.getElementById('liveP'),
+  Mt: document.getElementById('liveMt'),
+  Kt: document.getElementById('liveKt'),
+  Nt: document.getElementById('liveNt'),
+  runBtn: document.getElementById('runLiveBtn'),
+  progress: document.getElementById('liveProgress'),
+};
+
+async function detectWebGpu() {
+  if (!navigator.gpu) {
+    liveEls.webgpuStatus.textContent = 'unavailable (no navigator.gpu)';
+    liveEls.webgpuStatus.style.color = 'var(--bad)';
+    liveEls.runBtn.disabled = true;
+    return null;
+  }
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      liveEls.webgpuStatus.textContent = 'no adapter available';
+      liveEls.webgpuStatus.style.color = 'var(--bad)';
+      liveEls.runBtn.disabled = true;
+      return null;
+    }
+    const device = await adapter.requestDevice();
+    const info = adapter.info || {};
+    const tag = info.vendor || info.architecture || 'webgpu';
+    liveEls.webgpuStatus.textContent = `ready · ${tag}`;
+    liveEls.webgpuStatus.style.color = 'var(--good)';
+    return { adapter, device };
+  } catch (e) {
+    liveEls.webgpuStatus.textContent = `error: ${e.message}`;
+    liveEls.webgpuStatus.style.color = 'var(--bad)';
+    liveEls.runBtn.disabled = true;
+    return null;
+  }
+}
+
+const SUMMA_FMAC_WGSL = `
+struct Params { P: u32, Mt: u32, Kt: u32, Nt: u32, };
+
+@group(0) @binding(0) var<storage, read> a_recv: array<f32>;
+@group(0) @binding(1) var<storage, read> b_recv: array<f32>;
+@group(0) @binding(2) var<storage, read_write> c: array<f32>;
+@group(0) @binding(3) var<uniform> p: Params;
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let px = gid.x;
+  let py = gid.y;
+  if (px >= p.P || py >= p.P) { return; }
+  let dst_pe = py * p.P + px;
+  let c_tile = p.Mt * p.Nt;
+  let a_tile = p.Mt * p.Kt;
+  let b_tile = p.Kt * p.Nt;
+  let c_base = dst_pe * c_tile;
+  let a_base = dst_pe * a_tile;
+  let b_base = dst_pe * b_tile;
+  for (var i: u32 = 0u; i < p.Mt; i = i + 1u) {
+    for (var j: u32 = 0u; j < p.Nt; j = j + 1u) {
+      var acc = c[c_base + i * p.Nt + j];
+      for (var k: u32 = 0u; k < p.Kt; k = k + 1u) {
+        acc = acc + a_recv[a_base + i * p.Kt + k] * b_recv[b_base + j * p.Kt + k];
+      }
+      c[c_base + i * p.Nt + j] = acc;
+    }
+  }
+}
+`;
+
+function summarizeRange(view, base, len) {
+  if (len <= 0) return { mean: 0, absMax: 0, head: [] };
+  let sum = 0;
+  let absMax = 0;
+  for (let i = 0; i < len; i += 1) {
+    const v = view[base + i];
+    if (Number.isFinite(v)) {
+      sum += v;
+      const a = Math.abs(v);
+      if (a > absMax) absMax = a;
+    }
+  }
+  const head = Array.from(view.subarray(base, base + Math.min(4, len))).map((v) => Number(v.toFixed(4)));
+  return { mean: Number((sum / len).toFixed(4)), absMax: Number(absMax.toFixed(4)), head };
+}
+
+async function readbackBuffer(device, srcBuffer, sizeBytes) {
+  const staging = device.createBuffer({ size: sizeBytes, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+  const enc = device.createCommandEncoder();
+  enc.copyBufferToBuffer(srcBuffer, 0, staging, 0, sizeBytes);
+  device.queue.submit([enc.finish()]);
+  await staging.mapAsync(GPUMapMode.READ);
+  const arr = new Float32Array(staging.getMappedRange().slice(0));
+  staging.unmap();
+  staging.destroy();
+  return arr;
+}
+
+async function runLiveSumma(device) {
+  const P = Math.max(2, Math.min(12, Number(liveEls.P.value)));
+  const Mt = Math.max(1, Math.min(16, Number(liveEls.Mt.value)));
+  const Kt = Math.max(1, Math.min(16, Number(liveEls.Kt.value)));
+  const Nt = Math.max(1, Math.min(16, Number(liveEls.Nt.value)));
+  liveEls.runBtn.disabled = true;
+  liveEls.progress.textContent = 'preparing buffers…';
+
+  const peCount = P * P;
+  const aTile = Mt * Kt;
+  const bTile = Kt * Nt;
+  const cTile = Mt * Nt;
+  const aBytes = peCount * aTile * 4;
+  const bBytes = peCount * bTile * 4;
+  const cBytes = peCount * cTile * 4;
+
+  let s = 0xa17ec0;
+  const rand = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return ((s & 0xffff) / 0xffff) - 0.5; };
+  const A = new Float32Array(peCount * aTile);
+  const B = new Float32Array(peCount * bTile);
+  const C = new Float32Array(peCount * cTile);
+  for (let i = 0; i < A.length; i += 1) A[i] = rand();
+  for (let i = 0; i < B.length; i += 1) B[i] = rand();
+
+  const aBuf = device.createBuffer({ size: aBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
+  const bBuf = device.createBuffer({ size: bBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
+  const aRecv = device.createBuffer({ size: aBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  const bRecv = device.createBuffer({ size: bBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  const cBuf = device.createBuffer({ size: cBytes, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
+  const paramsBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  device.queue.writeBuffer(aBuf, 0, A);
+  device.queue.writeBuffer(bBuf, 0, B);
+  device.queue.writeBuffer(cBuf, 0, C);
+  device.queue.writeBuffer(paramsBuf, 0, new Uint32Array([P, Mt, Kt, Nt]));
+
+  const module = device.createShaderModule({ code: SUMMA_FMAC_WGSL });
+  const pipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute: { module, entryPoint: 'main' },
+  });
+  const bindGroup = device.createBindGroup({
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: aRecv } },
+      { binding: 1, resource: { buffer: bRecv } },
+      { binding: 2, resource: { buffer: cBuf } },
+      { binding: 3, resource: { buffer: paramsBuf } },
+    ],
+  });
+
+  const peSummary = (buf, pe, tile) => summarizeRange(buf, pe * tile, tile);
+  const fullPeDelta = (buf, tile, name) => {
+    const out = [];
+    for (let py = 0; py < P; py += 1) {
+      for (let px = 0; px < P; px += 1) {
+        out.push({ pe: [px, py], buffers: { [name]: peSummary(buf, py * P + px, tile) } });
+      }
+    }
+    return out;
+  };
+
+  const phases = [];
+  const allInit = [];
+  for (let py = 0; py < P; py += 1) {
+    for (let px = 0; px < P; px += 1) {
+      const pe = py * P + px;
+      allInit.push({
+        pe: [px, py],
+        buffers: {
+          a: peSummary(A, pe, aTile),
+          b: peSummary(B, pe, bTile),
+          c: peSummary(C, pe, cTile),
+        },
+      });
+    }
+  }
+  phases.push({
+    phase: 'init',
+    label: `WebGPU live: A and B staged on ${P * P} PEs; C is zero · ${aBytes + bBytes + cBytes} bytes total`,
+    fabric: { width: P, height: P },
+    peDelta: allInit,
+    flows: [],
+  });
+
+  for (let step = 0; step < P; step += 1) {
+    liveEls.progress.textContent = `step ${step + 1}/${P} · broadcast A`;
+    await new Promise((r) => setTimeout(r, 0));
+    const enc1 = device.createCommandEncoder();
+    for (let py = 0; py < P; py += 1) {
+      const srcOffset = (py * P + step) * aTile * 4;
+      for (let px = 0; px < P; px += 1) {
+        const dstOffset = (py * P + px) * aTile * 4;
+        enc1.copyBufferToBuffer(aBuf, srcOffset, aRecv, dstOffset, aTile * 4);
+      }
+    }
+    device.queue.submit([enc1.finish()]);
+    const flowsA = [];
+    for (let py = 0; py < P; py += 1) {
+      for (let px = 0; px < P; px += 1) {
+        if (px !== step) flowsA.push({ from: [step, py], to: [px, py], buffer: 'a' });
+      }
+    }
+    phases.push({
+      phase: 'broadcast_a',
+      step,
+      label: `Step ${step}/${P - 1}: A column ${step} copied to A_recv on every PE in each row (real GPU copyBufferToBuffer)`,
+      fabric: { width: P, height: P },
+      peDelta: [],
+      flows: flowsA,
+    });
+
+    liveEls.progress.textContent = `step ${step + 1}/${P} · broadcast B`;
+    await new Promise((r) => setTimeout(r, 0));
+    const enc2 = device.createCommandEncoder();
+    for (let px = 0; px < P; px += 1) {
+      const srcOffset = (step * P + px) * bTile * 4;
+      for (let py = 0; py < P; py += 1) {
+        const dstOffset = (py * P + px) * bTile * 4;
+        enc2.copyBufferToBuffer(bBuf, srcOffset, bRecv, dstOffset, bTile * 4);
+      }
+    }
+    device.queue.submit([enc2.finish()]);
+    const flowsB = [];
+    for (let py = 0; py < P; py += 1) {
+      for (let px = 0; px < P; px += 1) {
+        if (py !== step) flowsB.push({ from: [px, step], to: [px, py], buffer: 'b' });
+      }
+    }
+    phases.push({
+      phase: 'broadcast_b',
+      step,
+      label: `Step ${step}/${P - 1}: B row ${step} copied to B_recv on every PE in each column (real GPU copyBufferToBuffer)`,
+      fabric: { width: P, height: P },
+      peDelta: [],
+      flows: flowsB,
+    });
+
+    liveEls.progress.textContent = `step ${step + 1}/${P} · WGSL FMAC dispatch`;
+    await new Promise((r) => setTimeout(r, 0));
+    const enc3 = device.createCommandEncoder();
+    const pass = enc3.beginComputePass();
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.dispatchWorkgroups(Math.ceil(P / 8), Math.ceil(P / 8), 1);
+    pass.end();
+    device.queue.submit([enc3.finish()]);
+    const cBack = await readbackBuffer(device, cBuf, cBytes);
+    phases.push({
+      phase: 'fmac',
+      step,
+      label: `Step ${step}/${P - 1}: WGSL compute pass — each PE FMACs A_recv·B_recv into local C (readback after dispatch)`,
+      fabric: { width: P, height: P },
+      peDelta: fullPeDelta(cBack, cTile, 'c'),
+      flows: [],
+    });
+  }
+  phases.push({ phase: 'done', label: `WebGPU live SUMMA complete; ${P} steps × {broadcast_a, broadcast_b, fmac} dispatched`, fabric: { width: P, height: P }, peDelta: [], flows: [] });
+
+  aBuf.destroy(); bBuf.destroy(); aRecv.destroy(); bRecv.destroy(); cBuf.destroy(); paramsBuf.destroy();
+
+  liveEls.progress.textContent = `done · ${phases.length} phases generated`;
+  liveEls.runBtn.disabled = false;
+
+  const trace = {
+    schemaVersion: 1,
+    artifactKind: 'csl_kernel_trace',
+    kernel: {
+      pattern: 'summa_tiled_matmul',
+      params: { P, Mt, Kt, Nt },
+      fabric: { width: P, height: P },
+      buffers: ['a', 'b', 'c'],
+      semantics: 'Live WebGPU SUMMA: tile-along-K with explicit broadcast (real GPU copyBufferToBuffer) and FMAC (real WGSL compute pass). Per-fmac peDelta is read back from the GPU after each dispatch.',
+    },
+    notWhat: 'Synthetic random A and B. Arithmetic is the real WebGPU compute pipeline output, not Cerebras simfabric or hardware.',
+    phases,
+  };
+  loadTrace(trace);
+}
+
+let liveDevice = null;
+detectWebGpu().then((g) => { if (g) liveDevice = g.device; });
+
+liveEls.runBtn.addEventListener('click', async () => {
+  if (!liveDevice) {
+    alert('WebGPU device not available on this browser/host.');
+    return;
+  }
+  const pattern = liveEls.pattern.value;
+  if (pattern === 'summa') {
+    try { await runLiveSumma(liveDevice); }
+    catch (e) {
+      console.error(e);
+      liveEls.progress.textContent = `error: ${e.message}`;
+      liveEls.runBtn.disabled = false;
+    }
+  }
+});
+
+const params = new URLSearchParams(window.location.search);
+const traceParam = params.get('trace');
+if (traceParam) {
+  loadDemo(traceParam);
+}
+
+resizeCanvas();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

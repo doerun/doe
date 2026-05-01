@@ -26,6 +26,65 @@ runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
 
+class PrefillGemvTileResumeTest(unittest.TestCase):
+    def test_tile_output_status_accepts_loadable_f16_tile(self) -> None:
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "output.npy"
+            np.save(path, np.arange(4, dtype=np.float16))
+
+            ready, status = runner._prefill_gemv_tile_output_status(
+                path,
+                expected_elements=4,
+            )
+
+        self.assertTrue(ready)
+        self.assertEqual(status, "ready")
+
+    def test_tile_output_status_rejects_partial_or_wrong_dtype_tile(self) -> None:
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            short_path = Path(tmp) / "short.npy"
+            dtype_path = Path(tmp) / "dtype.npy"
+            corrupt_path = Path(tmp) / "corrupt.npy"
+            np.save(short_path, np.arange(2, dtype=np.float16))
+            np.save(dtype_path, np.arange(4, dtype=np.float32))
+            corrupt_path.write_bytes(b"not-npy")
+
+            short_ready, short_status = runner._prefill_gemv_tile_output_status(
+                short_path,
+                expected_elements=4,
+            )
+            dtype_ready, dtype_status = runner._prefill_gemv_tile_output_status(
+                dtype_path,
+                expected_elements=4,
+            )
+            corrupt_ready, corrupt_status = runner._prefill_gemv_tile_output_status(
+                corrupt_path,
+                expected_elements=4,
+            )
+
+        self.assertFalse(short_ready)
+        self.assertEqual(short_status, "short:2<4")
+        self.assertFalse(dtype_ready)
+        self.assertEqual(dtype_status, "dtype:float32")
+        self.assertFalse(corrupt_ready)
+        self.assertTrue(corrupt_status.startswith("unreadable:"))
+
+    def test_task_shards_are_bounded_by_jobs_and_task_count(self) -> None:
+        tasks = [{"index": index} for index in range(7)]
+
+        shards = runner._prefill_gemv_task_shards(tasks, jobs=3)
+
+        self.assertEqual([len(shard) for shard in shards], [3, 3, 1])
+        self.assertEqual(
+            [item["index"] for shard in shards for item in shard],
+            list(range(7)),
+        )
+
+
 def _load_launch_step_adapter_module():
     name = "int4ple_launch_step_adapter_for_tests"
     if name in sys.modules:
@@ -62,6 +121,106 @@ def _load_launch_step_adapter_module():
     sys.modules[name] = mod
     adapter_spec.loader.exec_module(mod)
     return mod
+
+
+def _load_embed_roi_adapter_module():
+    name = "int4ple_embed_roi_adapter_for_tests"
+    if name in sys.modules:
+        return sys.modules[name]
+    fake = types.ModuleType("sdkruntimepybind")
+
+    class _MemcpyDataType:
+        MEMCPY_32BIT = "MEMCPY_32BIT"
+
+    class _MemcpyOrder:
+        ROW_MAJOR = "ROW_MAJOR"
+
+    class _SdkRuntime:
+        pass
+
+    fake.MemcpyDataType = _MemcpyDataType
+    fake.MemcpyOrder = _MemcpyOrder
+    fake.SdkRuntime = _SdkRuntime
+    sys.modules.setdefault("cerebras", types.ModuleType("cerebras"))
+    sys.modules.setdefault("cerebras.sdk", types.ModuleType("cerebras.sdk"))
+    sys.modules.setdefault(
+        "cerebras.sdk.runtime",
+        types.ModuleType("cerebras.sdk.runtime"),
+    )
+    sys.modules["cerebras.sdk.runtime.sdkruntimepybind"] = fake
+    adapter_spec = importlib.util.spec_from_file_location(
+        name,
+        RUNNER_DIR / "int4ple_embed_roi_adapter.py",
+    )
+    assert adapter_spec is not None
+    assert adapter_spec.loader is not None
+    mod = importlib.util.module_from_spec(adapter_spec)
+    sys.modules[name] = mod
+    adapter_spec.loader.exec_module(mod)
+    return mod
+
+
+class EmbedRoiPartialCheckpointTest(unittest.TestCase):
+    def test_partial_checkpoint_round_trips_by_spec_hash(self) -> None:
+        adapter = _load_embed_roi_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            array_path = root / "activation.npy.partial.npy"
+            state_path = root / "activation.npy.partial.json"
+            compact = np.arange(12, dtype=np.float32).reshape(3, 4)
+            completed = [{"sublaunchIndex": 0}, {"sublaunchIndex": 1}]
+
+            adapter.write_embed_roi_partial(
+                partial_array_path=array_path,
+                partial_state_path=state_path,
+                compact=compact,
+                spec_sha256="abc123",
+                token_count=3,
+                hidden_size=4,
+                completed_sublaunches=completed,
+            )
+            loaded, loaded_completed = adapter.load_embed_roi_partial(
+                partial_array_path=array_path,
+                partial_state_path=state_path,
+                spec_sha256="abc123",
+                token_count=3,
+                hidden_size=4,
+            )
+
+        self.assertEqual(loaded_completed, completed)
+        self.assertEqual(loaded.dtype, np.float32)
+        self.assertEqual(loaded.tolist(), compact.tolist())
+
+    def test_partial_checkpoint_rejects_identity_mismatch(self) -> None:
+        adapter = _load_embed_roi_adapter_module()
+        import numpy as np
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            array_path = root / "activation.npy.partial.npy"
+            state_path = root / "activation.npy.partial.json"
+            adapter.write_embed_roi_partial(
+                partial_array_path=array_path,
+                partial_state_path=state_path,
+                compact=np.zeros((1, 2), dtype=np.float32),
+                spec_sha256="abc123",
+                token_count=1,
+                hidden_size=2,
+                completed_sublaunches=[],
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                "embed_roi_partial_identity_mismatch",
+            ):
+                adapter.load_embed_roi_partial(
+                    partial_array_path=array_path,
+                    partial_state_path=state_path,
+                    spec_sha256="def456",
+                    token_count=1,
+                    hidden_size=2,
+                )
 
 
 class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):

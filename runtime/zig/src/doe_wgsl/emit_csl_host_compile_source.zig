@@ -18,6 +18,7 @@ const fused = @import("emit_csl_fused.zig");
 const fused_ffn = @import("emit_csl_fused_ffn.zig");
 const dense_gemv = @import("emit_csl_dense_gemv.zig");
 const semantic_ops = @import("emit_csl_semantic_ops.zig");
+const rmsnorm_pack = @import("emit_csl_rmsnorm_pack.zig");
 const validate = @import("emit_csl_validate.zig");
 const spec = @import("csl_spec.zig");
 const ir = @import("ir.zig");
@@ -134,7 +135,12 @@ fn emitSemanticPatternSectionsForElem(
     try writeSection(out, &pos, spec.PE_PROGRAM_FILENAME);
     try semantic_ops.emitPeProgram(out, &pos, pattern);
 
-    if (elem == .f16) try rewriteF16CompileSourceInPlace(out, &pos);
+    if (elem == .f16) {
+        try rewriteF16CompileSourceInPlace(out, &pos);
+        if (std.mem.eql(u8, pattern, "rms_norm")) {
+            try rmsnorm_pack.rewriteF16OutputPackInPlace(out, &pos);
+        }
+    }
     const combined = out[0..pos];
     return .{
         .combined = combined,
@@ -692,8 +698,10 @@ test "host compile source routes af16 lane into f16 CSL source" {
     var buf: [mod.MAX_CSL_OUTPUT]u8 = undefined;
 
     const rms = try emitPatternSectionsForElem(std.testing.allocator, "rms_norm", .f16, &buf);
-    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "[*]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"input\", [*]f16, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"output\", [*]u32, true);") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "[hidden_size]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "output_bits_ptr: [*]u32 = &output_bits;") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.combined, "f32") == null);
 
     const tiled = try emitPatternSectionsForElem(std.testing.allocator, "tiled_matmul", .f16, &buf);

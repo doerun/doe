@@ -94,15 +94,12 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
-def _link_or_copy(src: Path, dst: Path) -> None:
-    """Hardlink `src` to `dst` when on the same filesystem; copy otherwise."""
+def _copy_checkpoint_buffer(src: Path, dst: Path) -> None:
+    """Copy runtime output bytes into checkpoint-owned storage."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         dst.unlink()
-    try:
-        os.link(src, dst)
-    except OSError:
-        shutil.copyfile(src, dst)
+    shutil.copyfile(src, dst)
 
 
 def compute_identity(
@@ -192,6 +189,8 @@ def _write_manifest(checkpoint_dir: Path, manifest: dict[str, Any]) -> None:
 def init_checkpoint(
     checkpoint_dir: Path,
     identity: dict[str, Any],
+    *,
+    allow_runner_version_drift: bool = False,
 ) -> dict[str, Any]:
     """Initialize an empty checkpoint dir with identity but no completed launches.
 
@@ -204,7 +203,10 @@ def init_checkpoint(
     if manifest_path.is_file():
         existing = _read_manifest(checkpoint_dir)
         existing_identity = existing.get("identity") or {}
-        if existing_identity == identity:
+        drift_field = _identity_drift_field(existing_identity, identity)
+        if drift_field is None or (
+            allow_runner_version_drift and drift_field == "runnerVersion"
+        ):
             return existing
         raise CheckpointIdentityDriftError(
             f"checkpoint dir {checkpoint_dir} already exists with different identity; "
@@ -252,7 +254,7 @@ def persist_launch_checkpoint(
                 code="output_source_missing",
             )
         dst = buffers_dir / f"{symbol}.bin"
-        _link_or_copy(src, dst)
+        _copy_checkpoint_buffer(src, dst)
         digest = _sha256_of_file(dst)
         byte_count = dst.stat().st_size
         persisted_outputs.append({
@@ -304,6 +306,7 @@ def load_checkpoint(
     checkpoint_dir: Path,
     identity: dict[str, Any],
     verify_buffers: bool = True,
+    allow_runner_version_drift: bool = False,
 ) -> ResumeState:
     """Load a manifest, validate identity strictly, verify buffers, return state.
 
@@ -324,7 +327,10 @@ def load_checkpoint(
 
     manifest_identity = manifest.get("identity") or {}
     drift_field = _identity_drift_field(manifest_identity, identity)
-    if drift_field is not None:
+    if (
+        drift_field is not None
+        and not (allow_runner_version_drift and drift_field == "runnerVersion")
+    ):
         raise CheckpointIdentityDriftError(
             f"checkpoint identity drift on field {drift_field!r}: "
             f"manifest={manifest_identity.get(drift_field)!r} "

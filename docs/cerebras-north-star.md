@@ -46,11 +46,33 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 | 8 | Full 60-layer prefill + first-token | Pending hardware |
 | 9 | Multi-token continuation | Pending hardware |
 
+Rungs are bring-up phases, not a strict prerequisite chain. Rungs 3-4
+catch kernel-in-isolation pathologies (cslc reject on wse3, fabric fit,
+dispatch timeout taxonomy, per-kernel byte/digest stability). Rungs 6-9
+catch composition, phase-order, lm-head routing, and inter-kernel
+handoff bugs (see Active fail-closed queue items 1-4 for concrete
+examples that per-kernel manifest-shape dispatch passed through).
+Neither side subsumes the other.
+
 ## Acceptance bar (Layer C)
 
-- All 23 manifest-shape kernels dispatched on simfabric, bytes/digests recorded.
+Load-bearing for the correctness claim:
+
 - For one prompt, prefill + first-token logits hash matches frozen Doppler reference at L=1.
 - Manifest / HostPlan / CSL / reference-fixture hash chain unbroken end-to-end.
+
+Regression net, parallel and not a prerequisite:
+
+- All 23 manifest-shape kernels dispatched on simfabric, bytes/digests recorded.
+
+Per-kernel manifest-shape dispatch is worth producing once and rerunning
+on kernel change, but it cannot catch composition / phase-order /
+lm-head-routing / graph-completeness bugs by construction — each probe
+runs one kernel in isolation. The end-to-end hardware receipt with
+hash-equal logits parity is what closes the Cerebras correctness claim;
+per-kernel manifest-shape dispatch is the cheap regression catch
+between hardware runs and the path to non-proxied simfabric wallclock
+calibration.
 
 ## Active fail-closed queue
 
@@ -60,7 +82,7 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 2. **Landed in source:** tied dense lm-head routes through the full-vocabulary `lm_head_prefill_stable` SUMMA target with one-row logits tiles and F16-to-F32 weight staging.
 3. **Landed in source:** the Gemma 4 31B execution-v1 smoke graph carries explicit final-norm / lm-head / sample tails for both prefill-generated and decode-generated tokens.
 4. **Landed in source:** HostPlan lowering rejects `sample` unless the immediately preceding same-phase step is a compatible logits producer; compute after same-phase sample also fails closed.
-5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches serial checkpointed kernels, and carries scheduler state. The latest scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`; it is checkpoint-stopped and has no token/logit/KV transcript.
+5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches serial checkpointed kernels, and carries scheduler state. The latest historical deep scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`; it is checkpoint-stopped and has no token/logit/KV transcript. **Active front:** frozen Doppler sky prompt, not the generic two-token stress path. The active run uses prompt `The color of the sky is`, Doppler prompt-token hash `85b8d0e590815c3e97f346806977853e3d0528a232fd7c781d1e9cfcb92a8b55`, expected first generated token `9503` (`blue`), and decode step-1 stop token `106`, with a fresh frozen-sky checkpoint/session tree. The generic launch-2 tiled_31b Q4K row-split remains plumbing evidence for the compact GEMV route and durable tile reuse; the acceptance target is the complete frozen-sky generated-token/logits/lm-head/sample/KV transcript.
 6. **Partially landed artifact step:** the f16 CSL dtype contract and bounded-smoke schema are gate-covered. The gate now accepts a complete `realSessionRuntime.status=output_ready` transcript as the end-to-end prefill/decode evidence path, superseding stale per-kernel lm-head evidence only after generated token IDs, lm-head dispatch records, and KV digests are present. The current bounded receipt still records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound` because no token/logit/KV transcript exists yet.
 7. **Landed in source:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, prefill/decode feedback shape, f16 dtype contract drift, and blocked-receipt bounded evidence emission.
 

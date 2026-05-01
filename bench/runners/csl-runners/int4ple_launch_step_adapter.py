@@ -29,6 +29,7 @@ DTYPE_MAP = {
     "f16": (np.float16, MemcpyDataType.MEMCPY_32BIT),
     "u16": (np.uint16, MemcpyDataType.MEMCPY_16BIT),
 }
+F16_D2H_CHUNK_WORDS = 128
 
 
 def parse_args() -> argparse.Namespace:
@@ -318,6 +319,65 @@ def _d2h_regions_for_output(
     return [region]
 
 
+def _chunked_f16_output_available(runner: Any, symbol: str) -> bool:
+    try:
+        runner.get_id(f"{symbol}_chunk_0000")
+    except Exception:
+        return False
+    return True
+
+
+def _chunked_f16_memcpy_d2h(
+    *,
+    runner: Any,
+    symbol: str,
+    elements_per_pe: int,
+    region: dict[str, int],
+    progress_path: Path | None,
+    launch_index: int,
+) -> np.ndarray:
+    if elements_per_pe % 2 != 0:
+        raise ValueError(
+            f"f16 elementsPerPe {elements_per_pe} must be even for chunked D2H"
+        )
+    words_per_pe = elements_per_pe // 2
+    pe_hosts: list[np.ndarray] = []
+    for pe_y in range(int(region["y"]), int(region["y"]) + int(region["height"])):
+        for pe_x in range(int(region["x"]), int(region["x"]) + int(region["width"])):
+            chunks: list[np.ndarray] = []
+            for chunk_index, word_start in enumerate(
+                range(0, words_per_pe, F16_D2H_CHUNK_WORDS)
+            ):
+                word_count = min(F16_D2H_CHUNK_WORDS, words_per_pe - word_start)
+                chunk_symbol = f"{symbol}_chunk_{chunk_index:04d}"
+                host_part = np.zeros(F16_D2H_CHUNK_WORDS, dtype=np.uint32)
+                append_progress(
+                    progress_path,
+                    "launch_step_memcpy_d2h_chunk",
+                    launchIndex=launch_index,
+                    symbol=chunk_symbol,
+                    peX=pe_x,
+                    peY=pe_y,
+                    words=word_count,
+                )
+                runner.memcpy_d2h(
+                    host_part,
+                    int(runner.get_id(chunk_symbol)),
+                    pe_x,
+                    pe_y,
+                    1,
+                    1,
+                    F16_D2H_CHUNK_WORDS,
+                    streaming=False,
+                    order=MemcpyOrder.ROW_MAJOR,
+                    data_type=MemcpyDataType.MEMCPY_32BIT,
+                    nonblock=False,
+                )
+                chunks.append(host_part[:word_count])
+            pe_hosts.append(np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.uint32))
+    return np.concatenate(pe_hosts) if pe_hosts else np.zeros(0, dtype=np.uint32)
+
+
 def _pe_rows_to_logical_matrix(
     host: np.ndarray,
     output_transform: dict[str, Any],
@@ -464,45 +524,58 @@ def main() -> int:
             raw_hosts: list[np.ndarray] = []
             np_dtype, _ = _dtype_config(dtype)
             logical_dtype = np.dtype(np_dtype)
-            for region_index, copy_region in enumerate(regions):
-                copy_elements = (
-                    int(copy_region["width"])
-                    * int(copy_region["height"])
-                    * elements_per_pe
-                )
-                host_part, memcpy_dtype, memcpy_elements_per_pe, logical_dtype = (
-                    _memcpy_buffer_for_d2h(
-                        dtype=dtype,
+            if dtype == "f16" and _chunked_f16_output_available(runner, symbol):
+                raw_hosts.append(
+                    _chunked_f16_memcpy_d2h(
+                        runner=runner,
+                        symbol=symbol,
                         elements_per_pe=elements_per_pe,
-                        total_elements=copy_elements,
+                        region=region,
+                        progress_path=progress_path,
+                        launch_index=launch_index,
                     )
                 )
-                append_progress(
-                    progress_path,
-                    "launch_step_memcpy_d2h",
-                    launchIndex=launch_index,
-                    symbol=symbol,
-                    elements=copy_elements,
-                    deviceElements=device_total_elements,
-                    region=copy_region,
-                    regionIndex=region_index,
-                    regionCount=len(regions),
-                )
-                print(f"phase:memcpy_d2h:{symbol}:{region_index}", flush=True)
-                runner.memcpy_d2h(
-                    host_part,
-                    int(runner.get_id(symbol)),
-                    int(copy_region["x"]),
-                    int(copy_region["y"]),
-                    int(copy_region["width"]),
-                    int(copy_region["height"]),
-                    memcpy_elements_per_pe,
-                    streaming=False,
-                    order=MemcpyOrder.ROW_MAJOR,
-                    data_type=memcpy_dtype,
-                    nonblock=False,
-                )
-                raw_hosts.append(host_part)
+                logical_dtype = np.dtype(np.float16)
+            else:
+                for region_index, copy_region in enumerate(regions):
+                    copy_elements = (
+                        int(copy_region["width"])
+                        * int(copy_region["height"])
+                        * elements_per_pe
+                    )
+                    host_part, memcpy_dtype, memcpy_elements_per_pe, logical_dtype = (
+                        _memcpy_buffer_for_d2h(
+                            dtype=dtype,
+                            elements_per_pe=elements_per_pe,
+                            total_elements=copy_elements,
+                        )
+                    )
+                    append_progress(
+                        progress_path,
+                        "launch_step_memcpy_d2h",
+                        launchIndex=launch_index,
+                        symbol=symbol,
+                        elements=copy_elements,
+                        deviceElements=device_total_elements,
+                        region=copy_region,
+                        regionIndex=region_index,
+                        regionCount=len(regions),
+                    )
+                    print(f"phase:memcpy_d2h:{symbol}:{region_index}", flush=True)
+                    runner.memcpy_d2h(
+                        host_part,
+                        int(runner.get_id(symbol)),
+                        int(copy_region["x"]),
+                        int(copy_region["y"]),
+                        int(copy_region["width"]),
+                        int(copy_region["height"]),
+                        memcpy_elements_per_pe,
+                        streaming=False,
+                        order=MemcpyOrder.ROW_MAJOR,
+                        data_type=memcpy_dtype,
+                        nonblock=False,
+                    )
+                    raw_hosts.append(host_part)
             if raw_hosts:
                 host = (
                     raw_hosts[0]

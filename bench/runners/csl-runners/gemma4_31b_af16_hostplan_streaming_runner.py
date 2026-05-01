@@ -239,6 +239,12 @@ def parse_args() -> argparse.Namespace:
         help="Parallel jobs for independent real-session embed/PLE ROI launches.",
     )
     parser.add_argument(
+        "--session-prefill-q4k-gemv-jobs",
+        type=int,
+        default=1,
+        help="Parallel batch shards for real-session prefill Q4K GEMV launches.",
+    )
+    parser.add_argument(
         "--session-ple-proj-dispatch-mode",
         choices=["monolithic_summa", "compact_summa_session"],
         default="monolithic_summa",
@@ -277,6 +283,14 @@ def parse_args() -> argparse.Namespace:
         "--ignore-checkpoint",
         action="store_true",
         help="Run from launch 0 even when --resume-from-checkpoint is set.",
+    )
+    parser.add_argument(
+        "--allow-checkpoint-runner-drift",
+        action="store_true",
+        help=(
+            "Allow resume when only the checkpoint runnerVersion field drifted. "
+            "Manifest/config/compile-target identity and buffer hashes still validate."
+        ),
     )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     return parser.parse_args()

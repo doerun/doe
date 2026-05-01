@@ -130,6 +130,7 @@ pub const default_config: Config = .{};
 // emit_kernel_body.zig stays under the 999-line cap. Re-exported here
 // for backward-compat callers that referenced them via this module.
 const dtype_routing = @import("emit_dtype_routing.zig");
+const csl_f16_pack = @import("emit_csl_f16_pack.zig");
 pub const cslElemName = dtype_routing.cslElemName;
 pub const wgslElemName = dtype_routing.wgslElemName;
 pub const isSupportedComputeElem = dtype_routing.isSupportedComputeElem;
@@ -410,9 +411,11 @@ fn emitCslRmsNorm(
     try writeCslBufferArray(writer, p, input.name, "hidden_size", ty);
     try writeCslBufferArray(writer, p, scale.name, "hidden_size", ty);
     try writeCslBufferArray(writer, p, output.name, "hidden_size", ty);
+    if (elem == .f16) try csl_f16_pack.writeBufferArray(writer, p, output.name, "hidden_size");
     try writeCslBufferPointer(writer, p, input.name, ty);
     try writeCslBufferPointer(writer, p, scale.name, ty);
     try writeCslBufferPointer(writer, p, output.name, ty);
+    if (elem == .f16) try csl_f16_pack.writeBufferPointer(writer, p, output.name);
     try writer.writeAll("\n");
     try writer.writeAll("fn compute() void {\n");
     try writer.print("    var sum_sq: {s} = 0.0;\n", .{ty});
@@ -440,12 +443,17 @@ fn emitCslRmsNorm(
         );
     }
     try writer.writeAll("    }\n");
+    if (elem == .f16) try csl_f16_pack.writePackLoop(writer, p, output.name, "hidden_size");
     try writer.writeAll("    sys_mod.unblock_cmd_stream();\n");
     try writer.writeAll("}\n\n");
     try writer.writeAll("comptime {\n");
     try writeCslExportSymbol(writer, p, input.name);
     try writeCslExportSymbol(writer, p, scale.name);
-    try writeCslExportSymbol(writer, p, output.name);
+    if (elem == .f16) {
+        try csl_f16_pack.writeExportSymbol(writer, p, output.name);
+    } else {
+        try writeCslExportSymbol(writer, p, output.name);
+    }
     try writer.writeAll("    @export_symbol(compute);\n");
     try writer.writeAll("}\n");
 }

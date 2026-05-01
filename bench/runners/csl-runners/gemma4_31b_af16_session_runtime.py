@@ -1455,6 +1455,9 @@ def build_real_session_runtime(
             "checkpointDir": rel(checkpoint_dir) if checkpoint_dir else "",
             "resumeFromCheckpoint": rel(resume_dir) if resume_dir else "",
             "ignoreCheckpoint": bool(getattr(args, "ignore_checkpoint", False)),
+            "allowRunnerVersionDrift": bool(
+                getattr(args, "allow_checkpoint_runner_drift", False)
+            ),
         },
     }
     blockers = [
@@ -1502,6 +1505,9 @@ def build_real_session_runtime(
             resume_state = load_checkpoint(
                 checkpoint_dir=resume_dir,
                 identity=identity,
+                allow_runner_version_drift=bool(
+                    getattr(args, "allow_checkpoint_runner_drift", False)
+                ),
             )
             result["checkpoint"]["resumeStatus"] = "loaded"
             result["checkpoint"]["resumeStartIndex"] = resume_state.start_index
@@ -1518,7 +1524,13 @@ def build_real_session_runtime(
             return result
     if checkpoint_dir is not None:
         try:
-            init_checkpoint(checkpoint_dir, identity)
+            init_checkpoint(
+                checkpoint_dir,
+                identity,
+                allow_runner_version_drift=bool(
+                    getattr(args, "allow_checkpoint_runner_drift", False)
+                ),
+            )
             result["checkpoint"]["checkpointStatus"] = "initialized"
         except CheckpointError as exc:
             result["status"] = "blocked"
@@ -1552,6 +1564,9 @@ def build_real_session_runtime(
             getattr(args, "session_lm_head_tile_jobs", 1)
         ),
         session_embed_roi_jobs=int(getattr(args, "session_embed_roi_jobs", 1)),
+        session_prefill_q4k_gemv_jobs=int(
+            getattr(args, "session_prefill_q4k_gemv_jobs", 1)
+        ),
         session_ple_proj_dispatch_mode=str(
             getattr(args, "session_ple_proj_dispatch_mode", "monolithic_summa")
             or "monolithic_summa"

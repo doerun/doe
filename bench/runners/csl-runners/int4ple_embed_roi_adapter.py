@@ -37,9 +37,94 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def write_json_atomic(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f"{path.name}.tmp")
+    tmp_path.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    tmp_path.replace(path)
+
+
 def sha256_json(value: Any) -> str:
     payload = json.dumps(value, separators=(",", ":"), sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def write_npy_atomic(path: Path, array: np.ndarray) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f"{path.name}.tmp")
+    with tmp_path.open("wb") as handle:
+        np.save(handle, array)
+    tmp_path.replace(path)
+
+
+def embed_roi_partial_paths(output_path: Path) -> tuple[Path, Path]:
+    return (
+        output_path.with_name(f"{output_path.name}.partial.npy"),
+        output_path.with_name(f"{output_path.name}.partial.json"),
+    )
+
+
+def load_embed_roi_partial(
+    *,
+    partial_array_path: Path,
+    partial_state_path: Path,
+    spec_sha256: str,
+    token_count: int,
+    hidden_size: int,
+) -> tuple[np.ndarray | None, list[dict[str, Any]]]:
+    if not partial_array_path.exists() and not partial_state_path.exists():
+        return None, []
+    if not partial_array_path.is_file() or not partial_state_path.is_file():
+        raise ValueError("embed_roi_partial_incomplete")
+    state = load_json(partial_state_path)
+    if state.get("specSha256") != spec_sha256:
+        raise ValueError("embed_roi_partial_identity_mismatch")
+    if int(state.get("tokenCount") or 0) != token_count:
+        raise ValueError("embed_roi_partial_token_count_mismatch")
+    if int(state.get("hiddenSize") or 0) != hidden_size:
+        raise ValueError("embed_roi_partial_hidden_size_mismatch")
+    array = np.load(partial_array_path, allow_pickle=False).astype(
+        np.float32,
+        copy=False,
+    )
+    if array.shape != (token_count, hidden_size):
+        raise ValueError(
+            "embed_roi_partial_shape_mismatch:"
+            f"{array.shape}!={(token_count, hidden_size)}"
+        )
+    completed = [
+        item
+        for item in state.get("completedSublaunches") or []
+        if isinstance(item, dict)
+    ]
+    return array, completed
+
+
+def write_embed_roi_partial(
+    *,
+    partial_array_path: Path,
+    partial_state_path: Path,
+    compact: np.ndarray,
+    spec_sha256: str,
+    token_count: int,
+    hidden_size: int,
+    completed_sublaunches: list[dict[str, Any]],
+) -> None:
+    write_npy_atomic(partial_array_path, compact)
+    write_json_atomic(
+        partial_state_path,
+        {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_embed_roi_partial_checkpoint",
+            "specSha256": spec_sha256,
+            "tokenCount": token_count,
+            "hiddenSize": hidden_size,
+            "completedSublaunches": completed_sublaunches,
+        },
+    )
 
 
 def embed_roi_input_buffers(spec: dict[str, Any]) -> list[dict[str, Any]]:
@@ -148,10 +233,54 @@ def main() -> int:
         write_json(receipt_path, receipt)
         return 1
 
+    output_path = Path(str(output.get("path") or ""))
+    partial_array_path, partial_state_path = embed_roi_partial_paths(output_path)
+    spec_sha256 = sha256_json(spec)
     runner = None
-    compact = np.zeros((token_count, hidden_size), dtype=np.float32)
     completed_sublaunches: list[dict[str, Any]] = []
+    completed_indices: set[int] = set()
     try:
+        compact = np.zeros((token_count, hidden_size), dtype=np.float32)
+        partial, completed_sublaunches = load_embed_roi_partial(
+            partial_array_path=partial_array_path,
+            partial_state_path=partial_state_path,
+            spec_sha256=spec_sha256,
+            token_count=token_count,
+            hidden_size=hidden_size,
+        )
+        if partial is not None:
+            compact = partial
+            completed_indices = {
+                int(item.get("sublaunchIndex") or 0)
+                for item in completed_sublaunches
+            }
+            append_progress(
+                progress_path,
+                "embed_roi_partial_resume",
+                launchIndex=launch_index,
+                completedSublaunchCount=len(completed_indices),
+            )
+        receipt["partialCheckpoint"] = {
+            "arrayPath": str(partial_array_path),
+            "statePath": str(partial_state_path),
+            "completedSublaunchCount": len(completed_indices),
+            "specSha256": spec_sha256,
+        }
+        if len(completed_indices) == len(spec.get("sublaunches") or []):
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(output_path, compact)
+            receipt["completedSublaunches"] = completed_sublaunches
+            receipt["output"]["sha256"] = hashlib.sha256(
+                compact.tobytes(order="C")
+            ).hexdigest()
+            receipt["output"]["sha256Kind"] = "array_tobytes_c_order"
+            receipt["status"] = "succeeded"
+            partial_array_path.unlink(missing_ok=True)
+            partial_state_path.unlink(missing_ok=True)
+            write_json(receipt_path, receipt)
+            append_progress(progress_path, "embed_roi_done", launchIndex=launch_index)
+            print("phase:done", flush=True)
+            return 0
         append_progress(progress_path, "embed_roi_constructor", launchIndex=launch_index)
         print("phase:constructor", flush=True)
         runner = SdkRuntime(str(compile_dir), cmaddr=str(spec.get("cmaddr") or "").strip() or None)
@@ -165,6 +294,14 @@ def main() -> int:
         print("phase:run", flush=True)
         runner.run()
         for sublaunch_index, sublaunch in enumerate(spec.get("sublaunches") or []):
+            if sublaunch_index in completed_indices:
+                append_progress(
+                    progress_path,
+                    "embed_roi_sublaunch_reused",
+                    launchIndex=launch_index,
+                    sublaunchIndex=sublaunch_index,
+                )
+                continue
             token_start = int(sublaunch.get("tokenStart") or 0)
             token_chunk_count = int(sublaunch.get("tokenCount") or 0)
             hidden_offset = int(sublaunch.get("hiddenOffset") or 0)
@@ -277,12 +414,22 @@ def main() -> int:
                 launchIndex=launch_index,
                 sublaunchIndex=sublaunch_index,
             )
-        output_path = Path(str(output.get("path") or ""))
+            write_embed_roi_partial(
+                partial_array_path=partial_array_path,
+                partial_state_path=partial_state_path,
+                compact=compact,
+                spec_sha256=spec_sha256,
+                token_count=token_count,
+                hidden_size=hidden_size,
+                completed_sublaunches=completed_sublaunches,
+            )
         output_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(output_path, compact)
         receipt["completedSublaunches"] = completed_sublaunches
         receipt["output"]["sha256"] = hashlib.sha256(compact.tobytes(order="C")).hexdigest()
         receipt["output"]["sha256Kind"] = "array_tobytes_c_order"
+        partial_array_path.unlink(missing_ok=True)
+        partial_state_path.unlink(missing_ok=True)
     except Exception as exc:  # pragma: no cover - SDK subprocess evidence
         blockers.append(f"embed_roi_failed:{type(exc).__name__}:{str(exc)[:200]}")
     finally:

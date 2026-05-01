@@ -12,6 +12,83 @@ below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
 completion.
 
+## 2026-05-01 — Layer C acceptance bar split: end-to-end load-bearing, per-kernel manifest-shape regression net
+
+`docs/cerebras-north-star.md` Layer C acceptance bar now separates the
+load-bearing correctness items (end-to-end prefill + first-token logits
+hash equal to the frozen Doppler reference at L=1; manifest / HostPlan
+/ CSL / reference-fixture hash chain unbroken) from the regression-net
+artifact (all 23 manifest-shape kernels dispatched on simfabric,
+bytes/digests recorded). The rung ladder also carries a one-paragraph
+note that rungs 3-4 and rungs 6-9 catch different bug classes and
+neither subsumes the other.
+
+The reframing is grounded in the Active fail-closed queue items 1-4 in
+the same doc: lm-head dtype resolver, tied-dense lm-head routing,
+missing prefill/decode tails in the smoke graph, and HostPlan accepting
+`sample` without a logits producer. All four are composition /
+phase-order / symbol-resolution bugs that per-kernel manifest-shape
+dispatch passed through by construction (each probe runs one kernel in
+isolation with its own inputs).
+
+Operational consequence: per-kernel manifest-shape dispatch on
+simfabric is no longer a hard prerequisite for the end-to-end Cerebras
+correctness claim. It remains worth producing once and rerunning on
+kernel change for regression coverage and for tightening the simfabric
+wallclock calibration off the 8x3 canary proxy. The end-to-end
+hardware receipt with hash-equal logits parity is what closes the
+correctness ask.
+
+## 2026-05-01 — Active end-to-end front: frozen Doppler sky prompt, decode step 1
+
+Real 31B HostPlan session active blocker is the frozen Doppler evidence
+target, not the generic two-token stress path: prompt
+`The color of the sky is`, Doppler prompt-token hash
+`85b8d0e590815c3e97f346806977853e3d0528a232fd7c781d1e9cfcb92a8b55`,
+first generated token `9503` (`blue`), and decode step-1 stop token
+`106`. The active run uses a fresh frozen-sky checkpoint/session tree
+with `prefill-token-count=19` and `decode-token-count=2`, so the
+acceptance evidence is measured against the Doppler transcript digests
+for generated tokens, logits, lm-head/sample dispatch, and KV cache
+state.
+
+The earlier generic two-token launch-2 tiled_31b Q4K projection remains
+plumbing evidence only. It proved that the full 512x512 SUMMA sim
+dispatch can be swapped for a smaller real Q4K GEMV fabric dispatch with
+f16 output through `chain_step_adapter.py --split-d2h-rows`, reusable
+tile output validation, and missing row/output tile replay. It is not
+the acceptance target by itself.
+
+The chunked-export D2H row-split pattern is established for the
+rms_norm f16 output as 21 D2H-addressable chunks in
+`runtime/zig/src/doe_wgsl/emit_csl_rmsnorm_pack.zig`. A simpler
+single-buffer f16 pack landed for the TSIR emit lane in the new
+`runtime/zig/src/tsir/emit_csl_f16_pack.zig` and is wired into
+`runtime/zig/src/tsir/emit_kernel_body.zig::emitCslRmsNorm`. For the
+tiled_31b Q4K projection, the working shape is height-1 f16 row-split
+copyback from the GEMV sink column. Sharded batch adapters are recorded
+in the batch manifest, but this simfabric host stalls on concurrent
+Q4K D2H, so the frozen-sky run keeps one Q4K shard with durable partial
+reuse. The Q4K shard count is explicit as
+`--session-prefill-q4k-gemv-jobs` so embed ROI and lm-head tile
+parallelism stay separate from this simulator D2H envelope.
+Checkpoint resume now has an explicit
+`--allow-checkpoint-runner-drift` mode for orchestration-only runner
+edits; it still validates manifest/config/compile-target identity and
+all persisted buffer hashes before loading completed launches.
+
+Checkpoint storage decoupled from runtime working buffers in
+`bench/runners/csl-runners/int4ple_checkpoint.py`: the hardlink path
+is replaced with always-copy so per-row D2H rewrites cannot
+retroactively mutate earlier checkpoint bytes. Pinned by
+`bench/tests/test_int4ple_checkpoint.py::test_source_buffer_rewrite_does_not_mutate_checkpoint`.
+The frozen-sky embed ROI adapter now also writes spec-hash-bound partial
+checkpoints after each sublaunch, so launch 0 can resume before the
+full activation buffer is assembled. Q4K tile reuse validation, Q4K
+shard planning, and embed ROI partial checkpoint round-trips are pinned
+by focused tests in
+`bench/tests/test_int4ple_hostplan_runtime_timeout.py`.
+
 ## 2026-05-01 — real-session transcript evidence becomes the bounded-smoke gate path
 
 The inference evidence gate now treats a complete

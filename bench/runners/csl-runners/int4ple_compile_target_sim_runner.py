@@ -75,7 +75,18 @@ DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
 DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
+TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
+RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
+Q4K_BLOCK_ELEMENTS = 256
+Q4K_BLOCK_BYTES = 144
+PREFILL_GEMV_IN_DIM_PER_PE = 512
+PREFILL_GEMV_OUT_DIM_PER_PE = 112
+PREFILL_GEMV_OUTPUT_PE_ROWS = 1
+PREFILL_GEMV_FABRIC_WEST_RESERVED = 4
+PREFILL_GEMV_FABRIC_EAST_RESERVED = 3
+PREFILL_GEMV_FABRIC_NORTH_RESERVED = 1
+PREFILL_GEMV_FABRIC_SOUTH_RESERVED = 1
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -145,6 +156,12 @@ def parse_args() -> argparse.Namespace:
         help="Parallel jobs for independent session embed/PLE ROI launches.",
     )
     parser.add_argument(
+        "--session-prefill-q4k-gemv-jobs",
+        type=int,
+        default=1,
+        help="Parallel batch shards for session prefill Q4K GEMV launches.",
+    )
+    parser.add_argument(
         "--session-ple-proj-dispatch-mode",
         choices=SESSION_PLE_PROJ_DISPATCH_MODES,
         default="monolithic_summa",
@@ -172,6 +189,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Run from launch 0 even if --resume-from-checkpoint points at a "
         "valid checkpoint. Disables identity validation.",
+    )
+    parser.add_argument(
+        "--allow-checkpoint-runner-drift",
+        action="store_true",
+        help=(
+            "Allow resume when only the checkpoint runnerVersion field drifted. "
+            "Manifest/config/compile-target identity and buffer hashes still validate."
+        ),
     )
     return parser.parse_args()
 
@@ -1824,6 +1849,861 @@ def _is_compact_ple_proj_launch(launch: dict[str, Any], mode: str) -> bool:
     )
 
 
+def _is_tiled_q4k_gemv_launch(launch: dict[str, Any], mode: str) -> bool:
+    if (
+        mode != "compact_summa_session"
+        or str(launch.get("targetName") or "") not in TILED_Q4K_GEMV_TARGETS
+    ):
+        return False
+    try:
+        b_binding = _binding_for_symbol(
+            launch.get("resolvedInputs") or [],
+            "b",
+            launch_index=int(launch.get("launchIndex") or 0),
+        )
+    except ValueError:
+        return False
+    materialization = b_binding.get("materialization") or {}
+    source_transform = materialization.get("sourceTransform") or {}
+    nested = (
+        source_transform.get("sourceTransform")
+        if isinstance(source_transform, dict)
+        else {}
+    )
+    return (
+        isinstance(nested, dict)
+        and str(nested.get("kind") or "") == "q4km_rowwise_to_f32"
+    )
+
+
+def _ceil_div(numerator: int, denominator: int) -> int:
+    if denominator <= 0:
+        raise ValueError("ceil_div_denominator_must_be_positive")
+    return (numerator + denominator - 1) // denominator
+
+
+def _prefill_gemv_blocks_per_pe(in_dim_per_pe: int) -> int:
+    if in_dim_per_pe % Q4K_BLOCK_ELEMENTS != 0:
+        raise ValueError(
+            "prefill_gemv_in_dim_per_pe_unaligned:"
+            f"{in_dim_per_pe}%{Q4K_BLOCK_ELEMENTS}"
+        )
+    return in_dim_per_pe // Q4K_BLOCK_ELEMENTS
+
+
+def _compile_tiled_q4k_gemv_target(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    source_cols: int,
+) -> tuple[Path, dict[str, Any]]:
+    in_dim_per_pe = PREFILL_GEMV_IN_DIM_PER_PE
+    out_dim_per_pe = PREFILL_GEMV_OUT_DIM_PER_PE
+    output_pe_rows = PREFILL_GEMV_OUTPUT_PE_ROWS
+    width = _ceil_div(source_cols, in_dim_per_pe)
+    blocks_per_pe = _prefill_gemv_blocks_per_pe(in_dim_per_pe)
+    source_compile_dir = Path(str(launch.get("compileDir") or ""))
+    compile_root = source_compile_dir.parent.parent
+    layout_path = compile_root / "gemv" / "layout.csl"
+    output_dir = (
+        runtime_dir
+        / "tiled-q4k-gemv"
+        / (
+            f"compiled_w{width:04d}_h{output_pe_rows:04d}"
+            f"_o{out_dim_per_pe:04d}_i{in_dim_per_pe:04d}"
+        )
+    )
+    params = {
+        "width": width,
+        "height": output_pe_rows,
+        "outDim": output_pe_rows * out_dim_per_pe,
+        "outDimPerPe": out_dim_per_pe,
+        "inDimPerPe": in_dim_per_pe,
+        "numBlocksPerRow": blocks_per_pe,
+        "fabricWidth": (
+            width
+            + PREFILL_GEMV_FABRIC_WEST_RESERVED
+            + PREFILL_GEMV_FABRIC_EAST_RESERVED
+        ),
+        "fabricHeight": (
+            output_pe_rows
+            + PREFILL_GEMV_FABRIC_NORTH_RESERVED
+            + PREFILL_GEMV_FABRIC_SOUTH_RESERVED
+        ),
+        "fabricOffsetX": PREFILL_GEMV_FABRIC_WEST_RESERVED,
+        "fabricOffsetY": PREFILL_GEMV_FABRIC_NORTH_RESERVED,
+    }
+    receipt_path = output_dir / "prefill-gemv-compile.json"
+    if (output_dir / "out.json").is_file() and (output_dir / "bin").is_dir():
+        return output_dir, {**params, "reused": True}
+    command = [
+        cslc_executable(),
+        str(layout_path),
+        "--arch=wse3",
+        f"--fabric-dims={params['fabricWidth']},{params['fabricHeight']}",
+        f"--fabric-offsets={params['fabricOffsetX']},{params['fabricOffsetY']}",
+        "--channels=1",
+        (
+            f"--params=width:{width},height:{output_pe_rows},"
+            f"out_dim:{output_pe_rows * out_dim_per_pe},"
+            f"out_dim_per_pe:{out_dim_per_pe},"
+            f"in_dim_per_pe:{in_dim_per_pe},"
+            f"num_blocks_per_row:{blocks_per_pe}"
+        ),
+        "-o",
+        str(output_dir),
+        "--memcpy",
+    ]
+    scratch_cwd = output_dir / "scratch"
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
+    started_ns = time.monotonic_ns()
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(scratch_cwd),
+    )
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_prefill_q4k_gemv_compile_receipt",
+        "status": "succeeded" if completed.returncode == 0 else "blocked",
+        "blockers": []
+        if completed.returncode == 0
+        else [f"prefill_q4k_gemv_compile_exit_code_{completed.returncode}"],
+        "layoutPath": str(layout_path),
+        "compileDir": str(output_dir),
+        "params": params,
+        "command": command,
+        "wallclockNs": time.monotonic_ns() - started_ns,
+        "stdoutTail": completed.stdout.strip().splitlines()[-4:],
+        "stderrTail": completed.stderr.strip().splitlines()[-4:],
+    }
+    write_json(receipt_path, receipt)
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "unknown"
+        raise ValueError(f"prefill_q4k_gemv_compile_failed:{detail[-400:]}")
+    return output_dir, {
+        **params,
+        "reused": False,
+        "receiptPath": str(receipt_path),
+        "stdoutTail": completed.stdout.strip().splitlines()[-3:],
+        "stderrTail": completed.stderr.strip().splitlines()[-3:],
+    }
+
+
+def _q4k_weight_row_bytes(source_cols: int) -> int:
+    return _ceil_div(source_cols, Q4K_BLOCK_ELEMENTS) * Q4K_BLOCK_BYTES
+
+
+def _load_q4k_weight_rows(
+    *,
+    materialization: dict[str, Any],
+    source_rows: int,
+    source_cols: int,
+) -> np.ndarray:
+    mapping = materialization.get("weightMapping")
+    if not isinstance(mapping, dict):
+        raise ValueError("prefill_q4k_gemv_weight_mapping_missing")
+    byte_count = source_rows * _q4k_weight_row_bytes(source_cols)
+    raw = _read_weight_prefix_bytes(mapping, byte_count)
+    return np.frombuffer(raw, dtype=np.uint8).reshape(source_rows, -1)
+
+
+def _materialize_prefill_gemv_activation_tile(
+    *,
+    activation_row: np.ndarray,
+    source_cols: int,
+    width: int,
+    height: int,
+    in_dim_per_pe: int,
+) -> np.ndarray:
+    tile = np.zeros((height, width, in_dim_per_pe), dtype=np.float16)
+    row = activation_row[:source_cols].astype(np.float16, copy=False)
+    for pe_x in range(width):
+        col_start = pe_x * in_dim_per_pe
+        col_end = min(col_start + in_dim_per_pe, source_cols)
+        if col_end > col_start:
+            tile[:, pe_x, : col_end - col_start] = row[col_start:col_end]
+    return tile.reshape(-1)
+
+
+def _materialize_prefill_gemv_weight_tile(
+    *,
+    weight_rows: np.ndarray,
+    source_cols: int,
+    output_start: int,
+    output_cols: int,
+    width: int,
+    height: int,
+    out_dim_per_pe: int,
+    blocks_per_pe: int,
+) -> np.ndarray:
+    source_blocks = _ceil_div(source_cols, Q4K_BLOCK_ELEMENTS)
+    bytes_per_row = source_blocks * Q4K_BLOCK_BYTES
+    if weight_rows.shape[1] != bytes_per_row:
+        raise ValueError(
+            "prefill_q4k_gemv_weight_row_byte_mismatch:"
+            f"{weight_rows.shape[1]}!={bytes_per_row}"
+        )
+    chunk_bytes = out_dim_per_pe * blocks_per_pe * Q4K_BLOCK_BYTES
+    tile = np.zeros((height, width, chunk_bytes), dtype=np.uint8)
+    for pe_y in range(height):
+        row_base = output_start + pe_y * out_dim_per_pe
+        for local_row in range(out_dim_per_pe):
+            source_row = row_base + local_row
+            if source_row >= output_cols:
+                continue
+            row_bytes = weight_rows[source_row]
+            local_base = local_row * blocks_per_pe * Q4K_BLOCK_BYTES
+            for pe_x in range(width):
+                source_block = pe_x * blocks_per_pe
+                for block_index in range(blocks_per_pe):
+                    block = source_block + block_index
+                    if block >= source_blocks:
+                        continue
+                    dst = local_base + block_index * Q4K_BLOCK_BYTES
+                    src = block * Q4K_BLOCK_BYTES
+                    tile[pe_y, pe_x, dst : dst + Q4K_BLOCK_BYTES] = row_bytes[
+                        src : src + Q4K_BLOCK_BYTES
+                    ]
+    return tile.reshape(-1)
+
+
+def _run_prefill_gemv_tile(
+    *,
+    command: list[str],
+    timeout_seconds: int | None,
+) -> tuple[int, str, str, bool, int]:
+    started_ns = time.monotonic_ns()
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+        )
+        return (
+            completed.returncode,
+            completed.stdout,
+            completed.stderr,
+            False,
+            time.monotonic_ns() - started_ns,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+        stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+        return -1, stdout, stderr, True, time.monotonic_ns() - started_ns
+
+
+def _prefill_gemv_tile_output_status(
+    path: Path,
+    *,
+    expected_elements: int,
+) -> tuple[bool, str]:
+    if not path.is_file() or path.stat().st_size <= 0:
+        return False, "missing"
+    try:
+        loaded = np.load(path, allow_pickle=False).ravel()
+    except (OSError, ValueError) as exc:
+        return False, f"unreadable:{type(exc).__name__}"
+    if loaded.dtype != np.dtype(np.float16):
+        return False, f"dtype:{loaded.dtype}"
+    if loaded.size < expected_elements:
+        return False, f"short:{loaded.size}<{expected_elements}"
+    return True, "ready"
+
+
+def _prefill_gemv_task_shards(
+    tasks: list[dict[str, Any]],
+    *,
+    jobs: int,
+) -> list[list[dict[str, Any]]]:
+    if not tasks:
+        return []
+    shard_count = min(max(1, int(jobs)), len(tasks))
+    shard_size = _ceil_div(len(tasks), shard_count)
+    return [
+        tasks[start : start + shard_size]
+        for start in range(0, len(tasks), shard_size)
+    ]
+
+
+def _execute_tiled_q4k_gemv_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+    jobs: int,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    a_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "a",
+        launch_index=launch_index,
+    )
+    b_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "b",
+        launch_index=launch_index,
+    )
+    c_binding = _binding_for_symbol(
+        launch.get("resolvedOutputs") or [],
+        "c",
+        launch_index=launch_index,
+    )
+    a_materialization = a_binding.get("materialization") or {}
+    b_materialization = b_binding.get("materialization") or {}
+    c_materialization = c_binding.get("materialization") or {}
+    a_source = a_materialization.get("sourceTransform") or {}
+    b_source = b_materialization.get("sourceTransform") or {}
+    c_output = c_materialization.get("outputTransform") or {}
+    source_cols = int(a_source.get("sourceCols") or b_source.get("sourceCols") or 0)
+    output_cols = int(c_output.get("cols") or b_source.get("sourceRows") or 0)
+    source_rows = int(b_source.get("sourceRows") or output_cols)
+    if min(source_cols, output_cols, source_rows) <= 0:
+        raise ValueError("prefill_q4k_gemv_shape_missing")
+    if source_rows < output_cols:
+        raise ValueError(
+            f"prefill_q4k_gemv_source_rows_short:{source_rows}<{output_cols}"
+        )
+    a_buffer = str(a_binding.get("buffer") or "")
+    c_buffer = str(c_binding.get("buffer") or "")
+    activation_path = buffer_files.get(a_buffer)
+    if activation_path is None or not activation_path.is_file():
+        raise ValueError(f"prefill_q4k_gemv_activation_missing:{a_buffer}")
+    activation = np.load(activation_path, allow_pickle=False).ravel()
+    if activation.size % source_cols != 0:
+        raise ValueError(
+            f"prefill_q4k_gemv_activation_shape_mismatch:{activation.size}%{source_cols}"
+        )
+    rows = int(c_output.get("rows") or (activation.size // source_cols))
+    if rows <= 0 or rows > activation.size // source_cols:
+        raise ValueError("prefill_q4k_gemv_activation_rows_missing")
+    compile_dir, compile_identity = _compile_tiled_q4k_gemv_target(
+        runtime_dir=runtime_dir,
+        launch=launch,
+        source_cols=source_cols,
+    )
+    width = int(compile_identity["width"])
+    height = int(compile_identity["height"])
+    in_dim_per_pe = int(compile_identity["inDimPerPe"])
+    out_dim_per_pe = int(compile_identity["outDimPerPe"])
+    blocks_per_pe = int(compile_identity["numBlocksPerRow"])
+    output_tile_cols = height * out_dim_per_pe
+    weight_rows = _load_q4k_weight_rows(
+        materialization=b_materialization,
+        source_rows=source_rows,
+        source_cols=source_cols,
+    )
+    launch_dir = runtime_dir / "tiled-q4k-gemv" / f"launch-{launch_index:04d}"
+    output_matrix = np.zeros((rows, output_cols), dtype=np.float16)
+    output_path = _buffer_path(runtime_dir, c_buffer)
+    append_progress(
+        progress_path,
+        "prefill_q4k_gemv_group_start",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        rows=rows,
+        sourceCols=source_cols,
+        outputCols=output_cols,
+        jobs=max(1, int(jobs)),
+    )
+
+    tasks: list[dict[str, Any]] = []
+    for row_index in range(rows):
+        row = activation[
+            row_index * source_cols : (row_index + 1) * source_cols
+        ]
+        for output_start in range(0, output_cols, output_tile_cols):
+            tile_dir = (
+                launch_dir
+                / f"row-{row_index:04d}"
+                / f"out-{output_start:05d}"
+            )
+            act_path = tile_dir / "in" / "activation.npy"
+            weight_path = tile_dir / "in" / "weight.npy"
+            tile_output_path = tile_dir / "out" / "output.npy"
+            phase_trace_path = tile_dir / "phase-trace.log"
+            act_tile = _materialize_prefill_gemv_activation_tile(
+                activation_row=row,
+                source_cols=source_cols,
+                width=width,
+                height=height,
+                in_dim_per_pe=in_dim_per_pe,
+            )
+            weight_tile = _materialize_prefill_gemv_weight_tile(
+                weight_rows=weight_rows,
+                source_cols=source_cols,
+                output_start=output_start,
+                output_cols=output_cols,
+                width=width,
+                height=height,
+                out_dim_per_pe=out_dim_per_pe,
+                blocks_per_pe=blocks_per_pe,
+            )
+            act_path.parent.mkdir(parents=True, exist_ok=True)
+            weight_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(act_path, act_tile)
+            np.save(weight_path, weight_tile)
+            activation_spec = f"activation:{act_path}:f16:{in_dim_per_pe}"
+            weight_spec = (
+                f"weight:{weight_path}:u8:"
+                f"{out_dim_per_pe * blocks_per_pe * Q4K_BLOCK_BYTES}"
+            )
+            output_spec = (
+                f"output:{tile_output_path}:f16:{out_dim_per_pe}:"
+                f"{width - 1},0,1,{height}"
+            )
+            command = [
+                cs_python_executable(),
+                str(CHAIN_STEP_ADAPTER),
+                "--compile-dir",
+                str(compile_dir),
+                "--width",
+                str(width),
+                "--height",
+                str(height),
+                "--chunk-size",
+                str(in_dim_per_pe),
+                "--input",
+                activation_spec,
+                "--input",
+                weight_spec,
+                "--output",
+                output_spec,
+                "--phase-trace",
+                str(phase_trace_path),
+            ]
+            if cmaddr:
+                command.extend(["--cmaddr", cmaddr])
+            output_reusable, reuse_status = _prefill_gemv_tile_output_status(
+                tile_output_path,
+                expected_elements=output_tile_cols,
+            )
+            if not output_reusable:
+                tile_output_path.unlink(missing_ok=True)
+            tasks.append({
+                "rowIndex": row_index,
+                "outputStart": output_start,
+                "activationPath": act_path,
+                "weightPath": weight_path,
+                "outputPath": tile_output_path,
+                "phaseTracePath": phase_trace_path,
+                "activationSha256": sha256_file(act_path),
+                "weightSha256": sha256_file(weight_path),
+                "activationSpec": activation_spec,
+                "weightSpec": weight_spec,
+                "outputSpec": output_spec,
+                "command": command,
+                "reusedOutput": output_reusable,
+                "reuseStatus": reuse_status,
+            })
+
+    if not tasks:
+        raise ValueError("prefill_q4k_gemv_tile_tasks_empty")
+    pending_tasks = [task for task in tasks if not bool(task.get("reusedOutput"))]
+    task_shards = _prefill_gemv_task_shards(
+        pending_tasks,
+        jobs=max(1, int(jobs)),
+    )
+    for shard_index, shard_tasks in enumerate(task_shards):
+        for batch_step_index, task in enumerate(shard_tasks):
+            task["batchShardIndex"] = shard_index
+            task["batchStepIndex"] = batch_step_index
+    batch_path = launch_dir / "batch.json"
+    shard_dir = launch_dir / "batch-shards"
+    batch_payload = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_prefill_q4k_gemv_tile_batch",
+        "launchIndex": launch_index,
+        "reusedOutputCount": len(tasks) - len(pending_tasks),
+        "pendingStepCount": len(pending_tasks),
+        "requestedJobCount": max(1, int(jobs)),
+        "shardCount": len(task_shards),
+        "shards": [],
+        "steps": [
+            {
+                "inputs": [task["activationSpec"], task["weightSpec"]],
+                "outputs": [task["outputSpec"]],
+            }
+            for task in pending_tasks
+        ],
+    }
+
+    shard_specs: list[dict[str, Any]] = []
+    for shard_index, shard_tasks in enumerate(task_shards):
+        shard_path = shard_dir / f"batch-{shard_index:04d}.json"
+        shard_phase_trace_path = shard_dir / f"batch-{shard_index:04d}-phase.log"
+        shard_payload = {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_prefill_q4k_gemv_tile_batch_shard",
+            "launchIndex": launch_index,
+            "shardIndex": shard_index,
+            "stepCount": len(shard_tasks),
+            "steps": [
+                {
+                    "inputs": [task["activationSpec"], task["weightSpec"]],
+                    "outputs": [task["outputSpec"]],
+                }
+                for task in shard_tasks
+            ],
+        }
+        write_json(shard_path, shard_payload)
+        command = [
+            cs_python_executable(),
+            str(CHAIN_STEP_ADAPTER),
+            "--compile-dir",
+            str(compile_dir),
+            "--width",
+            str(width),
+            "--height",
+            str(height),
+            "--chunk-size",
+            str(in_dim_per_pe),
+            "--output",
+            str(shard_tasks[0]["outputSpec"]),
+            "--batch-json",
+            str(shard_path),
+            "--split-d2h-rows",
+            "--phase-trace",
+            str(shard_phase_trace_path),
+        ]
+        if cmaddr:
+            command.extend(["--cmaddr", cmaddr])
+        shard_specs.append({
+            "shardIndex": shard_index,
+            "path": shard_path,
+            "phaseTracePath": shard_phase_trace_path,
+            "stepCount": len(shard_tasks),
+            "command": command,
+            "tasks": shard_tasks,
+        })
+        batch_payload["shards"].append({
+            "shardIndex": shard_index,
+            "path": str(shard_path),
+            "phaseTracePath": str(shard_phase_trace_path),
+            "stepCount": len(shard_tasks),
+        })
+    write_json(batch_path, batch_payload)
+
+    def run_batch_shard(shard: dict[str, Any]) -> dict[str, Any]:
+        step_count = max(1, int(shard.get("stepCount") or 0))
+        shard_timeout = (
+            None
+            if timeout_seconds is None or timeout_seconds <= 0
+            else max(1, int(timeout_seconds)) * step_count
+        )
+        (
+            exit_code,
+            stdout,
+            stderr,
+            timed_out,
+            elapsed_ns,
+        ) = _run_prefill_gemv_tile(
+            command=list(shard["command"]),
+            timeout_seconds=shard_timeout,
+        )
+        return {
+            "shardIndex": int(shard["shardIndex"]),
+            "batchPath": shard["path"],
+            "phaseTracePath": shard["phaseTracePath"],
+            "exitCode": exit_code,
+            "stdout": stdout,
+            "stderr": stderr,
+            "timedOut": timed_out,
+            "wallclockNs": elapsed_ns,
+        }
+
+    shard_results: dict[int, dict[str, Any]] = {}
+    if shard_specs:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(shard_specs)
+        ) as pool:
+            for shard_result in pool.map(run_batch_shard, shard_specs):
+                shard_results[int(shard_result["shardIndex"])] = shard_result
+
+    phase_lines_by_shard: dict[int, list[str]] = {}
+    for shard_index, shard_result in shard_results.items():
+        phase_trace_path = Path(str(shard_result.get("phaseTracePath") or ""))
+        phase_text = str(shard_result.get("stdout") or "")
+        if phase_trace_path.is_file():
+            phase_text = phase_trace_path.read_text(encoding="utf-8")
+        phase_lines_by_shard[shard_index] = [
+            line for line in phase_text.splitlines() if line.startswith("phase:")
+        ]
+
+    def phase_tail_for_step(shard_index: int, step_index: int) -> list[str]:
+        phase_lines = phase_lines_by_shard.get(shard_index, [])
+        step_token = f"step={step_index}"
+        return [line for line in phase_lines if step_token in line][-12:]
+
+    results: list[dict[str, Any]] = []
+    for task in tasks:
+        step_index = int(task.get("batchStepIndex", -1))
+        shard_index = int(task.get("batchShardIndex", -1))
+        shard_result = shard_results.get(shard_index, {})
+        output_record = {
+            "path": str(task["outputPath"]),
+            "totalBytes": (
+                task["outputPath"].stat().st_size
+                if task["outputPath"].is_file()
+                else 0
+            ),
+            "sha256": (
+                sha256_file(task["outputPath"])
+                if task["outputPath"].is_file()
+                else ""
+            ),
+        }
+        output_ready, output_status = _prefill_gemv_tile_output_status(
+            Path(str(task["outputPath"])),
+            expected_elements=output_tile_cols,
+        )
+        reused_output = bool(task.get("reusedOutput")) and output_ready
+        results.append({
+            **task,
+            "batchShardIndex": shard_index,
+            "batchStepIndex": step_index,
+            "batchPath": shard_result.get("batchPath", ""),
+            "batchPhaseTracePath": shard_result.get("phaseTracePath", ""),
+            "exitCode": 0 if output_ready else int(shard_result.get("exitCode") or 0),
+            "timedOut": False if output_ready else bool(shard_result.get("timedOut")),
+            "wallclockNs": int(shard_result.get("wallclockNs") or 0),
+            "output": output_record,
+            "outputStatus": output_status,
+            "phaseTail": (
+                ["phase:verified_tile_output_reused"]
+                if reused_output
+                else phase_tail_for_step(shard_index, step_index)
+            ),
+            "stdoutTail": tail_lines(shard_result.get("stdout"), 3),
+            "stderrTail": tail_lines(shard_result.get("stderr"), 3),
+        })
+
+    results.sort(key=lambda item: (int(item["rowIndex"]), int(item["outputStart"])))
+    batch_exit_code = next(
+        (
+            int(result.get("exitCode") or 0)
+            for result in shard_results.values()
+            if int(result.get("exitCode") or 0) != 0
+        ),
+        0,
+    )
+    batch_timed_out = any(
+        bool(result.get("timedOut")) for result in shard_results.values()
+    )
+    batch_elapsed_ns = max(
+        [int(result.get("wallclockNs") or 0) for result in shard_results.values()]
+        or [0]
+    )
+    batch_wallclock_ns_sum = sum(
+        int(result.get("wallclockNs") or 0) for result in shard_results.values()
+    )
+    batch_shards = [
+        {
+            "shardIndex": int(result.get("shardIndex") or 0),
+            "batchPath": str(result.get("batchPath") or ""),
+            "phaseTracePath": str(result.get("phaseTracePath") or ""),
+            "exitCode": int(result.get("exitCode") or 0),
+            "timedOut": bool(result.get("timedOut")),
+            "wallclockNs": int(result.get("wallclockNs") or 0),
+            "stdoutTail": tail_lines(result.get("stdout"), 3),
+            "stderrTail": tail_lines(result.get("stderr"), 3),
+        }
+        for result in sorted(
+            shard_results.values(),
+            key=lambda item: int(item.get("shardIndex") or 0),
+        )
+    ]
+    blockers: list[str] = []
+    for result in results:
+        output_start = int(result["outputStart"])
+        row_index = int(result["rowIndex"])
+        if bool(result["timedOut"]):
+            blockers.append(
+                f"prefill_q4k_gemv_tile_timeout:{row_index}:{output_start}"
+            )
+            continue
+        if int(result["exitCode"]) != 0:
+            blockers.append(
+                "prefill_q4k_gemv_tile_exit_code_"
+                f"{int(result['exitCode'])}:{row_index}:{output_start}"
+            )
+            continue
+        if str(result.get("outputStatus") or "") != "ready":
+            blockers.append(
+                "prefill_q4k_gemv_tile_output_invalid:"
+                f"{result.get('outputStatus')}:{row_index}:{output_start}"
+            )
+            continue
+        if int((result.get("output") or {}).get("totalBytes") or 0) <= 0:
+            blockers.append(
+                f"prefill_q4k_gemv_tile_output_empty:{row_index}:{output_start}"
+            )
+            continue
+        tile_values = np.load(
+            Path(str((result.get("output") or {}).get("path") or "")),
+            allow_pickle=False,
+        ).astype(np.float16, copy=False).reshape(-1)
+        count = min(output_tile_cols, output_cols - output_start)
+        output_matrix[row_index, output_start : output_start + count] = (
+            tile_values[:count]
+        )
+    if blockers:
+        receipt = {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_tiled_q4k_gemv_launch_receipt",
+            "status": "blocked",
+            "blockers": blockers,
+            "launchIndex": launch_index,
+            "targetName": launch.get("targetName"),
+            "dispatchMode": "tiled_q4k_gemv_batched_runtime",
+            "compileIdentity": compile_identity,
+            "batchRuntime": {
+                "batchPath": str(batch_path),
+                "exitCode": batch_exit_code,
+                "timedOut": batch_timed_out,
+                "wallclockNs": batch_elapsed_ns,
+                "adapterWallclockNsSum": batch_wallclock_ns_sum,
+                "requestedJobCount": max(1, int(jobs)),
+                "shardCount": len(task_shards),
+                "pendingStepCount": len(pending_tasks),
+                "reusedOutputCount": len(tasks) - len(pending_tasks),
+                "shards": batch_shards,
+            },
+            "tileDispatches": [
+                _prefill_gemv_tile_receipt_summary(result)
+                for result in results
+            ],
+        }
+        write_json(_launch_receipt_path(runtime_dir, launch_index), receipt)
+        raise ValueError("; ".join(blockers))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(output_path, output_matrix.reshape(-1))
+    digest = hashlib.sha256(output_matrix.tobytes(order="C")).hexdigest()
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_tiled_q4k_gemv_launch_receipt",
+        "status": "succeeded",
+        "blockers": [],
+        "launchIndex": launch_index,
+        "targetName": launch.get("targetName"),
+        "dispatchMode": "tiled_q4k_gemv_batched_runtime",
+        "compileIdentity": compile_identity,
+        "batchRuntime": {
+            "batchPath": str(batch_path),
+            "exitCode": batch_exit_code,
+            "timedOut": batch_timed_out,
+            "wallclockNs": batch_elapsed_ns,
+            "adapterWallclockNsSum": batch_wallclock_ns_sum,
+            "requestedJobCount": max(1, int(jobs)),
+            "shardCount": len(task_shards),
+            "pendingStepCount": len(pending_tasks),
+            "reusedOutputCount": len(tasks) - len(pending_tasks),
+            "shards": batch_shards,
+        },
+        "inputBuffers": [
+            {
+                "name": a_buffer,
+                "symbol": "a",
+                "role": "activation",
+                "path": str(activation_path),
+                "dtype": "f16",
+                "sha256": sha256_file(activation_path),
+                "sha256Kind": "npy_file_bytes",
+            },
+            {
+                "name": str(b_binding.get("buffer") or ""),
+                "symbol": "b",
+                "role": "weight",
+                "dtype": "u8_q4k",
+                "weightKey": (
+                    (b_materialization.get("weightMapping") or {}).get("weightKey")
+                ),
+                "weightSha256": (
+                    (b_materialization.get("weightMapping") or {}).get("sha256")
+                ),
+            },
+        ],
+        "tileCoverage": {
+            "kind": "prefill_row_q4k_gemv_output_tiles",
+            "rows": rows,
+            "sourceCols": source_cols,
+            "outputCols": output_cols,
+            "width": width,
+            "height": height,
+            "inDimPerPe": in_dim_per_pe,
+            "outDimPerPe": out_dim_per_pe,
+            "blocksPerPe": blocks_per_pe,
+            "outputTileCols": output_tile_cols,
+            "tileCount": len(results),
+            "batchStepCount": len(tasks),
+            "pendingBatchStepCount": len(pending_tasks),
+            "reusedOutputCount": len(tasks) - len(pending_tasks),
+            "covered": len(results)
+            == rows * _ceil_div(output_cols, output_tile_cols),
+        },
+        "tileDispatches": [
+            _prefill_gemv_tile_receipt_summary(result)
+            for result in results
+        ],
+        "output": {
+            "buffer": c_buffer,
+            "path": str(output_path),
+            "dtype": "f16",
+            "shape": [rows, output_cols],
+            "sha256": digest,
+            "sha256Kind": "array_tobytes_c_order",
+        },
+    }
+    write_json(_launch_receipt_path(runtime_dir, launch_index), receipt)
+    append_progress(
+        progress_path,
+        "prefill_q4k_gemv_group_complete",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        rows=rows,
+        outputCols=output_cols,
+        tileCount=len(results),
+    )
+    return receipt
+
+
+def _prefill_gemv_tile_receipt_summary(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "rowIndex": int(result.get("rowIndex") or 0),
+        "outputStart": int(result.get("outputStart") or 0),
+        "activation": {
+            "path": str(result.get("activationPath") or ""),
+            "sha256": str(result.get("activationSha256") or ""),
+        },
+        "weight": {
+            "path": str(result.get("weightPath") or ""),
+            "sha256": str(result.get("weightSha256") or ""),
+        },
+        "output": result.get("output") or {},
+        "outputStatus": str(result.get("outputStatus") or ""),
+        "reusedOutput": bool(result.get("reusedOutput")),
+        "reuseStatus": str(result.get("reuseStatus") or ""),
+        "batchShardIndex": int(result.get("batchShardIndex", -1)),
+        "batchStepIndex": int(result.get("batchStepIndex") or 0),
+        "batchPath": str(result.get("batchPath") or ""),
+        "batchPhaseTracePath": str(result.get("batchPhaseTracePath") or ""),
+        "exitCode": int(result.get("exitCode") or 0),
+        "timedOut": bool(result.get("timedOut")),
+        "wallclockNs": int(result.get("wallclockNs") or 0),
+        "phaseTail": result.get("phaseTail") or [],
+        "stdoutTail": result.get("stdoutTail") or [],
+        "stderrTail": result.get("stderrTail") or [],
+    }
+
+
 def _compact_ple_proj_source_transform(
     *,
     matrix_role: str,
@@ -2560,6 +3440,123 @@ def _execute_embed_roi_launch_group(
         return list(pool.map(run_one, group))
 
 
+def _is_rmsnorm_roi_launch(launch: dict[str, Any]) -> bool:
+    return str(launch.get("targetName") or "") in RMSNORM_ROI_TARGETS
+
+
+def _execute_rmsnorm_roi_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    staged_inputs: list[dict[str, Any]],
+    staged_outputs: list[dict[str, Any]],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+    jobs: int,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    if len(staged_inputs) < 2 or not staged_outputs:
+        raise ValueError("rmsnorm_roi_bindings_missing")
+    output = staged_outputs[0]
+    transform = output.get("outputTransform") or {}
+    rows = int(transform.get("rows") or 0)
+    cols = int(transform.get("cols") or staged_inputs[0].get("elementsPerPe") or 0)
+    if rows <= 0 or cols <= 0:
+        raise ValueError("rmsnorm_roi_shape_missing")
+    roi_dir = runtime_dir / "rmsnorm-roi" / f"launch-{launch_index:04d}"
+    roi_dir.mkdir(parents=True, exist_ok=True)
+    input_matrix = np.load(Path(str(staged_inputs[0]["path"])), allow_pickle=False).ravel()
+    weight_vector = np.load(Path(str(staged_inputs[1]["path"])), allow_pickle=False).ravel()[:cols]
+    compile_dir = Path(str(launch.get("compileDir") or ""))
+    roi_compile_dir = compile_dir.parent / "rmsnorm_decode"
+    row_outputs: list[Path] = [roi_dir / f"row-{row:04d}-output.npy" for row in range(rows)]
+
+    def run_row(row: int) -> dict[str, Any]:
+        row_input = input_matrix[row * cols : (row + 1) * cols].astype(np.float16, copy=False)
+        row_input_path = roi_dir / f"row-{row:04d}-input.npy"
+        row_weight_path = roi_dir / f"row-{row:04d}-weight.npy"
+        np.save(row_input_path, row_input)
+        np.save(row_weight_path, weight_vector.astype(np.float16, copy=False))
+        row_transform = dict(transform)
+        row_transform["rows"] = 1
+        row_spec = {
+            "compileDir": str(roi_compile_dir),
+            "launchFunction": launch.get("launchFunction"),
+            "launchIndex": launch_index,
+            "cmaddr": cmaddr or "",
+            "targetGeometry": {"width": 1, "height": 1, "peCount": 1, "runtimePeCount": 1},
+            "inputs": [
+                {**staged_inputs[0], "path": str(row_input_path), "elementsPerPe": cols},
+                {**staged_inputs[1], "path": str(row_weight_path), "elementsPerPe": cols},
+            ],
+            "outputs": [
+                {**output, "path": str(row_outputs[row]), "elementsPerPe": cols, "outputTransform": row_transform}
+            ],
+        }
+        spec_path = roi_dir / f"row-{row:04d}-spec.json"
+        receipt_path = roi_dir / f"row-{row:04d}-receipt.json"
+        write_json(spec_path, row_spec)
+        command = [
+            cs_python_executable(),
+            str(LAUNCH_STEP_ADAPTER),
+            "--spec",
+            str(spec_path),
+            "--receipt-out",
+            str(receipt_path),
+            "--progress-out",
+            str(progress_path),
+        ]
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+        )
+        receipt = load_json(receipt_path) if receipt_path.is_file() else {}
+        if completed.returncode != 0 or receipt.get("status") != "succeeded":
+            raise ValueError("; ".join(receipt.get("blockers") or ["rmsnorm_roi_row_failed"]))
+        return receipt
+
+    append_progress(
+        progress_path,
+        "rmsnorm_roi_group_start",
+        launchIndex=launch_index,
+        rows=rows,
+        jobs=max(1, int(jobs)),
+    )
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, int(jobs))) as pool:
+        row_receipts = list(pool.map(run_row, range(rows)))
+    merged = np.concatenate(
+        [np.load(path, allow_pickle=False).ravel()[:cols] for path in row_outputs]
+    ).astype(np.float16, copy=False)
+    output_path = Path(str(output["path"]))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(output_path, merged)
+    digest = hashlib.sha256(merged.tobytes(order="C")).hexdigest()
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_rmsnorm_roi_launch_receipt",
+        "status": "succeeded",
+        "blockers": [],
+        "launchIndex": launch_index,
+        "compileDir": str(roi_compile_dir),
+        "rowReceiptCount": len(row_receipts),
+        "output": {
+            "buffer": output.get("buffer"),
+            "path": str(output_path),
+            "dtype": "f16",
+            "shape": [rows, cols],
+            "sha256": digest,
+            "sha256Kind": "array_tobytes_c_order",
+        },
+    }
+    write_json(_launch_receipt_path(runtime_dir, launch_index), receipt)
+    append_progress(progress_path, "rmsnorm_roi_group_complete", launchIndex=launch_index)
+    return receipt
+
+
 def execute_hostplan_runtime(
     *,
     bootstrap: dict[str, Any],
@@ -2575,6 +3572,7 @@ def execute_hostplan_runtime(
     session_lm_head_tile_width: int = DEFAULT_SESSION_LM_HEAD_TILE_WIDTH,
     session_lm_head_tile_jobs: int = DEFAULT_SESSION_LM_HEAD_TILE_JOBS,
     session_embed_roi_jobs: int = 1,
+    session_prefill_q4k_gemv_jobs: int = 1,
     session_ple_proj_dispatch_mode: str = "monolithic_summa",
     session_lm_head_batch_runtime: bool = False,
     session_lm_head_batch_runtime_step_budget: int = DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
@@ -2740,6 +3738,46 @@ def execute_hostplan_runtime(
                     stopped_at_checkpoint = True
                     break
                 continue
+            if _is_tiled_q4k_gemv_launch(
+                launch,
+                session_ple_proj_dispatch_mode,
+            ):
+                launch_receipt = _execute_tiled_q4k_gemv_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    buffer_files=buffer_files,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                    jobs=max(1, int(session_prefill_q4k_gemv_jobs)),
+                )
+                executed_launches.append(launch_receipt)
+                output = launch_receipt.get("output") or {}
+                if output.get("buffer") and output.get("path"):
+                    buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="tiled_q4k_gemv_batched_runtime",
+                )
+                if checkpoint_dir is not None:
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=[output] if output else [],
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
             if _is_compact_ple_proj_launch(
                 launch,
                 session_ple_proj_dispatch_mode,
@@ -2798,6 +3836,43 @@ def execute_hostplan_runtime(
                 buffer_files=buffer_files,
                 export=export,
             )
+            if _is_rmsnorm_roi_launch(launch):
+                launch_receipt = _execute_rmsnorm_roi_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    staged_inputs=staged_inputs,
+                    staged_outputs=staged_outputs,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                    jobs=max(1, int(session_embed_roi_jobs)),
+                )
+                executed_launches.append(launch_receipt)
+                for output in staged_outputs:
+                    buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="rmsnorm_roi_parallel",
+                )
+                if checkpoint_dir is not None:
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=staged_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
             if _is_session_tiled_lm_head_launch(
                 launch,
                 session_lm_head_dispatch_mode,
@@ -3005,6 +4080,9 @@ def execute_hostplan_runtime(
         },
         "sessionEmbedRoi": {
             "jobs": max(1, int(session_embed_roi_jobs)),
+        },
+        "sessionPrefillQ4kGemv": {
+            "jobs": max(1, int(session_prefill_q4k_gemv_jobs)),
         },
         "sessionPleProjDispatch": {
             "mode": session_ple_proj_dispatch_mode,
@@ -3274,6 +4352,7 @@ def main() -> int:
                 resume_state = _load_checkpoint(
                     checkpoint_dir=resume_dir,
                     identity=identity,
+                    allow_runner_version_drift=args.allow_checkpoint_runner_drift,
                 )
                 append_progress(
                     progress_path,
@@ -3293,7 +4372,11 @@ def main() -> int:
                 )
                 raise
         if checkpoint_dir is not None:
-            _init_checkpoint(checkpoint_dir, identity)
+            _init_checkpoint(
+                checkpoint_dir,
+                identity,
+                allow_runner_version_drift=args.allow_checkpoint_runner_drift,
+            )
         append_progress(
             progress_path,
             "scheduler_readiness",
@@ -3329,6 +4412,7 @@ def main() -> int:
                 session_lm_head_tile_width=args.session_lm_head_tile_width,
                 session_lm_head_tile_jobs=args.session_lm_head_tile_jobs,
                 session_embed_roi_jobs=args.session_embed_roi_jobs,
+                session_prefill_q4k_gemv_jobs=args.session_prefill_q4k_gemv_jobs,
                 session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
                 session_lm_head_batch_runtime=args.session_lm_head_batch_runtime,
                 session_lm_head_batch_runtime_step_budget=(

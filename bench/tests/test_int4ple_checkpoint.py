@@ -161,6 +161,51 @@ class IdentityDriftRejection(unittest.TestCase):
                 load_checkpoint(checkpoint_dir=ckpt, identity=current)
             self.assertEqual(ctx.exception.code, "runner_drift")
 
+    def test_explicit_runner_drift_override_still_loads_buffers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            ckpt = tmp / "ckpt"
+            init_checkpoint(ckpt, _identity())
+            staged = [_seed_buffer(tmp, "activations", b"\x03" * 8)]
+            persist_launch_checkpoint(
+                checkpoint_dir=ckpt,
+                launch_index=0,
+                launch={"launchIndex": 0, "targetName": "embed"},
+                launch_receipt={"status": "succeeded"},
+                staged_outputs=staged,
+                launch_identity="li",
+                started_at_unix=1.0,
+            )
+
+            current = _identity()
+            current["runnerVersion"] = "deadbeefcafef00d"
+            state = load_checkpoint(
+                checkpoint_dir=ckpt,
+                identity=current,
+                allow_runner_version_drift=True,
+            )
+
+            self.assertEqual(state.start_index, 1)
+            self.assertEqual(
+                state.buffer_files["activations"].read_bytes(),
+                b"\x03" * 8,
+            )
+
+    def test_explicit_runner_drift_override_reuses_existing_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ckpt = Path(tmpdir) / "ckpt"
+            original = init_checkpoint(ckpt, _identity())
+
+            current = _identity()
+            current["runnerVersion"] = "deadbeefcafef00d"
+            reused = init_checkpoint(
+                ckpt,
+                current,
+                allow_runner_version_drift=True,
+            )
+
+        self.assertEqual(reused["identity"], original["identity"])
+
     def test_schema_drift_raises_typed_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -204,6 +249,28 @@ class BufferCorruptionRejection(unittest.TestCase):
             with self.assertRaises(CheckpointBufferCorruptionError) as ctx:
                 load_checkpoint(checkpoint_dir=ckpt, identity=_identity())
             self.assertIn("sha_drift", ctx.exception.code)
+
+    def test_source_buffer_rewrite_does_not_mutate_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            ckpt = tmp / "ckpt"
+            init_checkpoint(ckpt, _identity())
+
+            staged = [_seed_buffer(tmp, "activations", b"\x11" * 32)]
+            src = Path(str(staged[0]["path"]))
+            persist_launch_checkpoint(
+                checkpoint_dir=ckpt,
+                launch_index=0,
+                launch={"launchIndex": 0, "targetName": "embed"},
+                launch_receipt={"status": "succeeded"},
+                staged_outputs=staged,
+                launch_identity="li",
+                started_at_unix=1.0,
+            )
+            src.write_bytes(b"\x22" * 64)
+
+            state = load_checkpoint(checkpoint_dir=ckpt, identity=_identity())
+            self.assertEqual(state.buffer_files["activations"].read_bytes(), b"\x11" * 32)
 
 
 class StopResumeIdempotence(unittest.TestCase):
