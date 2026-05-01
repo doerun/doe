@@ -10,7 +10,7 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 |---|---|---|---|
 | A. Real-canary CSL identity | Smoke | No (regression bookkeeping) | 24/24 pass across 6 kernels × 4 backends |
 | B. 31B manifest-shape full-graph compile | Manifest | Yes | **Closed for emitted compile inventory only.** Not token-output inference evidence unless the inventory includes the post-layer logits path |
-| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | **Blocked fail-closed.** Sample dispatch is bound, lm-head dispatch is still unbound, and the real session remains checkpoint-stopped before transcript output |
+| C. 31B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | **Blocked fail-closed.** Sample dispatch is bound, session-tiled lm-head is the active path, and the real session remains checkpoint-stopped before transcript output |
 
 ## Bound today (no hardware)
 
@@ -61,7 +61,7 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 3. **Landed in source:** the Gemma 4 31B execution-v1 smoke graph carries explicit final-norm / lm-head / sample tails for both prefill-generated and decode-generated tokens.
 4. **Landed in source:** HostPlan lowering rejects `sample` unless the immediately preceding same-phase step is a compatible logits producer; compute after same-phase sample also fails closed.
 5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches serial checkpointed kernels, and carries scheduler state. The latest scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`; it is checkpoint-stopped and has no token/logit/KV transcript.
-6. **Partially landed artifact step:** the f16 CSL dtype contract and bounded-smoke schema are gate-covered, and the current bounded receipt records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound`. The sample dispatch receipt is bound; lm-head dispatch now reaches the direct SDK dispatch path but times out with no output bytes, so transcript evidence remains blocked.
+6. **Partially landed artifact step:** the f16 CSL dtype contract and bounded-smoke schema are gate-covered. The gate now accepts a complete `realSessionRuntime.status=output_ready` transcript as the end-to-end prefill/decode evidence path, superseding stale per-kernel lm-head evidence only after generated token IDs, lm-head dispatch records, and KV digests are present. The current bounded receipt still records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound` because no token/logit/KV transcript exists yet.
 7. **Landed in source:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, prefill/decode feedback shape, f16 dtype contract drift, and blocked-receipt bounded evidence emission.
 
 ## Integrity invariants

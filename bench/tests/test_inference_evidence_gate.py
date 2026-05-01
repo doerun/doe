@@ -19,6 +19,8 @@ from bench.tools._inference_evidence_gate import (  # noqa: E402
     REASON_NO_TOKEN_OUTPUT_PHASE,
     REASON_SAMPLE_PREDECESSOR_NOT_LM_HEAD,
     REASON_SAMPLE_WITHOUT_LOGITS_PRODUCER,
+    REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH,
+    REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY,
     REASON_TARGET_INVENTORY_MISMATCH,
     enforce_inference_evidence_gate,
     evaluate_inference_evidence_gate,
@@ -56,6 +58,31 @@ def _good_per_kernel() -> dict:
             },
             {"kernel": "sample", "verdict": "bound"},
         ],
+    }
+
+
+def _good_session_runtime() -> dict:
+    return {
+        "status": "output_ready",
+        "runtimeTranscript": {
+            "status": "output_ready",
+            "requestedDecodeSteps": 2,
+            "actualDecodeSteps": 2,
+            "generatedTokenIds": [4104, 6158],
+            "lmHeadDispatches": [
+                {
+                    "launchIndex": 4,
+                    "dispatchMode": "dense_gemv_width_tiled_session",
+                    "buffer": "activation:prefill:0004:global:lm_head",
+                },
+                {
+                    "launchIndex": 9,
+                    "dispatchMode": "dense_gemv_width_tiled_session",
+                    "buffer": "activation:decode:0009:global:lm_head",
+                },
+            ],
+            "kvCache": {"mode": "runtime_captured", "digestCount": 2},
+        },
     }
 
 
@@ -278,6 +305,48 @@ class InferenceEvidenceGateTest(unittest.TestCase):
         )
         self.assertTrue(result.eligible)
         self.assertEqual(result.reasons, ())
+
+    def test_session_transcript_supersedes_unbound_per_kernel(self) -> None:
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] in {"lm_head_gemv", "sample"}:
+                entry["verdict"] = "blocked"
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(),
+            per_kernel_summary=evidence,
+            real_session_runtime=_good_session_runtime(),
+            requested_decode_steps=2,
+        )
+        self.assertTrue(result.eligible)
+        self.assertEqual(result.reasons, ())
+
+    def test_invalid_output_ready_session_rejects_fail_closed(self) -> None:
+        session = _good_session_runtime()
+        session["runtimeTranscript"]["actualDecodeSteps"] = 1
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(),
+            per_kernel_summary=_good_per_kernel(),
+            real_session_runtime=session,
+            requested_decode_steps=2,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(
+            REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH,
+            _codes(result),
+        )
+
+    def test_not_ready_session_without_per_kernel_rejects(self) -> None:
+        session = _good_session_runtime()
+        session["status"] = "checkpoint_stopped"
+        session["runtimeTranscript"]["status"] = "pending"
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(),
+            per_kernel_summary=None,
+            real_session_runtime=session,
+            requested_decode_steps=2,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY, _codes(result))
 
     def test_lm_head_width_tiled_rejects_unsafe_shape(self) -> None:
         evidence = _good_per_kernel()

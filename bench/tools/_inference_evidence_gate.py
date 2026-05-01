@@ -19,6 +19,7 @@ Dispatch checks (per-kernel simfabric summary or equivalent):
   - lm-head missing from dispatch evidence
   - no lm-head dispatch verdict is 'bound'
   - dispatch evidence absent altogether while sample is in the plan
+  - complete session transcript evidence may supersede per-kernel evidence
 """
 
 from __future__ import annotations
@@ -37,6 +38,19 @@ REASON_DISPATCH_EVIDENCE_ABSENT = "dispatch_evidence_absent"
 REASON_DISPATCH_EVIDENCE_SAMPLE_UNBOUND = "dispatch_evidence_sample_unbound"
 REASON_DISPATCH_EVIDENCE_LM_HEAD_MISSING = "dispatch_evidence_lm_head_missing"
 REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND = "dispatch_evidence_lm_head_unbound"
+REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY = "session_transcript_not_output_ready"
+REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH = (
+    "session_transcript_decode_count_mismatch"
+)
+REASON_SESSION_TRANSCRIPT_TOKENS_INCOMPLETE = (
+    "session_transcript_generated_tokens_incomplete"
+)
+REASON_SESSION_TRANSCRIPT_LM_HEAD_MISSING = (
+    "session_transcript_lm_head_dispatch_missing"
+)
+REASON_SESSION_TRANSCRIPT_KV_CACHE_MISSING = (
+    "session_transcript_kv_cache_missing"
+)
 
 
 _LM_HEAD_PREFIX = "lm_head"
@@ -46,6 +60,7 @@ _DIRECT_DISPATCH_MODE = "monolithic_full_fabric"
 _DIRECT_LM_HEAD_SCOPE = "manifest_shape_direct_dispatch"
 _WIDTH_TILED_DISPATCH_MODE = "dense_gemv_width_tiled"
 _WIDTH_TILED_LM_HEAD_SCOPE = "full_vocab_host_reduced_width_row_tiles"
+_OUTPUT_READY_STATUS = "output_ready"
 
 
 @dataclass(frozen=True)
@@ -138,12 +153,162 @@ def _lm_head_entry_promotes(entry: Mapping[str, object]) -> bool:
     return False
 
 
+def _as_mapping(value: object) -> Mapping[str, object] | None:
+    return value if isinstance(value, Mapping) else None
+
+
+def _as_sequence(value: object) -> Sequence[object]:
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return value
+    return []
+
+
+def _session_transcript(
+    real_session_runtime: Mapping[str, object],
+) -> Mapping[str, object]:
+    transcript = real_session_runtime.get("runtimeTranscript")
+    if isinstance(transcript, Mapping):
+        return transcript
+    return real_session_runtime
+
+
+def _session_claims_output_ready(
+    real_session_runtime: Mapping[str, object],
+) -> bool:
+    transcript = _session_transcript(real_session_runtime)
+    runtime_status = str(real_session_runtime.get("status") or "")
+    transcript_status = str(transcript.get("status") or runtime_status)
+    return (
+        runtime_status == _OUTPUT_READY_STATUS
+        or transcript_status == _OUTPUT_READY_STATUS
+    )
+
+
+def session_runtime_evidence_reasons(
+    real_session_runtime: Mapping[str, object] | None,
+    *,
+    requested_decode_steps: int | None = None,
+) -> tuple[GateReason, ...]:
+    if real_session_runtime is None:
+        return (
+            GateReason(
+                REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY,
+                "no real-session runtime evidence was supplied.",
+            ),
+        )
+
+    transcript = _session_transcript(real_session_runtime)
+    runtime_status = str(real_session_runtime.get("status") or "")
+    transcript_status = str(transcript.get("status") or runtime_status)
+    reasons: list[GateReason] = []
+
+    if runtime_status != _OUTPUT_READY_STATUS:
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY,
+            "real-session runtime status is "
+            f"'{runtime_status or '<missing>'}'; required: "
+            f"'{_OUTPUT_READY_STATUS}'.",
+        ))
+    elif transcript_status != _OUTPUT_READY_STATUS:
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY,
+            "real-session transcript status is "
+            f"'{transcript_status or '<missing>'}'; required: "
+            f"'{_OUTPUT_READY_STATUS}'.",
+        ))
+
+    requested = requested_decode_steps
+    if requested is None:
+        try:
+            requested = int(transcript.get("requestedDecodeSteps") or 0)
+        except (TypeError, ValueError):
+            requested = 0
+    try:
+        actual = int(transcript.get("actualDecodeSteps") or 0)
+    except (TypeError, ValueError):
+        actual = 0
+    if requested is None or requested <= 0 or actual != requested:
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH,
+            "real-session transcript decode count mismatch; "
+            f"requested={requested or 0}; actual={actual}.",
+        ))
+
+    generated_tokens = _as_sequence(transcript.get("generatedTokenIds"))
+    if (
+        actual <= 0
+        or len(generated_tokens) != actual
+        or any(not isinstance(token, int) for token in generated_tokens)
+    ):
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_TOKENS_INCOMPLETE,
+            "real-session transcript generatedTokenIds must contain one "
+            "integer token ID per decoded output step.",
+        ))
+
+    lm_head_dispatches = _as_sequence(transcript.get("lmHeadDispatches"))
+    if len(lm_head_dispatches) < actual or actual <= 0:
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_LM_HEAD_MISSING,
+            "real-session transcript must include at least one lm-head "
+            "dispatch record per decoded output step.",
+        ))
+    else:
+        for index, dispatch in enumerate(lm_head_dispatches[:actual]):
+            item = _as_mapping(dispatch)
+            if item is None:
+                reasons.append(GateReason(
+                    REASON_SESSION_TRANSCRIPT_LM_HEAD_MISSING,
+                    f"lm-head dispatch record {index} is not an object.",
+                ))
+                break
+            if not str(item.get("dispatchMode") or ""):
+                reasons.append(GateReason(
+                    REASON_SESSION_TRANSCRIPT_LM_HEAD_MISSING,
+                    f"lm-head dispatch record {index} has no dispatchMode.",
+                ))
+                break
+
+    kv_cache = _as_mapping(transcript.get("kvCache"))
+    digest_count = 0
+    if kv_cache is not None:
+        try:
+            digest_count = int(kv_cache.get("digestCount") or 0)
+        except (TypeError, ValueError):
+            digest_count = 0
+    if (
+        kv_cache is None
+        or str(kv_cache.get("mode") or "") != "runtime_captured"
+        or digest_count <= 0
+    ):
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_KV_CACHE_MISSING,
+            "real-session transcript must include runtime_captured KV-cache "
+            "digests.",
+        ))
+
+    return tuple(reasons)
+
+
+def session_runtime_evidence_is_complete(
+    real_session_runtime: Mapping[str, object] | None,
+    *,
+    requested_decode_steps: int | None = None,
+) -> bool:
+    return not session_runtime_evidence_reasons(
+        real_session_runtime,
+        requested_decode_steps=requested_decode_steps,
+    )
+
+
 def evaluate_inference_evidence_gate(
     *,
     host_plan: Mapping[str, object],
     per_kernel_summary: Mapping[str, object] | None = None,
     require_dispatch_evidence: bool = True,
     source_graph_kernels: Sequence[str] | None = None,
+    real_session_runtime: Mapping[str, object] | None = None,
+    requested_decode_steps: int | None = None,
 ) -> GateResult:
     reasons: list[GateReason] = []
 
@@ -225,13 +390,33 @@ def evaluate_inference_evidence_gate(
                 f"missing={missing}; extra={extra}.",
             ))
 
-    if per_kernel_summary is None:
+    session_reasons: tuple[GateReason, ...] = ()
+    session_evidence_complete = False
+    session_output_ready_claim = False
+    if real_session_runtime is not None:
+        session_reasons = session_runtime_evidence_reasons(
+            real_session_runtime,
+            requested_decode_steps=requested_decode_steps,
+        )
+        session_evidence_complete = not session_reasons
+        session_output_ready_claim = _session_claims_output_ready(
+            real_session_runtime
+        )
+
+    if sample_in_any_phase and session_evidence_complete:
+        pass
+    elif sample_in_any_phase and session_output_ready_claim:
+        reasons.extend(session_reasons)
+    elif per_kernel_summary is None:
         if require_dispatch_evidence and sample_in_any_phase:
-            reasons.append(GateReason(
-                REASON_DISPATCH_EVIDENCE_ABSENT,
-                "no per-kernel dispatch evidence supplied; cannot back an "
-                "inference claim.",
-            ))
+            if real_session_runtime is not None:
+                reasons.extend(session_reasons)
+            else:
+                reasons.append(GateReason(
+                    REASON_DISPATCH_EVIDENCE_ABSENT,
+                    "no per-kernel dispatch evidence supplied; cannot back an "
+                    "inference claim.",
+                ))
     else:
         kernels_field = per_kernel_summary.get("kernels") or []
         kernel_entries: Sequence[object] = (

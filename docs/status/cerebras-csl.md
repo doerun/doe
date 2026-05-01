@@ -9,7 +9,25 @@ This is a live topical status shard.
 
 Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing. The
-active Gemma 4 31B af16 blocker is lm-head token-output evidence.
+active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
+completion.
+
+## 2026-05-01 — real-session transcript evidence becomes the bounded-smoke gate path
+
+The inference evidence gate now treats a complete
+`realSessionRuntime.status=output_ready` transcript as the authoritative
+token-output evidence path for bounded Gemma 4 31B af16 prefill/decode. A
+complete transcript must match the requested decode count, carry generated
+token IDs, lm-head dispatch records, and runtime-captured KV-cache digests.
+Incomplete or malformed `output_ready` transcripts fail closed instead of
+falling back to per-kernel evidence.
+
+The HostPlan streaming front door and bounded-smoke receipt builder now pass
+real-session transcript evidence into the gate. Once the resumable simfabric
+session reaches `output_ready`, stale or incomplete manifest-shape per-kernel
+lm-head evidence no longer blocks the end-to-end prefill/decode receipt. Until
+that transcript exists, current checkpoint-stopped and not-executed traces
+remain blocked by explicit runtime/transcript blockers.
 
 ## 2026-04-30 — session-tiled lm-head becomes the active simfabric path
 

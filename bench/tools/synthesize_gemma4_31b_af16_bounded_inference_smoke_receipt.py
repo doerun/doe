@@ -43,6 +43,7 @@ from bench.tools._inference_evidence_gate import (  # noqa: E402
     InferenceEvidenceGateError,
     enforce_inference_evidence_gate,
     evaluate_inference_evidence_gate,
+    session_runtime_evidence_is_complete,
 )
 
 MODEL_ID = "gemma-4-31b-it-text-q4k-ehf16-af16"
@@ -376,9 +377,15 @@ def _blockers(
     kernel_summary: dict[str, Any],
     streaming_trace: dict[str, Any],
     inference_gate: dict[str, Any],
+    requested_decode_steps: int,
 ) -> list[dict[str, str]]:
     blockers: list[dict[str, str]] = []
     blocker_classes: set[str] = set()
+    real_session = streaming_trace.get("realSessionRuntime") or {}
+    session_evidence_ready = session_runtime_evidence_is_complete(
+        real_session if isinstance(real_session, dict) else None,
+        requested_decode_steps=requested_decode_steps,
+    )
     if (
         compile_summary["compileTargetCount"]
         != compile_summary["compileSucceededCount"]
@@ -416,7 +423,7 @@ def _blockers(
     refresh_blocked = refresh.get("status") == "blocked"
     stale_dry_run_only = bool(kernel_summary.get("staleDryRunOnly"))
     if kernel_summary["blockedKernels"] and not (
-        refresh_blocked and stale_dry_run_only
+        session_evidence_ready or (refresh_blocked and stale_dry_run_only)
     ):
         blocker = {
             "class": "manifest_kernel_dispatch_not_bound",
@@ -445,7 +452,6 @@ def _blockers(
             "detail": str(blocker.get("detail") or cls),
         })
         blocker_classes.add(cls)
-    real_session = streaming_trace.get("realSessionRuntime") or {}
     if real_session:
         real_session_status = str(real_session.get("status") or "unknown")
         if real_session_status != "output_ready":
@@ -506,10 +512,16 @@ def build_receipt(
             "requiredKernels": None,
         }
     )
+    streaming_info = _streaming_trace_summary(streaming_trace)
+    real_session_runtime = streaming_info.get("realSessionRuntime")
+    if not isinstance(real_session_runtime, dict):
+        real_session_runtime = None
     inference_gate_result = evaluate_inference_evidence_gate(
         host_plan=_load_json(host_plan),
         per_kernel_summary=_load_json(per_kernel_summary),
         source_graph_kernels=source_inventory.get("requiredKernels"),
+        real_session_runtime=real_session_runtime,
+        requested_decode_steps=decode_token_count,
     )
     if (
         not inference_gate_result.eligible
@@ -519,6 +531,8 @@ def build_receipt(
             host_plan=_load_json(host_plan),
             per_kernel_summary=_load_json(per_kernel_summary),
             source_graph_kernels=source_inventory.get("requiredKernels"),
+            real_session_runtime=real_session_runtime,
+            requested_decode_steps=decode_token_count,
         )
     inference_gate = inference_gate_result.to_dict()
 
@@ -535,15 +549,35 @@ def build_receipt(
     host_plan_info = _host_plan_summary(host_plan)
     compile_info = _compile_summary(compile_receipt)
     kernel_info = _per_kernel_summary(per_kernel_summary)
-    streaming_info = _streaming_trace_summary(streaming_trace)
     blockers = _blockers(
         reference=reference,
         compile_summary=compile_info,
         kernel_summary=kernel_info,
         streaming_trace=streaming_info,
         inference_gate=inference_gate,
+        requested_decode_steps=decode_token_count,
     )
-    status = "blocked" if blockers else "ready_for_sdk_host"
+    status = (
+        "blocked"
+        if blockers
+        else (
+            "output_ready"
+            if session_runtime_evidence_is_complete(
+                real_session_runtime,
+                requested_decode_steps=decode_token_count,
+            )
+            else "ready_for_sdk_host"
+        )
+    )
+    claim_summary = (
+        "Gemma 4 31B af16 bounded inference smoke has an output_ready "
+        "session transcript bound to the source and reference artifacts."
+        if status == "output_ready"
+        else (
+            "Gemma 4 31B af16 bounded inference smoke is specified and "
+            "blocked on the named simulator execution gaps."
+        )
+    )
     receipt = {
         "schemaVersion": 2,
         "artifactKind": ARTIFACT_KIND,
@@ -605,17 +639,14 @@ def build_receipt(
                 "Gemma 4 31B af16 bounded simulator-smoke contract is "
                 "hash-bound to the af16 Doppler manifest, frozen Doppler "
                 "reference fixture, af16 HostPlan compile receipt, and "
-                "current per-kernel evidence."
+                "current dispatch/session evidence."
             ),
             "notWhat": (
-                "Not a Doe CSL inference success receipt. Not a hardware "
-                "receipt. Not a parity claim until a session-scoped HostPlan "
-                "runner emits the matching token/logit/KV transcript."
+                "Not a hardware receipt. Not a parity claim unless the "
+                "session token/logit/KV transcript is compared against the "
+                "frozen Doppler reference."
             ),
-            "summary": (
-                "Gemma 4 31B af16 bounded inference smoke is specified and "
-                "blocked on the named simulator execution gaps."
-            ),
+            "summary": claim_summary,
         },
     }
     return receipt

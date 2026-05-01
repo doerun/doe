@@ -228,6 +228,37 @@ def _materialize_inputs(root: Path) -> dict[str, Path]:
     }
 
 
+def _write_output_ready_streaming_trace(path: Path) -> None:
+    trace = json.loads(path.read_text(encoding="utf-8"))
+    trace["status"] = "output_ready"
+    trace["blockers"] = []
+    trace["realSessionRuntime"] = {
+        "status": "output_ready",
+        "runtimeTranscriptPath": "session/transcript.json",
+        "runtimeTranscriptSha256": "1" * 64,
+        "runtimeTranscript": {
+            "status": "output_ready",
+            "requestedDecodeSteps": 2,
+            "actualDecodeSteps": 2,
+            "generatedTokenIds": [9503, 106],
+            "lmHeadDispatches": [
+                {
+                    "launchIndex": 4,
+                    "dispatchMode": "dense_gemv_width_tiled_session",
+                    "buffer": "activation:prefill:0004:global:lm_head",
+                },
+                {
+                    "launchIndex": 9,
+                    "dispatchMode": "dense_gemv_width_tiled_session",
+                    "buffer": "activation:decode:0009:global:lm_head",
+                },
+            ],
+            "kvCache": {"mode": "runtime_captured", "digestCount": 2},
+        },
+    }
+    _write_json(path, trace)
+
+
 class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
     def _build(self, *, prefill: int) -> dict:
         self.tmp = tempfile.TemporaryDirectory()
@@ -364,6 +395,49 @@ class Gemma431BAf16BoundedInferenceSmokeReceiptTest(unittest.TestCase):
         self.assertIn(
             "inference_evidence_gate.dispatch_evidence_sample_unbound",
             blocker_classes,
+        )
+
+    def test_output_ready_session_supersedes_unbound_per_kernel(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        paths = _materialize_inputs(Path(self.tmp.name))
+        per_kernel = json.loads(
+            paths["per_kernel_summary"].read_text(encoding="utf-8")
+        )
+        for kernel in per_kernel["kernels"]:
+            if kernel["kernel"] in {"sample", "lm_head_gemv"}:
+                kernel["verdict"] = "blocked"
+                kernel["blocker"] = "dispatch_exit_code_255"
+        per_kernel["totals"] = {
+            "kernelCount": 3, "boundCount": 1, "blockedCount": 2,
+        }
+        paths["per_kernel_summary"].write_text(
+            json.dumps(per_kernel, indent=2) + "\n", encoding="utf-8"
+        )
+        _write_output_ready_streaming_trace(paths["streaming_trace"])
+
+        receipt = build_receipt(
+            source_doppler_manifest=paths["manifest"],
+            frozen_reference_root=paths["reference_root"],
+            compile_receipt=paths["compile_receipt"],
+            host_plan=paths["host_plan"],
+            per_kernel_summary=paths["per_kernel_summary"],
+            prefill_token_count=19,
+            decode_token_count=2,
+            streaming_trace=paths["streaming_trace"],
+        )
+
+        self.assertEqual(receipt["status"], "output_ready")
+        self.assertTrue(receipt["inferenceEvidenceGate"]["eligible"])
+        blocker_classes = {b["class"] for b in receipt["blockers"]}
+        self.assertNotIn(
+            "manifest_kernel_dispatch_not_bound",
+            blocker_classes,
+        )
+        self.assertFalse(
+            {
+                cls for cls in blocker_classes
+                if cls.startswith("inference_evidence_gate.")
+            }
         )
 
     def test_synthesizer_rejects_missing_lm_head_dispatch(self) -> None:

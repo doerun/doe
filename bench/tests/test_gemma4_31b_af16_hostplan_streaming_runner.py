@@ -1037,6 +1037,49 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
         self.assertIn("execution_stopped_at_checkpoint", blocker_classes)
         self.assertNotIn("real_session_runtime_blocked", blocker_classes)
 
+    def test_output_ready_session_skips_per_kernel_blocker(self) -> None:
+        runner = _load_runner_module()
+        real_session = {
+            "status": "output_ready",
+            "runtimeTranscript": {
+                "status": "output_ready",
+                "requestedDecodeSteps": 2,
+                "actualDecodeSteps": 2,
+                "generatedTokenIds": [4104, 6158],
+                "lmHeadDispatches": [
+                    {
+                        "launchIndex": 4,
+                        "dispatchMode": "dense_gemv_width_tiled_session",
+                    },
+                    {
+                        "launchIndex": 9,
+                        "dispatchMode": "dense_gemv_width_tiled_session",
+                    },
+                ],
+                "kvCache": {"mode": "runtime_captured", "digestCount": 2},
+            },
+        }
+        blockers = runner.build_blockers(
+            weight_plan={
+                "weightRootPresent": True,
+                "missingShards": [],
+                "sizeMismatches": [],
+                "unresolvedWeightKeys": [],
+            },
+            per_kernel={
+                "blockedKernels": ["lm_head_prefill_stable"],
+                "staleDryRunOnly": False,
+            },
+            refresh={"requested": False, "status": "not_requested"},
+            real_session=real_session,
+            execute=True,
+            requested_decode_steps=2,
+        )
+        self.assertNotIn(
+            "manifest_kernel_dispatch_not_bound",
+            {blocker["class"] for blocker in blockers},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

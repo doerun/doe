@@ -41,6 +41,7 @@ from bench.tools._lane_dtype_profile import (  # noqa: E402
 )
 from bench.tools._inference_evidence_gate import (  # noqa: E402
     evaluate_inference_evidence_gate,
+    session_runtime_evidence_is_complete,
 )
 from bench.tools.int4ple_runtime_weight_mappings import (  # noqa: E402
     inferred_rmsnorm_weight_key,
@@ -1205,8 +1206,13 @@ def build_blockers(
     refresh: dict[str, Any],
     real_session: dict[str, Any],
     execute: bool,
+    requested_decode_steps: int | None = None,
 ) -> list[dict[str, Any]]:
     blockers: list[dict[str, Any]] = []
+    session_evidence_ready = session_runtime_evidence_is_complete(
+        real_session,
+        requested_decode_steps=requested_decode_steps,
+    )
     if (
         not weight_plan["weightRootPresent"]
         or weight_plan["missingShards"]
@@ -1233,7 +1239,7 @@ def build_blockers(
     stale_dry_run_only = bool(per_kernel.get("staleDryRunOnly"))
     if (
         per_kernel.get("blockedKernels")
-        and not (refresh_blocked and stale_dry_run_only)
+        and not (session_evidence_ready or (refresh_blocked and stale_dry_run_only))
     ):
         blockers.append({
             "class": "manifest_kernel_dispatch_not_bound",
@@ -1297,6 +1303,9 @@ def gate_blockers(
     host_plan_path: Path,
     per_kernel_summary_path: Path,
     source_graph_inventory: Path,
+    *,
+    real_session_runtime: dict[str, Any] | None = None,
+    requested_decode_steps: int | None = None,
 ) -> list[dict[str, Any]]:
     host_plan = load_json(host_plan_path)
     per_kernel = (
@@ -1310,6 +1319,8 @@ def gate_blockers(
         source_graph_kernels=source_graph_kernels_from_inventory(
             source_graph_inventory
         ),
+        real_session_runtime=real_session_runtime,
+        requested_decode_steps=requested_decode_steps,
     )
     if result.eligible:
         return []
@@ -1366,12 +1377,15 @@ def build_trace(args: argparse.Namespace) -> dict[str, Any]:
         refresh=refresh,
         real_session=real_session,
         execute=args.execute,
+        requested_decode_steps=int(args.decode_token_count),
     )
     blockers.extend(
         gate_blockers(
             args.host_plan,
             args.per_kernel_summary,
             source_inventory_path,
+            real_session_runtime=real_session,
+            requested_decode_steps=int(args.decode_token_count),
         )
     )
     return {
@@ -1398,7 +1412,7 @@ def build_trace(args: argparse.Namespace) -> dict[str, Any]:
             "scope": (
                 "Gemma 4 31B af16 real-inference runner front door, weight "
                 "staging plan, dispatch expansion, per-kernel refresh command, "
-                "and serial HostPlan session contract are materialized."
+                "and resumable HostPlan session contract are materialized."
             ),
             "notWhat": (
                 "Not a generated token transcript until status is output_ready "
