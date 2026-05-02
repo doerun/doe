@@ -1569,6 +1569,91 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
             bootstrap["blockers"],
         )
 
+    def test_executor_runtime_bootstrap_skips_prefill_q4k_gemv_probe(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            progress_path = Path(tmpdir) / "progress.jsonl"
+            layout_path = Path(tmpdir) / "compile" / "tiled_31b" / "layout.csl"
+            execution_plan = {
+                "status": "planned",
+                "bufferPlan": {"bufferCount": 3},
+                "targetSessions": [
+                    {
+                        "targetName": "tiled_31b",
+                        "compileDir": str(Path(tmpdir) / "compile" / "compiled" / "tiled_31b"),
+                        "layoutPath": str(layout_path),
+                        "launchFunction": "compute",
+                        "requiredInputSymbols": ["activation", "weight"],
+                        "requiredOutputSymbols": ["output"],
+                    }
+                ],
+                "launches": [
+                    {
+                        "launchIndex": 2,
+                        "targetName": "tiled_31b",
+                        "kernelPattern": "prefill_q4k_gemv",
+                        "compileDir": str(Path(tmpdir) / "compile" / "compiled" / "tiled_31b"),
+                        "layoutPath": str(layout_path),
+                        "launchFunction": "compute",
+                        "phase": "prefill",
+                        "inputBindings": [
+                            {
+                                "symbol": "activation",
+                                "buffer": "activation:prefill:0001:layer0:input_norm",
+                                "role": "activation",
+                                "access": "read",
+                            },
+                            {
+                                "symbol": "weight",
+                                "buffer": "weight:layer0:q_proj",
+                                "role": "weight",
+                                "access": "read",
+                            },
+                        ],
+                        "outputBindings": [
+                            {
+                                "symbol": "output",
+                                "buffer": "activation:prefill:0002:layer0:q_proj",
+                                "role": "activation",
+                                "access": "write",
+                            }
+                        ],
+                        "runtimeActions": [{"kind": "launch", "functionName": "compute"}],
+                    }
+                ],
+            }
+
+            def fake_probe_session(
+                *,
+                target_session: dict[str, object],
+                progress_path: Path,
+                cmaddr: str | None,
+            ) -> dict[str, object]:
+                del target_session, progress_path, cmaddr
+                raise AssertionError("prefill_q4k_gemv uses runtime symbol resolution")
+
+            bootstrap = runner.execute_hostplan_runtime_bootstrap(
+                execution_plan=execution_plan,
+                progress_path=progress_path,
+                cmaddr=None,
+                probe_session=fake_probe_session,
+            )
+
+        self.assertEqual(bootstrap["status"], "ready_for_tensor_movement")
+        self.assertEqual(bootstrap["targetSessionsLoadedCount"], 1)
+        self.assertEqual(bootstrap["resolvedLaunchCount"], 1)
+        self.assertEqual(
+            bootstrap["targetSessions"][0]["resolutionMode"],
+            "runtime_managed_prefill_q4k_gemv",
+        )
+        launch = bootstrap["launches"][0]
+        self.assertEqual(launch["kernelPattern"], "prefill_q4k_gemv")
+        self.assertEqual(launch["layoutPath"], str(layout_path))
+        self.assertIsNone(launch["resolvedInputs"][0]["symbolId"])
+        self.assertEqual(
+            launch["resolvedInputs"][0]["symbolResolutionMode"],
+            "runtime_managed_prefill_q4k_gemv",
+        )
+
     def test_validator_blocks_on_unresolved_binding_symbol(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             (

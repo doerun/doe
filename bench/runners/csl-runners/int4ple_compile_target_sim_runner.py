@@ -78,6 +78,7 @@ EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
 PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
+PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE = "runtime_managed_prefill_q4k_gemv"
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
 Q4K_BLOCK_ELEMENTS = 256
@@ -1051,6 +1052,12 @@ def probe_target_session(
                 "resolvedSymbols": {},
                 "blockers": ["target_session_probe_receipt_missing"],
             }
+        receipt.setdefault("targetName", target_name)
+        receipt.setdefault("compileDir", str(target_session.get("compileDir") or ""))
+        receipt.setdefault(
+            "launchFunction",
+            str(target_session.get("launchFunction") or "compute"),
+        )
         blockers = list(receipt.get("blockers") or [])
         if completed.returncode != 0 and "target_session_probe_return_code" not in blockers:
             blockers.append(f"target_session_probe_return_code:{completed.returncode}")
@@ -1069,6 +1076,28 @@ def probe_target_session(
             blockers=receipt.get("blockers"),
         )
         return receipt
+
+
+def _is_prefill_q4k_gemv_plan_launch(launch: dict[str, Any]) -> bool:
+    return str(launch.get("kernelPattern") or "") == PREFILL_Q4K_GEMV_PATTERN
+
+
+def _prefill_q4k_gemv_target_session_receipt(
+    target_session: dict[str, Any],
+) -> dict[str, Any]:
+    target_name = str(target_session.get("targetName") or "unknown")
+    return {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_target_session_probe",
+        "status": "resolved",
+        "targetName": target_name,
+        "compileDir": str(target_session.get("compileDir") or ""),
+        "layoutPath": str(target_session.get("layoutPath") or ""),
+        "launchFunction": str(target_session.get("launchFunction") or "compute"),
+        "resolvedSymbols": {},
+        "resolutionMode": PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE,
+        "blockers": [],
+    }
 
 
 def execute_hostplan_runtime_bootstrap(
@@ -1096,18 +1125,41 @@ def execute_hostplan_runtime_bootstrap(
         launchCount=len(launches),
     )
 
+    launches_by_target: dict[str, list[dict[str, Any]]] = {}
+    for launch in launches:
+        if isinstance(launch, dict):
+            target_name = str(launch.get("targetName") or "")
+            launches_by_target.setdefault(target_name, []).append(launch)
+
     resolved_by_target: dict[str, dict[str, Any]] = {}
+    runtime_symbol_targets: set[str] = set()
     target_receipts: list[dict[str, Any]] = []
     for target_session in target_sessions:
         if not isinstance(target_session, dict):
             blockers.append("target_session_not_object")
+            continue
+        target_name = str(target_session.get("targetName") or "unknown")
+        target_launches = launches_by_target.get(target_name) or []
+        if target_launches and all(
+            _is_prefill_q4k_gemv_plan_launch(launch) for launch in target_launches
+        ):
+            receipt = _prefill_q4k_gemv_target_session_receipt(target_session)
+            target_receipts.append(receipt)
+            resolved_by_target[target_name] = {}
+            runtime_symbol_targets.add(target_name)
+            append_progress(
+                progress_path,
+                "hostplan_target_session_probe_skipped",
+                target=target_name,
+                resolutionMode=PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE,
+                launchCount=len(target_launches),
+            )
             continue
         receipt = probe_fn(
             target_session=target_session,
             progress_path=progress_path,
             cmaddr=cmaddr,
         )
-        target_name = str(target_session.get("targetName") or "unknown")
         target_receipts.append(receipt)
         if receipt.get("status") != "resolved":
             blockers.append(f"target_session_not_resolved:{target_name}")
@@ -1132,6 +1184,10 @@ def execute_hostplan_runtime_bootstrap(
         target_symbols = resolved_by_target.get(target_name) or {}
         resolved_inputs: list[dict[str, Any]] = []
         resolved_outputs: list[dict[str, Any]] = []
+        runtime_symbol_launch = (
+            target_name in runtime_symbol_targets
+            and _is_prefill_q4k_gemv_plan_launch(launch)
+        )
 
         for side, source_items, resolved_items in (
             ("input", launch.get("inputBindings") or [], resolved_inputs),
@@ -1143,11 +1199,16 @@ def execute_hostplan_runtime_bootstrap(
                     continue
                 symbol = str(item.get("symbol") or "")
                 symbol_id = target_symbols.get(symbol)
-                if symbol_id is None:
+                if symbol_id is None and not runtime_symbol_launch:
                     launch_blockers.append(
                         f"launch[{launch_index}].{side}_symbol_id_missing:{target_name}.{symbol}"
                     )
-                resolved_items.append({**item, "symbolId": symbol_id})
+                resolved_item = {**item, "symbolId": symbol_id}
+                if symbol_id is None and runtime_symbol_launch:
+                    resolved_item["symbolResolutionMode"] = (
+                        PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE
+                    )
+                resolved_items.append(resolved_item)
 
         launch_status = "resolved" if not launch_blockers else "blocked"
         if launch_status == "resolved":
@@ -1159,6 +1220,8 @@ def execute_hostplan_runtime_bootstrap(
                 "targetName": target_name,
                 "compileDir": launch.get("compileDir"),
                 "compileParams": launch.get("compileParams") or {},
+                "kernelPattern": launch.get("kernelPattern"),
+                "layoutPath": launch.get("layoutPath"),
                 "launchFunction": launch.get("launchFunction"),
                 "targetGeometry": launch.get("targetGeometry") or {},
                 "phase": launch.get("phase"),
