@@ -410,6 +410,33 @@ def _rope_pe_heads_to_logical_matrix(
     return heads.reshape(rows, cols).reshape(-1)
 
 
+def _attention_query_rows_to_logical_matrix(
+    host: np.ndarray,
+    output_transform: dict[str, Any],
+) -> np.ndarray:
+    rows = _required_positive_int(output_transform, "rows")
+    cols = _required_positive_int(output_transform, "cols")
+    head_dim = _required_positive_int(output_transform, "headDim")
+    target_rows = _required_positive_int(output_transform, "targetRows")
+    rows_per_pe = _required_positive_int(output_transform, "rowsPerPe")
+    if cols % head_dim != 0:
+        raise ValueError(f"attention_output_cols_mismatch:{cols}%{head_dim}")
+    head_rows = rows * (cols // head_dim)
+    expected = target_rows * rows_per_pe * head_dim
+    if host.size < expected:
+        raise ValueError(f"attention_output_size_mismatch:{host.size}<{expected}")
+    if head_rows > target_rows * rows_per_pe:
+        raise ValueError(
+            "attention_output_rows_exceed_target:"
+            f"{head_rows}>{target_rows * rows_per_pe}"
+        )
+    heads = host[:expected].reshape(target_rows * rows_per_pe, head_dim)[
+        :head_rows,
+        :,
+    ]
+    return heads.reshape(rows, cols).reshape(-1)
+
+
 def main() -> int:
     args = parse_args()
     spec_path = Path(args.spec)
@@ -625,6 +652,11 @@ def main() -> int:
                     saved_host = _pe_rows_to_logical_matrix(host, output_transform)
                 elif transform_kind == "rope_pe_heads_to_logical_matrix":
                     saved_host = _rope_pe_heads_to_logical_matrix(
+                        host,
+                        output_transform,
+                    )
+                elif transform_kind == "attention_query_rows_to_logical_matrix":
+                    saved_host = _attention_query_rows_to_logical_matrix(
                         host,
                         output_transform,
                     )

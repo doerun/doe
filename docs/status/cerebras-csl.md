@@ -21,6 +21,32 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
+## 2026-05-02 — Prefill Q4K GEMV canonicalized through HostPlan, rope, and attention boundaries
+
+The compact `<bos>sky color is` simfabric run exposed the remaining
+canonicalization gap as a fail-closed launch-boundary error: L5 `rope` rejected
+`activation:prefill:0002:layer0:q_proj` because the runner-substituted Q4K ->
+f16 GEMV wrote the logical Q projection while the downstream HostPlan contract
+still expected the old static `tiled_31b` layout. Launches through L4 were
+checkpointed cleanly under
+`bench/out/scratch/gemma4_31b_af16-checkpoint-bos-raw-sky-color-is-fast-embed512`.
+
+Source now promotes that path into the explicit `prefill_q4k_gemv` contract.
+Fresh Gemma 4 31B af16 HostPlan and simulator-plan bundles emit `tiled_31b`
+with pattern `prefill_q4k_gemv`, Q4K byte weight metadata, f16 activation /
+output metadata, and fused-GEMV compile source under the `tiled_31b` target
+instead of a hidden SUMMA substitution. The runtime scheduler, execution-plan
+materializer, sim runner, manifest compile-param projection, dtype contract,
+schemas, and receipts now name the same pattern.
+
+The shape bridge that the failed run needed is also explicit: logical Q/K/V
+projection buffers stage into RoPE PE-head rows and tiled-attention query/KV
+rows, then detile back to logical activation buffers for the following
+projection. The fail-closed size check remains intact; the runtime now satisfies
+it through declared transforms rather than bypassing it. Next action for the
+active proof lane is to regenerate the HostPlan/session artifacts and resume
+from the existing checkpoint toward `realSessionRuntime.status=output_ready`.
+
 ## 2026-05-02 — Cross-depth byte-identity restored after compile-root rematerialization
 
 Gemma 4 31B and Qwen 3.6 27B cross-depth byte-identity are green again after

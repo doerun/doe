@@ -113,6 +113,39 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             np.zeros((481 - 128, 256), dtype=np.float16),
         )
 
+    def test_attention_input_transform_pads_logical_matrix_heads(self) -> None:
+        import numpy as np
+
+        logical = np.arange(4 * 8192, dtype=np.float16)
+        materialization = {
+            "dtype": "f16",
+            "sourceTransform": {
+                "kind": "logical_matrix_to_attention_query_rows",
+                "sourceCols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+                "rowsPerPe": 9,
+            },
+        }
+
+        values, matrix_shape = runner._transform_existing_input(
+            logical,
+            materialization,
+        )
+
+        expected_heads = logical.reshape(4, 32, 256).reshape(128, 256)
+        self.assertEqual(values.dtype, np.dtype(np.float16))
+        self.assertEqual(values.size, 481 * 9 * 256)
+        self.assertEqual(matrix_shape, {"rows": 4, "cols": 8192})
+        np.testing.assert_array_equal(
+            values.reshape(481 * 9, 256)[:128],
+            expected_heads,
+        )
+        np.testing.assert_array_equal(
+            values.reshape(481 * 9, 256)[128:],
+            np.zeros((481 * 9 - 128, 256), dtype=np.float16),
+        )
+
 
 def _load_launch_step_adapter_module():
     name = "int4ple_launch_step_adapter_for_tests"
@@ -171,6 +204,30 @@ class RopeOutputTransformTest(unittest.TestCase):
                 "cols": 8192,
                 "headDim": 256,
                 "targetRows": 481,
+            },
+        )
+
+        np.testing.assert_array_equal(restored, logical)
+
+    def test_attention_output_transform_restores_logical_matrix(self) -> None:
+        import numpy as np
+
+        adapter = _load_launch_step_adapter_module()
+        logical = np.arange(4 * 8192, dtype=np.float32)
+        host = np.zeros(481 * 9 * 256, dtype=np.float32)
+        host.reshape(481 * 9, 256)[:128] = logical.reshape(4, 32, 256).reshape(
+            128,
+            256,
+        )
+
+        restored = adapter._attention_query_rows_to_logical_matrix(
+            host,
+            {
+                "rows": 4,
+                "cols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+                "rowsPerPe": 9,
             },
         )
 

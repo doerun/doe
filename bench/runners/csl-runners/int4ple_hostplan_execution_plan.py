@@ -35,6 +35,11 @@ _ROW_PARALLEL_TARGETS = frozenset({
     "sigmoid_gated_prefill",
 })
 _ROPE_TARGETS = frozenset({"rope", "rope_partial"})
+_ATTENTION_TILED_TARGETS = frozenset({
+    "attn_small",
+    "attn_head256",
+    "attn_head512",
+})
 
 
 def _resolve_phase_variant_target(
@@ -545,6 +550,100 @@ def _rope_output_transform(
     }
 
 
+def _attention_tiled_params(
+    compile_params: dict[str, int],
+) -> dict[str, int] | None:
+    width = _int_field(compile_params.get("width"))
+    head_dim = _int_field(compile_params.get("head_dim"))
+    q_len_per_pe = _int_field(compile_params.get("q_len_per_pe"))
+    block_size = _int_field(compile_params.get("block_size"))
+    if width is None or head_dim is None or q_len_per_pe is None or block_size is None:
+        return None
+    if min(width, head_dim, q_len_per_pe, block_size) <= 0:
+        return None
+    return {
+        "targetRows": width,
+        "headDim": head_dim,
+        "queryRowsPerPe": q_len_per_pe,
+        "kvRowsPerPe": block_size,
+    }
+
+
+def _attention_tiled_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+    dtype: str,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if source_transform is not None:
+        return source_transform
+    if target_name not in _ATTENTION_TILED_TARGETS:
+        return source_transform
+    if role != "activation":
+        return source_transform
+    symbol_key = symbol.lower()
+    if symbol_key not in {"query", "key", "val", "value"}:
+        return source_transform
+    params = _attention_tiled_params(compile_params)
+    source_cols = _int_field(item.get("matrixCols"))
+    if params is None or source_cols is None or source_cols <= 0:
+        return source_transform
+    is_query = symbol_key == "query"
+    return {
+        "kind": (
+            "logical_matrix_to_attention_query_rows"
+            if is_query
+            else "logical_matrix_to_attention_kv_rows"
+        ),
+        "matrixRole": symbol_key,
+        "sourceCols": source_cols,
+        "headDim": params["headDim"],
+        "targetRows": params["targetRows"],
+        "rowsPerPe": (
+            params["queryRowsPerPe"] if is_query else params["kvRowsPerPe"]
+        ),
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
+def _attention_tiled_output_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+    dtype: str,
+    output_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if output_transform is not None:
+        return output_transform
+    if target_name not in _ATTENTION_TILED_TARGETS:
+        return output_transform
+    if role != "activation" or symbol.lower() != "output":
+        return output_transform
+    params = _attention_tiled_params(compile_params)
+    cols = _int_field(item.get("matrixCols"))
+    if params is None or cols is None or cols <= 0:
+        return output_transform
+    return {
+        "kind": "attention_query_rows_to_logical_matrix",
+        "matrixRole": "output",
+        "rowsFromInput": "query",
+        "cols": cols,
+        "headDim": params["headDim"],
+        "targetRows": params["targetRows"],
+        "rowsPerPe": params["queryRowsPerPe"],
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
 def _dense_gemv_params(compile_params: dict[str, int]) -> dict[str, int] | None:
     width = _int_field(compile_params.get("width"))
     height = _int_field(compile_params.get("height"))
@@ -937,6 +1036,15 @@ def _binding_materialization(
         dtype=dtype,
         source_transform=source_transform,
     )
+    source_transform = _attention_tiled_source_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        item=item,
+        dtype=dtype,
+        source_transform=source_transform,
+    )
     if source_transform is None and isinstance(metadata_staging, dict):
         source_transform = metadata_staging
     output_transform = _summa_output_transform(
@@ -967,6 +1075,15 @@ def _binding_materialization(
     if dense_output_transform is not None:
         output_transform = dense_output_transform
     output_transform = _rope_output_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        item=item,
+        dtype=dtype,
+        output_transform=output_transform,
+    )
+    output_transform = _attention_tiled_output_transform(
         symbol=symbol,
         role=role,
         target_name=target_name,

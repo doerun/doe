@@ -1431,6 +1431,42 @@ def _logical_matrix_to_rope_pe_heads(
     return padded.reshape(-1).astype(dtype, copy=False), rows
 
 
+def _logical_matrix_to_attention_rows(
+    host: np.ndarray,
+    transform: dict[str, Any],
+    *,
+    target_dtype: np.dtype | type,
+) -> tuple[np.ndarray, int]:
+    source_cols = _required_positive_int(transform, "sourceCols")
+    head_dim = _required_positive_int(transform, "headDim")
+    target_rows = _required_positive_int(transform, "targetRows")
+    rows_per_pe = _required_positive_int(transform, "rowsPerPe")
+    if source_cols % head_dim != 0:
+        raise ValueError(
+            f"attention_rows_source_cols_mismatch:{source_cols}%{head_dim}"
+        )
+    if host.size % source_cols != 0:
+        raise ValueError(
+            f"attention_rows_logical_size_mismatch:{host.size}%{source_cols}"
+        )
+    rows = host.size // source_cols
+    head_rows = rows * (source_cols // head_dim)
+    target_capacity = target_rows * rows_per_pe
+    if head_rows > target_capacity:
+        raise ValueError(
+            f"attention_rows_logical_rows_exceed_target:{head_rows}>{target_capacity}"
+        )
+    dtype = np.dtype(target_dtype)
+    logical = host.astype(dtype, copy=False).reshape(rows, source_cols)
+    heads = logical.reshape(rows, source_cols // head_dim, head_dim).reshape(
+        head_rows,
+        head_dim,
+    )
+    padded = np.zeros((target_rows, rows_per_pe, head_dim), dtype=dtype)
+    padded.reshape(target_capacity, head_dim)[:head_rows, :] = heads
+    return padded.reshape(-1).astype(dtype, copy=False), rows
+
+
 def _broadcast_factor_or_one(
     *,
     mapping: dict[str, Any],
@@ -1674,6 +1710,24 @@ def _transform_existing_input(
             "rows": rows,
             "cols": _required_positive_int(source_transform, "sourceCols"),
         }
+    if transform_kind in {
+        "logical_matrix_to_attention_query_rows",
+        "logical_matrix_to_attention_kv_rows",
+    }:
+        target_dtype = (
+            np.float16
+            if str(materialization.get("dtype") or "") == "f16"
+            else np.float32
+        )
+        values, rows = _logical_matrix_to_attention_rows(
+            host,
+            source_transform,
+            target_dtype=target_dtype,
+        )
+        return values, {
+            "rows": rows,
+            "cols": _required_positive_int(source_transform, "sourceCols"),
+        }
     return host, {}
 
 
@@ -1741,6 +1795,8 @@ def _stage_launch_arrays(
                     "logical_vector_to_dense_gemv_activation_shards",
                     "tied_f16_embedding_to_dense_gemv_shards",
                     "logical_matrix_to_rope_pe_heads",
+                    "logical_matrix_to_attention_query_rows",
+                    "logical_matrix_to_attention_kv_rows",
                 }
                 if not cache_buffer_file:
                     path = _staged_input_path(

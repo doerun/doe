@@ -957,18 +957,34 @@ def build_real_session_scheduler(
             query = state.get("q", current)
             key = state.get("kv_key") or state.get("k", "state:kv_cache:key")
             val = state.get("kv_val") or state.get("v", "state:kv_cache:value")
+            query_cols = state.get("q_cols")
+            key_cols = state.get("k_cols")
+            val_cols = state.get("v_cols")
             value_symbol = (
                 "value"
                 if kernel == "attn_prefill_kv_axis_sharded"
                 else "val"
             )
-            add_input("query", query, "activation", "activation_router")
-            add_input("key", key, routed_tensor_role(key), "kv_or_activation_router")
+            add_input(
+                "query",
+                query,
+                "activation",
+                "activation_router",
+                matrixCols=query_cols,
+            )
+            add_input(
+                "key",
+                key,
+                routed_tensor_role(key),
+                "kv_or_activation_router",
+                matrixCols=key_cols,
+            )
             add_input(
                 value_symbol,
                 val,
                 routed_tensor_role(val),
                 "kv_or_activation_router",
+                matrixCols=val_cols,
             )
             if kernel in {"attn_decode", "attn_decode_sliding"}:
                 add_input(
@@ -983,7 +999,15 @@ def build_real_session_scheduler(
                     "position",
                     "runtime_state",
                 )
-            add_output("output", out, "activation", f"{kernel}.output")
+            add_output(
+                "output",
+                out,
+                "activation",
+                f"{kernel}.output",
+                matrixCols=query_cols,
+            )
+            if query_cols is not None:
+                state["attention_cols"] = query_cols
             kv_operations.append(
                 {
                     "launchIndex": launch_index,

@@ -603,6 +603,9 @@ def bind_launch_dataflow(
         query = str(layer_state.get("q") or current_buffer())
         key = str(layer_state.get("k") or "state:kv_cache:key")
         val = str(layer_state.get("v") or "state:kv_cache:value")
+        query_cols = layer_state.get("q_cols")
+        key_cols = layer_state.get("k_cols")
+        val_cols = layer_state.get("v_cols")
         output = next_buffer(op_name)
         inputs.extend(
             [
@@ -612,6 +615,7 @@ def bind_launch_dataflow(
                     role="activation",
                     access="read",
                     source="activation_router",
+                    matrixCols=query_cols,
                 ),
                 binding(
                     symbol="key",
@@ -620,6 +624,7 @@ def bind_launch_dataflow(
                     access="read",
                     source="kv_cache_schedule",
                     fallbackBuffer=key,
+                    matrixCols=key_cols,
                 ),
                 binding(
                     symbol="val",
@@ -628,6 +633,7 @@ def bind_launch_dataflow(
                     access="read",
                     source="kv_cache_schedule",
                     fallbackBuffer=val,
+                    matrixCols=val_cols,
                 ),
             ]
         )
@@ -718,8 +724,11 @@ def bind_launch_dataflow(
                 role="activation",
                 access="write",
                 source=f"{kernel_name}.output",
+                matrixCols=query_cols,
             )
         )
+        if layer_index is not None and query_cols is not None:
+            layer_state["attention_cols"] = query_cols
         set_current(output)
     elif kernel_name == "sample":
         logits = str(phase_state.get("last_logits") or "state:output_logits")
