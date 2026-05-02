@@ -77,6 +77,7 @@ DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS = 1
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
+PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
 Q4K_BLOCK_ELEMENTS = 256
@@ -1396,6 +1397,40 @@ def _logical_matrix_to_pe_rows(
     return padded.reshape(-1).astype(dtype, copy=False), rows
 
 
+def _logical_matrix_to_rope_pe_heads(
+    host: np.ndarray,
+    transform: dict[str, Any],
+    *,
+    target_dtype: np.dtype | type,
+) -> tuple[np.ndarray, int]:
+    source_cols = _required_positive_int(transform, "sourceCols")
+    head_dim = _required_positive_int(transform, "headDim")
+    target_rows = _required_positive_int(transform, "targetRows")
+    if source_cols % head_dim != 0:
+        raise ValueError(
+            f"rope_heads_source_cols_mismatch:{source_cols}%{head_dim}"
+        )
+    if host.size % source_cols != 0:
+        raise ValueError(
+            f"rope_heads_logical_size_mismatch:{host.size}%{source_cols}"
+        )
+    rows = host.size // source_cols
+    head_rows = rows * (source_cols // head_dim)
+    if head_rows > target_rows:
+        raise ValueError(
+            f"rope_heads_logical_rows_exceed_target:{head_rows}>{target_rows}"
+        )
+    dtype = np.dtype(target_dtype)
+    logical = host.astype(dtype, copy=False).reshape(rows, source_cols)
+    heads = logical.reshape(rows, source_cols // head_dim, head_dim).reshape(
+        head_rows,
+        head_dim,
+    )
+    padded = np.zeros((target_rows, head_dim), dtype=dtype)
+    padded[:head_rows, :head_dim] = heads
+    return padded.reshape(-1).astype(dtype, copy=False), rows
+
+
 def _broadcast_factor_or_one(
     *,
     mapping: dict[str, Any],
@@ -1624,6 +1659,21 @@ def _transform_existing_input(
             "rows": rows,
             "cols": _required_positive_int(source_transform, "sourceCols"),
         }
+    if transform_kind == "logical_matrix_to_rope_pe_heads":
+        target_dtype = (
+            np.float16
+            if str(materialization.get("dtype") or "") == "f16"
+            else np.float32
+        )
+        values, rows = _logical_matrix_to_rope_pe_heads(
+            host,
+            source_transform,
+            target_dtype=target_dtype,
+        )
+        return values, {
+            "rows": rows,
+            "cols": _required_positive_int(source_transform, "sourceCols"),
+        }
     return host, {}
 
 
@@ -1690,6 +1740,7 @@ def _stage_launch_arrays(
                     "weight_matrix_to_summa_tiles",
                     "logical_vector_to_dense_gemv_activation_shards",
                     "tied_f16_embedding_to_dense_gemv_shards",
+                    "logical_matrix_to_rope_pe_heads",
                 }
                 if not cache_buffer_file:
                     path = _staged_input_path(
@@ -1865,6 +1916,8 @@ def _is_compact_ple_proj_launch(launch: dict[str, Any], mode: str) -> bool:
 
 
 def _is_tiled_q4k_gemv_launch(launch: dict[str, Any], mode: str) -> bool:
+    if str(launch.get("kernelPattern") or "") == PREFILL_Q4K_GEMV_PATTERN:
+        return True
     if (
         mode != "compact_summa_session"
         or str(launch.get("targetName") or "") not in TILED_Q4K_GEMV_TARGETS
@@ -1889,6 +1942,27 @@ def _is_tiled_q4k_gemv_launch(launch: dict[str, Any], mode: str) -> bool:
         isinstance(nested, dict)
         and str(nested.get("kind") or "") == "q4km_rowwise_to_f32"
     )
+
+
+def _binding_for_any_symbol(
+    bindings: list[dict[str, Any]],
+    symbols: tuple[str, ...],
+    *,
+    launch_index: int,
+) -> dict[str, Any]:
+    last_error: ValueError | None = None
+    for symbol in symbols:
+        try:
+            return _binding_for_symbol(
+                bindings,
+                symbol,
+                launch_index=launch_index,
+            )
+        except ValueError as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    raise ValueError(f"launch[{launch_index}].binding_missing")
 
 
 def _ceil_div(numerator: int, denominator: int) -> int:
@@ -1920,7 +1994,17 @@ def _compile_tiled_q4k_gemv_target(
     blocks_per_pe = _prefill_gemv_blocks_per_pe(in_dim_per_pe)
     source_compile_dir = Path(str(launch.get("compileDir") or ""))
     compile_root = source_compile_dir.parent.parent
-    layout_path = compile_root / "gemv" / "layout.csl"
+    if str(launch.get("kernelPattern") or "") == PREFILL_Q4K_GEMV_PATTERN:
+        raw_layout_path = str(launch.get("layoutPath") or "")
+        layout_path = (
+            Path(raw_layout_path)
+            if raw_layout_path
+            else compile_root / str(launch.get("targetName") or "") / "layout.csl"
+        )
+    else:
+        layout_path = compile_root / "gemv" / "layout.csl"
+    if not layout_path.is_absolute():
+        layout_path = compile_root / layout_path
     output_dir = (
         runtime_dir
         / "tiled-q4k-gemv"
@@ -2158,19 +2242,19 @@ def _execute_tiled_q4k_gemv_launch(
     output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
-    a_binding = _binding_for_symbol(
+    a_binding = _binding_for_any_symbol(
         launch.get("resolvedInputs") or [],
-        "a",
+        ("activation", "a"),
         launch_index=launch_index,
     )
-    b_binding = _binding_for_symbol(
+    b_binding = _binding_for_any_symbol(
         launch.get("resolvedInputs") or [],
-        "b",
+        ("weight", "b"),
         launch_index=launch_index,
     )
-    c_binding = _binding_for_symbol(
+    c_binding = _binding_for_any_symbol(
         launch.get("resolvedOutputs") or [],
-        "c",
+        ("output", "c"),
         launch_index=launch_index,
     )
     a_materialization = a_binding.get("materialization") or {}
@@ -2580,6 +2664,7 @@ def _execute_tiled_q4k_gemv_launch(
             "blockers": blockers,
             "launchIndex": launch_index,
             "targetName": launch.get("targetName"),
+            "kernelPattern": launch.get("kernelPattern"),
             "dispatchMode": "tiled_q4k_gemv_batched_runtime",
             "compileIdentity": compile_identity,
             "batchRuntime": {
@@ -2612,6 +2697,7 @@ def _execute_tiled_q4k_gemv_launch(
         "blockers": [],
         "launchIndex": launch_index,
         "targetName": launch.get("targetName"),
+        "kernelPattern": launch.get("kernelPattern"),
         "dispatchMode": "tiled_q4k_gemv_batched_runtime",
         "compileIdentity": compile_identity,
         "batchRuntime": {

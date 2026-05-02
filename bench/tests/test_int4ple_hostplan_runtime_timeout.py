@@ -84,6 +84,35 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             list(range(7)),
         )
 
+    def test_rope_input_transform_pads_logical_matrix_heads(self) -> None:
+        import numpy as np
+
+        logical = np.arange(4 * 8192, dtype=np.float16)
+        materialization = {
+            "dtype": "f16",
+            "sourceTransform": {
+                "kind": "logical_matrix_to_rope_pe_heads",
+                "sourceCols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+            },
+        }
+
+        values, matrix_shape = runner._transform_existing_input(
+            logical,
+            materialization,
+        )
+
+        expected_heads = logical.reshape(4, 32, 256).reshape(128, 256)
+        self.assertEqual(values.dtype, np.dtype(np.float16))
+        self.assertEqual(values.size, 481 * 256)
+        self.assertEqual(matrix_shape, {"rows": 4, "cols": 8192})
+        np.testing.assert_array_equal(values.reshape(481, 256)[:128], expected_heads)
+        np.testing.assert_array_equal(
+            values.reshape(481, 256)[128:],
+            np.zeros((481 - 128, 256), dtype=np.float16),
+        )
+
 
 def _load_launch_step_adapter_module():
     name = "int4ple_launch_step_adapter_for_tests"
@@ -121,6 +150,31 @@ def _load_launch_step_adapter_module():
     sys.modules[name] = mod
     adapter_spec.loader.exec_module(mod)
     return mod
+
+
+class RopeOutputTransformTest(unittest.TestCase):
+    def test_rope_output_transform_restores_logical_matrix(self) -> None:
+        import numpy as np
+
+        adapter = _load_launch_step_adapter_module()
+        logical = np.arange(4 * 8192, dtype=np.float32)
+        host = np.zeros(481 * 256, dtype=np.float32)
+        host.reshape(481, 256)[:128] = logical.reshape(4, 32, 256).reshape(
+            128,
+            256,
+        )
+
+        restored = adapter._rope_pe_heads_to_logical_matrix(
+            host,
+            {
+                "rows": 4,
+                "cols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+            },
+        )
+
+        np.testing.assert_array_equal(restored, logical)
 
 
 def _load_embed_roi_adapter_module():

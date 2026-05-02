@@ -88,8 +88,9 @@ history.
   HostPlan / SdkLayout / CSL lowering → simulator and hardware receipts, using
   `/home/x/deco/doe/config/doe-csl-reference-parity.schema.json` as the parity
   binding surface. The proof target is a bounded deterministic prefill+decode
-  transcript with per-step logits hashes and matching token IDs, not a lone
-  tensor snapshot; full `final_logits` is only an intermediate bring-up check.
+  transcript with matching token IDs and per-step logits digest/tolerance
+  evidence, not a lone tensor snapshot; full `final_logits` is only an
+  intermediate bring-up check.
   This is a target-lane clarification, not a new claim: direct LiteRT/TFLite and
   the Doe-side Doppler-equivalent harness remain out of the correctness-claim
   path, and full E2B, Doppler production parity, hardware, and performance
@@ -281,7 +282,8 @@ history.
   shared JS/WGSL input surface, plus a first capture-to-CSL attention-core
   lowering receipt with CPU-oracle parity. That capture-lowering rung is
   still non-claimable for full Doppler production inference, full graph
-  lowering, logits parity, hardware, or performance.
+  lowering, generated-token/logits tolerance evidence, hardware, or
+  performance.
   A separate production INT4 PLE reference export contract, exporter, gate,
   and parity binder now exist. The current Doppler export emits final logits
   plus a bounded greedy prefill+decode transcript; this is source-reference
@@ -300,9 +302,9 @@ history.
   the current blocker is that simfabric times out before returning trace,
   token/logit transcript, or KV/cache artifacts. The promotion gate now requires
   CSL trace source identity, full-model depth evidence, real KV/cache behavior,
-  token-ID parity, per-step logits parity, non-stub kernels, complete
-  compile/weight coverage, and no synthetic inputs or weights before the INT4
-  PLE lane can pass strict promotion.
+  exact generated-token parity, per-step logits tolerance evidence, non-stub
+  kernels, complete compile/weight coverage, and no synthetic inputs or
+  weights before the INT4 PLE lane can pass strict promotion.
 
 ## Current follow-up highlights
 

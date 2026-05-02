@@ -38,6 +38,7 @@ pub const LowerError = error{
 const INVALID_DIMENSION: u32 = 0;
 const LAUNCH_REPEAT: u32 = 1;
 const TEST_ARTIFACT_CAPACITY: usize = 32 * 1024;
+pub const PREFILL_Q4K_GEMV_PATTERN: []const u8 = "prefill_q4k_gemv";
 
 pub const GridDims = struct {
     width: u32,
@@ -575,6 +576,7 @@ fn isLogitsProducerStep(step: ExecStep, op_spec: OpSpec) bool {
     const pattern = stepPattern(step, op_spec);
     if (!std.mem.eql(u8, pattern, "fused_gemv_dequant") and
         !std.mem.eql(u8, pattern, "tiled_matmul") and
+        !std.mem.eql(u8, pattern, PREFILL_Q4K_GEMV_PATTERN) and
         !std.mem.eql(u8, pattern, "dense_gemv"))
     {
         return false;
@@ -591,6 +593,7 @@ fn isLogitsProducerStep(step: ExecStep, op_spec: OpSpec) bool {
 
 fn stepPattern(step: ExecStep, op_spec: OpSpec) []const u8 {
     if (std.mem.eql(u8, op_spec.pattern, "tiled_matmul")) {
+        if (isPrefillQ4kGemvStep(step)) return PREFILL_Q4K_GEMV_PATTERN;
         if (step.name) |name| {
             if (isLmHeadName(name)) return "dense_gemv";
         }
@@ -600,6 +603,10 @@ fn stepPattern(step: ExecStep, op_spec: OpSpec) []const u8 {
         }
     }
     return op_spec.pattern;
+}
+
+fn isPrefillQ4kGemvStep(step: ExecStep) bool {
+    return step.phase == .prefill and std.mem.eql(u8, step.kernel_key, "tiled_31b");
 }
 
 fn deriveAttentionTypeFromLayerPattern(layer_pattern: LayerPattern, layer_index: u32) host.LaunchAttentionType {
@@ -948,4 +955,35 @@ test "execution-v1 step repeat lowers into HostPlan launch repeat" {
         @as(u32, 3),
         plan.prefill_launches[0].repeat,
     );
+}
+
+test "execution-v1 routes tiled_31b prefill matmul to canonical Q4K GEMV" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const payload =
+        \\{
+        \\  "grid": { "width": 2, "height": 1 },
+        \\  "steps": [
+        \\    {
+        \\      "phase": "prefill",
+        \\      "op": "matmul",
+        \\      "kernelKey": "tiled_31b",
+        \\      "weightsKey": "layer.0.self_attn.q_proj"
+        \\    }
+        \\  ]
+        \\}
+    ;
+    var kernel_buf: [4]host.KernelSpec = undefined;
+    var prefill_buf: [4]host.LaunchSpec = undefined;
+    var decode_buf: [4]host.LaunchSpec = undefined;
+    const plan = try lowerJsonToHostPlan(
+        arena.allocator(),
+        payload,
+        &kernel_buf,
+        &prefill_buf,
+        &decode_buf,
+    );
+    try std.testing.expectEqual(@as(usize, 1), plan.kernels.len);
+    try std.testing.expectEqualStrings("tiled_31b", plan.kernels[0].name);
+    try std.testing.expectEqualStrings(PREFILL_Q4K_GEMV_PATTERN, plan.kernels[0].pattern);
 }

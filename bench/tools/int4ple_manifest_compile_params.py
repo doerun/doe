@@ -7,6 +7,9 @@ Q4K_BLOCK_SIZE = 256
 TARGET_MATMUL_TILE = 16
 ATTENTION_PREFILL_BLOCK_SIZE = 32
 DEFAULT_GEMV_INPUT_PER_PE = 512
+PREFILL_Q4K_GEMV_OUT_DIM_PER_PE = 112
+PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS = 1
+DEFAULT_FFN_EXPANSION_FACTOR = 4
 DEFAULT_DECODE_KV_CHUNK = 1
 SUMMA_PE_DATA_BUDGET_BYTES = 32 * 1024
 
@@ -285,6 +288,24 @@ def lmhead_gemv_compile_params(
     else:
         params["height"] = 1
     return params
+
+
+def prefill_q4k_gemv_compile_params(*, hidden_dim: int) -> dict[str, int]:
+    num_blocks_per_row = ceil_div(DEFAULT_GEMV_INPUT_PER_PE, Q4K_BLOCK_SIZE)
+    max_feature_dim = max(hidden_dim, hidden_dim * DEFAULT_FFN_EXPANSION_FACTOR)
+    return {
+        "width": max(
+            TARGET_MATMUL_TILE,
+            ceil_div(max_feature_dim, DEFAULT_GEMV_INPUT_PER_PE),
+        ),
+        "height": PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
+        "out_dim": PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS
+        * PREFILL_Q4K_GEMV_OUT_DIM_PER_PE,
+        "out_dim_per_pe": PREFILL_Q4K_GEMV_OUT_DIM_PER_PE,
+        "in_dim_per_pe": DEFAULT_GEMV_INPUT_PER_PE,
+        "num_blocks_per_row": num_blocks_per_row,
+        "output_pe_rows": PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
+    }
 
 
 def solve_attention_streaming(
@@ -581,6 +602,7 @@ def manifest_compile_param_projection(
     # Keep these aliases explicit so drift shows up in the projection report
     # instead of falling through to width/height-only cslc invocations.
     params["lm_head_prefill_stable"] = dict(params["tiled"])
+    params["tiled_31b"] = prefill_q4k_gemv_compile_params(hidden_dim=hidden_dim)
     params["q4_widetile"] = dict(params["gemv"])
     params["q4_decode_gemv"] = dict(params["gemv"])
     if global_head_dim > 0:

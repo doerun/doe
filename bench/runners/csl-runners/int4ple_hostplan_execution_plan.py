@@ -25,6 +25,7 @@ _ELEMENTWISE_PHASE_VARIANT_KERNELS = frozenset({
 })
 _SUPPORTED_ELEMENTWISE_PHASES = frozenset({"prefill", "decode"})
 _SUMMA_TARGETS = frozenset({"tiled", "tiled_31b", "ple_proj"})
+PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 _ROW_PARALLEL_TARGETS = frozenset({
     "rmsnorm_prefill",
     "residual_prefill",
@@ -33,6 +34,7 @@ _ROW_PARALLEL_TARGETS = frozenset({
     "silu_gated_prefill",
     "sigmoid_gated_prefill",
 })
+_ROPE_TARGETS = frozenset({"rope", "rope_partial"})
 
 
 def _resolve_phase_variant_target(
@@ -111,6 +113,11 @@ def _target_by_name(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
         for target in targets
         if isinstance(target, dict) and target.get("name")
     }
+
+
+def _target_pattern(target: dict[str, Any]) -> str:
+    pattern = target.get("pattern")
+    return str(pattern) if isinstance(pattern, str) and pattern else ""
 
 
 def _runtime_scheduler(scheduler: dict[str, Any]) -> dict[str, Any]:
@@ -330,6 +337,7 @@ def _summa_source_transform(
     symbol: str,
     role: str,
     target_name: str,
+    target_pattern: str,
     compile_params: dict[str, int],
     runtime_config: dict[str, Any],
     item: dict[str, Any],
@@ -337,6 +345,8 @@ def _summa_source_transform(
     weight_item: dict[str, Any] | None,
     source_transform: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
+    if target_pattern and target_pattern != "tiled_matmul":
+        return source_transform
     if target_name not in _SUMMA_TARGETS:
         return source_transform
     params = _summa_params(compile_params)
@@ -386,10 +396,13 @@ def _summa_output_transform(
     *,
     symbol: str,
     target_name: str,
+    target_pattern: str,
     compile_params: dict[str, int],
     item: dict[str, Any],
     dtype: str,
 ) -> dict[str, Any] | None:
+    if target_pattern and target_pattern != "tiled_matmul":
+        return None
     if target_name not in _SUMMA_TARGETS or symbol.lower() != "c":
         return None
     params = _summa_params(compile_params)
@@ -458,6 +471,75 @@ def _row_parallel_output_transform(
         "matrixRole": symbol,
         "rowsFromInput": "input",
         "cols": elements_per_pe,
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
+def _rope_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+    dtype: str,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if source_transform is not None:
+        return source_transform
+    if target_name not in _ROPE_TARGETS:
+        return source_transform
+    if role != "activation" or symbol != "input":
+        return source_transform
+    source_cols = _int_field(item.get("matrixCols"))
+    head_dim = _int_field(compile_params.get("head_dim"))
+    target_rows = _int_field(compile_params.get("width"))
+    if source_cols is None or head_dim is None or target_rows is None:
+        return source_transform
+    if min(source_cols, head_dim, target_rows) <= 0:
+        return source_transform
+    return {
+        "kind": "logical_matrix_to_rope_pe_heads",
+        "matrixRole": "input",
+        "sourceCols": source_cols,
+        "headDim": head_dim,
+        "targetRows": target_rows,
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+    }
+
+
+def _rope_output_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_name: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+    dtype: str,
+    output_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if output_transform is not None:
+        return output_transform
+    if target_name not in _ROPE_TARGETS:
+        return output_transform
+    if role != "activation" or symbol != "input":
+        return output_transform
+    cols = _int_field(item.get("matrixCols"))
+    head_dim = _int_field(compile_params.get("head_dim"))
+    target_rows = _int_field(compile_params.get("width"))
+    if cols is None or head_dim is None or target_rows is None:
+        return output_transform
+    if min(cols, head_dim, target_rows) <= 0:
+        return output_transform
+    return {
+        "kind": "rope_pe_heads_to_logical_matrix",
+        "matrixRole": "input",
+        "rowsFromInput": "input",
+        "cols": cols,
+        "headDim": head_dim,
+        "targetRows": target_rows,
         "sourceDtype": dtype,
         "targetDtype": dtype,
     }
@@ -542,6 +624,96 @@ def _dense_gemv_output_transform(
     }
 
 
+def _prefill_q4k_gemv_params(
+    compile_params: dict[str, int],
+) -> dict[str, int] | None:
+    in_dim_per_pe = int(compile_params.get("in_dim_per_pe") or 0)
+    out_dim_per_pe = int(compile_params.get("out_dim_per_pe") or 0)
+    num_blocks_per_row = int(compile_params.get("num_blocks_per_row") or 0)
+    output_pe_rows = int(
+        compile_params.get("output_pe_rows") or compile_params.get("height") or 0
+    )
+    if min(in_dim_per_pe, out_dim_per_pe, num_blocks_per_row, output_pe_rows) <= 0:
+        return None
+    return {
+        "inDimPerPe": in_dim_per_pe,
+        "outDimPerPe": out_dim_per_pe,
+        "numBlocksPerRow": num_blocks_per_row,
+        "outputPeRows": output_pe_rows,
+    }
+
+
+def _prefill_q4k_gemv_source_transform(
+    *,
+    symbol: str,
+    role: str,
+    target_pattern: str,
+    compile_params: dict[str, int],
+    runtime_config: dict[str, Any],
+    item: dict[str, Any],
+    dtype: str,
+    weight_item: dict[str, Any] | None,
+    source_transform: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    if target_pattern != PREFILL_Q4K_GEMV_PATTERN:
+        return source_transform
+    params = _prefill_q4k_gemv_params(compile_params)
+    if params is None:
+        return source_transform
+    symbol_key = symbol.lower()
+    if symbol_key in {"activation", "a"} and role == "activation":
+        source_cols = _int_field(item.get("matrixCols"))
+        if source_cols is None:
+            source_cols = _model_hidden_dim(runtime_config)
+        if source_cols is None or source_cols <= 0:
+            return source_transform
+        return {
+            "kind": "logical_matrix_to_prefill_q4k_gemv_activation_shards",
+            "sourceDtype": dtype,
+            "targetDtype": "f16",
+            "sourceCols": source_cols,
+            **params,
+        }
+    if symbol_key in {"weight", "b"} and role == "weight" and weight_item is not None:
+        shape = _normalized_shape(weight_item.get("shape") or [])
+        if len(shape) < 2:
+            return source_transform
+        return {
+            "kind": "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles",
+            "sourceDtype": str(weight_item.get("dtype") or ""),
+            "targetDtype": "u8_q4k",
+            "sourceRows": shape[0],
+            "sourceCols": shape[1],
+            **params,
+        }
+    return source_transform
+
+
+def _prefill_q4k_gemv_output_transform(
+    *,
+    symbol: str,
+    target_pattern: str,
+    compile_params: dict[str, int],
+    item: dict[str, Any],
+    dtype: str,
+) -> dict[str, Any] | None:
+    if target_pattern != PREFILL_Q4K_GEMV_PATTERN:
+        return None
+    if symbol.lower() not in {"output", "c"}:
+        return None
+    params = _prefill_q4k_gemv_params(compile_params)
+    output_cols = _int_field(item.get("matrixCols"))
+    if params is None or output_cols is None:
+        return None
+    return {
+        "kind": "prefill_q4k_gemv_row_tiles_to_logical_matrix",
+        "cols": output_cols,
+        "sourceDtype": dtype,
+        "targetDtype": dtype,
+        **params,
+    }
+
+
 def _memcpy_element_count(elem_type: str, raw_element_count: int) -> int:
     if elem_type == "u8":
         return max(1, (raw_element_count + 3) // 4)
@@ -614,6 +786,7 @@ def _binding_materialization(
     *,
     item: dict[str, Any],
     target_name: str,
+    target_pattern: str,
     compile_params: dict[str, int],
     pe_program_arrays: dict[str, dict[str, Any]],
     pe_program_compile_time: dict[str, int],
@@ -718,6 +891,18 @@ def _binding_materialization(
         symbol=symbol,
         role=role,
         target_name=target_name,
+        target_pattern=target_pattern,
+        compile_params=compile_params,
+        runtime_config=runtime_config,
+        item=item,
+        dtype=dtype,
+        weight_item=weight_item,
+        source_transform=source_transform,
+    )
+    source_transform = _prefill_q4k_gemv_source_transform(
+        symbol=symbol,
+        role=role,
+        target_pattern=target_pattern,
         compile_params=compile_params,
         runtime_config=runtime_config,
         item=item,
@@ -743,15 +928,34 @@ def _binding_materialization(
         dtype=dtype,
         source_transform=source_transform,
     )
+    source_transform = _rope_source_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        item=item,
+        dtype=dtype,
+        source_transform=source_transform,
+    )
     if source_transform is None and isinstance(metadata_staging, dict):
         source_transform = metadata_staging
     output_transform = _summa_output_transform(
         symbol=symbol,
         target_name=target_name,
+        target_pattern=target_pattern,
         compile_params=compile_params,
         item=item,
         dtype=dtype,
     )
+    prefill_q4k_output_transform = _prefill_q4k_gemv_output_transform(
+        symbol=symbol,
+        target_pattern=target_pattern,
+        compile_params=compile_params,
+        item=item,
+        dtype=dtype,
+    )
+    if prefill_q4k_output_transform is not None:
+        output_transform = prefill_q4k_output_transform
     metadata_detile = (binding_metadata or {}).get("detileTransform")
     if output_transform is None and isinstance(metadata_detile, dict):
         output_transform = metadata_detile
@@ -762,6 +966,15 @@ def _binding_materialization(
     )
     if dense_output_transform is not None:
         output_transform = dense_output_transform
+    output_transform = _rope_output_transform(
+        symbol=symbol,
+        role=role,
+        target_name=target_name,
+        compile_params=compile_params,
+        item=item,
+        dtype=dtype,
+        output_transform=output_transform,
+    )
     output_transform = _row_parallel_output_transform(
         symbol=symbol,
         role=role,
@@ -1260,6 +1473,7 @@ def build_hostplan_execution_plan(
         pe_program_path = _pe_program_path(compile_root, target)
         compile_params = _compile_params(compile_dir)
         compile_params.update(compile_params_from_target(target))
+        target_pattern = _target_pattern(target) or str(launch.get("kernelPattern") or "")
         binding_metadata = binding_metadata_by_symbol(target)
         target_phase_name = target_phase(target)
         if binding_metadata:
@@ -1329,6 +1543,7 @@ def build_hostplan_execution_plan(
                     "materialization": _binding_materialization(
                         item=item,
                         target_name=target_name,
+                        target_pattern=target_pattern,
                         compile_params=compile_params,
                         pe_program_arrays=pe_program_arrays,
                         pe_program_compile_time=pe_program_compile_time,
@@ -1357,6 +1572,7 @@ def build_hostplan_execution_plan(
                     "materialization": _binding_materialization(
                         item=item,
                         target_name=target_name,
+                        target_pattern=target_pattern,
                         compile_params=compile_params,
                         pe_program_arrays=pe_program_arrays,
                         pe_program_compile_time=pe_program_compile_time,
@@ -1378,6 +1594,7 @@ def build_hostplan_execution_plan(
                 "phase": launch.get("phase"),
                 "decodeStepIndex": launch.get("decodeStepIndex"),
                 "kernelName": base_kernel_name,
+                "kernelPattern": target_pattern,
                 "targetName": target_name,
                 "compileDir": str(compile_dir),
                 "compileParams": compile_params,

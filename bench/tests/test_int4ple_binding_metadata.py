@@ -49,6 +49,7 @@ def _binding(
     access: str,
     elements: str,
     *,
+    elem_type: str = "f32",
     staging: dict[str, Any] | None = None,
     detile: dict[str, Any] | None = None,
     weight_source: str | None = None,
@@ -56,7 +57,7 @@ def _binding(
     return {
         "symbol": symbol,
         "access": access,
-        "elemType": "f32",
+        "elemType": elem_type,
         "bindingShape": _shape(elements),
         "perPeShape": _shape(elements),
         "stagingTransform": staging,
@@ -95,6 +96,39 @@ def _tiled_bindings() -> list[dict[str, Any]]:
                 matrix_role="c",
                 rows_from_input="a",
             ),
+        ),
+    ]
+
+
+def _prefill_q4k_gemv_bindings() -> list[dict[str, Any]]:
+    return [
+        _binding(
+            "activation",
+            "read",
+            "in_dim_per_pe",
+            elem_type="f16",
+            staging={
+                "kind": "logical_matrix_to_prefill_q4k_gemv_activation_shards",
+            },
+        ),
+        _binding(
+            "weight",
+            "read",
+            "out_dim_per_pe * num_blocks_per_row * 144",
+            elem_type="u8",
+            staging={
+                "kind": "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles",
+            },
+            weight_source="runtime_weight_mapping",
+        ),
+        _binding(
+            "output",
+            "read_write",
+            "out_dim_per_pe",
+            elem_type="f16",
+            detile={
+                "kind": "prefill_q4k_gemv_row_tiles_to_logical_matrix",
+            },
         ),
     ]
 
@@ -305,6 +339,138 @@ class StructuredBindingMetadataTests(unittest.TestCase):
             "summa_tiles_to_logical_matrix",
         )
         self.assertEqual(c_mat["detileTransform"]["rowsFromInput"], "a")
+
+    def test_prefill_q4k_gemv_plan_uses_canonical_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            compile_root = Path(tmpdir) / "compile"
+            execution_plan = build_hostplan_execution_plan(
+                plan={
+                    "inputs": {
+                        "compileTargets": [
+                            {
+                                "name": "tiled_31b",
+                                "pattern": "prefill_q4k_gemv",
+                                "layout": "missing/layout.csl",
+                                "peProgram": "missing/pe_program.csl",
+                                "compileParams": {
+                                    "width": 4,
+                                    "height": 1,
+                                    "out_dim": 112,
+                                    "out_dim_per_pe": 112,
+                                    "in_dim_per_pe": 512,
+                                    "num_blocks_per_row": 2,
+                                    "output_pe_rows": 1,
+                                },
+                                "metadata": {
+                                    "targetPhase": "prefill",
+                                    "bindings": _prefill_q4k_gemv_bindings(),
+                                },
+                            }
+                        ]
+                    }
+                },
+                compile_root=compile_root,
+                runtime_config={
+                    "modelConfig": {
+                        "hiddenDim": 2048,
+                        "vocabSize": 8,
+                        "maxSeqLen": 4,
+                    },
+                    "memoryPlan": {"grid": {"width": 4, "height": 1}},
+                    "weightMappings": [
+                        {
+                            "weightKey": "layer.0.self_attn.q_proj",
+                            "tensor": "layer.0.self_attn.q_proj",
+                            "path": "/weights/q.bin",
+                            "sha256": "0" * 64,
+                            "dtype": "u8_q4k",
+                            "shape": [1024, 2048],
+                            "byteSize": 147456,
+                        }
+                    ],
+                },
+                scheduler={
+                    "hostPlan": {
+                        "runtimeScheduler": {
+                            "status": "bound",
+                            "launches": [
+                                {
+                                    "launchIndex": 2,
+                                    "phase": "prefill",
+                                    "kernelName": "tiled_31b",
+                                    "kernelPattern": "prefill_q4k_gemv",
+                                    "inputs": [
+                                        {
+                                            "symbol": "activation",
+                                            "buffer": "activation:prev",
+                                            "role": "activation",
+                                            "access": "read",
+                                            "matrixCols": 2048,
+                                        },
+                                        {
+                                            "symbol": "weight",
+                                            "buffer": "weight:layer.0.self_attn.q_proj",
+                                            "role": "weight",
+                                            "access": "read",
+                                        },
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "symbol": "output",
+                                            "buffer": "activation:q",
+                                            "role": "activation",
+                                            "access": "write",
+                                            "matrixCols": 1024,
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    }
+                },
+                executor_validator={
+                    "status": "passed",
+                    "producedBufferCount": 1,
+                },
+            )
+
+        self.assertEqual(
+            execution_plan["status"],
+            "planned",
+            execution_plan["blockers"],
+        )
+        launch = execution_plan["launches"][0]
+        self.assertEqual(launch["kernelPattern"], "prefill_q4k_gemv")
+        inputs = {item["symbol"]: item for item in launch["inputBindings"]}
+        outputs = {item["symbol"]: item for item in launch["outputBindings"]}
+
+        activation = inputs["activation"]["materialization"]
+        self.assertEqual(activation["targetPhase"], "prefill")
+        self.assertEqual(activation["dtype"], "f16")
+        self.assertEqual(
+            activation["sourceTransform"]["kind"],
+            "logical_matrix_to_prefill_q4k_gemv_activation_shards",
+        )
+        self.assertEqual(activation["sourceTransform"]["sourceCols"], 2048)
+
+        weight = inputs["weight"]["materialization"]
+        self.assertEqual(weight["dtype"], "u32")
+        self.assertEqual(weight["elemType"], "u8")
+        self.assertEqual(
+            weight["sourceTransform"]["kind"],
+            "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles",
+        )
+        self.assertEqual(weight["sourceTransform"]["sourceRows"], 1024)
+        self.assertEqual(weight["sourceTransform"]["sourceCols"], 2048)
+        self.assertEqual(weight["weightSource"], "runtime_weight_mapping")
+
+        output = outputs["output"]["materialization"]
+        self.assertEqual(output["dtype"], "f16")
+        self.assertEqual(
+            output["outputTransform"]["kind"],
+            "prefill_q4k_gemv_row_tiles_to_logical_matrix",
+        )
+        self.assertEqual(output["outputTransform"]["cols"], 1024)
 
     def test_plan_uses_structured_sidecars_without_reading_csl_sources(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

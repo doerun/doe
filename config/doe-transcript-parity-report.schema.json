@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.doe.deco/doe-transcript-parity-report.schema.json",
   "title": "Doe transcript parity report",
-  "description": "Backend-agnostic pairwise transcript parity report for one Doppler reference export and one or more Doe transcript receipts bound to the same source-program contract.",
+  "description": "Backend-agnostic pairwise transcript parity report for one Doppler reference export and one or more Doe transcript receipts bound to the same source-program contract. Generated token IDs are exact-parity evidence; logits are exact only when the comparison policy says sha256_exact, otherwise they are tolerance evidence under the declared policy.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,7 +16,7 @@
     "summary"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "artifactKind": { "const": "doe_transcript_parity_report" },
     "modelId": { "type": "string" },
     "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
@@ -171,7 +171,10 @@
         "actualDecodeStepsMatch",
         "stopReasonMatch",
         "generatedTokenIdsMatch",
+        "generatedTokenParityStatus",
         "logitsDigestCountMatch",
+        "logitsComparison",
+        "logitsComparisonStatus",
         "perStepMetadataMatch"
       ],
       "properties": {
@@ -180,7 +183,25 @@
         "actualDecodeStepsMatch": { "type": "boolean" },
         "stopReasonMatch": { "type": "boolean" },
         "generatedTokenIdsMatch": { "type": "boolean" },
+        "generatedTokenParityStatus": {
+          "type": "string",
+          "enum": ["matched", "mismatch"]
+        },
         "logitsDigestCountMatch": { "type": "boolean" },
+        "logitsComparison": {
+          "type": "string",
+          "enum": ["sha256_exact", "max_abs"]
+        },
+        "logitsComparisonStatus": {
+          "type": "string",
+          "enum": [
+            "sha256_exact_match",
+            "sha256_exact_mismatch",
+            "all_within_tolerance",
+            "exceeds_tolerance",
+            "blocked"
+          ]
+        },
         "perStepMetadataMatch": { "type": "boolean" },
         "perStepLogitsParityPassed": { "type": ["boolean", "null"] },
         "comparedLogitsStepCount": { "type": "integer", "minimum": 0 },

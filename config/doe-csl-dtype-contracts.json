@@ -75,6 +75,12 @@
           "accumulationDtype": "f16"
         },
         {
+          "name": "prefill_q4k_gemv",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
           "name": "fused_gemv",
           "inputDtype": "f16",
           "outputDtype": "f16",
@@ -183,6 +189,12 @@
         },
         {
           "name": "tiled_matmul",
+          "inputDtype": "f16",
+          "outputDtype": "f16",
+          "accumulationDtype": "f16"
+        },
+        {
+          "name": "prefill_q4k_gemv",
           "inputDtype": "f16",
           "outputDtype": "f16",
           "accumulationDtype": "f16"

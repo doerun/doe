@@ -106,6 +106,7 @@ pub const KernelFamilyHint = enum {
     gather,
     rms_norm,
     fused_gemv,
+    prefill_q4k_gemv,
     tiled_matmul,
     attention_decode,
     attention_tiled,

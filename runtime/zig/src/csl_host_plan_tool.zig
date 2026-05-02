@@ -63,6 +63,10 @@ const MAX_COMPILE_TARGETS: usize = MAX_KERNELS + PHASE_COMPILE_TARGET_COUNT;
 const MAX_LAUNCHES: usize = 1024;
 const MAX_STATE_BUFFERS: usize = 16;
 const SHA256_HEX_LEN: usize = 64;
+const PREFILL_Q4K_GEMV_IN_DIM_PER_PE: u32 = 512;
+const PREFILL_Q4K_GEMV_OUT_DIM_PER_PE: u32 = 112;
+const PREFILL_Q4K_GEMV_DEFAULT_OUTPUT_PE_ROWS: u32 = 1;
+const Q4K_BLOCK_ELEMENTS: u32 = 256;
 // Linear-attention state is sharded across pe_y so per-PE state fits the
 // WSE-3 48 KiB SRAM budget. value_dim is split into value_dim_per_pe rows
 // per PE; key_dim is broadcast. output[d] only reduces over k, so each PE
@@ -359,6 +363,7 @@ fn appendCompileTarget(
     if (count.* >= out.len) @panic("too many CSL compile targets");
     out[count.*] = .{
         .kernel_name = target_name,
+        .pattern = pattern,
         .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{source_name}),
         .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{source_name}),
         .metadata = try compileTargetMetadata(allocator, pattern, phase orelse "base", activation_elem),
@@ -407,20 +412,25 @@ fn compileTargetParams(
         try appendParam(allocator, &params, "rows_per_pe", ceilDivU32(vocab, pe_count));
         try appendParam(allocator, &params, "num_tokens", @min(config.max_seq_len, @as(u32, 16)));
         try appendParam(allocator, &params, "tokens_per_chunk", @min(config.max_seq_len, @as(u32, 16)));
+    } else if (std.mem.eql(u8, pattern, exec_v1.PREFILL_Q4K_GEMV_PATTERN)) {
+        const output_pe_rows = PREFILL_Q4K_GEMV_DEFAULT_OUTPUT_PE_ROWS;
+        try appendParam(allocator, &params, "width", ceilDivU32(maxModelFeatureDim(config), PREFILL_Q4K_GEMV_IN_DIM_PER_PE));
+        try appendParam(allocator, &params, "height", output_pe_rows);
+        try appendParam(allocator, &params, "out_dim", output_pe_rows * PREFILL_Q4K_GEMV_OUT_DIM_PER_PE);
+        try appendParam(allocator, &params, "out_dim_per_pe", PREFILL_Q4K_GEMV_OUT_DIM_PER_PE);
+        try appendParam(allocator, &params, "in_dim_per_pe", PREFILL_Q4K_GEMV_IN_DIM_PER_PE);
+        try appendParam(allocator, &params, "num_blocks_per_row", ceilDivU32(PREFILL_Q4K_GEMV_IN_DIM_PER_PE, Q4K_BLOCK_ELEMENTS));
+        try appendParam(allocator, &params, "output_pe_rows", output_pe_rows);
     } else if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         const is_ple = std.mem.startsWith(u8, target_name, "ple_");
         if (std.mem.eql(u8, target_name, "tiled_31b")) {
             const p = @as(u32, 512);
-            const q_dim = config.num_heads * config.head_dim;
-            const kv_dim = (config.num_key_value_heads orelse config.num_heads) * config.head_dim;
-            const ffn_dim = config.hidden_dim * config.ffn_expansion_factor;
-            const max_feature_dim = @max(@max(config.hidden_dim, q_dim), @max(kv_dim, ffn_dim));
             try appendParam(allocator, &params, "width", p);
             try appendParam(allocator, &params, "height", p);
             try appendParam(allocator, &params, "P", p);
             try appendParam(allocator, &params, "Mt", ceilDivU32(config.max_seq_len, p));
-            try appendParam(allocator, &params, "Kt", ceilDivU32(max_feature_dim, p));
-            try appendParam(allocator, &params, "Nt", ceilDivU32(max_feature_dim, p));
+            try appendParam(allocator, &params, "Kt", ceilDivU32(maxModelFeatureDim(config), p));
+            try appendParam(allocator, &params, "Nt", ceilDivU32(maxModelFeatureDim(config), p));
         } else {
             const tile = if (is_ple)
                 @as(u32, 16)
@@ -565,6 +575,13 @@ fn isPhaseSpecializedKernel(name: []const u8) bool {
 }
 fn isLmHeadTarget(name: []const u8) bool {
     return std.mem.eql(u8, name, "lm_head") or std.mem.startsWith(u8, name, "lm_head_");
+}
+
+fn maxModelFeatureDim(config: host.ModelConfig) u32 {
+    const q_dim = config.num_heads * config.head_dim;
+    const kv_dim = (config.num_key_value_heads orelse config.num_heads) * config.head_dim;
+    const ffn_dim = config.hidden_dim * config.ffn_expansion_factor;
+    return @max(@max(config.hidden_dim, q_dim), @max(kv_dim, ffn_dim));
 }
 fn buildStateBuffers(memory_plan: mem_plan.MemoryPlan, out: *[MAX_STATE_BUFFERS]host_runtime.StateBuffer) []const host_runtime.StateBuffer {
     var count: usize = 0;
@@ -846,6 +863,44 @@ test "buildCompileTargets uses vocab output width for lm_head GEMV" {
     try std.testing.expectEqual(@as(u32, 64), targets[1].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 16), targets[1].compile_params[3].value);
 }
+
+test "buildCompileTargets emits canonical prefill Q4K GEMV target for tiled_31b" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const plan = host.HostPlan{
+        .pe_grid_width = 8,
+        .pe_grid_height = 4,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "tiled_31b", .pattern = exec_v1.PREFILL_Q4K_GEMV_PATTERN, .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    const config = host.ModelConfig{
+        .hidden_dim = 5120,
+        .num_heads = 32,
+        .head_dim = 160,
+        .num_layers = 1,
+        .vocab_size = 262144,
+        .max_seq_len = 16,
+        .quant_format = .q4k,
+    };
+    var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
+    const targets = try buildCompileTargets(arena.allocator(), plan, config, .f16, &target_buf);
+    try std.testing.expectEqual(@as(usize, 1), targets.len);
+    try std.testing.expectEqualStrings("tiled_31b", targets[0].kernel_name);
+    try std.testing.expectEqualStrings(exec_v1.PREFILL_Q4K_GEMV_PATTERN, targets[0].pattern);
+    try std.testing.expectEqual(@as(u32, 40), targets[0].compile_params[0].value);
+    try std.testing.expectEqual(@as(u32, 1), targets[0].compile_params[1].value);
+    try std.testing.expectEqual(@as(u32, 112), targets[0].compile_params[3].value);
+    try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[4].value);
+    const metadata = targets[0].metadata orelse return error.TestUnexpectedResult;
+    try std.testing.expectEqualStrings("activation", metadata.bindings[0].symbol);
+    try std.testing.expectEqualStrings("weight", metadata.bindings[1].symbol);
+    try std.testing.expectEqualStrings("u8", metadata.bindings[1].elem_type);
+    try std.testing.expectEqualStrings("output", metadata.bindings[2].symbol);
+}
+
 test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();

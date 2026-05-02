@@ -546,12 +546,17 @@ def transcript_step_metadata_matches(
 def compare_transcripts(
     left: Participant,
     right: Participant,
+    logits_comparison: str,
     atol: float,
     rtol: float,
 ) -> tuple[dict[str, Any], bool, list[str]]:
     left_digest = left.transcript_digest
     right_digest = right.transcript_digest
     missing_artifacts: list[str] = []
+    generated_token_ids_match = (
+        left_digest["generatedTokenIdsSha256"]
+        == right_digest["generatedTokenIdsSha256"]
+    )
     comparison = {
         "requestedDecodeStepsMatch": (
             left_digest["requestedDecodeSteps"] == right_digest["requestedDecodeSteps"]
@@ -560,13 +565,15 @@ def compare_transcripts(
             left_digest["actualDecodeSteps"] == right_digest["actualDecodeSteps"]
         ),
         "stopReasonMatch": left_digest["stopReason"] == right_digest["stopReason"],
-        "generatedTokenIdsMatch": (
-            left_digest["generatedTokenIdsSha256"]
-            == right_digest["generatedTokenIdsSha256"]
+        "generatedTokenIdsMatch": generated_token_ids_match,
+        "generatedTokenParityStatus": (
+            "matched" if generated_token_ids_match else "mismatch"
         ),
         "logitsDigestCountMatch": (
             left_digest["logitsDigestCount"] == right_digest["logitsDigestCount"]
         ),
+        "logitsComparison": logits_comparison,
+        "logitsComparisonStatus": "all_within_tolerance",
         "perStepMetadataMatch": transcript_step_metadata_matches(
             left.transcript_steps,
             right.transcript_steps,
@@ -589,6 +596,15 @@ def compare_transcripts(
             if isinstance(left_step.sha256, str) and isinstance(right_step.sha256, str):
                 if left_step.sha256 == right_step.sha256:
                     continue
+                if logits_comparison == "sha256_exact":
+                    per_step_parity = False
+                    break
+            elif logits_comparison == "sha256_exact":
+                missing_artifacts.append(
+                    f"{left.participant_id}.logitsDigests[{index}].sha256"
+                )
+                per_step_parity = False
+                continue
             if not isinstance(left_step.path, str):
                 missing_artifacts.append(
                     f"{left.participant_id}.logitsDigests[{index}].path"
@@ -621,6 +637,16 @@ def compare_transcripts(
     comparison["maxAbsErr"] = max_abs_err
     comparison["perStepLogitsParityPassed"] = per_step_parity
     comparison["comparable"] = len(missing_artifacts) == 0
+    if missing_artifacts:
+        comparison["logitsComparisonStatus"] = "blocked"
+    elif per_step_parity is True and logits_comparison == "sha256_exact":
+        comparison["logitsComparisonStatus"] = "sha256_exact_match"
+    elif per_step_parity is True:
+        comparison["logitsComparisonStatus"] = "all_within_tolerance"
+    elif logits_comparison == "sha256_exact":
+        comparison["logitsComparisonStatus"] = "sha256_exact_mismatch"
+    else:
+        comparison["logitsComparisonStatus"] = "exceeds_tolerance"
     if missing_artifacts:
         comparison["missingArtifacts"] = missing_artifacts
 
@@ -671,6 +697,7 @@ def participant_readiness_blocker(participant: Participant) -> str | None:
 def compare_participants(
     left: Participant,
     right: Participant,
+    logits_comparison: str,
     atol: float,
     rtol: float,
 ) -> dict[str, Any]:
@@ -678,7 +705,13 @@ def compare_participants(
         left.source_program,
         right.source_program,
     )
-    transcript, transcript_ok, _ = compare_transcripts(left, right, atol, rtol)
+    transcript, transcript_ok, _ = compare_transcripts(
+        left,
+        right,
+        logits_comparison,
+        atol,
+        rtol,
+    )
     blocker = comparison_blocker(source_program, transcript)
     if blocker is None:
         blocker = participant_readiness_blocker(left)
@@ -765,17 +798,18 @@ def build_report(
     if len(model_ids) != 1:
         raise ValueError(f"participants do not agree on modelId: {sorted(model_ids)}")
 
+    logits_comparison = str(comparison_policy.get("comparison", "max_abs"))
     comparisons = [
-        compare_participants(left, right, atol, rtol)
+        compare_participants(left, right, logits_comparison, atol, rtol)
         for left, right in itertools.combinations(participants, 2)
     ]
     report = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "artifactKind": "doe_transcript_parity_report",
         "modelId": reference_participant.model_id,
         "sourceProgram": reference_participant.source_program,
         "comparisonPolicy": {
-            "comparison": str(comparison_policy.get("comparison", "max_abs")),
+            "comparison": logits_comparison,
             "atol": atol,
             "rtol": rtol,
         },

@@ -46,6 +46,11 @@
             "required": ["name", "layout", "peProgram"],
             "properties": {
               "name": { "type": "string", "minLength": 1 },
+              "pattern": {
+                "type": "string",
+                "minLength": 1,
+                "description": "HostPlan kernel-pattern taxonomy for this compile target. When present, this must match hostPlan.kernels[].pattern for the target name; runner receipts use it to avoid target-name inference."
+              },
               "layout": { "type": "string", "minLength": 1 },
               "peProgram": { "type": "string", "minLength": 1 },
               "sourceWgslPath": {
@@ -200,7 +205,12 @@
             "pe_rows_to_logical_matrix",
             "logical_vector_to_dense_gemv_activation_shards",
             "tied_f16_embedding_to_dense_gemv_shards",
-            "dense_gemv_row_shards_to_logits"
+            "dense_gemv_row_shards_to_logits",
+            "logical_matrix_to_prefill_q4k_gemv_activation_shards",
+            "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles",
+            "prefill_q4k_gemv_row_tiles_to_logical_matrix",
+            "logical_matrix_to_rope_pe_heads",
+            "rope_pe_heads_to_logical_matrix"
           ]
         },
         "matrixRole": { "type": "string", "minLength": 1 },

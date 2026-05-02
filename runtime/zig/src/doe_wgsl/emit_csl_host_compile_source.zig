@@ -699,9 +699,10 @@ test "host compile source routes af16 lane into f16 CSL source" {
 
     const rms = try emitPatternSectionsForElem(std.testing.allocator, "rms_norm", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"input\", [*]f16, true);") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"output\", [*]u32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"output\", [*]f16, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.layout, "@export_name(\"output_chunk_0000\", [*]u32, true);") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "[hidden_size]f16") != null);
-    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "output_bits_ptr: [*]u32 = &output_bits;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "output_chunk_0000_ptr: [*]u32 = &output_chunk_0000;") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.combined, "f32") == null);
 
     const tiled = try emitPatternSectionsForElem(std.testing.allocator, "tiled_matmul", .f16, &buf);

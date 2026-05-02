@@ -52,9 +52,10 @@ The first proof is not speed. The proof target is a bounded deterministic
 prefill+decode transcript for the same source artifact, manifest identity,
 graph or capture identity, weight identity, and prompt/input contract. Doppler
 WebGPU and Doe-emitted CSL must complete full prefill, run a fixed number of
-greedy decode steps, record per-step logits hashes, select the same token IDs
-at every step, and produce the same generated token sequence within the
-declared numerical tolerance. KV/cache state must be real, not stubbed.
+greedy decode steps, record per-step logits digests, select the same token IDs
+at every step, and keep logits within the declared numerical tolerance unless
+the reference export explicitly binds `sha256_exact`. KV/cache state must be
+real, not stubbed.
 Unsupported captured operations must fail with explicit CSL taxonomy errors.
 Hidden fallbacks do not promote the lane.
 
@@ -228,8 +229,8 @@ Allowed wording:
 - "This is source-reference evidence only. It is not Doe CSL parity, not
   Cerebras hardware execution, and not a performance claim."
 - "Promotion requires Doe CSL simfabric to emit the same bounded transcript
-  with matching hashes, real KV/cache behavior, token IDs, per-step logits,
-  no stubs, and no synthetic inputs or weights."
+  with exact generated-token parity, logits digest/tolerance evidence, real
+  KV/cache behavior, no stubs, and no synthetic inputs or weights."
 
 ### Declared real-weight smoke diagnostics are local, not promoted
 

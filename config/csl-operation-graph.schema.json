@@ -500,6 +500,7 @@
             "gelu_gated",
             "silu_gated",
             "sigmoid_gated",
+            "prefill_q4k_gemv",
             "fused_gemv_dequant",
             "residual",
             "residual_add",

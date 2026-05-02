@@ -118,10 +118,11 @@ pub fn materializeCompileSources(
     try pruneStaleCompileSourceDirs(allocator, bundle_root, plan.kernels);
     var csl_buf: [wgsl.MAX_CSL_OUTPUT]u8 = undefined;
     for (plan.kernels) |kernel| {
+        const source_pattern = compileSourcePatternForPattern(kernel.pattern);
         const source_elem = compileSourceElemForPattern(kernel.pattern, elem);
         const sections = try compile_source.emitPatternSectionsForElem(
             allocator,
-            kernel.pattern,
+            source_pattern,
             source_elem,
             &csl_buf,
         );
@@ -152,6 +153,11 @@ fn compileSourceElemForPattern(pattern: []const u8, elem: wgsl.ir.ScalarType) wg
     if (std.mem.eql(u8, pattern, "dense_gemv")) return .f32;
     if (std.mem.eql(u8, pattern, "sample")) return .f32;
     return elem;
+}
+
+fn compileSourcePatternForPattern(pattern: []const u8) []const u8 {
+    if (std.mem.eql(u8, pattern, "prefill_q4k_gemv")) return "fused_gemv_dequant";
+    return pattern;
 }
 
 fn pruneStaleCompileSourceDirs(

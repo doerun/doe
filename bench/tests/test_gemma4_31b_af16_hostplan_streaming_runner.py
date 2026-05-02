@@ -1046,6 +1046,10 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
                 "requestedDecodeSteps": 2,
                 "actualDecodeSteps": 2,
                 "generatedTokenIds": [4104, 6158],
+                "logitsDigests": [
+                    {"path": "logits-0.f32", "sha256": "a" * 64},
+                    {"path": "logits-1.f32", "sha256": "b" * 64},
+                ],
                 "lmHeadDispatches": [
                     {
                         "launchIndex": 4,

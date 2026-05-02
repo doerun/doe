@@ -45,6 +45,9 @@ REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH = (
 REASON_SESSION_TRANSCRIPT_TOKENS_INCOMPLETE = (
     "session_transcript_generated_tokens_incomplete"
 )
+REASON_SESSION_TRANSCRIPT_LOGITS_MISSING = (
+    "session_transcript_logits_digests_missing"
+)
 REASON_SESSION_TRANSCRIPT_LM_HEAD_MISSING = (
     "session_transcript_lm_head_dispatch_missing"
 )
@@ -245,6 +248,29 @@ def session_runtime_evidence_reasons(
             "real-session transcript generatedTokenIds must contain one "
             "integer token ID per decoded output step.",
         ))
+
+    logits_digests = _as_sequence(transcript.get("logitsDigests"))
+    if len(logits_digests) < actual or actual <= 0:
+        reasons.append(GateReason(
+            REASON_SESSION_TRANSCRIPT_LOGITS_MISSING,
+            "real-session transcript must include at least one logits digest "
+            "record per decoded output step.",
+        ))
+    else:
+        for index, digest in enumerate(logits_digests[:actual]):
+            item = _as_mapping(digest)
+            if item is None:
+                reasons.append(GateReason(
+                    REASON_SESSION_TRANSCRIPT_LOGITS_MISSING,
+                    f"logits digest record {index} is not an object.",
+                ))
+                break
+            if not str(item.get("sha256") or ""):
+                reasons.append(GateReason(
+                    REASON_SESSION_TRANSCRIPT_LOGITS_MISSING,
+                    f"logits digest record {index} has no sha256.",
+                ))
+                break
 
     lm_head_dispatches = _as_sequence(transcript.get("lmHeadDispatches"))
     if len(lm_head_dispatches) < actual or actual <= 0:

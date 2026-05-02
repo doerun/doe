@@ -133,7 +133,7 @@ fn writeInt(buf: []u8, pos: *usize, value: anytype) EmitError!void {
 
 test "Makefile emits compile targets" {
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
+        .{ .kernel_name = "gelu", .pattern = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
     };
     const plan = host.HostPlan{
         .pe_grid_width = 16,
@@ -175,7 +175,7 @@ test "simulator plan wrapper emits JSON" {
         .state_buffer_count = 0,
     };
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
+        .{ .kernel_name = "gelu", .pattern = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
     };
     const paths = SimulatorArtifactPaths{
         .host_plan_artifact_path = "artifacts/host-plan.json",

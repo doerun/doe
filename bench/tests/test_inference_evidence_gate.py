@@ -20,6 +20,7 @@ from bench.tools._inference_evidence_gate import (  # noqa: E402
     REASON_SAMPLE_PREDECESSOR_NOT_LM_HEAD,
     REASON_SAMPLE_WITHOUT_LOGITS_PRODUCER,
     REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH,
+    REASON_SESSION_TRANSCRIPT_LOGITS_MISSING,
     REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY,
     REASON_TARGET_INVENTORY_MISMATCH,
     enforce_inference_evidence_gate,
@@ -69,6 +70,10 @@ def _good_session_runtime() -> dict:
             "requestedDecodeSteps": 2,
             "actualDecodeSteps": 2,
             "generatedTokenIds": [4104, 6158],
+            "logitsDigests": [
+                {"path": "logits-0.f32", "sha256": "a" * 64},
+                {"path": "logits-1.f32", "sha256": "b" * 64},
+            ],
             "lmHeadDispatches": [
                 {
                     "launchIndex": 4,
@@ -334,6 +339,18 @@ class InferenceEvidenceGateTest(unittest.TestCase):
             REASON_SESSION_TRANSCRIPT_DECODE_COUNT_MISMATCH,
             _codes(result),
         )
+
+    def test_output_ready_session_without_logits_rejects_fail_closed(self) -> None:
+        session = _good_session_runtime()
+        session["runtimeTranscript"]["logitsDigests"] = []
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(),
+            per_kernel_summary=_good_per_kernel(),
+            real_session_runtime=session,
+            requested_decode_steps=2,
+        )
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_SESSION_TRANSCRIPT_LOGITS_MISSING, _codes(result))
 
     def test_not_ready_session_without_per_kernel_rejects(self) -> None:
         session = _good_session_runtime()

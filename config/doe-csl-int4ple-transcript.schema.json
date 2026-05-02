@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.doe.deco/doe-csl-int4ple-transcript.schema.json",
   "title": "Doe CSL INT4 PLE transcript receipt",
-  "description": "Receipt for the Doe CSL simfabric side of the production Doppler INT4 PLE bounded prefill+decode transcript contract. Blocked receipts are allowed for traceability; promotion requires simulator_success, transcript output, token/logits parity, real KV/cache evidence, and non-stub kernels.",
+  "description": "Receipt for the Doe CSL simfabric side of the production Doppler INT4 PLE bounded prefill+decode transcript contract. Blocked receipts are allowed for traceability; promotion requires simulator_success, transcript output, exact generated-token parity, logits comparison under the declared Doppler tolerance policy, real KV/cache evidence, and non-stub kernels.",
   "type": "object",
   "additionalProperties": false,
   "required": [

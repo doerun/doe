@@ -104,6 +104,7 @@ pub fn emitForKernelDispatch(self: anytype, kd: model.KernelDispatchCommand) !vo
     const targets = [_]host_plan.CompileTarget{
         .{
             .kernel_name = kernel_base,
+            .pattern = kernel_pattern,
             .layout_path = layout_path,
             .pe_program_path = pe_program_path,
         },

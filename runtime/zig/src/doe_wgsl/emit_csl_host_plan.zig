@@ -20,6 +20,7 @@ pub const EmitError = error{
 
 pub const CompileTarget = struct {
     kernel_name: []const u8,
+    pattern: []const u8,
     layout_path: []const u8,
     pe_program_path: []const u8,
     metadata: ?CompileTargetMetadata = null,
@@ -245,6 +246,8 @@ pub fn emitHostPlanArtifactJson(
     for (targets, 0..) |target, idx| {
         try write(buf, pos, "    { \"name\": ");
         try writeJsonString(buf, pos, target.kernel_name);
+        try write(buf, pos, ", \"pattern\": ");
+        try writeJsonString(buf, pos, target.pattern);
         try write(buf, pos, ", \"layout\": ");
         try writeJsonString(buf, pos, target.layout_path);
         try write(buf, pos, ", \"peProgram\": ");
@@ -400,6 +403,10 @@ fn validateCompileTargetsValue(raw: std.json.Value) EmitError!void {
             for (arr.items) |item| {
                 const obj = expectObject(item, "compileTarget") orelse return error.InvalidSchema;
                 const name = expectString(obj.get("name"), "compileTarget.name") orelse return error.InvalidSchema;
+                if (obj.get("pattern")) |raw_pattern| {
+                    const pattern = expectString(raw_pattern, "compileTarget.pattern") orelse return error.InvalidSchema;
+                    if (pattern.len == 0) return error.InvalidSchema;
+                }
                 const layout = expectString(obj.get("layout"), "compileTarget.layout") orelse return error.InvalidSchema;
                 const pe_program = expectString(obj.get("peProgram"), "compileTarget.peProgram") orelse return error.InvalidSchema;
                 if (name.len == 0 or layout.len == 0 or pe_program.len == 0) return error.InvalidSchema;
@@ -454,10 +461,11 @@ fn validateHostPlan(
     }
 
     for (targets) |target| {
-        if (target.kernel_name.len == 0 or target.layout_path.len == 0 or target.pe_program_path.len == 0) {
+        if (target.kernel_name.len == 0 or target.pattern.len == 0 or target.layout_path.len == 0 or target.pe_program_path.len == 0) {
             return error.InvalidIr;
         }
-        if (!hasKernel(plan.kernels, kernelNameForTarget(target.kernel_name))) return error.InvalidIr;
+        const kernel = findKernel(plan.kernels, kernelNameForTarget(target.kernel_name)) orelse return error.InvalidIr;
+        if (!std.mem.eql(u8, kernel.pattern, target.pattern)) return error.InvalidIr;
     }
 
     if (cslc_plan) |plan_cslc| {
@@ -633,7 +641,7 @@ fn writeInt(buf: []u8, pos: *usize, value: anytype) EmitError!void {
 
 test "host plan artifact emits schema and cslc plan" {
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
+        .{ .kernel_name = "attn_decode", .pattern = "attention_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
     };
     const plan = host.HostPlan{
         .pe_grid_width = 16,
@@ -683,7 +691,7 @@ test "host plan accepts decode position state on kv writes" {
         },
     };
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "kv_write", .layout_path = "kv_write/layout.csl", .pe_program_path = "kv_write/pe_program.csl" },
+        .{ .kernel_name = "kv_write", .pattern = "kv_write", .layout_path = "kv_write/layout.csl", .pe_program_path = "kv_write/pe_program.csl" },
     };
     var buf: [4096]u8 = undefined;
     var pos: usize = 0;
@@ -706,9 +714,9 @@ test "host plan accepts phase-specific compile targets backed by base kernel" {
         },
     };
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "rmsnorm", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
-        .{ .kernel_name = "rmsnorm_prefill", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
-        .{ .kernel_name = "rmsnorm_decode", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+        .{ .kernel_name = "rmsnorm", .pattern = "element_wise", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+        .{ .kernel_name = "rmsnorm_prefill", .pattern = "element_wise", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
+        .{ .kernel_name = "rmsnorm_decode", .pattern = "element_wise", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
     };
     var buf: [4096]u8 = undefined;
     var pos: usize = 0;
@@ -727,7 +735,7 @@ test "host plan rejects phase suffixes for unspecialized kernels" {
         .decode_launches = &[_]host.LaunchSpec{},
     };
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "sample_decode", .layout_path = "sample/layout.csl", .pe_program_path = "sample/pe_program.csl" },
+        .{ .kernel_name = "sample_decode", .pattern = "sample", .layout_path = "sample/layout.csl", .pe_program_path = "sample/pe_program.csl" },
     };
     try std.testing.expectError(error.InvalidIr, validateHostPlan(plan, &targets, null));
 }
@@ -751,7 +759,7 @@ test "host plan rejects sliding attention in prefill" {
         .decode_launches = &[_]host.LaunchSpec{},
     };
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
+        .{ .kernel_name = "attn_decode", .pattern = "attention_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
     };
     var buf: [4096]u8 = undefined;
     var pos: usize = 0;

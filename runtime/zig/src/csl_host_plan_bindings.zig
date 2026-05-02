@@ -16,6 +16,10 @@ const SSM_STATE_PER_PE_SHAPE = host_plan.BindingShape{ .elements = "value_dim_pe
 const SUMMA_A_SHAPE = host_plan.BindingShape{ .elements = "Mt * Kt" };
 const SUMMA_B_SHAPE = host_plan.BindingShape{ .elements = "Kt * Nt" };
 const SUMMA_C_SHAPE = host_plan.BindingShape{ .elements = "Mt * Nt" };
+const Q4K_BLOCK_BYTES_TEXT: []const u8 = "144";
+const PREFILL_Q4K_GEMV_ACTIVATION_SHAPE = host_plan.BindingShape{ .elements = "in_dim_per_pe" };
+const PREFILL_Q4K_GEMV_WEIGHT_SHAPE = host_plan.BindingShape{ .elements = "out_dim_per_pe * num_blocks_per_row * " ++ Q4K_BLOCK_BYTES_TEXT };
+const PREFILL_Q4K_GEMV_OUTPUT_SHAPE = host_plan.BindingShape{ .elements = "out_dim_per_pe" };
 
 const RMSNORM_BINDINGS = [_]host_plan.BindingMetadata{
     .{ .symbol = "input", .access = "read", .elem_type = "f32", .binding_shape = HIDDEN_SHAPE, .per_pe_shape = HIDDEN_SHAPE },
@@ -81,6 +85,33 @@ const TILED_BINDINGS = [_]host_plan.BindingMetadata{
         .detile_transform = .{ .kind = "summa_tiles_to_logical_matrix", .matrix_role = "c", .rows_from_input = "a" },
     },
 };
+const PREFILL_Q4K_GEMV_BINDINGS = [_]host_plan.BindingMetadata{
+    .{
+        .symbol = "activation",
+        .access = "read",
+        .elem_type = "f16",
+        .binding_shape = PREFILL_Q4K_GEMV_ACTIVATION_SHAPE,
+        .per_pe_shape = PREFILL_Q4K_GEMV_ACTIVATION_SHAPE,
+        .staging_transform = .{ .kind = "logical_matrix_to_prefill_q4k_gemv_activation_shards" },
+    },
+    .{
+        .symbol = "weight",
+        .access = "read",
+        .elem_type = "u8",
+        .binding_shape = PREFILL_Q4K_GEMV_WEIGHT_SHAPE,
+        .per_pe_shape = PREFILL_Q4K_GEMV_WEIGHT_SHAPE,
+        .staging_transform = .{ .kind = "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles" },
+        .weight_source = "runtime_weight_mapping",
+    },
+    .{
+        .symbol = "output",
+        .access = "read_write",
+        .elem_type = "f16",
+        .binding_shape = PREFILL_Q4K_GEMV_OUTPUT_SHAPE,
+        .per_pe_shape = PREFILL_Q4K_GEMV_OUTPUT_SHAPE,
+        .detile_transform = .{ .kind = "prefill_q4k_gemv_row_tiles_to_logical_matrix" },
+    },
+};
 
 pub fn metadataForPattern(
     allocator: std.mem.Allocator,
@@ -114,6 +145,9 @@ pub fn metadataForPattern(
     }
     if (std.mem.eql(u8, pattern, "tiled_matmul")) {
         return .{ .target_phase = target_phase, .bindings = try laneBindings(allocator, &TILED_BINDINGS, activation_elem) };
+    }
+    if (std.mem.eql(u8, pattern, "prefill_q4k_gemv")) {
+        return .{ .target_phase = target_phase, .bindings = &PREFILL_Q4K_GEMV_BINDINGS };
     }
     if (std.mem.eql(u8, pattern, "dense_gemv")) {
         return .{ .target_phase = target_phase, .bindings = &dense_gemv_host_plan.BINDINGS };

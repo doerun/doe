@@ -15,7 +15,9 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 ## Bound today (no hardware)
 
 - [x] Full-graph compile receipt — `bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json`; compile evidence for the emitted target inventory, not a token-output inference receipt
-- [x] Per-kernel byte-identity (1L vs 61L) — `bench/tests/test_one_layer_per_kernel_byte_identity.py` (2/2 pass, 17 shared kernels match)
+- [x] Per-kernel byte-identity (Gemma 1L vs 61L) — `bench/tests/test_one_layer_per_kernel_byte_identity.py` (2/2 pass, 17 shared kernels match)
+- [x] Per-kernel byte-identity (Qwen 1L vs 64L) — `bench/tests/test_qwen_3_6_one_layer_per_kernel_byte_identity.py` (2/2 pass, 15 shared kernels match)
+- [ ] Qwen frozen-reference validator — `bench/tests/test_validate_frozen_qwen_3_6_doppler_reference.py` remains fail-closed because the frozen Qwen reference manifest is missing the L=0 probes
 - [x] Frozen 4-of-4 TSIR boundary fixture — `bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/` (`fixtureDigest=8cc17070fedf9c…`); greedy decode of "The color of the sky is" → "blue"
 - [x] Frozen-reference validator — `bench/tools/validate_frozen_doppler_reference.py` (`schemaValid=true`, `bound=true`, `verdict="bound"`)
 - [x] Multi-PE kv-axis-sharded attention emit — `runtime/zig/src/tsir/emit_kernel_body_attention.zig::emitKvAxisSharded`; identity test 13/13 pass; head_dim=512 fits per-PE SRAM
@@ -58,7 +60,9 @@ Neither side subsumes the other.
 
 Load-bearing for the correctness claim:
 
-- For one prompt, prefill + first-token logits hash matches frozen Doppler reference at L=1.
+- For one prompt, prefill + generated-token IDs match the frozen Doppler
+  reference at L=1, and per-step logits artifacts compare under the declared
+  Doppler tolerance policy.
 - Manifest / HostPlan / CSL / reference-fixture hash chain unbroken end-to-end.
 
 Regression net, parallel and not a prerequisite:
@@ -68,11 +72,11 @@ Regression net, parallel and not a prerequisite:
 Per-kernel manifest-shape dispatch is worth producing once and rerunning
 on kernel change, but it cannot catch composition / phase-order /
 lm-head-routing / graph-completeness bugs by construction — each probe
-runs one kernel in isolation. The end-to-end hardware receipt with
-hash-equal logits parity is what closes the Cerebras correctness claim;
-per-kernel manifest-shape dispatch is the cheap regression catch
-between hardware runs and the path to non-proxied simfabric wallclock
-calibration.
+runs one kernel in isolation. The end-to-end hardware receipt with exact
+generated-token parity, logits digest/tolerance evidence, lm-head dispatch
+evidence, and KV-cache digests is what closes the Cerebras correctness claim;
+per-kernel manifest-shape dispatch is the cheap regression catch between
+hardware runs and the path to non-proxied simfabric wallclock calibration.
 
 ## Active fail-closed queue
 
@@ -82,9 +86,15 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 2. **Landed in source:** tied dense lm-head routes through the full-vocabulary `lm_head_prefill_stable` SUMMA target with one-row logits tiles and F16-to-F32 weight staging.
 3. **Landed in source:** the Gemma 4 31B execution-v1 smoke graph carries explicit final-norm / lm-head / sample tails for both prefill-generated and decode-generated tokens.
 4. **Landed in source:** HostPlan lowering rejects `sample` unless the immediately preceding same-phase step is a compatible logits producer; compute after same-phase sample also fails closed.
-5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches checkpointed kernels, and carries scheduler state. The latest historical deep scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`; it is checkpoint-stopped and has no token/logit/KV transcript. **Active front:** the compact non-chat Doppler parity target `<bos>sky color is`, backed by `bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/doppler_int4ple_reference_export.json` and live session tree `bench/out/r3-1-31b-af16-hostplan-session-bos-raw-sky-color-is`. The frozen-sky session/checkpoint tree is preserved as historical acceptance state, but the live simfabric lane moved to the compact BOS sky target to reach complete generated-token/logits/lm-head/sample/KV transcript evidence first. The generic launch-2 tiled_31b Q4K row-split remains plumbing evidence for the compact GEMV route and durable tile reuse; concurrent Q4K shard attempts stall at `SdkRuntime.run()` on this simfabric host, so the active compact lane uses one Q4K shard and the validated height-4 output PE row tile via `--session-prefill-q4k-gemv-output-pe-rows`. Clean retries can use the explicit `--session-embed-roi-hidden-per-pe` embed ROI override, which is budget-checked and recorded in the ROI spec.
+5. **Partially landed runtime step:** real session runtime stages real weights, binds host I/O layout, launches checkpointed kernels, and carries scheduler state. The latest historical deep scratch trace is `bench/out/scratch/gemma4_31b_af16_hostplan_streaming.f16-e2e-plefix.ckpt81.json`; it is checkpoint-stopped and has no token/logit/KV transcript. **Active front:** the compact non-chat Doppler parity target `<bos>sky color is`, backed by `bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/doppler_int4ple_reference_export.json` and live session tree `bench/out/r3-1-31b-af16-hostplan-session-bos-raw-sky-color-is-fast-embed512`. The frozen-sky session/checkpoint tree is preserved as historical acceptance state, but the live simfabric lane moved to the compact BOS sky target to reach complete generated-token/logits/lm-head/sample/KV transcript evidence first. The generic launch-2 tiled_31b Q4K row-split remains plumbing evidence for the compact GEMV route and durable tile reuse; concurrent Q4K shard attempts stall at `SdkRuntime.run()` on this simfabric host, so the active compact lane uses one Q4K shard and the validated height-4 output PE row tile via `--session-prefill-q4k-gemv-output-pe-rows`. Clean retries can use the explicit `--session-embed-roi-hidden-per-pe` embed ROI override, which is budget-checked and recorded in the ROI spec. **Active compiler goal:** promote the runner-substituted prefill Q4K -> f16 GEMV path into a first-class HostPlan/compiler target so `tiled_31b` no longer hides the pattern, materialization, shape, receipt, or f16 numerical contract behind Python runner detection.
 6. **Partially landed artifact step:** the f16 CSL dtype contract and bounded-smoke schema are gate-covered. The gate now accepts a complete `realSessionRuntime.status=output_ready` transcript as the end-to-end prefill/decode evidence path, superseding stale per-kernel lm-head evidence only after generated token IDs, lm-head dispatch records, and KV digests are present. The current bounded receipt still records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound` because no token/logit/KV transcript exists yet.
 7. **Landed in source:** focused fail-closed tests cover sample-without-logits, invalid lm-head dtype selection, prefill/decode feedback shape, f16 dtype contract drift, and blocked-receipt bounded evidence emission.
+
+## Current compiler hardening target
+
+Promote the current `tiled_q4k_gemv_batched_runtime` substitution into an explicit prefill Q4K GEMV contract. The accepted state is a HostPlan/compiler target whose pattern name, Q4K materialization transform, shape parameters, compile-target hash, simulator plan entry, launch receipt, checkpoint metadata, and f16 numerical contract all agree without runner-side inference from `tiled_31b`.
+
+The live Gemma `<bos>sky color is` session remains the first proof path. Canonicalization should preserve resumability and the generated-token/logits/lm-head/sample/KV transcript gate rather than replace it with a narrower kernel-only receipt. Qwen 3.6 27B af16 is the second model target for the same contract: model-specific dimensions, layer-body differences, and Qwen-only ops stay in HostPlan/runtime params, while Q4K -> f16 prefill GEMV patterning and receipt semantics stay shared.
 
 ## Integrity invariants
 
@@ -93,20 +103,22 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 - Shape substitution (e.g., `hidden_dim=1024` instead of 5120) is a separate receipt class.
 - The reference fixture is frozen — regeneration is a digest-changing event, not a silent refresh.
 - Every kernel dispatches at manifest shape (rung 4) before any parity claim.
+- Per-class CSL kernel bytes must be numLayers-invariant before an L=1 run can stand in for a full-depth parity claim.
+- Materialized compile roots under `bench/out/*manifest-fullgraph-compile-steps/` must be regenerated after emitter changes before byte-identity or dispatch evidence is restated.
 - Graph-to-HostPlan inventory equality is required for inference claims; dropping a source graph target must produce a typed unsupported result.
 - `sample` is never valid as token-output evidence without a typed logits input from the compatible lm-head launch.
 
 ## Optimization roadmap (post-hardware)
 
-These land after the first hardware receipt. Today's lowering is correctness-first f32; each item below is a known leverage point.
+These land after the first hardware receipt. Correctness-first lowering is the rule today, with two shipped exceptions: the `fused_gemv_dequant` f16 lane (full f16 storage / Q4K dequant / accumulator / output for narrow-output GEMV used by decode + lm-head + dense GEMV ops, via `runtime/zig/src/doe_wgsl/emit_csl_fused.zig::emitForElem(.f16)`) and the RMSNorm f16 output pack (`runtime/zig/src/doe_wgsl/emit_csl_rmsnorm_pack.zig` plus the single-buffer pack module `runtime/zig/src/tsir/emit_csl_f16_pack.zig`). Each item below targets the wide-output kernels and activation buffers that remain f32 today.
 
 ### 1. Mixed precision (bf16/f16 storage, f32 accums)
 
-Switch CSL emit from all-f32 to mixed precision: bf16 (preferred over f16 for softmax range safety) for KV cache, attention Q/K/V/O buffers, residual stream, RMSNorm storage; keep f32 for softmax max/sum reductions and matmul accumulators. Halves KV memory, roughly doubles attention `slots_per_pe` budget for head_dim=512 sharded routing, matches the WSE-3 silicon design point. Touches `body_emit.requireElem` assertions, `kv_write` cache buffer types, `gemv` dequant output type, RoPE/GeLU up-cast for `math.exp`/`tanh` transcendentals. Q4K weights on disk unchanged.
+Extend the `fused_gemv_dequant` f16 lane (already shipped) to the still-f32 wide paths: KV cache, attention Q/K/V/O buffers, residual stream, RMSNorm storage, and the SUMMA tiled matmul output. bf16 preferred over f16 for softmax range safety; f32 stays for softmax max/sum reductions and SUMMA matmul accumulators. Halves KV memory, roughly doubles attention `slots_per_pe` budget for head_dim=512 sharded routing, matches the WSE-3 silicon design point. Touches `body_emit.requireElem` assertions, `kv_write` cache buffer types, `tiled_matmul` / `tiled_matmul_q4k_dequant_b` output types, RoPE/GeLU up-cast for `math.exp`/`tanh` transcendentals. Q4K weights on disk unchanged.
 
 ### 2. Fused-dequant SUMMA tiled matmul (or Q4K pre-pass kernel)
 
-On prefill, the SUMMA tiled matmul (`compile/tiled/`) ingests f32 A/B/C tiles, so host dequantizes Q4K → f32 in CPU memory and pushes f32 over the memcpy fabric — 4× more bandwidth than necessary. Two design options: (a) emit a fused-dequant variant that ingests Q4K `u8` bytes in `B_tile` and dequants per inner-product step, or (b) a one-time Q4K → f32 pre-pass kernel materializing f32 tiles in PE SRAM, amortized across subsequent matmul launches. Decode GEMV path already does (a).
+The SUMMA tiled matmul has two emitted variants: the plain f32 path (`tiled_matmul` → `runtime/zig/src/doe_wgsl/emit_csl_matmul.zig`), where the host dequantizes Q4K → f32 in CPU memory and pushes f32 over the memcpy fabric (4× more bandwidth than necessary), and the fused-dequant Q4K-byte ingestion variant (`tiled_matmul_q4k_dequant_b` → `runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig`), which decodes Q4K bytes per broadcast step into a still-f32 `B_tile`. The decode GEMV is end-to-end f16 already via the `fused_gemv_dequant` f16 lane. Outstanding work: extend f16 to the SUMMA `B_tile` and output once item 1 widens the activation lane, and / or land option (b) — a one-time Q4K → f16 pre-pass kernel materializing tiles in PE SRAM amortized across subsequent matmul launches.
 
 ### 3. Cross-kernel fusion in CSL emit
 

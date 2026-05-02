@@ -55,7 +55,9 @@ PER_LAYER_INPUT_KERNELS = frozenset({
     "ple_rmsnorm",
     "ple_residual",
 })
-SUMMA_KERNELS = frozenset({"tiled", "tiled_31b", "ple_proj"})
+SUMMA_KERNELS = frozenset({"tiled", "ple_proj"})
+PREFILL_Q4K_GEMV_KERNELS = frozenset({"tiled_31b"})
+PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 
 
 def resolve(path: Path) -> Path:
@@ -784,8 +786,57 @@ def build_real_session_scheduler(
                     current = out
                 elif name in {"q_proj", "k_proj", "v_proj"}:
                     state[name[0]] = out
+                    state[f"{name[0]}_cols"] = matrix_n
                 elif name in {"gate_proj", "up_proj"}:
                     state[name] = out
+                else:
+                    current = out
+        elif kernel in PREFILL_Q4K_GEMV_KERNELS:
+            matrix_n, matrix_k = weight_matrix_dims(weight_key)
+            if name in {"q_proj", "k_proj", "v_proj"}:
+                source = state.get("attn_norm", current)
+            elif name in {"gate_proj", "up_proj"}:
+                source = state.get("ffn_norm", current)
+            elif name == "down_proj":
+                source = state.get("activation", current)
+            else:
+                source = current
+            add_input(
+                "activation",
+                source,
+                "activation",
+                "activation_router",
+                matrixCols=matrix_k,
+            )
+            add_input("weight", f"weight:{step.get('weightKey')}", "weight", "weights")
+            add_output(
+                "output",
+                out,
+                "logits" if is_lm_head else "activation",
+                f"{kernel}.output",
+                matrixCols=matrix_n,
+            )
+            if is_lm_head:
+                decode_index = int(step.get("tokenIndex") or 0)
+                last_logits = out
+                last_logits_launch_index = launch_index
+                transcript_emitters.append(
+                    {
+                        "kind": "logits_digest",
+                        "stepIndex": decode_index,
+                        "launchIndex": launch_index,
+                        "symbol": "output",
+                        "buffer": out,
+                        "expectedSha256": None,
+                    }
+                )
+            else:
+                if name in {"q_proj", "k_proj", "v_proj"}:
+                    state[name[0]] = out
+                    state[f"{name[0]}_cols"] = matrix_n
+                elif name in {"gate_proj", "up_proj"}:
+                    state[name] = out
+                    current = out
                 else:
                     current = out
         elif kernel in {"gemv", *LM_HEAD_KERNELS}:
@@ -865,7 +916,14 @@ def build_real_session_scheduler(
         elif kernel in {"rope", "rope_partial"}:
             source_key = "q" if name == "rope_q" else "k"
             source = state.get(source_key, current)
-            add_input("input", source, "activation", "activation_router")
+            source_cols = state.get(f"{source_key}_cols")
+            add_input(
+                "input",
+                source,
+                "activation",
+                "activation_router",
+                matrixCols=source_cols,
+            )
             add_input(
                 "cos_table",
                 "state:rope_cos_table",
@@ -878,8 +936,16 @@ def build_real_session_scheduler(
                 "position_encoding",
                 "runtime_state",
             )
-            add_output("input", out, "activation", "rope.output")
+            add_output(
+                "input",
+                out,
+                "activation",
+                "rope.output",
+                matrixCols=source_cols,
+            )
             state[source_key] = out
+            if source_cols is not None:
+                state[f"{source_key}_cols"] = source_cols
             if name not in {"rope_q", "rope_k"}:
                 current = out
         elif kernel in {
@@ -1090,7 +1156,9 @@ def build_real_session_scheduler(
                 "phase": step["phase"],
                 "phaseLaunchIndex": launch_index,
                 "kernelName": kernel,
-                "kernelPattern": kernel,
+                "kernelPattern": PREFILL_Q4K_GEMV_PATTERN
+                if kernel in PREFILL_Q4K_GEMV_KERNELS
+                else kernel,
                 "repeat": 1,
                 "operationName": name,
                 "layerIndex": layer_idx,
@@ -1624,6 +1692,7 @@ def build_real_session_runtime(
                 "requestedDecodeSteps",
                 "actualDecodeSteps",
                 "generatedTokenIds",
+                "logitsDigests",
                 "lmHeadDispatches",
                 "kvCache",
             )

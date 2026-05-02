@@ -13,6 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 LAYER_STEP_SCAN_WINDOW = 8
 LAYER_WEIGHT_RE = re.compile(r"^layer\.(?P<layer>[0-9]+)\.")
 ATTENTION_KERNELS = frozenset({"attn_head256", "attn_head512", "attn_decode"})
+PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 
 
 def load_json(path: Path) -> Any:
@@ -365,6 +366,7 @@ def bind_launch_dataflow(
     phase = str(record["phase"])
     launch_index = int(record["launchIndex"])
     kernel_name = str(record["kernelName"])
+    kernel_pattern = str(record.get("kernelPattern") or "")
     op_name = str(normalized_step.get("name") or kernel_name)
     op = str(normalized_step.get("op") or kernel_name)
     inputs: list[dict[str, Any]] = []
@@ -472,12 +474,14 @@ def bind_launch_dataflow(
         "lm_head_prefill_stable",
         "q4_widetile",
         "q4_decode_gemv",
-    }:
+    } or kernel_pattern == PREFILL_Q4K_GEMV_PATTERN:
         is_lm_head = op_name in {"lm_head", "lm_head_prefill"} or (
             kernel_name
             in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
         )
-        is_tiled_kernel = kernel_name == "tiled"
+        is_tiled_kernel = kernel_name == "tiled" or (
+            kernel_name == "tiled_31b" and kernel_pattern == "tiled_matmul"
+        )
         if op_name in {"q_proj", "k_proj", "v_proj"} and layer_index is not None:
             source = str(layer_state.get("attn_input") or current_buffer())
         else:
@@ -532,6 +536,8 @@ def bind_launch_dataflow(
         )
         if layer_index is not None and op_name in {"q_proj", "k_proj", "v_proj"}:
             layer_state[op_name[0]] = output
+            if matrix_n is not None:
+                layer_state[f"{op_name[0]}_cols"] = matrix_n
         elif layer_index is not None and op_name == "o_proj":
             layer_state["attention_projected"] = output
             set_current(output)
@@ -548,6 +554,7 @@ def bind_launch_dataflow(
     elif kernel_name == "rope":
         source_key = "q" if op_name == "rope_q" else "k"
         source = str(layer_state.get(source_key) or current_buffer())
+        source_cols = layer_state.get(f"{source_key}_cols")
         output = next_buffer(op_name)
         inputs.append(
             binding(
@@ -556,6 +563,7 @@ def bind_launch_dataflow(
                 role="activation",
                 access="read",
                 source="activation_router",
+                matrixCols=source_cols,
             )
         )
         inputs.append(
@@ -583,10 +591,13 @@ def bind_launch_dataflow(
                 role="activation",
                 access="write",
                 source="rope.output",
+                matrixCols=source_cols,
             )
         )
         if layer_index is not None:
             layer_state[source_key] = output
+            if source_cols is not None:
+                layer_state[f"{source_key}_cols"] = source_cols
         set_current(output)
     elif kernel_name in ATTENTION_KERNELS:
         query = str(layer_state.get("q") or current_buffer())

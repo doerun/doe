@@ -33,6 +33,7 @@
         "fused_gemv_dequant",
         "gather",
         "kv_write",
+        "prefill_q4k_gemv",
         "reduction",
         "rope",
         "sample",

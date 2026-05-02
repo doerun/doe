@@ -12,11 +12,41 @@ below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
 completion.
 
+Sharding follow-up: owner Doe Cerebras; split
+`bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py` by moving
+checkpoint identity and transcript artifact assembly into focused modules.
+
+Contract note: `doe-transcript-parity-report` schema v2 makes generated-token
+exact parity and logits comparison status explicit. `max_abs` is the Doppler
+tolerance-backed logits gate unless a reference export declares
+`sha256_exact`.
+
+## 2026-05-02 — Cross-depth byte-identity restored after compile-root rematerialization
+
+Gemma 4 31B and Qwen 3.6 27B cross-depth byte-identity are green again after
+rematerializing the stale upstream compile roots. Gemma 1L-vs-61L is 2/2 pass
+with 17 shared kernels matching; Qwen 1L-vs-64L is 2/2 pass with 15 shared
+kernels matching.
+
+Root cause was stale generated artifacts, not a numLayers-dependent emitter.
+The stale `bench/out/r3-1-31b-manifest-fullgraph-compile-steps/compile/` root
+was generated before emitter changes such as `sample/pe_program.csl` moving to
+the bounded-smoke local-argmax form and `rope/pe_program.csl` gaining
+multimodal-rope params. Regeneration policy: materialized compile roots under
+`bench/out/*manifest-fullgraph-compile-steps/` must be regenerated after
+emitter changes before byte-identity or dispatch evidence is restated.
+
+The active `<bos>sky color is` L=1 simfabric transcript can now count toward
+rung 6 if it reaches generated-token/logits/lm-head/KV output readiness. Qwen
+still remains separately fail-closed on the frozen reference manifest missing
+the L=0 probes.
+
 ## 2026-05-01 — Layer C acceptance bar split: end-to-end load-bearing, per-kernel manifest-shape regression net
 
 `docs/cerebras-north-star.md` Layer C acceptance bar now separates the
-load-bearing correctness items (end-to-end prefill + first-token logits
-hash equal to the frozen Doppler reference at L=1; manifest / HostPlan
+load-bearing correctness items (end-to-end prefill + generated-token IDs
+matching the frozen Doppler reference at L=1; per-step logits artifacts
+comparing under the declared Doppler tolerance policy; manifest / HostPlan
 / CSL / reference-fixture hash chain unbroken) from the regression-net
 artifact (all 23 manifest-shape kernels dispatched on simfabric,
 bytes/digests recorded). The rung ladder also carries a one-paragraph
@@ -36,7 +66,8 @@ simfabric is no longer a hard prerequisite for the end-to-end Cerebras
 correctness claim. It remains worth producing once and rerunning on
 kernel change for regression coverage and for tightening the simfabric
 wallclock calibration off the 8x3 canary proxy. The end-to-end
-hardware receipt with hash-equal logits parity is what closes the
+hardware receipt with exact generated-token parity, logits digest/tolerance
+evidence, lm-head dispatch evidence, and KV-cache digests is what closes the
 correctness ask.
 
 ## 2026-05-01 — Active end-to-end front: frozen Doppler sky prompt, decode step 1
@@ -133,7 +164,8 @@ The inference evidence gate now treats a complete
 `realSessionRuntime.status=output_ready` transcript as the authoritative
 token-output evidence path for bounded Gemma 4 31B af16 prefill/decode. A
 complete transcript must match the requested decode count, carry generated
-token IDs, lm-head dispatch records, and runtime-captured KV-cache digests.
+token IDs, per-step logits digests, lm-head dispatch records, and
+runtime-captured KV-cache digests.
 Incomplete or malformed `output_ready` transcripts fail closed instead of
 falling back to per-kernel evidence.
 
@@ -588,7 +620,7 @@ The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
    with the host-plan-tool invocation pointer.
 3. **Per-kernel byte-identity test.**
    `bench/tests/test_qwen_3_6_one_layer_per_kernel_byte_identity.py`
-   pins the 1L == 64L per-kernel CSL byte-identity property. Skips with
+   exercises the 1L == 64L per-kernel CSL byte-identity property. Skips with
    typed pointer when the upstream Qwen compile root is absent.
 4. **Validator binding test.**
    `bench/tests/test_validate_frozen_qwen_3_6_doppler_reference.py`
@@ -615,9 +647,8 @@ With the revised smoke config, all three trio legs now run:
 
 - `doe-csl-host-plan-tool` materializes a 15-target Qwen bundle at
   `bench/out/r3-2-27b-manifest-fullgraph-compile-steps/`;
-- the per-kernel byte-identity test passes (1L emission is byte-
-  identical to 64L emission across all shared kernels — the 1-of-64-
-  layer property holds);
+- the per-kernel byte-identity test passes after rematerializing the compile
+  root from the current emitter;
 - the synthesizer emits
   `bench/out/r3-2-27b-full-graph-compile-attempt/receipt.json` with
   `compileTargetCount=15`, `compileAttempted=true`,
