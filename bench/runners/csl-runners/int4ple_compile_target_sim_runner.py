@@ -90,6 +90,7 @@ PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE = "runtime_managed_prefill_q4k_gemv"
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 PREFILL_ATTENTION_TARGETS = frozenset({"attn_small"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
+GATED_PREFILL_TARGETS = frozenset({"gelu_gated_prefill"})
 Q4K_BLOCK_ELEMENTS = 256
 Q4K_BLOCK_BYTES = 144
 PREFILL_GEMV_IN_DIM_PER_PE = 512
@@ -4133,6 +4134,168 @@ def _is_rmsnorm_roi_launch(launch: dict[str, Any]) -> bool:
     return str(launch.get("targetName") or "") in RMSNORM_ROI_TARGETS
 
 
+def _compact_gated_prefill_compile_dir(
+    launch: dict[str, Any],
+    rows: int,
+) -> Path:
+    target_name = str(launch.get("targetName") or "")
+    compile_dir = Path(str(launch.get("compileDir") or ""))
+    return compile_dir.parent / f"{target_name}_roi{rows}"
+
+
+def _is_compact_gated_prefill_launch(
+    launch: dict[str, Any],
+    staged_outputs: list[dict[str, Any]],
+) -> bool:
+    target_name = str(launch.get("targetName") or "")
+    if target_name not in GATED_PREFILL_TARGETS:
+        return False
+    if not staged_outputs or not isinstance(staged_outputs[0], dict):
+        return False
+    transform = staged_outputs[0].get("outputTransform") or {}
+    if str(transform.get("kind") or "") != "pe_rows_to_logical_matrix":
+        return False
+    rows = int(transform.get("rows") or 0)
+    width = int((launch.get("targetGeometry") or {}).get("width") or 0)
+    return rows > 0 and width > rows
+
+
+def _execute_compact_gated_prefill_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    staged_inputs: list[dict[str, Any]],
+    staged_outputs: list[dict[str, Any]],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    if len(staged_inputs) < 2 or not staged_outputs:
+        raise ValueError("compact_gated_prefill_bindings_missing")
+    output = staged_outputs[0]
+    transform = output.get("outputTransform") or {}
+    rows = int(transform.get("rows") or 0)
+    cols = int(transform.get("cols") or staged_inputs[0].get("elementsPerPe") or 0)
+    if rows <= 0 or cols <= 0:
+        raise ValueError("compact_gated_prefill_shape_missing")
+    compact_compile_dir = _compact_gated_prefill_compile_dir(launch, rows)
+    if not compact_compile_dir.is_dir():
+        raise ValueError(f"compact_gated_compile_dir_missing:{compact_compile_dir}")
+    compact_dir = runtime_dir / "gated-prefill-compact" / f"launch-{launch_index:04d}"
+    compact_dir.mkdir(parents=True, exist_ok=True)
+
+    compact_inputs: list[dict[str, Any]] = []
+    for item in staged_inputs:
+        source = np.load(Path(str(item["path"])), allow_pickle=False).ravel()
+        expected = rows * cols
+        if source.size < expected:
+            raise ValueError(
+                "compact_gated_prefill_input_too_small:"
+                f"{item.get('symbol')}:{source.size}<{expected}"
+            )
+        compact_path = compact_dir / f"{str(item.get('symbol') or 'input')}.npy"
+        np.save(compact_path, source[:expected].astype(np.float16, copy=False))
+        compact_inputs.append(
+            {
+                **item,
+                "path": str(compact_path),
+                "elementsPerPe": cols,
+            }
+        )
+
+    compact_output_path = compact_dir / "output.npy"
+    compact_spec = {
+        "compileDir": str(compact_compile_dir),
+        "launchFunction": launch.get("launchFunction"),
+        "launchIndex": launch_index,
+        "cmaddr": cmaddr or "",
+        "targetGeometry": {
+            "width": rows,
+            "height": 1,
+            "peCount": rows,
+            "runtimePeCount": rows,
+        },
+        "inputs": compact_inputs,
+        "outputs": [
+            {
+                **output,
+                "path": str(compact_output_path),
+                "elementsPerPe": cols,
+                "outputTransform": {**transform, "rows": rows, "cols": cols},
+            }
+        ],
+    }
+    spec_path = compact_dir / "spec.json"
+    receipt_path = compact_dir / "receipt.json"
+    write_json(spec_path, compact_spec)
+    append_progress(
+        progress_path,
+        "compact_gated_prefill_start",
+        launchIndex=launch_index,
+        rows=rows,
+        cols=cols,
+        compileDir=str(compact_compile_dir),
+    )
+    command = [
+        cs_python_executable(),
+        str(LAUNCH_STEP_ADAPTER),
+        "--spec",
+        str(spec_path),
+        "--receipt-out",
+        str(receipt_path),
+        "--progress-out",
+        str(progress_path),
+    ]
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+    )
+    receipt = load_json(receipt_path) if receipt_path.is_file() else {}
+    if completed.returncode != 0 or receipt.get("status") != "succeeded":
+        raise ValueError(
+            "; ".join(receipt.get("blockers") or ["compact_gated_prefill_failed"])
+        )
+    merged = np.load(compact_output_path, allow_pickle=False).ravel()[: rows * cols]
+    output_path = Path(str(output["path"]))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(output_path, merged.astype(np.float16, copy=False))
+    digest = hashlib.sha256(merged.tobytes(order="C")).hexdigest()
+    compact_receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_compact_gated_prefill_launch_receipt",
+        "status": "succeeded",
+        "blockers": [],
+        "launchIndex": launch_index,
+        "compileDir": str(compact_compile_dir),
+        "sourceCompileDir": str(launch.get("compileDir") or ""),
+        "inputBuffers": _staged_input_buffer_records(staged_inputs),
+        "adapterReceipt": str(receipt_path),
+        "stdoutTail": tail_lines(completed.stdout, 1),
+        "stderrTail": tail_lines(completed.stderr, 1),
+        "output": {
+            "buffer": output.get("buffer"),
+            "path": str(output_path),
+            "dtype": "f16",
+            "shape": [rows, cols],
+            "sha256": digest,
+            "sha256Kind": "array_tobytes_c_order",
+        },
+    }
+    write_json(_launch_receipt_path(runtime_dir, launch_index), compact_receipt)
+    append_progress(
+        progress_path,
+        "compact_gated_prefill_complete",
+        launchIndex=launch_index,
+        rows=rows,
+        cols=cols,
+    )
+    return compact_receipt
+
+
 def _execute_rmsnorm_roi_launch(
     *,
     runtime_dir: Path,
@@ -4616,6 +4779,42 @@ def execute_hostplan_runtime(
                     target=launch.get("targetName"),
                     status="succeeded",
                     dispatchMode="rmsnorm_roi_parallel",
+                )
+                if checkpoint_dir is not None:
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=staged_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
+            if _is_compact_gated_prefill_launch(launch, staged_outputs):
+                launch_receipt = _execute_compact_gated_prefill_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    staged_inputs=staged_inputs,
+                    staged_outputs=staged_outputs,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                )
+                executed_launches.append(launch_receipt)
+                for output in staged_outputs:
+                    buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="compact_gated_prefill_session",
                 )
                 if checkpoint_dir is not None:
                     _persist_launch_checkpoint(

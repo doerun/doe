@@ -139,6 +139,8 @@ fn emitSemanticPatternSectionsForElem(
         try rewriteF16CompileSourceInPlace(out, &pos);
         if (std.mem.eql(u8, pattern, "rms_norm")) {
             try rmsnorm_pack.rewriteF16OutputPackInPlace(out, &pos);
+        } else if (isGatedSemanticPattern(pattern)) {
+            try rmsnorm_pack.rewriteF16OutputPackInPlaceForExtent(out, &pos, "chunk_size");
         }
     }
     const combined = out[0..pos];
@@ -296,6 +298,12 @@ fn isElementWisePattern(pattern: []const u8) bool {
     return std.mem.eql(u8, pattern, "element_wise") or
         std.mem.eql(u8, pattern, "residual") or
         std.mem.eql(u8, pattern, "gelu");
+}
+
+fn isGatedSemanticPattern(pattern: []const u8) bool {
+    return std.mem.eql(u8, pattern, "gelu_gated") or
+        std.mem.eql(u8, pattern, "silu_gated") or
+        std.mem.eql(u8, pattern, "sigmoid_gated");
 }
 
 pub fn sectionBody(csl: []const u8, filename: []const u8) ?[]const u8 {
@@ -704,6 +712,13 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "[hidden_size]f16") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.pe_program, "output_chunk_0000_ptr: [*]u32 = &output_chunk_0000;") != null);
     try std.testing.expect(std.mem.indexOf(u8, rms.combined, "f32") == null);
+
+    const gated = try emitPatternSectionsForElem(std.testing.allocator, "gelu_gated", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, gated.layout, "@export_name(\"output_chunk_0000\", [*]u32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gated.pe_program, "[chunk_size]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gated.pe_program, "output_chunk_0000_ptr: [*]u32 = &output_chunk_0000;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gated.pe_program, "base + 1 < @as(u32, chunk_size)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gated.combined, "f32") == null);
 
     const tiled = try emitPatternSectionsForElem(std.testing.allocator, "tiled_matmul", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, tiled.layout, "[*]f16") != null);

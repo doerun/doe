@@ -16,6 +16,10 @@ Sharding follow-up: owner Doe Cerebras; split
 `bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py` by moving
 checkpoint identity and transcript artifact assembly into focused modules.
 
+Sharding follow-up: owner Doe Cerebras; split
+`bench/runners/csl-runners/int4ple_compile_target_sim_runner.py` by moving
+session compact-dispatch helpers into focused runtime modules.
+
 Contract note: `doe-transcript-parity-report` schema v2 makes generated-token
 exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
