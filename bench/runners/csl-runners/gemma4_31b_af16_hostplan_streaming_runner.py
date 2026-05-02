@@ -266,6 +266,12 @@ def parse_args() -> argparse.Namespace:
         help="Execution mode for real-session PLE projection launches.",
     )
     parser.add_argument(
+        "--session-attention-prefill-dispatch-mode",
+        choices=["hostplan_static", "compact_width_session"],
+        default="hostplan_static",
+        help="Execution mode for real-session prefill attention launches.",
+    )
+    parser.add_argument(
         "--session-lm-head-batch-runtime",
         action="store_true",
         help="Run session lm-head tiles through the batched SDK adapter.",

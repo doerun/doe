@@ -60,7 +60,10 @@ from int4ple_checkpoint import (
     load_checkpoint as _load_checkpoint,
     persist_launch_checkpoint as _persist_launch_checkpoint,
 )
-from manifest_dense_gemv_tiles import run_dense_gemv_row_tiled
+from manifest_dense_gemv_tiles import (
+    SDK_D2H_ELEMENT_COUNT_LIMIT,
+    run_dense_gemv_row_tiled,
+)
 
 SCHEDULE_PREVIEW_COUNT = 4
 TARGET_SESSION_PROBE = Path(__file__).with_name("int4ple_target_session_probe.py")
@@ -70,20 +73,28 @@ EMBED_ROI_ADAPTER = Path(__file__).with_name("int4ple_embed_roi_adapter.py")
 DEFAULT_LAUNCH_TIMEOUT_SECONDS = 3600
 SESSION_LM_HEAD_DISPATCH_MODES = ("monolithic", "dense_gemv_width_tiled_session")
 SESSION_PLE_PROJ_DISPATCH_MODES = ("monolithic_summa", "compact_summa_session")
+SESSION_ATTENTION_PREFILL_DISPATCH_MODES = (
+    "hostplan_static",
+    "compact_width_session",
+)
 DEFAULT_SESSION_LM_HEAD_TILE_WIDTH = 120
 DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
 DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
 DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS = 1
+COMPACT_ATTENTION_Q_ROWS_PER_PE = 1
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
 PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE = "runtime_managed_prefill_q4k_gemv"
 SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
+PREFILL_ATTENTION_TARGETS = frozenset({"attn_small"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
 Q4K_BLOCK_ELEMENTS = 256
 Q4K_BLOCK_BYTES = 144
 PREFILL_GEMV_IN_DIM_PER_PE = 512
+PREFILL_GEMV_WIDE_SOURCE_COLS = 8192
+PREFILL_GEMV_WIDE_IN_DIM_PER_PE = 256
 PREFILL_GEMV_OUT_DIM_PER_PE = 112
 PREFILL_GEMV_FABRIC_WEST_RESERVED = 4
 PREFILL_GEMV_FABRIC_EAST_RESERVED = 3
@@ -183,6 +194,12 @@ def parse_args() -> argparse.Namespace:
         choices=SESSION_PLE_PROJ_DISPATCH_MODES,
         default="monolithic_summa",
         help="Execution mode for session PLE projection launches.",
+    )
+    parser.add_argument(
+        "--session-attention-prefill-dispatch-mode",
+        choices=SESSION_ATTENTION_PREFILL_DISPATCH_MODES,
+        default="hostplan_static",
+        help="Execution mode for session prefill attention launches.",
     )
     parser.add_argument(
         "--session-lm-head-batch-runtime",
@@ -2043,6 +2060,17 @@ def _is_compact_ple_proj_launch(launch: dict[str, Any], mode: str) -> bool:
     )
 
 
+def _is_compact_attention_prefill_launch(
+    launch: dict[str, Any],
+    mode: str,
+) -> bool:
+    return (
+        mode == "compact_width_session"
+        and str(launch.get("targetName") or "") in PREFILL_ATTENTION_TARGETS
+        and str(launch.get("kernelPattern") or "") == "attention_tiled"
+    )
+
+
 def _is_tiled_q4k_gemv_launch(launch: dict[str, Any], mode: str) -> bool:
     if str(launch.get("kernelPattern") or "") == PREFILL_Q4K_GEMV_PATTERN:
         return True
@@ -2108,6 +2136,16 @@ def _prefill_gemv_blocks_per_pe(in_dim_per_pe: int) -> int:
     return in_dim_per_pe // Q4K_BLOCK_ELEMENTS
 
 
+def _prefill_gemv_in_dim_per_pe(source_cols: int) -> int:
+    if source_cols >= PREFILL_GEMV_WIDE_SOURCE_COLS:
+        return PREFILL_GEMV_WIDE_IN_DIM_PER_PE
+    return PREFILL_GEMV_IN_DIM_PER_PE
+
+
+def _prefill_gemv_split_d2h_rows(output_tile_cols: int) -> bool:
+    return int(output_tile_cols) >= SDK_D2H_ELEMENT_COUNT_LIMIT
+
+
 def _compile_tiled_q4k_gemv_target(
     *,
     runtime_dir: Path,
@@ -2115,7 +2153,7 @@ def _compile_tiled_q4k_gemv_target(
     source_cols: int,
     output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
 ) -> tuple[Path, dict[str, Any]]:
-    in_dim_per_pe = PREFILL_GEMV_IN_DIM_PER_PE
+    in_dim_per_pe = _prefill_gemv_in_dim_per_pe(source_cols)
     out_dim_per_pe = PREFILL_GEMV_OUT_DIM_PER_PE
     output_pe_rows = max(1, int(output_pe_rows))
     width = _ceil_div(source_cols, in_dim_per_pe)
@@ -2161,9 +2199,11 @@ def _compile_tiled_q4k_gemv_target(
         "fabricOffsetX": PREFILL_GEMV_FABRIC_WEST_RESERVED,
         "fabricOffsetY": PREFILL_GEMV_FABRIC_NORTH_RESERVED,
     }
-    receipt_path = output_dir / "prefill-gemv-compile.json"
     if (output_dir / "out.json").is_file() and (output_dir / "bin").is_dir():
         return output_dir, {**params, "reused": True}
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    receipt_path = output_dir / "prefill-gemv-compile.json"
     command = [
         cslc_executable(),
         str(layout_path),
@@ -2183,7 +2223,11 @@ def _compile_tiled_q4k_gemv_target(
         "--memcpy",
     ]
     scratch_cwd = output_dir / "scratch"
+    scratch_tmp = output_dir / "tmp"
     scratch_cwd.mkdir(parents=True, exist_ok=True)
+    scratch_tmp.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["TMPDIR"] = str(scratch_tmp)
     started_ns = time.monotonic_ns()
     completed = subprocess.run(
         command,
@@ -2191,6 +2235,7 @@ def _compile_tiled_q4k_gemv_target(
         capture_output=True,
         text=True,
         cwd=str(scratch_cwd),
+        env=env,
     )
     receipt = {
         "schemaVersion": 1,
@@ -2425,6 +2470,7 @@ def _execute_tiled_q4k_gemv_launch(
     out_dim_per_pe = int(compile_identity["outDimPerPe"])
     blocks_per_pe = int(compile_identity["numBlocksPerRow"])
     output_tile_cols = height * out_dim_per_pe
+    split_d2h_rows = _prefill_gemv_split_d2h_rows(output_tile_cols)
     weight_rows = _load_q4k_weight_rows(
         materialization=b_materialization,
         source_rows=source_rows,
@@ -2555,6 +2601,7 @@ def _execute_tiled_q4k_gemv_launch(
         "pendingStepCount": len(pending_tasks),
         "requestedJobCount": max(1, int(jobs)),
         "shardCount": len(task_shards),
+        "splitD2HRows": split_d2h_rows,
         "shards": [],
         "steps": [
             {
@@ -2575,6 +2622,7 @@ def _execute_tiled_q4k_gemv_launch(
             "launchIndex": launch_index,
             "shardIndex": shard_index,
             "stepCount": len(shard_tasks),
+            "splitD2HRows": split_d2h_rows,
             "steps": [
                 {
                     "inputs": [task["activationSpec"], task["weightSpec"]],
@@ -2599,10 +2647,11 @@ def _execute_tiled_q4k_gemv_launch(
             str(shard_tasks[0]["outputSpec"]),
             "--batch-json",
             str(shard_path),
-            "--split-d2h-rows",
             "--phase-trace",
             str(shard_phase_trace_path),
         ]
+        if split_d2h_rows:
+            command.append("--split-d2h-rows")
         if cmaddr:
             command.extend(["--cmaddr", cmaddr])
         shard_specs.append({
@@ -2618,6 +2667,7 @@ def _execute_tiled_q4k_gemv_launch(
             "path": str(shard_path),
             "phaseTracePath": str(shard_phase_trace_path),
             "stepCount": len(shard_tasks),
+            "splitD2HRows": split_d2h_rows,
         })
     write_json(batch_path, batch_payload)
 
@@ -2805,6 +2855,7 @@ def _execute_tiled_q4k_gemv_launch(
                 "shardCount": len(task_shards),
                 "pendingStepCount": len(pending_tasks),
                 "reusedOutputCount": len(tasks) - len(pending_tasks),
+                "splitD2HRows": split_d2h_rows,
                 "shards": batch_shards,
             },
             "tileDispatches": [
@@ -2838,6 +2889,7 @@ def _execute_tiled_q4k_gemv_launch(
             "shardCount": len(task_shards),
             "pendingStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
+            "splitD2HRows": split_d2h_rows,
             "shards": batch_shards,
         },
         "inputBuffers": [
@@ -2874,6 +2926,8 @@ def _execute_tiled_q4k_gemv_launch(
             "outDimPerPe": out_dim_per_pe,
             "blocksPerPe": blocks_per_pe,
             "outputTileCols": output_tile_cols,
+            "splitD2HRows": split_d2h_rows,
+            "d2hElementCountLimit": SDK_D2H_ELEMENT_COUNT_LIMIT,
             "tileCount": len(results),
             "batchStepCount": len(tasks),
             "pendingBatchStepCount": len(pending_tasks),
@@ -3280,6 +3334,388 @@ def _execute_compact_ple_proj_launch(
     if completed.returncode != 0 or receipt.get("status") != "succeeded":
         raise ValueError(
             "; ".join(receipt.get("blockers") or ["compact_ple_proj_failed"])
+        )
+    return receipt
+
+
+def _attention_required_pe_rows(source_transform: dict[str, Any], rows: int) -> int:
+    source_cols = _required_positive_int(source_transform, "sourceCols")
+    head_dim = _required_positive_int(source_transform, "headDim")
+    target_rows = _required_positive_int(source_transform, "targetRows")
+    rows_per_pe = _required_positive_int(source_transform, "rowsPerPe")
+    if source_cols % head_dim != 0:
+        raise ValueError(
+            f"attention_compact_source_cols_mismatch:{source_cols}%{head_dim}"
+        )
+    head_rows = rows * (source_cols // head_dim)
+    required_pe_rows = _ceil_div(head_rows, rows_per_pe)
+    if required_pe_rows > target_rows:
+        raise ValueError(
+            "attention_compact_rows_exceed_target:"
+            f"{head_rows}>{target_rows * rows_per_pe}"
+        )
+    return required_pe_rows
+
+
+def _attention_compact_transform(
+    source_transform: dict[str, Any],
+    *,
+    target_rows: int,
+    rows_per_pe: int | None = None,
+) -> dict[str, Any]:
+    transform = {
+        **source_transform,
+        "targetRows": target_rows,
+    }
+    if rows_per_pe is not None:
+        transform["rowsPerPe"] = rows_per_pe
+    return transform
+
+
+def _load_compact_attention_input(
+    *,
+    buffer_files: dict[str, Path],
+    binding: dict[str, Any],
+    compact_width: int,
+    launch_index: int,
+    rows_per_pe: int | None = None,
+) -> tuple[np.ndarray, dict[str, int], dict[str, Any]]:
+    buffer_name = str(binding.get("buffer") or "")
+    path = buffer_files.get(buffer_name)
+    if path is None or not path.is_file():
+        raise ValueError(f"compact_attention_input_missing:{buffer_name}")
+    materialization = dict(binding.get("materialization") or {})
+    source_transform = dict(materialization.get("sourceTransform") or {})
+    source_transform = _attention_compact_transform(
+        source_transform,
+        target_rows=compact_width,
+        rows_per_pe=rows_per_pe,
+    )
+    materialization["sourceTransform"] = source_transform
+    if rows_per_pe is not None:
+        head_dim = _required_positive_int(source_transform, "headDim")
+        materialization["elementsPerPe"] = rows_per_pe * head_dim
+    host = np.load(path, allow_pickle=False).ravel()
+    values, matrix_shape = _transform_existing_input(host, materialization)
+    expected = compact_width * int(materialization.get("elementsPerPe") or 0)
+    if values.size != expected:
+        raise ValueError(
+            f"launch[{launch_index}].compact_attention_input_size_mismatch:"
+            f"{buffer_name}:{values.size}!={expected}"
+        )
+    return values, matrix_shape, materialization
+
+
+def _compile_compact_attention_target(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    width: int,
+    head_dim: int,
+    q_len_per_pe: int,
+    block_size: int,
+) -> tuple[Path, dict[str, Any]]:
+    source_compile_dir = Path(str(launch.get("compileDir") or ""))
+    compile_root = source_compile_dir.parent.parent
+    layout_path = compile_root / "attn_small" / "layout.csl"
+    original_out = source_compile_dir / "out.json"
+    q_len = 4096
+    if original_out.is_file():
+        original = load_json(original_out)
+        params = original.get("params") if isinstance(original, dict) else {}
+        if isinstance(params, dict):
+            q_len = int(params.get("q_len") or q_len)
+    output_dir = (
+        runtime_dir
+        / "attention-prefill-compact"
+        / f"w{width:04d}_hd{head_dim:04d}_q{q_len_per_pe:04d}_b{block_size:04d}"
+    )
+    compiled_dir = output_dir / "compiled"
+    params = {
+        "width": width,
+        "headDim": head_dim,
+        "qLen": q_len,
+        "qLenPerPe": q_len_per_pe,
+        "blockSize": block_size,
+        "fabricWidth": width + 8,
+        "fabricHeight": 3,
+        "fabricOffsetX": 4,
+        "fabricOffsetY": 1,
+    }
+    if (compiled_dir / "out.json").is_file():
+        return compiled_dir, {**params, "reused": True}
+    command = [
+        cslc_executable(),
+        str(layout_path),
+        "--arch=wse3",
+        f"--fabric-dims={params['fabricWidth']},{params['fabricHeight']}",
+        f"--fabric-offsets={params['fabricOffsetX']},{params['fabricOffsetY']}",
+        "--channels=1",
+        (
+            "--params="
+            f"width:{width},head_dim:{head_dim},q_len:{q_len},"
+            f"q_len_per_pe:{q_len_per_pe},block_size:{block_size}"
+        ),
+        "-o",
+        str(compiled_dir),
+        "--memcpy",
+    ]
+    scratch_cwd = output_dir / "scratch"
+    scratch_cwd.mkdir(parents=True, exist_ok=True)
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(scratch_cwd),
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "unknown"
+        raise ValueError(f"compact_attention_compile_failed:{detail[-400:]}")
+    return compiled_dir, {
+        **params,
+        "reused": False,
+        "stdoutTail": completed.stdout.strip().splitlines()[-3:],
+        "stderrTail": completed.stderr.strip().splitlines()[-3:],
+    }
+
+
+def _execute_compact_attention_prefill_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    buffer_files: dict[str, Path],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    query_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "query",
+        launch_index=launch_index,
+    )
+    key_binding = _binding_for_symbol(
+        launch.get("resolvedInputs") or [],
+        "key",
+        launch_index=launch_index,
+    )
+    val_binding = _binding_for_any_symbol(
+        launch.get("resolvedInputs") or [],
+        ("val", "value"),
+        launch_index=launch_index,
+    )
+    output_binding = _binding_for_symbol(
+        launch.get("resolvedOutputs") or [],
+        "output",
+        launch_index=launch_index,
+    )
+    query_materialization = query_binding.get("materialization") or {}
+    query_transform = query_materialization.get("sourceTransform") or {}
+    if not isinstance(query_transform, dict):
+        raise ValueError("compact_attention_query_transform_missing")
+    query_path = buffer_files.get(str(query_binding.get("buffer") or ""))
+    if query_path is None or not query_path.is_file():
+        raise ValueError("compact_attention_query_missing")
+    query_host = np.load(query_path, allow_pickle=False).ravel()
+    query_cols = _required_positive_int(query_transform, "sourceCols")
+    if query_host.size % query_cols != 0:
+        raise ValueError(
+            f"compact_attention_query_shape_mismatch:{query_host.size}%{query_cols}"
+        )
+    rows = query_host.size // query_cols
+    head_dim = _required_positive_int(query_transform, "headDim")
+    q_len_per_pe = COMPACT_ATTENTION_Q_ROWS_PER_PE
+    compact_query_transform = {
+        **dict(query_transform),
+        "rowsPerPe": q_len_per_pe,
+    }
+    compact_width = max(
+        _attention_required_pe_rows(
+            compact_query_transform,
+            rows,
+        ),
+        _attention_required_pe_rows(
+            dict((key_binding.get("materialization") or {}).get("sourceTransform") or {}),
+            rows,
+        ),
+        _attention_required_pe_rows(
+            dict((val_binding.get("materialization") or {}).get("sourceTransform") or {}),
+            rows,
+        ),
+    )
+    query_values, query_shape, query_materialization = _load_compact_attention_input(
+        buffer_files=buffer_files,
+        binding=query_binding,
+        compact_width=compact_width,
+        launch_index=launch_index,
+        rows_per_pe=q_len_per_pe,
+    )
+    key_values, _key_shape, key_materialization = _load_compact_attention_input(
+        buffer_files=buffer_files,
+        binding=key_binding,
+        compact_width=compact_width,
+        launch_index=launch_index,
+    )
+    val_values, _val_shape, val_materialization = _load_compact_attention_input(
+        buffer_files=buffer_files,
+        binding=val_binding,
+        compact_width=compact_width,
+        launch_index=launch_index,
+    )
+    key_transform = (key_materialization.get("sourceTransform") or {})
+    block_size = _required_positive_int(key_transform, "rowsPerPe")
+    compile_dir, compile_identity = _compile_compact_attention_target(
+        runtime_dir=runtime_dir,
+        launch=launch,
+        width=compact_width,
+        head_dim=head_dim,
+        q_len_per_pe=q_len_per_pe,
+        block_size=block_size,
+    )
+    launch_dir = runtime_dir / "attention-prefill-compact" / f"launch-{launch_index:04d}"
+    input_dir = launch_dir / "inputs"
+    input_dir.mkdir(parents=True, exist_ok=True)
+    query_input_path = input_dir / "query.npy"
+    key_input_path = input_dir / "key.npy"
+    val_input_path = input_dir / "val.npy"
+    np.save(query_input_path, query_values)
+    np.save(key_input_path, key_values)
+    np.save(val_input_path, val_values)
+    output_buffer = str(output_binding.get("buffer") or "")
+    output_path = _buffer_path(runtime_dir, output_buffer)
+    output_materialization = output_binding.get("materialization") or {}
+    output_transform = dict(output_materialization.get("outputTransform") or {})
+    output_transform["rows"] = int(query_shape.get("rows") or rows)
+    output_transform["targetRows"] = compact_width
+    output_transform["rowsPerPe"] = q_len_per_pe
+    output_elements_per_pe = q_len_per_pe * head_dim
+    spec = {
+        "compileDir": str(compile_dir),
+        "launchFunction": launch.get("launchFunction") or "compute",
+        "postLaunchFunctions": ["finalize"],
+        "launchIndex": launch_index,
+        "cmaddr": cmaddr or "",
+        "targetGeometry": {
+            "height": 1,
+            "peCount": compact_width,
+            "runtimePeCount": compact_width,
+            "width": compact_width,
+        },
+        "inputs": [
+            {
+                "symbol": "query",
+                "buffer": str(query_binding.get("buffer") or ""),
+                "role": "activation",
+                "path": str(query_input_path),
+                "dtype": str(query_materialization.get("dtype") or "f16"),
+                "elemType": str(query_materialization.get("elemType") or "f16"),
+                "elementsPerPe": int(query_materialization.get("elementsPerPe") or 0),
+                "sourceTransform": query_materialization.get("sourceTransform"),
+            },
+            {
+                "symbol": "key",
+                "buffer": str(key_binding.get("buffer") or ""),
+                "role": str(key_binding.get("role") or "activation"),
+                "path": str(key_input_path),
+                "dtype": str(key_materialization.get("dtype") or "f16"),
+                "elemType": str(key_materialization.get("elemType") or "f16"),
+                "elementsPerPe": int(key_materialization.get("elementsPerPe") or 0),
+                "sourceTransform": key_materialization.get("sourceTransform"),
+            },
+            {
+                "symbol": str(val_binding.get("symbol") or "val"),
+                "buffer": str(val_binding.get("buffer") or ""),
+                "role": str(val_binding.get("role") or "activation"),
+                "path": str(val_input_path),
+                "dtype": str(val_materialization.get("dtype") or "f16"),
+                "elemType": str(val_materialization.get("elemType") or "f16"),
+                "elementsPerPe": int(val_materialization.get("elementsPerPe") or 0),
+                "sourceTransform": val_materialization.get("sourceTransform"),
+            },
+        ],
+        "outputs": [
+            {
+                "symbol": "output",
+                "buffer": output_buffer,
+                "role": "activation",
+                "path": str(output_path),
+                "dtype": str(output_materialization.get("dtype") or "f16"),
+                "elemType": str(output_materialization.get("elemType") or "f16"),
+                "elementsPerPe": output_elements_per_pe,
+                "outputTransform": output_transform,
+            }
+        ],
+    }
+    spec_path = _launch_spec_path(runtime_dir, launch_index)
+    receipt_path = _launch_receipt_path(runtime_dir, launch_index)
+    write_json(spec_path, spec)
+    append_progress(
+        progress_path,
+        "session_attention_compact_start",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        dispatchMode="compact_width_session",
+        rows=rows,
+        compactWidth=compact_width,
+        qLenPerPe=q_len_per_pe,
+        blockSize=block_size,
+    )
+    command = [
+        cs_python_executable(),
+        str(LAUNCH_STEP_ADAPTER),
+        "--spec",
+        str(spec_path),
+        "--receipt-out",
+        str(receipt_path),
+        "--progress-out",
+        str(progress_path),
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        receipt = {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_launch_step_receipt",
+            "status": "blocked",
+            "blockers": ["compact_attention_timeout"],
+            "launchIndex": launch_index,
+            "targetName": launch.get("targetName"),
+            "dispatchMode": "compact_width_session",
+            "compileIdentity": compile_identity,
+            "stdoutTail": tail_lines(exc.stdout, 1),
+            "stderrTail": tail_lines(exc.stderr, 1),
+        }
+        write_json(receipt_path, receipt)
+        raise ValueError("compact_attention_timeout") from exc
+    if not receipt_path.is_file():
+        raise ValueError("compact_attention_receipt_missing")
+    receipt = load_json(receipt_path)
+    if not isinstance(receipt.get("inputBuffers"), list):
+        receipt["inputBuffers"] = _staged_input_buffer_records(spec["inputs"])
+    receipt["targetName"] = launch.get("targetName")
+    receipt["dispatchMode"] = "compact_width_session"
+    receipt["compileIdentity"] = compile_identity
+    receipt["stdoutTail"] = tail_lines(completed.stdout, 1)
+    receipt["stderrTail"] = tail_lines(completed.stderr, 1)
+    write_json(receipt_path, receipt)
+    append_progress(
+        progress_path,
+        "session_attention_compact_complete",
+        launchIndex=launch_index,
+        target=launch.get("targetName"),
+        status=receipt.get("status"),
+        blocker=";".join(receipt.get("blockers") or []),
+    )
+    if completed.returncode != 0 or receipt.get("status") != "succeeded":
+        raise ValueError(
+            "; ".join(receipt.get("blockers") or ["compact_attention_failed"])
         )
     return receipt
 
@@ -3814,6 +4250,7 @@ def execute_hostplan_runtime(
         DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS
     ),
     session_ple_proj_dispatch_mode: str = "monolithic_summa",
+    session_attention_prefill_dispatch_mode: str = "hostplan_static",
     session_lm_head_batch_runtime: bool = False,
     session_lm_head_batch_runtime_step_budget: int = DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET,
     session_lm_head_tile_dispatch_budget: int = 0,
@@ -4058,6 +4495,58 @@ def execute_hostplan_runtime(
                     target=launch.get("targetName"),
                     status="succeeded",
                     dispatchMode="compact_summa_session",
+                )
+                if checkpoint_dir is not None:
+                    new_outputs = [
+                        {
+                            "buffer": key,
+                            "path": str(buffer_files[key]),
+                            "dtype": "unknown",
+                            "shape": [],
+                        }
+                        for key in sorted(set(buffer_files.keys()) - buffer_keys_before)
+                    ]
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=new_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
+            if _is_compact_attention_prefill_launch(
+                launch,
+                session_attention_prefill_dispatch_mode,
+            ):
+                buffer_keys_before = set(buffer_files.keys())
+                launch_receipt = _execute_compact_attention_prefill_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    buffer_files=buffer_files,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                )
+                executed_launches.append(launch_receipt)
+                for output in launch.get("resolvedOutputs") or []:
+                    if isinstance(output, dict) and output.get("buffer"):
+                        buffer_files[str(output["buffer"])] = _buffer_path(
+                            runtime_dir,
+                            str(output["buffer"]),
+                        )
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="compact_width_session",
                 )
                 if checkpoint_dir is not None:
                     new_outputs = [
@@ -4343,6 +4832,9 @@ def execute_hostplan_runtime(
         },
         "sessionPleProjDispatch": {
             "mode": session_ple_proj_dispatch_mode,
+        },
+        "sessionAttentionPrefillDispatch": {
+            "mode": session_attention_prefill_dispatch_mode,
         },
     }
 
@@ -4683,6 +5175,9 @@ def main() -> int:
                     args.session_prefill_q4k_gemv_output_pe_rows
                 ),
                 session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
+                session_attention_prefill_dispatch_mode=(
+                    args.session_attention_prefill_dispatch_mode
+                ),
                 session_lm_head_batch_runtime=args.session_lm_head_batch_runtime,
                 session_lm_head_batch_runtime_step_budget=(
                     args.session_lm_head_batch_runtime_step_budget

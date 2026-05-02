@@ -84,6 +84,23 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             list(range(7)),
         )
 
+    def test_prefill_gemv_wide_source_uses_smaller_input_tile(self) -> None:
+        self.assertEqual(runner._prefill_gemv_in_dim_per_pe(5376), 512)
+        self.assertEqual(runner._prefill_gemv_in_dim_per_pe(8192), 256)
+
+    def test_prefill_gemv_only_splits_d2h_rows_at_sdk_limit(self) -> None:
+        self.assertFalse(runner._prefill_gemv_split_d2h_rows(4 * 112))
+        self.assertFalse(
+            runner._prefill_gemv_split_d2h_rows(
+                runner.SDK_D2H_ELEMENT_COUNT_LIMIT - 1
+            )
+        )
+        self.assertTrue(
+            runner._prefill_gemv_split_d2h_rows(
+                runner.SDK_D2H_ELEMENT_COUNT_LIMIT
+            )
+        )
+
     def test_rope_input_transform_pads_logical_matrix_heads(self) -> None:
         import numpy as np
 
@@ -146,6 +163,55 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             np.zeros((481 * 9 - 128, 256), dtype=np.float16),
         )
 
+    def test_compact_attention_input_transform_uses_required_pe_rows(self) -> None:
+        import numpy as np
+
+        logical = np.arange(4 * 8192, dtype=np.float16)
+        binding = {
+            "buffer": "activation:attention:query",
+            "materialization": {
+                "dtype": "f16",
+                "elemType": "f16",
+                "elementsPerPe": 9 * 256,
+                "sourceTransform": {
+                    "kind": "logical_matrix_to_attention_query_rows",
+                    "sourceCols": 8192,
+                    "headDim": 256,
+                    "targetRows": 481,
+                    "rowsPerPe": 9,
+                },
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "query.npy"
+            np.save(path, logical)
+            values, matrix_shape, materialization = (
+                runner._load_compact_attention_input(
+                    buffer_files={"activation:attention:query": path},
+                    binding=binding,
+                    compact_width=128,
+                    launch_index=7,
+                    rows_per_pe=1,
+                )
+            )
+
+        expected_heads = logical.reshape(4, 32, 256).reshape(128, 256)
+        self.assertEqual(values.size, 128 * 256)
+        self.assertEqual(matrix_shape, {"rows": 4, "cols": 8192})
+        self.assertEqual(
+            materialization["sourceTransform"]["targetRows"],
+            128,
+        )
+        self.assertEqual(
+            materialization["sourceTransform"]["rowsPerPe"],
+            1,
+        )
+        np.testing.assert_array_equal(
+            values.reshape(128, 256),
+            expected_heads,
+        )
+
 
 def _load_launch_step_adapter_module():
     name = "int4ple_launch_step_adapter_for_tests"
@@ -186,6 +252,26 @@ def _load_launch_step_adapter_module():
 
 
 class RopeOutputTransformTest(unittest.TestCase):
+    def test_chunked_f16_output_requires_resolved_symbol_id(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        class MissingChunkRunner:
+            def get_id(self, symbol: str) -> object:
+                del symbol
+                return None
+
+        class PresentChunkRunner:
+            def get_id(self, symbol: str) -> object:
+                del symbol
+                return 7
+
+        self.assertFalse(
+            adapter._chunked_f16_output_available(MissingChunkRunner(), "input")
+        )
+        self.assertTrue(
+            adapter._chunked_f16_output_available(PresentChunkRunner(), "input")
+        )
+
     def test_rope_output_transform_restores_logical_matrix(self) -> None:
         import numpy as np
 
@@ -210,6 +296,30 @@ class RopeOutputTransformTest(unittest.TestCase):
         np.testing.assert_array_equal(restored, logical)
 
     def test_attention_output_transform_restores_logical_matrix(self) -> None:
+        import numpy as np
+
+        adapter = _load_launch_step_adapter_module()
+        logical = np.arange(4 * 8192, dtype=np.float32)
+        host = np.zeros(15 * 9 * 256, dtype=np.float32)
+        host.reshape(15 * 9, 256)[:128] = logical.reshape(4, 32, 256).reshape(
+            128,
+            256,
+        )
+
+        restored = adapter._attention_query_rows_to_logical_matrix(
+            host,
+            {
+                "rows": 4,
+                "cols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+                "rowsPerPe": 9,
+            },
+        )
+
+        np.testing.assert_array_equal(restored, logical)
+
+    def test_attention_output_transform_accepts_full_surface_copyback(self) -> None:
         import numpy as np
 
         adapter = _load_launch_step_adapter_module()
@@ -486,6 +596,71 @@ class LaunchStepAdapterMemcpyPackingTest(unittest.TestCase):
                 "x": 0,
                 "y": 1,
                 "width": 1,
+                "height": 1,
+            },
+        ])
+
+    def test_pe_rows_output_splits_multi_pe_copyback(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        regions = adapter._d2h_regions_for_output(
+            output_transform={
+                "kind": "pe_rows_to_logical_matrix",
+                "rows": 4,
+                "cols": 5376,
+            },
+            width=481,
+            height=1,
+        )
+
+        self.assertEqual(regions, [
+            {"x": 0, "y": 0, "width": 1, "height": 1},
+            {"x": 1, "y": 0, "width": 1, "height": 1},
+            {"x": 2, "y": 0, "width": 1, "height": 1},
+            {"x": 3, "y": 0, "width": 1, "height": 1},
+        ])
+
+    def test_attention_output_splits_wide_copyback(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        regions = adapter._d2h_regions_for_output(
+            output_transform={
+                "kind": "attention_query_rows_to_logical_matrix",
+                "rows": 4,
+                "cols": 8192,
+                "headDim": 256,
+                "targetRows": 481,
+                "rowsPerPe": 9,
+            },
+            width=481,
+            height=1,
+        )
+
+        self.assertEqual(len(regions), 15)
+        self.assertEqual(regions[0], {"x": 0, "y": 0, "width": 1, "height": 1})
+        self.assertEqual(regions[-1], {"x": 14, "y": 0, "width": 1, "height": 1})
+
+    def test_attention_output_keeps_compact_row_copyback_together(self) -> None:
+        adapter = _load_launch_step_adapter_module()
+
+        regions = adapter._d2h_regions_for_output(
+            output_transform={
+                "kind": "attention_query_rows_to_logical_matrix",
+                "rows": 4,
+                "cols": 8192,
+                "headDim": 256,
+                "targetRows": 128,
+                "rowsPerPe": 1,
+            },
+            width=128,
+            height=1,
+        )
+
+        self.assertEqual(regions, [
+            {
+                "x": 0,
+                "y": 0,
+                "width": 128,
                 "height": 1,
             },
         ])

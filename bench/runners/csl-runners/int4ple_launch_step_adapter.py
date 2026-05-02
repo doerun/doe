@@ -30,6 +30,7 @@ DTYPE_MAP = {
     "u16": (np.uint16, MemcpyDataType.MEMCPY_16BIT),
 }
 F16_D2H_CHUNK_WORDS = 128
+ATTENTION_D2H_REGION_PE_WIDTH = 1
 
 
 def parse_args() -> argparse.Namespace:
@@ -162,6 +163,26 @@ def _required_positive_int(mapping: dict[str, Any], key: str) -> int:
     return value
 
 
+def _attention_query_output_required_pe_rows(
+    output_transform: dict[str, Any],
+) -> int:
+    rows = _required_positive_int(output_transform, "rows")
+    cols = _required_positive_int(output_transform, "cols")
+    head_dim = _required_positive_int(output_transform, "headDim")
+    target_rows = _required_positive_int(output_transform, "targetRows")
+    rows_per_pe = _required_positive_int(output_transform, "rowsPerPe")
+    if cols % head_dim != 0:
+        raise ValueError(f"attention_output_cols_mismatch:{cols}%{head_dim}")
+    head_rows = rows * (cols // head_dim)
+    required_pe_rows = (head_rows + rows_per_pe - 1) // rows_per_pe
+    if required_pe_rows > target_rows:
+        raise ValueError(
+            "attention_output_rows_exceed_target:"
+            f"{head_rows}>{target_rows * rows_per_pe}"
+        )
+    return required_pe_rows
+
+
 def _summa_c_tiles_to_logical(
     host: np.ndarray,
     transform: dict[str, Any],
@@ -284,6 +305,21 @@ def _d2h_region_for_output(
             "width": min(width, rows),
             "height": 1,
         }
+    if transform_kind == "attention_query_rows_to_logical_matrix":
+        required_pe_rows = _attention_query_output_required_pe_rows(output_transform)
+        if required_pe_rows > width * height:
+            raise ValueError(
+                "attention_output_region_exceeds_grid:"
+                f"{required_pe_rows}>{width * height}"
+            )
+        region_height = max(1, (required_pe_rows + width - 1) // width)
+        region_width = width if region_height > 1 else required_pe_rows
+        return {
+            "x": 0,
+            "y": 0,
+            "width": region_width,
+            "height": min(height, region_height),
+        }
     return {
         "x": 0,
         "y": 0,
@@ -316,15 +352,48 @@ def _d2h_regions_for_output(
             }
             for y in range(int(region["y"]), int(region["y"]) + int(region["height"]))
         ]
+    if (
+        str(output_transform.get("kind") or "") == "pe_rows_to_logical_matrix"
+        and int(region["width"]) > 1
+    ):
+        return [
+            {
+                "x": x,
+                "y": int(region["y"]),
+                "width": 1,
+                "height": int(region["height"]),
+            }
+            for x in range(int(region["x"]), int(region["x"]) + int(region["width"]))
+        ]
+    if (
+        str(output_transform.get("kind") or "")
+        == "attention_query_rows_to_logical_matrix"
+        and int(output_transform.get("rowsPerPe") or 0) > 1
+        and int(region["width"]) > ATTENTION_D2H_REGION_PE_WIDTH
+    ):
+        regions: list[dict[str, int]] = []
+        width_limit = int(region["x"]) + int(region["width"])
+        for y in range(int(region["y"]), int(region["y"]) + int(region["height"])):
+            x = int(region["x"])
+            while x < width_limit:
+                chunk_width = min(ATTENTION_D2H_REGION_PE_WIDTH, width_limit - x)
+                regions.append({
+                    "x": x,
+                    "y": y,
+                    "width": chunk_width,
+                    "height": 1,
+                })
+                x += chunk_width
+        return regions
     return [region]
 
 
 def _chunked_f16_output_available(runner: Any, symbol: str) -> bool:
     try:
-        runner.get_id(f"{symbol}_chunk_0000")
+        symbol_id = runner.get_id(f"{symbol}_chunk_0000")
     except Exception:
         return False
-    return True
+    return symbol_id is not None
 
 
 def _chunked_f16_memcpy_d2h(
@@ -360,9 +429,12 @@ def _chunked_f16_memcpy_d2h(
                     peY=pe_y,
                     words=word_count,
                 )
+                chunk_symbol_id = runner.get_id(chunk_symbol)
+                if chunk_symbol_id is None:
+                    raise ValueError(f"chunked_f16_symbol_unresolved:{chunk_symbol}")
                 runner.memcpy_d2h(
                     host_part,
-                    int(runner.get_id(chunk_symbol)),
+                    int(chunk_symbol_id),
                     pe_x,
                     pe_y,
                     1,
@@ -417,23 +489,22 @@ def _attention_query_rows_to_logical_matrix(
     rows = _required_positive_int(output_transform, "rows")
     cols = _required_positive_int(output_transform, "cols")
     head_dim = _required_positive_int(output_transform, "headDim")
-    target_rows = _required_positive_int(output_transform, "targetRows")
     rows_per_pe = _required_positive_int(output_transform, "rowsPerPe")
     if cols % head_dim != 0:
         raise ValueError(f"attention_output_cols_mismatch:{cols}%{head_dim}")
     head_rows = rows * (cols // head_dim)
-    expected = target_rows * rows_per_pe * head_dim
-    if host.size < expected:
-        raise ValueError(f"attention_output_size_mismatch:{host.size}<{expected}")
-    if head_rows > target_rows * rows_per_pe:
+    required_pe_rows = _attention_query_output_required_pe_rows(output_transform)
+    elements_per_pe = rows_per_pe * head_dim
+    if host.size % elements_per_pe != 0:
         raise ValueError(
-            "attention_output_rows_exceed_target:"
-            f"{head_rows}>{target_rows * rows_per_pe}"
+            "attention_output_size_not_pe_aligned:"
+            f"{host.size}%{elements_per_pe}"
         )
-    heads = host[:expected].reshape(target_rows * rows_per_pe, head_dim)[
-        :head_rows,
-        :,
-    ]
+    copied_pe_rows = host.size // elements_per_pe
+    if copied_pe_rows < required_pe_rows:
+        expected = required_pe_rows * elements_per_pe
+        raise ValueError(f"attention_output_size_mismatch:{host.size}<{expected}")
+    heads = host.reshape(copied_pe_rows * rows_per_pe, head_dim)[:head_rows, :]
     return heads.reshape(rows, cols).reshape(-1)
 
 
@@ -450,6 +521,11 @@ def main() -> int:
         "status": "blocked",
         "compileDir": str(spec.get("compileDir") or ""),
         "launchFunction": str(spec.get("launchFunction") or "compute"),
+        "postLaunchFunctions": [
+            str(item)
+            for item in spec.get("postLaunchFunctions") or []
+            if str(item or "").strip()
+        ],
         "launchIndex": int(spec.get("launchIndex") or 0),
         "blockers": blockers,
         "inputBuffers": [],
@@ -537,6 +613,18 @@ def main() -> int:
         append_progress(progress_path, "launch_step_launch", launchIndex=launch_index)
         print("phase:launch", flush=True)
         runner.launch(str(spec.get("launchFunction") or "compute"), nonblock=False)
+        for post_launch in spec.get("postLaunchFunctions") or []:
+            post_launch_name = str(post_launch or "").strip()
+            if not post_launch_name:
+                continue
+            append_progress(
+                progress_path,
+                "launch_step_post_launch",
+                launchIndex=launch_index,
+                function=post_launch_name,
+            )
+            print(f"phase:post_launch:{post_launch_name}", flush=True)
+            runner.launch(post_launch_name, nonblock=False)
         outputs: list[dict[str, Any]] = []
         for item in spec.get("outputs") or []:
             if not isinstance(item, dict):

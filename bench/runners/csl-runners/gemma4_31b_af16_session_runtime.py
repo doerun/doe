@@ -1683,6 +1683,10 @@ def build_real_session_runtime(
             getattr(args, "session_ple_proj_dispatch_mode", "monolithic_summa")
             or "monolithic_summa"
         ),
+        session_attention_prefill_dispatch_mode=str(
+            getattr(args, "session_attention_prefill_dispatch_mode", "hostplan_static")
+            or "hostplan_static"
+        ),
         session_lm_head_batch_runtime=bool(
             getattr(args, "session_lm_head_batch_runtime", False)
         ),
