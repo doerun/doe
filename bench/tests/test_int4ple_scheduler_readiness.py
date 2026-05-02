@@ -1579,7 +1579,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                 "targetSessions": [
                     {
                         "targetName": "tiled_31b",
-                        "compileDir": str(Path(tmpdir) / "compile" / "compiled" / "tiled_31b"),
+                        "compileDir": str(
+                            Path(tmpdir) / "compile" / "compiled" / "tiled_31b"
+                        ),
                         "layoutPath": str(layout_path),
                         "launchFunction": "compute",
                         "requiredInputSymbols": ["activation", "weight"],
@@ -1591,7 +1593,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                         "launchIndex": 2,
                         "targetName": "tiled_31b",
                         "kernelPattern": "prefill_q4k_gemv",
-                        "compileDir": str(Path(tmpdir) / "compile" / "compiled" / "tiled_31b"),
+                        "compileDir": str(
+                            Path(tmpdir) / "compile" / "compiled" / "tiled_31b"
+                        ),
                         "layoutPath": str(layout_path),
                         "launchFunction": "compute",
                         "phase": "prefill",
