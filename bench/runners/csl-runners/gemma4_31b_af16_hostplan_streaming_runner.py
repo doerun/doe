@@ -307,6 +307,15 @@ def parse_args() -> argparse.Namespace:
             "Manifest/config/compile-target identity and buffer hashes still validate."
         ),
     )
+    parser.add_argument(
+        "--allow-checkpoint-canonicalization-drift",
+        action="store_true",
+        help=(
+            "Allow resume across the tiled_31b prefill_q4k_gemv "
+            "canonicalization boundary. Only hostplanSha256 and compile-target "
+            "hashes for the same target set may drift; buffer hashes still validate."
+        ),
+    )
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     return parser.parse_args()
 

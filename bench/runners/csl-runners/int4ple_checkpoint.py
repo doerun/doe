@@ -191,6 +191,7 @@ def init_checkpoint(
     identity: dict[str, Any],
     *,
     allow_runner_version_drift: bool = False,
+    allow_canonicalization_drift: bool = False,
 ) -> dict[str, Any]:
     """Initialize an empty checkpoint dir with identity but no completed launches.
 
@@ -203,11 +204,16 @@ def init_checkpoint(
     if manifest_path.is_file():
         existing = _read_manifest(checkpoint_dir)
         existing_identity = existing.get("identity") or {}
-        drift_field = _identity_drift_field(existing_identity, identity)
-        if drift_field is None or (
-            allow_runner_version_drift and drift_field == "runnerVersion"
+        drift_fields = _identity_drift_fields(existing_identity, identity)
+        if not drift_fields or _identity_drift_allowed(
+            manifest_identity=existing_identity,
+            current=identity,
+            drift_fields=drift_fields,
+            allow_runner_version_drift=allow_runner_version_drift,
+            allow_canonicalization_drift=allow_canonicalization_drift,
         ):
             return existing
+        drift_field = drift_fields[0]
         raise CheckpointIdentityDriftError(
             f"checkpoint dir {checkpoint_dir} already exists with different identity; "
             "remove it or use --ignore-checkpoint",
@@ -307,6 +313,7 @@ def load_checkpoint(
     identity: dict[str, Any],
     verify_buffers: bool = True,
     allow_runner_version_drift: bool = False,
+    allow_canonicalization_drift: bool = False,
 ) -> ResumeState:
     """Load a manifest, validate identity strictly, verify buffers, return state.
 
@@ -326,11 +333,15 @@ def load_checkpoint(
         )
 
     manifest_identity = manifest.get("identity") or {}
-    drift_field = _identity_drift_field(manifest_identity, identity)
-    if (
-        drift_field is not None
-        and not (allow_runner_version_drift and drift_field == "runnerVersion")
+    drift_fields = _identity_drift_fields(manifest_identity, identity)
+    if drift_fields and not _identity_drift_allowed(
+        manifest_identity=manifest_identity,
+        current=identity,
+        drift_fields=drift_fields,
+        allow_runner_version_drift=allow_runner_version_drift,
+        allow_canonicalization_drift=allow_canonicalization_drift,
     ):
+        drift_field = drift_fields[0]
         raise CheckpointIdentityDriftError(
             f"checkpoint identity drift on field {drift_field!r}: "
             f"manifest={manifest_identity.get(drift_field)!r} "
@@ -386,13 +397,65 @@ def load_checkpoint(
     )
 
 
+def _identity_drift_fields(
+    manifest_identity: dict[str, Any],
+    current: dict[str, Any],
+) -> list[str]:
+    """Return all identity fields that differ."""
+    keys = sorted(set(manifest_identity.keys()) | set(current.keys()))
+    return [
+        key for key in keys
+        if manifest_identity.get(key) != current.get(key)
+    ]
+
+
 def _identity_drift_field(manifest_identity: dict[str, Any], current: dict[str, Any]) -> str | None:
     """Return the first field that differs, or None if identities match."""
-    keys = sorted(set(manifest_identity.keys()) | set(current.keys()))
-    for key in keys:
-        if manifest_identity.get(key) != current.get(key):
-            return key
-    return None
+    fields = _identity_drift_fields(manifest_identity, current)
+    return fields[0] if fields else None
+
+
+def _compile_target_canonicalization_drift_allowed(
+    manifest_identity: dict[str, Any],
+    current: dict[str, Any],
+) -> bool:
+    manifest_hashes = manifest_identity.get("compileTargetHashes") or {}
+    current_hashes = current.get("compileTargetHashes") or {}
+    if not isinstance(manifest_hashes, dict) or not isinstance(current_hashes, dict):
+        return False
+    manifest_keys = set(manifest_hashes)
+    current_keys = set(current_hashes)
+    return (
+        manifest_keys == current_keys
+        and "tiled_31b" in manifest_keys
+        and any(manifest_hashes.get(key) != current_hashes.get(key) for key in manifest_keys)
+    )
+
+
+def _identity_drift_allowed(
+    *,
+    manifest_identity: dict[str, Any],
+    current: dict[str, Any],
+    drift_fields: list[str],
+    allow_runner_version_drift: bool,
+    allow_canonicalization_drift: bool,
+) -> bool:
+    for field in drift_fields:
+        if field == "runnerVersion" and allow_runner_version_drift:
+            continue
+        if allow_canonicalization_drift and field == "hostplanSha256":
+            continue
+        if (
+            allow_canonicalization_drift
+            and field == "compileTargetHashes"
+            and _compile_target_canonicalization_drift_allowed(
+                manifest_identity,
+                current,
+            )
+        ):
+            continue
+        return False
+    return True
 
 
 def _drift_code(field: str) -> str:

@@ -191,6 +191,79 @@ class IdentityDriftRejection(unittest.TestCase):
                 b"\x03" * 8,
             )
 
+    def test_canonicalization_drift_override_allows_same_target_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            ckpt = tmp / "ckpt"
+            original = _identity()
+            original["compileTargetHashes"] = {
+                "embed": "target-embed-static",
+                "tiled_31b": "target-tiled-static",
+            }
+            init_checkpoint(ckpt, original)
+            staged = [_seed_buffer(tmp, "activations", b"\x04" * 8)]
+            persist_launch_checkpoint(
+                checkpoint_dir=ckpt,
+                launch_index=0,
+                launch={"launchIndex": 0, "targetName": "embed"},
+                launch_receipt={"status": "succeeded"},
+                staged_outputs=staged,
+                launch_identity="li",
+                started_at_unix=1.0,
+            )
+
+            current = dict(original)
+            current["hostplanSha256"] = "hostplan-canonical"
+            current["compileTargetHashes"] = {
+                "embed": "target-embed-canonical",
+                "tiled_31b": "target-prefill-q4k-gemv",
+            }
+            state = load_checkpoint(
+                checkpoint_dir=ckpt,
+                identity=current,
+                allow_canonicalization_drift=True,
+            )
+
+            self.assertEqual(state.start_index, 1)
+            self.assertEqual(
+                state.buffer_files["activations"].read_bytes(),
+                b"\x04" * 8,
+            )
+
+    def test_canonicalization_drift_override_rejects_target_set_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            ckpt = tmp / "ckpt"
+            original = _identity()
+            original["compileTargetHashes"] = {
+                "embed": "target-embed-A",
+                "tiled_31b": "target-tiled-static",
+            }
+            init_checkpoint(ckpt, original)
+            staged = [_seed_buffer(tmp, "activations", b"\x05" * 8)]
+            persist_launch_checkpoint(
+                checkpoint_dir=ckpt,
+                launch_index=0,
+                launch={"launchIndex": 0, "targetName": "embed"},
+                launch_receipt={"status": "succeeded"},
+                staged_outputs=staged,
+                launch_identity="li",
+                started_at_unix=1.0,
+            )
+
+            current = dict(original)
+            current["hostplanSha256"] = "hostplan-canonical"
+            current["compileTargetHashes"] = {
+                "tiled_31b": "target-prefill-q4k-gemv",
+            }
+            with self.assertRaises(CheckpointIdentityDriftError) as ctx:
+                load_checkpoint(
+                    checkpoint_dir=ckpt,
+                    identity=current,
+                    allow_canonicalization_drift=True,
+                )
+            self.assertEqual(ctx.exception.code, "compile_target_drift")
+
     def test_explicit_runner_drift_override_reuses_existing_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             ckpt = Path(tmpdir) / "ckpt"

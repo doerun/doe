@@ -94,7 +94,7 @@ These items gate any claim that Gemma 4 31B af16 runs real prefill/decode on the
 
 The `tiled_q4k_gemv_batched_runtime` substitution has been promoted into an explicit prefill Q4K GEMV contract in source. The accepted regenerated state is a HostPlan/compiler target whose pattern name, Q4K materialization transform, shape parameters, compile-target hash, simulator plan entry, launch receipt, checkpoint metadata, and f16 numerical contract all agree without runner-side inference from `tiled_31b`.
 
-The live Gemma `<bos>sky color is` session remains the first proof path. Regenerate the HostPlan/session artifacts, resume from the checkpointed L4 state, and keep the generated-token/logits/lm-head/sample/KV transcript gate as the evidence target rather than replacing it with a narrower kernel-only receipt. Qwen 3.6 27B af16 is the second model target for the same contract: model-specific dimensions, layer-body differences, and Qwen-only ops stay in HostPlan/runtime params, while Q4K -> f16 prefill GEMV patterning and receipt semantics stay shared.
+The live Gemma `<bos>sky color is` session remains the first proof path. Regenerate the HostPlan/session artifacts, resume from the checkpointed L4 state with `--allow-checkpoint-canonicalization-drift` plus runner-drift allowance when needed, and keep the generated-token/logits/lm-head/sample/KV transcript gate as the evidence target rather than replacing it with a narrower kernel-only receipt. Qwen 3.6 27B af16 is the second model target for the same contract: model-specific dimensions, layer-body differences, and Qwen-only ops stay in HostPlan/runtime params, while Q4K -> f16 prefill GEMV patterning and receipt semantics stay shared.
 
 ## Integrity invariants
 

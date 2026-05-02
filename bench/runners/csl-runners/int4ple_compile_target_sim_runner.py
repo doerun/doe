@@ -214,6 +214,15 @@ def parse_args() -> argparse.Namespace:
             "Manifest/config/compile-target identity and buffer hashes still validate."
         ),
     )
+    parser.add_argument(
+        "--allow-checkpoint-canonicalization-drift",
+        action="store_true",
+        help=(
+            "Allow resume across the tiled_31b prefill_q4k_gemv "
+            "canonicalization boundary. Only hostplanSha256 and compile-target "
+            "hashes for the same target set may drift; buffer hashes still validate."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -4538,6 +4547,9 @@ def main() -> int:
                     checkpoint_dir=resume_dir,
                     identity=identity,
                     allow_runner_version_drift=args.allow_checkpoint_runner_drift,
+                    allow_canonicalization_drift=(
+                        args.allow_checkpoint_canonicalization_drift
+                    ),
                 )
                 append_progress(
                     progress_path,
@@ -4561,6 +4573,9 @@ def main() -> int:
                 checkpoint_dir,
                 identity,
                 allow_runner_version_drift=args.allow_checkpoint_runner_drift,
+                allow_canonicalization_drift=(
+                    args.allow_checkpoint_canonicalization_drift
+                ),
             )
         append_progress(
             progress_path,

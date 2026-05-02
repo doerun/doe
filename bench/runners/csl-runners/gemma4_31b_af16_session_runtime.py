@@ -1600,6 +1600,13 @@ def build_real_session_runtime(
                 allow_runner_version_drift=bool(
                     getattr(args, "allow_checkpoint_runner_drift", False)
                 ),
+                allow_canonicalization_drift=bool(
+                    getattr(
+                        args,
+                        "allow_checkpoint_canonicalization_drift",
+                        False,
+                    )
+                ),
             )
             result["checkpoint"]["resumeStatus"] = "loaded"
             result["checkpoint"]["resumeStartIndex"] = resume_state.start_index
@@ -1621,6 +1628,13 @@ def build_real_session_runtime(
                 identity,
                 allow_runner_version_drift=bool(
                     getattr(args, "allow_checkpoint_runner_drift", False)
+                ),
+                allow_canonicalization_drift=bool(
+                    getattr(
+                        args,
+                        "allow_checkpoint_canonicalization_drift",
+                        False,
+                    )
                 ),
             )
             result["checkpoint"]["checkpointStatus"] = "initialized"

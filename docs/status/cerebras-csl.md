@@ -46,6 +46,13 @@ projection. The fail-closed size check remains intact; the runtime now satisfies
 it through declared transforms rather than bypassing it. Next action for the
 active proof lane is to regenerate the HostPlan/session artifacts and resume
 from the existing checkpoint toward `realSessionRuntime.status=output_ready`.
+Because the canonicalization adds `compileTargets[].pattern` across the target
+set and changes `tiled_31b` from static SUMMA metadata to explicit
+`prefill_q4k_gemv`, the resume command must use the explicit
+`--allow-checkpoint-canonicalization-drift` override together with the existing
+runner-drift override when the runner hash changed. The override still requires
+the same compile-target set and verifies every persisted buffer hash before
+launching L5.
 
 ## 2026-05-02 — Cross-depth byte-identity restored after compile-root rematerialization
 
