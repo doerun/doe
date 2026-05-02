@@ -100,6 +100,7 @@ PREFILL_GEMV_FABRIC_WEST_RESERVED = 4
 PREFILL_GEMV_FABRIC_EAST_RESERVED = 3
 PREFILL_GEMV_FABRIC_NORTH_RESERVED = 1
 PREFILL_GEMV_FABRIC_SOUTH_RESERVED = 1
+PREFILL_GEMV_MAX_OUTPUT_PE_ROWS = 4
 DEFAULT_CS_PYTHON_CANDIDATES = (
     "/home/x/cerebras-sdk-2.10.0/cs_python",
     "/home/x/cerebras-sdk/cs_python",
@@ -2142,6 +2143,16 @@ def _prefill_gemv_in_dim_per_pe(source_cols: int) -> int:
     return PREFILL_GEMV_IN_DIM_PER_PE
 
 
+def _prefill_gemv_output_pe_rows(value: int) -> int:
+    output_pe_rows = max(1, int(value))
+    if output_pe_rows > PREFILL_GEMV_MAX_OUTPUT_PE_ROWS:
+        raise ValueError(
+            "prefill_q4k_gemv_output_pe_rows_unsupported:"
+            f"{output_pe_rows}>{PREFILL_GEMV_MAX_OUTPUT_PE_ROWS}"
+        )
+    return output_pe_rows
+
+
 def _prefill_gemv_split_d2h_rows(output_tile_cols: int) -> bool:
     return int(output_tile_cols) >= SDK_D2H_ELEMENT_COUNT_LIMIT
 
@@ -2155,7 +2166,7 @@ def _compile_tiled_q4k_gemv_target(
 ) -> tuple[Path, dict[str, Any]]:
     in_dim_per_pe = _prefill_gemv_in_dim_per_pe(source_cols)
     out_dim_per_pe = PREFILL_GEMV_OUT_DIM_PER_PE
-    output_pe_rows = max(1, int(output_pe_rows))
+    output_pe_rows = _prefill_gemv_output_pe_rows(output_pe_rows)
     width = _ceil_div(source_cols, in_dim_per_pe)
     blocks_per_pe = _prefill_gemv_blocks_per_pe(in_dim_per_pe)
     source_compile_dir = Path(str(launch.get("compileDir") or ""))
@@ -2602,6 +2613,7 @@ def _execute_tiled_q4k_gemv_launch(
         "requestedJobCount": max(1, int(jobs)),
         "shardCount": len(task_shards),
         "splitD2HRows": split_d2h_rows,
+        "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
         "shards": [],
         "steps": [
             {
@@ -2623,6 +2635,7 @@ def _execute_tiled_q4k_gemv_launch(
             "shardIndex": shard_index,
             "stepCount": len(shard_tasks),
             "splitD2HRows": split_d2h_rows,
+            "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "steps": [
                 {
                     "inputs": [task["activationSpec"], task["weightSpec"]],
@@ -2668,6 +2681,7 @@ def _execute_tiled_q4k_gemv_launch(
             "phaseTracePath": str(shard_phase_trace_path),
             "stepCount": len(shard_tasks),
             "splitD2HRows": split_d2h_rows,
+            "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
         })
     write_json(batch_path, batch_payload)
 
@@ -2856,6 +2870,7 @@ def _execute_tiled_q4k_gemv_launch(
                 "pendingStepCount": len(pending_tasks),
                 "reusedOutputCount": len(tasks) - len(pending_tasks),
                 "splitD2HRows": split_d2h_rows,
+                "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
                 "shards": batch_shards,
             },
             "tileDispatches": [
@@ -2890,6 +2905,7 @@ def _execute_tiled_q4k_gemv_launch(
             "pendingStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
             "splitD2HRows": split_d2h_rows,
+            "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "shards": batch_shards,
         },
         "inputBuffers": [
@@ -2927,6 +2943,7 @@ def _execute_tiled_q4k_gemv_launch(
             "blocksPerPe": blocks_per_pe,
             "outputTileCols": output_tile_cols,
             "splitD2HRows": split_d2h_rows,
+            "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "d2hElementCountLimit": SDK_D2H_ELEMENT_COUNT_LIMIT,
             "tileCount": len(results),
             "batchStepCount": len(tasks),

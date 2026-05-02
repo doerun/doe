@@ -513,6 +513,7 @@ def main() -> int:
     spec_path = Path(args.spec)
     receipt_path = Path(args.receipt_out)
     progress_path = Path(args.progress_out) if args.progress_out else None
+    receipt_path.unlink(missing_ok=True)
     spec = load_json(spec_path)
     blockers: list[str] = []
     receipt: dict[str, Any] = {

@@ -101,6 +101,22 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             )
         )
 
+    def test_prefill_gemv_rejects_tall_output_tiles(self) -> None:
+        self.assertEqual(runner._prefill_gemv_output_pe_rows(0), 1)
+        self.assertEqual(
+            runner._prefill_gemv_output_pe_rows(
+                runner.PREFILL_GEMV_MAX_OUTPUT_PE_ROWS
+            ),
+            runner.PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "prefill_q4k_gemv_output_pe_rows_unsupported",
+        ):
+            runner._prefill_gemv_output_pe_rows(
+                runner.PREFILL_GEMV_MAX_OUTPUT_PE_ROWS + 1
+            )
+
     def test_rope_input_transform_pads_logical_matrix_heads(self) -> None:
         import numpy as np
 
