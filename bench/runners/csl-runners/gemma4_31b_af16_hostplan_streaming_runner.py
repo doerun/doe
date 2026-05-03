@@ -251,13 +251,22 @@ def parse_args() -> argparse.Namespace:
         "--session-prefill-q4k-gemv-jobs",
         type=int,
         default=1,
-        help="Parallel batch shards for real-session prefill Q4K GEMV launches.",
+        help="Parallel adapter workers for real-session prefill Q4K GEMV launches.",
     )
     parser.add_argument(
         "--session-prefill-q4k-gemv-output-pe-rows",
         type=int,
         default=1,
         help="Output PE rows per real-session prefill Q4K GEMV launch tile.",
+    )
+    parser.add_argument(
+        "--session-prefill-q4k-gemv-adapter-step-budget",
+        type=int,
+        default=1,
+        help=(
+            "Maximum Q4K GEMV tile steps per SDK adapter process. "
+            "Use 1 to isolate simulator state between tile launches."
+        ),
     )
     parser.add_argument(
         "--session-ple-proj-dispatch-mode",

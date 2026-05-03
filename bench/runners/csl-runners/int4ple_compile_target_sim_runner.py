@@ -81,6 +81,7 @@ DEFAULT_SESSION_LM_HEAD_TILE_WIDTH = 120
 DEFAULT_SESSION_LM_HEAD_TILE_JOBS = 1
 DEFAULT_SESSION_LM_HEAD_BATCH_STEP_BUDGET = 16
 DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS = 1
+DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET = 1
 COMPACT_ATTENTION_Q_ROWS_PER_PE = 1
 EMBED_ROI_TARGETS = frozenset({"embed", "ple_embed"})
 PLE_PROJ_TARGETS = frozenset({"ple_proj"})
@@ -91,9 +92,15 @@ SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
 PREFILL_ATTENTION_TARGETS = frozenset({"attn_small"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
 GATED_PREFILL_TARGETS = frozenset({"gelu_gated_prefill"})
+RESIDUAL_PREFILL_TARGETS = frozenset({"residual_prefill"})
 Q4K_BLOCK_ELEMENTS = 256
 Q4K_BLOCK_BYTES = 144
+PREFILL_GEMV_SOURCE_TILE_BLOCKS = 128
+PREFILL_GEMV_SOURCE_TILE_COLS = (
+    PREFILL_GEMV_SOURCE_TILE_BLOCKS * Q4K_BLOCK_ELEMENTS
+)
 PREFILL_GEMV_IN_DIM_PER_PE = 512
+PREFILL_GEMV_HOST_REDUCE_MIN_SOURCE_COLS = 2 * PREFILL_GEMV_IN_DIM_PER_PE
 PREFILL_GEMV_WIDE_SOURCE_COLS = 8192
 PREFILL_GEMV_WIDE_IN_DIM_PER_PE = 256
 PREFILL_GEMV_OUT_DIM_PER_PE = 112
@@ -183,13 +190,22 @@ def parse_args() -> argparse.Namespace:
         "--session-prefill-q4k-gemv-jobs",
         type=int,
         default=1,
-        help="Parallel batch shards for session prefill Q4K GEMV launches.",
+        help="Parallel adapter workers for session prefill Q4K GEMV launches.",
     )
     parser.add_argument(
         "--session-prefill-q4k-gemv-output-pe-rows",
         type=int,
         default=DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
         help="Output PE rows per session prefill Q4K GEMV launch tile.",
+    )
+    parser.add_argument(
+        "--session-prefill-q4k-gemv-adapter-step-budget",
+        type=int,
+        default=DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET,
+        help=(
+            "Maximum Q4K GEMV tile steps per SDK adapter process. "
+            "Use 1 to isolate simulator state between tile launches."
+        ),
     )
     parser.add_argument(
         "--session-ple-proj-dispatch-mode",
@@ -2154,8 +2170,100 @@ def _prefill_gemv_output_pe_rows(value: int) -> int:
     return output_pe_rows
 
 
-def _prefill_gemv_split_d2h_rows(output_tile_cols: int) -> bool:
+def _prefill_gemv_split_d2h_rows(
+    *,
+    output_tile_cols: int,
+    output_region_height: int,
+) -> bool:
+    del output_region_height
     return int(output_tile_cols) >= SDK_D2H_ELEMENT_COUNT_LIMIT
+
+
+def _prefill_gemv_source_tiles(source_cols: int) -> list[dict[str, int]]:
+    source_cols = int(source_cols)
+    if source_cols <= 0:
+        raise ValueError("prefill_q4k_gemv_source_cols_missing")
+    source_blocks = _ceil_div(source_cols, Q4K_BLOCK_ELEMENTS)
+    compile_source_cols = max(
+        source_cols,
+        PREFILL_GEMV_HOST_REDUCE_MIN_SOURCE_COLS,
+    )
+    compile_block_count = _ceil_div(compile_source_cols, Q4K_BLOCK_ELEMENTS)
+    if source_cols <= PREFILL_GEMV_SOURCE_TILE_COLS:
+        return [
+            {
+                "sourceTileIndex": 0,
+                "sourceColStart": 0,
+                "sourceCols": source_cols,
+                "sourceBlockStart": 0,
+                "sourceBlockCount": source_blocks,
+                "compileSourceCols": compile_source_cols,
+                "compileBlockCount": compile_block_count,
+            }
+        ]
+
+    tiles: list[dict[str, int]] = []
+    for source_block_start in range(
+        0,
+        source_blocks,
+        PREFILL_GEMV_SOURCE_TILE_BLOCKS,
+    ):
+        source_block_count = min(
+            PREFILL_GEMV_SOURCE_TILE_BLOCKS,
+            source_blocks - source_block_start,
+        )
+        source_col_start = source_block_start * Q4K_BLOCK_ELEMENTS
+        source_tile_cols = min(
+            source_cols - source_col_start,
+            source_block_count * Q4K_BLOCK_ELEMENTS,
+        )
+        compile_source_cols = max(
+            PREFILL_GEMV_SOURCE_TILE_COLS,
+            PREFILL_GEMV_HOST_REDUCE_MIN_SOURCE_COLS,
+        )
+        tiles.append({
+            "sourceTileIndex": len(tiles),
+            "sourceColStart": source_col_start,
+            "sourceCols": source_tile_cols,
+            "sourceBlockStart": source_block_start,
+            "sourceBlockCount": source_block_count,
+            "compileSourceCols": compile_source_cols,
+            "compileBlockCount": _ceil_div(
+                compile_source_cols,
+                Q4K_BLOCK_ELEMENTS,
+            ),
+        })
+    return tiles
+
+
+def _prefill_gemv_weight_rows_source_tile(
+    *,
+    weight_rows: np.ndarray,
+    source_block_start: int,
+    source_block_count: int,
+    compile_block_count: int,
+) -> np.ndarray:
+    source_block_start = int(source_block_start)
+    source_block_count = int(source_block_count)
+    compile_block_count = int(compile_block_count)
+    if min(source_block_count, compile_block_count) <= 0:
+        raise ValueError("prefill_q4k_gemv_source_tile_blocks_missing")
+    if source_block_count > compile_block_count:
+        raise ValueError(
+            "prefill_q4k_gemv_source_tile_block_overflow:"
+            f"{source_block_count}>{compile_block_count}"
+        )
+    byte_start = source_block_start * Q4K_BLOCK_BYTES
+    byte_count = source_block_count * Q4K_BLOCK_BYTES
+    compile_byte_count = compile_block_count * Q4K_BLOCK_BYTES
+    if weight_rows.shape[1] < byte_start + byte_count:
+        raise ValueError(
+            "prefill_q4k_gemv_source_tile_weight_short:"
+            f"{weight_rows.shape[1]}<{byte_start + byte_count}"
+        )
+    tile = np.zeros((weight_rows.shape[0], compile_byte_count), dtype=np.uint8)
+    tile[:, :byte_count] = weight_rows[:, byte_start : byte_start + byte_count]
+    return tile
 
 
 def _compile_tiled_q4k_gemv_target(
@@ -2188,7 +2296,7 @@ def _compile_tiled_q4k_gemv_target(
         / "tiled-q4k-gemv"
         / (
             f"compiled_w{width:04d}_h{output_pe_rows:04d}"
-            f"_o{out_dim_per_pe:04d}_i{in_dim_per_pe:04d}"
+            f"_o{out_dim_per_pe:04d}_i{in_dim_per_pe:04d}_dr1"
         )
     )
     params = {
@@ -2210,6 +2318,7 @@ def _compile_tiled_q4k_gemv_target(
         ),
         "fabricOffsetX": PREFILL_GEMV_FABRIC_WEST_RESERVED,
         "fabricOffsetY": PREFILL_GEMV_FABRIC_NORTH_RESERVED,
+        "hostReduce": False,
     }
     if (output_dir / "out.json").is_file() and (output_dir / "bin").is_dir():
         return output_dir, {**params, "reused": True}
@@ -2228,7 +2337,8 @@ def _compile_tiled_q4k_gemv_target(
             f"out_dim:{output_pe_rows * out_dim_per_pe},"
             f"out_dim_per_pe:{out_dim_per_pe},"
             f"in_dim_per_pe:{in_dim_per_pe},"
-            f"num_blocks_per_row:{blocks_per_pe}"
+            f"num_blocks_per_row:{blocks_per_pe},"
+            "host_reduce:0"
         ),
         "-o",
         str(output_dir),
@@ -2386,6 +2496,7 @@ def _prefill_gemv_tile_output_status(
     path: Path,
     *,
     expected_elements: int,
+    expected_dtype: np.dtype = np.dtype(np.float16),
 ) -> tuple[bool, str]:
     if not path.is_file() or path.stat().st_size <= 0:
         return False, "missing"
@@ -2393,10 +2504,10 @@ def _prefill_gemv_tile_output_status(
         loaded = np.load(path, allow_pickle=False).ravel()
     except (OSError, ValueError) as exc:
         return False, f"unreadable:{type(exc).__name__}"
-    if loaded.dtype != np.dtype(np.float16):
+    if loaded.dtype != expected_dtype:
         return False, f"dtype:{loaded.dtype}"
-    if loaded.size < expected_elements:
-        return False, f"short:{loaded.size}<{expected_elements}"
+    if loaded.size != expected_elements:
+        return False, f"size:{loaded.size}!={expected_elements}"
     return True, "ready"
 
 
@@ -2404,11 +2515,12 @@ def _prefill_gemv_task_shards(
     tasks: list[dict[str, Any]],
     *,
     jobs: int,
+    adapter_step_budget: int,
 ) -> list[list[dict[str, Any]]]:
     if not tasks:
         return []
-    shard_count = min(max(1, int(jobs)), len(tasks))
-    shard_size = _ceil_div(len(tasks), shard_count)
+    del jobs
+    shard_size = max(1, int(adapter_step_budget))
     return [
         tasks[start : start + shard_size]
         for start in range(0, len(tasks), shard_size)
@@ -2425,6 +2537,7 @@ def _execute_tiled_q4k_gemv_launch(
     timeout_seconds: int | None,
     jobs: int,
     output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
+    adapter_step_budget: int = DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
     a_binding = _binding_for_any_symbol(
@@ -2470,10 +2583,14 @@ def _execute_tiled_q4k_gemv_launch(
     rows = int(c_output.get("rows") or (activation.size // source_cols))
     if rows <= 0 or rows > activation.size // source_cols:
         raise ValueError("prefill_q4k_gemv_activation_rows_missing")
+    source_tiles = _prefill_gemv_source_tiles(source_cols)
+    compile_source_cols = max(
+        int(tile["compileSourceCols"]) for tile in source_tiles
+    )
     compile_dir, compile_identity = _compile_tiled_q4k_gemv_target(
         runtime_dir=runtime_dir,
         launch=launch,
-        source_cols=source_cols,
+        source_cols=compile_source_cols,
         output_pe_rows=output_pe_rows,
     )
     width = int(compile_identity["width"])
@@ -2482,14 +2599,20 @@ def _execute_tiled_q4k_gemv_launch(
     out_dim_per_pe = int(compile_identity["outDimPerPe"])
     blocks_per_pe = int(compile_identity["numBlocksPerRow"])
     output_tile_cols = height * out_dim_per_pe
-    split_d2h_rows = _prefill_gemv_split_d2h_rows(output_tile_cols)
+    output_region_x = max(0, width - 1)
+    output_region_width = 1
+    output_read_elements = output_region_width * output_tile_cols
+    split_d2h_rows = _prefill_gemv_split_d2h_rows(
+        output_tile_cols=output_read_elements,
+        output_region_height=height,
+    )
     weight_rows = _load_q4k_weight_rows(
         materialization=b_materialization,
         source_rows=source_rows,
         source_cols=source_cols,
     )
     launch_dir = runtime_dir / "tiled-q4k-gemv" / f"launch-{launch_index:04d}"
-    output_matrix = np.zeros((rows, output_cols), dtype=np.float16)
+    output_matrix = np.zeros((rows, output_cols), dtype=np.float32)
     output_path = _buffer_path(runtime_dir, c_buffer)
     append_progress(
         progress_path,
@@ -2507,90 +2630,117 @@ def _execute_tiled_q4k_gemv_launch(
         row = activation[
             row_index * source_cols : (row_index + 1) * source_cols
         ]
-        for output_start in range(0, output_cols, output_tile_cols):
-            tile_dir = (
-                launch_dir
-                / f"row-{row_index:04d}"
-                / f"out-{output_start:05d}"
-            )
-            act_path = tile_dir / "in" / "activation.npy"
-            weight_path = tile_dir / "in" / "weight.npy"
-            tile_output_path = tile_dir / "out" / "output.npy"
-            phase_trace_path = tile_dir / "phase-trace.log"
-            act_tile = _materialize_prefill_gemv_activation_tile(
-                activation_row=row,
-                source_cols=source_cols,
-                width=width,
-                height=height,
-                in_dim_per_pe=in_dim_per_pe,
-            )
-            weight_tile = _materialize_prefill_gemv_weight_tile(
-                weight_rows=weight_rows,
-                source_cols=source_cols,
-                output_start=output_start,
-                output_cols=output_cols,
-                width=width,
-                height=height,
-                out_dim_per_pe=out_dim_per_pe,
-                blocks_per_pe=blocks_per_pe,
-            )
-            act_path.parent.mkdir(parents=True, exist_ok=True)
-            weight_path.parent.mkdir(parents=True, exist_ok=True)
-            np.save(act_path, act_tile)
-            np.save(weight_path, weight_tile)
-            activation_spec = f"activation:{act_path}:f16:{in_dim_per_pe}"
-            weight_spec = (
-                f"weight:{weight_path}:u8:"
-                f"{out_dim_per_pe * blocks_per_pe * Q4K_BLOCK_BYTES}"
-            )
-            output_spec = (
-                f"output:{tile_output_path}:f16:{out_dim_per_pe}:"
-                f"{width - 1},0,1,{height}"
-            )
-            command = [
-                cs_python_executable(),
-                str(CHAIN_STEP_ADAPTER),
-                "--compile-dir",
-                str(compile_dir),
-                "--width",
-                str(width),
-                "--height",
-                str(height),
-                "--chunk-size",
-                str(in_dim_per_pe),
-                "--input",
-                activation_spec,
-                "--input",
-                weight_spec,
-                "--output",
-                output_spec,
-                "--phase-trace",
-                str(phase_trace_path),
+        for source_tile in source_tiles:
+            source_tile_index = int(source_tile["sourceTileIndex"])
+            source_col_start = int(source_tile["sourceColStart"])
+            source_tile_cols = int(source_tile["sourceCols"])
+            source_block_start = int(source_tile["sourceBlockStart"])
+            source_block_count = int(source_tile["sourceBlockCount"])
+            compile_tile_cols = int(source_tile["compileSourceCols"])
+            compile_block_count = int(source_tile["compileBlockCount"])
+            activation_tile_row = np.zeros(compile_tile_cols, dtype=np.float16)
+            activation_tile_row[:source_tile_cols] = row[
+                source_col_start : source_col_start + source_tile_cols
             ]
-            if cmaddr:
-                command.extend(["--cmaddr", cmaddr])
-            output_reusable, reuse_status = _prefill_gemv_tile_output_status(
-                tile_output_path,
-                expected_elements=output_tile_cols,
+            weight_rows_tile = _prefill_gemv_weight_rows_source_tile(
+                weight_rows=weight_rows,
+                source_block_start=source_block_start,
+                source_block_count=source_block_count,
+                compile_block_count=compile_block_count,
             )
-            if not output_reusable:
-                tile_output_path.unlink(missing_ok=True)
-            tasks.append({
-                "rowIndex": row_index,
-                "outputStart": output_start,
-                "activationPath": act_path,
-                "weightPath": weight_path,
-                "outputPath": tile_output_path,
-                "phaseTracePath": phase_trace_path,
-                "activationSha256": sha256_file(act_path),
-                "weightSha256": sha256_file(weight_path),
-                "activationSpec": activation_spec,
-                "weightSpec": weight_spec,
-                "outputSpec": output_spec,
-                "command": command,
-                "reusedOutput": output_reusable,
-                "reuseStatus": reuse_status,
-            })
+            for output_start in range(0, output_cols, output_tile_cols):
+                tile_dir = (
+                    launch_dir
+                    / f"row-{row_index:04d}"
+                    / f"src-{source_col_start:05d}"
+                    / f"out-{output_start:05d}"
+                )
+                act_path = tile_dir / "in" / "activation.npy"
+                weight_path = tile_dir / "in" / "weight.npy"
+                tile_output_path = tile_dir / "out" / "output.npy"
+                phase_trace_path = tile_dir / "phase-trace.log"
+                act_tile = _materialize_prefill_gemv_activation_tile(
+                    activation_row=activation_tile_row,
+                    source_cols=compile_tile_cols,
+                    width=width,
+                    height=height,
+                    in_dim_per_pe=in_dim_per_pe,
+                )
+                weight_tile = _materialize_prefill_gemv_weight_tile(
+                    weight_rows=weight_rows_tile,
+                    source_cols=compile_tile_cols,
+                    output_start=output_start,
+                    output_cols=output_cols,
+                    width=width,
+                    height=height,
+                    out_dim_per_pe=out_dim_per_pe,
+                    blocks_per_pe=blocks_per_pe,
+                )
+                act_path.parent.mkdir(parents=True, exist_ok=True)
+                weight_path.parent.mkdir(parents=True, exist_ok=True)
+                np.save(act_path, act_tile)
+                np.save(weight_path, weight_tile)
+                activation_spec = f"activation:{act_path}:f16:{in_dim_per_pe}"
+                weight_spec = (
+                    f"weight:{weight_path}:u8:"
+                    f"{out_dim_per_pe * blocks_per_pe * Q4K_BLOCK_BYTES}"
+                )
+                output_spec = (
+                    f"output:{tile_output_path}:f16:{out_dim_per_pe}:"
+                    f"{output_region_x},0,{output_region_width},{height}"
+                )
+                command = [
+                    cs_python_executable(),
+                    str(CHAIN_STEP_ADAPTER),
+                    "--compile-dir",
+                    str(compile_dir),
+                    "--width",
+                    str(width),
+                    "--height",
+                    str(height),
+                    "--chunk-size",
+                    str(in_dim_per_pe),
+                    "--input",
+                    activation_spec,
+                    "--input",
+                    weight_spec,
+                    "--output",
+                    output_spec,
+                    "--phase-trace",
+                    str(phase_trace_path),
+                ]
+                if cmaddr:
+                    command.extend(["--cmaddr", cmaddr])
+                output_reusable, reuse_status = _prefill_gemv_tile_output_status(
+                    tile_output_path,
+                    expected_elements=output_read_elements,
+                    expected_dtype=np.dtype(np.float16),
+                )
+                if not output_reusable:
+                    tile_output_path.unlink(missing_ok=True)
+                tasks.append({
+                    "rowIndex": row_index,
+                    "outputStart": output_start,
+                    "sourceTileIndex": source_tile_index,
+                    "sourceColStart": source_col_start,
+                    "sourceCols": source_tile_cols,
+                    "sourceBlockStart": source_block_start,
+                    "sourceBlockCount": source_block_count,
+                    "compileSourceCols": compile_tile_cols,
+                    "compileBlockCount": compile_block_count,
+                    "activationPath": act_path,
+                    "weightPath": weight_path,
+                    "outputPath": tile_output_path,
+                    "phaseTracePath": phase_trace_path,
+                    "activationSha256": sha256_file(act_path),
+                    "weightSha256": sha256_file(weight_path),
+                    "activationSpec": activation_spec,
+                    "weightSpec": weight_spec,
+                    "outputSpec": output_spec,
+                    "command": command,
+                    "reusedOutput": output_reusable,
+                    "reuseStatus": reuse_status,
+                })
 
     if not tasks:
         raise ValueError("prefill_q4k_gemv_tile_tasks_empty")
@@ -2598,6 +2748,7 @@ def _execute_tiled_q4k_gemv_launch(
     task_shards = _prefill_gemv_task_shards(
         pending_tasks,
         jobs=max(1, int(jobs)),
+        adapter_step_budget=max(1, int(adapter_step_budget)),
     )
     for shard_index, shard_tasks in enumerate(task_shards):
         for batch_step_index, task in enumerate(shard_tasks):
@@ -2612,6 +2763,7 @@ def _execute_tiled_q4k_gemv_launch(
         "reusedOutputCount": len(tasks) - len(pending_tasks),
         "pendingStepCount": len(pending_tasks),
         "requestedJobCount": max(1, int(jobs)),
+        "adapterStepBudget": max(1, int(adapter_step_budget)),
         "shardCount": len(task_shards),
         "splitD2HRows": split_d2h_rows,
         "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
@@ -2636,6 +2788,7 @@ def _execute_tiled_q4k_gemv_launch(
             "shardIndex": shard_index,
             "stepCount": len(shard_tasks),
             "splitD2HRows": split_d2h_rows,
+            "adapterStepBudget": max(1, int(adapter_step_budget)),
             "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "steps": [
                 {
@@ -2682,16 +2835,16 @@ def _execute_tiled_q4k_gemv_launch(
             "phaseTracePath": str(shard_phase_trace_path),
             "stepCount": len(shard_tasks),
             "splitD2HRows": split_d2h_rows,
+            "adapterStepBudget": max(1, int(adapter_step_budget)),
             "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
         })
     write_json(batch_path, batch_payload)
 
     def run_batch_shard(shard: dict[str, Any]) -> dict[str, Any]:
-        step_count = max(1, int(shard.get("stepCount") or 0))
         shard_timeout = (
             None
             if timeout_seconds is None or timeout_seconds <= 0
-            else max(1, int(timeout_seconds)) * step_count
+            else max(1, int(timeout_seconds))
         )
         (
             exit_code,
@@ -2716,11 +2869,14 @@ def _execute_tiled_q4k_gemv_launch(
 
     shard_results: dict[int, dict[str, Any]] = {}
     if shard_specs:
+        worker_count = min(max(1, int(jobs)), len(shard_specs))
         with concurrent.futures.ThreadPoolExecutor(
-            max_workers=len(shard_specs)
+            max_workers=worker_count
         ) as pool:
             for shard_result in pool.map(run_batch_shard, shard_specs):
                 shard_results[int(shard_result["shardIndex"])] = shard_result
+    else:
+        worker_count = 0
 
     phase_lines_by_shard: dict[int, list[str]] = {}
     for shard_index, shard_result in shard_results.items():
@@ -2757,7 +2913,8 @@ def _execute_tiled_q4k_gemv_launch(
         }
         output_ready, output_status = _prefill_gemv_tile_output_status(
             Path(str(task["outputPath"])),
-            expected_elements=output_tile_cols,
+            expected_elements=output_read_elements,
+            expected_dtype=np.dtype(np.float16),
         )
         reused_output = bool(task.get("reusedOutput")) and output_ready
         results.append({
@@ -2780,7 +2937,13 @@ def _execute_tiled_q4k_gemv_launch(
             "stderrTail": tail_lines(shard_result.get("stderr"), 3),
         })
 
-    results.sort(key=lambda item: (int(item["rowIndex"]), int(item["outputStart"])))
+    results.sort(
+        key=lambda item: (
+            int(item["rowIndex"]),
+            int(item["outputStart"]),
+            int(item["sourceTileIndex"]),
+        )
+    )
     batch_exit_code = next(
         (
             int(result.get("exitCode") or 0)
@@ -2819,34 +2982,44 @@ def _execute_tiled_q4k_gemv_launch(
     for result in results:
         output_start = int(result["outputStart"])
         row_index = int(result["rowIndex"])
+        source_tile_index = int(result["sourceTileIndex"])
         if bool(result["timedOut"]):
             blockers.append(
-                f"prefill_q4k_gemv_tile_timeout:{row_index}:{output_start}"
+                "prefill_q4k_gemv_tile_timeout:"
+                f"{row_index}:{output_start}:{source_tile_index}"
             )
             continue
         if int(result["exitCode"]) != 0:
             blockers.append(
                 "prefill_q4k_gemv_tile_exit_code_"
-                f"{int(result['exitCode'])}:{row_index}:{output_start}"
+                f"{int(result['exitCode'])}:{row_index}:{output_start}:"
+                f"{source_tile_index}"
             )
             continue
         if str(result.get("outputStatus") or "") != "ready":
             blockers.append(
                 "prefill_q4k_gemv_tile_output_invalid:"
-                f"{result.get('outputStatus')}:{row_index}:{output_start}"
+                f"{result.get('outputStatus')}:{row_index}:{output_start}:"
+                f"{source_tile_index}"
             )
             continue
         if int((result.get("output") or {}).get("totalBytes") or 0) <= 0:
             blockers.append(
-                f"prefill_q4k_gemv_tile_output_empty:{row_index}:{output_start}"
+                "prefill_q4k_gemv_tile_output_empty:"
+                f"{row_index}:{output_start}:{source_tile_index}"
             )
             continue
         tile_values = np.load(
             Path(str((result.get("output") or {}).get("path") or "")),
             allow_pickle=False,
-        ).astype(np.float16, copy=False).reshape(-1)
+        ).astype(np.float32, copy=False).reshape(-1)
+        tile_values = tile_values[:output_read_elements].reshape(
+            height,
+            output_region_width,
+            out_dim_per_pe,
+        ).sum(axis=1).reshape(-1)
         count = min(output_tile_cols, output_cols - output_start)
-        output_matrix[row_index, output_start : output_start + count] = (
+        output_matrix[row_index, output_start : output_start + count] += (
             tile_values[:count]
         )
     if blockers:
@@ -2858,8 +3031,14 @@ def _execute_tiled_q4k_gemv_launch(
             "launchIndex": launch_index,
             "targetName": launch.get("targetName"),
             "kernelPattern": launch.get("kernelPattern"),
-            "dispatchMode": "tiled_q4k_gemv_batched_runtime",
+            "dispatchMode": "tiled_q4k_gemv_device_reduce_runtime",
             "compileIdentity": compile_identity,
+            "sourceTiling": {
+                "sourceTileCols": PREFILL_GEMV_SOURCE_TILE_COLS,
+                "sourceTileBlocks": PREFILL_GEMV_SOURCE_TILE_BLOCKS,
+                "sourceTileCount": len(source_tiles),
+                "tiles": source_tiles,
+            },
             "batchRuntime": {
                 "batchPath": str(batch_path),
                 "exitCode": batch_exit_code,
@@ -2867,6 +3046,8 @@ def _execute_tiled_q4k_gemv_launch(
                 "wallclockNs": batch_elapsed_ns,
                 "adapterWallclockNsSum": batch_wallclock_ns_sum,
                 "requestedJobCount": max(1, int(jobs)),
+                "workerCount": worker_count,
+                "adapterStepBudget": max(1, int(adapter_step_budget)),
                 "shardCount": len(task_shards),
                 "pendingStepCount": len(pending_tasks),
                 "reusedOutputCount": len(tasks) - len(pending_tasks),
@@ -2883,8 +3064,9 @@ def _execute_tiled_q4k_gemv_launch(
         raise ValueError("; ".join(blockers))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    np.save(output_path, output_matrix.reshape(-1))
-    digest = hashlib.sha256(output_matrix.tobytes(order="C")).hexdigest()
+    output_values = output_matrix.astype(np.float16)
+    np.save(output_path, output_values.reshape(-1))
+    digest = hashlib.sha256(output_values.tobytes(order="C")).hexdigest()
     receipt = {
         "schemaVersion": 1,
         "artifactKind": "int4ple_tiled_q4k_gemv_launch_receipt",
@@ -2893,16 +3075,24 @@ def _execute_tiled_q4k_gemv_launch(
         "launchIndex": launch_index,
         "targetName": launch.get("targetName"),
         "kernelPattern": launch.get("kernelPattern"),
-        "dispatchMode": "tiled_q4k_gemv_batched_runtime",
+            "dispatchMode": "tiled_q4k_gemv_device_reduce_runtime",
         "compileIdentity": compile_identity,
+        "sourceTiling": {
+            "sourceTileCols": PREFILL_GEMV_SOURCE_TILE_COLS,
+            "sourceTileBlocks": PREFILL_GEMV_SOURCE_TILE_BLOCKS,
+            "sourceTileCount": len(source_tiles),
+            "tiles": source_tiles,
+        },
         "batchRuntime": {
             "batchPath": str(batch_path),
             "exitCode": batch_exit_code,
             "timedOut": batch_timed_out,
             "wallclockNs": batch_elapsed_ns,
             "adapterWallclockNsSum": batch_wallclock_ns_sum,
-            "requestedJobCount": max(1, int(jobs)),
-            "shardCount": len(task_shards),
+                "requestedJobCount": max(1, int(jobs)),
+                "workerCount": worker_count,
+                "adapterStepBudget": max(1, int(adapter_step_budget)),
+                "shardCount": len(task_shards),
             "pendingStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
             "splitD2HRows": split_d2h_rows,
@@ -2936,13 +3126,20 @@ def _execute_tiled_q4k_gemv_launch(
             "kind": "prefill_row_q4k_gemv_output_tiles",
             "rows": rows,
             "sourceCols": source_cols,
+            "sourceTileCount": len(source_tiles),
+            "sourceTileCols": PREFILL_GEMV_SOURCE_TILE_COLS,
             "outputCols": output_cols,
             "width": width,
             "height": height,
+            "outputRegionX": output_region_x,
+            "outputRegionWidth": output_region_width,
             "inDimPerPe": in_dim_per_pe,
             "outDimPerPe": out_dim_per_pe,
             "blocksPerPe": blocks_per_pe,
             "outputTileCols": output_tile_cols,
+            "outputReadElements": output_read_elements,
+            "outputReadDtype": "f16",
+            "hostReduce": False,
             "splitD2HRows": split_d2h_rows,
             "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "d2hElementCountLimit": SDK_D2H_ELEMENT_COUNT_LIMIT,
@@ -2951,7 +3148,7 @@ def _execute_tiled_q4k_gemv_launch(
             "pendingBatchStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
             "covered": len(results)
-            == rows * _ceil_div(output_cols, output_tile_cols),
+            == rows * _ceil_div(output_cols, output_tile_cols) * len(source_tiles),
         },
         "tileDispatches": [
             _prefill_gemv_tile_receipt_summary(result)
@@ -2983,6 +3180,13 @@ def _prefill_gemv_tile_receipt_summary(result: dict[str, Any]) -> dict[str, Any]
     return {
         "rowIndex": int(result.get("rowIndex") or 0),
         "outputStart": int(result.get("outputStart") or 0),
+        "sourceTileIndex": int(result.get("sourceTileIndex") or 0),
+        "sourceColStart": int(result.get("sourceColStart") or 0),
+        "sourceCols": int(result.get("sourceCols") or 0),
+        "sourceBlockStart": int(result.get("sourceBlockStart") or 0),
+        "sourceBlockCount": int(result.get("sourceBlockCount") or 0),
+        "compileSourceCols": int(result.get("compileSourceCols") or 0),
+        "compileBlockCount": int(result.get("compileBlockCount") or 0),
         "activation": {
             "path": str(result.get("activationPath") or ""),
             "sha256": str(result.get("activationSha256") or ""),
@@ -4160,6 +4364,209 @@ def _is_compact_gated_prefill_launch(
     return rows > 0 and width > rows
 
 
+def _is_residual_prefill_roi_launch(
+    launch: dict[str, Any],
+    staged_outputs: list[dict[str, Any]],
+) -> bool:
+    target_name = str(launch.get("targetName") or "")
+    if target_name not in RESIDUAL_PREFILL_TARGETS:
+        return False
+    if not staged_outputs or not isinstance(staged_outputs[0], dict):
+        return False
+    transform = staged_outputs[0].get("outputTransform") or {}
+    if str(transform.get("kind") or "") != "pe_rows_to_logical_matrix":
+        return False
+    rows = int(transform.get("rows") or 0)
+    width = int((launch.get("targetGeometry") or {}).get("width") or 0)
+    return rows > 0 and width > rows
+
+
+def _execute_residual_prefill_roi_launch(
+    *,
+    runtime_dir: Path,
+    launch: dict[str, Any],
+    staged_inputs: list[dict[str, Any]],
+    staged_outputs: list[dict[str, Any]],
+    progress_path: Path,
+    cmaddr: str | None,
+    timeout_seconds: int | None,
+) -> dict[str, Any]:
+    launch_index = int(launch.get("launchIndex") or 0)
+    if len(staged_inputs) < 2 or not staged_outputs:
+        raise ValueError("residual_prefill_roi_bindings_missing")
+    output = staged_outputs[0]
+    transform = output.get("outputTransform") or {}
+    rows = int(transform.get("rows") or 0)
+    cols = int(
+        transform.get("cols")
+        or staged_inputs[0].get("elementsPerPe")
+        or 0
+    )
+    if rows <= 0 or cols <= 0:
+        raise ValueError("residual_prefill_roi_shape_missing")
+    compile_dir = Path(str(launch.get("compileDir") or ""))
+    row_compile_dir = compile_dir.parent / "residual_decode"
+    if not row_compile_dir.is_dir():
+        raise ValueError(
+            f"residual_prefill_roi_compile_dir_missing:{row_compile_dir}"
+        )
+
+    roi_dir = runtime_dir / "residual-prefill-roi" / f"launch-{launch_index:04d}"
+    roi_dir.mkdir(parents=True, exist_ok=True)
+    input_matrix = np.load(
+        Path(str(staged_inputs[0]["path"])),
+        allow_pickle=False,
+    ).ravel()
+    residual_matrix = np.load(
+        Path(str(staged_inputs[1]["path"])),
+        allow_pickle=False,
+    ).ravel()
+    expected = rows * cols
+    if input_matrix.size < expected:
+        raise ValueError(
+            "residual_prefill_roi_input_too_small:"
+            f"{input_matrix.size}<{expected}"
+        )
+    if residual_matrix.size < expected:
+        raise ValueError(
+            "residual_prefill_roi_residual_too_small:"
+            f"{residual_matrix.size}<{expected}"
+        )
+
+    row_outputs: list[Path] = [
+        roi_dir / f"row-{row:04d}-output.npy" for row in range(rows)
+    ]
+    row_receipts: list[dict[str, Any]] = []
+    append_progress(
+        progress_path,
+        "residual_prefill_roi_group_start",
+        launchIndex=launch_index,
+        rows=rows,
+        cols=cols,
+        compileDir=str(row_compile_dir),
+    )
+    for row in range(rows):
+        row_input_path = roi_dir / f"row-{row:04d}-input.npy"
+        row_residual_path = roi_dir / f"row-{row:04d}-residual.npy"
+        np.save(
+            row_input_path,
+            input_matrix[row * cols : (row + 1) * cols].astype(
+                np.float16,
+                copy=False,
+            ),
+        )
+        np.save(
+            row_residual_path,
+            residual_matrix[row * cols : (row + 1) * cols].astype(
+                np.float16,
+                copy=False,
+            ),
+        )
+        row_transform = dict(transform)
+        row_transform["rows"] = 1
+        row_spec = {
+            "compileDir": str(row_compile_dir),
+            "launchFunction": launch.get("launchFunction"),
+            "launchIndex": launch_index,
+            "cmaddr": cmaddr or "",
+            "targetGeometry": {
+                "width": 1,
+                "height": 1,
+                "peCount": 1,
+                "runtimePeCount": 1,
+            },
+            "inputs": [
+                {
+                    **staged_inputs[0],
+                    "path": str(row_input_path),
+                    "elementsPerPe": cols,
+                },
+                {
+                    **staged_inputs[1],
+                    "path": str(row_residual_path),
+                    "elementsPerPe": cols,
+                },
+            ],
+            "outputs": [
+                {
+                    **output,
+                    "path": str(row_outputs[row]),
+                    "elementsPerPe": cols,
+                    "outputTransform": row_transform,
+                }
+            ],
+        }
+        spec_path = roi_dir / f"row-{row:04d}-spec.json"
+        receipt_path = roi_dir / f"row-{row:04d}-receipt.json"
+        write_json(spec_path, row_spec)
+        command = [
+            cs_python_executable(),
+            str(LAUNCH_STEP_ADAPTER),
+            "--spec",
+            str(spec_path),
+            "--receipt-out",
+            str(receipt_path),
+            "--progress-out",
+            str(progress_path),
+        ]
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=(
+                timeout_seconds
+                if timeout_seconds and timeout_seconds > 0
+                else None
+            ),
+        )
+        receipt = load_json(receipt_path) if receipt_path.is_file() else {}
+        if completed.returncode != 0 or receipt.get("status") != "succeeded":
+            raise ValueError(
+                "; ".join(
+                    receipt.get("blockers")
+                    or ["residual_prefill_roi_row_failed"]
+                )
+            )
+        row_receipts.append(receipt)
+
+    merged = np.concatenate(
+        [np.load(path, allow_pickle=False).ravel()[:cols] for path in row_outputs]
+    ).astype(np.float16, copy=False)
+    output_path = Path(str(output["path"]))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(output_path, merged)
+    digest = hashlib.sha256(merged.tobytes(order="C")).hexdigest()
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": "int4ple_residual_prefill_roi_launch_receipt",
+        "status": "succeeded",
+        "blockers": [],
+        "launchIndex": launch_index,
+        "compileDir": str(row_compile_dir),
+        "sourceCompileDir": str(compile_dir),
+        "rowReceiptCount": len(row_receipts),
+        "inputBuffers": _staged_input_buffer_records(staged_inputs),
+        "output": {
+            "buffer": output.get("buffer"),
+            "path": str(output_path),
+            "dtype": "f16",
+            "shape": [rows, cols],
+            "sha256": digest,
+            "sha256Kind": "array_tobytes_c_order",
+        },
+    }
+    write_json(_launch_receipt_path(runtime_dir, launch_index), receipt)
+    append_progress(
+        progress_path,
+        "residual_prefill_roi_group_complete",
+        launchIndex=launch_index,
+        rows=rows,
+        cols=cols,
+    )
+    return receipt
+
+
 def _execute_compact_gated_prefill_launch(
     *,
     runtime_dir: Path,
@@ -4429,6 +4836,9 @@ def execute_hostplan_runtime(
     session_prefill_q4k_gemv_output_pe_rows: int = (
         DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS
     ),
+    session_prefill_q4k_gemv_adapter_step_budget: int = (
+        DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET
+    ),
     session_ple_proj_dispatch_mode: str = "monolithic_summa",
     session_attention_prefill_dispatch_mode: str = "hostplan_static",
     session_lm_head_batch_runtime: bool = False,
@@ -4619,6 +5029,10 @@ def execute_hostplan_runtime(
                         1,
                         int(session_prefill_q4k_gemv_output_pe_rows),
                     ),
+                    adapter_step_budget=max(
+                        1,
+                        int(session_prefill_q4k_gemv_adapter_step_budget),
+                    ),
                 )
                 executed_launches.append(launch_receipt)
                 output = launch_receipt.get("output") or {}
@@ -4631,7 +5045,7 @@ def execute_hostplan_runtime(
                     launchIndex=launch_index,
                     target=launch.get("targetName"),
                     status="succeeded",
-                    dispatchMode="tiled_q4k_gemv_batched_runtime",
+                    dispatchMode="tiled_q4k_gemv_device_reduce_runtime",
                 )
                 if checkpoint_dir is not None:
                     _persist_launch_checkpoint(
@@ -4779,6 +5193,42 @@ def execute_hostplan_runtime(
                     target=launch.get("targetName"),
                     status="succeeded",
                     dispatchMode="rmsnorm_roi_parallel",
+                )
+                if checkpoint_dir is not None:
+                    _persist_launch_checkpoint(
+                        checkpoint_dir=checkpoint_dir,
+                        launch_index=launch_index,
+                        launch=launch,
+                        launch_receipt=launch_receipt,
+                        staged_outputs=staged_outputs,
+                        launch_identity=_compute_launch_identity(launch, {}),
+                        started_at_unix=launch_started_at,
+                    )
+                if stop_after_launch >= 0 and launch_index >= stop_after_launch:
+                    stopped_at_checkpoint = True
+                    break
+                continue
+            if _is_residual_prefill_roi_launch(launch, staged_outputs):
+                launch_receipt = _execute_residual_prefill_roi_launch(
+                    runtime_dir=runtime_dir,
+                    launch=launch,
+                    staged_inputs=staged_inputs,
+                    staged_outputs=staged_outputs,
+                    progress_path=progress_path,
+                    cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
+                )
+                executed_launches.append(launch_receipt)
+                for output in staged_outputs:
+                    buffer_files[str(output["buffer"])] = Path(str(output["path"]))
+                executed_count += 1
+                append_progress(
+                    progress_path,
+                    "hostplan_launch_complete",
+                    launchIndex=launch_index,
+                    target=launch.get("targetName"),
+                    status="succeeded",
+                    dispatchMode="residual_prefill_roi_session",
                 )
                 if checkpoint_dir is not None:
                     _persist_launch_checkpoint(
@@ -5044,6 +5494,10 @@ def execute_hostplan_runtime(
             "outputPeRows": max(
                 1,
                 int(session_prefill_q4k_gemv_output_pe_rows),
+            ),
+            "adapterStepBudget": max(
+                1,
+                int(session_prefill_q4k_gemv_adapter_step_budget),
             ),
         },
         "sessionPleProjDispatch": {
@@ -5389,6 +5843,9 @@ def main() -> int:
                 session_prefill_q4k_gemv_jobs=args.session_prefill_q4k_gemv_jobs,
                 session_prefill_q4k_gemv_output_pe_rows=(
                     args.session_prefill_q4k_gemv_output_pe_rows
+                ),
+                session_prefill_q4k_gemv_adapter_step_budget=(
+                    args.session_prefill_q4k_gemv_adapter_step_budget
                 ),
                 session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
                 session_attention_prefill_dispatch_mode=(

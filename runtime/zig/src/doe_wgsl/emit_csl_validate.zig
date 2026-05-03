@@ -370,6 +370,13 @@ fn validateFusedFfn(csl: []const u8, result: *ValidationResult) void {
     if (!has_activation) {
         addError(result, "fused_ffn missing activation function (silu/gelu)");
     }
+    requireContains(csl, result, "c2d_params", "fused_ffn missing collectives_2d params");
+    requireContains(csl, result, "reduce_fadds", "fused_ffn missing collectives_2d vector reduction");
+    if (std.mem.indexOf(u8, csl, "param reduce_color") != null or
+        std.mem.indexOf(u8, csl, "@fmovs(reduce_out") != null)
+    {
+        addError(result, "fused_ffn must use collectives_2d reduce_fadds, not the hand-routed row-chain reduce");
+    }
 }
 
 fn validateSdk210Compatibility(csl: []const u8, result: *ValidationResult) void {

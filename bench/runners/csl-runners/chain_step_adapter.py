@@ -57,6 +57,26 @@ DTYPE_MAP = {
     "u8": (np.uint8, MemcpyDataType.MEMCPY_32BIT),
 }
 PHASE_TRACE_PATH: Path | None = None
+SIMFAB_THREADS_ENV = "DOE_SIMFAB_THREADS"
+MAX_SIMFAB_THREADS = 64
+
+
+def _simfab_numthreads_from_env() -> int | None:
+    raw = os.environ.get(SIMFAB_THREADS_ENV)
+    if raw is None or raw.strip() == "":
+        return None
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(
+            f"{SIMFAB_THREADS_ENV} must be an integer, received {raw!r}"
+        ) from exc
+    if value <= 0 or value > MAX_SIMFAB_THREADS:
+        raise ValueError(
+            f"{SIMFAB_THREADS_ENV} must be in 1..{MAX_SIMFAB_THREADS}, "
+            f"received {value}"
+        )
+    return value
 
 
 def _load_writeable_mmap_or_copy(path: str) -> np.ndarray:
@@ -318,51 +338,59 @@ def _copy_d2h_output(
 ) -> tuple[str, str, np.ndarray]:
     region_x, region_y, region_width, region_height = region
     sym_id = runner.get_id(symbol)
-    if split_rows and region_height > 1:
+    if split_rows and (region_height > 1 or region_width > 1):
         rows: list[np.ndarray] = []
         for row_offset in range(region_height):
-            arr, mcpy_dtype, memcpy_chunk, output_dtype = _memcpy_buffer_for_d2h(
-                dtype=dtype,
-                chunk_size=chunk_size,
-                pe_count=region_width,
-            )
+            row_parts: list[np.ndarray] = []
             row_y = region_y + row_offset
-            _phase(
-                "memcpy_d2h_start",
-                step=step_index,
-                symbol=symbol,
-                x=region_x,
-                y=row_y,
-                width=region_width,
-                height=1,
-                chunk=memcpy_chunk,
-                words=arr.size,
-                rowOffset=row_offset,
-            )
-            runner.memcpy_d2h(
-                arr,
-                sym_id,
-                region_x,
-                row_y,
-                region_width,
-                1,
-                memcpy_chunk,
-                streaming=False, order=MemcpyOrder.ROW_MAJOR,
-                data_type=mcpy_dtype, nonblock=False,
-            )
-            _phase(
-                "memcpy_d2h_complete",
-                step=step_index,
-                symbol=symbol,
-                rowOffset=row_offset,
-            )
-            rows.append(
-                _logical_output_array(
-                    arr=arr,
-                    dtype=dtype,
-                    output_dtype=output_dtype,
-                ).reshape(-1)
-            )
+            for col_offset in range(region_width):
+                arr, mcpy_dtype, memcpy_chunk, output_dtype = (
+                    _memcpy_buffer_for_d2h(
+                        dtype=dtype,
+                        chunk_size=chunk_size,
+                        pe_count=1,
+                    )
+                )
+                col_x = region_x + col_offset
+                _phase(
+                    "memcpy_d2h_start",
+                    step=step_index,
+                    symbol=symbol,
+                    x=col_x,
+                    y=row_y,
+                    width=1,
+                    height=1,
+                    chunk=memcpy_chunk,
+                    words=arr.size,
+                    rowOffset=row_offset,
+                    colOffset=col_offset,
+                )
+                runner.memcpy_d2h(
+                    arr,
+                    sym_id,
+                    col_x,
+                    row_y,
+                    1,
+                    1,
+                    memcpy_chunk,
+                    streaming=False, order=MemcpyOrder.ROW_MAJOR,
+                    data_type=mcpy_dtype, nonblock=False,
+                )
+                _phase(
+                    "memcpy_d2h_complete",
+                    step=step_index,
+                    symbol=symbol,
+                    rowOffset=row_offset,
+                    colOffset=col_offset,
+                )
+                row_parts.append(
+                    _logical_output_array(
+                        arr=arr,
+                        dtype=dtype,
+                        output_dtype=output_dtype,
+                    ).reshape(-1)
+                )
+            rows.append(np.concatenate(row_parts))
         return symbol, path, np.concatenate(rows)
 
     region_pe_count = region_width * region_height
@@ -428,7 +456,15 @@ def main() -> int:
     pe_count = width * height
 
     cmaddr = args.cmaddr.strip() or None
-    runner = SdkRuntime(args.compile_dir, cmaddr=cmaddr)
+    simfab_numthreads = _simfab_numthreads_from_env()
+    runtime_kwargs: dict[str, object] = {"cmaddr": cmaddr}
+    if simfab_numthreads is not None:
+        runtime_kwargs["simfab_numthreads"] = simfab_numthreads
+    runner = SdkRuntime(args.compile_dir, **runtime_kwargs)
+    _phase(
+        "simfab_config",
+        simfabNumthreads=simfab_numthreads if simfab_numthreads is not None else "sdk_default",
+    )
     _phase("load_start")
     runner.load()
     _phase("load_complete")

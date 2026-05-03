@@ -64,21 +64,31 @@ pub fn emit(
     try emitPtr(buf, pos, sin, "f32");
     try W.write(buf, pos, "\n");
 
-    // RoPE rotation: for each pair (x0, x1), apply rotation
+    // RoPE rotation: for each pair (x0, x1), apply rotation. The
+    // `interleaved` param is comptime-known, so the branch is hoisted
+    // outside the per-pair loop — two clean straight-line loops emit
+    // instead of one loop with an inside-loop param test.
     try W.write(buf, pos, "fn compute() void {\n");
-    try W.write(buf, pos, "    for (@range(i16, num_pairs)) |p| {\n");
-    try W.write(buf, pos, "        const cos_val = ");
+    try W.write(buf, pos, "    if (interleaved) {\n");
+    try W.write(buf, pos, "        for (@range(i16, num_pairs)) |p| {\n");
+    try W.write(buf, pos, "            const cos_val = ");
     try W.write(buf, pos, cos);
     try W.write(buf, pos, "[@as(u32, p)];\n");
-    try W.write(buf, pos, "        const sin_val = ");
+    try W.write(buf, pos, "            const sin_val = ");
     try W.write(buf, pos, sin);
-    try W.write(buf, pos, "[@as(u32, p)];\n\n");
-
-    try W.write(buf, pos, "        if (interleaved) {\n");
+    try W.write(buf, pos, "[@as(u32, p)];\n");
     try W.write(buf, pos, "            const dim0 = @as(u32, p) * 2;\n");
     try W.write(buf, pos, "            const dim1 = dim0 + 1;\n");
     try emitRoPEPair(buf, pos, inp);
-    try W.write(buf, pos, "        } else {\n");
+    try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        for (@range(i16, num_pairs)) |p| {\n");
+    try W.write(buf, pos, "            const cos_val = ");
+    try W.write(buf, pos, cos);
+    try W.write(buf, pos, "[@as(u32, p)];\n");
+    try W.write(buf, pos, "            const sin_val = ");
+    try W.write(buf, pos, sin);
+    try W.write(buf, pos, "[@as(u32, p)];\n");
     try W.write(buf, pos, "            const dim0 = @as(u32, p);\n");
     try W.write(buf, pos, "            const dim1 = dim0 + @as(u32, num_pairs);\n");
     try emitRoPEPair(buf, pos, inp);

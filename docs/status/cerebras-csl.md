@@ -25,6 +25,183 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
+## 2026-05-02 — CSL emitter performance audit: scalar dot products vs fmacs+DSD
+
+A side-by-side pass over `runtime/zig/src/doe_wgsl/emit_csl_*.zig` against the
+canonical SUMMA GEMM and GEMV-collectives_2d references identified a
+consistent gap: the matmul emitter uses the canonical `@fmacs` over a
+`mem1d_dsd` inner pattern, but GEMV, fused FFN, and all three attention paths
+fall through to scalar `for` loops over the contracted dimension. Per the CSL
+technical overview, the PE datapath is four FP16 FMAC units behind the DSR
+file; scalar fp32 mul-add cannot saturate it. This is the largest source of
+emitter-side speed left on the table before WSE-3 evidence.
+
+The audit also surfaced two redundant-work patterns and a linear chain reduce
+that should be a tree, plus a few low-severity cleanups. Items already in
+flight (Qwen GEMV reduce switched to `reduce_fadds` 2026-04-28; Q4K-input
+SUMMA wedge landed 2026-04-27) are noted but not re-listed.
+
+### High severity — scalar inner loops should be `@fmacs` over `mem1d_dsd`
+
+The canonical pattern, already shipping in `emit_csl_matmul.zig:143-153`:
+
+```
+for (@range(i16, Kt)) |k| {
+    var C_dsd = @get_dsd(mem1d_dsd, ...);
+    for (@range(i16, Nt)) |j| {
+        @fmacs(C_dsd, C_dsd, A_dsd, b_val);
+        C_dsd = @increment_dsd_offset(C_dsd, Mt, f32);
+    }
+    A_dsd = @increment_dsd_offset(A_dsd, Mt, f32);
+}
+```
+
+Targets to migrate:
+
+1. **`emit_csl_dense_gemv.zig:82-91`** — `for row { for col { sum += act[col]
+   * weight[idx] } }`. Inner loop is a scalar fp32 mul-add over
+   `in_dim_per_pe`; should be `@fmacs(partial_dsd, partial_dsd,
+   weight_row_dsd, act[col])` with `weight_row_dsd` as a strided
+   `mem1d_dsd` over the row.
+   Started 2026-05-02 — Q4K GEMV hot path in `emit_csl_fused.zig` migrated
+   from row-scalar dot loops to a DSD `@fmacs` shape over `weight_col` and
+   `partial` vectors (this is the launch-14 bottleneck path). Pending
+   regenerate + CSL recompile for verification. `emit_csl_dense_gemv.zig`
+   itself still scalar; non-Q4K attention score loops (items 3, 4, 5) also
+   still scalar.
+2. **`emit_csl_fused_ffn.zig:60-77`** — same scalar shape on both
+   `gate_sum` and `up_sum`. Two parallel fmacs over the same `in_per_pe`
+   contraction.
+3. **`emit_csl_attention.zig::emitStreaming` (lines 99-107, 124-129)** — QK
+   score loop is scalar over `head_dim`.
+4. **`emit_csl_attention.zig::emitDecode::emitScoreLoop` (lines 467-488)** —
+   same.
+5. **`emit_csl_attention.zig::emitTiled` (lines 360-368, 381-389)** — same,
+   plus issue 6 below.
+
+### High severity — redundant work and serial reduces
+
+6. **`emit_csl_attention.zig::emitTiled` recomputes the QK dot product** —
+   the inner block first computes `score` to find `blk_max`, then recomputes
+   the same `score` in the second loop to weight V. Cache scores in a
+   `[block_size]f32` scratch on pass 1; pass 2 reuses. With
+   `block_size=16, head_dim=256` that is ~4 KiB scratch saving ~4096
+   redundant mul-adds per query row per tile.
+   Done 2026-05-02; tiled attention now stores scaled block scores in
+   `score_cache: [block_size]f32` during the max pass and reuses those
+   values for the value-weighting pass. This removes the second QK dot
+   loop while preserving the streaming K/V tile host contract.
+7. **`emit_csl_attention.zig::emitStreaming` runs a 2-pass softmax** —
+   max-find then weight-and-sum. The decode path already has a correct
+   online-softmax shape in `emitScoreLoop`; port it to streaming.
+   Done 2026-05-02; rewrote `compute()` to single-pass online softmax
+   with running `(m, l)` and rescale-on-new-max, also folding the
+   output accumulation into the same loop. Eliminates the redundant
+   second QK dot product. Streaming path is for Qwen
+   linear_attention which is currently scope-restricted, so no active
+   parity surface affected.
+8. **`emit_csl_fused_ffn.zig:84-97` reduces one element at a time over
+   fabric** — `reduce_recv` task fires per output element with
+   `fabout_dsd { extent = 1 }`. For Gemma `out_dim ≈ 2304` that is 2304+
+   task fires per layer per FFN. Switch to the same
+   `mpi_x.reduce_fadds(...)` over a full partial-vector DSD that
+   `emit_csl_dense_gemv.zig:99` already uses (the canonical pattern landed
+   for the GEMV lane on 2026-04-28).
+   Done 2026-05-02; `emit_csl_fused_ffn.zig` now reduces the full
+   `gate_partial` and `up_partial` vectors with `collectives_2d`
+   `mpi_x.reduce_fadds`, then applies SiLU on the row root. The layout now
+   passes per-tile `c2d_params` and removes the hand-routed reduce color, so
+   width greater than two follows the canonical collective shape instead of
+   the known-gap row chain.
+9. **`emit_csl_attention.zig::emitDecode::reduce_recv` is a linear chain
+   reduce** — the local-max propagates east hop-by-hop, O(width) wavelets.
+   Switch to `mpi_x.reduce_max` (or chain through `collectives_2d` reduce
+   primitives) for O(log width). Material at width ≥ 32; significant at
+   WSE-3 row widths.
+
+### Medium severity — acknowledged in source comments
+
+10. **f32 SUMMA broadcast inflation** — `emit_csl_matmul.zig` self-notes
+    "~7× more bytes than necessary"; `emit_csl_matmul_q4k.zig` is the
+    landed fix for the Q4K-input lane (2026-04-27 entry). The af32
+    activation lane on the f32 SUMMA path still sends 4× more bytes than
+    a f16 broadcast would. Open follow-up: an f16-input SUMMA emitter
+    that mirrors the Q4K wedge.
+11. **KV-resident attention exceeds PE memory at `head_dim ≥ 256`** —
+    `emit_csl_attention.zig:16-50` documents a 147 KiB / 294 KiB .bss
+    footprint vs ~63 KiB PE budget. `emitTiled` with block streaming is
+    the fix and lives in the same file; the older `emitStreaming` /
+    `emitDecode` paths still allocate full KV per PE. Migrate the callers,
+    then drop the old paths.
+
+### Low severity — cleanups
+
+12. **`emit_csl_rmsnorm_pack.zig:3-4`** — `CHUNK_COUNT = 21` is a hard
+    constant sized for the largest target hidden_size. Smaller models pay
+    a dozen stub `@export_name` / `@export_symbol` pairs per call and a
+    per-chunk `else { ...[word] = 0; }` write inside the pack loop.
+    Derive `CHUNK_COUNT` from the manifest's hidden_size at emit time.
+13. **`emit_csl_dense_gemv.zig:88`** — `@as(f32, activation[col]) *
+    @as(f32, weight[idx])` widens fp16 to fp32 on every multiply.
+    Pre-widen the activation row once, or use `@fmach` over fp16 DSDs
+    (compounds with item 1).
+    Done 2026-05-02; added module-scope `activation_f32: [in_dim_per_pe]f32`
+    and a one-time pre-widen at the top of `compute()`. Row loop now reads
+    `activation_f32[col]` directly. Weight-side widen is left for item 1
+    (fmacs over fp16 DSDs).
+14. **`emit_csl_rope.zig:77-86`** — `interleaved` is a `param` (comptime
+    constant) but the `if (interleaved)` branch lives inside the per-pair
+    loop. Hoist as a comptime split so two distinct loop forms emit;
+    removes any chance of a per-iteration mispredict.
+    Done 2026-05-02; emitter now hoists the branch outside the loop and
+    emits two straight-line per-pair loops, one per `interleaved` value.
+15. **`emit_csl_dequant.zig:78-79`** — `scales[8]`/`mins[8]` re-zero'd
+    inside `dequant_block` per super-block. Stack-allocated so cheap, but
+    hoisting them to module-level scratch removes 16 zero-inits per block
+    on the dequant-on-broadcast variant.
+    Done 2026-05-02; renamed to module-scope `block_scales` /
+    `block_mins`, removing the per-call `@zeros([8]f32)` pair.
+
+### Guardrails (added 2026-05-02)
+
+Regression checks landed in `emit_csl_validate.zig` and
+`emit_csl_host_compile_source.zig` to keep the new shapes from silently
+reverting:
+
+- Fused FFN must emit per-tile `c2d_params` and `mpi_x.reduce_fadds` over
+  full partial vectors (not the prior per-element fabric chain). Anchors
+  the item-8 fix.
+- Tiled attention must emit `score_cache: [block_size]f32` and reuse it on
+  the value-weighting pass (no second QK dot). Anchors the item-6 fix.
+
+Verification status: `zig build test-wgsl` passes after the latest
+emitter changes; `zig build csl-host-plan-tool` passed before the
+`emit_csl_fused.zig` Q4K `@fmacs` edit. The active Q4K compile bundle
+needs another regenerate + CSL recompile pass before launch-14 resumes,
+since it was rebuilt prior to the GEMV fmacs migration.
+
+### Anchors
+
+Findings grounded against the canonical SDK references:
+
+- GEMM-collectives_2d: <https://sdk.cerebras.net/csl/code-examples/benchmark-gemm-collectives>
+- GEMV-collectives_2d: <https://sdk.cerebras.net/csl/code-examples/benchmark-gemv-collectives>
+- DSDs: <https://sdk.cerebras.net/csl/language/dsds>
+- DSRs: <https://sdk.cerebras.net/csl/language/dsrs>
+- SDK technical overview (FP16 FMAC datapath): <https://8968533.fs1.hubspotusercontent-na2.net/hubfs/8968533/Cerebras%20SDK%20Technical%20Overview%20White%20Paper.pdf>
+
+The `emit_csl_matmul.zig` SUMMA emitter is the in-repo reference shape;
+items 1-5 are mechanical migrations of that same pattern.
+
+Active prefill Q4K GEMV note, 2026-05-02: the launch-14
+`prefill_q4k_gemv` emitter path now uses a DSD `@fmacs` accumulation over a
+module-scope `weight_col: [out_dim_per_pe]f32` scratch and the
+`partial: [out_dim_per_pe]f32` vector. This keeps the existing Q4K dequant
+contract but changes the local accumulation shape from row-scalar dots to a
+column-vector FMAC. The generated `tiled_31b` CSL compiles under SDK 2.10 with
+the active launch-14 params
+`width=84,height=4,out_dim_per_pe=112,in_dim_per_pe=256,num_blocks_per_row=1`.
+
 ## 2026-05-02 — Prefill Q4K GEMV canonicalized through HostPlan, rope, and attention boundaries
 
 The compact `<bos>sky color is` simfabric run exposed the remaining
@@ -164,12 +341,14 @@ rms_norm f16 output as 21 D2H-addressable chunks in
 single-buffer f16 pack landed for the TSIR emit lane in the new
 `runtime/zig/src/tsir/emit_csl_f16_pack.zig` and is wired into
 `runtime/zig/src/tsir/emit_kernel_body.zig::emitCslRmsNorm`. For the
-tiled_31b Q4K projection, the current faster path is height-4 f16
-row-split copyback from the GEMV sink column. A single-tile runtime
-probe validated `output_pe_rows=4` with four row-split D2H rows and a
-448-element f16 tile output; the session runner exposes it as
-`--session-prefill-q4k-gemv-output-pe-rows`. Sharded batch adapters are
-recorded in the batch manifest, but this simfabric host stalls
+tiled_31b Q4K projection, the current compact path is a taller f16
+row-split copyback from the GEMV sink column. Compile probes under
+`bench/out/scratch/q4k-height12-probe/` and
+`bench/out/scratch/q4k-height48-probe/` validate taller output-PE-row
+shapes with the same per-PE memory footprint, but the active simfabric
+resume stays on the runtime-proven height-4 row-split path because the
+height-48 runtime probe did not advance past its first D2H row. Sharded
+batch adapters are recorded in the batch manifest, but this simfabric host stalls
 concurrent Q4K shards at `SdkRuntime.run()`, so the active compact run keeps
 one Q4K shard with durable partial reuse. The Q4K shard count remains
 explicit as `--session-prefill-q4k-gemv-jobs` so embed ROI and lm-head

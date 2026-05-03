@@ -65,8 +65,9 @@ pub fn emitPatternSectionsForElem(
     if (std.mem.eql(u8, pattern, "dense_gemv")) {
         return emitDenseGemvSections(out);
     }
-    if (semantic_ops.isSemanticPattern(pattern)) {
-        return emitSemanticPatternSectionsForElem(pattern, elem, out);
+    const semantic_pattern = semanticPatternAlias(pattern);
+    if (semantic_ops.isSemanticPattern(semantic_pattern)) {
+        return emitSemanticPatternSectionsForElem(semantic_pattern, elem, out);
     }
 
     const source = patternSource(pattern) orelse return error.UnsupportedPattern;
@@ -87,7 +88,12 @@ pub fn emitPatternSectionsForElem(
     try emitPeProgram(out, &pos, &module_ir, entry, pattern_info, elem);
 
     const validation_kind = try validationKind(pattern);
-    if (elem == .f16) try rewriteF16CompileSourceInPlace(out, &pos);
+    if (elem == .f16) {
+        try rewriteF16CompileSourceInPlace(out, &pos);
+        if (std.mem.eql(u8, pattern, "fused_gemv_dequant")) {
+            try restoreFusedGemvF32ReductionInPlace(out, &pos);
+        }
+    }
     const validation = validate.validatePattern(out[0..pos], validation_kind);
     if (!validation.valid) return error.InvalidIr;
 
@@ -122,6 +128,11 @@ fn emitSemanticPatternSections(pattern: []const u8, out: []u8) EmitError!Compile
     return emitSemanticPatternSectionsForElem(pattern, .f32, out);
 }
 
+fn semanticPatternAlias(pattern: []const u8) []const u8 {
+    if (std.mem.eql(u8, pattern, "residual")) return "residual_add";
+    return pattern;
+}
+
 fn emitSemanticPatternSectionsForElem(
     pattern: []const u8,
     elem: ir.ScalarType,
@@ -139,7 +150,9 @@ fn emitSemanticPatternSectionsForElem(
         try rewriteF16CompileSourceInPlace(out, &pos);
         if (std.mem.eql(u8, pattern, "rms_norm")) {
             try rmsnorm_pack.rewriteF16OutputPackInPlace(out, &pos);
-        } else if (isGatedSemanticPattern(pattern)) {
+        } else if (std.mem.eql(u8, pattern, "residual_add") or
+            isGatedSemanticPattern(pattern))
+        {
             try rmsnorm_pack.rewriteF16OutputPackInPlaceForExtent(out, &pos, "chunk_size");
         }
     }
@@ -353,6 +366,28 @@ fn rewriteF16CompileSourceInPlace(buf: []u8, pos: *usize) EmitError!void {
         "@fmacs(C_dsd, C_dsd, A_dsd, b_val);",
         "for (@range(i16, Mt)) |ii| {\n                const c_idx = @as(u32, j) * @as(u32, Mt) + @as(u32, ii);\n                const a_idx = @as(u32, k) * @as(u32, Mt) + @as(u32, ii);\n                C_tile[c_idx] += Ap.*[a_idx] * b_val;\n            }",
     );
+}
+
+fn restoreFusedGemvF32ReductionInPlace(buf: []u8, pos: *usize) EmitError!void {
+    try replaceAllInPlace(buf, pos, "@export_name(\"output\", [*]f16, true);\n    @export_name(\"compute\", fn()void);", "@export_name(\"output\", [*]f16, true);\n    @export_name(\"partial\", [*]f32, true);\n    @export_name(\"reduced\", [*]f32, true);\n    @export_name(\"compute\", fn()void);");
+    try replaceAllInPlace(buf, pos, "reduce_fadds accumulates f16 partials", "reduce_fadds accumulates f32 partials");
+    try replaceAllInPlace(buf, pos, "var partial: [out_dim_per_pe]f16 = @zeros([out_dim_per_pe]f16);", "var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);");
+    try replaceAllInPlace(buf, pos, "var reduced: [out_dim_per_pe]f16 = @zeros([out_dim_per_pe]f16);", "var reduced: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);");
+    try replaceAllInPlace(buf, pos, "var weight_col: [out_dim_per_pe]f16 = @zeros([out_dim_per_pe]f16);", "var weight_col: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);");
+    try replaceAllInPlace(buf, pos, "var partial_ptr: [*]f16 = &partial;", "var partial_ptr: [*]f32 = &partial;");
+    try replaceAllInPlace(buf, pos, "var reduced_ptr: [*]f16 = &reduced;", "var reduced_ptr: [*]f32 = &reduced;");
+    try replaceAllInPlace(buf, pos, "var sum: f16 = 0.0;", "var sum: f32 = 0.0;");
+    try replaceAllInPlace(buf, pos, "const d = @as(f16, @bitcast(f16, d_bits));", "const d = @as(f32, @bitcast(f16, d_bits));");
+    try replaceAllInPlace(buf, pos, "weight_col[@as(u32, row)] = @as(f16, byte & 0x0F) * d;", "weight_col[@as(u32, row)] = @as(f32, byte & 0x0F) * d;");
+    try replaceAllInPlace(buf, pos, "weight_col[@as(u32, row)] = @as(f16, byte >> 4) * d;", "weight_col[@as(u32, row)] = @as(f32, byte >> 4) * d;");
+    try replaceAllInPlace(buf, pos, "const lo = @as(f16, byte & 0x0F) * d;", "const lo = @as(f32, byte & 0x0F) * d;");
+    try replaceAllInPlace(buf, pos, "const hi = @as(f16, byte >> 4) * d;", "const hi = @as(f32, byte >> 4) * d;");
+    try replaceAllInPlace(buf, pos, "const x_lo = @as(f16, ", "const x_lo = @as(f32, ");
+    try replaceAllInPlace(buf, pos, "const x_hi = @as(f16, ", "const x_hi = @as(f32, ");
+    try replaceAllInPlace(buf, pos, "sum += lo * @as(f16, ", "sum += lo * @as(f32, ");
+    try replaceAllInPlace(buf, pos, "sum += hi * @as(f16, ", "sum += hi * @as(f32, ");
+    try replaceAllInPlace(buf, pos, "@ptrcast([*]f16, &partial)", "@ptrcast([*]f32, &partial)");
+    try replaceAllInPlace(buf, pos, "@ptrcast([*]f16, &reduced)", "@ptrcast([*]f32, &reduced)");
 }
 
 fn replaceAllInPlace(buf: []u8, pos: *usize, from: []const u8, to: []const u8) EmitError!void {
@@ -720,6 +755,13 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, gated.pe_program, "base + 1 < @as(u32, chunk_size)") != null);
     try std.testing.expect(std.mem.indexOf(u8, gated.combined, "f32") == null);
 
+    const residual = try emitPatternSectionsForElem(std.testing.allocator, "residual", .f16, &buf);
+    try std.testing.expect(std.mem.indexOf(u8, residual.layout, "@export_name(\"output_chunk_0000\", [*]u32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "[chunk_size]f16") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "output_chunk_0000_ptr: [*]u32 = &output_chunk_0000;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.pe_program, "base + 1 < @as(u32, chunk_size)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, residual.combined, "f32") == null);
+
     const tiled = try emitPatternSectionsForElem(std.testing.allocator, "tiled_matmul", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, tiled.layout, "[*]f16") != null);
     try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "[Mt * Kt]f16") != null);
@@ -735,11 +777,26 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, sample_sections.pe_program, "output_token[0] = local_max_idx;") != null);
 
     const gemv = try emitPatternSectionsForElem(std.testing.allocator, "fused_gemv_dequant", .f16, &buf);
-    try std.testing.expect(std.mem.indexOf(u8, gemv.combined, "f32") == null);
-    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "mpi_x.gather(@as(u16, num_pes - 1)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "reduce_fadds") == null);
-    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial_bits: [out_dim_per_pe]u32") != null);
-    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var acc: f16 = 0.0") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.layout, "param host_reduce: i16 = 0;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.layout, ".host_reduce = host_reduce") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.layout, "@export_name(\"output\", [*]f16, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.layout, "@export_name(\"partial\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.layout, "@export_name(\"reduced\", [*]f32, true);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial: [out_dim_per_pe]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial_ptr: [*]f32 = &partial;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var reduced: [out_dim_per_pe]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var reduced_ptr: [*]f32 = &reduced;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var weight_col: [out_dim_per_pe]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var partial_dsd = @get_dsd(mem1d_dsd") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "@fmacs(partial_dsd, partial_dsd, weight_col_dsd") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "if (host_reduce != 0)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "@export_symbol(partial_ptr, \"partial\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "@export_symbol(reduced_ptr, \"reduced\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "mpi_x.reduce_fadds(@as(u16, num_pes - 1)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "mpi_x.gather(@as(u16, num_pes - 1)") == null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "var sum:") == null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "out_dim_per_pe * num_pes") == null);
+    try std.testing.expect(std.mem.indexOf(u8, gemv.pe_program, "output[@as(u32, row)] = @as(f16, reduced[@as(u32, row)]);") != null);
 
     const dense = try emitPatternSectionsForElem(std.testing.allocator, "dense_gemv", .f16, &buf);
     try std.testing.expect(std.mem.indexOf(u8, dense.layout, ".pe_y = @as(i16, pe_y)") != null);
@@ -751,6 +808,32 @@ test "host compile source routes af16 lane into f16 CSL source" {
     try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "mpi_x.reduce_fadds(@as(u16, num_pes - 1)") != null);
     try std.testing.expect(std.mem.indexOf(u8, dense.pe_program, "@mov32(reduce_out, scratch_out_dsd") == null);
     try std.testing.expect(std.mem.indexOf(u8, dense.layout, "@set_color_config") == null);
+}
+
+test "host compile source emits fused FFN collectives row reduction" {
+    var buf: [32768]u8 = undefined;
+
+    const ffn = try emitPatternSections(std.testing.allocator, "fused_ffn", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.layout, "const c2d = @import_module(\"<collectives_2d/params>\");") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.layout, ".c2d_params = c2d_tile_params") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.layout, "@set_color_config") == null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "param c2d_params;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "const mpi_x = @import_module(\"<collectives_2d/pe>\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "var gate_reduced: [out_dim]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "var up_reduced: [out_dim]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "mpi_x.reduce_fadds(@as(u16, num_pes - 1)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "@fmovs(reduce_out") == null);
+    try std.testing.expect(std.mem.indexOf(u8, ffn.pe_program, "param reduce_color") == null);
+}
+
+test "host compile source emits tiled attention score cache" {
+    var buf: [32768]u8 = undefined;
+
+    const tiled = try emitPatternSections(std.testing.allocator, "attention_tiled", &buf);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "var score_cache: [block_size]f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "score_cache[@as(u32, bi)] = score;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "const w = math.exp(score_cache[@as(u32, bi)] - m_new);") != null);
+    try std.testing.expect(std.mem.indexOf(u8, tiled.pe_program, "const w = math.exp(score * scale - m_new);") == null);
 }
 
 test "host compile source emits semantic Gemma elementwise bodies" {

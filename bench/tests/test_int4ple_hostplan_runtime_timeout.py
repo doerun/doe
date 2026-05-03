@@ -67,7 +67,7 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
             )
 
         self.assertFalse(short_ready)
-        self.assertEqual(short_status, "short:2<4")
+        self.assertEqual(short_status, "size:2!=4")
         self.assertFalse(dtype_ready)
         self.assertEqual(dtype_status, "dtype:float32")
         self.assertFalse(corrupt_ready)
@@ -76,7 +76,11 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
     def test_task_shards_are_bounded_by_jobs_and_task_count(self) -> None:
         tasks = [{"index": index} for index in range(7)]
 
-        shards = runner._prefill_gemv_task_shards(tasks, jobs=3)
+        shards = runner._prefill_gemv_task_shards(
+            tasks,
+            jobs=3,
+            adapter_step_budget=3,
+        )
 
         self.assertEqual([len(shard) for shard in shards], [3, 3, 1])
         self.assertEqual(
@@ -88,16 +92,29 @@ class PrefillGemvTileResumeTest(unittest.TestCase):
         self.assertEqual(runner._prefill_gemv_in_dim_per_pe(5376), 512)
         self.assertEqual(runner._prefill_gemv_in_dim_per_pe(8192), 256)
 
-    def test_prefill_gemv_only_splits_d2h_rows_at_sdk_limit(self) -> None:
-        self.assertFalse(runner._prefill_gemv_split_d2h_rows(4 * 112))
+    def test_prefill_gemv_splits_multirow_or_large_d2h_regions(self) -> None:
         self.assertFalse(
             runner._prefill_gemv_split_d2h_rows(
-                runner.SDK_D2H_ELEMENT_COUNT_LIMIT - 1
+                output_tile_cols=112,
+                output_region_height=1,
             )
         )
         self.assertTrue(
             runner._prefill_gemv_split_d2h_rows(
-                runner.SDK_D2H_ELEMENT_COUNT_LIMIT
+                output_tile_cols=4 * 112,
+                output_region_height=4,
+            )
+        )
+        self.assertFalse(
+            runner._prefill_gemv_split_d2h_rows(
+                output_tile_cols=runner.SDK_D2H_ELEMENT_COUNT_LIMIT - 1,
+                output_region_height=1,
+            )
+        )
+        self.assertTrue(
+            runner._prefill_gemv_split_d2h_rows(
+                output_tile_cols=runner.SDK_D2H_ELEMENT_COUNT_LIMIT,
+                output_region_height=1,
             )
         )
 

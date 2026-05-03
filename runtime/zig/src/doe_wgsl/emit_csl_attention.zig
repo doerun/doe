@@ -90,10 +90,19 @@ pub fn emitStreaming(
 
     try emitStoragePtrs(buf, pos, module);
 
-    // Online softmax: 2-pass algorithm
+    // Single-pass online softmax: track running max `m` and sum `l`,
+    // rescale the accumulated output when a new max appears. Eliminates
+    // the redundant second QK dot product of the prior 2-pass form.
+    // Matches emitDecode::emitScoreLoop's online-softmax shape, extended
+    // to also accumulate output here since streaming has no fabric stage.
     try W.write(buf, pos, "fn compute() void {\n");
-    // Pass 1: find max score
-    try W.write(buf, pos, "    var max_score: f32 = -3.4028235e+38;\n");
+    try W.write(buf, pos, "    var m: f32 = -3.4028235e+38;\n");
+    try W.write(buf, pos, "    var l: f32 = 0.0;\n");
+    try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| {\n");
+    try W.write(buf, pos, "        ");
+    try W.write(buf, pos, out);
+    try W.write(buf, pos, "[@as(u32, d)] = 0.0;\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    for (@range(i16, kv_len)) |kv_i| {\n");
     try W.write(buf, pos, "        var score: f32 = 0.0;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
@@ -109,29 +118,18 @@ pub fn emitStreaming(
     try W.write(buf, pos, "        if (softcap != 0.0) {\n");
     try W.write(buf, pos, "            score = softcap * math.tanh(score / softcap);\n");
     try W.write(buf, pos, "        }\n");
-    try W.write(buf, pos, "        if (score > max_score) max_score = score;\n");
-    try W.write(buf, pos, "    }\n\n");
-
-    // Pass 2: accumulate exp(score - max) * V
-    try W.write(buf, pos, "    var sum_exp: f32 = 0.0;\n");
-    try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| {\n");
-    try W.write(buf, pos, "        ");
+    try W.write(buf, pos, "        if (score > m) {\n");
+    try W.write(buf, pos, "            const rescale = math.exp(m - score);\n");
+    try W.write(buf, pos, "            l *= rescale;\n");
+    try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
+    try W.write(buf, pos, "                ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] = 0.0;\n");
-    try W.write(buf, pos, "    }\n");
-    try W.write(buf, pos, "    for (@range(i16, kv_len)) |kv_i| {\n");
-    try W.write(buf, pos, "        var score: f32 = 0.0;\n");
-    try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
-    try W.write(buf, pos, "            score += ");
-    try W.write(buf, pos, q);
-    try W.write(buf, pos, "[@as(u32, d)] * ");
-    try W.write(buf, pos, k);
-    try W.write(buf, pos, "[@as(u32, kv_i) * @as(u32, head_dim) + @as(u32, d)];\n");
+    try W.write(buf, pos, "[@as(u32, d)] *= rescale;\n");
+    try W.write(buf, pos, "            }\n");
+    try W.write(buf, pos, "            m = score;\n");
     try W.write(buf, pos, "        }\n");
-    try W.write(buf, pos, "        score *= scale;\n");
-    try W.write(buf, pos, "        if (softcap != 0.0) score = softcap * math.tanh(score / softcap);\n");
-    try W.write(buf, pos, "        const w = math.exp(score - max_score);\n");
-    try W.write(buf, pos, "        sum_exp += w;\n");
+    try W.write(buf, pos, "        const w = math.exp(score - m);\n");
+    try W.write(buf, pos, "        l += w;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "            const idx = @as(u32, d);\n");
     try W.write(buf, pos, "            ");
@@ -143,11 +141,11 @@ pub fn emitStreaming(
     try W.write(buf, pos, "    }\n\n");
 
     // Normalize
-    try W.write(buf, pos, "    const inv_sum = 1.0 / sum_exp;\n");
+    try W.write(buf, pos, "    const inv = 1.0 / l;\n");
     try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "        ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, d)] *= inv_sum;\n");
+    try W.write(buf, pos, "[@as(u32, d)] *= inv;\n");
     try W.write(buf, pos, "    }\n\n");
     try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "}\n\n");
@@ -346,6 +344,7 @@ pub fn emitTiled(
     // Online softmax state, per-query-row, preserved across compute_tile calls.
     try W.write(buf, pos, "var m_state: [q_len_per_pe]f32 = @zeros([q_len_per_pe]f32);\n");
     try W.write(buf, pos, "var l_state: [q_len_per_pe]f32 = @zeros([q_len_per_pe]f32);\n\n");
+    try W.write(buf, pos, "var score_cache: [block_size]f32 = @zeros([block_size]f32);\n\n");
 
     // compute: named `compute` to satisfy the csl_spec structural marker
     // that every emitted PE program must export a `compute` symbol.
@@ -367,6 +366,7 @@ pub fn emitTiled(
     try W.write(buf, pos, "[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
     try W.write(buf, pos, "            }\n");
     try W.write(buf, pos, "            score *= scale;\n");
+    try W.write(buf, pos, "            score_cache[@as(u32, bi)] = score;\n");
     try W.write(buf, pos, "            if (score > blk_max) blk_max = score;\n");
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        const m_new = (if (m_i > blk_max) m_i else blk_max);\n");
@@ -378,16 +378,7 @@ pub fn emitTiled(
     try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)] *= rescale;\n");
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        for (@range(i16, block_size)) |bi| {\n");
-    try W.write(buf, pos, "            var score: f32 = 0.0;\n");
-    try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
-    try W.write(buf, pos, "                score += ");
-    try W.write(buf, pos, q);
-    try W.write(buf, pos, "[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]\n");
-    try W.write(buf, pos, "                    * ");
-    try W.write(buf, pos, k);
-    try W.write(buf, pos, "[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];\n");
-    try W.write(buf, pos, "            }\n");
-    try W.write(buf, pos, "            const w = math.exp(score * scale - m_new);\n");
+    try W.write(buf, pos, "            const w = math.exp(score_cache[@as(u32, bi)] - m_new);\n");
     try W.write(buf, pos, "            l_i += w;\n");
     try W.write(buf, pos, "            for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "                ");

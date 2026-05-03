@@ -69,6 +69,9 @@ pub fn emitPeProgram(buf: []u8, pos: *usize) EmitError!void {
     try W.write(buf, pos, "var weight: [out_dim_per_pe * in_dim_per_pe]f16 = @zeros([out_dim_per_pe * in_dim_per_pe]f16);\n");
     try W.write(buf, pos, "var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);\n");
     try W.write(buf, pos, "var output: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);\n");
+    // Pre-widened activation scratch: written once per compute() call,
+    // then read inside the row loop without per-multiply f16->f32 casts.
+    try W.write(buf, pos, "var activation_f32: [in_dim_per_pe]f32 = @zeros([in_dim_per_pe]f32);\n");
     try W.write(buf, pos, "\n");
     try W.write(buf, pos, "var activation_ptr: [*]f16 = &activation;\n");
     try W.write(buf, pos, "var weight_ptr: [*]f16 = &weight;\n");
@@ -80,12 +83,17 @@ pub fn emitPeProgram(buf: []u8, pos: *usize) EmitError!void {
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
     try W.write(buf, pos, "fn compute() void {\n");
+    // One-time widen of the activation row from f16 to f32 so the hot
+    // row loop reads activation_f32 directly without per-multiply casts.
+    try W.write(buf, pos, "    for (@range(i16, in_dim_per_pe)) |col| {\n");
+    try W.write(buf, pos, "        activation_f32[@as(u32, col)] = @as(f32, activation[@as(u32, col)]);\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "    for (@range(i16, out_dim_per_pe)) |row| {\n");
     try W.write(buf, pos, "        var sum: f32 = 0.0;\n");
     try W.write(buf, pos, "        const row_base = @as(u32, row) * @as(u32, in_dim_per_pe);\n");
     try W.write(buf, pos, "        for (@range(i16, in_dim_per_pe)) |col| {\n");
     try W.write(buf, pos, "            const idx = row_base + @as(u32, col);\n");
-    try W.write(buf, pos, "            sum += @as(f32, activation[@as(u32, col)]) * @as(f32, weight[idx]);\n");
+    try W.write(buf, pos, "            sum += activation_f32[@as(u32, col)] * @as(f32, weight[idx]);\n");
     try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        partial[@as(u32, row)] = sum;\n");
     try W.write(buf, pos, "    }\n");

@@ -4,7 +4,8 @@
 //   output = silu(gate_proj(x)) * up_proj(x)
 //
 // Common in Qwen/Llama FFN blocks. Each PE holds a slice of the weight
-// matrices and computes partial output rows. Fabric reduce accumulates.
+// matrices and computes partial output rows. collectives_2d reduces the
+// gate/up vectors before the activation is applied on the row root.
 
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
@@ -27,28 +28,33 @@ pub fn emit(
     try W.write(buf, pos, "// output = silu(gate(x)) * up(x), distributed across PEs.\n\n");
 
     try W.write(buf, pos, "param memcpy_params;\n");
+    try W.write(buf, pos, "param c2d_params;\n");
     try W.write(buf, pos, "param pe_id: i16;\n");
     try W.write(buf, pos, "param num_pes: i16;\n");
-    try W.write(buf, pos, "param reduce_color: color;\n\n");
+    try W.write(buf, pos, "\n");
     try W.write(buf, pos, "param in_dim: i16 = 1152;\n");
     try W.write(buf, pos, "param out_dim: i16 = 1152;\n");
     try W.write(buf, pos, "param in_per_pe: i16 = 1152;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try W.write(buf, pos, "const mpi_x = @import_module(\"<collectives_2d/pe>\", .{\n");
+    try W.write(buf, pos, "    .dim_params = c2d_params.x,\n");
+    try W.write(buf, pos, "    .queues = [2]u16{2, 4},\n");
+    try W.write(buf, pos, "    .dest_dsr_ids = [1]u16{1},\n");
+    try W.write(buf, pos, "    .src0_dsr_ids = [1]u16{1},\n");
+    try W.write(buf, pos, "    .src1_dsr_ids = [1]u16{1},\n");
+    try W.write(buf, pos, "});\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
     try emitStoragePtrs(buf, pos, module);
 
     try W.write(buf, pos, "var gate_partial: [out_dim]f32 = @zeros([out_dim]f32);\n");
     try W.write(buf, pos, "var up_partial: [out_dim]f32 = @zeros([out_dim]f32);\n\n");
+    try W.write(buf, pos, "var gate_reduced: [out_dim]f32 = @zeros([out_dim]f32);\n");
+    try W.write(buf, pos, "var up_reduced: [out_dim]f32 = @zeros([out_dim]f32);\n\n");
 
-    // Fabric DSDs
-    try W.write(buf, pos, "const reduce_out_q = @get_output_queue(2);\n");
-    try W.write(buf, pos, "const reduce_in_q = @get_input_queue(2);\n");
-    try W.write(buf, pos, "const reduce_out = @get_dsd(fabout_dsd, .{ .extent = 1, .output_queue = reduce_out_q });\n");
-    try W.write(buf, pos, "const reduce_in = @get_dsd(fabin_dsd, .{ .extent = 1, .input_queue = reduce_in_q });\n\n");
-    try W.write(buf, pos, "const reduce_task_id: local_task_id = @get_local_task_id(10);\n");
-    try W.write(buf, pos, "var reduce_dim: i16 = 0;\n\n");
+    try W.write(buf, pos, "const gate_reduce_done_id: local_task_id = @get_local_task_id(12);\n");
+    try W.write(buf, pos, "const up_reduce_done_id: local_task_id = @get_local_task_id(13);\n\n");
 
     // SiLU: x * sigmoid(x) = x / (1 + exp(-x))
     try W.write(buf, pos, "fn silu(x: f32) f32 {\n");
@@ -76,33 +82,38 @@ pub fn emit(
     try W.write(buf, pos, "        up_partial[@as(u32, row)] = up_sum;\n");
     try W.write(buf, pos, "    }\n\n");
 
-    try W.write(buf, pos, "    reduce_dim = 0;\n");
-    try W.write(buf, pos, "    @fmovs(reduce_out, gate_partial[0]);\n");
+    try W.write(buf, pos, "    if (num_pes == 1) {\n");
+    try W.write(buf, pos, "        for (@range(i16, out_dim)) |row| {\n");
+    try W.write(buf, pos, "            ");
+    try W.write(buf, pos, out);
+    try W.write(buf, pos, "[@as(u32, row)] = silu(gate_partial[@as(u32, row)]) * up_partial[@as(u32, row)];\n");
+    try W.write(buf, pos, "        }\n");
+    try W.write(buf, pos, "        sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "    } else {\n");
+    try W.write(buf, pos, "        mpi_x.init();\n");
+    try W.write(buf, pos, "        mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &gate_partial), @ptrcast([*]f32, &gate_reduced), @as(u16, out_dim), gate_reduce_done_id);\n");
+    try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
-    // Phase 2: reduce and apply SiLU gating
-    try W.write(buf, pos, "task reduce_recv() void {\n");
-    try W.write(buf, pos, "    var incoming: f32 = 0.0;\n");
-    try W.write(buf, pos, "    @fmovs(incoming, reduce_in);\n");
-    try W.write(buf, pos, "    const g = gate_partial[@as(u32, reduce_dim)] + incoming;\n");
-    try W.write(buf, pos, "    ");
+    // Phase 2: reduce the up projection, then apply SiLU gating at the row root.
+    try W.write(buf, pos, "task gate_reduce_done_task() void {\n");
+    try W.write(buf, pos, "    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &up_partial), @ptrcast([*]f32, &up_reduced), @as(u16, out_dim), up_reduce_done_id);\n");
+    try W.write(buf, pos, "}\n\n");
+
+    try W.write(buf, pos, "task up_reduce_done_task() void {\n");
+    try W.write(buf, pos, "    if (pe_id == num_pes - 1) {\n");
+    try W.write(buf, pos, "        for (@range(i16, out_dim)) |row| {\n");
+    try W.write(buf, pos, "            ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[@as(u32, reduce_dim)] = silu(g) * up_partial[@as(u32, reduce_dim)];\n\n");
-    try W.write(buf, pos, "    reduce_dim += 1;\n");
-    try W.write(buf, pos, "    if (reduce_dim < out_dim) {\n");
-    try W.write(buf, pos, "        @fmovs(reduce_out, gate_partial[@as(u32, reduce_dim)]);\n");
-    try W.write(buf, pos, "    } else {\n");
-    try W.write(buf, pos, "        if (pe_id == num_pes - 1) sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "[@as(u32, row)] = silu(gate_reduced[@as(u32, row)]) * up_reduced[@as(u32, row)];\n");
+    try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "    }\n");
+    try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "}\n\n");
 
     try W.write(buf, pos, "comptime {\n");
-    try W.write(buf, pos, "    @bind_local_task(reduce_recv, reduce_task_id);\n");
-    try W.write(buf, pos, "    if (@is_arch(\"wse3\")) {\n");
-    try W.write(buf, pos, "        @initialize_queue(reduce_out_q, .{ .color = reduce_color });\n");
-    try W.write(buf, pos, "        @initialize_queue(reduce_in_q, .{ .color = reduce_color });\n");
-    try W.write(buf, pos, "    }\n");
-    try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
+    try W.write(buf, pos, "    @bind_local_task(gate_reduce_done_task, gate_reduce_done_id);\n");
+    try W.write(buf, pos, "    @bind_local_task(up_reduce_done_task, up_reduce_done_id);\n");
     try emitStorageExports(buf, pos, module);
     try W.write(buf, pos, "    @export_symbol(compute);\n");
     try W.write(buf, pos, "}\n");

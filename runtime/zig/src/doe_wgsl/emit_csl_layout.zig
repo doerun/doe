@@ -581,6 +581,7 @@ pub fn emitFusedGemvLayout(
     try write(buf, pos, "param out_dim_per_pe: i16 = out_dim;\n");
     try write(buf, pos, "param in_dim_per_pe: i16;\n");
     try write(buf, pos, "param num_blocks_per_row: i16;\n\n");
+    try write(buf, pos, "param host_reduce: i16 = 0;\n\n");
     try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
     try write(buf, pos, "    .width = width,\n    .height = height,\n});\n\n");
     try write(buf, pos, "const c2d = @import_module(\"<collectives_2d/params>\");\n\n");
@@ -612,6 +613,7 @@ pub fn emitFusedGemvLayout(
     try write(buf, pos, "                .out_dim_per_pe = out_dim_per_pe,\n");
     try write(buf, pos, "                .in_dim_per_pe = in_dim_per_pe,\n");
     try write(buf, pos, "                .num_blocks_per_row = num_blocks_per_row,\n");
+    try write(buf, pos, "                .host_reduce = host_reduce,\n");
     try write(buf, pos, "            });\n\n");
     try write(buf, pos, "        }\n");
     try write(buf, pos, "    }\n\n");
@@ -719,7 +721,7 @@ pub fn emitKvReadLayout(
 }
 
 // ---------------------------------------------------------------------------
-// Fused FFN layout: 1-D row with reduce chain
+// Fused FFN layout: 1-D row with collectives reduce
 // ---------------------------------------------------------------------------
 
 pub fn emitFusedFfnLayout(
@@ -729,15 +731,33 @@ pub fn emitFusedFfnLayout(
     info: classify.FusedFfnInfo,
 ) EmitError!void {
     _ = info;
-    try write(buf, pos, "// Layout: fused SiLU-gated FFN with fabric reduce.\n\n");
-    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "// Layout: fused SiLU-gated FFN with collectives_2d row reduce.\n\n");
+    try write(buf, pos, "param width: u16;\n");
     try write(buf, pos, "param in_dim: i16;\n");
     try write(buf, pos, "param out_dim: i16;\n");
     try write(buf, pos, "param in_per_pe: i16;\n\n");
     try emitMemcpyRow(buf, pos);
-    try emitReduceColor(buf, pos);
+    try write(buf, pos, "const c2d = @import_module(\"<collectives_2d/params>\");\n\n");
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
-    try emitReduceRowTileLoop(buf, pos, ".in_dim = in_dim, .out_dim = out_dim, .in_per_pe = in_per_pe,\n");
+    try write(buf, pos, "    for (@range(u16, width)) |pe_x| {\n");
+    try write(buf, pos, "        const c2d_tile_params = c2d.get_params(pe_x, 0, .{\n");
+    try write(buf, pos, "            .x_colors      = .{ @get_color(4),         @get_color(5)         },\n");
+    try write(buf, pos, "            .x_entrypoints = .{ @get_local_task_id(8), @get_local_task_id(9) },\n");
+    try write(buf, pos, "            .y_colors      = .{ @get_color(6),         @get_color(7)         },\n");
+    try write(buf, pos, "            .y_entrypoints = .{ @get_local_task_id(10), @get_local_task_id(11) },\n");
+    try write(buf, pos, "        });\n");
+    try write(buf, pos, "        @set_tile_code(pe_x, 0, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "            .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "            .c2d_params = c2d_tile_params,\n");
+    try write(buf, pos, "            .pe_id = @as(i16, pe_x),\n");
+    try write(buf, pos, "            .num_pes = @as(i16, width),\n");
+    try write(buf, pos, "            .in_dim = in_dim,\n");
+    try write(buf, pos, "            .out_dim = out_dim,\n");
+    try write(buf, pos, "            .in_per_pe = in_per_pe,\n");
+    try write(buf, pos, "        });\n");
+    try write(buf, pos, "    }\n\n");
     try emitStorageExports(buf, pos, module);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }

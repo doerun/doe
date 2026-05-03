@@ -52,6 +52,13 @@ pub fn emit(
     try emitPtrTyped(buf, pos, out, "f32");
     try W.write(buf, pos, "\n");
 
+    // Per-block scratch hoisted to module scope: the inner loop in
+    // dequant_block writes every element before reading it, so a single
+    // module-scope @zeros at program init replaces an 8-element zero-init
+    // per super-block call.
+    try W.write(buf, pos, "var block_scales: [8]f32 = @zeros([8]f32);\n");
+    try W.write(buf, pos, "var block_mins: [8]f32 = @zeros([8]f32);\n\n");
+
     // Dequantization function
     try W.write(buf, pos, "fn dequant_block(block_idx: u32) void {\n");
     try W.write(buf, pos, "    const base = block_idx * Q4K_BLOCK_BYTES;\n");
@@ -71,18 +78,13 @@ pub fn emit(
     try W.write(buf, pos, "    const d = @bitcast(f16, d_bits);\n");
     try W.write(buf, pos, "    const dmin = @bitcast(f16, dmin_bits);\n\n");
 
-    // Per-sub-block scales and mins
-    // CSL rejects `= undefined` local initializers. Use @zeros(T) — the
-    // loop that follows writes every element, so zero-init vs undefined
-    // is semantically equivalent here.
-    try W.write(buf, pos, "    var scales: [8]f32 = @zeros([8]f32);\n");
-    try W.write(buf, pos, "    var mins: [8]f32 = @zeros([8]f32);\n");
+    // Fill module-scope block_scales / block_mins for this super-block.
     try W.write(buf, pos, "    for (@range(u32, 8)) |sb| {\n");
     try W.write(buf, pos, "        const sc_byte = ");
     try W.write(buf, pos, qnt);
     try W.write(buf, pos, "[base + 4 + sb];\n");
-    try W.write(buf, pos, "        scales[sb] = @as(f32, d) * @as(f32, sc_byte & 0x3F);\n");
-    try W.write(buf, pos, "        mins[sb] = @as(f32, dmin) * @as(f32, sc_byte >> 6);\n");
+    try W.write(buf, pos, "        block_scales[sb] = @as(f32, d) * @as(f32, sc_byte & 0x3F);\n");
+    try W.write(buf, pos, "        block_mins[sb] = @as(f32, dmin) * @as(f32, sc_byte >> 6);\n");
     try W.write(buf, pos, "    }\n\n");
 
     // Dequantize nibble-packed values
@@ -99,10 +101,10 @@ pub fn emit(
     try W.write(buf, pos, "        const sb1 = elem1 / 32;\n");
     try W.write(buf, pos, "        ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[out_base + elem0] = scales[sb0] * @as(f32, lo) - mins[sb0];\n");
+    try W.write(buf, pos, "[out_base + elem0] = block_scales[sb0] * @as(f32, lo) - block_mins[sb0];\n");
     try W.write(buf, pos, "        ");
     try W.write(buf, pos, out);
-    try W.write(buf, pos, "[out_base + elem1] = scales[sb1] * @as(f32, hi) - mins[sb1];\n");
+    try W.write(buf, pos, "[out_base + elem1] = block_scales[sb1] * @as(f32, hi) - block_mins[sb1];\n");
     try W.write(buf, pos, "    }\n");
     try W.write(buf, pos, "}\n\n");
 
