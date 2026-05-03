@@ -30,7 +30,7 @@ tolerance-backed logits gate unless a reference export declares
 The Gemma 4 31B af16 `<bos>sky color is` simfabric session is stopped on a
 clean checkpoint after `launch-0022` (`attn_small`) succeeded through the
 compact-width attention path. See
-`bench/out/scratch/gemma4_31b_af16-launch-postmortem-hardware-hold-2026-05-03.json`
+`bench/out/r3-1-31b-af16-hostplan-postmortem/launch-postmortem-2026-05-03.json`
 for the checkpoint state, execution-plan launch count, target mix, Q4K shard
 summary, and receipt paths.
 
