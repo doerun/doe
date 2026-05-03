@@ -551,7 +551,7 @@ def main() -> int:
 
         _save_outputs(outputs)
         _phase("step_complete", step=step_index)
-
+    _phase("stop_start")
     runner.stop()
     _phase("stop_complete")
 

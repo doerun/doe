@@ -25,6 +25,30 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
+## 2026-05-03 — Gemma 4 31B simfabric hardware hold
+
+The Gemma 4 31B af16 `<bos>sky color is` simfabric session is stopped on a
+clean checkpoint after `launch-0022` (`attn_small`) succeeded through the
+compact-width attention path. See
+`bench/out/scratch/gemma4_31b_af16-launch-postmortem-hardware-hold-2026-05-03.json`
+for the checkpoint state, execution-plan launch count, target mix, Q4K shard
+summary, and receipt paths.
+
+The active blocker is architectural simfabric D2H serialization on this host,
+not a HostPlan identity or checkpoint-corruption issue. Q4K stayed on the
+known-safe serial settings (`jobs=1`, `adapterStepBudget=1`,
+`outputPeRows=4`); attempted Q4K process/thread/step-budget expansion remains
+non-claimable because it wedges in the SDK D2H path. Hardware endpoint access
+(R2-10) is the unblock for closing the full real-session token/logit/KV
+transcript.
+
+The canonical relaunch command is
+`bench/out/scratch/run-next-session-parallel.sh`. It keeps Q4K serial, enables
+compact prefill attention, and carries the unit-validated embed ROI lane plus
+the configured lm-head runtime lane. The command is runtime-proven through
+`launch-0022`; the killed `launch-0023` Q4K partial did not commit a receipt
+and the checkpoint manifest remains at the prior launch boundary.
+
 ## 2026-05-02 — CSL emitter performance audit: scalar dot products vs fmacs+DSD
 
 A side-by-side pass over `runtime/zig/src/doe_wgsl/emit_csl_*.zig` against the
