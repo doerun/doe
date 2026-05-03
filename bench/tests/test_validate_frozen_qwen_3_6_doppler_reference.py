@@ -46,7 +46,7 @@ DOPPLER_CAPTURE_INVOCATION = (
     "--manifest models/local/qwen-3-6-27b-q4k-ehaf16/manifest.json "
     '--prompt "The color of the sky is" '
     "--tsir-fixture-dir <doe-repo>/bench/fixtures/r3-2-27b-doppler-frozen "
-    "--tsir-fixture-layer-filter 0"
+    "--tsir-fixture-layer-filter 3"
 )
 
 
@@ -112,23 +112,23 @@ class FrozenQwenReferenceFixtureTest(unittest.TestCase):
             f"QWEN_MODEL_IDS set needs an entry.",
         )
 
-    def test_layer_zero_probes_present(self) -> None:
+    def test_first_full_attention_layer_probes_present(self) -> None:
         # The four-probe boundary set (rung-5 expectation) must be
-        # present at L=0 for the fixture to bind a downstream parity
-        # claim. Same set the Gemma Doppler-frozen fixture carries.
+        # present at L=3, the first full-attention layer in Qwen 3.6's
+        # linear x3 -> full hybrid pattern, for downstream parity.
         activations = self.manifest.get("activations") or {}
-        layer_0 = activations.get("0") or activations.get(0) or {}
+        layer_3 = activations.get("3") or activations.get(3) or {}
         expected_probes = {
             "post_rmsnorm",
             "post_qkv",
             "post_attn",
             "post_ffn",
         }
-        present = set(layer_0.keys()) if isinstance(layer_0, dict) else set()
+        present = set(layer_3.keys()) if isinstance(layer_3, dict) else set()
         missing = expected_probes - present
         self.assertFalse(
             missing,
-            f"L=0 probe(s) missing from manifest: {sorted(missing)}; "
+            f"L=3 probe(s) missing from manifest: {sorted(missing)}; "
             f"present={sorted(present)}",
         )
 

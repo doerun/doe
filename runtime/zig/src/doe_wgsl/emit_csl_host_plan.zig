@@ -10,6 +10,7 @@ const spec = @import("csl_spec.zig");
 
 const PHASE_TARGET_SUFFIXES = [_][]const u8{ "_prefill", "_decode" };
 const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu", "gelu_gated", "silu_gated", "sigmoid_gated" };
+const DENSE_GEMV_COMPILE_TILE_MARKER: []const u8 = "_width_tile_x";
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -481,6 +482,9 @@ fn hasKernel(kernels: []const host.KernelSpec, kernel_name: []const u8) bool {
 }
 
 fn kernelNameForTarget(target_name: []const u8) []const u8 {
+    if (std.mem.indexOf(u8, target_name, DENSE_GEMV_COMPILE_TILE_MARKER)) |marker_start| {
+        return target_name[0..marker_start];
+    }
     for (PHASE_TARGET_SUFFIXES) |suffix| {
         if (std.mem.endsWith(u8, target_name, suffix)) {
             const base_name = target_name[0 .. target_name.len - suffix.len];

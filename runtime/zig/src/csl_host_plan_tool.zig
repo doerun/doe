@@ -67,6 +67,8 @@ const PREFILL_Q4K_GEMV_IN_DIM_PER_PE: u32 = 512;
 const PREFILL_Q4K_GEMV_OUT_DIM_PER_PE: u32 = 112;
 const PREFILL_Q4K_GEMV_DEFAULT_OUTPUT_PE_ROWS: u32 = 1;
 const Q4K_BLOCK_ELEMENTS: u32 = 256;
+const DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH: u32 = 32;
+const DENSE_GEMV_COMPILE_TILE_MARKER: []const u8 = "_width_tile_x";
 // Linear-attention state is sharded across pe_y so per-PE state fits the
 // WSE-3 48 KiB SRAM budget. value_dim is split into value_dim_per_pe rows
 // per PE; key_dim is broadcast. output[d] only reduces over k, so each PE
@@ -338,6 +340,9 @@ fn buildCompileTargets(
 ) ![]const host_plan.CompileTarget {
     var count: usize = 0;
     for (plan.kernels) |kernel| {
+        if (try appendDenseGemvHiddenTileTargets(allocator, model_config, activation_elem, out, &count, kernel)) {
+            continue;
+        }
         try appendCompileTarget(allocator, plan, model_config, activation_elem, out, &count, kernel.name, kernel.name, kernel.pattern, null);
         if (isPhaseSpecializedKernel(kernel.name)) {
             for (PHASE_TARGET_SUFFIXES) |suffix| {
@@ -373,6 +378,45 @@ fn appendCompileTarget(
         .base_kernel = if (phase != null) source_name else null,
     };
     count.* += 1;
+}
+fn appendDenseGemvHiddenTileTargets(
+    allocator: std.mem.Allocator,
+    model_config: ?host.ModelConfig,
+    activation_elem: wgsl.ir.ScalarType,
+    out: *[MAX_COMPILE_TARGETS]host_plan.CompileTarget,
+    count: *usize,
+    kernel: host.KernelSpec,
+) !bool {
+    const config = model_config orelse return false;
+    if (!std.mem.eql(u8, kernel.pattern, "dense_gemv")) return false;
+    if (!isLmHeadTarget(kernel.name)) return false;
+    const full_width = dense_gemv_host_plan.width(config.hidden_dim);
+    if (full_width <= DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH) return false;
+
+    var width_start: u32 = 0;
+    while (width_start < full_width) {
+        const width_count = @min(DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH, full_width - width_start);
+        const tile_name = try std.fmt.allocPrint(
+            allocator,
+            "{s}" ++ DENSE_GEMV_COMPILE_TILE_MARKER ++ "{d}_w{d}",
+            .{ kernel.name, width_start, width_count },
+        );
+        if (count.* >= out.len) @panic("too many CSL compile targets");
+        out[count.*] = .{
+            .kernel_name = tile_name,
+            .pattern = kernel.pattern,
+            .layout_path = try std.fmt.allocPrint(allocator, "{s}/layout.csl", .{kernel.name}),
+            .pe_program_path = try std.fmt.allocPrint(allocator, "{s}/pe_program.csl", .{kernel.name}),
+            .metadata = try compileTargetMetadata(allocator, kernel.pattern, "base", activation_elem),
+            .compile_params = try denseGemvCompileTargetParams(allocator, config, width_count),
+            .compile_blocked_reason = null,
+            .phase = null,
+            .base_kernel = kernel.name,
+        };
+        count.* += 1;
+        width_start += width_count;
+    }
+    return true;
 }
 fn compileTargetMetadata(
     allocator: std.mem.Allocator,
@@ -447,13 +491,7 @@ fn compileTargetParams(
             try appendParam(allocator, &params, "Nt", block_n);
         }
     } else if (std.mem.eql(u8, pattern, "dense_gemv")) {
-        const height = dense_gemv_host_plan.height(config.vocab_size);
-        const width = dense_gemv_host_plan.width(config.hidden_dim);
-        try appendParam(allocator, &params, "width", width);
-        try appendParam(allocator, &params, "height", height);
-        try appendParam(allocator, &params, "out_dim", config.vocab_size);
-        try appendParam(allocator, &params, "out_dim_per_pe", ceilDivU32(config.vocab_size, height));
-        try appendParam(allocator, &params, "in_dim_per_pe", dense_gemv_host_plan.inDimPerPe(config.hidden_dim));
+        return denseGemvCompileTargetParams(allocator, config, dense_gemv_host_plan.width(config.hidden_dim));
     } else if (std.mem.eql(u8, pattern, "rms_norm") or
         std.mem.eql(u8, pattern, "reduction"))
     {
@@ -551,6 +589,20 @@ fn compileTargetParams(
             try appendParam(allocator, &params, "mrope_w_pairs", s[2]);
         }
     }
+    return try params.toOwnedSlice(allocator);
+}
+fn denseGemvCompileTargetParams(
+    allocator: std.mem.Allocator,
+    config: host.ModelConfig,
+    width: u32,
+) ![]const host_plan.CompileParam {
+    var params = try std.ArrayList(host_plan.CompileParam).initCapacity(allocator, 0);
+    const height = dense_gemv_host_plan.height(config.vocab_size);
+    try appendParam(allocator, &params, "width", width);
+    try appendParam(allocator, &params, "height", height);
+    try appendParam(allocator, &params, "out_dim", config.vocab_size);
+    try appendParam(allocator, &params, "out_dim_per_pe", ceilDivU32(config.vocab_size, height));
+    try appendParam(allocator, &params, "in_dim_per_pe", dense_gemv_host_plan.inDimPerPe(config.hidden_dim));
     return try params.toOwnedSlice(allocator);
 }
 fn appendParam(
@@ -924,13 +976,22 @@ test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
     };
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
     const targets = try buildCompileTargets(arena.allocator(), plan, config, .f32, &target_buf);
-    try std.testing.expectEqual(@as(usize, 1), targets.len);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable", targets[0].kernel_name);
-    try std.testing.expectEqual(@as(u32, 160), targets[0].compile_params[0].value);
+    try std.testing.expectEqual(@as(usize, 5), targets.len);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x0_w32", targets[0].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable", targets[0].base_kernel.?);
+    try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[0].compile_params[0].value);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[1].value);
     try std.testing.expectEqual(@as(u32, 262144), targets[0].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[3].value);
     try std.testing.expectEqual(@as(u32, 32), targets[0].compile_params[4].value);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x32_w32", targets[1].kernel_name);
+    try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[1].compile_params[0].value);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x64_w32", targets[2].kernel_name);
+    try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[2].compile_params[0].value);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x96_w32", targets[3].kernel_name);
+    try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[3].compile_params[0].value);
+    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x128_w32", targets[4].kernel_name);
+    try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[4].compile_params[0].value);
     const metadata = targets[0].metadata orelse return error.TestUnexpectedResult;
     try std.testing.expectEqualStrings("activation", metadata.bindings[0].symbol);
     try std.testing.expectEqualStrings("weight", metadata.bindings[1].symbol);
