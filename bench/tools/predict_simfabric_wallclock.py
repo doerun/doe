@@ -83,6 +83,7 @@ INOUT_SYMBOLS_BY_KERNEL = {
 _AS_CAST_INLINE = re.compile(r"@as\([a-z0-9_]+,\s*([^)]+)\)")
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _NUMBER_RE = re.compile(r"[+-]?\d+")
+_WIDTH_TILE_SUFFIX_RE = re.compile(r"_width_tile_x\d+_w\d+$")
 
 
 class SizeExprError(ValueError):
@@ -257,6 +258,58 @@ def inout_symbols_for_kernel(kernel_name: str | None) -> set[str]:
     return set(INOUT_SYMBOLS_BY_KERNEL.get(kernel_name, ()))
 
 
+def compile_source_kernel_name(target: dict[str, Any]) -> str | None:
+    for key in ("layout", "peProgram"):
+        raw = target.get(key)
+        if not isinstance(raw, str) or not raw:
+            continue
+        parent = Path(raw).parent.name
+        if parent:
+            return parent
+    name = target.get("name")
+    if isinstance(name, str):
+        return _WIDTH_TILE_SUFFIX_RE.sub("", name)
+    return None
+
+
+def append_target_alias(
+    aliases: dict[str, list[dict[str, Any]]],
+    alias: str | None,
+    target: dict[str, Any],
+) -> None:
+    if not alias:
+        return
+    bucket = aliases.setdefault(alias, [])
+    target_name = target.get("name")
+    if not any(existing.get("name") == target_name for existing in bucket):
+        bucket.append(target)
+
+
+def compile_target_aliases(
+    compile_targets: list[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    aliases: dict[str, list[dict[str, Any]]] = {}
+    for target in compile_targets:
+        name = target.get("name")
+        if isinstance(name, str):
+            append_target_alias(aliases, name, target)
+            append_target_alias(
+                aliases,
+                _WIDTH_TILE_SUFFIX_RE.sub("", name),
+                target,
+            )
+        append_target_alias(aliases, compile_source_kernel_name(target), target)
+    return aliases
+
+
+def per_pe_peer_count(targets: list[dict[str, Any]]) -> int:
+    total = 0
+    for target in targets:
+        params = target.get("compileParams") or {}
+        total += int(params.get("width", 0)) * int(params.get("height", 0))
+    return total
+
+
 def predict_wallclock(
     host_plan: dict[str, Any],
     compile_root: Path,
@@ -271,9 +324,16 @@ def predict_wallclock(
     on the receipt so the rung-1 hash spine guard can validate the
     chain back to the live host plan file.
     """
+    compile_targets = [
+        t for t in (host_plan.get("compileTargets") or [])
+        if isinstance(t, dict)
+    ]
     targets = {
-        t["name"]: t for t in (host_plan.get("compileTargets") or [])
+        t["name"]: t
+        for t in compile_targets
+        if isinstance(t.get("name"), str)
     }
+    target_aliases = compile_target_aliases(compile_targets)
     kernels = {
         k["name"]: k for k in host_plan["hostPlan"].get("kernels") or []
     }
@@ -286,15 +346,21 @@ def predict_wallclock(
     per_kernel: list[dict[str, Any]] = []
     issues: list[str] = []
     for kernel_name, kernel_meta in kernels.items():
-        target = targets.get(kernel_name)
-        if target is None:
+        exact_target = targets.get(kernel_name)
+        target_group = (
+            [exact_target]
+            if exact_target is not None
+            else target_aliases.get(kernel_name, [])
+        )
+        if not target_group:
             issues.append(
                 f"kernel {kernel_name!r} not present in compileTargets"
             )
             continue
-        bindings = dict(target.get("compileParams") or {})
+        target_names = [str(t.get("name")) for t in target_group]
+        source_kernel = compile_source_kernel_name(target_group[0]) or kernel_name
         meta_path = (
-            compile_root / kernel_name / "pe_program.metadata.json"
+            compile_root / source_kernel / "pe_program.metadata.json"
         )
         if not meta_path.is_file():
             issues.append(
@@ -303,23 +369,23 @@ def predict_wallclock(
             )
             continue
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
-        out_bytes = output_bytes_for_target(
-            metadata,
-            bindings,
-            kernel_name=kernel_name,
+        out_bytes = sum(
+            output_bytes_for_target(
+                metadata,
+                dict(target.get("compileParams") or {}),
+                kernel_name=kernel_name,
+            )
+            for target in target_group
         )
         cycles_per_call = pattern_cycles.get(kernel_meta.get("pattern"))
         per_kernel.append(
             {
                 "name": kernel_name,
+                "compileTargets": target_names,
                 "pattern": kernel_meta.get("pattern"),
                 "outputBytesPerCall": out_bytes,
                 "cyclesPerCall": cycles_per_call,
-                "perPePeerCount": int(target.get("compileParams", {}).get(
-                    "width", 0
-                )) * int(target.get("compileParams", {}).get(
-                    "height", 0
-                )),
+                "perPePeerCount": per_pe_peer_count(target_group),
             }
         )
 

@@ -118,6 +118,10 @@ SHARED_KERNELS = (
     ("rope", "rope", "rope_partial"),
 )
 PER_KERNEL_FILES = ("layout.csl", "pe_program.csl", "pe_program.metadata.json")
+_CSLC_EXEC_WRAPPER_RE = re.compile(
+    r"^\s*exec\s+(?P<executable>\S+)\s+\"\$@\"(?P<extra_args>.*)$",
+    re.MULTILINE,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -167,6 +171,28 @@ def _sha256_file(path: Path) -> str | None:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _resolve_cslc_wrapper(path: Path) -> dict[str, Any] | None:
+    if not path.is_file() or path.suffix != ".sh":
+        return None
+    try:
+        body = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    match = _CSLC_EXEC_WRAPPER_RE.search(body)
+    if not match:
+        return None
+    resolved = Path(match.group("executable"))
+    if not resolved.is_absolute():
+        resolved = path.parent / resolved
+    if not resolved.is_file():
+        return None
+    extra_args = match.group("extra_args").strip()
+    return {
+        "executable": str(resolved),
+        "extraArgs": extra_args.split() if extra_args else [],
+    }
 
 
 def _load_json(path: Path, issues: list[str], label: str) -> dict[str, Any] | None:
@@ -226,24 +252,40 @@ def _cslc_hash_from_driver(driver_path: Path, driver: dict[str, Any] | None) -> 
             break
     executable = str(command[0]) if command else None
     exe_path = Path(executable) if executable else None
-    executable_hash = _sha256_file(exe_path) if exe_path is not None else None
+    wrapper_hash = _sha256_file(exe_path) if exe_path is not None else None
+    wrapper = _resolve_cslc_wrapper(exe_path) if exe_path is not None else None
+    hash_executable = Path(wrapper["executable"]) if wrapper else exe_path
+    executable_hash = (
+        _sha256_file(hash_executable) if hash_executable is not None else None
+    )
     fallback_hash = _sha256_bytes(
         json.dumps(
             {
                 "driverResult": _rel(driver_path),
-                "executable": executable,
+                "executable": str(hash_executable) if hash_executable else executable,
                 "sdkMinVersionSource": "runtime/zig/src/doe_wgsl/csl_spec.zig",
             },
             sort_keys=True,
         ).encode("utf-8")
     )
-    return {
+    record = {
         "driverResultPath": _rel(driver_path),
-        "executable": executable,
+        "executable": str(hash_executable) if hash_executable else executable,
         "executableSha256": executable_hash,
         "toolchainHash": executable_hash or fallback_hash,
-        "hashSource": "cslc_executable_sha256" if executable_hash else "driver_command_fallback",
+        "hashSource": (
+            "cslc_wrapper_resolved_executable_sha256"
+            if wrapper and executable_hash
+            else "cslc_executable_sha256"
+            if executable_hash
+            else "driver_command_fallback"
+        ),
     }
+    if wrapper:
+        record["wrapperExecutable"] = executable
+        record["wrapperExecutableSha256"] = wrapper_hash
+        record["wrapperExtraArgs"] = wrapper.get("extraArgs", [])
+    return record
 
 
 def _compile_receipt_summary(payload: dict[str, Any] | None, issues: list[str], label: str) -> dict[str, Any]:

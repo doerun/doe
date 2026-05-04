@@ -356,6 +356,66 @@ class PredictWallclockTest(unittest.TestCase):
                 2,
             )
 
+    def test_logical_kernel_can_use_tiled_compile_targets(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            compile_root = Path(scratch) / "compile"
+            _write_target(
+                compile_root,
+                "lm_head_prefill_stable",
+                output_size_expr="out_dim_per_pe",
+            )
+            host_plan = {
+                "compileTargets": [
+                    {
+                        "name": "lm_head_prefill_stable_width_tile_x0_w32",
+                        "layout": "lm_head_prefill_stable/layout.csl",
+                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "compileParams": {
+                            "width": 32,
+                            "height": 512,
+                            "out_dim_per_pe": 512,
+                        },
+                    },
+                    {
+                        "name": "lm_head_prefill_stable_width_tile_x32_w8",
+                        "layout": "lm_head_prefill_stable/layout.csl",
+                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "compileParams": {
+                            "width": 8,
+                            "height": 512,
+                            "out_dim_per_pe": 512,
+                        },
+                    },
+                ],
+                "hostPlan": {
+                    "kernels": [
+                        {
+                            "name": "lm_head_prefill_stable",
+                            "pattern": "dense_gemv",
+                            "count": 1,
+                        }
+                    ],
+                    "phases": {
+                        "prefill": [
+                            {"kernelName": "lm_head_prefill_stable"}
+                        ]
+                    },
+                },
+            }
+            receipt = predict_wallclock(host_plan, compile_root, throughput=None)
+            self.assertEqual(receipt["issues"], [])
+            self.assertEqual(len(receipt["perKernel"]), 1)
+            kernel = receipt["perKernel"][0]
+            self.assertEqual(
+                kernel["compileTargets"],
+                [
+                    "lm_head_prefill_stable_width_tile_x0_w32",
+                    "lm_head_prefill_stable_width_tile_x32_w8",
+                ],
+            )
+            self.assertEqual(kernel["outputBytesPerCall"], 2 * 512 * 4)
+            self.assertEqual(kernel["perPePeerCount"], (32 + 8) * 512)
+
 
 if __name__ == "__main__":
     unittest.main()
