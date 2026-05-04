@@ -6,6 +6,31 @@ This is a live topical sub-shard split from `docs/status/cerebras-csl.md`.
 - Keep this file under 1200 lines.
 - Dated archive material still belongs under `docs/status/archive/`.
 
+## 2026-05-04 — Gemma full-session resume attempted, still blocked pre-transcript
+
+Phase-7 `run-next-session` resume was retried with:
+`timeout 180s bench/out/scratch/run-next-session-parallel.sh`.
+The generated `bench/out/r3-1-31b-af16-hostplan-streaming/trace-bos-raw-sky-color-is-fast-embed512-exec.json`
+is still `status=blocked` before transcript readiness.
+
+Top blockers remain:
+
+- `manifest_kernel_dispatch_not_bound`
+- `real_session_runtime_blocked` with
+  `runtime:launch[26]_blocked:tiled_q4k_gemv_device_reduce_runtime`
+- `inference_evidence_gate.dispatch_evidence_lm_head_unbound`
+
+Observed transcript note:
+`Not a generated token transcript until status is output_ready and blockers is empty.`
+
+Phase-7 supporting checks were re-run:
+
+- `python3 bench/tools/synthesize_gemma4_31b_af16_bounded_inference_smoke_receipt.py` remains blocked,
+  and the per-kernel summary at `bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/summary.json`
+  still has `kernelCount=2` with `lm_head_prefill_stable` blocked and `sample` bound.
+- `python3 bench/tools/synthesize_qwen_3_6_27b_simfabric_cells_summary_receipt.py` remains in pass-with-canary
+  mode and does not close Qwen lm-head dispatch in this phase.
+
 ## 2026-05-02 — Prefill Q4K GEMV canonicalized through HostPlan, rope, and attention boundaries
 
 The compact `<bos>sky color is` simfabric run exposed the remaining

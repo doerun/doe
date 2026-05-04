@@ -139,6 +139,39 @@ _LAYOUT_PARAM_DEFAULT_RE = re.compile(
 )
 _COMPILED_ELF_RE = re.compile(r"out_([0-9]+)_([0-9]+)\.elf$")
 _PHASE_LINE_RE = re.compile(r"^phase:([^\s]+)(?:\s+(.*))?$")
+_KERNEL_VARIANT_SUFFIX_RE = re.compile(
+    r"("
+    r"_decode$|"
+    r"_prefill$|"
+    r"_width_tile_x\d+_w\d+$|"
+    r"_width_tile_x\d+_w\d+_h\d+$|"
+    r"_width\d+_h\d+$|"
+    r"_width\d+_w\d+$|"
+    r"_width\d+_w\d+_h\d+$|"
+    r"_row_tile_w\d+_h\d+$|"
+    r"_row_tile_h\d+$"
+    r")"
+)
+
+
+def _kernel_source_candidates(*, kernel: str) -> list[str]:
+    """Yield kernel names to try when locating source metadata/layout."""
+    names: list[str] = [kernel]
+    seen = {kernel}
+    queue = [kernel]
+    while queue:
+        current = queue.pop()
+        for variant in _KERNEL_VARIANT_SUFFIX_RE.split(current):
+            if not variant:
+                continue
+            base = variant
+            if base == current:
+                continue
+            if base not in seen:
+                seen.add(base)
+                names.append(base)
+                queue.append(base)
+    return names
 
 
 def parse_tile_y_range(raw: str) -> tuple[int, int]:
@@ -443,18 +476,26 @@ def find_probe_transcript(
     underscores before matching, so either spelling resolves to the
     same fixture when one exists.
     """
-    direct = probe_dir / f"{kernel}.doppler-transcript.json"
-    if direct.is_file():
-        return direct
-    alias = PROBE_TRANSCRIPT_ALIASES.get(kernel)
-    if alias:
-        alias_path = probe_dir / f"{alias}.doppler-transcript.json"
-        if alias_path.is_file():
-            return alias_path
-    canonical = kernel.replace("_", "")
+    if not probe_dir.is_dir():
+        return None
+    candidates: list[str] = []
+    seen = set()
+    for candidate in _kernel_source_candidates(kernel=kernel):
+        if candidate not in seen:
+            seen.add(candidate)
+            candidates.append(candidate)
+            alias = PROBE_TRANSCRIPT_ALIASES.get(candidate)
+            if alias and alias not in seen:
+                seen.add(alias)
+                candidates.append(alias)
+    for candidate in candidates:
+        direct = probe_dir / f"{candidate}.doppler-transcript.json"
+        if direct.is_file():
+            return direct
+    canonical = {candidate.replace("_", "") for candidate in candidates}
     for entry in probe_dir.glob("*.doppler-transcript.json"):
         stem = entry.name[: -len(".doppler-transcript.json")]
-        if stem.replace("_", "") == canonical:
+        if stem.replace("_", "") in canonical:
             return entry
     return None
 
@@ -671,16 +712,11 @@ def _metadata_path_for_kernel(
     kernel: str,
     source_root: Path,
 ) -> Path:
-    metadata_path = source_root / kernel / "pe_program.metadata.json"
-    if metadata_path.is_file():
-        return metadata_path
-    for suffix in ("_decode", "_prefill"):
-        if kernel.endswith(suffix):
-            base_kernel = kernel[: -len(suffix)]
-            base_path = source_root / base_kernel / "pe_program.metadata.json"
-            if base_path.is_file():
-                return base_path
-    return metadata_path
+    for candidate in _kernel_source_candidates(kernel=kernel):
+        candidate_path = source_root / candidate / "pe_program.metadata.json"
+        if candidate_path.is_file():
+            return candidate_path
+    return source_root / kernel / "pe_program.metadata.json"
 
 
 def _layout_path_for_kernel(
@@ -688,16 +724,11 @@ def _layout_path_for_kernel(
     kernel: str,
     source_root: Path,
 ) -> Path:
-    layout_path = source_root / kernel / "layout.csl"
-    if layout_path.is_file():
-        return layout_path
-    for suffix in ("_decode", "_prefill"):
-        if kernel.endswith(suffix):
-            base_kernel = kernel[: -len(suffix)]
-            base_path = source_root / base_kernel / "layout.csl"
-            if base_path.is_file():
-                return base_path
-    return layout_path
+    for candidate in _kernel_source_candidates(kernel=kernel):
+        candidate_path = source_root / candidate / "layout.csl"
+        if candidate_path.is_file():
+            return candidate_path
+    return source_root / kernel / "layout.csl"
 
 
 def estimate_target_io_bytes(
