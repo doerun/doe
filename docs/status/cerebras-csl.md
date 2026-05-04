@@ -25,32 +25,38 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
-## 2026-05-03 — Gemma af16 lm-head split compile in progress
+## 2026-05-04 — Compact correctness gate bound (compile-only)
 
-The compact correctness gate (`bench/out/r3-cross-model-parity/receipt.json`) is
-at `verdict=unbound`, `laneBound=3/4`. Gemma af32, Qwen af32, and Qwen eaf16
-hash spines are bound. The single remaining issue is
-`gemma4_31b_af16: compileFailedCount=1` on `lm_head_prefill_stable`, which
-ballooned `cslc-driver.real` past the 80G `MemoryMax` cap as a single
-monolithic target.
+The four-lane compact correctness gate
+(`bench/out/r3-cross-model-parity/receipt.json`) is at **`verdict=bound`**,
+`laneBound=4/4`, `issues=[]`. Receipt hash:
+`92fcb6b209068422ad5fb2e6b7a35b0d08b03432b9176ae6d73737670de2cb9d`. All four
+required lanes — `gemma4_31b_af32`, `gemma4_31b_af16`, `qwen3_6_27b_af32`,
+`qwen3_6_27b_af16` — bind.
 
-Fix in progress: the monolithic `lm_head_prefill_stable` target is split into
-six smaller `lm_head_prefill_stable_width_tile_x*_w32` compile targets
-(steps 14–19 of the 23-target plan). Tiles 14–16 plateaued in the 58–61G
-band; tiles 17 (18.7G) and 18 (20.5G, current) are running in a lower
-~18–21G band — structurally smaller tiles, same pattern, zero swap, all
-under the 80G cap.
+Gemma af16 unblock: the monolithic `lm_head_prefill_stable` target was split
+into six smaller `lm_head_prefill_stable_width_tile_x*_w32` tiles (steps
+14–19 of the 23-target plan). All 23 compile targets succeeded under the
+80G `MemoryMax` cap with `compileFailedCount=0`. Tiles 14–16 plateaued in
+the 58–61G band; tiles 17–19 in the 18–21G band; zero swap throughout.
 
-Remaining concrete work: finish step 18, compile lm-head tile 19, compile
-the four post-lm-head targets 20–23, write the driver result JSON, regenerate
-the Gemma af16 compile + budget receipts, then rerun
-`bench/tools/aggregate_cross_model_parity.py` with
-`--require-lanes gemma4_31b_af32,gemma4_31b_af16,qwen3_6_27b_af32,qwen3_6_27b_af16`.
+Two follow-on tooling fixes verified:
 
-Forward risk: targets 20–23 (post-lm-head) are unvalidated under cap. If any
-of them runs away on `cslc-driver.real`, treat it as a single-child shape
-problem like lm-head was — split or reshape, do not retry under a tighter
-cap. Plan + agent rules at `.agents/cerebras-compact-correctness-gate-7phase.md`.
+- `bench/tools/predict_simfabric_wallclock.py` now understands one logical
+  kernel backed by tiled compile targets;
+  `python3 -m unittest bench.tests.test_predict_simfabric_wallclock` passed.
+- `bench/tools/aggregate_cross_model_parity.py` now resolves the cslc
+  wrapper to the underlying compiler for toolchain hash comparison while
+  preserving wrapper metadata.
+
+**Scope clarification.** This bind covers the compile-only fixture: the full
+compile inventory for the generated inference host plan plus the cross-model
+correctness aggregate. The `run` phase still reports `compile_only_fixture`,
+which is the intended output for this gate. Runtime/inference correctness is
+the next ladder (Phase 4–5 bounded CSL cells + minimal host skeleton, with
+Doppler / Doe Vulkan as the semantic oracle), NOT covered by this receipt.
+
+Plan + agent rules: `.agents/cerebras-compact-correctness-gate-7phase.md`.
 
 ## 2026-05-03 — Gemma 4 31B simfabric hardware hold
 
