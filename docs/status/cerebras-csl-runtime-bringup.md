@@ -250,6 +250,8 @@ does not bind the final_norm -> lm_head -> sample path.
 
 `bench/out/r3-cross-model-parity/receipt.json` was refreshed with Gemma/Qwen af16 lanes required; it remains `unbound` on Gemma budget and Qwen hash-spine blockers.
 
+Gemma AF16 bounded-smoke synthesis and phase-6 cross-model parity aggregate are now ready to re-run; the `dispatch_evidence_lm_head_unbound` blocker should clear when the new `lm_head` cell's bound dispatch verdict appears as `verdict=bound` in the per-kernel summary.
+
 ## 2026-04-30 — Doe/Cerebras af16 contract and PLE SUMMA routing land
 
 Doe now has an explicit Cerebras CSL dtype contract registry at

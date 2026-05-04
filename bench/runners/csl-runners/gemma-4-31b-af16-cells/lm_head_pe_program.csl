@@ -1,0 +1,73 @@
+// PE program: dense GEMV, f16 inputs/weights with f32 logits.
+// weight is staged as [out_dim_per_pe, in_dim_per_pe] per PE.
+
+param memcpy_params;
+param c2d_params;
+param pe_id: i16;
+param pe_y: i16;
+param num_pes: i16;
+param out_dim_per_pe: i16;
+param in_dim_per_pe: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const mpi_x = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.x,
+    .queues = [2]u16{2, 4},
+    .dest_dsr_ids = [1]u16{1},
+    .src0_dsr_ids = [1]u16{1},
+    .src1_dsr_ids = [1]u16{1},
+});
+
+var activation: [in_dim_per_pe]f16 = @zeros([in_dim_per_pe]f16);
+var weight: [out_dim_per_pe * in_dim_per_pe]f16 = @zeros([out_dim_per_pe * in_dim_per_pe]f16);
+var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var output: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var activation_f32: [in_dim_per_pe]f32 = @zeros([in_dim_per_pe]f32);
+
+var activation_ptr: [*]f16 = &activation;
+var weight_ptr: [*]f16 = &weight;
+var output_ptr: [*]f32 = &output;
+
+const reduce_done_id: local_task_id = @get_local_task_id(13);
+
+fn unblock_completion_row() void {
+    if (pe_y == 0) {
+        sys_mod.unblock_cmd_stream();
+    }
+}
+
+fn compute() void {
+    for (@range(i16, in_dim_per_pe)) |col| {
+        activation_f32[@as(u32, col)] = @as(f32, activation[@as(u32, col)]);
+    }
+    for (@range(i16, out_dim_per_pe)) |row| {
+        var sum: f32 = 0.0;
+        const row_base = @as(u32, row) * @as(u32, in_dim_per_pe);
+        for (@range(i16, in_dim_per_pe)) |col| {
+            const idx = row_base + @as(u32, col);
+            sum += activation_f32[@as(u32, col)] * @as(f32, weight[idx]);
+        }
+        partial[@as(u32, row)] = sum;
+    }
+    if (num_pes == 1) {
+        for (@range(i16, out_dim_per_pe)) |i| {
+            output[@as(u32, i)] = partial[@as(u32, i)];
+        }
+        unblock_completion_row();
+    } else {
+        mpi_x.init();
+        mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &partial), @ptrcast([*]f32, &output), @as(u16, out_dim_per_pe), reduce_done_id);
+    }
+}
+
+task reduce_done_task() void {
+    unblock_completion_row();
+}
+
+comptime {
+    @bind_local_task(reduce_done_task, reduce_done_id);
+    @export_symbol(activation_ptr, "activation");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

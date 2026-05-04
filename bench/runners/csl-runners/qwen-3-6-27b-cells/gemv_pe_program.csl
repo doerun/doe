@@ -35,7 +35,7 @@ var activation_ptr: [*]f32 = &activation;
 var weight_ptr: [*]u8 = &weight;
 var output_ptr: [*]f32 = &output;
 
-const reduce_done_id: local_task_id = @get_local_task_id(12);
+const reduce_done_id: local_task_id = @get_local_task_id(13);
 
 fn compute() void {
     for (@range(i16, out_dim_per_pe)) |row| {

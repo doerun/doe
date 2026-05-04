@@ -1,16 +1,12 @@
-// Layout: fused GEMV + Q4K dequant with 2-D grid + per-row collectives reduce.
-// width shards in_dim, height shards out_dim. See
-// bench/out/cslc-lmhead-2d-probe/probe-result.json for the E2B
-// feasibility evidence. Defaults (height=1, out_dim_per_pe=out_dim)
-// preserve the pre-shard 1-D behaviour for callers that have not
-// plumbed the out_dim_per_pe / height pair through HostPlan.
+// Layout: dense GEMV with hidden x-shards and vocab y-shards.
+// Width shards hidden, height shards vocab rows; collectives_2d reduces
+// the partial logits across width.
 
 param width: u16;
-param height: u16 = 1;
+param height: u16;
 param out_dim: i16;
-param out_dim_per_pe: i16 = out_dim;
+param out_dim_per_pe: i16;
 param in_dim_per_pe: i16;
-param num_blocks_per_row: i16;
 
 const memcpy = @import_module("<memcpy/get_params>", .{
     .width = width,
@@ -34,16 +30,16 @@ layout {
                 .memcpy_params = memcpy.get_params(pe_x),
                 .c2d_params = c2d_tile_params,
                 .pe_id = @as(i16, pe_x),
+                .pe_y = @as(i16, pe_y),
                 .num_pes = @as(i16, width),
                 .out_dim_per_pe = out_dim_per_pe,
                 .in_dim_per_pe = in_dim_per_pe,
-                .num_blocks_per_row = num_blocks_per_row,
             });
         }
     }
 
-    @export_name("activation", [*]f32, true);
-    @export_name("weight", [*]u8, true);
+    @export_name("activation", [*]f16, true);
+    @export_name("weight", [*]f16, true);
     @export_name("output", [*]f32, true);
     @export_name("compute", fn()void);
 }

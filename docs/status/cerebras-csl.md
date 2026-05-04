@@ -1,3 +1,285 @@
+- 2026-05-04T14:02:32Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T14:02:32Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T14:02:29Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T14:02:29Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T14:00:48Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T14:00:48Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:58:24Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:58:23Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:57:28Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:57:28Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:39:23Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:39:23Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:38:56Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:38:56Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:32:52Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:32:52Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=80G, MemorySwapMax=8G)
+
+- 2026-05-04T13:31:52Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:31:51Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=80G, MemorySwapMax=8G)
+
+- 2026-05-04T13:31:46Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:31:46Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=80G, MemorySwapMax=8G)
+
+- 2026-05-04T13:31:43Z — failed: phase4 qwen gemv compile-attempt verbose | status=failed | rc=1
+
+- 2026-05-04T13:31:43Z — started: phase4 qwen gemv compile-attempt verbose (cap MemoryMax=40G, MemorySwapMax=8G)
+
+- 2026-05-04T13:19:54Z — failed: phase4 gemma af16 bounded smoke receipt | status=failed | rc=2
+
+- 2026-05-04T13:19:54Z — note: gemma af16 bounded-smoke synth and phase-6 cross-model aggregate are now ready to re-run; `dispatch_evidence_lm_head_unbound` should clear when the new `lm_head` cell has a bound dispatch verdict in the per-kernel summary.
+
+- 2026-05-04T13:19:54Z — started: phase4 gemma af16 bounded smoke receipt (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:19:54Z — failed: phase4 qwen cell summary receipt | status=failed | rc=1
+
+- 2026-05-04T13:19:54Z — started: phase4 qwen cell summary receipt (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:19:54Z — done: phase4 qwen cell tiled (rc=0)
+
+- 2026-05-04T13:19:31Z — started: phase4 qwen cell tiled (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:19:31Z — done: phase4 qwen cell silu (rc=0)
+
+- 2026-05-04T13:19:08Z — started: phase4 qwen cell silu (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:19:08Z — done: phase4 qwen cell sample (rc=0)
+
+- 2026-05-04T13:18:50Z — started: phase4 qwen cell sample (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:18:50Z — done: phase4 qwen cell rope_partial (rc=0)
+
+- 2026-05-04T13:18:31Z — started: phase4 qwen cell rope_partial (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:18:31Z — done: phase4 qwen cell rmsnorm (rc=0)
+
+- 2026-05-04T13:18:09Z — started: phase4 qwen cell rmsnorm (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:18:09Z — done: phase4 qwen cell residual (rc=0)
+
+- 2026-05-04T13:17:47Z — started: phase4 qwen cell residual (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:17:47Z — done: phase4 qwen cell kv_write (rc=0)
+
+- 2026-05-04T13:17:27Z — started: phase4 qwen cell kv_write (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:17:27Z — failed: phase4 qwen cell gemv | status=failed | rc=1
+
+- 2026-05-04T13:17:27Z — started: phase4 qwen cell gemv (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:17:27Z — done: phase4 qwen cell embed (rc=0)
+
+- 2026-05-04T13:17:04Z — started: phase4 qwen cell embed (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:17:04Z — done: phase4 qwen cell attn_decode (rc=0)
+
+- 2026-05-04T13:16:51Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:51Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:16:51Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:51Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:16:51Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:26Z — failed: phase4 gemma af16 bounded smoke receipt | status=failed | rc=2
+
+- 2026-05-04T13:16:26Z — started: phase4 gemma af16 bounded smoke receipt (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:26Z — failed: phase4 qwen cell summary receipt | status=failed | rc=1
+
+- 2026-05-04T13:16:26Z — started: phase4 qwen cell summary receipt (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:26Z — done: phase4 qwen cell tiled (rc=0)
+
+- 2026-05-04T13:16:07Z — started: phase4 qwen cell tiled (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:16:07Z — done: phase4 qwen cell silu (rc=0)
+
+- 2026-05-04T13:15:46Z — started: phase4 qwen cell silu (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:15:45Z — done: phase4 qwen cell sample (rc=0)
+
+- 2026-05-04T13:15:24Z — started: phase4 qwen cell sample (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:15:24Z — done: phase4 qwen cell rope_partial (rc=0)
+
+- 2026-05-04T13:15:05Z — started: phase4 qwen cell rope_partial (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:15:05Z — done: phase4 qwen cell rmsnorm (rc=0)
+
+- 2026-05-04T13:14:45Z — started: phase4 qwen cell rmsnorm (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:14:45Z — done: phase4 qwen cell residual (rc=0)
+
+- 2026-05-04T13:14:23Z — started: phase4 qwen cell residual (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:14:23Z — done: phase4 qwen cell kv_write (rc=0)
+
+- 2026-05-04T13:14:08Z — started: phase4 qwen cell kv_write (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:14:08Z — failed: phase4 qwen cell gemv | status=failed | rc=1
+
+- 2026-05-04T13:14:08Z — started: phase4 qwen cell gemv (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:14:08Z — done: phase4 qwen cell embed (rc=0)
+
+- 2026-05-04T13:13:47Z — started: phase4 qwen cell embed (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:13:47Z — done: phase4 qwen cell attn_decode (rc=0)
+
+- 2026-05-04T13:13:25Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:13:25Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:13:25Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:13:25Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:13:25Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:13:11Z — failed: phase4 qwen cell summary receipt | status=failed | rc=1
+
+- 2026-05-04T13:13:11Z — started: phase4 qwen cell summary receipt (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:13:11Z — done: phase4 qwen cell tiled (rc=0)
+
+- 2026-05-04T13:12:50Z — started: phase4 qwen cell tiled (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:12:50Z — done: phase4 qwen cell silu (rc=0)
+
+- 2026-05-04T13:12:33Z — started: phase4 qwen cell silu (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:12:33Z — done: phase4 qwen cell sample (rc=0)
+
+- 2026-05-04T13:12:19Z — started: phase4 qwen cell sample (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:12:19Z — done: phase4 qwen cell rope_partial (rc=0)
+
+- 2026-05-04T13:12:00Z — started: phase4 qwen cell rope_partial (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:12:00Z — done: phase4 qwen cell rmsnorm (rc=0)
+
+- 2026-05-04T13:11:37Z — started: phase4 qwen cell rmsnorm (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:11:37Z — done: phase4 qwen cell residual (rc=0)
+
+- 2026-05-04T13:11:12Z — started: phase4 qwen cell residual (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:11:12Z — done: phase4 qwen cell kv_write (rc=0)
+
+- 2026-05-04T13:10:54Z — started: phase4 qwen cell kv_write (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:10:54Z — failed: phase4 qwen cell gemv | status=failed | rc=1
+
+- 2026-05-04T13:10:54Z — started: phase4 qwen cell gemv (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:10:54Z — done: phase4 qwen cell embed (rc=0)
+
+- 2026-05-04T13:10:35Z — started: phase4 qwen cell embed (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:10:35Z — done: phase4 qwen cell attn_decode (rc=0)
+
+- 2026-05-04T13:10:16Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:10:16Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:10:16Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:10:16Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:10:16Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:09:19Z — failed: phase4 qwen cell gemv | status=failed | rc=1
+
+- 2026-05-04T13:09:18Z — started: phase4 qwen cell gemv (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:09:18Z — done: phase4 qwen cell embed (rc=0)
+
+- 2026-05-04T13:08:54Z — started: phase4 qwen cell embed (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:54Z — done: phase4 qwen cell attn_decode (rc=0)
+
+- 2026-05-04T13:08:37Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:37Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:08:37Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:37Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:08:37Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:22Z — failed: phase4 qwen cell attn_decode | status=failed | rc=139
+
+- 2026-05-04T13:08:05Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:05Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:08:05Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:08:05Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:08:05Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:07:53Z — failed: phase4 qwen cell gemv | status=failed | rc=1
+
+- 2026-05-04T13:07:53Z — started: phase4 qwen cell gemv (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:07:53Z — done: phase4 qwen cell embed (rc=0)
+
+- 2026-05-04T13:07:29Z — started: phase4 qwen cell embed (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:07:29Z — done: phase4 qwen cell attn_decode (rc=0)
+
+- 2026-05-04T13:07:12Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:07:12Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:07:12Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:07:12Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:07:12Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:06:04Z — failed: test-cs-python-wrapper | status=failed | rc=1
+
+- 2026-05-04T13:05:47Z — started: test-cs-python-wrapper (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:05:33Z — failed: phase4 qwen cell attn_decode | status=failed | rc=1
+
+- 2026-05-04T13:05:33Z — started: phase4 qwen cell attn_decode (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:05:33Z — done: phase5 qwen frozen doppler validate (rc=0)
+
+- 2026-05-04T13:05:33Z — started: phase5 qwen frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:05:33Z — done: phase5 gemma frozen doppler validate (rc=0)
+
+- 2026-05-04T13:05:33Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
+- 2026-05-04T13:05:10Z — failed: phase5 gemma frozen doppler validate | status=failed | rc=2
+
+- 2026-05-04T13:05:10Z — started: phase5 gemma frozen doppler validate (cap MemoryMax=16G, MemorySwapMax=8G)
+
 # Doe status: Cerebras and CSL
 
 This is a live topical status shard.
