@@ -384,14 +384,19 @@ def main() -> int:
         "gemma4-31b-af16-splice-single-block-hidden",
         [
             "python3",
-            "bench/tools/build_doppler_to_csl_splice_receipt.py",
+            "bench/tools/run_gemma4_31b_af16_doppler_csl_splice.py",
             "--kind",
             "single_block_hidden",
-            "--layer-index",
-            "59",
-            "--out",
-            "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json",
+            "--q4k-tile-dispatch-budget",
+            "1",
             "--allow-blocked",
+        ],
+    ))
+    steps.append(run(
+        "gemma4-31b-af16-splice-selected-logit",
+        [
+            "python3",
+            "bench/tools/run_gemma4_31b_af16_doppler_selected_logit_splice.py",
         ],
     ))
     steps.append(run(

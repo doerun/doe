@@ -724,11 +724,8 @@ def bind_launch_dataflow(
                 role="activation",
                 access="write",
                 source=f"{kernel_name}.output",
-                matrixCols=query_cols,
             )
         )
-        if layer_index is not None and query_cols is not None:
-            layer_state["attention_cols"] = query_cols
         set_current(output)
     elif kernel_name == "sample":
         logits = str(phase_state.get("last_logits") or "state:output_logits")

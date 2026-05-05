@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 from bench.tools.build_doppler_to_csl_splice_receipt import build_receipt
 
 
@@ -38,7 +40,9 @@ class BuildDopplerToCslSpliceReceiptTest(unittest.TestCase):
         reference.write_text(json.dumps(reference_payload), encoding="utf-8")
         fixture = root / "fixture"
         input_sha = _write(fixture / "layer_59/pre_layer_input.npy", b"input")
-        expected_sha = _write(fixture / "layer_59/post_ffn.npy", b"expected")
+        expected = np.asarray([1.0, 2.0, 3.0], dtype=np.float32)
+        np.save(fixture / "layer_59/post_ffn.npy", expected)
+        expected_sha = _sha((fixture / "layer_59/post_ffn.npy").read_bytes())
         fixture_manifest = {
             "schemaVersion": 1,
             "artifactKind": "doe_frozen_doppler_reference_manifest",
@@ -78,6 +82,8 @@ class BuildDopplerToCslSpliceReceiptTest(unittest.TestCase):
                 "csl_output_tensor": None,
                 "csl_output_token_id": None,
                 "csl_command": None,
+                "atol": 0.02,
+                "rtol": 0.02,
             })()
             receipt = build_receipt(args)
         self.assertEqual(receipt["verdict"], "blocked")
@@ -95,7 +101,7 @@ class BuildDopplerToCslSpliceReceiptTest(unittest.TestCase):
             root = Path(tmp)
             paths = self._fixture(root)
             csl = root / "csl.npy"
-            _write(csl, b"expected")
+            np.save(csl, np.asarray([1.001, 1.999, 3.002], dtype=np.float16))
             args = type("Args", (), {
                 "kind": "single_block_hidden",
                 "layer_index": 59,
@@ -108,11 +114,14 @@ class BuildDopplerToCslSpliceReceiptTest(unittest.TestCase):
                 "csl_output_tensor": csl,
                 "csl_output_token_id": None,
                 "csl_command": "test",
+                "atol": 0.02,
+                "rtol": 0.02,
             })()
             receipt = build_receipt(args)
         self.assertEqual(receipt["verdict"], "bound")
         self.assertIsNone(receipt["blocker"])
         self.assertTrue(receipt["comparison"]["match"])
+        self.assertEqual(receipt["comparison"]["mode"], "hidden_tensor_tolerance")
 
     def test_tail_token_compares_token_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -129,6 +138,8 @@ class BuildDopplerToCslSpliceReceiptTest(unittest.TestCase):
                 "csl_output_tensor": None,
                 "csl_output_token_id": 3730,
                 "csl_command": "test",
+                "atol": 0.02,
+                "rtol": 0.02,
             })()
             receipt = build_receipt(args)
         self.assertEqual(receipt["verdict"], "bound")

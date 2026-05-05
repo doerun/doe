@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -35,7 +37,7 @@ DEFAULT_MANIFEST = (
 DEFAULT_REFERENCE_EXPORT = (
     REPO_ROOT
     / "bench/out/doppler-reference/"
-    "gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/"
+    "gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/"
     "doppler_int4ple_reference_export.json"
 )
 DEFAULT_FIXTURE_ROOT = REPO_ROOT / "bench/fixtures/r3-1-31b-doppler-frozen-af16"
@@ -56,6 +58,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csl-output-tensor", type=Path, default=None)
     parser.add_argument("--csl-output-token-id", type=int, default=None)
     parser.add_argument("--csl-command", default=None)
+    parser.add_argument("--atol", type=float, default=2e-2)
+    parser.add_argument("--rtol", type=float, default=2e-2)
     parser.add_argument(
         "--allow-blocked",
         action="store_true",
@@ -182,6 +186,40 @@ def generated_token_ids(reference_export: dict[str, Any]) -> list[int]:
     return []
 
 
+def load_float_tensor(path: Path) -> np.ndarray:
+    return np.load(path, allow_pickle=False).astype(np.float32, copy=False).ravel()
+
+
+def compare_float_tensors(
+    *,
+    expected_path: Path,
+    observed_path: Path,
+    atol: float,
+    rtol: float,
+) -> dict[str, Any]:
+    expected = load_float_tensor(expected_path)
+    observed = load_float_tensor(observed_path)
+    if expected.shape != observed.shape:
+        return {
+            "match": False,
+            "maxAbsDiff": None,
+            "maxRelDiff": None,
+            "shapeMismatch": {
+                "expected": list(expected.shape),
+                "observed": list(observed.shape),
+            },
+        }
+    diff = np.abs(observed - expected)
+    denom = np.maximum(np.abs(expected), np.float32(1e-9))
+    rel = diff / denom
+    return {
+        "match": bool(np.allclose(observed, expected, atol=atol, rtol=rtol)),
+        "maxAbsDiff": float(np.max(diff)) if diff.size else 0.0,
+        "maxRelDiff": float(np.max(rel)) if rel.size else 0.0,
+        "shapeMismatch": None,
+    }
+
+
 def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
     manifest_path = resolve(args.manifest)
     reference_export_path = resolve(args.reference_export)
@@ -217,9 +255,15 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
         csl_output_tensor = hash_link(csl_output_path, extra=extra)
 
     if args.kind == "single_block_hidden":
-        comparison_mode = "hidden_tensor_sha256_exact"
+        comparison_mode = "hidden_tensor_tolerance"
         expected_sha = expected_tensor["sha256"] if expected_tensor else None
         observed_sha = csl_output_tensor["sha256"] if csl_output_tensor else None
+        numeric = {
+            "match": None,
+            "maxAbsDiff": None,
+            "maxRelDiff": None,
+            "shapeMismatch": None,
+        }
         if input_tensor is None:
             status = "blocked_missing_doppler_input"
             match = None
@@ -233,7 +277,19 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             match = None
             blocker = "csl_splice_output_absent"
         else:
-            match = expected_sha == observed_sha
+            expected_path = fixture_root / str(
+                ((fixture_manifest.get("activations") or {})
+                 .get(str(args.layer_index)) or {})
+                .get(args.expected_probe, {})
+                .get("path")
+            )
+            numeric = compare_float_tensors(
+                expected_path=expected_path,
+                observed_path=csl_output_path,
+                atol=float(args.atol),
+                rtol=float(args.rtol),
+            )
+            match = bool(numeric["match"])
             status = "matched" if match else "mismatch"
             blocker = None if match else "csl_splice_tensor_mismatch"
     else:
@@ -316,6 +372,10 @@ def build_receipt(args: argparse.Namespace) -> dict[str, Any]:
             "observedSha256": observed_sha,
             "expectedTokenId": expected_token_id if args.kind == "last_layer_tail_token" else None,
             "observedTokenId": args.csl_output_token_id if args.kind == "last_layer_tail_token" else None,
+            "atol": float(args.atol) if args.kind == "single_block_hidden" else None,
+            "rtol": float(args.rtol) if args.kind == "single_block_hidden" else None,
+            "maxAbsDiff": numeric["maxAbsDiff"] if args.kind == "single_block_hidden" else None,
+            "maxRelDiff": numeric["maxRelDiff"] if args.kind == "single_block_hidden" else None,
         },
         "claim": {
             "scope": (

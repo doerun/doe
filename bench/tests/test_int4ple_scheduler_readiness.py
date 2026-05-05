@@ -1710,6 +1710,58 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
             validator["blockers"],
         )
 
+    def test_validator_accepts_suffix_splice_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            (
+                compile_root,
+                plan,
+                runtime_config,
+                scheduler,
+                manifest_preflight,
+            ) = make_valid_executor_validator_fixture(Path(tmpdir))
+            runtime_scheduler = scheduler["runtimeScheduler"]
+            handoff_buffer = "input:doppler:layer59:pre_layer_input"
+            runtime_scheduler["externalInputBuffers"] = [handoff_buffer]
+            runtime_scheduler["validationScope"] = {
+                "kind": "doppler_csl_suffix_splice",
+                "requiresTranscript": False,
+                "requiresFullKvCoverage": False,
+                "expectedKvLayerCount": 1,
+                "initialActivationBuffer": handoff_buffer,
+            }
+            launch = runtime_scheduler["launches"][0]
+            launch["symbols"]["prompt"] = {
+                "buffer": handoff_buffer,
+                "role": "activation",
+                "access": "read",
+            }
+            launch["inputs"][0] = {
+                "symbol": "prompt",
+                "buffer": handoff_buffer,
+                "role": "activation",
+                "access": "read",
+            }
+            runtime_scheduler["kvCacheSchedule"]["layerCoverage"] = {
+                "layerCount": 60,
+                "coveredLayerCount": 1,
+                "coveredLayers": [59],
+            }
+            runtime_scheduler["transcriptCaptureSchedule"] = {
+                "status": "bound",
+                "expectedActualDecodeSteps": 0,
+                "emitters": [],
+            }
+
+            validator = validate_hostplan_executor(
+                plan=plan,
+                compile_root=compile_root,
+                runtime_config=runtime_config,
+                scheduler=scheduler,
+                manifest_preflight=manifest_preflight,
+            )
+
+        self.assertEqual(validator["status"], "passed")
+
     def test_validator_blocks_missing_transcript_and_kv_buffers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             (

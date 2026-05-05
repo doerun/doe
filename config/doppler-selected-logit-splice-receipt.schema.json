@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe.local/schemas/doppler-selected-logit-splice-receipt.schema.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptClass",
+    "comparisonMode",
+    "verdict",
+    "blockers",
+    "modelId",
+    "manifestPath",
+    "manifestSha256",
+    "referenceFixtureHash",
+    "sourceProgram",
+    "splicePoint",
+    "dopplerReference",
+    "weights",
+    "cslRun",
+    "claim"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": {
+      "const": "gemma4_31b_af16_doppler_selected_logit_splice_receipt"
+    },
+    "receiptClass": {
+      "const": "manifest_shape_doppler_selected_logit_splice"
+    },
+    "comparisonMode": { "const": "parity" },
+    "verdict": { "enum": ["pass", "blocked"] },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "modelId": { "type": "string" },
+    "manifestPath": { "type": "string" },
+    "manifestSha256": { "type": "string" },
+    "referenceFixtureHash": { "type": "string" },
+    "sourceProgram": { "type": "object" },
+    "splicePoint": {
+      "type": "object",
+      "required": [
+        "kind",
+        "layerIndex",
+        "inputProbe",
+        "promptTokenCount",
+        "selectedTokenId"
+      ],
+      "properties": {
+        "kind": { "const": "selected_lm_head_logit" },
+        "layerIndex": { "type": "integer" },
+        "inputProbe": { "type": "string" },
+        "promptTokenCount": { "type": "integer" },
+        "selectedTokenId": { "type": "integer" },
+        "selectedText": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "dopplerReference": { "type": "object" },
+    "weights": { "type": "object" },
+    "cslRun": {
+      "type": "object",
+      "required": [
+        "kernel",
+        "chunkPeWidth",
+        "inDimPerPe",
+        "chunkCount",
+        "chunkResults",
+        "rawLogit",
+        "softcappedLogit",
+        "logitAbsDiff",
+        "atol"
+      ],
+      "properties": {
+        "kernel": { "type": "string" },
+        "chunkPeWidth": { "type": "integer" },
+        "inDimPerPe": { "type": "integer" },
+        "chunkCount": { "type": "integer" },
+        "chunkResults": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "rawLogit": { "type": "number" },
+        "softcappedLogit": { "type": "number" },
+        "cpuRawLogit": { "type": "number" },
+        "cpuSoftcappedLogit": { "type": "number" },
+        "softcap": { "type": "number" },
+        "rmsNormEps": { "type": "number" },
+        "logitAbsDiff": { "type": "number" },
+        "atol": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "claim": { "type": "object" }
+  },
+  "additionalProperties": true
+}

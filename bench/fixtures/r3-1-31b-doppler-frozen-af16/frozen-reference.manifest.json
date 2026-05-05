@@ -2,106 +2,106 @@
   "activations": {
     "0": {
       "post_attn": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_0/post_attn.npy",
-        "sha256": "97389da588893db355924fa57b2bd6e398d996d62a1025034880ad4fba070721"
+        "sha256": "6a702c70ea7cb102fe84385dc7b8816d4726323099f04faaf852a8b0da86c3a7"
       },
       "post_ffn": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_0/post_ffn.npy",
-        "sha256": "550786951e7f118b2068a9441e7ba07cf053485e6cf8b3e435356a9a96437857"
+        "sha256": "d8401d4236a9e51ff61e18df49d87305e3b54310c7063df60894c2e5abd14f7b"
       },
       "post_qkv": {
-        "byteLength": 262272,
+        "byteLength": 458880,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           16384
         ],
         "path": "layer_0/post_qkv.npy",
-        "sha256": "329bd0053a0d3c9fa48c6e44c4b2b94e5c12c212650c2ce8f1efb8ef1d2d5b56"
+        "sha256": "6cac9f819ed156fd4bcb4a63ac25756e3758a1a17b5548bc118b3ba5aad3e75e"
       },
       "post_rmsnorm": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_0/post_rmsnorm.npy",
-        "sha256": "8e41761567497ec57393fb8efda739440aba06307b729f024f730dde076e2dae"
+        "sha256": "2a02b141466a2555ab618ae44f7807bf1c553b5c302d6b50620e71085d5202f2"
       },
       "pre_layer_input": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_0/pre_layer_input.npy",
-        "sha256": "195f7e1055bb10e8da211d5fe090f5892337887538399034e2cf5d506dc568b2"
+        "sha256": "33c77e98dd9b77bb0bcf2d7e5003c6a4ea8a46f1299e68618b3eed007ec6a14a"
       }
     },
     "59": {
       "post_attn": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_59/post_attn.npy",
-        "sha256": "9936f845246c310e8d27978b26df8d43d182d68f47d8469f1de04215c826ab2d"
+        "sha256": "3e57ace81104b56705fd1b73a6dc026458cde7e38104e36a1c352af83c9974ff"
       },
       "post_ffn": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_59/post_ffn.npy",
-        "sha256": "27f13fbe6a8c61c23fcebc8812b169358b64c91008fe53fdc1a1e154455c0aa4"
+        "sha256": "7c6d01ed06482b057a21dfebc8ba0e68f99e83fb50d90733971e02d0153ef19d"
       },
       "post_qkv": {
-        "byteLength": 327808,
+        "byteLength": 573568,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           20480
         ],
         "path": "layer_59/post_qkv.npy",
-        "sha256": "5b7f6131b5a4aa69352999eaf01754a4f67b6627f6f15f6f3e5c6c619b311185"
+        "sha256": "0b7e7e72e2a757247d19f5597e0e63dc2fda300f6ced324bdbc7c7c7fe7cf9f5"
       },
       "post_rmsnorm": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_59/post_rmsnorm.npy",
-        "sha256": "014c86413a0a3b29be0c12f28c834efc7131a00d37a5d70f4ac84278c7d7f602"
+        "sha256": "e5e366daf301c07421805e8051a0ac4467d086c08de06ab883c70c1947bce570"
       },
       "pre_layer_input": {
-        "byteLength": 86144,
+        "byteLength": 150656,
         "elemDtype": "float32",
         "elemShape": [
-          4,
+          7,
           5376
         ],
         "path": "layer_59/pre_layer_input.npy",
-        "sha256": "b5c5597969116db941ca46bed38225379638ba7c822d8d0a9cf93cf42164de5c"
+        "sha256": "5968ec66e645bb503710f9d7543055c4769d790799a3baa7628a7d576c2668ca"
       }
     }
   },
@@ -114,15 +114,15 @@
     "variantTag": "q4k-ehf16-af16",
     "weights": "q4k"
   },
-  "fixtureDigest": "8d07981fa75d34f8687fb87c074f2bdebc6d12a968de9d49648f6ec8dbc35f7c",
-  "frozenAt": "2026-05-05T18:46:33Z",
+  "fixtureDigest": "db16b94c49b74eb2701824f648ea6e48bae2d11d5d1c285ea938d18bf7fc786f",
+  "frozenAt": "2026-05-05T19:21:24Z",
   "frozenReason": "Captured via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; serves as the frozen-Doppler-reference reference for the Doe manifest-shape simfabric proof plan.",
   "modelId": "gemma-4-31b-it-text-q4k-ehf16-af16",
-  "promptText": "<bos>sky color is",
+  "promptText": "<bos>The color of the sky is",
   "schemaVersion": 1,
   "transcript": {
-    "byteLength": 30191,
+    "byteLength": 30327,
     "path": "reference-report.json",
-    "sha256": "60cab9e65a5bdd71335fb609045a1c12a9fb78700ac298b0595d4787c0b4bc69"
+    "sha256": "2fb7461b38654956a498a76efd7cf8fde82f8523374254bd1993fd4d17fe810d"
   }
 }

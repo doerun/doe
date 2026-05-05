@@ -6,12 +6,16 @@
     "scope": "Doppler supplies real Gemma 4 31B af16 state at the splice point; CSL is responsible only for the declared suffix output."
   },
   "comparison": {
+    "atol": null,
     "expectedSha256": null,
     "expectedTokenId": 3730,
     "match": null,
+    "maxAbsDiff": null,
+    "maxRelDiff": null,
     "mode": "token_equal",
     "observedSha256": null,
     "observedTokenId": null,
+    "rtol": null,
     "status": "blocked_missing_csl_output"
   },
   "comparisonMode": "parity",
@@ -25,9 +29,9 @@
     "expectedTensor": null,
     "expectedTokenId": 3730,
     "fixtureManifest": {
-      "byteLength": 3716,
+      "byteLength": 3735,
       "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/frozen-reference.manifest.json",
-      "sha256": "69f92218eb4a7411a3bd6adde821cf15d8b9e7afbcde2490be5812c678b26772"
+      "sha256": "8a92d64c1b388c3d663cc3b486305b2306be8c26aa9ff165b5aa73c5095f9f84"
     },
     "fixtureRoot": "bench/fixtures/r3-1-31b-doppler-frozen-af16",
     "generatedTokenIds": [
@@ -35,32 +39,32 @@
       236761
     ],
     "inputTensor": {
-      "byteLength": 86144,
+      "byteLength": 150656,
       "elemDtype": "float32",
       "elemShape": [
-        4,
+        7,
         5376
       ],
       "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/layer_59/pre_layer_input.npy",
-      "sha256": "b5c5597969116db941ca46bed38225379638ba7c822d8d0a9cf93cf42164de5c"
+      "sha256": "5968ec66e645bb503710f9d7543055c4769d790799a3baa7628a7d576c2668ca"
     }
   },
   "manifestPath": "/home/x/deco/doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json",
   "manifestSha256": "8d71be2650a1bd35f38111e6cf670b52a55aa80f9f22497ddb38a92c7398a9f8",
   "modelId": "gemma-4-31b-it-text-q4k-ehf16-af16",
   "receiptClass": "manifest_shape_doppler_to_csl_splice",
-  "referenceFixtureHash": "8d07981fa75d34f8687fb87c074f2bdebc6d12a968de9d49648f6ec8dbc35f7c",
+  "referenceFixtureHash": "db16b94c49b74eb2701824f648ea6e48bae2d11d5d1c285ea938d18bf7fc786f",
   "schemaVersion": 1,
   "sourceProgram": {
     "authoringSurface": "doppler_execution_v1",
     "executionGraphSha256": "9c462d2437a77e181a2deb0ae81af8f8545677d1a881cac7c7fa4d3692bb0ab9",
-    "inputSetSha256": "68e32810f20ac2438adaba58a58086ac186fd4278902fb5175da7d5587dd9829",
+    "inputSetSha256": "7b350257a61e31019ca621d6a27f7daac1b5f4e2ed69c9cf0be3557ce32d3e80",
     "manifestSha256": "8d71be2650a1bd35f38111e6cf670b52a55aa80f9f22497ddb38a92c7398a9f8",
     "programBundleId": null,
     "referenceExport": {
-      "byteLength": 100235,
-      "path": "bench/out/doppler-reference/gemma-4-31b-af16-bos-raw-sky-color-is-prefill-decode2/doppler_int4ple_reference_export.json",
-      "sha256": "8ebee8f753a14c877569d61fcfc6bcd35fbdee963a378f6eabd2aa77828e1759"
+      "byteLength": 100414,
+      "path": "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/doppler_int4ple_reference_export.json",
+      "sha256": "8778d4781d7fa06d214457abc1fb18cdbbc67e83fa9efbe2f67e6df4af73df55"
     },
     "weightSetSha256": "24f0c6a070fa93fe6f84e2457803cf36b34b3d0fe1de56031755f686928896bd"
   },
@@ -69,7 +73,7 @@
     "inputProbe": "pre_layer_input",
     "kind": "last_layer_tail_token",
     "layerIndex": 59,
-    "promptTokenCount": 4
+    "promptTokenCount": 7
   },
   "verdict": "blocked"
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T19:01:55.806536+00:00",
+  "generatedAt": "2026-05-05T20:30:47.468356+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -200,23 +200,31 @@
       "verdict": "blocked",
       "blocker": "simfabric_d2h_copyback_stall_after_launch_complete",
       "scope": "memcpy_d2h_start",
-      "artifactMtime": "2026-05-05T19:01:55.774241+00:00"
+      "artifactMtime": "2026-05-05T19:10:50.981524+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.single_block_hidden",
-      "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json",
+      "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json",
       "verdict": "blocked",
-      "blocker": "csl_splice_output_absent",
-      "scope": "single_block_hidden, layer=59, promptTokens=4",
-      "artifactMtime": "2026-05-05T19:01:55.643550+00:00"
+      "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259; prefill_q4k_gemv_tile_timeout:0:0:0",
+      "scope": "single_block_hidden, layer=59, promptTokens=7, handoffPromptTokens=7",
+      "artifactMtime": "2026-05-05T20:30:07.082262+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.last_layer_tail_token",
       "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json",
       "verdict": "blocked",
       "blocker": "csl_splice_token_absent",
-      "scope": "last_layer_tail_token, layer=59, promptTokens=4",
-      "artifactMtime": "2026-05-05T19:01:55.734883+00:00"
+      "scope": "last_layer_tail_token, layer=59, promptTokens=7",
+      "artifactMtime": "2026-05-05T19:46:23.336336+00:00"
+    },
+    {
+      "lane": "gemma.doppler_csl_splice.selected_logit",
+      "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
+      "verdict": "bound",
+      "blocker": null,
+      "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417",
+      "artifactMtime": "2026-05-05T20:30:39.072140+00:00"
     },
     {
       "lane": "qwen.multi_token_decode",
@@ -232,7 +240,7 @@
       "verdict": "pass_with_documented_canary_constraints",
       "blocker": null,
       "scope": "",
-      "artifactMtime": "2026-05-05T17:53:55.990587+00:00"
+      "artifactMtime": "2026-05-05T19:10:50.946164+00:00"
     },
     {
       "lane": "qwen.simfabric_cells",

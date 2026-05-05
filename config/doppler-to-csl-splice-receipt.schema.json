@@ -131,7 +131,7 @@
       "additionalProperties": false,
       "required": ["mode", "status", "match"],
       "properties": {
-        "mode": { "enum": ["hidden_tensor_sha256_exact", "token_equal"] },
+        "mode": { "enum": ["hidden_tensor_sha256_exact", "hidden_tensor_tolerance", "token_equal"] },
         "status": {
           "enum": [
             "matched",
@@ -145,7 +145,11 @@
         "expectedSha256": { "type": ["string", "null"] },
         "observedSha256": { "type": ["string", "null"] },
         "expectedTokenId": { "type": ["integer", "null"] },
-        "observedTokenId": { "type": ["integer", "null"] }
+        "observedTokenId": { "type": ["integer", "null"] },
+        "atol": { "type": ["number", "null"], "minimum": 0 },
+        "rtol": { "type": ["number", "null"], "minimum": 0 },
+        "maxAbsDiff": { "type": ["number", "null"], "minimum": 0 },
+        "maxRelDiff": { "type": ["number", "null"], "minimum": 0 }
       }
     },
     "claim": {

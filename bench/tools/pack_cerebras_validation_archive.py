@@ -84,6 +84,7 @@ INCLUDE_FILES: tuple = (
     # Fixture contracts: one per primary model lane.
     "config/doe-frozen-doppler-reference.schema.json",
     "config/doppler-to-csl-splice-receipt.schema.json",
+    "config/doppler-selected-logit-splice-receipt.schema.json",
     "config/gemma-4-e2b-real-weight-fixture.json",
     "config/gemma-4-31b-real-weight-fixture.json",
     "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json",
@@ -147,6 +148,12 @@ INCLUDE_FILES: tuple = (
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/execution_graph.json",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/prompt.txt",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/tokenized_prompt.u32",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/generated_tokens.u32",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/decode_transcript.json",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/doppler_int4ple_reference_export.json",
     # 31B-led evidence (Step 1 of the Cerebras bundle drive plan).
     # Sources are promoted from dated overnight-matrix cells to stable
     # paths so the packer's static allow-list stays deterministic; the
@@ -212,7 +219,25 @@ INCLUDE_FILES: tuple = (
     ),
     (
         "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "single_block_hidden-run.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "session-single_block_hidden/hostplan-runtime/launch-receipts/"
+        "launch-0001.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/"
+        "launch-0001/batch-shards/batch-0000-phase.log"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
         "last-layer-tail-token.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "selected-logit-splice/selected-logit-splice.json"
     ),
     "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
     "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
@@ -290,6 +315,7 @@ CLAIM_ROLE: dict[str, str] = {
     "docs/claim-discipline.md": "governance",
     "config/doe-frozen-doppler-reference.schema.json": "fixture-schema",
     "config/doppler-to-csl-splice-receipt.schema.json": "splice-receipt-schema",
+    "config/doppler-selected-logit-splice-receipt.schema.json": "selected-logit-splice-receipt-schema",
     "config/gemma-4-e2b-real-weight-fixture.json": "real-weight-fixture",
     "config/gemma-4-31b-real-weight-fixture.json": "real-weight-fixture",
     "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json": "doppler-rdrr-fixture",
@@ -351,6 +377,12 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/generated_tokens.u32": "doppler-int4ple-reference-output-tokens",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json": "doppler-int4ple-reference-transcript",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/doppler_int4ple_reference_export.json": "doppler-int4ple-reference-export",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/execution_graph.json": "doppler-31b-af16-splice-execution-graph",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/prompt.txt": "doppler-31b-af16-splice-reference-input",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/tokenized_prompt.u32": "doppler-31b-af16-splice-reference-input",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/generated_tokens.u32": "doppler-31b-af16-splice-reference-output-tokens",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/decode_transcript.json": "doppler-31b-af16-splice-reference-transcript",
+    "bench/out/doppler-reference/gemma-4-31b-af16-bos-the-color-of-the-sky-is-prefill-decode2/doppler_int4ple_reference_export.json": "doppler-31b-af16-splice-reference-export",
     "bench/out/r3-1-31b-doppler-reference/gemma-4-31b-program-bundle.json": "doppler-31b-program-bundle",
     "bench/out/r3-1-31b-doppler-reference/reference.json": "doppler-31b-webgpu-prefill-decode-reference",
     "bench/out/r3-1-31b-doppler-reference/PROVENANCE.json": "promoted-artifact-provenance",
@@ -415,8 +447,26 @@ CLAIM_ROLE: dict[str, str] = {
     ): "doppler-csl-splice-receipt",
     (
         "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "single_block_hidden-run.json"
+    ): "doppler-csl-splice-run-receipt",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "session-single_block_hidden/hostplan-runtime/launch-receipts/"
+        "launch-0001.json"
+    ): "doppler-csl-splice-blocked-launch-receipt",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/"
+        "launch-0001/batch-shards/batch-0000-phase.log"
+    ): "doppler-csl-splice-blocked-launch-phase-trace",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
         "last-layer-tail-token.json"
     ): "doppler-csl-splice-receipt",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "selected-logit-splice/selected-logit-splice.json"
+    ): "doppler-csl-selected-logit-splice-receipt",
     (
         "bench/out/r3-1-31b-af16-full-graph-compile-attempt/"
         "receipt.json"

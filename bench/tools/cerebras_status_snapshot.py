@@ -30,8 +30,15 @@ GEMMA_LOCAL_SIMFABRIC_CEILING = (
 GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN = (
     "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json"
 )
+GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN_RUN = (
+    "bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json"
+)
 GEMMA_SPLICE_LAST_LAYER_TAIL_TOKEN = (
     "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json"
+)
+GEMMA_SELECTED_LOGIT_SPLICE = (
+    "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+    "selected-logit-splice/selected-logit-splice.json"
 )
 QWEN_MULTI_TOKEN_DECODE = "bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json"
 GEMMA_SIMFABRIC_CELLS = (
@@ -185,10 +192,11 @@ def gemma_local_simfabric_ceiling_row() -> dict:
     )
 
 
-def gemma_splice_row(lane: str, artifact: str) -> dict:
+def gemma_splice_row(lane: str, artifact: str, run_artifact: str | None = None) -> dict:
     d = _load_json(artifact)
     if d is None:
         return _row(lane, artifact, "missing", None)
+    run = _load_json(run_artifact) if run_artifact else None
     splice = d.get("splicePoint") or {}
     scope_parts = []
     if splice.get("kind"):
@@ -197,11 +205,52 @@ def gemma_splice_row(lane: str, artifact: str) -> dict:
         scope_parts.append(f"layer={splice.get('layerIndex')}")
     if splice.get("promptTokenCount") is not None:
         scope_parts.append(f"promptTokens={splice.get('promptTokenCount')}")
+    blocker = d.get("blocker")
+    if isinstance(run, dict) and run.get("blocker"):
+        blocker = run.get("blocker")
+        if run.get("prefillTokenCount") is not None:
+            scope_parts.append(f"handoffPromptTokens={run.get('prefillTokenCount')}")
     return _row(
         lane,
-        artifact,
-        d.get("verdict") or "unknown",
-        d.get("blocker"),
+        run_artifact if run_artifact and run is not None else artifact,
+        (run.get("status") or "unknown")
+        if isinstance(run, dict)
+        else (d.get("verdict") or "unknown"),
+        blocker,
+        scope=", ".join(scope_parts),
+    )
+
+
+def gemma_selected_logit_splice_row() -> dict:
+    d = _load_json(GEMMA_SELECTED_LOGIT_SPLICE)
+    if d is None:
+        return _row(
+            "gemma.doppler_csl_splice.selected_logit",
+            GEMMA_SELECTED_LOGIT_SPLICE,
+            "missing",
+            None,
+        )
+    splice = d.get("splicePoint") or {}
+    csl_run = d.get("cslRun") or {}
+    blockers = d.get("blockers") or []
+    verdict = "bound" if d.get("verdict") == "pass" else d.get("verdict") or "unknown"
+    blocker = blockers[0] if blockers else None
+    scope_parts = []
+    if splice.get("kind"):
+        scope_parts.append(str(splice.get("kind")))
+    if splice.get("layerIndex") is not None:
+        scope_parts.append(f"layer={splice.get('layerIndex')}")
+    if splice.get("promptTokenCount") is not None:
+        scope_parts.append(f"promptTokens={splice.get('promptTokenCount')}")
+    if splice.get("selectedTokenId") is not None:
+        scope_parts.append(f"token={splice.get('selectedTokenId')}")
+    if csl_run.get("logitAbsDiff") is not None:
+        scope_parts.append(f"logitAbsDiff={csl_run.get('logitAbsDiff'):.6g}")
+    return _row(
+        "gemma.doppler_csl_splice.selected_logit",
+        GEMMA_SELECTED_LOGIT_SPLICE,
+        verdict,
+        blocker,
         scope=", ".join(scope_parts),
     )
 
@@ -310,11 +359,13 @@ def collect_rows() -> list[dict]:
     rows.append(gemma_splice_row(
         "gemma.doppler_csl_splice.single_block_hidden",
         GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN,
+        GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN_RUN,
     ))
     rows.append(gemma_splice_row(
         "gemma.doppler_csl_splice.last_layer_tail_token",
         GEMMA_SPLICE_LAST_LAYER_TAIL_TOKEN,
     ))
+    rows.append(gemma_selected_logit_splice_row())
     rows.append(qwen_multi_token_decode_row())
     rows.append(gemma_simfabric_cells_row())
     rows.append(qwen_simfabric_cells_row())

@@ -15,6 +15,7 @@ import concurrent.futures
 import hashlib
 import json
 import os
+import signal
 import shutil
 import subprocess
 import sys
@@ -206,6 +207,12 @@ def parse_args() -> argparse.Namespace:
             "Maximum Q4K GEMV tile steps per SDK adapter process. "
             "Use 1 to isolate simulator state between tile launches."
         ),
+    )
+    parser.add_argument(
+        "--session-prefill-q4k-gemv-tile-dispatch-budget",
+        type=int,
+        default=0,
+        help="Stop session prefill Q4K GEMV after this many fresh tile dispatches; 0 means unbounded.",
     )
     parser.add_argument(
         "--session-ple-proj-dispatch-mode",
@@ -2471,24 +2478,35 @@ def _run_prefill_gemv_tile(
     timeout_seconds: int | None,
 ) -> tuple[int, str, str, bool, int]:
     started_ns = time.monotonic_ns()
+    timeout = timeout_seconds if timeout_seconds and timeout_seconds > 0 else None
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
     try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds if timeout_seconds and timeout_seconds > 0 else None,
-        )
+        stdout, stderr = process.communicate(timeout=timeout)
         return (
-            completed.returncode,
-            completed.stdout,
-            completed.stderr,
+            int(process.returncode or 0),
+            stdout,
+            stderr,
             False,
             time.monotonic_ns() - started_ns,
         )
     except subprocess.TimeoutExpired as exc:
-        stdout = exc.stdout if isinstance(exc.stdout, str) else ""
-        stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        stdout, stderr = process.communicate()
+        stdout = stdout if isinstance(stdout, str) else ""
+        stderr = stderr if isinstance(stderr, str) else ""
+        if isinstance(exc.stdout, str) and exc.stdout:
+            stdout = exc.stdout + stdout
+        if isinstance(exc.stderr, str) and exc.stderr:
+            stderr = exc.stderr + stderr
         return -1, stdout, stderr, True, time.monotonic_ns() - started_ns
 
 
@@ -2538,6 +2556,7 @@ def _execute_tiled_q4k_gemv_launch(
     jobs: int,
     output_pe_rows: int = DEFAULT_PREFILL_Q4K_GEMV_OUTPUT_PE_ROWS,
     adapter_step_budget: int = DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET,
+    tile_dispatch_budget: int = 0,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
     a_binding = _binding_for_any_symbol(
@@ -2744,6 +2763,13 @@ def _execute_tiled_q4k_gemv_launch(
 
     if not tasks:
         raise ValueError("prefill_q4k_gemv_tile_tasks_empty")
+    total_task_count = len(tasks)
+    tile_dispatch_budget = max(0, int(tile_dispatch_budget))
+    budget_limited = (
+        tile_dispatch_budget > 0 and total_task_count > tile_dispatch_budget
+    )
+    if budget_limited:
+        tasks = tasks[:tile_dispatch_budget]
     pending_tasks = [task for task in tasks if not bool(task.get("reusedOutput"))]
     task_shards = _prefill_gemv_task_shards(
         pending_tasks,
@@ -2765,6 +2791,9 @@ def _execute_tiled_q4k_gemv_launch(
         "requestedJobCount": max(1, int(jobs)),
         "adapterStepBudget": max(1, int(adapter_step_budget)),
         "shardCount": len(task_shards),
+        "totalTaskCountBeforeBudget": total_task_count,
+        "tileDispatchBudget": tile_dispatch_budget,
+        "budgetLimited": budget_limited,
         "splitD2HRows": split_d2h_rows,
         "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
         "shards": [],
@@ -2979,6 +3008,11 @@ def _execute_tiled_q4k_gemv_launch(
         )
     ]
     blockers: list[str] = []
+    if budget_limited:
+        blockers.append(
+            "prefill_q4k_gemv_tile_dispatch_budget_exhausted:"
+            f"{len(tasks)}<{total_task_count}"
+        )
     for result in results:
         output_start = int(result["outputStart"])
         row_index = int(result["rowIndex"])
@@ -3049,11 +3083,44 @@ def _execute_tiled_q4k_gemv_launch(
                 "workerCount": worker_count,
                 "adapterStepBudget": max(1, int(adapter_step_budget)),
                 "shardCount": len(task_shards),
+                "totalTaskCountBeforeBudget": total_task_count,
+                "tileDispatchBudget": tile_dispatch_budget,
+                "budgetLimited": budget_limited,
                 "pendingStepCount": len(pending_tasks),
                 "reusedOutputCount": len(tasks) - len(pending_tasks),
                 "splitD2HRows": split_d2h_rows,
                 "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
                 "shards": batch_shards,
+            },
+            "tileCoverage": {
+                "kind": "prefill_row_q4k_gemv_output_tiles",
+                "rows": rows,
+                "sourceCols": source_cols,
+                "sourceTileCount": len(source_tiles),
+                "sourceTileCols": PREFILL_GEMV_SOURCE_TILE_COLS,
+                "outputCols": output_cols,
+                "width": width,
+                "height": height,
+                "outputRegionX": output_region_x,
+                "outputRegionWidth": output_region_width,
+                "inDimPerPe": in_dim_per_pe,
+                "outDimPerPe": out_dim_per_pe,
+                "blocksPerPe": blocks_per_pe,
+                "outputTileCols": output_tile_cols,
+                "outputReadElements": output_read_elements,
+                "outputReadDtype": "f16",
+                "hostReduce": False,
+                "splitD2HRows": split_d2h_rows,
+                "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
+                "d2hElementCountLimit": SDK_D2H_ELEMENT_COUNT_LIMIT,
+                "tileCount": len(results),
+                "totalTaskCountBeforeBudget": total_task_count,
+                "tileDispatchBudget": tile_dispatch_budget,
+                "budgetLimited": budget_limited,
+                "batchStepCount": len(tasks),
+                "pendingBatchStepCount": len(pending_tasks),
+                "reusedOutputCount": len(tasks) - len(pending_tasks),
+                "covered": False,
             },
             "tileDispatches": [
                 _prefill_gemv_tile_receipt_summary(result)
@@ -3093,6 +3160,9 @@ def _execute_tiled_q4k_gemv_launch(
                 "workerCount": worker_count,
                 "adapterStepBudget": max(1, int(adapter_step_budget)),
                 "shardCount": len(task_shards),
+            "totalTaskCountBeforeBudget": total_task_count,
+            "tileDispatchBudget": tile_dispatch_budget,
+            "budgetLimited": budget_limited,
             "pendingStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
             "splitD2HRows": split_d2h_rows,
@@ -3144,7 +3214,13 @@ def _execute_tiled_q4k_gemv_launch(
             "maxOutputPeRows": PREFILL_GEMV_MAX_OUTPUT_PE_ROWS,
             "d2hElementCountLimit": SDK_D2H_ELEMENT_COUNT_LIMIT,
             "tileCount": len(results),
+            "totalTaskCountBeforeBudget": total_task_count,
+            "tileDispatchBudget": tile_dispatch_budget,
+            "budgetLimited": budget_limited,
             "batchStepCount": len(tasks),
+            "totalTaskCountBeforeBudget": total_task_count,
+            "tileDispatchBudget": tile_dispatch_budget,
+            "budgetLimited": budget_limited,
             "pendingBatchStepCount": len(pending_tasks),
             "reusedOutputCount": len(tasks) - len(pending_tasks),
             "covered": len(results)
@@ -4825,6 +4901,7 @@ def execute_hostplan_runtime(
     trace_path: Path,
     checkpoint_dir: Path | None = None,
     resume_state: Any = None,
+    initial_buffer_files: dict[str, Path] | None = None,
     stop_after_launch: int = -1,
     launch_timeout_seconds: int | None = DEFAULT_LAUNCH_TIMEOUT_SECONDS,
     session_lm_head_dispatch_mode: str = "monolithic",
@@ -4839,6 +4916,7 @@ def execute_hostplan_runtime(
     session_prefill_q4k_gemv_adapter_step_budget: int = (
         DEFAULT_PREFILL_Q4K_GEMV_ADAPTER_STEP_BUDGET
     ),
+    session_prefill_q4k_gemv_tile_dispatch_budget: int = 0,
     session_ple_proj_dispatch_mode: str = "monolithic_summa",
     session_attention_prefill_dispatch_mode: str = "hostplan_static",
     session_lm_head_batch_runtime: bool = False,
@@ -4849,7 +4927,7 @@ def execute_hostplan_runtime(
     runtime_dir.mkdir(parents=True, exist_ok=True)
     launches = bootstrap.get("launches") or []
     blockers: list[str] = []
-    buffer_files: dict[str, Path] = {}
+    buffer_files: dict[str, Path] = dict(initial_buffer_files or {})
     executed_launches: list[dict[str, Any]] = []
     executed_count = 0
     start_index = 0
@@ -4861,6 +4939,12 @@ def execute_hostplan_runtime(
             "hostplan_resume_loaded",
             startIndex=start_index,
             bufferCount=len(buffer_files),
+        )
+    elif initial_buffer_files:
+        append_progress(
+            progress_path,
+            "hostplan_initial_buffers_loaded",
+            bufferCount=len(initial_buffer_files),
         )
     stopped_at_checkpoint = False
     parallel_embed_roi_done: set[int] = set()
@@ -5032,6 +5116,10 @@ def execute_hostplan_runtime(
                     adapter_step_budget=max(
                         1,
                         int(session_prefill_q4k_gemv_adapter_step_budget),
+                    ),
+                    tile_dispatch_budget=max(
+                        0,
+                        int(session_prefill_q4k_gemv_tile_dispatch_budget),
                     ),
                 )
                 executed_launches.append(launch_receipt)
@@ -5450,13 +5538,19 @@ def execute_hostplan_runtime(
                 stopped_at_checkpoint = True
                 break
         except Exception as exc:
-            blockers.append(f"launch[{launch_index}]_blocked:{exc}")
+            blocker_detail = (
+                "launch_step_timeout"
+                if isinstance(exc, subprocess.TimeoutExpired)
+                or "timed out after" in str(exc)
+                else str(exc)
+            )
+            blockers.append(f"launch[{launch_index}]_blocked:{blocker_detail}")
             append_progress(
                 progress_path,
                 "hostplan_launch_blocked",
                 launchIndex=launch_index,
                 target=launch.get("targetName"),
-                error=str(exc),
+                error=blocker_detail,
             )
             break
     if blockers:
@@ -5498,6 +5592,10 @@ def execute_hostplan_runtime(
             "adapterStepBudget": max(
                 1,
                 int(session_prefill_q4k_gemv_adapter_step_budget),
+            ),
+            "tileDispatchBudget": max(
+                0,
+                int(session_prefill_q4k_gemv_tile_dispatch_budget),
             ),
         },
         "sessionPleProjDispatch": {
@@ -5846,6 +5944,9 @@ def main() -> int:
                 ),
                 session_prefill_q4k_gemv_adapter_step_budget=(
                     args.session_prefill_q4k_gemv_adapter_step_budget
+                ),
+                session_prefill_q4k_gemv_tile_dispatch_budget=(
+                    args.session_prefill_q4k_gemv_tile_dispatch_budget
                 ),
                 session_ple_proj_dispatch_mode=args.session_ple_proj_dispatch_mode,
                 session_attention_prefill_dispatch_mode=(

@@ -582,6 +582,7 @@ def build_real_session_scheduler(
     runtime_config: dict[str, Any],
     architecture_disabled_weight_keys: list[str] | None = None,
     per_layer_input_block_enabled: bool = True,
+    initial_activation_buffer: str = "input:prompt_token_ids",
 ) -> dict[str, Any]:
     launches: list[dict[str, Any]] = []
     blockers: list[str] = []
@@ -590,7 +591,7 @@ def build_real_session_scheduler(
     transcript_emitters: list[dict[str, Any]] = []
     elided_operations: list[dict[str, Any]] = []
     lifetimes: dict[str, dict[str, Any]] = {}
-    current = "input:prompt_token_ids"
+    current = initial_activation_buffer
     layer_state: dict[int, dict[str, str]] = {}
     last_generated_token = "input:prompt_token_ids"
     last_logits = ""
@@ -1213,6 +1214,10 @@ def build_real_session_scheduler(
         }
     )
     expected_decode_steps = int(dispatch_plan["decodeTokenCount"])
+    is_suffix_splice = str(dispatch_plan.get("kind") or "").startswith(
+        "doppler_csl_splice"
+    )
+    expected_kv_layer_count = len(covered_layers) if is_suffix_splice else model_layers
     logits_emitters = [
         item for item in transcript_emitters if item["kind"] == "logits_digest"
     ]
@@ -1227,17 +1232,27 @@ def build_real_session_scheduler(
         blockers.append(
             f"transcript_token_emitter_count:{len(token_emitters)}!={expected_decode_steps}"
         )
-    transcript_status = (
-        "bound"
-        if expected_decode_steps > 0
-        and len(logits_emitters) == expected_decode_steps
+    transcript_bound = (
+        len(logits_emitters) == expected_decode_steps
         and len(token_emitters) == expected_decode_steps
-        else "blocked_missing_decode_emitters"
     )
+    transcript_status = "bound" if transcript_bound else "blocked_missing_decode_emitters"
     status = "bound" if not blockers else "blocked"
     return {
         "status": status,
         "blockers": blockers,
+        "validationScope": {
+            "kind": "doppler_csl_suffix_splice" if is_suffix_splice else "full_model",
+            "requiresTranscript": expected_decode_steps > 0,
+            "requiresFullKvCoverage": not is_suffix_splice,
+            "expectedKvLayerCount": expected_kv_layer_count,
+            "initialActivationBuffer": initial_activation_buffer,
+        },
+        "externalInputBuffers": (
+            []
+            if initial_activation_buffer == "input:prompt_token_ids"
+            else [initial_activation_buffer]
+        ),
         "runtimeExpansion": {
             "decodeIterationCount": int(dispatch_plan["decodeTokenCount"]),
             "runtimeLaunchCount": len(launches),
@@ -1256,6 +1271,7 @@ def build_real_session_scheduler(
             "cacheReadCount": len(kv_operations),
             "layerCoverage": {
                 "layerCount": model_layers,
+                "expectedCoveredLayerCount": expected_kv_layer_count,
                 "coveredLayerCount": len(covered_layers),
                 "coveredLayers": covered_layers,
             },

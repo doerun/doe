@@ -173,6 +173,7 @@ def _validate_transcript_emitters(
     transcript: dict[str, Any],
     produced_buffers: set[str],
     launch_indices: set[int],
+    required: bool,
 ) -> dict[str, Any]:
     emitters = transcript.get("emitters") or []
     if transcript.get("status") != "bound":
@@ -183,13 +184,13 @@ def _validate_transcript_emitters(
     logits_emitters = [item for item in emitters if item.get("kind") == "logits_digest"]
     token_emitters = [item for item in emitters if item.get("kind") == "generated_token"]
     expected_steps = int(transcript.get("expectedActualDecodeSteps") or 0)
-    if expected_steps <= 0:
+    if required and expected_steps <= 0:
         blockers.append("transcript_expected_decode_steps_missing")
-    if len(logits_emitters) != expected_steps:
+    if required and len(logits_emitters) != expected_steps:
         blockers.append(
             f"transcript_logits_emitter_count:{len(logits_emitters)}!={expected_steps}"
         )
-    if len(token_emitters) != expected_steps:
+    if required and len(token_emitters) != expected_steps:
         blockers.append(
             f"transcript_token_emitter_count:{len(token_emitters)}!={expected_steps}"
         )
@@ -222,6 +223,7 @@ def _validate_kv_schedule(
     blockers: list[str],
     kv_schedule: dict[str, Any],
     launch_indices: set[int],
+    expected_layer_count: int | None,
 ) -> dict[str, Any]:
     operations = kv_schedule.get("operations") or []
     if kv_schedule.get("status") != "bound":
@@ -238,8 +240,15 @@ def _validate_kv_schedule(
     coverage = kv_schedule.get("layerCoverage") or {}
     layer_count = int(coverage.get("layerCount") or 0)
     covered_layer_count = int(coverage.get("coveredLayerCount") or 0)
-    if layer_count > 0 and covered_layer_count != layer_count:
-        blockers.append(f"kv_cache_layer_coverage:{covered_layer_count}!={layer_count}")
+    expected_coverage = (
+        expected_layer_count
+        if isinstance(expected_layer_count, int) and expected_layer_count >= 0
+        else layer_count
+    )
+    if expected_coverage > 0 and covered_layer_count != expected_coverage:
+        blockers.append(
+            f"kv_cache_layer_coverage:{covered_layer_count}!={expected_coverage}"
+        )
     for index, operation in enumerate(operations):
         if not isinstance(operation, dict):
             blockers.append(f"kv_cache.operations[{index}]_not_object")
@@ -281,11 +290,15 @@ def validate_hostplan_executor(
 ) -> dict[str, Any]:
     runtime_scheduler = _runtime_scheduler(scheduler)
     launches = runtime_scheduler.get("launches") or []
+    validation_scope = runtime_scheduler.get("validationScope") or {}
     blockers: list[str] = []
     checks: list[dict[str, Any]] = []
     target_names = _target_names(plan)
     states = _state_roots(runtime_config)
     produced_buffers: set[str] = {"input:prompt_token_ids"}
+    for buffer in runtime_scheduler.get("externalInputBuffers") or []:
+        if isinstance(buffer, str) and buffer:
+            produced_buffers.add(buffer)
     launch_indices: set[int] = set()
     launched_targets: set[str] = set()
     compiled_targets: set[str] = set()
@@ -418,11 +431,17 @@ def validate_hostplan_executor(
         transcript=runtime_scheduler.get("transcriptCaptureSchedule") or {},
         produced_buffers=produced_buffers,
         launch_indices=launch_indices,
+        required=bool(validation_scope.get("requiresTranscript", True)),
     )
     kv_summary = _validate_kv_schedule(
         blockers=blockers,
         kv_schedule=runtime_scheduler.get("kvCacheSchedule") or {},
         launch_indices=launch_indices,
+        expected_layer_count=(
+            int(validation_scope["expectedKvLayerCount"])
+            if isinstance(validation_scope.get("expectedKvLayerCount"), int)
+            else None
+        ),
     )
 
     checks.append(
