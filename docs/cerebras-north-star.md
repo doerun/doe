@@ -1,4 +1,4 @@
-# Doe Cerebras North Star
+# Doe Cerebras evidence ledger
 
 One Doppler-authored Gemma 4 31B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Layer B full-graph compile is closed only for the emitted compile-target inventory. Token-output inference evidence is fail-closed until the HostPlan preserves the explicit post-layer logits path and every sample launch consumes a typed logits producer.
 
@@ -33,28 +33,29 @@ External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebra
 - [ ] **R3-3**: Manifest-shape hardware parity receipt — 23-kernel graph end-to-end on WSE, bound to Doppler reference fixture
 - [ ] Speed measurement: prefill + decode tok/s (simfabric is correctness-only)
 
-## Layer C rung ladder (manifest-shape simfabric)
+## Layer C milestone queue (manifest-shape simfabric)
 
-| # | Rung | Status |
-|---|---|---|
-| 0 | Per-target compile cache | Module landed; driver wiring follow-up |
-| 1 | Schema-enforced hash spine | 15/15 tests pass; wired into 6 receipt writers |
-| 2 | Predicted simfabric wall-clock | 18/18 tests pass; calibration via canary proxy |
-| 3 | Per-kernel manifest-shape dispatch | Runner landed; manifest-shape simfabric exceeds 1800s timeout — hardware-gated |
-| 4 | Layout receipt | Runner landed; hardware-gated for same reason |
-| 5 | Frozen Doppler reference fixture | **Closed**, 4-of-4 probes bound |
-| 6 | 1-of-60-layer first-token parity | Per-kernel byte-identity precondition closed; sharded attention emit closed |
-| 7 | Single-block parity with intra-block probes | Pending hardware |
-| 8 | Full 60-layer prefill + first-token | Pending hardware |
-| 9 | Multi-token continuation | Pending hardware |
+| Milestone | Status |
+|---|---|
+| Per-target compile cache | Module landed; driver wiring follow-up |
+| Schema-enforced hash spine | 15/15 tests pass; wired into 6 receipt writers |
+| Predicted simfabric wall-clock | 18/18 tests pass; calibration via canary proxy |
+| Per-kernel manifest-shape dispatch | Runner landed; manifest-shape simfabric exceeds 1800s timeout — hardware-gated |
+| Layout receipt | Runner landed; hardware-gated for same reason |
+| Frozen Doppler reference fixture | **Closed**, 4-of-4 probes bound |
+| 1-of-60-layer first-token parity | Per-kernel byte-identity precondition closed; sharded attention emit closed |
+| Single-block parity with intra-block probes | Pending hardware |
+| Full 60-layer prefill + first-token | Pending hardware |
+| Multi-token continuation | Pending hardware |
 
-Rungs are bring-up phases, not a strict prerequisite chain. Rungs 3-4
-catch kernel-in-isolation pathologies (cslc reject on wse3, fabric fit,
-dispatch timeout taxonomy, per-kernel byte/digest stability). Rungs 6-9
-catch composition, phase-order, lm-head routing, and inter-kernel
-handoff bugs (see Active fail-closed queue items 1-4 for concrete
-examples that per-kernel manifest-shape dispatch passed through).
-Neither side subsumes the other.
+These are bring-up phases, not a strict prerequisite chain. Per-kernel
+manifest-shape dispatch and layout-receipt steps catch kernel-in-isolation
+pathologies (cslc reject on wse3, fabric fit, dispatch timeout taxonomy,
+per-kernel byte/digest stability). The 1-of-60 / single-block /
+full-60-layer / multi-token-continuation steps catch composition,
+phase-order, lm-head routing, and inter-kernel handoff bugs (see Active
+fail-closed queue items 1-4 for concrete examples that per-kernel
+manifest-shape dispatch passed through). Neither side subsumes the other.
 
 ## Acceptance bar (Layer C)
 
@@ -102,7 +103,7 @@ The live Gemma `<bos>sky color is` session remains the first proof path. Regener
 - Compile artifacts reused only by content hash, never filename.
 - Shape substitution (e.g., `hidden_dim=1024` instead of 5120) is a separate receipt class.
 - The reference fixture is frozen — regeneration is a digest-changing event, not a silent refresh.
-- Every kernel dispatches at manifest shape (rung 4) before any parity claim.
+- Every kernel dispatches at manifest shape (per-kernel manifest-shape dispatch step) before any parity claim.
 - Per-class CSL kernel bytes must be numLayers-invariant before an L=1 run can stand in for a full-depth parity claim.
 - Materialized compile roots under `bench/out/*manifest-fullgraph-compile-steps/` must be regenerated after emitter changes before byte-identity or dispatch evidence is restated.
 - Graph-to-HostPlan inventory equality is required for inference claims; dropping a source graph target must produce a typed unsupported result.

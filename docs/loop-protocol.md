@@ -1,33 +1,33 @@
-# Loop protocol: building TSIR vs. closing parity
+# TSIR iteration discipline
 
 ## Purpose
 
 This doc defines the iteration discipline for two concurrent streams of work
 on the Doe TSIR pipeline:
 
-- **Loop 2** — builds the compiler machinery.
-- **Loop 3** — proves it on real Doppler→Doe→Cerebras legs, one kernel family
-  at a time.
+- **Build iteration** — extends the compiler machinery.
+- **Parity iteration** — proves it on real Doppler→Doe→Cerebras legs, one
+  kernel family at a time.
 
 `tsir-lowering-plan.md` defines the *architecture* and the *rollout ordering*
 (steps 1–12). This doc defines the *cadence* and *gating rules* that govern
 how code lands against that architecture — so that partially-built TSIR can
 host real parity receipts without the two streams fighting each other.
 
-Loop 1 — end-to-end happy-path bring-up — is not defined here. That work
-precedes and produces the current baseline.
+End-to-end happy-path bring-up is not defined here. That work precedes and
+produces the current baseline.
 
 ## Summary
 
-| | Loop 2 | Loop 3 |
+| | Build iteration | Parity iteration |
 |--|--|--|
 | Job | Build TSIR infrastructure | Close one parity leg |
 | Scope | Oracle, descriptors, schema, frontend, residency, collectives, emitter | GEMV → RMSNorm → gather, in that order |
 | Per-iteration | One committable increment of the lowest-numbered unlanded step | One kernel family, end to end |
 | Gating | Green tests + dated status entry; stop at phase boundary | Parity receipt + lowering binding committed |
-| Doc output | Status entry in `docs/status/tsir.md` (Loop 2 TSIR work) / `docs/status/cerebras-csl.md` (Cerebras-specific work) | Parity receipt under `reports/parity/` + manifest `integrityExtensions.lowerings[]` entry |
+| Doc output | Status entry in `docs/status/tsir.md` (TSIR build work) / `docs/status/cerebras-csl.md` (Cerebras-specific work) | Parity receipt under `reports/parity/` + manifest `integrityExtensions.lowerings[]` entry |
 
-## Loop 2 — TSIR machinery
+## Build iteration — TSIR machinery
 
 **Source of truth:** `docs/tsir-lowering-plan.md`.
 
@@ -49,14 +49,14 @@ precedes and produces the current baseline.
 - Phase C: remaining kernel families.
 - Phase D: autotuning pass on top of the correctness-only planner.
 
-A phase boundary is a mandatory pause. No Loop 2 iteration crosses a phase
+A phase boundary is a mandatory pause. No build iteration crosses a phase
 without human review.
 
-**Stop-until-green rule:** A Loop 2 iteration that leaves its step partially
+**Hold until green:** A build iteration that leaves its step partially
 landed must be marked as such in the status entry. The next iteration resumes
 the same step. No drift to other steps until the current one is green.
 
-## Loop 3 — parity closure per kernel family
+## Parity iteration — closure per kernel family
 
 **Source of truth:** `docs/tsir-lowering-plan.md` §Step 10 (manifest binding)
 plus `bench/tools/doe_parity.py` receipt schema.
@@ -68,12 +68,12 @@ plus `bench/tools/doe_parity.py` receipt schema.
 3. **gather** — worst per-PE blowup today; unblocks embedding lookup under
    tight residency budget.
 
-Attention enters the Loop 3 sequence only after Phase A is green. It does
-*not* go in this list.
+Attention enters the parity-iteration sequence only after Phase A is green.
+It does *not* go in this list.
 
 **Per-iteration protocol:**
 
-1. Confirm the Loop 2 phase required for this kernel family is landed.
+1. Confirm the build phase required for this kernel family is landed.
    Minimum prerequisites for each family:
    - **GEMV:** TSIR schema (step 3), frontend (step 4), residency (step 5),
      mechanical emitter (step 7) landed for at least this kernel.
@@ -98,30 +98,31 @@ Attention enters the Loop 3 sequence only after Phase A is green. It does
 8. **Stop.** Do not start the next family until the current one is green and
    committed.
 
-**Stop-until-green rule:** if the parity receipt for the current family is
+**Hold until green:** if the parity receipt for the current family is
 `not_implemented` / `deferred` / `failed`, the iteration is not green and the
-next family does not begin. A failing parity run is a Loop 2 defect report,
-not a license to skip ahead.
+next family does not begin. A failing parity run is a build-iteration defect
+report, not a license to skip ahead.
 
 ## Legacy-path receipts (pre-TSIR)
 
-During Loop 2 bring-up, `doe_parity.py` may emit receipts from the current
-classifier/template CSL path, labeled `backend: csl-classifier-legacy`. These
-receipts:
+During build-iteration bring-up, `doe_parity.py` may emit receipts from the
+current classifier/template CSL path, labeled `backend: csl-classifier-legacy`.
+These receipts:
 
 - exercise the receipt-schema + report directory plumbing on real WGSL+CSL
   pairs
-- do **not** satisfy a Loop 3 iteration
+- do **not** satisfy a parity iteration
 - must not be bound into `integrityExtensions.lowerings[]` (leaving that
   array absent is the correct state for a Doppler artifact with no TSIR-backed
   lowering yet)
 
-A Loop-3-iteration receipt requires `backend: webgpu-generic` or `backend:
-wse3` and non-null TSIR digests. Anything else is Loop 2 plumbing evidence.
+A parity-iteration receipt requires `backend: webgpu-generic` or `backend:
+wse3` and non-null TSIR digests. Anything else is build-iteration plumbing
+evidence.
 
 ## Cross-repo handoffs
 
-Loop 3 binds into Doppler artifacts. The touchpoints:
+Parity iteration binds into Doppler artifacts. The touchpoints:
 
 - **Schema:** `doppler/src/formats/rdrr/types.d.ts`
   (`IntegrityExtensionsLowerings`, `IntegrityExtensionsLoweringEntry`).
@@ -131,40 +132,41 @@ Loop 3 binds into Doppler artifacts. The touchpoints:
   (`findLoweringOrThrow`, `DOPPLER_LOWERING_MISSING`,
   `DOPPLER_LOWERING_REJECTED`).
 
-A Loop 3 iteration that needs a new field on a lowering entry pauses Loop 3,
-opens a Doppler schema change as a separate commit, and resumes Loop 3 only
-after the schema lands on Doppler `main`.
+A parity iteration that needs a new field on a lowering entry pauses, opens a
+Doppler schema change as a separate commit, and resumes only after the schema
+lands on Doppler `main`.
 
-**Vocabulary drift to resolve before the first Loop 3 close:** Doe's current
+**Vocabulary drift to resolve before the first parity close:** Doe's current
 `config/doe-parity-receipt.schema.json` uses underscored exactness-class
 values (`bit_exact_solo`, `algorithm_exact`, `tolerance_bounded`). RDRR
 canonical form (see `doppler/docs/distribution/rdrr-p2p-plan.md` and
 `doppler/docs/distribution/collective-transport-contract.md`) is hyphenated
 (`bit-exact-solo`, etc.), and the Doppler `IntegrityExtensionsLoweringEntry`
-schema uses the hyphenated form. A Loop 3 iteration will need to either
+schema uses the hyphenated form. A parity iteration will need to either
 (a) update the Doe receipt schema to the hyphenated form, or (b) translate
 in the tool that copies receipt fields into the manifest entry. Option (a) is
 preferred — keep RDRR vocabulary verbatim everywhere.
 
-## What does *not* belong in either loop
+## What does *not* belong in either iteration
 
-- **Loop 2 iterations that run parity on real artifacts.** That's Loop 3.
-- **Loop 3 iterations that change the compiler.** That's Loop 2.
+- **Build iterations that run parity on real artifacts.** That's a parity
+  iteration.
+- **Parity iterations that change the compiler.** That's a build iteration.
 - **Receipts emitted as side-effects of ad-hoc debug runs.** Only committed
-  receipts under `reports/parity/` count toward Loop 3.
+  receipts under `reports/parity/` count toward parity iterations.
 - **Attention** until Phase A completes.
 - **CI automation.** Per `tsir-lowering-plan.md` §Step 9, the parity harness
-  is a manual CLI gate; automation is not in scope for either loop.
+  is a manual CLI gate; automation is not in scope for either iteration type.
 
 ## Exit criteria
 
-Loop 2 exits when:
+The build stream exits when:
 
 - all 12 steps are landed
 - the 16 per-kernel `emit_csl_*.zig` emitters are deleted
 - `emit_csl_classify.zig` is reduced to kernel-family hint extraction
 
-Loop 3 exits when:
+The parity stream exits when:
 
 - GEMV, RMSNorm, and gather each have a committed parity receipt at
   `algorithm-exact` or better against `webgpu-generic` and `wse3`
@@ -172,5 +174,5 @@ Loop 3 exits when:
   entries for those (kernelRef, backend) pairs
 - Phase A is closed in `docs/status/tsir.md`
 
-Attention and the remaining kernel families begin a new loop sequence
+Attention and the remaining kernel families begin a new iteration sequence
 (Phase B / Phase C); their rules are defined when Phase A exits, not earlier.

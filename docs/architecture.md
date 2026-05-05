@@ -20,10 +20,9 @@ Doe has three user-facing/runtime-adjacent surfaces and two supporting layers.
 
 These surfaces are related, but they are not interchangeable.
 
-They also do not all carry the same strategic weight. In practice, Dawn
-remains the incumbent WebGPU runtime in Chromium and much of the browser
-ecosystem. Doe is the challenger runtime. The present product center is the
-runtime/package/native boundary, while the Chromium lane remains a future
+They also sit at different maturity levels. Dawn remains the WebGPU runtime
+used in Chromium and much of the browser ecosystem; Doe's present scope is
+the runtime/package/native boundary, while the Chromium lane remains a future
 integration track.
 
 ## Product boundary rules
@@ -37,11 +36,11 @@ The important boundary distinctions are:
 - `browser/chromium` is the future browser-runtime lane, not the current package wrapper
 - `bench` measures surfaces; it is not itself a product surface
 
-Current competitive framing:
+Current scope:
 
-- Dawn is the incumbent runtime baseline
-- Doe competes directly in Node.js, Bun, Deno, drop-in, and embedded/native lanes
-- a Doe-backed ONNX Runtime plugin EP is a concrete challenger seam, but it is repo-only and experimental today
+- Dawn is the comparison baseline
+- Doe runs in Node.js, Bun, Deno, drop-in, and embedded/native lanes
+- a Doe-backed ONNX Runtime plugin EP is a repo-only experimental integration seam
 - browser `navigator.gpu` replacement is an explicit future lane, not the current package claim
 
 That separation is deliberate. It keeps package ergonomics, runtime behavior,
@@ -83,7 +82,7 @@ Current native backend identities are:
 - `doe_metal`
 - `doe_vulkan`
 - `doe_d3d12`
-- `dawn_delegate` as the incumbent compare lane
+- `dawn_delegate` as the Dawn-comparison lane
 
 ## Verification boundary
 
@@ -116,8 +115,8 @@ Those paths answer different questions and should not be described as the same
 thing.
 
 They also sit at different maturity levels. The browser shim is a present
-compatibility surface. The Chromium lane is a future challenger lane against an
-incumbent runtime that still belongs to Dawn today.
+compatibility surface. The Chromium lane is a future integration track against
+the Dawn-based runtime browsers ship today.
 
 ## Build and evidence outputs
 

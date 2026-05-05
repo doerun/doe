@@ -123,7 +123,7 @@ The active blocker is architectural simfabric D2H serialization on this host,
 not a HostPlan identity or checkpoint-corruption issue. Q4K stayed on the
 known-safe serial settings (`jobs=1`, `adapterStepBudget=1`,
 `outputPeRows=4`); attempted Q4K process/thread/step-budget expansion remains
-non-claimable because it wedges in the SDK D2H path. Hardware endpoint access
+non-claimable because it stalls in the SDK D2H path. Hardware endpoint access
 (R2-10) is the unblock for closing the full real-session token/logit/KV
 transcript.
 
@@ -515,14 +515,14 @@ hardware; not yet bound to Gemma 4 31B's full compile sweep shape. The
 small SUMMA cell proves the mechanism. Promotion to manifest-shape SUMMA
 is named in the dispatch receipt's `remainingForFullClaim`.
 
-## 2026-04-26 — Rung 3 calibration lands; rung 6 closes for head_dim=256; rung 8 launch gate flips to allow
+## 2026-04-26 — Per-kernel manifest-shape calibration lands; head_dim=256 attention canary closes; manifest-shape simfabric budget gate flips to allow
 
 Three landings against the manifest-shape simfabric proof plan in
 `docs/cerebras-north-star.md`:
 
 1. **Rung 3 calibration via canary-proxy.** Manifest-shape simfabric (246x236
    fabric, ~58k PEs) does not finish a single-kernel dispatch in tractable
-   wall-clock on local hosts; the rung-3 `manifest_kernel_probe_runner` times
+   wall-clock on local hosts; the per-kernel `manifest_kernel_probe_runner` times
    out at the chain_step_adapter 1800s timeout. New tool
    `bench/tools/derive_canary_proxy_calibration.py` derives a
    `bytesPerCycle` + `perPatternCyclesPerCall` calibration from the per-kernel
@@ -533,7 +533,7 @@ Three landings against the manifest-shape simfabric proof plan in
    `calibrationSource: canary_proxy` and a `claim.notWhat` block naming
    exactly what this is not (manifest-shape evidence). 7/7 tests in
    `bench.tests.test_derive_canary_proxy_calibration`. Replace with a real
-   manifest-shape rung-3 dispatch sha256 once hardware execution lands
+   manifest-shape per-kernel dispatch sha256 once hardware execution lands
    (R3-1 / R3-3).
 
 2. **Rung 8 launch gate flips to `allow`.** Rerunning
@@ -574,7 +574,7 @@ Three landings against the manifest-shape simfabric proof plan in
    axis or a zero-input-elide mode in the attention emit body.
 
 Cross-repo work (Doppler tree, separate from this commit set): the
-rung-5 Doppler reference fixture data path landed
+frozen Doppler reference fixture data path landed
 `src/inference/pipelines/text/tsir-fixture-writer.js` plus
 `tools/run-program-bundle-reference.js --tsir-fixture-dir` so a Doppler
 inference run captures activations at the four TSIR boundary points
@@ -583,15 +583,16 @@ A 31B node-surface partial run captured 3 of 4 boundary tensors at
 L=0 before being killed (Gemma 4 31B has a chat-template / tokenizer
 bug separate from the fixture path; user is debugging in another
 thread). Doe-side `bench/tools/build_frozen_doppler_reference_manifest.py`
-assembles the fixture into a rung-5 manifest the validator binds.
+assembles the fixture into a frozen Doppler reference manifest the validator binds.
 
 Open follow-ups:
 
 - Doppler chat-template debug (cross-repo, gates re-running the fixture
   capture).
 - Once 4-of-4 .npy files are captured at L=1, build the manifest and
-  validate it; downstream rungs 6/7/8/9 then bind.
-- Rung 6 dispatch and rung 8 dispatch at manifest shape: gated on
+  validate it; downstream attention-canary, single-block-parity,
+  full-prefill, and multi-token continuation steps then bind.
+- Attention-canary dispatch and full-prefill dispatch at manifest shape: gated on
   hardware execution since manifest-shape simfabric is wall-time
   prohibitive (each kernel invocation alone exceeds the 1800s
   chain_step_adapter timeout).

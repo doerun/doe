@@ -279,7 +279,7 @@ Read this file first. Use the live topical shards under
   `docs/hardware-validation-appendix.md`.
   The E2B receipt also now binds a Doppler WebGPU capture graph as the
   shared JS/WGSL input surface, plus a first capture-to-CSL attention-core
-  lowering receipt with CPU-oracle parity. That capture-lowering rung is
+  lowering receipt with CPU-oracle parity. That capture-lowering step is
   still non-claimable for full Doppler production inference, full graph
   lowering, generated-token/logits tolerance evidence, hardware, or
   performance.

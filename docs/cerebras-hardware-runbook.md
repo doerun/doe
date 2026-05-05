@@ -43,14 +43,14 @@ provider prefers.
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
 | Gemma 4 31B evidence summary | [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md) |
 | Qwen 3.6 27B evidence summary | [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md) |
-| Gemma north-star ladder + acceptance bar | [`docs/cerebras-north-star.md`](cerebras-north-star.md) |
-| Qwen north-star ladder + acceptance bar | [`docs/cerebras-north-star-qwen.md`](cerebras-north-star-qwen.md) |
+| Gemma evidence steps + acceptance bar | [`docs/cerebras-north-star.md`](cerebras-north-star.md) |
+| Qwen evidence steps + acceptance bar | [`docs/cerebras-north-star-qwen.md`](cerebras-north-star-qwen.md) |
 | Live status shard | [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) |
 | Active fail-closed queue (Gemma) | `cerebras-north-star.md` § Active fail-closed queue |
 
-## Gemma 4 31B — runner ladder
+## Gemma 4 31B — runner steps
 
-The 31B ladder starts with the smallest hardware rung and climbs.
+Start with the smallest hardware step and climb.
 
 ### L1 smoke (first hardware ask)
 
@@ -69,7 +69,7 @@ CSL source, SDK environment, compile path, hardware execution, and receipt
 shape with a bounded tensor contract before climbing to the 61-layer chain
 or manifest-shape streaming.
 
-### Climb order after L1 succeeds
+### Steps after L1 succeeds
 
 1. Same runner, `--num-layers 61` — full smoke chain, still smoke-shape.
 2. Same runner once `bench/out/gemma-4-31b-real-weights/` is materialized per
@@ -87,15 +87,15 @@ dispatch evidence**. The bounded receipt at
 `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` validates the
 f16 dtype contract but records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound`
 because no token/logit/KV transcript exists yet. Diagnostic multi-row split-D2H
-tiles still wedge at `memcpy_d2h_start`; the live simfabric session
+tiles still hang at `memcpy_d2h_start`; the live simfabric session
 (`bench/out/r3-1-31b-af16-hostplan-session-bos-raw-sky-color-is-fast-embed512`)
 is the active proof path. Hardware L1 smoke does not need this resolved, but
 manifest-shape parity does.
 
-## Qwen 3.6 27B — runner ladder
+## Qwen 3.6 27B — runner steps
 
 Qwen does not yet have a single `layer_block_smoke` driver equivalent to
-Gemma's. The bring-up surface is per-kernel CSL cells under
+Gemma's. The validation surface is per-kernel CSL cells under
 `bench/runners/csl-runners/qwen-3-6-27b-cells/`, plus the
 `multi_token_decode_orchestrator_qwen.py` chain driver. Each cell is a small
 end-to-end CSL kernel with its own `cs_python` driver.
@@ -132,7 +132,7 @@ cs_python bench/runners/csl-runners/multi_token_decode_orchestrator_qwen.py \
 This is correctness-oriented chain evidence, not a single-shape layer-block
 hardware proof.
 
-### Climb order
+### Steps after L1 succeeds
 
 1. All 10 cells dispatch and parity-check against a reachable endpoint.
 2. Multi-token decode chain runs end-to-end with bound transcript.
@@ -205,7 +205,7 @@ and verdict line. Example body:
 > Hi <name>,
 >
 > We have a software evidence bundle for Doe's Gemma 4 on Cerebras lane and
-> would like to validate the first 31B dense hardware rung on WSE/WSC.
+> would like to validate the first 31B dense hardware step on WSE/WSC.
 >
 > The primary ask is intentionally small: a one-layer Gemma 4 31B dense
 > layer-block smoke run via the runner above. Two acceptable paths: (A) we get
@@ -264,5 +264,5 @@ shows `dirty` in the pointer, rebuild from a clean tree before circulation.
   external-facing snapshots of what is bound in-tree per model.
 - [`docs/cerebras-north-star.md`](cerebras-north-star.md) /
   [`docs/cerebras-north-star-qwen.md`](cerebras-north-star-qwen.md) — full
-  evidence ladders, integrity invariants, optimization roadmap.
+  evidence ledgers, integrity invariants, optimization roadmap.
 - [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) — live status shard.

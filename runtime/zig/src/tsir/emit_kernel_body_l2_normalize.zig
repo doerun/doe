@@ -39,6 +39,8 @@ pub fn emitCslL2Normalize(
     try writer.print("const hidden_size: i16 = {d};\n", .{body.hidden});
     try writer.writeAll("const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try writer.writeAll("const math = @import_module(\"<math>\");\n");
+    try writer.writeAll("\n");
+    try body_emit.writeCslSqrtNr(writer, elem);
     try writer.print("const l2_eps: {s} = {e};\n", .{ ty, body.eps });
     try body_emit.writeCslBufferArray(writer, p, input.name, "hidden_size", ty);
     try body_emit.writeCslBufferArray(writer, p, output.name, "hidden_size", ty);
@@ -54,7 +56,7 @@ pub fn emitCslL2Normalize(
     );
     try writer.writeAll("        sq += v * v;\n");
     try writer.writeAll("    }\n");
-    try writer.writeAll("    const inv_norm = 1.0 / math.sqrt(sq + l2_eps);\n");
+    try writer.writeAll("    const inv_norm = 1.0 / sqrt_nr(sq + l2_eps);\n");
     try writer.writeAll("    for (@range(i16, hidden_size)) |d| {\n");
     try writer.print(
         "        {s}{s}[@as(u32, d)] = {s}{s}[@as(u32, d)] * inv_norm;\n",

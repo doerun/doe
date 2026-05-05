@@ -139,8 +139,8 @@ governed-lane report.
 The top-level discriminator is `orchestrationMode`:
 
 - `memcpy`: direct `cslc` compile plus `SdkRuntime` `memcpy_h2d`,
-  `memcpy_d2h`, and `launch` operations. This covers the Gemma 4 E2B ladder
-  and SDK patterns such as single-PE GEMV, replicated multi-PE GEMV, and
+  `memcpy_d2h`, and `launch` operations. This covers the Gemma 4 E2B
+  validation steps and SDK patterns such as single-PE GEMV, replicated multi-PE GEMV, and
   checkerboard GEMV. Streaming H2D/D2H is still `memcpy` mode when
   the host operation is `SdkRuntime.memcpy_*` with `streaming=true`.
 - `sdklayout`: Python `SdkLayout` code regions, ports, connections, streams,

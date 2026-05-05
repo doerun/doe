@@ -1,6 +1,6 @@
 # Doe CSL-plan quickstart
 
-## Run the evidence ladder
+## Run the evidence sweep
 
 ```
 python3 bench/tools/run_csl_plan_sweep.py
@@ -11,8 +11,8 @@ Exit 0 iff every gate passes. Structured summary at
 
 ## Read next
 
-- `docs/cerebras-north-star.md` — current North Star checklist and
-  active blocker order.
+- `docs/cerebras-north-star.md` — current evidence ledger and active
+  blocker order.
 - `docs/csl-architecture.md` — the abstraction stack Doe uses to
   retarget Cerebras CSL.
 

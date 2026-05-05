@@ -51,6 +51,10 @@ bundle" for the prose workflow; this file is the tool-reference.
   BUNDLE_META required fields + claim-role taxonomy, runs the
   live claim-discipline rules over every text file inside. Use
   after `pack` and on any received archive.
+- **`cerebras_status_snapshot.py`** — refreshes
+  `bench/out/r3-cerebras-status/snapshot.{json,md}` from the current
+  Cerebras receipt set so docs can point at a generated status table
+  instead of copying verdicts into prose.
 
 ## Quick-read helpers
 

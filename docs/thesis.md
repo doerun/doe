@@ -5,16 +5,15 @@
 Doe is a Zig-first WebGPU runtime for cases where you want a direct, explicit
 runtime instead of shipping Dawn.
 
-In practice, Dawn is the incumbent WebGPU runtime standard, especially in
-Chromium and browser-shaped deployments. Doe is the challenger runtime. Its
-near-term goal is not to claim that Doe already replaces browser WebGPU. Its
-near-term goal is to beat Dawn in the lanes Doe can actually contest today:
-package, embedded, native, and server-side JavaScript runtimes such as Node.js
-and Bun.
+Dawn is the WebGPU runtime baseline used in Chromium and most browser-shaped
+deployments. Doe targets the lanes where a lighter, more explicit runtime is
+useful today: package, embedded, native, and server-side JavaScript runtimes
+such as Node.js and Bun. The near-term scope is not "replaces browser WebGPU";
+it is matched-workload comparison against Dawn in those lanes.
 
-One concrete challenger seam for that thesis is a Doe-backed ONNX Runtime
-plugin EP. That is a native ML-host integration lane, not a claim that Doe has
-already displaced Chromium's runtime stack.
+One concrete integration lane for that scope is a Doe-backed ONNX Runtime
+plugin EP — a native ML-host surface, not a claim that Doe has displaced
+Chromium's runtime stack.
 
 The project goal is not "rewrite WebGPU in Zig" for its own sake. The goal is
 to reduce hot-path CPU cost, keep runtime behavior explainable from config and
@@ -29,15 +28,17 @@ Doe is built around one technical split:
 3. Use Lean only where proof work removes runtime branches or discharges
    blocking obligations.
 
-That gives Doe two intended advantages over incumbent stacks:
+That gives Doe two intended properties relative to general-purpose WebGPU
+runtimes:
 
 - less recurring runtime work on hot paths
 - smaller, more auditable implementation boundaries
 
-The important competitive boundary is:
+Scope boundary:
 
-- Dawn is the incumbent baseline
-- Doe is the challenger runtime
+- Dawn is the comparison baseline
+- Doe targets package, native, embedded, and server-side JavaScript runtime
+  lanes
 - Chromium/browser replacement is a future lane, not the current proof point
 
 ## Why this exists
@@ -69,8 +70,8 @@ Dawn and wgpu are comparison baselines, not runtime dependencies.
 
 That matters for how Doe should be evaluated. The immediate question is not
 "has Doe replaced the browser runtime?" The immediate question is whether Doe
-can provide a better runtime boundary than Dawn in the package, native, and
-embedded shapes it targets directly.
+provides a better runtime boundary than Dawn in the package, native, and
+embedded shapes it targets directly, measured under matched-workload contracts.
 
 ## Verification stance
 

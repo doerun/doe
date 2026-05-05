@@ -4,13 +4,13 @@
 
 This document describes specific practitioner pain points in current WebGPU
 stacks and how Doe addresses them. Each section names the problem, explains
-what incumbent stacks (Dawn, browser WebGPU) do, and describes Doe's approach.
+what general-purpose stacks (Dawn, browser WebGPU) do today, and describes
+Doe's approach.
 
-The important framing is competitive, not rhetorical: Dawn is the incumbent.
-Doe is the challenger runtime. The immediate target is not "replace Chromium."
-The immediate target is to win the native, embedded, and package/runtime lanes
-where browser process overhead and general-purpose incumbent layering are most
-expensive.
+Doe's near-term scope is the native, embedded, and package/runtime lanes —
+the deployment shapes where browser process overhead and general-purpose
+runtime layering are most expensive. Browser-runtime replacement is a future
+lane, not the current proof point.
 
 See also:
 
@@ -120,10 +120,10 @@ primarily compute-driven with occasional visualization.
 ## 6. Hidden runtime behavior and silent fallback
 
 **Problem.**
-Incumbent WebGPU stacks sometimes silently fall back to slower paths when a
-feature is unavailable, or hide policy decisions in undocumented runtime
-branches. This makes performance debugging difficult — you don't know what
-path you're actually on.
+General-purpose WebGPU stacks sometimes silently fall back to slower paths
+when a feature is unavailable, or hide policy decisions in undocumented
+runtime branches. This makes performance debugging difficult — you don't know
+what path you're actually on.
 
 **Doe's approach.**
 

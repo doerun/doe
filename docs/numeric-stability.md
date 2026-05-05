@@ -3,8 +3,8 @@
 ## Purpose
 
 This is the single planning and claim-boundary document for Doe numeric
-stability. It replaces the older split strategy, claim ladder, demo
-ladder, contract-roadmap, auto-detection, decode-validation, and
+stability. It replaces the older split strategy, claim-discipline plan,
+demo plan, contract roadmap, auto-detection, decode-validation, and
 semantic-envelope planning notes.
 
 The strategy boundary is narrow:

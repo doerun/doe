@@ -466,7 +466,7 @@ fn writeCslHiddenSizeParam(writer: anytype, config: *const Config) !void {
     }
 }
 
-fn writeCslSqrtNr(writer: anytype, elem: schema.ScalarKind) !void {
+pub fn writeCslSqrtNr(writer: anytype, elem: schema.ScalarKind) !void {
     const ty = cslElemName(elem);
     if (elem == .f32) {
         // Preserve byte-identical f32 output: same line shape as before

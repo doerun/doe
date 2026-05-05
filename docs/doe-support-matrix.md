@@ -4,7 +4,7 @@
 
 This document defines explicit capability tiers for Doe with hard contracts per tier.
 
-Every tier has: a deployment surface, a supported API set, required gates, conformance requirements, SLA/support commitments, and allowed marketing claims. Claims that exceed a tier's contract are disallowed regardless of directional evidence.
+Every tier has: a deployment surface, a supported API set, required gates, conformance requirements, support commitments, and allowed claim language. Claims that exceed a tier's contract are disallowed regardless of directional evidence.
 
 Tier names are tied to deployment surface and guarantees, not vague quality labels.
 
@@ -12,11 +12,11 @@ This document is the product-contract layer of a larger tracking model. Spec inv
 
 ## Tiers
 
-| Tier | Deployment Surface | Buyer |
-|------|-------------------|-------|
-| **doe-core** | Node/Bun/CLI headless | AI/ML infra, CI/perf teams |
-| **doe-runtime** | Native apps, engines, embedded | Teams replacing Dawn/wgpu in applications |
-| **chromium** | Managed Chromium distribution | Enterprise/regulated browser deployments |
+| Tier | Deployment surface | Audience |
+|------|-------------------|----------|
+| **doe-core** | Node/Bun/CLI headless | AI/ML infra, CI/perf integrators |
+| **doe-runtime** | Native apps, engines, embedded | Integrators replacing Dawn/wgpu in applications |
+| **chromium** | Managed Chromium distribution | Managed Chromium WebGPU runtime distribution |
 
 Each tier is additive: doe-runtime includes all doe-core commitments; chromium includes all doe-runtime commitments.
 
@@ -148,7 +148,7 @@ exist in the repo today:
 Cells not listed separately are intentionally folded into one of those rows:
 
 - `doe-gpu/compute`, `doe-gpu/browser`, and `doe-gpu/hybrid` are API-shape
-  entrypoints inside the same runtime package family, not separate competitive
+  entrypoints inside the same runtime package family, not separate API
   surfaces
 - legacy `@simulatte/webgpu/node` and `@simulatte/webgpu/bun` names are
   host-specific history aliases of the same package family and inherit the same
@@ -234,7 +234,7 @@ Package boundary:
 - API stability: the `doe-gpu` API contract v1 surface is stable; breaking changes require version bump.
 - No uptime/availability SLA (headless tooling, not a service).
 
-### Allowed marketing claims
+### Allowed claim language
 
 | Claim | Allowed | Condition |
 |-------|---------|-----------|
@@ -324,7 +324,7 @@ All doe-core commitments, plus:
 - Conformance trend: CTS subset results published per release.
 - Bug response: issues with reproducible trace artifacts get priority triage.
 
-### Allowed marketing claims
+### Allowed claim language
 
 All doe-core claims, plus:
 
@@ -344,7 +344,7 @@ All doe-core claims, plus:
 
 ### Scope
 
-Managed Chromium distribution with Doe as the WebGPU runtime. Deployable as an enterprise/regulated browser product.
+Managed Chromium distribution with Doe as the WebGPU runtime.
 
 ### Consumer hardware coverage plan
 
@@ -438,7 +438,7 @@ All doe-runtime requirements, plus:
 | Diff ceiling | If the Doe Chromium lane diff exceeds 50K LOC (excluding `third_party/dawn/` replacement), trigger architectural review to re-isolate. |
 | Security audit | Doe runtime code in GPU process is in-scope for security review. Sandbox boundary behavior must match Dawn's guarantees or explicitly document deviations. |
 
-### Allowed marketing claims
+### Allowed claim language
 
 All doe-runtime claims, plus:
 
@@ -469,9 +469,9 @@ doe-core ──────────► doe-runtime ────────�
   │                     │   measured            │
   │                     │                       │
   ▼                     ▼                       ▼
-  CI/perf teams         Engine/embedded teams   Enterprise/regulated
-  AI/ML infra           Dawn/wgpu replacers     Government/defense
-  AI workload integration   Native app developers   Healthcare/finance
+  CI/perf integrators   Engine/embedded teams   Managed-runtime distribution
+  AI/ML infra           Dawn/wgpu replacers     consumers
+  AI workload integration   Native app developers
 ```
 
 ### Promotion criteria
@@ -499,7 +499,7 @@ doe-core ──────────► doe-runtime ────────�
 ## Layer escalation guidance
 
 Use the lowest layer that can honestly describe the current evidence. Do not
-escalate a command stream, package surface, or marketing claim just because the
+escalate a command stream, package surface, or claim language just because the
 code path exists.
 
 1. Keep an item at example-only status when it is merely schema-valid or locally useful.
@@ -546,9 +546,8 @@ The claim discipline rules from [`docs/claim-discipline.md`](claim-discipline.md
 | Regression blocks "faster" language | Yes | Yes | Yes |
 | "Replacement" language allowed | No | Yes (with CTS) | Yes |
 | "Production" language allowed | No | Yes (with gates) | Yes |
-| "Enterprise/regulated" language allowed | No | No | Yes (with SLA) |
 | "Conformant" language allowed | No | Yes (with CTS trend) | Yes |
-| "Sovereign" language allowed | No | No | Yes (full stack) |
+| "Full-stack distribution" language allowed | No | No | Yes |
 
 ---
 

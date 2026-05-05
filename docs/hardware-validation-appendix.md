@@ -43,7 +43,7 @@ shape, and it maps better to a first Cerebras proof than Gemma 4 26B/A4B MoE.
 The 31B lane should start with hardware receipts for the existing smoke-shape
 layer-block path, then climb toward real-weight and manifest-shape execution.
 
-The concrete 31B ladder is:
+The concrete 31B steps are:
 
 1. Run the 31B layer-block smoke at one layer on Cerebras hardware with
    `bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1`
@@ -72,7 +72,7 @@ per-expert batching. It should not borrow the E2B or dense-31B receipts, and it
 is not part of the first hardware-access ask.
 
 Do not claim full 31B parity from smoke-shape or synthetic receipts. Those
-receipts only prove the rung they execute. Full 31B parity requires a
+receipts only prove the step they execute. Full 31B parity requires a
 manifest-shape hardware transcript plus a Doppler reference export bound to the
 same manifest, execution graph, weights, and input set.
 
@@ -172,7 +172,7 @@ source for which declared depths are evidence-eligible. Diagnostic files at
 deeper depths do not turn into E2B claims unless their summary carries
 `evidenceEligibility.claimable=true`.
 
-The Doppler RDRR/int4ple proof now has two separate rungs. The structural
+The Doppler RDRR/int4ple proof now has two separate steps. The structural
 probe `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-rdrr-probe.json` validates
 the local Doppler production artifact's manifest, declared shard sizes,
 selected shard hash, target tensor spans, Q4_K_M packed-size formulas, and
@@ -180,7 +180,7 @@ int4 per-layer embedding metadata. The Q4_K_M wrapper verdict
 `bench/out/doppler-rdrr/gemma-4-e2b-int4ple-q4k-parity.json` dequantizes the
 RDRR spans into Doe's existing L1 smoke-contract slice format and checks
 WebGPU-vs-CSL simfabric parity. The diagnostic wrappers under the same
-directory extend the smoke-chain depth only. None of these rungs prove
+directory extend the smoke-chain depth only. None of these steps prove
 Doppler production inference output parity or full E2B execution from the
 RDRR artifact.
 
@@ -214,14 +214,14 @@ heads to exercise the grouped-KV source contract. It is still only a
 Q.K-plus-V diagnostic, not the production attention operator, decoder stack,
 logits parity, hardware, or performance evidence.
 
-The Doppler WebGPU capture graph is the shared-input rung. It proves Doppler's
+The Doppler WebGPU capture graph is the shared-input step. It proves Doppler's
 Node WebGPU bootstrap can install `doe-gpu/capture` and record a Gemma-4 E2B
 WGSL/command graph with manifest identity and hashes. The capture-to-CSL
 lowering receipt now consumes that graph for the first attention-core
 SdkLayout/CSL simulator slice. Full captured-graph HostPlan lowering and
 production Doppler inference parity remain blocked.
 
-The INT4 PLE reference export rung is separate from the capture and
+The INT4 PLE reference export step is separate from the capture and
 Doe-side Doppler-equivalent harnesses. Its receipt must be produced by the
 production Doppler WebGPU inference path and carry `inputsSynthetic=false`
 and `weightsSynthetic=false`. The `final_logits` digest is only an
@@ -340,7 +340,7 @@ performance claim" in
 
 ## Where to look first
 
-- Claim ladder: `docs/claim-discipline.md`
+- Claim discipline: `docs/claim-discipline.md`
 - Receipts: `bench/out/e2b-full-graph/`, `bench/out/31b-full-graph/`
 - Cross-runtime evidence: `bench/out/doppler-reference/`
 - Self-check: `python3 bench/tools/e2b_layer_block_self_check.py`

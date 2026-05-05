@@ -40,10 +40,9 @@ Tint (Dawn's shader compiler) added heuristic integer range analysis
 safe. This is sound but not formally verified — the analysis could have
 bugs that silently remove necessary checks.
 
-Doe's competitive advantage: Lean proofs that formally verify the
-conditions under which an index is guaranteed in-bounds, with the
-proofs consumed at compile time to elide clamps. Provably correct
-bounds elimination, not heuristic.
+Doe's design property: Lean proofs that formally verify the conditions under
+which an index is guaranteed in-bounds, with the proofs consumed at compile
+time to elide clamps. Provably correct bounds elimination, not heuristic.
 
 ## Architecture
 

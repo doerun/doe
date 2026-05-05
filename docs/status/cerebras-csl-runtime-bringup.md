@@ -68,7 +68,7 @@ multimodal-rope params. Regeneration policy: materialized compile roots under
 emitter changes before byte-identity or dispatch evidence is restated.
 
 The active `<bos>sky color is` L=1 simfabric transcript can now count toward
-rung 6 if it reaches generated-token/logits/lm-head/KV output readiness. Qwen
+the 1-of-60-layer first-token parity step if it reaches generated-token/logits/lm-head/KV output readiness. Qwen
 still remains separately fail-closed on the frozen reference manifest missing
 the L=0 probes.
 
@@ -80,8 +80,8 @@ matching the frozen Doppler reference at L=1; per-step logits artifacts
 comparing under the declared Doppler tolerance policy; manifest / HostPlan
 / CSL / reference-fixture hash chain unbroken) from the regression-net
 artifact (all 23 manifest-shape kernels dispatched on simfabric,
-bytes/digests recorded). The rung ladder also carries a one-paragraph
-note that rungs 3-4 and rungs 6-9 catch different bug classes and
+bytes/digests recorded). The milestone queue also carries a one-paragraph
+note that per-kernel/layout steps and composition/parity steps catch different bug classes and
 neither subsumes the other.
 
 The reframing is grounded in the Active fail-closed queue items 1-4 in
@@ -223,16 +223,16 @@ This is source and harness infrastructure only until a real prompted session run
 
 ## 2026-04-30 — lm-head D2H envelope and width-row tiling
 
-The generic chain-step adapter now emits `phase:*` breadcrumbs around SDK load/run, H2D, launch, D2H, and stop. For Gemma `lm_head_prefill_stable`, those breadcrumbs show the full `width=160,height=512` manifest target and smaller `height>1` row blocks reach `launch_complete` and then wedge in SDK D2H with zero output bytes.
+The generic chain-step adapter now emits `phase:*` breadcrumbs around SDK load/run, H2D, launch, D2H, and stop. For Gemma `lm_head_prefill_stable`, those breadcrumbs show the full `width=160,height=512` manifest target and smaller `height>1` row blocks reach `launch_complete` and then stall in SDK D2H with zero output bytes.
 
-The real simfabric envelope found on this host is `height=1` with hidden-width tiles below the failing full width: `width=120,height=1` writes a real `partial.npy`, while `width=128,height=1` and full `width=160,height=1` wedge at D2H. The manifest runner now keeps lm-head evidence classes contract-visible: `monolithic_full_fabric`, `dense_gemv_width_tiled`, `dense_gemv_row_tiled`, and future `resident_weight_session` evidence do not share a silent gate path. Routine refresh keeps the monolithic path unless a tile mode is explicitly requested. Tiled receipts carry phase events, tile-shape D2H safety metadata, coverage, compile identity, weight input scope, and host-reduction metadata. The tiled planner clamps hidden-width chunks under the current simfabric element-count guard and only probes unsafe shapes through explicit diagnostic sweep mode.
+The real simfabric envelope found on this host is `height=1` with hidden-width tiles below the failing full width: `width=120,height=1` writes a real `partial.npy`, while `width=128,height=1` and full `width=160,height=1` stall at D2H. The manifest runner now keeps lm-head evidence classes contract-visible: `monolithic_full_fabric`, `dense_gemv_width_tiled`, `dense_gemv_row_tiled`, and future `resident_weight_session` evidence do not share a silent gate path. Routine refresh keeps the monolithic path unless a tile mode is explicitly requested. Tiled receipts carry phase events, tile-shape D2H safety metadata, coverage, compile identity, weight input scope, and host-reduction metadata. The tiled planner clamps hidden-width chunks under the current simfabric element-count guard and only probes unsafe shapes through explicit diagnostic sweep mode.
 Width-row tiling can now resume only from verified tile partial receipts that match the tile command, input hashes, compile identity, output hash, and shape-safety metadata; bare partial files still do not count. Coverage separates receipts on disk from verified reusable, fresh-emitter, and accepted partials; stale receipt files cannot inflate progress.
 
 The SDK wrapper now defaults Singularity/Apptainer temp and cache paths to `bench/out/scratch/csl-container/` so SIF extraction does not consume tmpfs space. Failed tmpfs rootfs extraction sandboxes were cleared before the next lm-head evidence attempt.
 
 The full `lm_head_prefill_stable` governed receipt is still not bound. The official summary now records `dispatchMode=dense_gemv_width_tiled`, `blocker=dense_gemv_width_tile_dispatch_budget_exhausted`, `tileD2HMode=single_region_copyback`, `maxRowTileHeight=1`, and verified height-1 SDK partials; `sample` was refreshed against the regenerated HostPlan hash and remains bound.
 
-Diagnostic height-16 split-D2H tiles now carry durable `phase-trace.log` breadcrumbs and still wedge at `memcpy_d2h_start`; the dense-GEMV emitter now passes `pe_y`, gates command stream completion to row 0, and assigns row-specific reduction colors, but multi-row dense-GEMV tiles are not claim-eligible until a receipt proves D2H copyback completes.
+Diagnostic height-16 split-D2H tiles now carry durable `phase-trace.log` breadcrumbs and still stall at `memcpy_d2h_start`; the dense-GEMV emitter now passes `pe_y`, gates command stream completion to row 0, and assigns row-specific reduction colors, but multi-row dense-GEMV tiles are not claim-eligible until a receipt proves D2H copyback completes.
 
 Focused coverage lives in `bench/tests/test_manifest_kernel_probe_runner.py` and `bench/tests/test_int4ple_hostplan_runtime_timeout.py`. Follow-up: split `manifest_kernel_probe_runner.py` materialization/receipt helpers and shard `manifest_dense_gemv_tiles.py`; both exceed the Python tooling cap.
 
@@ -561,7 +561,7 @@ The first SDK-capable refresh exposed source-side probe issues that are now
 fixed in the runner path. `bench/runners/csl-runners/chain_step_adapter.py`
 packs logical `f16` tensors through 32-bit memcpy words because this SDK rejects
 16-bit memcpy calls. `rope` / `rope_partial` are in-place kernels, so the shared
-rung-2/rung-4 classifier treats `input` as the output symbol for those kernels;
+in-place classifier treats `input` as the output symbol for those kernels;
 the predictor, layout receipt, and probe runner now agree on the same d2h
 contract. The summary entries now carry `dispatchTimedOut` so timeout taxonomy
 is visible without opening each per-kernel receipt. Existing refreshed receipts

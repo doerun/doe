@@ -290,8 +290,8 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
   WGSL -> TSIR -> backend lowering architecture and parity-oracle contract
   (Phase A compiler surface landed; live status in
   [`docs/status/tsir.md`](./status/tsir.md))
-- [`docs/loop-protocol.md`](./loop-protocol.md) — Loop 2 / Loop 3
-  iteration discipline that drives incremental TSIR + parity
+- [`docs/loop-protocol.md`](./loop-protocol.md) — build-iteration vs
+  parity-iteration discipline that drives incremental TSIR + parity
   landing
 
 ## Remaining work (current reality)

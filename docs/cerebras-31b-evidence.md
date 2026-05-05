@@ -16,7 +16,7 @@ The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json
 
 **Cerebras semantic kernels.** The Gemma host plan exercises the shared transformer CSL surface, including kv-axis-sharded attention for the large head-dim path. The attention emitter lives in [`runtime/zig/src/tsir/emit_kernel_body_attention.zig`](../runtime/zig/src/tsir/emit_kernel_body_attention.zig); host-side log-sum-exp stitching lives in [`bench/tools/attention_kv_axis_sharded_stitch.py`](../bench/tools/attention_kv_axis_sharded_stitch.py); semantic identity coverage lives in [`bench/tests/test_attention_canary_kv_axis_sharded_identity.py`](../bench/tests/test_attention_canary_kv_axis_sharded_identity.py).
 
-**Fused-dequant SUMMA wedge.** The Q4K fused-dequant SUMMA path is bound by [`bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json`](../bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json) and the Gemma dispatch receipt at [`bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json`](../bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json). The emitter and structural tests are linked from those receipts; this is correctness and structural fabric-byte evidence, not a WSE speed claim.
+**Fused-dequant SUMMA path.** The Q4K fused-dequant SUMMA path is bound by [`bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json`](../bench/out/r2-q4k-fused-dequant-summa/wedge-q4k/receipt.json) and the Gemma dispatch receipt at [`bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json`](../bench/out/r3-1-31b-multi-token-decode-q4k/receipt.json). The emitter and structural tests are linked from those receipts; this is correctness and structural fabric-byte evidence, not a WSE speed claim.
 
 **Cross-model parity gate.** [`bench/tools/aggregate_cross_model_parity.py`](../bench/tools/aggregate_cross_model_parity.py) joins Gemma 4 31B and Qwen 3.6 27B receipts, asserts shared toolchain and contract identity, and writes [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json). [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py) runs this gate by default.
 
@@ -39,7 +39,7 @@ It records checkpointed HostPlan execution progress and remains
 bound `sample` dispatch and a blocked `lm_head_prefill_stable` dispatch. The
 claim path is `dense_gemv_width_tiled` with verified height-1 SDK partials,
 but the aggregate remains blocked on incomplete tile coverage. Diagnostic
-multi-row split-D2H tiles still wedge at `memcpy_d2h_start`, so final_norm ->
+multi-row split-D2H tiles still hang at `memcpy_d2h_start`, so final_norm ->
 lm_head -> sample token-output evidence remains unbound.
 
 ## Simulator performance guardrail

@@ -282,7 +282,8 @@ test "Qwen SSM body op pe programs pin TSIR formulas" {
         &l2_buf,
     );
     try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "const hidden_size: i16 = 128;") != null);
-    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "1.0 / math.sqrt(sq + l2_eps)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "fn sqrt_nr(x: f32) f32") != null);
+    try std.testing.expect(std.mem.indexOf(u8, l2.pe_program, "1.0 / sqrt_nr(sq + l2_eps)") != null);
 
     var linear_buf: [32768]u8 = undefined;
     const linear = try compile_source.emitPatternSections(

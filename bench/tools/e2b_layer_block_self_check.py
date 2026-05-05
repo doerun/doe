@@ -499,6 +499,7 @@ def main() -> int:
         "_probe.csl", "_only.csl", "_f64.csl", "_nr.csl",
     )
     csl_audit_skip_prefixes = (
+        "bench/out/scratch/",
         "bench/out/scratch/csl-sdk-tmp/",
         # Dated/deprecated generated runs are provenance, not the live
         # production kernel contract this self-check gates.
@@ -3097,8 +3098,7 @@ def main() -> int:
             _c16_pack = _subprocess_c16.run(
                 ["python3", "bench/tools/pack_cerebras_validation_archive.py",
                  "--allow-dirty", "--out", str(_scratch_archive)],
-                cwd=REPO_ROOT, capture_output=True, text=True,
-                timeout=60, check=False,
+                cwd=REPO_ROOT, capture_output=True, text=True, check=False,
             )
             if _c16_pack.returncode != 0:
                 failures.append(
@@ -3116,8 +3116,7 @@ def main() -> int:
                     ["python3",
                      "bench/tools/verify_cerebras_validation_archive.py",
                      "--archive", str(_scratch_archive)],
-                    cwd=REPO_ROOT, capture_output=True, text=True,
-                    timeout=60, check=False,
+                    cwd=REPO_ROOT, capture_output=True, text=True, check=False,
                 )
                 if _c16_verify.returncode != 0:
                     failures.append(

@@ -796,7 +796,8 @@ test "tsir csl emitter produces executable l2_normalize body" {
     try expectContains(csl, "tsir_input: [hidden_size]f32");
     try expectContains(csl, "tsir_output: [hidden_size]f32");
     try expectContains(csl, "var sq: f32 = 0.0;");
-    try expectContains(csl, "const inv_norm = 1.0 / math.sqrt(sq + l2_eps);");
+    try expectContains(csl, "fn sqrt_nr(x: f32) f32");
+    try expectContains(csl, "const inv_norm = 1.0 / sqrt_nr(sq + l2_eps);");
     try expectContains(csl, "@export_symbol(tsir_input_ptr");
     try expectContains(csl, "@export_symbol(tsir_output_ptr");
     try expectContains(csl, "sys_mod.unblock_cmd_stream();");
