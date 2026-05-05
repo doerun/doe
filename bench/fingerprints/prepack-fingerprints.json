@@ -32,7 +32,7 @@
     },
     {
       "path": "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
-      "sha256": "c478c846ba0eb74ff1d8845851620744572f211b0ffc6ed0f8d5fb0ebd4105a2"
+      "sha256": "d02c4d5912e71e11928abd64eed3d646eca3b62f4efb6634acc44a96192a22ef"
     },
     {
       "path": "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.md",
@@ -120,11 +120,11 @@
     },
     {
       "path": "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-simfabric-cell/receipt.json",
-      "sha256": "c9463ab36203667050a1a1440bc0f775f8b5da186d6f506af6f2b4c0980680ea"
+      "sha256": "b3183f4e162e8f54fbed171dcc7322eb51200a95de51c62b2709610a1d7839fd"
     },
     {
       "path": "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json",
-      "sha256": "ea2b4e0a5aed28c07d2ae74fb715e1e2789582536e51e5ba73ef9d3ab5dd9aa9"
+      "sha256": "655bd4c50c5bcd66da8a9b4da9039affa0e0c1f566364ec3af9693b620faa238"
     },
     {
       "path": "bench/out/r3-1-31b-l1-dry/trace.json",
@@ -296,7 +296,7 @@
     },
     {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "e40ddb2dae41c29b2439cc85b625bacefab17d784a1b4aa4f0b9d48454cc72b9"
+      "sha256": "80e92c0f2c0ec70019feaea0d924deee96a062424f8f48bb08c03e58adbbb31f"
     },
     {
       "path": "docs/claim-discipline.md",
