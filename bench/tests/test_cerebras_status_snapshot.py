@@ -161,6 +161,24 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
         self.assertIn("inference_evidence_gate.dispatch_evidence_lm_head_unbound", row["blocker"])
         self.assertIn("(+2 more)", row["blocker"])
 
+    def test_local_simfabric_ceiling_row(self) -> None:
+        self._write(
+            self.module.GEMMA_LOCAL_SIMFABRIC_CEILING,
+            {
+                "verdict": "blocked",
+                "blocker": "simfabric_d2h_copyback_stall_after_launch_complete",
+                "lastPhaseReached": "memcpy_d2h_start",
+            },
+        )
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.gemma_local_simfabric_ceiling_row()
+        self.assertEqual(row["verdict"], "blocked")
+        self.assertEqual(
+            row["blocker"],
+            "simfabric_d2h_copyback_stall_after_launch_complete",
+        )
+        self.assertEqual(row["scope"], "memcpy_d2h_start")
+
     def test_render_markdown_contains_marker(self) -> None:
         rows = [
             {"lane": "x", "artifact": "a/b.json", "verdict": "bound", "blocker": None, "artifactMtime": "t"},

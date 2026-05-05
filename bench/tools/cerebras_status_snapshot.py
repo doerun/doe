@@ -24,6 +24,9 @@ CROSS_MODEL_PARITY = "bench/out/r3-cross-model-parity/receipt.json"
 GEMMA_PER_KERNEL_DIR = "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel"
 QWEN_PER_KERNEL_DIR = "bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel"
 GEMMA_BOUNDED_SMOKE = "bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json"
+GEMMA_LOCAL_SIMFABRIC_CEILING = (
+    "bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json"
+)
 QWEN_MULTI_TOKEN_DECODE = "bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json"
 GEMMA_SIMFABRIC_CELLS = (
     "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json"
@@ -158,6 +161,24 @@ def bounded_smoke_row() -> dict:
     return _row("gemma.bounded_smoke", GEMMA_BOUNDED_SMOKE, verdict, blocker)
 
 
+def gemma_local_simfabric_ceiling_row() -> dict:
+    d = _load_json(GEMMA_LOCAL_SIMFABRIC_CEILING)
+    if d is None:
+        return _row(
+            "gemma.local_simfabric_ceiling",
+            GEMMA_LOCAL_SIMFABRIC_CEILING,
+            "missing",
+            None,
+        )
+    return _row(
+        "gemma.local_simfabric_ceiling",
+        GEMMA_LOCAL_SIMFABRIC_CEILING,
+        d.get("verdict") or "unknown",
+        d.get("blocker"),
+        scope=d.get("lastPhaseReached") or "",
+    )
+
+
 def qwen_multi_token_decode_row() -> dict:
     d = _load_json(QWEN_MULTI_TOKEN_DECODE)
     if d is None:
@@ -258,6 +279,7 @@ def collect_rows() -> list[dict]:
     rows.extend(per_kernel_rows("gemma", GEMMA_PER_KERNEL_DIR))
     rows.extend(per_kernel_rows("qwen", QWEN_PER_KERNEL_DIR))
     rows.append(bounded_smoke_row())
+    rows.append(gemma_local_simfabric_ceiling_row())
     rows.append(qwen_multi_token_decode_row())
     rows.append(gemma_simfabric_cells_row())
     rows.append(qwen_simfabric_cells_row())

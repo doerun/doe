@@ -164,6 +164,22 @@ def load_driver_targets(path: Path) -> dict[str, dict] | None:
     return out
 
 
+def compiled_output_path(bundle_root: Path, target_name: str) -> Path:
+    return bundle_root / "compile" / "compiled" / target_name / "out.json"
+
+
+def stale_stable_alias(name: str) -> str | None:
+    if name.startswith("lm_head_prefill_width_tile_"):
+        return name.replace(
+            "lm_head_prefill_width_tile_",
+            "lm_head_prefill_stable_width_tile_",
+            1,
+        )
+    if name == "lm_head_prefill":
+        return "lm_head_prefill_stable"
+    return None
+
+
 def resolve_size_expr(expr: str, scope: dict[str, int]) -> int | None:
     """Resolve a CSL sizeExpr against a scope of known integer values.
 
@@ -395,22 +411,47 @@ def main() -> int:
         )
 
     target_records = []
+    compiled_output_targets: list[str] = []
+    stale_driver_aliases: list[dict] = []
     for target in compile_targets:
         if not isinstance(target, dict):
             continue
         name = str(target.get("name", "unknown"))
         driver_target = driver_targets.get(name) if driver_targets is not None else None
+        alias_name = stale_stable_alias(name)
+        alias_driver_target = (
+            driver_targets.get(alias_name)
+            if driver_target is None
+            and alias_name is not None
+            and driver_targets is not None
+            else None
+        )
+        compiled_out = compiled_output_path(args.bundle_root, name)
         compile_verdict = "not_attempted"
+        verdict_source = None
         failure_code = None
         stderr_path = None
         stdout_path = None
         command = None
         if isinstance(driver_target, dict):
             compile_verdict = str(driver_target.get("status", "unknown"))
+            verdict_source = "driver_result"
             failure_code = driver_target.get("failureCode")
             stderr_path = driver_target.get("stderrPath")
             stdout_path = driver_target.get("stdoutPath")
             command = driver_target.get("command")
+        elif compiled_out.is_file():
+            compile_verdict = "succeeded"
+            verdict_source = "compiled_output_artifact"
+            compiled_output_targets.append(name)
+            if isinstance(alias_driver_target, dict):
+                stale_driver_aliases.append(
+                    {
+                        "currentTargetName": name,
+                        "staleDriverTargetName": alias_driver_target.get("name"),
+                        "staleDriverStatus": alias_driver_target.get("status"),
+                    }
+                )
         params_dict = target.get("compileParams") or {}
         residency = None
         if compile_verdict not in ("succeeded", "not_attempted"):
@@ -426,12 +467,21 @@ def main() -> int:
                 "layout": target.get("layout", ""),
                 "peProgram": target.get("peProgram", ""),
                 "compileVerdict": compile_verdict,
+                **({"verdictSource": verdict_source} if verdict_source else {}),
                 "compileSize": args.manifest_size,
                 "compileParams": params_dict,
                 **({"failureCode": failure_code} if failure_code else {}),
                 **({"stderrPath": rel(stderr_path)} if stderr_path else {}),
                 **({"stdoutPath": rel(stdout_path)} if stdout_path else {}),
                 **({"command": command} if isinstance(command, list) else {}),
+                **(
+                    {
+                        "compiledOutputPath": rel(compiled_out),
+                        "compiledOutputSha256": _sha256_file(compiled_out),
+                    }
+                    if compiled_out.is_file()
+                    else {}
+                ),
                 **({"residencyAnalysis": residency} if residency else {}),
             }
         )
@@ -460,7 +510,7 @@ def main() -> int:
             ),
         }
 
-    attempted = driver_targets is not None
+    attempted = driver_targets is not None or bool(compiled_output_targets)
     failed_targets = [
         target
         for target in target_records
@@ -487,6 +537,8 @@ def main() -> int:
         if args.driver_result.is_file()
         else None
     )
+    exact_driver_only = attempted and driver_targets is not None and not compiled_output_targets
+    mixed_driver_and_output = attempted and bool(compiled_output_targets)
 
     host_plan_hash = _sha256_file(args.host_plan)
     dtype_profile: dict[str, str] | None = None
@@ -539,6 +591,18 @@ def main() -> int:
         "compileSucceededCount": len(succeeded_targets),
         "compileFailedCount": len(failed_targets),
         "compileTargets": target_records,
+        "compileEvidenceSources": {
+            "driverResultPresent": driver_targets is not None,
+            "compiledOutputArtifactTargets": compiled_output_targets,
+            "staleDriverAliases": stale_driver_aliases,
+            "interpretation": (
+                "Driver-result rows are authoritative when they match the "
+                "current host-plan target name. For renamed lm-head width "
+                "tiles, existing clean compiled/<target>/out.json artifacts "
+                "are cited as compile-output evidence and stale _stable "
+                "driver rows are recorded only as historical aliases."
+            ),
+        },
         **({"redesignSummary": redesign_summary} if redesign_summary else {}),
         "thresholdNote": threshold_note,
         "blocker": {
@@ -553,9 +617,23 @@ def main() -> int:
             ),
             "detail": (
                 (
+                    "steps-mode layout materialization ran. Current host-plan "
+                    "target verdicts are backed by exact driver-result rows "
+                    "where available and by existing clean compiled-output "
+                    "artifacts for renamed lm-head width tiles. Stale _stable "
+                    "driver rows are recorded as historical aliases only."
+                )
+                if mixed_driver_and_output
+                else (
                     "steps-mode layout materialization and cslc iteration "
                     "both ran. Failed targets now carry measured failureCode "
                     "values in compileTargets[]."
+                )
+                if exact_driver_only
+                else (
+                    "steps-mode layout materialization and compile-output "
+                    "artifacts are present for current host-plan targets. "
+                    "No driver-result rows were available."
                 )
                 if attempted
                 else (

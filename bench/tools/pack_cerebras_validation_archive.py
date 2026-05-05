@@ -195,6 +195,8 @@ INCLUDE_FILES: tuple = (
         "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
         "lm_head_prefill_width_tile_x0_w32.json"
     ),
+    "bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json",
+    "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
     "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
     (
         "bench/out/r3-2-27b-af16-manifest-simfabric-predicted-wallclock/"
@@ -375,6 +377,14 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
         "lm_head_prefill_width_tile_x0_w32.json"
     ): "manifest-simfabric-per-kernel-receipt",
+    (
+        "bench/out/r3-1-31b-af16-local-simfabric-ceiling/"
+        "receipt.json"
+    ): "gemma-af16-local-simfabric-ceiling",
+    (
+        "bench/out/r3-1-31b-af16-full-graph-compile-attempt/"
+        "receipt.json"
+    ): "gemma-af16-full-graph-compile-attempt",
     (
         "bench/out/r3-2-27b-af16-full-graph-compile-attempt/"
         "receipt.json"

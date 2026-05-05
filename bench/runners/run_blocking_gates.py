@@ -62,6 +62,17 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--with-tracked-ignore-gate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Run check_no_new_tracked_under_gitignore.py before the normal "
+            "gate sequence. Default: enabled. The guard scans staged "
+            "additions only, so legacy tracked files under ignored paths do "
+            "not block unrelated gate runs."
+        ),
+    )
+    parser.add_argument(
         "--with-claim-gate",
         action="store_true",
         help="Run claim_gate.py after schema/correctness/trace gates.",
@@ -645,6 +656,7 @@ def main() -> int:
     csl_fixture_mirror_gate = gates_dir / "csl_fixture_mirror_gate.py"
     csl_operation_graph_gate = gates_dir / "csl_operation_graph_gate.py"
     cross_model_parity_gate = tools_dir / "aggregate_cross_model_parity.py"
+    tracked_ignore_gate = tools_dir / "check_no_new_tracked_under_gitignore.py"
     pilot_evidence_gate = gates_dir / "pilot_evidence_gate.py"
     claim_gate = gates_dir / "claim_gate.py"
     bench_cli = BENCH_ROOT / "cli.py"
@@ -691,6 +703,11 @@ def main() -> int:
         return 1
 
     try:
+        if args.with_tracked_ignore_gate:
+            run_gate(
+                "tracked-ignore",
+                [sys.executable, str(tracked_ignore_gate)],
+            )
         run_gate("schema", [sys.executable, str(schema_gate)])
         run_gate("cerebras-artifact", [sys.executable, str(cerebras_artifact_gate)])
         run_gate("doe-private-strategy-leak", [sys.executable, str(doe_private_strategy_leak_gate)])
