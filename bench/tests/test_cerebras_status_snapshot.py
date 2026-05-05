@@ -46,6 +46,7 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
             row = self.module.cross_model_parity_row()
         self.assertEqual(row["verdict"], "bound")
         self.assertIsNone(row["blocker"])
+        self.assertEqual(row["scope"], "requiredLanes=a,b")
 
     def test_cross_model_parity_with_issues(self) -> None:
         self._write(
@@ -168,6 +169,7 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
         md = self.module.render_markdown(rows, "now")
         self.assertIn("✅ bound", md)
         self.assertIn("❌ blocked", md)
+        self.assertIn("| Lane | Verdict | Scope | Blocker |", md)
         self.assertIn("`a/b.json`", md)
 
 

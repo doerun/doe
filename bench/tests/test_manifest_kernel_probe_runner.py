@@ -989,12 +989,65 @@ class SchedulingAndResumeTest(unittest.TestCase):
         self.assertEqual(receipt["verdict"], "blocked")
         self.assertEqual(
             receipt["blocker"],
-            "sdk_d2h_output_transfer_wedged",
+            "simfabric_d2h_copyback_stall_after_launch_complete",
         )
         self.assertEqual(receipt["lastPhaseReached"], "memcpy_d2h_start")
         self.assertEqual(receipt["failurePhase"], "memcpy_d2h_start")
         self.assertTrue(
             receipt["dispatchTimeoutEvidence"]["launchCompleted"],
+        )
+
+    def test_lm_head_width_tile_timeout_uses_canonical_d2h_wedge(self) -> None:
+        runner = _load_runner_module()
+        receipt = runner.build_kernel_receipt(
+            kernel="lm_head_prefill_width_tile_x0_w32",
+            compile_dir=Path("/tmp/compile/lm_head_prefill_width_tile_x0_w32"),
+            compile_params={"width": 32, "height": 512},
+            inputs=[
+                {
+                    "symbol": "activation",
+                    "totalBytes": 1048576,
+                },
+                {
+                    "symbol": "weight",
+                    "totalBytes": 268435456,
+                },
+            ],
+            outputs=[
+                {
+                    "symbol": "output",
+                    "totalBytes": 0,
+                    "sha256": "",
+                },
+            ],
+            probe={},
+            dispatch_command=[],
+            dispatch_exit_code=-1,
+            dispatch_stdout=(
+                "phase:run_complete\n"
+                "phase:launch_complete function=compute\n"
+                "phase:memcpy_d2h_start chunk=512 symbol=output words=512\n"
+            ),
+            dispatch_stderr="",
+            dispatch_timed_out=True,
+            dispatch_wallclock_ns=123,
+            host_plan_path=Path("/tmp/host-plan.json"),
+            host_plan_hash="abc",
+            cmaddr="",
+            blocker=None,
+        )
+
+        self.assertEqual(
+            receipt["blocker"],
+            "simfabric_d2h_copyback_stall_after_launch_complete",
+        )
+        self.assertEqual(
+            receipt["lmHeadEvidenceScope"],
+            "manifest_shape_direct_dispatch",
+        )
+        self.assertEqual(
+            receipt["weightInputScope"],
+            "manifest_full_weight_payload",
         )
 
     def test_lm_head_timeout_records_residency_before_launch_complete(self) -> None:

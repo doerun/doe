@@ -861,9 +861,10 @@ def _dispatch_timeout_blocker(
     last_phase: str,
     launch_completed: bool,
 ) -> str:
+    canonical_kernel = _canonical_dense_gemv_kernel(kernel)
     if (
         dispatch_mode == DIRECT_DISPATCH_MODE
-        and kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        and canonical_kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
         and total_output_bytes == 0
     ):
         weight_bytes = _weight_payload_bytes(inputs)
@@ -872,7 +873,7 @@ def _dispatch_timeout_blocker(
             and launch_completed
             and last_phase == "memcpy_d2h_start"
         ):
-            return "sdk_d2h_output_transfer_wedged"
+            return "simfabric_d2h_copyback_stall_after_launch_complete"
         if (
             weight_bytes >= RESIDENCY_WEIGHT_PAYLOAD_MIN_BYTES
             and last_phase in {"run_complete", "memcpy_h2d_complete", "launch_start"}
@@ -917,6 +918,63 @@ def _timeout_evidence(
         "lastPhaseReached": last_phase,
         "launchCompleted": launch_completed,
     }
+
+
+def normalize_reusable_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Refresh derived blocker/scope fields when reusing old receipts."""
+    kernel = str(receipt.get("kernel") or "")
+    dispatch_mode = str(receipt.get("dispatchMode") or DIRECT_DISPATCH_MODE)
+    canonical_kernel = _canonical_dense_gemv_kernel(kernel)
+    if (
+        canonical_kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        and dispatch_mode == DIRECT_DISPATCH_MODE
+    ):
+        receipt["weightInputScope"] = (
+            receipt.get("weightInputScope")
+            or "manifest_full_weight_payload"
+        )
+        receipt["weightResidencyMode"] = (
+            receipt.get("weightResidencyMode")
+            or "per_dispatch_h2d"
+        )
+    scope = _lm_head_evidence_scope(kernel, dispatch_mode)
+    if scope:
+        receipt["lmHeadEvidenceScope"] = scope
+    if not bool(receipt.get("dispatchTimedOut")):
+        return receipt
+    phase_events = receipt.get("phaseEvents")
+    if not isinstance(phase_events, list):
+        phase_events = []
+    last_phase = str(
+        receipt.get("lastPhaseReached")
+        or last_phase_reached(phase_events)
+        or ""
+    )
+    launch_completed = _has_phase(phase_events, "launch_complete")
+    inputs = [
+        item for item in receipt.get("inputs") or []
+        if isinstance(item, dict)
+    ]
+    total_output_bytes = int(receipt.get("totalOutputBytes") or 0)
+    receipt["blocker"] = _dispatch_timeout_blocker(
+        kernel=kernel,
+        inputs=inputs,
+        total_output_bytes=total_output_bytes,
+        dispatch_mode=dispatch_mode,
+        last_phase=last_phase,
+        launch_completed=launch_completed,
+    )
+    receipt["lastPhaseReached"] = last_phase
+    receipt["failurePhase"] = last_phase
+    receipt["dispatchTimeoutEvidence"] = _timeout_evidence(
+        kernel=kernel,
+        inputs=inputs,
+        total_output_bytes=total_output_bytes,
+        dispatch_mode=dispatch_mode,
+        last_phase=last_phase,
+        launch_completed=launch_completed,
+    )
+    return receipt
 
 
 def _lm_head_evidence_scope(kernel: str, dispatch_mode: str) -> str:
@@ -1196,7 +1254,10 @@ def build_kernel_receipt(
     failure_phase = last_phase if dispatch_timed_out else ""
     weight_input_scope = ""
     weight_residency_mode = ""
-    if kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS and dispatch_mode == DIRECT_DISPATCH_MODE:
+    if (
+        _canonical_dense_gemv_kernel(kernel) in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        and dispatch_mode == DIRECT_DISPATCH_MODE
+    ):
         weight_input_scope = "manifest_full_weight_payload"
         weight_residency_mode = "per_dispatch_h2d"
 
@@ -1751,7 +1812,8 @@ def _summary_entry(receipt: dict[str, Any]) -> dict[str, Any]:
     weight_input_scope = receipt.get("weightInputScope") or ""
     weight_residency_mode = receipt.get("weightResidencyMode") or ""
     if (
-        str(receipt["kernel"]) in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        _canonical_dense_gemv_kernel(str(receipt["kernel"]))
+        in DENSE_GEMV_SINK_OUTPUT_KERNELS
         and dispatch_mode == DIRECT_DISPATCH_MODE
     ):
         weight_input_scope = weight_input_scope or "manifest_full_weight_payload"
@@ -1970,6 +2032,12 @@ def main() -> int:
                 reuse_blocked=args.reuse_blocked,
             )
             if reusable is not None:
+                reusable = normalize_reusable_receipt(reusable)
+                if not args.dense_gemv_partial_only_worker:
+                    write_kernel_receipt(
+                        receipt=reusable,
+                        out_dir=args.out_dir,
+                    )
                 return kernel, reusable, True
         receipt = run_one_kernel(
             kernel=kernel,

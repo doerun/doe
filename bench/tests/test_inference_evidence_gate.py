@@ -365,6 +365,25 @@ class InferenceEvidenceGateTest(unittest.TestCase):
         self.assertFalse(result.eligible)
         self.assertIn(REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY, _codes(result))
 
+    def test_not_ready_session_is_primary_over_unbound_per_kernel(self) -> None:
+        session = _good_session_runtime()
+        session["status"] = "blocked"
+        session["runtimeTranscript"]["status"] = "blocked"
+        evidence = _good_per_kernel()
+        for entry in evidence["kernels"]:
+            if entry["kernel"] == "lm_head_gemv":
+                entry["verdict"] = "blocked"
+        result = evaluate_inference_evidence_gate(
+            host_plan=_good_host_plan(),
+            per_kernel_summary=evidence,
+            real_session_runtime=session,
+            requested_decode_steps=2,
+        )
+        codes = _codes(result)
+        self.assertFalse(result.eligible)
+        self.assertIn(REASON_SESSION_TRANSCRIPT_NOT_OUTPUT_READY, codes)
+        self.assertNotIn(REASON_DISPATCH_EVIDENCE_LM_HEAD_UNBOUND, codes)
+
     def test_lm_head_width_tiled_rejects_unsafe_shape(self) -> None:
         evidence = _good_per_kernel()
         for entry in evidence["kernels"]:

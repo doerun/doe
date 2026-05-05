@@ -57,12 +57,20 @@ def _mtime_iso(rel_path: str) -> str | None:
     return datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc).isoformat()
 
 
-def _row(lane: str, artifact: str, verdict: str, blocker: str | None) -> dict:
+def _row(
+    lane: str,
+    artifact: str,
+    verdict: str,
+    blocker: str | None,
+    *,
+    scope: str | None = None,
+) -> dict:
     return {
         "lane": lane,
         "artifact": artifact,
         "verdict": verdict,
         "blocker": blocker,
+        "scope": scope or "",
         "artifactMtime": _mtime_iso(artifact),
     }
 
@@ -92,7 +100,17 @@ def cross_model_parity_row() -> dict:
     if issues:
         first = issues[0]
         blocker = first.get("class") if isinstance(first, dict) else str(first)
-    return _row("compile.cross_model_parity", CROSS_MODEL_PARITY, verdict, blocker)
+    required_lanes = d.get("requiredLanes") or []
+    scope = ""
+    if isinstance(required_lanes, list) and required_lanes:
+        scope = "requiredLanes=" + ",".join(str(lane) for lane in required_lanes)
+    return _row(
+        "compile.cross_model_parity",
+        CROSS_MODEL_PARITY,
+        verdict,
+        blocker,
+        scope=scope,
+    )
 
 
 def per_kernel_rows(model: str, dir_rel: str) -> list[dict]:
@@ -257,8 +275,8 @@ def render_markdown(rows: list[dict], generated_at: str) -> str:
         "",
         f"Generated: `{generated_at}`",
         "",
-        "| Lane | Verdict | Blocker | Artifact mtime | Artifact |",
-        "| --- | --- | --- | --- | --- |",
+        "| Lane | Verdict | Scope | Blocker | Artifact mtime | Artifact |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for r in rows:
         verdict = r["verdict"] or "unknown"
@@ -271,8 +289,11 @@ def render_markdown(rows: list[dict], generated_at: str) -> str:
         blocker = r["blocker"] or ""
         if len(blocker) > 90:
             blocker = blocker[:87] + "..."
+        scope = r.get("scope") or ""
+        if len(scope) > 90:
+            scope = scope[:87] + "..."
         lines.append(
-            f"| `{r['lane']}` | {marker} {verdict} | {blocker} | "
+            f"| `{r['lane']}` | {marker} {verdict} | {scope} | {blocker} | "
             f"{r['artifactMtime'] or 'n/a'} | `{r['artifact']}` |"
         )
     return "\n".join(lines) + "\n"

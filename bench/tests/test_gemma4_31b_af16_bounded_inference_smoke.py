@@ -241,6 +241,10 @@ def _write_output_ready_streaming_trace(path: Path) -> None:
             "requestedDecodeSteps": 2,
             "actualDecodeSteps": 2,
             "generatedTokenIds": [9503, 106],
+            "logitsDigests": [
+                {"path": "logits-0.f32", "sha256": "2" * 64},
+                {"path": "logits-1.f32", "sha256": "3" * 64},
+            ],
             "lmHeadDispatches": [
                 {
                     "launchIndex": 4,

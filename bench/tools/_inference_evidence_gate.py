@@ -175,18 +175,6 @@ def _session_transcript(
     return real_session_runtime
 
 
-def _session_claims_output_ready(
-    real_session_runtime: Mapping[str, object],
-) -> bool:
-    transcript = _session_transcript(real_session_runtime)
-    runtime_status = str(real_session_runtime.get("status") or "")
-    transcript_status = str(transcript.get("status") or runtime_status)
-    return (
-        runtime_status == _OUTPUT_READY_STATUS
-        or transcript_status == _OUTPUT_READY_STATUS
-    )
-
-
 def session_runtime_evidence_reasons(
     real_session_runtime: Mapping[str, object] | None,
     *,
@@ -418,31 +406,30 @@ def evaluate_inference_evidence_gate(
 
     session_reasons: tuple[GateReason, ...] = ()
     session_evidence_complete = False
-    session_output_ready_claim = False
+    session_status = ""
     if real_session_runtime is not None:
+        session_status = str(real_session_runtime.get("status") or "")
         session_reasons = session_runtime_evidence_reasons(
             real_session_runtime,
             requested_decode_steps=requested_decode_steps,
         )
         session_evidence_complete = not session_reasons
-        session_output_ready_claim = _session_claims_output_ready(
-            real_session_runtime
-        )
 
     if sample_in_any_phase and session_evidence_complete:
         pass
-    elif sample_in_any_phase and session_output_ready_claim:
+    elif (
+        sample_in_any_phase
+        and real_session_runtime is not None
+        and session_status not in {"", "ready_not_executed"}
+    ):
         reasons.extend(session_reasons)
     elif per_kernel_summary is None:
         if require_dispatch_evidence and sample_in_any_phase:
-            if real_session_runtime is not None:
-                reasons.extend(session_reasons)
-            else:
-                reasons.append(GateReason(
-                    REASON_DISPATCH_EVIDENCE_ABSENT,
-                    "no per-kernel dispatch evidence supplied; cannot back an "
-                    "inference claim.",
-                ))
+            reasons.append(GateReason(
+                REASON_DISPATCH_EVIDENCE_ABSENT,
+                "no per-kernel dispatch evidence supplied; cannot back an "
+                "inference claim.",
+            ))
     else:
         kernels_field = per_kernel_summary.get("kernels") or []
         kernel_entries: Sequence[object] = (

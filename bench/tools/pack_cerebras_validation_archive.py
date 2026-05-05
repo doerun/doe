@@ -179,6 +179,28 @@ INCLUDE_FILES: tuple = (
         "bench/out/r3-1-31b-gemma-af16-simfabric-cells/"
         "summary-receipt.json"
     ),
+    # Current Cerebras lane status and bounded af16 blocker taxonomy.
+    "bench/out/r3-cerebras-status/snapshot.json",
+    "bench/out/r3-cerebras-status/snapshot.md",
+    "bench/out/r3-cross-model-parity/receipt.json",
+    (
+        "bench/out/r3-1-31b-af16-bounded-inference-smoke/"
+        "receipt.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
+        "summary.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
+        "lm_head_prefill_width_tile_x0_w32.json"
+    ),
+    "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
+    (
+        "bench/out/r3-2-27b-af16-manifest-simfabric-predicted-wallclock/"
+        "budget.json"
+    ),
+    "bench/out/r3-2-27b-qwen-simfabric-cells/summary-receipt.json",
     # 31B no-hardware evidence promoted after the initial bundle.
     "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json",
     "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json",
@@ -338,6 +360,33 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/out/r3-1-31b-gemma-af16-simfabric-cells/"
         "summary-receipt.json"
     ): "simfabric-cells-summary",
+    "bench/out/r3-cerebras-status/snapshot.json": "status-snapshot",
+    "bench/out/r3-cerebras-status/snapshot.md": "status-snapshot",
+    "bench/out/r3-cross-model-parity/receipt.json": "cross-model-parity-scope",
+    (
+        "bench/out/r3-1-31b-af16-bounded-inference-smoke/"
+        "receipt.json"
+    ): "bounded-inference-smoke-receipt",
+    (
+        "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
+        "summary.json"
+    ): "manifest-simfabric-per-kernel-summary",
+    (
+        "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/"
+        "lm_head_prefill_width_tile_x0_w32.json"
+    ): "manifest-simfabric-per-kernel-receipt",
+    (
+        "bench/out/r3-2-27b-af16-full-graph-compile-attempt/"
+        "receipt.json"
+    ): "qwen-af16-full-graph-compile-attempt",
+    (
+        "bench/out/r3-2-27b-af16-manifest-simfabric-predicted-wallclock/"
+        "budget.json"
+    ): "qwen-af16-simfabric-budget",
+    (
+        "bench/out/r3-2-27b-qwen-simfabric-cells/"
+        "summary-receipt.json"
+    ): "qwen-simfabric-cells-summary",
     "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json": "manifest-compile-attempt",
     "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json": "promoted-artifact-provenance",
     "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json": "manifest-compile-sweep",
