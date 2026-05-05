@@ -71,6 +71,18 @@
       "sha256": "93a3a1bdbf8d10d6e85b95a9e81c74a8a96b38630d73e952b6f14f87cddeb843"
     },
     {
+      "path": "bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json",
+      "sha256": "3340ca5f96998649eeadda21548fca1d04eb3d7c6a16f91815c21b0babf3428e"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/lm_head_prefill_width_tile_x0_w32.json",
+      "sha256": "c40c97afa3467369dcc6bfb8f2197b22edadda364cee483886b15b375780f473"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/summary.json",
+      "sha256": "d864c8feaad1a3c0d47988e481326cf0249f80eb929fc4f4abe66100f85ffeb9"
+    },
+    {
       "path": "bench/out/r3-1-31b-bounded-decode-integrated/PROVENANCE.json",
       "sha256": "d6ea49ced9466b6d44714ba41cca1ddb4dbe744e6813f35d08229e00a1da257d"
     },
