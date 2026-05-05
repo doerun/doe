@@ -156,7 +156,7 @@ cross-references inside the receipts resolve as written.
 | `promoted-artifact-provenance` | Sidecar provenance for promoted stable bundle paths | Reviewers checking source-to-bundle identity |
 | `target-run-receipt` | Per-target L1 receipt for WebGPU WGSL, CSL WebGPU emulator, or CSL simfabric | Reviewers of the side-by-side layer-block demo |
 | `moe-lane-scope` | 26B/A4B MoE blocked-lane + 6 TODO receipts | Anyone asking about MoE |
-| `rollup` | Summary artifacts (lanes, gate bundle) | Quick triage |
+| `rollup` | Summary artifacts (lanes, gate bundle) | Triage |
 | `depth-coverage-rollup` | Which declared depths have raw files vs evidence-eligible receipts; today only L1 synthetic is claimable | Anyone asking "is this the full model?" |
 
 ## Contact and next steps
@@ -417,7 +417,8 @@ export HUGGINGFACE_HUB_CACHE=/home/x/.cache/huggingface/hub
 export HF_HUB_CACHE=/home/x/.cache/huggingface/hub
 export DOE_MODELS_ROOT=/home/x/model-downloads
 export DOE_GEMMA4_31B_SAFETENSORS_DIR=/home/x/model-downloads/gemma-4-31B-it
-export DOE_GEMMA4_31B_AF16_MANIFEST=/home/x/deco/doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json
+export DOE_RDRR_ROOT=/home/x/model-downloads/Clocksmith-rdrr
+export DOE_GEMMA4_31B_AF16_MANIFEST=/home/x/model-downloads/Clocksmith-rdrr/models/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json
 export DOE_GEMMA4_E2B_SAFETENSORS_DIR=/home/x/model-downloads/gemma4-e2b-it
 export DOE_GEMMA4_E2B_RDRR_ROOT=/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple
 ```
@@ -441,6 +442,13 @@ its shared Q4K weight pack:
 - upstream page: <https://huggingface.co/google/gemma-4-31B-it>
 - pinned upstream revision:
   `439edf5652646a0d1bd8b46bfdc1d3645761a445`
+- hosted RDRR repo: `Clocksmith/rdrr`
+- hosted af16 revision:
+  `e6f36589da5f860d9da9b10efdc945434f1f1be2`
+- hosted af16 path:
+  `models/gemma-4-31b-it-text-q4k-ehf16-af16`
+- hosted af32 Q4K primary path:
+  `models/gemma-4-31b-it-text-q4k-ehf16-af32`
 - Doppler af16 manifest:
   `$DOE_GEMMA4_31B_AF16_MANIFEST`
 - Doppler primary Q4K weight pack:
@@ -488,27 +496,17 @@ Authenticate without writing credentials into the model root:
 hf auth login --token <token> --add-to-git-credential false
 ```
 
-Download the raw 31B snapshot used by the af16 lane:
+Download the hosted 31B RDRR pair used by the af16 hardware lane. The
+af16 manifest references the af32 primary weight pack through
+`weightsRef`, so both paths must be present under the same local root:
 
 ```bash
-hf download google/gemma-4-31B-it \
-  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
-  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
-```
-
-Materialize the Doppler Q4K weight pack and the af16 manifest sibling:
-
-```bash
-cd /home/x/deco/doppler
-npm ci
-
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af32.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af32
-
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af16.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af16
+hf download Clocksmith/rdrr \
+  --repo-type model \
+  --revision e6f36589da5f860d9da9b10efdc945434f1f1be2 \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af16/*" \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af32/*" \
+  --local-dir "$DOE_RDRR_ROOT"
 ```
 
 Validate the 31B Doppler artifact before running Doe:
@@ -518,7 +516,15 @@ cd /home/x/deco/doe
 python3 - <<'PY'
 import json
 import os
+import hashlib
 from pathlib import Path
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
 
 manifest_path = Path(os.environ["DOE_GEMMA4_31B_AF16_MANIFEST"]).resolve()
 manifest = json.loads(manifest_path.read_text())
@@ -526,6 +532,7 @@ assert manifest["modelId"] == "gemma-4-31b-it-text-q4k-ehf16-af16"
 weights_ref = manifest["weightsRef"]
 weights_root = (manifest_path.parent / weights_ref["artifactRoot"]).resolve()
 weights_manifest = json.loads((weights_root / "manifest.json").read_text())
+assert sha256_file(weights_root / "manifest.json") == weights_ref["manifestDigest"]
 assert weights_manifest["artifactIdentity"]["shardSetHash"] == weights_ref["shardSetHash"]
 missing = [
     shard["filename"]
@@ -633,10 +640,19 @@ Hugging Face cache env vars, and the claim boundary. The primary
 hardware ask is the Gemma 4 31B af16 full-prompt HostPlan run. The
 layer-block runner is a bounded fallback, not the main claim.
 
+Current local bridge evidence: the selected-token lm-head splice at
+`bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`
+uses the real Gemma 4 31B af16 hidden state for
+`<bos>The color of the sky is`, real tied lm-head weights, and generated CSL.
+It computes token `3730` (` blue`) with
+`logitAbsDiff=0.008741699047892126` against the Doppler/WebGPU reference.
+This is not full hardware parity; it is the local bridge proof the hardware
+path is meant to extend.
+
 ## Two paths — either works
 
-**Path A: temporary endpoint access.** We run the runner from our side
-against a Cerebras-provided endpoint:
+**Path A: endpoint access.** We run the runner from our side against a
+Cerebras-provided endpoint:
 
 1. **Reachable CS/WSC endpoint.** Either a direct `--cmaddr <ip:port>`
    target or an appliance SdkLauncher endpoint.
@@ -651,8 +667,8 @@ against a Cerebras-provided endpoint:
 runs the same commands internally and returns the receipt artifacts:
 
 1. **Clone Doe at the archive commit** and verify the archive.
-2. **Materialize the Doppler Gemma 4 31B af16 artifact** from the
-   pinned Hugging Face snapshot, or mount an already-validated copy.
+2. **Fetch the Doppler Gemma 4 31B af16 RDRR artifact** from
+   `Clocksmith/rdrr`, or mount an already-validated copy.
 3. **Build generated CSL, compile it with cslc, run the full-prompt
    HostPlan runner, and return the trace artifacts.**
 4. **Redact what your policy requires.** Every `hardware.*` field has
@@ -674,40 +690,40 @@ git clone https://github.com/doe-gpu/doe.git
 cd doe
 git checkout "$DOE_COMMIT"
 
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install numpy jsonschema huggingface_hub
+
 python3 bench/tools/verify_cerebras_validation_archive.py \
   --archive "$ARCHIVE"
+
+mkdir -p bench/out/hardware-run
 ```
 
-Materialize the model artifact if a validated Doppler copy is not
-already mounted:
+The hardware host must also provide the Cerebras SDK surface: `cslc` on
+`PATH` or passed with `--cslc-executable`, and a Python environment that can
+import `cerebras.sdk.runtime.sdkruntimepybind`.
+
+Fetch the hosted model artifact if a validated RDRR copy is not already
+mounted. The af16 manifest references the af32 primary weight pack through
+`weightsRef`, so both paths must be present under the same local root:
 
 ```bash
-cd ..
-git clone https://github.com/clocksmith/doppler.git
-cd doppler
-npm ci
-
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
-export DOE_MODELS_ROOT="${DOE_MODELS_ROOT:-$PWD/models/source/huggingface_cache}"
-export DOE_GEMMA4_31B_SAFETENSORS_DIR="$DOE_MODELS_ROOT/google--gemma-4-31B-it"
+export DOE_RDRR_ROOT="${DOE_RDRR_ROOT:-$PWD/../rdrr-cache/Clocksmith-rdrr}"
 
 hf auth login --token <token> --add-to-git-credential false
-hf download google/gemma-4-31B-it \
-  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
-  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
 
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af32.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af32
+hf download Clocksmith/rdrr \
+  --repo-type model \
+  --revision e6f36589da5f860d9da9b10efdc945434f1f1be2 \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af16/*" \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af32/*" \
+  --local-dir "$DOE_RDRR_ROOT"
 
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af16.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af16
-
-cd ../doe
-export DOE_GEMMA4_31B_AF16_MANIFEST="$PWD/../doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
+export DOE_GEMMA4_31B_AF16_MANIFEST="$DOE_RDRR_ROOT/models/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
 ```
 
 Validate the manifest and shared Q4K shards:
@@ -716,7 +732,15 @@ Validate the manifest and shared Q4K shards:
 python3 - <<'PY'
 import json
 import os
+import hashlib
 from pathlib import Path
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
 
 manifest_path = Path(os.environ["DOE_GEMMA4_31B_AF16_MANIFEST"]).resolve()
 manifest = json.loads(manifest_path.read_text())
@@ -724,6 +748,7 @@ assert manifest["modelId"] == "gemma-4-31b-it-text-q4k-ehf16-af16"
 weights_ref = manifest["weightsRef"]
 weights_root = (manifest_path.parent / weights_ref["artifactRoot"]).resolve()
 weights_manifest = json.loads((weights_root / "manifest.json").read_text())
+assert sha256_file(weights_root / "manifest.json") == weights_ref["manifestDigest"]
 assert weights_manifest["artifactIdentity"]["shardSetHash"] == weights_ref["shardSetHash"]
 missing = [
     shard["filename"]
@@ -794,6 +819,14 @@ These are useful if the endpoint owner wants a smaller preflight first.
 They are not full-prompt Gemma 4 31B evidence.
 
 Layer-block smoke on real-weight smoke slices:
+
+```bash
+export DOE_GEMMA4_31B_SAFETENSORS_DIR="${DOE_GEMMA4_31B_SAFETENSORS_DIR:-$PWD/../model-downloads/gemma-4-31B-it}"
+
+hf download google/gemma-4-31B-it \
+  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
+  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
+```
 
 ```bash
 python3 bench/tools/extract_gemma4_31b_weight_slices.py \
@@ -984,7 +1017,7 @@ can re-run the runner (see `CEREBRAS_ASK.md`) against the pinned
 manifest/graph/kernel hashes in this bundle to produce their own
 compile workdir, then visualize it locally.
 
-## Quick archive summary
+## Archive summary
 
 ```bash
 bench/tools/summarize_cerebras_evidence_archive.sh <archive>

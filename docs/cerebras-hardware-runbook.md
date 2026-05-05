@@ -5,7 +5,7 @@ lanes end-to-end on Cerebras WSE/WSC. This is the practical "how to actually
 run the validation" doc; deeper architecture, claim taxonomy, and acceptance
 bars live under the cross-references at the bottom.
 
-If you only have time to read one page, read this one.
+If you read one page, read this one.
 
 ## What this runbook covers
 
@@ -39,7 +39,7 @@ provider prefers.
   below internally, and returns the receipt artifacts. Nothing from our side
   has to execute on Cerebras infrastructure.
 
-## Quick reference
+## Reference
 
 | Resource | Where |
 |---|---|
@@ -60,8 +60,10 @@ provider prefers.
 
 ## Operator setup
 
-The evidence archive is not a complete source checkout. Start from the archive
-commit, then verify the archive from that checkout:
+All commands in this section run from the Doe repository root unless a command
+explicitly changes directory. The evidence archive is not a complete source
+checkout. Start from the archive commit, then verify the archive from that
+checkout:
 
 ```bash
 export ARCHIVE=/path/to/doe-cerebras-evidence-<stamp>-<sha>.tar.gz
@@ -74,41 +76,40 @@ git clone https://github.com/doe-gpu/doe.git
 cd doe
 git checkout "$DOE_COMMIT"
 
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install numpy jsonschema huggingface_hub
+
 python3 bench/tools/verify_cerebras_validation_archive.py \
   --archive "$ARCHIVE"
+
+mkdir -p bench/out/hardware-run
 ```
 
-The full-prompt Gemma runner also needs the Doppler Gemma 4 31B af16 artifact
-next to the Doe checkout, because the runner resolves the manifest and the
-shared Q4K weight pack from Doppler:
+The hardware host must also provide the Cerebras SDK surface: `cslc` on `PATH`
+or passed with `--cslc-executable`, and a Python environment that can import
+`cerebras.sdk.runtime.sdkruntimepybind`.
+
+The full-prompt Gemma runner also needs the hosted Doppler Gemma 4 31B af16
+RDRR artifact and its shared af32 Q4K weight pack. Both are hosted in
+`Clocksmith/rdrr`; no safetensors conversion is part of the hardware path.
 
 ```bash
-cd ..
-git clone https://github.com/clocksmith/doppler.git
-cd doppler
-npm ci
-
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
 export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
-export DOE_MODELS_ROOT="${DOE_MODELS_ROOT:-$PWD/models/source/huggingface_cache}"
-export DOE_GEMMA4_31B_SAFETENSORS_DIR="$DOE_MODELS_ROOT/google--gemma-4-31B-it"
+export DOE_RDRR_ROOT="${DOE_RDRR_ROOT:-$PWD/../rdrr-cache/Clocksmith-rdrr}"
 
 hf auth login --token <token> --add-to-git-credential false
-hf download google/gemma-4-31B-it \
-  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
-  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
 
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af32.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af32
+hf download Clocksmith/rdrr \
+  --repo-type model \
+  --revision e6f36589da5f860d9da9b10efdc945434f1f1be2 \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af16/*" \
+  --include "models/gemma-4-31b-it-text-q4k-ehf16-af32/*" \
+  --local-dir "$DOE_RDRR_ROOT"
 
-node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
-  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af16.json \
-  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af16
-
-cd ../doe
-export DOE_GEMMA4_31B_AF16_MANIFEST="$PWD/../doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
+export DOE_GEMMA4_31B_AF16_MANIFEST="$DOE_RDRR_ROOT/models/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
 ```
 
 Validate the Doppler artifact before launching hardware:
@@ -117,7 +118,15 @@ Validate the Doppler artifact before launching hardware:
 python3 - <<'PY'
 import json
 import os
+import hashlib
 from pathlib import Path
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return "sha256:" + h.hexdigest()
 
 manifest_path = Path(os.environ["DOE_GEMMA4_31B_AF16_MANIFEST"]).resolve()
 manifest = json.loads(manifest_path.read_text())
@@ -125,6 +134,7 @@ assert manifest["modelId"] == "gemma-4-31b-it-text-q4k-ehf16-af16"
 weights_ref = manifest["weightsRef"]
 weights_root = (manifest_path.parent / weights_ref["artifactRoot"]).resolve()
 weights_manifest = json.loads((weights_root / "manifest.json").read_text())
+assert sha256_file(weights_root / "manifest.json") == weights_ref["manifestDigest"]
 assert weights_manifest["artifactIdentity"]["shardSetHash"] == weights_ref["shardSetHash"]
 missing = [
     shard["filename"]
@@ -137,7 +147,21 @@ print(f"validated {manifest_path}")
 PY
 ```
 
-## Gemma 4 31B — runner steps
+## Current local evidence
+
+The strongest local no-hardware check is the selected-token lm-head splice:
+`bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`.
+It uses the real Gemma 4 31B af16 hidden state for
+`<bos>The color of the sky is`, real tied lm-head weights, and generated CSL.
+The CSL path computes token `3730` (` blue`) with
+`logitAbsDiff=0.008741699047892126` against the Doppler/WebGPU reference.
+
+Do not treat that as full hardware parity. It is the bridge proof that says the
+same model artifact and generated CSL can meet the local reference on a
+manifest-shape selected-token check. The hardware run below is the full-prompt
+validation path.
+
+## Gemma 4 31B runner steps
 
 ### Full-prompt af16 HostPlan run
 
@@ -207,6 +231,16 @@ useful if it returns the named blocker and the phase reached.
 Use this only as an endpoint and receipt-shape check, or as a labeled
 `real_weight_smoke_shape` run after the smoke slices below are materialized. It
 is not a full-prompt Gemma 4 31B run.
+
+The fallback extractor reads raw safetensors, not the primary RDRR artifact:
+
+```bash
+export DOE_GEMMA4_31B_SAFETENSORS_DIR="${DOE_GEMMA4_31B_SAFETENSORS_DIR:-$PWD/../model-downloads/gemma-4-31B-it}"
+
+hf download google/gemma-4-31B-it \
+  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
+  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
+```
 
 ```bash
 python3 bench/tools/extract_gemma4_31b_weight_slices.py \
@@ -285,8 +319,14 @@ cs_python bench/runners/csl-runners/qwen-3-6-27b-cells/<kernel>_run.py \
 
 The 10 cells today are: `rmsnorm`, `rope_partial`, `residual`, `silu`,
 `embed`, `tiled` (SUMMA matmul), `kv_write`, `gemv` (Q4_K dequant + GEMV),
-`sample`, and `attn_decode`. The 11th compile target, `attn_prefill`, hits
-`linker_pe_memory_overflow` and is not currently a cell.
+`sample`, and `attn_decode`. `attn_prefill` is not packaged as a
+standalone small-shape cell — it is covered by the manifest-shape
+semantic-pattern path `attention_prefill_kv_axis_sharded`, which
+compiles cleanly under the current SDK driver with multi-Q
+causal-prefill and per-PE residency under the WSE-3 budget. The earlier
+`linker_pe_memory_overflow` blocker is closed; see
+[`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md)
+for the audit trail.
 
 The aggregator at
 `bench/tools/synthesize_qwen_3_6_27b_simfabric_cells_summary_receipt.py` rolls
@@ -382,9 +422,9 @@ and verdict line. Example body:
 > would like to validate the Gemma 4 31B af16 full-prompt HostPlan path on
 > WSE/WSC.
 >
-> The command path is: clone Doe at the bundle commit, materialize the Doppler
-> Gemma 4 31B af16 artifact from the pinned Hugging Face revision, build the
-> generated HostPlan/CSL bundle, compile with cslc, then run
+> The command path is: clone Doe at the bundle commit, fetch the hosted Doppler
+> Gemma 4 31B af16 RDRR artifact from `Clocksmith/rdrr`, build the generated
+> HostPlan/CSL bundle, compile with cslc, then run
 > `gemma4_31b_af16_hostplan_streaming_runner.py` against `<bos>The color of
 > the sky is`.
 >

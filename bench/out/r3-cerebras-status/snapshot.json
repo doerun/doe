@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-05T20:30:47.468356+00:00",
+  "generatedAt": "2026-05-05T21:27:14.393569+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -200,7 +200,7 @@
       "verdict": "blocked",
       "blocker": "simfabric_d2h_copyback_stall_after_launch_complete",
       "scope": "memcpy_d2h_start",
-      "artifactMtime": "2026-05-05T19:10:50.981524+00:00"
+      "artifactMtime": "2026-05-05T20:35:39.879954+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.single_block_hidden",
@@ -240,7 +240,7 @@
       "verdict": "pass_with_documented_canary_constraints",
       "blocker": null,
       "scope": "",
-      "artifactMtime": "2026-05-05T19:10:50.946164+00:00"
+      "artifactMtime": "2026-05-05T20:35:39.843257+00:00"
     },
     {
       "lane": "qwen.simfabric_cells",
