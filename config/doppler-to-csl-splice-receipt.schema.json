@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.doe.deco/doppler-to-csl-splice-receipt.schema.json",
+  "title": "Doppler to CSL splice receipt",
+  "description": "Receipt for a Doppler-prefix / CSL-suffix proof. Doppler supplies real Gemma activations or token reference state; CSL supplies the splice output. The receipt is bound even when blocked so the missing producer is named without downgrading the evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptClass",
+    "comparisonMode",
+    "verdict",
+    "blocker",
+    "modelId",
+    "manifestPath",
+    "manifestSha256",
+    "referenceFixtureHash",
+    "sourceProgram",
+    "splicePoint",
+    "dopplerReference",
+    "cslRun",
+    "comparison",
+    "claim"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "doppler_to_csl_splice_receipt" },
+    "receiptClass": { "const": "manifest_shape_doppler_to_csl_splice" },
+    "comparisonMode": { "const": "parity" },
+    "verdict": { "enum": ["bound", "blocked"] },
+    "blocker": { "type": ["string", "null"] },
+    "modelId": { "type": "string" },
+    "manifestPath": { "type": "string" },
+    "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "referenceFixtureHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sourceProgram": { "$ref": "#/$defs/sourceProgram" },
+    "splicePoint": { "$ref": "#/$defs/splicePoint" },
+    "dopplerReference": { "$ref": "#/$defs/dopplerReference" },
+    "cslRun": { "$ref": "#/$defs/cslRun" },
+    "comparison": { "$ref": "#/$defs/comparison" },
+    "claim": { "$ref": "#/$defs/claim" }
+  },
+  "$defs": {
+    "hashLinkedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "byteLength": { "type": "integer", "minimum": 0 },
+        "elemDtype": { "type": "string" },
+        "elemShape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "sourceProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authoringSurface",
+        "manifestSha256",
+        "executionGraphSha256",
+        "weightSetSha256",
+        "inputSetSha256",
+        "referenceExport"
+      ],
+      "properties": {
+        "authoringSurface": { "const": "doppler_execution_v1" },
+        "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "executionGraphSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "weightSetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "inputSetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "programBundleId": { "type": ["string", "null"] },
+        "referenceExport": { "$ref": "#/$defs/hashLinkedPath" }
+      }
+    },
+    "splicePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "layerIndex", "promptTokenCount"],
+      "properties": {
+        "kind": {
+          "enum": ["single_block_hidden", "last_layer_tail_token"]
+        },
+        "layerIndex": { "type": "integer", "minimum": 0 },
+        "promptTokenCount": { "type": "integer", "minimum": 0 },
+        "inputProbe": { "type": "string" },
+        "expectedProbe": { "type": ["string", "null"] }
+      }
+    },
+    "dopplerReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixtureManifest",
+        "fixtureRoot",
+        "inputTensor",
+        "expectedTensor",
+        "expectedTokenId",
+        "generatedTokenIds"
+      ],
+      "properties": {
+        "fixtureManifest": { "$ref": "#/$defs/hashLinkedPath" },
+        "fixtureRoot": { "type": "string" },
+        "inputTensor": { "anyOf": [{ "$ref": "#/$defs/hashLinkedPath" }, { "type": "null" }] },
+        "expectedTensor": { "anyOf": [{ "$ref": "#/$defs/hashLinkedPath" }, { "type": "null" }] },
+        "expectedTokenId": { "type": ["integer", "null"] },
+        "generatedTokenIds": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "cslRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "outputTensor", "outputTokenId"],
+      "properties": {
+        "status": { "enum": ["output_ready", "blocked"] },
+        "outputTensor": { "anyOf": [{ "$ref": "#/$defs/hashLinkedPath" }, { "type": "null" }] },
+        "outputTokenId": { "type": ["integer", "null"] },
+        "command": { "type": ["string", "null"] }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "status", "match"],
+      "properties": {
+        "mode": { "enum": ["hidden_tensor_sha256_exact", "token_equal"] },
+        "status": {
+          "enum": [
+            "matched",
+            "mismatch",
+            "blocked_missing_csl_output",
+            "blocked_missing_doppler_input",
+            "blocked_missing_doppler_expected"
+          ]
+        },
+        "match": { "type": ["boolean", "null"] },
+        "expectedSha256": { "type": ["string", "null"] },
+        "observedSha256": { "type": ["string", "null"] },
+        "expectedTokenId": { "type": ["integer", "null"] },
+        "observedTokenId": { "type": ["integer", "null"] }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "notWhat"],
+      "properties": {
+        "scope": { "type": "string" },
+        "notWhat": { "type": "string" }
+      }
+    }
+  }
+}

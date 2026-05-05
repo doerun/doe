@@ -51,6 +51,7 @@ PINNED_INCLUDE_PREFIXES: tuple[str, ...] = (
     "docs/",
     "bench/out/26b-moe-lane/",
     "bench/out/31b-full-graph/",
+    "bench/fixtures/r3-1-31b-doppler-frozen-af16/",
     "bench/out/r3-1-",
     "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/",
 )

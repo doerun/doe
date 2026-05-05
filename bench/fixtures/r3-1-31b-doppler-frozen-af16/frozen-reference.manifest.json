@@ -2,44 +2,106 @@
   "activations": {
     "0": {
       "post_attn": {
-        "byteLength": 408704,
+        "byteLength": 86144,
         "elemDtype": "float32",
         "elemShape": [
-          19,
+          4,
           5376
         ],
         "path": "layer_0/post_attn.npy",
-        "sha256": "80f71f63857d2c4f1a768c7cefe0393b0d6ec5ae4c4cf17c6c15c7c8f6f836d6"
+        "sha256": "97389da588893db355924fa57b2bd6e398d996d62a1025034880ad4fba070721"
       },
       "post_ffn": {
-        "byteLength": 408704,
+        "byteLength": 86144,
         "elemDtype": "float32",
         "elemShape": [
-          19,
+          4,
           5376
         ],
         "path": "layer_0/post_ffn.npy",
-        "sha256": "2da1459e9affbc64e1f8235fd94930c132a2831dbe8e32aeaefe474cb007be93"
+        "sha256": "550786951e7f118b2068a9441e7ba07cf053485e6cf8b3e435356a9a96437857"
       },
       "post_qkv": {
-        "byteLength": 1245312,
+        "byteLength": 262272,
         "elemDtype": "float32",
         "elemShape": [
-          19,
+          4,
           16384
         ],
         "path": "layer_0/post_qkv.npy",
-        "sha256": "8f4657181c61bca0c9b121a4816295ec5881916f52112841598c7da1de81b6ab"
+        "sha256": "329bd0053a0d3c9fa48c6e44c4b2b94e5c12c212650c2ce8f1efb8ef1d2d5b56"
       },
       "post_rmsnorm": {
-        "byteLength": 408704,
+        "byteLength": 86144,
         "elemDtype": "float32",
         "elemShape": [
-          19,
+          4,
           5376
         ],
         "path": "layer_0/post_rmsnorm.npy",
-        "sha256": "603934fa52bfbb124a5a90eabca9ca621e01ff83b1a904860943350760b398c8"
+        "sha256": "8e41761567497ec57393fb8efda739440aba06307b729f024f730dde076e2dae"
+      },
+      "pre_layer_input": {
+        "byteLength": 86144,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          5376
+        ],
+        "path": "layer_0/pre_layer_input.npy",
+        "sha256": "195f7e1055bb10e8da211d5fe090f5892337887538399034e2cf5d506dc568b2"
+      }
+    },
+    "59": {
+      "post_attn": {
+        "byteLength": 86144,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          5376
+        ],
+        "path": "layer_59/post_attn.npy",
+        "sha256": "9936f845246c310e8d27978b26df8d43d182d68f47d8469f1de04215c826ab2d"
+      },
+      "post_ffn": {
+        "byteLength": 86144,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          5376
+        ],
+        "path": "layer_59/post_ffn.npy",
+        "sha256": "27f13fbe6a8c61c23fcebc8812b169358b64c91008fe53fdc1a1e154455c0aa4"
+      },
+      "post_qkv": {
+        "byteLength": 327808,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          20480
+        ],
+        "path": "layer_59/post_qkv.npy",
+        "sha256": "5b7f6131b5a4aa69352999eaf01754a4f67b6627f6f15f6f3e5c6c619b311185"
+      },
+      "post_rmsnorm": {
+        "byteLength": 86144,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          5376
+        ],
+        "path": "layer_59/post_rmsnorm.npy",
+        "sha256": "014c86413a0a3b29be0c12f28c834efc7131a00d37a5d70f4ac84278c7d7f602"
+      },
+      "pre_layer_input": {
+        "byteLength": 86144,
+        "elemDtype": "float32",
+        "elemShape": [
+          4,
+          5376
+        ],
+        "path": "layer_59/pre_layer_input.npy",
+        "sha256": "b5c5597969116db941ca46bed38225379638ba7c822d8d0a9cf93cf42164de5c"
       }
     }
   },
@@ -52,15 +114,15 @@
     "variantTag": "q4k-ehf16-af16",
     "weights": "q4k"
   },
-  "fixtureDigest": "1b825f5d35cd828002eaabf0d9bfbdde96d81e58b43441ff601370afa3cdf8c3",
-  "frozenAt": "2026-04-29T17:27:47Z",
-  "frozenReason": "Captured via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; serves as the rung-5 frozen Doppler reference for the Doe manifest-shape simfabric proof plan.",
+  "fixtureDigest": "8d07981fa75d34f8687fb87c074f2bdebc6d12a968de9d49648f6ec8dbc35f7c",
+  "frozenAt": "2026-05-05T18:46:33Z",
+  "frozenReason": "Captured via doppler tools/run-program-bundle-reference.js --tsir-fixture-dir; serves as the frozen-Doppler-reference reference for the Doe manifest-shape simfabric proof plan.",
   "modelId": "gemma-4-31b-it-text-q4k-ehf16-af16",
-  "promptText": "The color of the sky is",
+  "promptText": "<bos>sky color is",
   "schemaVersion": 1,
   "transcript": {
-    "byteLength": 30366,
+    "byteLength": 30191,
     "path": "reference-report.json",
-    "sha256": "70749a4ca90b1a64e5bffb694c1346fa78028533e6e3c63cc4e10013a07a17d5"
+    "sha256": "60cab9e65a5bdd71335fb609045a1c12a9fb78700ac298b0595d4787c0b4bc69"
   }
 }

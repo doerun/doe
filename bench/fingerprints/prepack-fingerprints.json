@@ -3,6 +3,14 @@
   "artifactKind": "doe_prepack_fingerprints",
   "fingerprints": [
     {
+      "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/frozen-reference.manifest.json",
+      "sha256": "69f92218eb4a7411a3bd6adde821cf15d8b9e7afbcde2490be5812c678b26772"
+    },
+    {
+      "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/reference-report.json",
+      "sha256": "60cab9e65a5bdd71335fb609045a1c12a9fb78700ac298b0595d4787c0b4bc69"
+    },
+    {
       "path": "bench/out/26b-moe-lane/lane-status.json",
       "sha256": "b1bac88ea0acee5b26dbcdd8d934f4a67ad1f9f44db2c033a552c76c1686c4d8"
     },
@@ -73,6 +81,14 @@
     {
       "path": "bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json",
       "sha256": "3340ca5f96998649eeadda21548fca1d04eb3d7c6a16f91815c21b0babf3428e"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json",
+      "sha256": "34e52353b8738bd73498861d3af1c01815528c9e36a5dbfb34c58a2f154070e5"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json",
+      "sha256": "5aed70102650f9b59329f0b3e424665a5fb4c62892ef8e296780287196c8cac5"
     },
     {
       "path": "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
@@ -301,6 +317,14 @@
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/rmsnorm.wse3/rmsnorm.parity.json",
       "sha256": "6f373f42986e90f74c8ab1d19f9403cc18b8308f790c2a76e0ac77535c22423f"
+    },
+    {
+      "path": "config/doe-frozen-doppler-reference.schema.json",
+      "sha256": "ba5a325cfc33f843991ed2d5ace3550ba4ae837577e61c73f45012b0c4c913b3"
+    },
+    {
+      "path": "config/doppler-to-csl-splice-receipt.schema.json",
+      "sha256": "f8be9e6f5aae96d17fcb7ff5ee59b3d72294423e9813cb2aae34b6196df63330"
     },
     {
       "path": "config/gemma-4-31b-real-weight-fixture.json",

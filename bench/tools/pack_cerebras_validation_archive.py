@@ -82,6 +82,8 @@ INCLUDE_FILES: tuple = (
     "docs/hardware-validation-appendix.md",
     "docs/claim-discipline.md",
     # Fixture contracts: one per primary model lane.
+    "config/doe-frozen-doppler-reference.schema.json",
+    "config/doppler-to-csl-splice-receipt.schema.json",
     "config/gemma-4-e2b-real-weight-fixture.json",
     "config/gemma-4-31b-real-weight-fixture.json",
     "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json",
@@ -196,6 +198,22 @@ INCLUDE_FILES: tuple = (
         "lm_head_prefill_width_tile_x0_w32.json"
     ),
     "bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json",
+    (
+        "bench/fixtures/r3-1-31b-doppler-frozen-af16/"
+        "frozen-reference.manifest.json"
+    ),
+    (
+        "bench/fixtures/r3-1-31b-doppler-frozen-af16/"
+        "reference-report.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "single-block-hidden.json"
+    ),
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "last-layer-tail-token.json"
+    ),
     "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
     "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
     (
@@ -270,6 +288,8 @@ CLAIM_ROLE: dict[str, str] = {
     "LOCAL_INSPECTION.md": "governance",
     "docs/hardware-validation-appendix.md": "governance",
     "docs/claim-discipline.md": "governance",
+    "config/doe-frozen-doppler-reference.schema.json": "fixture-schema",
+    "config/doppler-to-csl-splice-receipt.schema.json": "splice-receipt-schema",
     "config/gemma-4-e2b-real-weight-fixture.json": "real-weight-fixture",
     "config/gemma-4-31b-real-weight-fixture.json": "real-weight-fixture",
     "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json": "doppler-rdrr-fixture",
@@ -381,6 +401,22 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/out/r3-1-31b-af16-local-simfabric-ceiling/"
         "receipt.json"
     ): "gemma-af16-local-simfabric-ceiling",
+    (
+        "bench/fixtures/r3-1-31b-doppler-frozen-af16/"
+        "frozen-reference.manifest.json"
+    ): "doppler-frozen-fixture-manifest",
+    (
+        "bench/fixtures/r3-1-31b-doppler-frozen-af16/"
+        "reference-report.json"
+    ): "doppler-frozen-reference-report",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "single-block-hidden.json"
+    ): "doppler-csl-splice-receipt",
+    (
+        "bench/out/r3-1-31b-af16-doppler-csl-splice/"
+        "last-layer-tail-token.json"
+    ): "doppler-csl-splice-receipt",
     (
         "bench/out/r3-1-31b-af16-full-graph-compile-attempt/"
         "receipt.json"

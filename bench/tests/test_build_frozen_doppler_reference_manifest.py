@@ -56,6 +56,7 @@ class CollectActivationsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "layer_0").mkdir()
+            _write_npy_f32(root / "layer_0/pre_layer_input.npy", (4,), 0.5)
             _write_npy_f32(root / "layer_0/post_rmsnorm.npy", (4,), 1.0)
             _write_npy_f32(root / "layer_0/post_attn.npy", (4,), 2.0)
             (root / "layer_3").mkdir()
@@ -67,7 +68,7 @@ class CollectActivationsTest(unittest.TestCase):
 
             self.assertEqual(set(acts), {"0", "3"})
             self.assertEqual(
-                set(acts["0"]), {"post_rmsnorm", "post_attn"}
+                set(acts["0"]), {"pre_layer_input", "post_rmsnorm", "post_attn"}
             )
             self.assertEqual(set(acts["3"]), {"post_ffn"})
             for layer in acts.values():

@@ -1,7 +1,7 @@
 """Assemble a frozen Doppler reference fixture manifest from captured .npy files.
 
 Mitigates the frozen-Doppler-reference fixture data gap in
-``docs/cerebras-evidence-ledger-gemma.md`` (Manifest-shape simfabric proof plan):
+``docs/cerebras-evidence-ledger-gemma.md`` (manifest-shape simfabric proof plan):
 the Doe-side schema + validator
 (``config/doe-frozen-doppler-reference.schema.json``,
 ``bench/tools/validate_frozen_doppler_reference.py``) have shipped,
@@ -12,7 +12,7 @@ This tool walks a directory tree produced by Doppler's
 `tools/run-program-bundle-reference.js --tsir-fixture-dir <dir>`
 flag, which writes::
 
-    <dir>/layer_<layerIdx>/{post_rmsnorm,post_qkv,post_attn,post_ffn}.npy
+    <dir>/layer_<layerIdx>/{pre_layer_input,post_rmsnorm,post_qkv,post_attn,post_ffn}.npy
 
 and emits a `frozen-reference.manifest.json` next to it that conforms
 to ``config/doe-frozen-doppler-reference.schema.json``. The manifest
@@ -59,7 +59,13 @@ from bench.tools._lane_dtype_profile import (  # noqa: E402
     canonical_dtype_profile,
 )
 
-TSIR_PROBE_NAMES = ("post_rmsnorm", "post_qkv", "post_attn", "post_ffn")
+TSIR_PROBE_NAMES = (
+    "pre_layer_input",
+    "post_rmsnorm",
+    "post_qkv",
+    "post_attn",
+    "post_ffn",
+)
 
 
 def _sha256_file(path: Path) -> str:
@@ -213,7 +219,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=(
             "Captured via doppler tools/run-program-bundle-reference.js "
-            "--tsir-fixture-dir; serves as the frozen-Doppler-reference frozen Doppler "
+            "--tsir-fixture-dir; serves as the frozen-Doppler-reference "
             "reference for the Doe manifest-shape simfabric proof plan."
         ),
     )

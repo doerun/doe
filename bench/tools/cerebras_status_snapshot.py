@@ -27,6 +27,12 @@ GEMMA_BOUNDED_SMOKE = "bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.j
 GEMMA_LOCAL_SIMFABRIC_CEILING = (
     "bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json"
 )
+GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN = (
+    "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json"
+)
+GEMMA_SPLICE_LAST_LAYER_TAIL_TOKEN = (
+    "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json"
+)
 QWEN_MULTI_TOKEN_DECODE = "bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json"
 GEMMA_SIMFABRIC_CELLS = (
     "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json"
@@ -179,6 +185,27 @@ def gemma_local_simfabric_ceiling_row() -> dict:
     )
 
 
+def gemma_splice_row(lane: str, artifact: str) -> dict:
+    d = _load_json(artifact)
+    if d is None:
+        return _row(lane, artifact, "missing", None)
+    splice = d.get("splicePoint") or {}
+    scope_parts = []
+    if splice.get("kind"):
+        scope_parts.append(str(splice.get("kind")))
+    if splice.get("layerIndex") is not None:
+        scope_parts.append(f"layer={splice.get('layerIndex')}")
+    if splice.get("promptTokenCount") is not None:
+        scope_parts.append(f"promptTokens={splice.get('promptTokenCount')}")
+    return _row(
+        lane,
+        artifact,
+        d.get("verdict") or "unknown",
+        d.get("blocker"),
+        scope=", ".join(scope_parts),
+    )
+
+
 def qwen_multi_token_decode_row() -> dict:
     d = _load_json(QWEN_MULTI_TOKEN_DECODE)
     if d is None:
@@ -280,6 +307,14 @@ def collect_rows() -> list[dict]:
     rows.extend(per_kernel_rows("qwen", QWEN_PER_KERNEL_DIR))
     rows.append(bounded_smoke_row())
     rows.append(gemma_local_simfabric_ceiling_row())
+    rows.append(gemma_splice_row(
+        "gemma.doppler_csl_splice.single_block_hidden",
+        GEMMA_SPLICE_SINGLE_BLOCK_HIDDEN,
+    ))
+    rows.append(gemma_splice_row(
+        "gemma.doppler_csl_splice.last_layer_tail_token",
+        GEMMA_SPLICE_LAST_LAYER_TAIL_TOKEN,
+    ))
     rows.append(qwen_multi_token_decode_row())
     rows.append(gemma_simfabric_cells_row())
     rows.append(qwen_simfabric_cells_row())

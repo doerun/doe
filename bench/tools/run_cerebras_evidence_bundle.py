@@ -24,10 +24,11 @@ Steps (in order):
  13. E2B model receipt refresh after attention-core/lowering restamp
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
  15. Gemma 4 31B AF16 simfabric cell summary refresh
- 16. claim-discipline gate (hardware + MoE fronts)
- 17. SdkLayout streaming hardening gate (against any available live
+ 16. Gemma 4 31B AF16 local ceiling + Doppler-to-CSL splice receipts
+ 17. claim-discipline gate (hardware + MoE fronts)
+ 18. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 18. schema validation of 31B receipt and receipt-link integrity for
+ 19. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -374,13 +375,47 @@ def main() -> int:
         ["python3", "bench/tools/run_gemma4_31b_af16_simfabric_cells.py"],
     ))
 
-    # 16. claim-discipline gate (hardware + MoE fronts).
+    # 16. Gemma 4 31B AF16 local ceiling + Doppler-to-CSL splice receipts.
+    steps.append(run(
+        "gemma4-31b-af16-local-simfabric-ceiling",
+        ["python3", "bench/tools/synthesize_gemma4_31b_af16_local_ceiling_receipt.py"],
+    ))
+    steps.append(run(
+        "gemma4-31b-af16-splice-single-block-hidden",
+        [
+            "python3",
+            "bench/tools/build_doppler_to_csl_splice_receipt.py",
+            "--kind",
+            "single_block_hidden",
+            "--layer-index",
+            "59",
+            "--out",
+            "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json",
+            "--allow-blocked",
+        ],
+    ))
+    steps.append(run(
+        "gemma4-31b-af16-splice-last-layer-tail-token",
+        [
+            "python3",
+            "bench/tools/build_doppler_to_csl_splice_receipt.py",
+            "--kind",
+            "last_layer_tail_token",
+            "--layer-index",
+            "59",
+            "--out",
+            "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json",
+            "--allow-blocked",
+        ],
+    ))
+
+    # 17. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 17. SdkLayout streaming hardening gate against the freshest live
+    # 18. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -399,7 +434,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 18. receipt link integrity (already invoked by self-check STEP 5,
+    # 19. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",
