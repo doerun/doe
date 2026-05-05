@@ -20,8 +20,9 @@ bundled.
 You are holding a packed software-only evidence bundle for Doe's
 Gemma-4-on-Cerebras lane. This file is the front door. Read it first,
 then follow the run order below. The current external ask leads with
-Gemma 4 31B dense hardware smoke evidence; the E2B artifacts remain
-substantive control evidence and smaller repro fixtures.
+the Gemma 4 31B af16 full-prompt HostPlan hardware transcript; the
+E2B artifacts remain substantive control evidence and smaller repro
+fixtures.
 
 ## What's at the archive root
 
@@ -31,9 +32,9 @@ substantive control evidence and smaller repro fixtures.
 - `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
 - `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
   it does not. Read before drawing any conclusions.
-- `MODEL_ACCESS.md` — cache roots, canonical Gemma 4 E2B artifact
-  identities, 31B fixture contracts where present, download commands,
-  validation commands, and demo scope.
+- `MODEL_ACCESS.md` — cache roots, canonical Gemma 4 31B and E2B
+  artifact identities, download/materialization commands, validation
+  commands, and demo scope.
 - `CEREBRAS_ASK.md` — operator-facing distillation: exact endpoint
   access needed, exact command to run, exact receipt fields to
   return, publication boundaries.
@@ -69,18 +70,20 @@ cross-references inside the receipts resolve as written.
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
 
-4. **Read `MODEL_ACCESS.md`.** It pins the raw BF16 Hugging Face
-   snapshot, the local Doppler RDRR/Q4_K_M artifact, the writable
-   Hugging Face cache env vars, and the first-demo scope. Run
+4. **Read `MODEL_ACCESS.md`.** It pins the raw 31B Hugging Face
+   snapshot, the Doppler Q4K/af16 artifact, the E2B control artifacts,
+   the writable Hugging Face cache env vars, and the first-demo scope.
+   The E2B helper
    `python3 bench/tools/prepare_gemma4_e2b_access.py --print-shell`
-   in the repo when preparing a fresh host.
+   remains available for the smaller control lane.
 
 5. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
-   the external ask. The first requested run is the Gemma 4 31B dense
-   L1 smoke runner. It also enumerates two paths — endpoint access (we
-   run the runner) or Cerebras-assisted bundle run (Cerebras runs the
-   bundle internally, returns the receipt) — plus the exact command,
-   receipt fields, and publication boundaries for either.
+   the external ask. The first requested run is the Gemma 4 31B af16
+   full-prompt HostPlan runner. It also enumerates two paths —
+   endpoint access (we run the runner) or Cerebras-assisted source
+   checkout run (Cerebras runs it internally, returns the receipt) —
+   plus the exact command, receipt fields, and publication boundaries
+   for either.
    `docs/hardware-validation-appendix.md` is its parent document with
    the fuller context.
 
@@ -391,7 +394,7 @@ If any of 1-7 fails, reject the bundle and request a rebuild.
 <!-- archive:CLAIM_SCOPE.md:end -->
 
 <!-- archive:MODEL_ACCESS.md:start -->
-# Gemma 4 E2B model access handoff
+# Gemma 4 model access handoff
 
 This is the model/cache side of the Cerebras evidence handoff. It pins
 the local artifact identities and the environment variables that make
@@ -413,6 +416,8 @@ export HF_HOME=/home/x/.cache/huggingface
 export HUGGINGFACE_HUB_CACHE=/home/x/.cache/huggingface/hub
 export HF_HUB_CACHE=/home/x/.cache/huggingface/hub
 export DOE_MODELS_ROOT=/home/x/model-downloads
+export DOE_GEMMA4_31B_SAFETENSORS_DIR=/home/x/model-downloads/gemma-4-31B-it
+export DOE_GEMMA4_31B_AF16_MANIFEST=/home/x/deco/doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json
 export DOE_GEMMA4_E2B_SAFETENSORS_DIR=/home/x/model-downloads/gemma4-e2b-it
 export DOE_GEMMA4_E2B_RDRR_ROOT=/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple
 ```
@@ -428,6 +433,24 @@ Add `--create` to create the selected cache directories. Add
 SafeTensors or Doppler RDRR artifact is missing.
 
 ## Canonical artifacts
+
+The primary 31B hardware lane starts from the Doppler af16 manifest and
+its shared Q4K weight pack:
+
+- upstream model id: `google/gemma-4-31B-it`
+- upstream page: <https://huggingface.co/google/gemma-4-31B-it>
+- pinned upstream revision:
+  `439edf5652646a0d1bd8b46bfdc1d3645761a445`
+- Doppler af16 manifest:
+  `$DOE_GEMMA4_31B_AF16_MANIFEST`
+- Doppler primary Q4K weight pack:
+  `models/local/gemma-4-31b-it-text-q4k-ehf16-af32`
+- expected manifest id:
+  `gemma-4-31b-it-text-q4k-ehf16-af16`
+- expected shard-set hash:
+  `sha256:54933058e14fa0be4480912e641b897730db3e8ee7e871bdb2a92fd404ade146`
+- active Doe use: Gemma 4 31B af16 HostPlan runner, selected-logit
+  splice receipt, and hardware transcript path
 
 The canonical raw checkpoint source for the BF16/text oracle lane is
 `google/gemma-4-E2B-it` from Hugging Face:
@@ -465,7 +488,57 @@ Authenticate without writing credentials into the model root:
 hf auth login --token <token> --add-to-git-credential false
 ```
 
-Download the raw BF16 snapshot:
+Download the raw 31B snapshot used by the af16 lane:
+
+```bash
+hf download google/gemma-4-31B-it \
+  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
+  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
+```
+
+Materialize the Doppler Q4K weight pack and the af16 manifest sibling:
+
+```bash
+cd /home/x/deco/doppler
+npm ci
+
+node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
+  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af32.json \
+  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af32
+
+node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
+  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af16.json \
+  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af16
+```
+
+Validate the 31B Doppler artifact before running Doe:
+
+```bash
+cd /home/x/deco/doe
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+manifest_path = Path(os.environ["DOE_GEMMA4_31B_AF16_MANIFEST"]).resolve()
+manifest = json.loads(manifest_path.read_text())
+assert manifest["modelId"] == "gemma-4-31b-it-text-q4k-ehf16-af16"
+weights_ref = manifest["weightsRef"]
+weights_root = (manifest_path.parent / weights_ref["artifactRoot"]).resolve()
+weights_manifest = json.loads((weights_root / "manifest.json").read_text())
+assert weights_manifest["artifactIdentity"]["shardSetHash"] == weights_ref["shardSetHash"]
+missing = [
+    shard["filename"]
+    for shard in weights_manifest["shards"]
+    if not (weights_root / shard["filename"]).is_file()
+]
+if missing:
+    raise SystemExit(f"missing Doppler weight shards: {missing[:5]}")
+print(f"validated {manifest_path}")
+PY
+```
+
+Download the raw E2B BF16 snapshot:
 
 ```bash
 hf download google/gemma-4-E2B-it \
@@ -555,17 +628,15 @@ documents are reviewer-facing; this one is for the person pressing
 Enter on the hardware.
 
 Before running, read `MODEL_ACCESS.md` in the bundle. It pins the raw
-BF16 Hugging Face snapshot, the local Doppler RDRR/Q4_K_M artifact,
-writable Hugging Face cache env vars, and the first-demo claim
-boundary. The primary hardware ask is Gemma 4 31B dense L1 smoke
-execution; E2B remains the smaller control lane and should not be
-treated as a prerequisite for the 31B hardware receipt unless the
-failure is clearly shared.
+31B Hugging Face snapshot, the Doppler Q4K/af16 artifact, writable
+Hugging Face cache env vars, and the claim boundary. The primary
+hardware ask is the Gemma 4 31B af16 full-prompt HostPlan run. The
+layer-block runner is a bounded fallback, not the main claim.
 
 ## Two paths — either works
 
-**Path A (preferred): temporary endpoint access.** We run the runner
-from our side against a Cerebras-provided endpoint:
+**Path A: temporary endpoint access.** We run the runner from our side
+against a Cerebras-provided endpoint:
 
 1. **Reachable CS/WSC endpoint.** Either a direct `--cmaddr <ip:port>`
    target or an appliance SdkLauncher endpoint.
@@ -573,135 +644,210 @@ from our side against a Cerebras-provided endpoint:
    host. SDK 2.10 is the active Doe CSL floor; older receipts are
    historical and should not be used for new hardware claims.
 3. **Authorization to run the runner** in `bench/runners/csl-runners/`
-   against the endpoint with the pinned manifest + graph + kernel
-   source from this bundle.
+   against the endpoint with the pinned manifest, HostPlan, CSL, and
+   Doppler weight artifact.
 
-**Path B: Cerebras-assisted bundle run.** A Cerebras engineer runs the
-bundle internally on their cluster and returns the receipt:
+**Path B: Cerebras-assisted source checkout run.** A Cerebras engineer
+runs the same commands internally and returns the receipt artifacts:
 
-1. **Unpack this archive** and run the `What to run` commands below.
-   Kernel, manifest, and graph are all pinned inside the bundle with
-   recorded sha256; `MANIFEST.txt` has every file's digest.
-2. **Return the `doe_target_run_receipt`** with the fields listed under
-   `What to return`. No code from our side needs to run on your
-   cluster; the runner is self-contained under `bench/runners/`.
-3. **Redact what your policy requires.** Every `hardware.*` field has
+1. **Clone Doe at the archive commit** and verify the archive.
+2. **Materialize the Doppler Gemma 4 31B af16 artifact** from the
+   pinned Hugging Face snapshot, or mount an already-validated copy.
+3. **Build generated CSL, compile it with cslc, run the full-prompt
+   HostPlan runner, and return the trace artifacts.**
+4. **Redact what your policy requires.** Every `hardware.*` field has
    an explicit `"redacted"` convention so we can compare receipts
    without leaking endpoint identity.
 
 ## What to run
 
-Minimum viable primary run:
+Clone the source checkout at the archive commit and verify the archive:
 
 ```bash
+export ARCHIVE=/path/to/doe-cerebras-evidence-<stamp>-<sha>.tar.gz
+export DOE_COMMIT="$(
+  tar -xOf "$ARCHIVE" BUNDLE_META.json |
+    python3 -c 'import json,sys; print(json.load(sys.stdin)["gitCommit"])'
+)"
+
+git clone https://github.com/doe-gpu/doe.git
+cd doe
+git checkout "$DOE_COMMIT"
+
+python3 bench/tools/verify_cerebras_validation_archive.py \
+  --archive "$ARCHIVE"
+```
+
+Materialize the model artifact if a validated Doppler copy is not
+already mounted:
+
+```bash
+cd ..
+git clone https://github.com/clocksmith/doppler.git
+cd doppler
+npm ci
+
+export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
+export DOE_MODELS_ROOT="${DOE_MODELS_ROOT:-$PWD/models/source/huggingface_cache}"
+export DOE_GEMMA4_31B_SAFETENSORS_DIR="$DOE_MODELS_ROOT/google--gemma-4-31B-it"
+
+hf auth login --token <token> --add-to-git-credential false
+hf download google/gemma-4-31B-it \
+  --revision 439edf5652646a0d1bd8b46bfdc1d3645761a445 \
+  --local-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR"
+
+node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
+  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af32.json \
+  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af32
+
+node tools/convert-safetensors-node.js "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
+  --config src/config/conversion/gemma4/gemma-4-31b-it-text-q4k-ehf16-af16.json \
+  --output-dir models/local/gemma-4-31b-it-text-q4k-ehf16-af16
+
+cd ../doe
+export DOE_GEMMA4_31B_AF16_MANIFEST="$PWD/../doppler/models/local/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json"
+```
+
+Validate the manifest and shared Q4K shards:
+
+```bash
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+manifest_path = Path(os.environ["DOE_GEMMA4_31B_AF16_MANIFEST"]).resolve()
+manifest = json.loads(manifest_path.read_text())
+assert manifest["modelId"] == "gemma-4-31b-it-text-q4k-ehf16-af16"
+weights_ref = manifest["weightsRef"]
+weights_root = (manifest_path.parent / weights_ref["artifactRoot"]).resolve()
+weights_manifest = json.loads((weights_root / "manifest.json").read_text())
+assert weights_manifest["artifactIdentity"]["shardSetHash"] == weights_ref["shardSetHash"]
+missing = [
+    shard["filename"]
+    for shard in weights_manifest["shards"]
+    if not (weights_root / shard["filename"]).is_file()
+]
+if missing:
+    raise SystemExit(f"missing Doppler weight shards: {missing[:5]}")
+print(f"validated {manifest_path}")
+PY
+```
+
+Build the generated HostPlan/CSL bundle and compile the targets:
+
+```bash
+zig build csl-host-plan-tool
+
+runtime/zig/zig-out/bin/doe-csl-host-plan-tool \
+  --input runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json \
+  --bundle-root bench/out/hardware-run/gemma4-31b-af16-hostplan \
+  --mode steps \
+  --cslc-executable cslc
+
+python3 runtime/zig/tools/csl_sdk_driver.py \
+  bench/out/hardware-run/gemma4-31b-af16-hostplan/simulator-plan.json \
+  --cslc-executable cslc
+```
+
+Replace `cslc` with the SDK-local executable path if it is not on `PATH`.
+
+Run the full-prompt hardware path. The prompt token IDs are
+`<bos>The color of the sky is`; the Doppler reference continuation is
+token `3730` (` blue`).
+
+```bash
+python3 bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py \
+  --source-doppler-manifest "$DOE_GEMMA4_31B_AF16_MANIFEST" \
+  --smoke-config runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json \
+  --host-plan bench/out/hardware-run/gemma4-31b-af16-hostplan/host-plan.json \
+  --simulator-plan bench/out/hardware-run/gemma4-31b-af16-hostplan/simulator-plan.json \
+  --runtime-config bench/out/hardware-run/gemma4-31b-af16-hostplan/runtime-config.json \
+  --compile-root bench/out/hardware-run/gemma4-31b-af16-hostplan/compile \
+  --prefill-token-count 7 \
+  --decode-token-count 2 \
+  --prompt-token-id 2 \
+  --prompt-token-id 818 \
+  --prompt-token-id 2258 \
+  --prompt-token-id 529 \
+  --prompt-token-id 506 \
+  --prompt-token-id 7217 \
+  --prompt-token-id 563 \
+  --execute \
+  --cmaddr <operator-supplied> \
+  --session-lm-head-dispatch-mode dense_gemv_width_tiled_session \
+  --session-lm-head-tile-width 32 \
+  --session-lm-head-tile-dispatch-budget 0 \
+  --session-prefill-q4k-gemv-output-pe-rows 4 \
+  --session-out-dir bench/out/hardware-run/gemma4-31b-af16-session \
+  --out bench/out/hardware-run/gemma4-31b-af16-trace.json
+```
+
+Return the top-level trace, the session trace, the progress log, and
+the driver result files under `bench/out/hardware-run/`.
+
+## Bounded fallback runs
+
+These are useful if the endpoint owner wants a smaller preflight first.
+They are not full-prompt Gemma 4 31B evidence.
+
+Layer-block smoke on real-weight smoke slices:
+
+```bash
+python3 bench/tools/extract_gemma4_31b_weight_slices.py \
+  --source-dir "$DOE_GEMMA4_31B_SAFETENSORS_DIR" \
+  --projection-substitute-tensor pre_feedforward_layernorm.weight \
+  --linear-attention-policy skip-with-layout-metadata \
+  --out-dir bench/out/gemma-4-31b-real-weights \
+  --out-json bench/out/gemma-4-31b-real-weights/verdict.json
+
 cs_python bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py \
-  --num-layers 1 \
+  --num-layers 61 \
   --size 1024 \
-  --compile-out bench/out/hardware-run/compile \
-  --trace-out  bench/out/hardware-run/trace.json \
+  --weights-dir bench/out/gemma-4-31b-real-weights \
+  --compile-out bench/out/hardware-run/layer-block-smoke-compile \
+  --trace-out bench/out/hardware-run/layer-block-smoke-trace.json \
   --cmaddr <operator-supplied>
 ```
 
-WSC appliance equivalent:
+Gemma af16 lm-head cell:
 
 ```bash
-python3 runtime/zig/tools/csl_appliance_driver.py \
-  --code-dir bench/out/streaming-executor/e2b-layer-block-source \
-  --layout layout.csl \
-  --compiler-args "<operator-supplied cslc args>" \
-  --compile-output bench/out/hardware-run/compile \
-  --runner-command "cs_python bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1 --size 1024 --compile-out bench/out/hardware-run/compile --trace-out bench/out/hardware-run/trace.json --cmaddr %CMADDR%" \
-  --download "bench/out/hardware-run/trace.json:bench/out/hardware-run/trace.json" \
-  --receipt-out bench/out/hardware-run/appliance-receipt.json \
-  --system
-```
-
-The appliance form intentionally uses `%CMADDR%` inside the launcher
-command. The returned receipt redacts that to `$DOE_CSL_CMADDR`; do not
-paste raw endpoint addresses into checked-in artifacts. The deprecated
-appliance `SdkRuntime` binding is not part of this ask.
-
-Run with the bundle's pinned smoke kernel at
-`bench/out/streaming-executor/e2b-layer-block-source/transformer_layer_shape.csl`.
-The same generated CSL source is intentionally used by the E2B and 31B
-smoke runners; the 31B runner supplies the 61-layer model shape and
-31B-specific stream contract.
-
-If the 31B L1 run succeeds, the next conditional run is the same command
-with `--num-layers 61`. That is still smoke-shape 31B evidence, not
-manifest-shape 31B execution.
-
-E2B control run, if the operator wants the smaller existing lane too:
-
-```bash
-cs_python bench/runners/csl-runners/e2b_layer_block_smoke.py \
-  --num-layers 35 \
-  --compile-out bench/out/hardware-run/e2b-control-compile \
-  --trace-out  bench/out/hardware-run/e2b-control-trace.json \
+python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py \
   --cmaddr <operator-supplied>
 ```
-
-For BF16-derived E2B real-weight smoke runs, first materialize and
-validate the weights described in `MODEL_ACCESS.md`, then add:
-
-```bash
---weights-dir bench/out/gemma-4-e2b-real-weights
-```
-
-Without `--weights-dir`, the hardware run remains a synthetic/smoke
-tensor run and must not be described as real-weight evidence. The
-bundle includes a 31B real-weight source pin and smoke-contract
-extraction/audit, but it still needs a comparable Doe receipt before
-any 31B real-weight Cerebras execution or parity claim.
-
-The 31B runner writes a trace whose `executedRun` section includes the
-host numpy comparison for the same smoke-shape layer-block chain. For
-the E2B control run, this additional parity check can be run after the
-hardware trace returns:
-
-```bash
-python3 bench/tools/compare_runner_vs_synthetic.py \
-  --runner-trace bench/out/hardware-run/e2b-control-trace.json \
-  --synthetic-trace bench/out/streaming-executor/e2b-layer-block-synthetic-trace.json
-```
-
-For E2B, this should report `promotionEligible=true` with six of six
-preconditions met, matching the simfabric run recorded in this bundle.
-
-Optional follow-up runs:
-
-- Re-run the 31B smoke command with `--num-layers 61`.
-- When 31B real-weight slices are available, re-run with
-  `--weights-dir <path>` to promote the corresponding real-weight
-  fields on the receipt.
 
 ## What to return
 
-Any `doe_target_run_receipt` JSON extended with the fields below. All
-fields are explicit; anything redacted should be filled with the string
-`"redacted"` rather than omitted so the shape is preserved.
+For the full-prompt run, return these files when present:
+
+- `bench/out/hardware-run/gemma4-31b-af16-trace.json`
+- `bench/out/hardware-run/gemma4-31b-af16-session/trace.json`
+- `bench/out/hardware-run/gemma4-31b-af16-session/progress.jsonl`
+- `bench/out/hardware-run/gemma4-31b-af16-hostplan/trace.json.driver-result.json`
+
+For any returned receipt, fill explicit fields with `"redacted"` rather
+than omitting them when operator policy does not allow disclosure.
 
 - `hardware.endpoint`: operator-scoped tag, not raw IP, or `"redacted"`
 - `hardware.jobId`: provider-assigned job identifier, or `"redacted"`
 - `hardware.sdkVersion`: Cerebras SDK release string
 - `hardware.fabricId`: fabric identity for trace pinning
 - `hardware.deviceArch`: e.g. `"wse3"`
-- `executedCompile.elapsedMs`: wall time, only if operator authorizes
-  disclosure; otherwise `"redacted"`
-- `executedRun.elapsedMs`: same
+- `executedCompile.elapsedMs`: only if operator authorizes disclosure;
+  otherwise `"redacted"`
+- `executedRun.elapsedMs`: same disclosure policy
 - `executedRun.status`: `"succeeded"` or `"failed:<taxonomy>"`
-- `executedRun.output.sha256`: sha256 of `activation_out.f32`; for 31B
-  L1 this is compared against the runner's host numpy reference, while
-  E2B control runs can also compare against the pinned simfabric smoke
-  trace
-- `executedRun.numericalParity.maxAbsErr`: max |csl - numpy| across
-  all positions of the output tensor
-- `executedRun.numericalParity.perLayerMaxAbsErr`: per-layer same
-- `executedRun.perLayerOutputs[*].{layer,sha256,path}`: per-layer
-  `.f32` digests so drift can be located to a specific layer
-- `cacheKeyComponents`: kernel, plan, target, size
-- `claimScope`: explicit `{claimable: [...], notClaimable: [...]}` signed
-  off by the operator
+- `executedRun.generatedTokenIds`: if the full-prompt run reaches token
+  output
+- `executedRun.logitsDigest` or `executedRun.output.sha256`: if logits
+  or output tensors are returned
+- `executedRun.blocker`: typed blocker if the run stops before token
+  output
+- `executedRun.lastPhaseReached`: final phase marker when available
+- `claimScope`: explicit `{claimable: [...], notClaimable: [...]}`
 
 ## What we will NOT publish without written approval
 

@@ -40,25 +40,25 @@ source of truth for any bundle in hand.
 The first hardware validation target is Gemma 4 31B dense. It is the
 highest-value inference target, it has a uniform dense transformer execution
 shape, and it maps better to a first Cerebras proof than Gemma 4 26B/A4B MoE.
-The 31B lane should start with hardware receipts for the existing smoke-shape
-layer-block path, then climb toward real-weight and manifest-shape execution.
+The 31B lane should start with the af16 full-prompt HostPlan runner. The
+smoke-shape layer-block path remains a bounded fallback for endpoint and
+receipt-shape checks.
 
 The concrete 31B steps are:
 
-1. Run the 31B layer-block smoke at one layer on Cerebras hardware with
-   `bench/runners/csl-runners/gemma_4_31b_layer_block_smoke.py --num-layers 1`
-   and a small smoke shape. Capture the hardware receipt, compile metadata,
-   and d2h output hash.
-2. Run the same smoke shape through all 61 layers to validate launch ordering,
-   buffer reuse, host I/O, and receipt chaining at 31B depth.
-3. After `bench/out/gemma-4-31b-real-weights/` exists per
-   `config/gemma-4-31b-real-weight-fixture.json`, rerun the smoke-shape chain
-   with real 31B weights instead of synthetic fixtures.
-4. Promote to manifest-shape 31B execution: `headDim=160`, `numHeads=32`,
-   `hiddenDim=5120`, streaming weight residency, explicit KV policy, compile
-   artifact reuse, and bounded host memory.
-5. Bind the resulting 31B CSL hardware transcript to the Doppler reference
-   export for the same bundle identity and input contract.
+1. Verify the evidence archive from a Doe checkout at the archive commit.
+2. Materialize or mount the Doppler Gemma 4 31B af16 artifact:
+   `gemma-4-31b-it-text-q4k-ehf16-af16`, backed by the shared Q4K weight pack
+   `gemma-4-31b-it-text-q4k-ehf16-af32`.
+3. Build the generated HostPlan/CSL bundle from
+   `runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json` and compile
+   the targets with the SDK driver.
+4. Run `bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py`
+   against the endpoint for `<bos>The color of the sky is`, token IDs
+   `[2, 818, 2258, 529, 506, 7217, 563]`.
+5. Bind the returned token/logit/KV transcript, or the fail-closed hardware
+   blocker, to the Doppler reference export for the same model identity and
+   input contract.
 
 Gemma 4 E2B remains a control lane. It is useful for cheap failure
 reproduction, smaller bundle checks, bounded simfabric diagnostics, and
@@ -71,10 +71,10 @@ token-to-expert dispatch, shared expert execution, expert output combine, and
 per-expert batching. It should not borrow the E2B or dense-31B receipts, and it
 is not part of the first hardware-access ask.
 
-Do not claim full 31B parity from smoke-shape or synthetic receipts. Those
-receipts only prove the step they execute. Full 31B parity requires a
-manifest-shape hardware transcript plus a Doppler reference export bound to the
-same manifest, execution graph, weights, and input set.
+Do not claim full 31B parity from smoke-shape, selected-logit, or synthetic
+receipts. Those receipts only prove the step they execute. Full 31B hardware
+parity requires a returned hardware transcript plus a Doppler reference export
+bound to the same manifest, execution graph, weights, and input set.
 
 ## 1. Current artifact paths and hashes
 
@@ -247,50 +247,33 @@ end-to-end Gemma inference.
 
 Two paths either work; CEREBRAS_ASK.md inside the evidence bundle
 has the operator-facing detail for both. MODEL_ACCESS.md inside the same
-bundle pins the raw BF16 checkpoint path, Doppler RDRR/Q4_K_M artifact,
-Hugging Face cache environment, and first-demo claim boundary.
+bundle pins the raw 31B checkpoint path, Doppler Q4K/af16 artifact, Hugging
+Face cache environment, and claim boundary.
 
 - **Path A — endpoint access.** Cerebras provides a reachable CS/WSC
   endpoint; we run the commands below from our side.
-- **Path B — Cerebras-assisted bundle run.** A Cerebras engineer runs
-  the bundle internally on their cluster and returns the receipt.
+- **Path B — Cerebras-assisted source checkout run.** A Cerebras engineer runs
+  the same source checkout commands internally and returns the receipt.
   No code from our side needs to run on Cerebras infrastructure —
-  the runner is self-contained under `bench/runners/`.
+  the runner is under `bench/runners/`.
 
-Minimum sufficient ask (same command either way):
+Minimum sufficient ask (same source path either way):
 
-1. Preferred lane: production Doppler INT4 PLE RDRR bounded
-   prefill+decode reference receipt, then Doe CSL simfabric transcript
-   parity, then Cerebras hardware receipt. The same artifact, input set,
-   `manifestSha256`, `executionGraphSha256`, weight identity, tokenized
-   prompt hash, generated token IDs, and per-step logits hashes must be
-   recorded across all three receipts. Promotion requires the Doe parity gate
-   to show same manifest hash, same graph hash, matched weight hash, real
-   KV/cache behavior, token-ID parity, per-step logits parity, no stub stages,
-   no synthetic inputs or weights, and output parity passed.
-2. Current fallback lane: E2B L1 synthetic or BF16-derived real-weight smoke
-   layer-block against a reachable CS endpoint via
-   `--cmaddr`, or appliance via
-   `runtime/zig/tools/csl_appliance_driver.py`. The runner is
-   `bench/runners/csl-runners/e2b_layer_block_smoke.py` and accepts
-   `--cmaddr <addr>` and `--weights-dir <dir>` today.
-3. Output parity check: compare `activation_out.f32` against the
-   simfabric trace's recorded output at the matching chain depth.
-   Tolerance: the fixture policy in
-   `config/gemma-4-e2b-real-weight-fixture.json`.
-4. Graph-identity pin: hardware receipt records the same
-   `manifestSha256`, stream-plan `planSha256`, and
-   `kernelSourceSha256` listed above.
-
-Stretch, if time permits:
-
-- E2B layer-block at deeper chain depths after `all-lanes-summary-L{N}.json`
-  marks the depth as evidence-eligible.
-- E2B real-weight layer-block at deeper chain depths after the L1
-  smoke-contract receipt is extended to L2/L4/L8/L35.
-- 31B dense layer-block smoke at the same chain depth as E2B, to exercise
-  streaming scale. This is a dense-model validation target, not a MoE
-  efficiency claim.
+1. Primary lane: Gemma 4 31B af16 full-prompt HostPlan runner. It uses the
+   Doppler af16 manifest, the shared real Q4K weight pack, generated CSL, and
+   concrete prompt token IDs. A successful run returns token/logit/KV transcript
+   evidence for the prompt; a blocked run returns the named hardware blocker
+   and last phase reached.
+2. Current local bridge evidence: selected-logit splice for
+   `<bos>The color of the sky is`, token `3730` (` blue`), using real Gemma
+   31B hidden state, real tied lm-head weights, and generated CSL. This is not
+   full-prompt hardware evidence; it is the strongest local no-hardware check.
+3. Fallback lane: 31B layer-block smoke with optional real-weight smoke slices,
+   or Gemma af16 per-kernel cells. These are bounded checks and must be labeled
+   as such.
+4. Identity pin: hardware receipt records the same manifest, source graph,
+   HostPlan, compile target inventory, weight identity, and tokenized prompt
+   identity as the bundle.
 
 ## 4. What receipt fields we want back
 
@@ -301,17 +284,19 @@ Emitted as `doe_target_run_receipt` (existing schema) with
 - `hardware.jobId` — provider-assigned, redacted if policy requires
 - `hardware.sdkVersion` — Cerebras SDK release running on the endpoint
 - `hardware.fabricId` and `hardware.deviceArch` — for trace pinning
-- `executedCompile.elapsedMs` and `executedRun.elapsedMs` — wall time,
-  only if Cerebras policy permits disclosure
+- `executedCompile.elapsedMs` and `executedRun.elapsedMs` — only if
+  Cerebras policy permits disclosure
 - `executedRun.status` — `succeeded` / `failed:<taxonomy>`
-- `executedRun.output.sha256` — matches or explicitly diverges from the
-  simfabric trace's recorded `activation_out.f32` digest
-- `executedRun.numericalParity` — `maxAbsErr` and `perLayerMaxAbsErr`
-  against the simfabric reference
-- `executedRun.perLayerOutputs[*]` — per-layer `.f32` digests so drift
-  can be located if the chain-final digest diverges
-- `cacheKeyComponents` — kernel, plan, target, size (already emitted by
-  the runner as of the gap-1 seeding tick)
+- `executedRun.generatedTokenIds` — if the full-prompt run reaches token
+  output
+- `executedRun.logitsDigest` or `executedRun.output.sha256` — if logits
+  or output tensors are returned
+- `executedRun.numericalParity` — token/logit comparison against the
+  Doppler reference when output is available
+- `executedRun.blocker` and `executedRun.lastPhaseReached` — if the run
+  stops before token output
+- `cacheKeyComponents` — kernel, plan, target, and shape fields emitted
+  by the runner
 - Signed-off `claimScope` — explicit enumeration of what the receipt
   does and does not claim
 
@@ -325,9 +310,7 @@ explicit approval we will NOT publish:
 - endpoint identity, IP, physical location, rack or appliance IDs
 - queue-depth, fabric-level, or operator-internal telemetry surfaced
   in SDK logs
-- any performance claim beyond "matches simfabric reference within
-  tolerance" — hardware speed claims are gated on endpoint approval and
-  governed benchmark methodology
+- any performance claim beyond the returned parity receipt's own scope
 - comparisons against other hardware unless the methodology is jointly
   signed off
 
