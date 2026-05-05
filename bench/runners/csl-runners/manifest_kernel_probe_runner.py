@@ -75,7 +75,11 @@ from bench.tools.run_manifest_shape_layout_receipt import (  # noqa: E402
     classify_exports,
     run_dispatch_subprocess,
 )
-from manifest_dense_gemv_tiles import run_dense_gemv_row_tiled  # noqa: E402
+from manifest_dense_gemv_tiles import (  # noqa: E402
+    is_safe_tile_shape,
+    max_safe_tile_width,
+    run_dense_gemv_row_tiled,
+)
 
 
 CS_PYTHON_SINGULARITY = (
@@ -927,6 +931,36 @@ def _lm_head_evidence_scope(kernel: str, dispatch_mode: str) -> str:
     return "unsupported_lm_head_dispatch_mode"
 
 
+def _auto_dense_gemv_hidden_tile_width(
+    *,
+    requested_hidden_tile_width: int | None,
+    tile_height: int,
+    compile_params: dict[str, int],
+    allow_unsafe_tile_shapes: bool,
+) -> int | None:
+    if requested_hidden_tile_width is not None or allow_unsafe_tile_shapes:
+        return requested_hidden_tile_width
+    width = int(compile_params.get("width") or 0)
+    full_height = int(compile_params.get("height") or 0)
+    out_dim_per_pe = int(compile_params.get("out_dim_per_pe") or 0)
+    if min(width, full_height, out_dim_per_pe) <= 0:
+        return None
+    row_tile_height = max(1, min(max(1, tile_height), full_height))
+    if full_height % row_tile_height != 0:
+        row_tile_height = 1
+    if is_safe_tile_shape(
+        width=width,
+        height=row_tile_height,
+        out_dim_per_pe=out_dim_per_pe,
+    ):
+        return None
+    safe_width = max_safe_tile_width(height=1, out_dim_per_pe=out_dim_per_pe)
+    if safe_width <= 0:
+        return None
+    tile_count = max(1, (width + safe_width - 1) // safe_width)
+    return max(1, (width + tile_count - 1) // tile_count)
+
+
 def _dense_gemv_output_region(
     *,
     kernel: str,
@@ -1473,7 +1507,20 @@ def run_one_kernel(
         )
 
     tiled = None
-    if dense_gemv_tile_height > 0 or dense_gemv_hidden_tile_width is not None:
+    effective_dense_gemv_hidden_tile_width = (
+        _auto_dense_gemv_hidden_tile_width(
+            requested_hidden_tile_width=dense_gemv_hidden_tile_width,
+            tile_height=max(1, dense_gemv_tile_height),
+            compile_params=compile_params,
+            allow_unsafe_tile_shapes=dense_gemv_allow_unsafe_tile_shapes,
+        )
+        if dense_gemv_tile_height > 0
+        else dense_gemv_hidden_tile_width
+    )
+    if (
+        dense_gemv_tile_height > 0
+        or effective_dense_gemv_hidden_tile_width is not None
+    ):
         tiled = run_dense_gemv_row_tiled(
             kernel=kernel,
             compile_root=compile_root,
@@ -1489,7 +1536,7 @@ def run_one_kernel(
             repo_root=REPO_ROOT,
             cslc=cslc,
             tile_height=max(1, dense_gemv_tile_height),
-            hidden_tile_width=dense_gemv_hidden_tile_width,
+            hidden_tile_width=effective_dense_gemv_hidden_tile_width,
             allow_unsafe_tile_shapes=dense_gemv_allow_unsafe_tile_shapes,
             reuse_verified_tile_partials=(
                 dense_gemv_reuse_verified_tile_partials

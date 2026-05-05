@@ -1407,6 +1407,159 @@ class RunOneKernelTest(unittest.TestCase):
         self.assertEqual(receipt["outputs"][0]["aggregatedElements"], 8)
         self.assertGreater(receipt["totalOutputBytes"], 0)
 
+    def test_lm_head_selector_auto_width_tiles_unsafe_row_shape(self) -> None:
+        runner = _load_runner_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            compile_root = tmp_path / "compile"
+            _make_kernel_dir(
+                compile_root,
+                name="lm_head_prefill",
+                exports=[
+                    {
+                        "symbol": "activation",
+                        "elemType": "f16",
+                        "sizeExpr": "in_dim_per_pe",
+                    },
+                    {
+                        "symbol": "weight",
+                        "elemType": "f16",
+                        "sizeExpr": "out_dim_per_pe * in_dim_per_pe",
+                    },
+                    {
+                        "symbol": "output",
+                        "elemType": "f32",
+                        "sizeExpr": "out_dim_per_pe",
+                    },
+                ],
+            )
+            host_plan_path = tmp_path / "host-plan.json"
+            host_plan_path.write_text(
+                json.dumps(
+                    {
+                        "compileTargets": [
+                            {
+                                "name": "lm_head_prefill",
+                                "compileParams": {
+                                    "width": 168,
+                                    "height": 1,
+                                    "out_dim": 512,
+                                    "out_dim_per_pe": 512,
+                                    "in_dim_per_pe": 1,
+                                },
+                            }
+                        ]
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            probe_dir = tmp_path / "probes"
+            input_fixture = tmp_path / "inputs/lm_head.json"
+            _write_probe(
+                probe_dir=probe_dir,
+                kernel="lm_head_prefill",
+                input_fixture_rel=str(input_fixture.relative_to(tmp_path)),
+                fixture_path=input_fixture,
+                inputs={
+                    "activation": [1.0],
+                    "weight": [0.5],
+                },
+            )
+            cs_python = tmp_path / "cs_python.sh"
+            cs_python.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            cs_python.chmod(0o755)
+            adapter = tmp_path / "adapter.py"
+            adapter.write_text("# stub\n", encoding="utf-8")
+            target = json.loads(host_plan_path.read_text(encoding="utf-8"))[
+                "compileTargets"
+            ][0]
+            captured: dict[str, object] = {}
+
+            def fake_tiler(**kwargs):
+                captured["hidden_tile_width"] = kwargs["hidden_tile_width"]
+                outputs = kwargs["output_records"]
+                outputs[0]["totalBytes"] = 16
+                outputs[0]["sha256"] = "d" * 64
+                outputs[0]["hostReduction"] = {
+                    "kind": "sum_hidden_width_tiles",
+                }
+                return types.SimpleNamespace(
+                    output_records=outputs,
+                    dispatch_command=["dense_gemv_width_tiled"],
+                    dispatch_exit_code=0,
+                    dispatch_stdout="phase:launch_complete\n",
+                    dispatch_stderr="",
+                    dispatch_timed_out=False,
+                    dispatch_wallclock_ns=1,
+                    blocker=None,
+                    dispatch_mode="dense_gemv_width_tiled",
+                    tile_compile={
+                        "mode": "dense_gemv_width_tiled",
+                        "effectiveHiddenTileWidth": kwargs[
+                            "hidden_tile_width"
+                        ],
+                    },
+                    tile_dispatches=[
+                        {
+                            "tileIndex": 0,
+                            "tileShapeSafety": {"safe": True},
+                            "exitCode": 0,
+                            "timedOut": False,
+                        }
+                    ],
+                    tile_coverage={
+                        "kind": "width_row_tiles",
+                        "covered": True,
+                        "effectiveHiddenTileWidth": kwargs[
+                            "hidden_tile_width"
+                        ],
+                    },
+                    weight_input_scope="hidden_width_slice",
+                    weight_residency_mode="per_tile_h2d_sliced",
+                )
+
+            original_repo_root = runner.REPO_ROOT
+            runner.REPO_ROOT = tmp_path
+            try:
+                with mock.patch.object(
+                    runner,
+                    "run_dense_gemv_row_tiled",
+                    side_effect=fake_tiler,
+                ):
+                    receipt = runner.run_one_kernel(
+                        kernel="lm_head_prefill",
+                        target=target,
+                        compile_root=compile_root,
+                        source_root=compile_root,
+                        probe_dir=probe_dir,
+                        host_plan_path=host_plan_path,
+                        host_plan_hash=_sha256_file(host_plan_path),
+                        out_dir=tmp_path / "out",
+                        cmaddr="",
+                        timeout_seconds=30,
+                        cs_python=cs_python,
+                        adapter=adapter,
+                        dry_run=False,
+                        cslc=None,
+                        dense_gemv_tile_height=1,
+                    )
+            finally:
+                runner.REPO_ROOT = original_repo_root
+        self.assertEqual(captured["hidden_tile_width"], 84)
+        self.assertEqual(receipt["verdict"], "bound")
+        self.assertEqual(receipt["dispatchMode"], "dense_gemv_width_tiled")
+        self.assertEqual(
+            receipt["lmHeadEvidenceScope"],
+            "full_vocab_host_reduced_width_row_tiles",
+        )
+        self.assertEqual(
+            receipt["tileCoverage"]["effectiveHiddenTileWidth"],
+            84,
+        )
+
     def test_lm_head_hidden_width_tiling_aggregates_partials(self) -> None:
         runner = _load_runner_module()
         import numpy as np
