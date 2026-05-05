@@ -205,6 +205,7 @@ wio_flows_tmpdir.*/
 /sim_stats.json
 /simconfig.json
 /plan.json
+/logs/
 /io_port-*.json
 /transformer_layer_shape-*.json
 /transformer_layer_shape-*-compile-errors.txt
