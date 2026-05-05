@@ -40,6 +40,7 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 | Verify a received bundle archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
+| Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --archive <path> --hf-token <token> --cmaddr <endpoint>` |
 | Run blocking gates locally | `python3 bench/runners/run_blocking_gates.py` |
 
 ## Run on hardware

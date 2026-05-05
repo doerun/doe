@@ -48,6 +48,7 @@ provider prefers.
 | Build a fresh bundle | `bench/tools/prepare_cerebras_validation_bundle.sh` |
 | Build emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
 | Verify a received archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
+| Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --archive <path> --hf-token <token> --cmaddr <endpoint>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
@@ -147,6 +148,40 @@ print(f"validated {manifest_path}")
 PY
 ```
 
+## Scripted Gemma run
+
+The wrapper below performs the common operator steps after checkout: archive
+verification, hosted RDRR fetch, RDRR validation, HostPlan build, SDK compile,
+and full-prompt hardware execution. It takes only the values the local operator
+has to provide.
+
+```bash
+export CMADDR=<operator-supplied>
+
+bench/tools/run_gemma4_31b_af16_hardware_path.sh \
+  --archive "$ARCHIVE" \
+  --hf-token <token> \
+  --cmaddr "$CMADDR"
+```
+
+If the host does not have `zig`, provide a prebuilt HostPlan directory instead
+of rebuilding from source:
+
+```bash
+bench/tools/run_gemma4_31b_af16_hardware_path.sh \
+  --archive "$ARCHIVE" \
+  --hf-token <token> \
+  --cmaddr "$CMADDR" \
+  --use-existing-hostplan \
+  --hostplan-root <prebuilt-hostplan-dir>
+```
+
+`<prebuilt-hostplan-dir>` must contain `host-plan.json`,
+`simulator-plan.json`, `runtime-config.json`, and `compile/`. Without `zig` or
+a prebuilt HostPlan directory, the generated CSL/HostPlan path cannot be
+materialized on that host. In that case use Path A and let us drive the same
+run against the endpoint.
+
 ## Current local evidence
 
 The strongest local no-hardware check is the selected-token lm-head splice:
@@ -164,6 +199,9 @@ validation path.
 ## Gemma 4 31B runner steps
 
 ### Full-prompt af16 HostPlan run
+
+The scripted path above is the preferred operator command. The manual sequence
+below is the same path expanded for audit.
 
 Build the generated HostPlan/CSL bundle from source, then compile every target
 with the SDK driver:

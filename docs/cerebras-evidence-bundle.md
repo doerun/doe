@@ -700,9 +700,40 @@ python3 bench/tools/verify_cerebras_validation_archive.py \
 mkdir -p bench/out/hardware-run
 ```
 
+Then run the wrapper. It performs the hosted RDRR fetch and validation,
+generated HostPlan build, SDK compile, and full-prompt hardware execution:
+
+```bash
+export CMADDR=<operator-supplied>
+
+bench/tools/run_gemma4_31b_af16_hardware_path.sh \
+  --archive "$ARCHIVE" \
+  --hf-token <token> \
+  --cmaddr "$CMADDR"
+```
+
+If this host cannot run `zig`, use a prebuilt HostPlan directory:
+
+```bash
+bench/tools/run_gemma4_31b_af16_hardware_path.sh \
+  --archive "$ARCHIVE" \
+  --hf-token <token> \
+  --cmaddr "$CMADDR" \
+  --use-existing-hostplan \
+  --hostplan-root <prebuilt-hostplan-dir>
+```
+
+`<prebuilt-hostplan-dir>` must contain `host-plan.json`,
+`simulator-plan.json`, `runtime-config.json`, and `compile/`. Without `zig` or
+a prebuilt HostPlan directory, use endpoint access and we can drive the same
+run from our side.
+
 The hardware host must also provide the Cerebras SDK surface: `cslc` on
 `PATH` or passed with `--cslc-executable`, and a Python environment that can
 import `cerebras.sdk.runtime.sdkruntimepybind`.
+
+The wrapper expands to the commands below. Keep them here for audit and for
+operators who prefer each step separated.
 
 Fetch the hosted model artifact if a validated RDRR copy is not already
 mounted. The af16 manifest references the af32 primary weight pack through
