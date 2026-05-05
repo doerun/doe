@@ -6,30 +6,18 @@ This is a live topical sub-shard split from `docs/status/cerebras-csl.md`.
 - Keep this file under 1200 lines.
 - Dated archive material still belongs under `docs/status/archive/`.
 
-## 2026-05-04 — Gemma full-session resume attempted, still blocked pre-transcript
+## Lane status
 
-Phase-7 `run-next-session` resume was retried with:
-`timeout 180s bench/out/scratch/run-next-session-parallel.sh`.
-The generated `bench/out/r3-1-31b-af16-hostplan-streaming/trace-bos-raw-sky-color-is-fast-embed512-exec.json`
-is still `status=blocked` before transcript readiness.
+This sub-shard does not restate verdicts or current launch index. Run
+`python3 bench/tools/cerebras_status_snapshot.py` and read
+`bench/out/r3-cerebras-status/snapshot.md`. The snapshot is the only place
+that holds current state for this lane; it reads receipts and the live
+Phase-7 `progress.jsonl` directly.
 
-Top blockers remain:
-
-- `manifest_kernel_dispatch_not_bound`
-- `real_session_runtime_blocked` with
-  `runtime:launch[26]_blocked:tiled_q4k_gemv_device_reduce_runtime`
-- `inference_evidence_gate.dispatch_evidence_lm_head_unbound`
-
-Observed transcript note:
-`Not a generated token transcript until status is output_ready and blockers is empty.`
-
-Phase-7 supporting checks were re-run:
-
-- `python3 bench/tools/synthesize_gemma4_31b_af16_bounded_inference_smoke_receipt.py` remains blocked,
-  and the per-kernel summary at `bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/summary.json`
-  still has `kernelCount=2` with `lm_head_prefill_stable` blocked and `sample` bound.
-- `python3 bench/tools/synthesize_qwen_3_6_27b_simfabric_cells_summary_receipt.py` remains in pass-with-canary
-  mode and does not close Qwen lm-head dispatch in this phase.
+Dated bring-up entries below describe architecture and named blockers, not
+"which launch are we on" or "what is the current verdict". Don't add those
+back here — add them as new artifact-shaped fields and let the snapshot
+surface them.
 
 ## 2026-05-02 — Prefill Q4K GEMV canonicalized through HostPlan, rope, and attention boundaries
 

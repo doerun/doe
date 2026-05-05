@@ -93,8 +93,8 @@ Attention enters the Loop 3 sequence only after Phase A is green. It does
    verify runtime lookup resolves.
 6. Commit parity receipt + manifest binding + dated status entry in the same
    commit.
-7. Update any current-state claims in an Ouroboros positioning/CUJ doc only
-   if they changed.
+7. Update any current-state claims in cross-repo coordination docs only if
+   they changed.
 8. **Stop.** Do not start the next family until the current one is green and
    committed.
 

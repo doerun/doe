@@ -3,16 +3,17 @@
 This is a live topical status shard.
 
 - Add new entries at the top.
-- Keep this file under 1200 lines.
-- Split by subdomain before it exceeds the cap.
+- Soft target: keep this file under ~1500 lines; split by subdomain or by
+  date suffix when it gets uncomfortably long. See `docs/status.md` for the
+  full sharding policy.
 - Dated history lives under `docs/status/archive/`.
 
 **Scope notice:** 2026-04-24 TSIR entries moved to
-[`tsir.md`](./tsir.md); 2026-04-23 TSIR Step 4 history moved to
-[`archive/2026-04.md`](archive/2026-04.md). **New TSIR entries go in
-[`tsir.md`](./tsir.md).** This shard stays focused on non-TSIR
-compiler work (shader compiler non-TSIR paths, WebGPU runtime,
-robustness).
+[`tsir.md`](./tsir.md); 2026-04-23 TSIR Step 4 history lives in
+[`archive/2026-04-02-to-2026-04-15.md`](archive/2026-04-02-to-2026-04-15.md)
+(tail block). **New TSIR entries go in [`tsir.md`](./tsir.md).** This shard
+stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
+WebGPU runtime, robustness).
 
 ## 2026-04-24 — Track C first-zero diagnostic receipt
 

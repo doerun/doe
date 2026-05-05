@@ -174,6 +174,13 @@ def _kernel_source_candidates(*, kernel: str) -> list[str]:
     return names
 
 
+def _canonical_dense_gemv_kernel(kernel: str) -> str:
+    for candidate in _kernel_source_candidates(kernel=kernel):
+        if candidate in DENSE_GEMV_SINK_OUTPUT_KERNELS:
+            return candidate
+    return kernel
+
+
 def parse_tile_y_range(raw: str) -> tuple[int, int]:
     match = re.fullmatch(r"(\d+):(\d+)", raw.strip())
     if match is None:
@@ -891,7 +898,7 @@ def _timeout_evidence(
     return {
         "kernelClass": (
             "dense_gemv_lm_head"
-            if kernel in DENSE_GEMV_SINK_OUTPUT_KERNELS
+            if _canonical_dense_gemv_kernel(kernel) in DENSE_GEMV_SINK_OUTPUT_KERNELS
             else "other"
         ),
         "dispatchMode": dispatch_mode,
@@ -910,7 +917,7 @@ def _timeout_evidence(
 
 
 def _lm_head_evidence_scope(kernel: str, dispatch_mode: str) -> str:
-    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
+    if _canonical_dense_gemv_kernel(kernel) not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
         return ""
     if dispatch_mode == DIRECT_DISPATCH_MODE:
         return LM_HEAD_DIRECT_EVIDENCE_SCOPE
@@ -927,7 +934,11 @@ def _dense_gemv_output_region(
     symbol: str,
     bindings: dict[str, int],
 ) -> tuple[dict[str, int], str] | None:
-    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS or symbol.lower() != "output":
+    if (
+        _canonical_dense_gemv_kernel(kernel)
+        not in DENSE_GEMV_SINK_OUTPUT_KERNELS
+        or symbol.lower() != "output"
+    ):
         return None
     width = int(bindings.get("width") or 0)
     height = int(bindings.get("height") or 0)
@@ -956,7 +967,7 @@ def _d2h_mode_for_outputs(
     kernel: str,
     output_records: list[dict[str, Any]],
 ) -> str:
-    if kernel not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
+    if _canonical_dense_gemv_kernel(kernel) not in DENSE_GEMV_SINK_OUTPUT_KERNELS:
         return SINGLE_REGION_D2H_MODE
     for record in output_records:
         region = record.get("deviceRegion")

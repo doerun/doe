@@ -72,6 +72,13 @@ For Dawn-vs-Doe performance work, also read:
 - `SKILLS.md`
 - `docs/performance-strategy.md`
 
+For Cerebras hardware bring-up work (Gemma 4 31B and Qwen 3.6 27B), the
+single operator-facing entry point is `docs/cerebras-hardware-runbook.md`.
+Treat it as the front door for "how do I actually run the validation"; the
+governance/claim-scope companion is `docs/hardware-validation-appendix.md`
+(referenced by the bundle packer and claim-discipline gate, do not delete or
+rename).
+
 ## Core principles (adopted)
 
 1. Config as code

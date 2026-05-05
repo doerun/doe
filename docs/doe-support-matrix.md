@@ -537,7 +537,7 @@ layers.
 
 ## Claim discipline by tier
 
-The claim discipline rules from the positioning report apply universally, but the *scope* of allowed claims differs by tier:
+The claim discipline rules from [`docs/claim-discipline.md`](claim-discipline.md) apply universally, but the *scope* of allowed claims differs by tier:
 
 | Rule | doe-core | doe-runtime | chromium |
 |------|----------|-------------|--------------|

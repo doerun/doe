@@ -2,7 +2,7 @@
 
 External-facing snapshot of what is bound in-tree for Qwen 3.6 27B before WSE hardware. The Qwen path mirrors the Gemma 4 31B evidence trail at [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md); identical source-identity chain, parallel artifacts, and hardware-gated tail.
 
-The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json) joins both models across the same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes, budget hashes, and compile-blocker taxonomy. The current full af16-required aggregate is fail-closed and records the unresolved af16 budget/hash-spine issues in that receipt.
+The shared cross-model receipt at [`bench/out/r3-cross-model-parity/receipt.json`](../bench/out/r3-cross-model-parity/receipt.json) joins both models across the same `cslc` toolchain, TSIR schema, opToSpec table, host-plan hashes, budget hashes, and compile-blocker taxonomy. For current verdict and any open issues, run `python3 bench/tools/cerebras_status_snapshot.py` and read `bench/out/r3-cerebras-status/snapshot.md`; the snapshot reflects the receipt directly.
 
 ## Bound non-hardware scope
 

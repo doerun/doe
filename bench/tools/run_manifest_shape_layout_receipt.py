@@ -587,7 +587,15 @@ def run_one_kernel(
 
     `dispatcher` lets tests substitute a stub for run_dispatch_subprocess.
     """
-    metadata_path = compile_root / kernel / "pe_program.metadata.json"
+    effective_source_root = (
+        compile_root.parent
+        if compile_root.name == "compiled"
+        else compile_root
+    )
+    metadata_path = _metadata_path_for_kernel(
+        kernel=kernel,
+        source_root=effective_source_root,
+    )
     if not metadata_path.is_file():
         raise LayoutReceiptError(
             f"kernel {kernel!r}: pe_program.metadata.json absent at "

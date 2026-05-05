@@ -170,8 +170,10 @@ Phase A compiler surface has landed for the bootstrap catalog
 (`fused_gemv`, `rms_norm`, `gather`). For live TSIR status refer to
 [`docs/status/tsir.md`](status/tsir.md); the plan doc gives the shape
 of what exists, not counts or dates. Archive of 2026-04-23 TSIR Step 4
-incremental history lives in
-[`docs/status/archive/2026-04.md`](status/archive/2026-04.md).
+incremental history lives in the tail of
+[`docs/status/archive/2026-04-02-to-2026-04-15.md`](status/archive/2026-04-02-to-2026-04-15.md).
+Deep 2026-04-24 TSIR Step 7-12 entries live in
+[`docs/status/archive/2026-04-24-tsir.md`](status/archive/2026-04-24-tsir.md).
 
 TSIR core under `runtime/zig/src/tsir/`:
 

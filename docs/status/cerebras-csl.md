@@ -12,38 +12,22 @@ below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
 completion.
 
-## 2026-05-04 — Phase 7 runtime snapshot (no gate unblock yet)
+## Lane status
 
-The phase-7 runtime/frontier refresh ran and reported:
+Lane verdicts and blockers are not restated in this doc. Run:
 
-- Gemma bounded smoke remains blocked:  
-  `python3 bench/tools/synthesize_gemma4_31b_af16_bounded_inference_smoke_receipt.py`
-  writes `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json`
-  with 4 blockers:
-  `inference_evidence_gate.dispatch_evidence_lm_head_unbound`,
-  `manifest_kernel_dispatch_not_bound`,
-  `real_session_runtime_blocked`,
-  `real_session_runtime_not_output_ready`.
+```
+python3 bench/tools/cerebras_status_snapshot.py
+```
 
-- Q4K full-session resume attempt still did not reach transcript readiness:
-  `timeout 180s bench/out/scratch/run-next-session-parallel.sh` exited 124.
-  `bench/out/r3-1-31b-af16-hostplan-streaming/trace-bos-raw-sky-color-is-fast-embed512-exec.json`
-  is `status=blocked` with blockers:
-  `manifest_kernel_dispatch_not_bound`,
-  `real_session_runtime_blocked` (`runtime:launch[26]_blocked:tiled_q4k_gemv_device_reduce_runtime`),
-  `inference_evidence_gate.dispatch_evidence_lm_head_unbound`.
+The snapshot reads receipts directly and writes
+`bench/out/r3-cerebras-status/snapshot.{md,json}`. Every row points at the
+underlying artifact and shows its mtime. Re-run the tool whenever you want
+the current truth — drift is impossible because nothing else holds state.
 
-- Qwen 3.6 27B phase-7 compact lane stays simfabric-only:
-  `python3 bench/tools/synthesize_qwen_3_6_27b_simfabric_cells_summary_receipt.py`
-  writes verdict `pass_with_documented_canary_constraints`.
-  `python3 bench/tools/aggregate_qwen_3_6_27b_multi_token_decode_receipt.py` writes
-  `bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json`
-  (`boundKernelCount=0/3`).
-
-- Cross-model compact aggregate still bound:
-  `python3 bench/tools/aggregate_cross_model_parity.py --require-lanes ...`
-  writes `bench/out/r3-cross-model-parity/receipt.json`
-  with `verdict=bound`, `issues=0`, `laneBound=4/4`.
+This doc retains dated context entries (architecture, named blockers,
+follow-up work) below. Numbers, verdicts, and "which launch are we on"
+belong in the snapshot, never here.
 
 Sharding follow-up: owner Doe Cerebras; split
 `bench/runners/csl-runners/gemma4_31b_af16_session_runtime.py` by moving

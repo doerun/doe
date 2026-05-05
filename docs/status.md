@@ -3,26 +3,24 @@
 This file is the front door for Doe project status.
 
 Read this file first. Use the live topical shards under
-[`docs/status/`](/Users/xyz/deco/doe/docs/status) for active details and
-[`docs/status/archive/`](/Users/xyz/deco/doe/docs/status/archive) for dated
-history.
+[`docs/status/`](status/) for active details and
+[`docs/status/archive/`](status/archive/) for dated history.
 
 ## How to use the status log
 
 - Keep this file concise. It is the mandatory-reading summary, not the full
   ledger.
-- Live topical shards:
-  - [`docs/status/cerebras-csl.md`](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
-  - [`docs/status/cerebras-csl-runtime-bringup.md`](/Users/xyz/deco/doe/docs/status/cerebras-csl-runtime-bringup.md)
-  - [`docs/status/compiler-and-webgpu.md`](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
-  - [`docs/status/tsir.md`](/Users/xyz/deco/doe/docs/status/tsir.md)
-  - [`docs/status/runtime-backends-and-bench.md`](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
-- Add new status entries to the top of the relevant topical shard.
-- Live topical shards are LOC-capped at 1200 lines. Split by subdomain before a
-  shard exceeds the cap; do not create another date file just because the
-  calendar changed.
-- Dated archive files under `docs/status/archive/` are append-only. Do not
-  rewrite old entries except for deliberate archive maintenance.
+- Add new entries to the top of the relevant live topical shard.
+- Prefer subdomain splits over file growth. Live shards have a soft target of
+  ~1500 lines; once a shard reaches that range, split by subdomain (e.g.
+  `cerebras-csl-runtime-bringup.md` peeled out of `cerebras-csl.md`). Date-
+  suffixed splits (e.g. `tsir-2026-05.md`) are also fine when subdomain
+  cuts don't fit cleanly.
+- Dated archive files under `docs/status/archive/` are preserve-rather-than-
+  frozen: keep the original ordering and don't retroactively re-sort, but
+  link/typo fixes, format normalization, and "split this archive into smaller
+  pieces" are explicitly allowed maintenance. Substantive content
+  corrections go in a new entry that links back to the original.
 - When a task leaves placeholders, temporary methodology choices, or follow-up
   work, record that in the relevant topical shard and refresh this front door
   only if the current summary materially changes.
@@ -264,7 +262,7 @@ history.
   the provider root alive through async completion.
 - Benchmark/package compare cleanup in early April moved more of the compare
   stack onto artifact-first, config-backed paths.
-- Cerebras-facing Gemma-4 lane is in outreach phase: the current local
+- Cerebras-facing Gemma-4 lane is in hardware-access ask phase: the current local
   side-by-side evidence includes L1 synthetic layer-block parity, E2B L1
   BF16-derived real-weight smoke-contract parity, a structural
   Doppler RDRR/int4ple artifact-readability probe, RDRR-derived
@@ -320,18 +318,25 @@ history.
 
 ## Live topical shards
 
-- [cerebras-csl.md](/Users/xyz/deco/doe/docs/status/cerebras-csl.md)
-- [compiler-and-webgpu.md](/Users/xyz/deco/doe/docs/status/compiler-and-webgpu.md)
-- [tsir.md](/Users/xyz/deco/doe/docs/status/tsir.md)
-- [runtime-backends-and-bench.md](/Users/xyz/deco/doe/docs/status/runtime-backends-and-bench.md)
+- [cerebras-csl.md](status/cerebras-csl.md)
+- [cerebras-csl-runtime-bringup.md](status/cerebras-csl-runtime-bringup.md)
+- [compiler-and-webgpu.md](status/compiler-and-webgpu.md)
+- [tsir.md](status/tsir.md)
+- [runtime-backends-and-bench.md](status/runtime-backends-and-bench.md)
 
 ## Dated archive shards
 
-- [2026-04.md](/Users/xyz/deco/doe/docs/status/archive/2026-04.md)
-- [2026-03-30-to-2026-03-28.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-30-to-2026-03-28.md)
-- [2026-03-27-to-2026-03-24.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-27-to-2026-03-24.md)
-- [2026-03-23-to-2026-03-01.md](/Users/xyz/deco/doe/docs/status/archive/2026-03-23-to-2026-03-01.md)
-- [2026-02-and-legacy.md](/Users/xyz/deco/doe/docs/status/archive/2026-02-and-legacy.md)
+- [2026-04-25-late-and-cycles-16-21.md](status/archive/2026-04-25-late-and-cycles-16-21.md)
+- [2026-04-25-loop-cycles-7-to-15.md](status/archive/2026-04-25-loop-cycles-7-to-15.md)
+- [2026-04-24.md](status/archive/2026-04-24.md)
+- [2026-04-24-tsir.md](status/archive/2026-04-24-tsir.md)
+- [2026-04-19-to-2026-04-23.md](status/archive/2026-04-19-to-2026-04-23.md)
+- [2026-04-16-to-2026-04-18.md](status/archive/2026-04-16-to-2026-04-18.md)
+- [2026-04-02-to-2026-04-15.md](status/archive/2026-04-02-to-2026-04-15.md)
+- [2026-03-30-to-2026-03-28.md](status/archive/2026-03-30-to-2026-03-28.md)
+- [2026-03-27-to-2026-03-24.md](status/archive/2026-03-27-to-2026-03-24.md)
+- [2026-03-23-to-2026-03-01.md](status/archive/2026-03-23-to-2026-03-01.md)
+- [2026-02-and-legacy.md](status/archive/2026-02-and-legacy.md)
 
 ## Historical note
 

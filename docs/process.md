@@ -359,7 +359,7 @@ This flow is additive and does not replace blocking v0 runtime gates. Its role i
 - run `bench/runners/run_cts_subset.py` with a versioned query config (for example `bench/fixtures/cts_subset.fawn-node.json`).
 - report exact pass/fail counts and query list used.
 
-5. publish model ceiling matrix (when AI/ML positioning is in scope)
+5. publish model ceiling matrix (when external claim work is in scope)
 - run `bench/tools/build_model_capacity_matrix.py` with measured row inputs (hardware, model, quantization, status, TTFT/decode/prefill, peak VRAM, artifact path).
 - do not generalize beyond measured rows.
 

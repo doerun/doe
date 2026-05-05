@@ -56,6 +56,7 @@ DTYPE_MAP = {
     "f16": (np.float16, MemcpyDataType.MEMCPY_32BIT),
     "u8": (np.uint8, MemcpyDataType.MEMCPY_32BIT),
 }
+MAX_D2H_ROWS_PER_BATCH = 1
 PHASE_TRACE_PATH: Path | None = None
 SIMFAB_THREADS_ENV = "DOE_SIMFAB_THREADS"
 MAX_SIMFAB_THREADS = 64
@@ -339,6 +340,63 @@ def _copy_d2h_output(
     region_x, region_y, region_width, region_height = region
     sym_id = runner.get_id(symbol)
     if split_rows and (region_height > 1 or region_width > 1):
+        if region_width == 1:
+            rows: list[np.ndarray] = []
+            for row_batch_start in range(
+                0, region_height, MAX_D2H_ROWS_PER_BATCH
+            ):
+                batch_height = min(
+                    MAX_D2H_ROWS_PER_BATCH, region_height - row_batch_start
+                )
+                arr, mcpy_dtype, memcpy_chunk, output_dtype = (
+                    _memcpy_buffer_for_d2h(
+                        dtype=dtype,
+                        chunk_size=chunk_size,
+                        pe_count=batch_height,
+                    )
+                )
+                row_y = region_y + row_batch_start
+                _phase(
+                    "memcpy_d2h_start",
+                    step=step_index,
+                    symbol=symbol,
+                    x=region_x,
+                    y=row_y,
+                    width=1,
+                    height=batch_height,
+                    chunk=memcpy_chunk,
+                    words=arr.size,
+                    rowOffset=row_batch_start,
+                    rowCount=batch_height,
+                    colOffset=0,
+                )
+                runner.memcpy_d2h(
+                    arr,
+                    sym_id,
+                    region_x,
+                    row_y,
+                    1,
+                    batch_height,
+                    memcpy_chunk,
+                    streaming=False, order=MemcpyOrder.ROW_MAJOR,
+                    data_type=mcpy_dtype, nonblock=False,
+                )
+                _phase(
+                    "memcpy_d2h_complete",
+                    step=step_index,
+                    symbol=symbol,
+                    rowOffset=row_batch_start,
+                    rowCount=batch_height,
+                    colOffset=0,
+                )
+                rows.append(
+                    _logical_output_array(
+                        arr=arr,
+                        dtype=dtype,
+                        output_dtype=output_dtype,
+                    ).reshape(-1)
+                )
+            return symbol, path, np.concatenate(rows)
         rows: list[np.ndarray] = []
         for row_offset in range(region_height):
             row_parts: list[np.ndarray] = []
