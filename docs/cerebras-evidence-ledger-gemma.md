@@ -2,7 +2,7 @@
 
 One Doppler-authored Gemma 4 31B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Layer B full-graph compile is closed only for the emitted compile-target inventory. Token-output inference evidence is fail-closed until the HostPlan preserves the explicit post-layer logits path and every sample launch consumes a typed logits producer.
 
-External evidence packet for Cerebras: [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md).
+External evidence packet for Cerebras: bundle archive built via [`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md), governance + claim scope in [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md). Lane front door: [`docs/cerebras.md`](cerebras.md).
 
 ## Evidence layers
 

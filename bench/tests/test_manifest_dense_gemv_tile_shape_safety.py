@@ -51,8 +51,8 @@ class TileShapeSafetyTest(unittest.TestCase):
             M.is_safe_tile_shape(width=120, height=1, out_dim_per_pe=512)
         )
 
-    def test_observed_wedge_shape_is_unsafe(self) -> None:
-        # width=128, height=1, out_dim_per_pe=512 wedges at memcpy_d2h_start
+    def test_observed_stall_shape_is_unsafe(self) -> None:
+        # width=128, height=1, out_dim_per_pe=512 stalls at memcpy_d2h_start
         # with totalOutputBytes=0 (65,536 elements -- exactly at the cliff).
         self.assertFalse(
             M.is_safe_tile_shape(width=128, height=1, out_dim_per_pe=512)

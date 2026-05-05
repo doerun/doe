@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""Gate the rung-8 manifest-shape full-graph dispatch on the predicted budget.
+"""Gate the manifest-shape full-graph dispatch on the predicted budget.
 
-Mitigates the rung-2 followup item from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
+Mitigates the predicted-wallclock followup item from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
 
-  > Rung 8 will not launch unless the budget is under a configured
-  > ceiling in `config/manifest-simfabric-budget.json` — that ceiling
-  > + gate are followup once the calibration constant lands.
+  > The full-graph dispatch will not launch unless the budget is under a
+  > configured ceiling in `config/manifest-simfabric-budget.json` — that
+  > ceiling + gate are followup once the calibration constant lands.
 
 Inputs:
-  - rung-2 budget receipt (default
+  - predicted-wallclock budget receipt (default
     `bench/out/r3-1-31b-manifest-simfabric-predicted-wallclock/budget.json`)
   - ceiling config (default `config/manifest-simfabric-budget.json`,
     schema at `config/manifest-simfabric-budget.schema.json`)
 
 Decision rules:
   1. Ceiling config must be schema-valid.
-  2. `calibrationStatus` must NOT be `<bootstrap-pending-rung-3>` (i.e.
-     a rung-3 calibration receipt must back the ceiling).
-  3. The rung-2 budget receipt must have `calibrated == true`; an
-     uncalibrated budget produces `predictedCycles: null` so the
+  2. `calibrationStatus` must NOT be the bootstrap sentinel (i.e. a
+     per-kernel manifest-shape calibration receipt must back the ceiling).
+  3. The predicted-wallclock budget receipt must have `calibrated == true`;
+     an uncalibrated budget produces `predictedCycles: null` so the
      comparison is undefined.
   4. `grandPredictedCycles` must be ≤ `ceilings.grandPredictedCycles`.
   5. When both sides cite per-phase entries, each phase's
@@ -28,7 +28,7 @@ Decision rules:
 Output: a `doe_simfabric_wallclock_gate_decision` receipt JSON. Exit
 code 0 when allowed, 1 when denied, 2 on input errors. The receipt
 chains hashes for both the budget file and the ceiling file so any
-downstream rung-8 launch receipt can cite this decision.
+downstream full-graph launch receipt can cite this decision.
 """
 
 from __future__ import annotations
@@ -139,13 +139,13 @@ def _check_calibration(ceiling: dict[str, Any]) -> list[str]:
     if cs == BOOTSTRAP_TOKEN:
         return [
             "ceiling.calibrationStatus is <bootstrap-pending-rung-3>; the "
-            "rung-3 calibration receipt has not landed, so any numeric "
-            "ceiling is unfounded — refusing rung-8 launch"
+            "per-kernel manifest-shape calibration receipt has not landed, "
+            "so any numeric ceiling is unfounded — refusing full-graph launch"
         ]
     if not isinstance(cs, str) or not _is_sha256(cs):
         return [
             f"ceiling.calibrationStatus={cs!r} is neither the bootstrap "
-            "token nor a sha256 hex — refusing rung-8 launch"
+            "token nor a sha256 hex — refusing full-graph launch"
         ]
     return []
 
@@ -154,8 +154,8 @@ def _check_budget_calibrated(budget: dict[str, Any]) -> list[str]:
     if not budget.get("calibrated"):
         return [
             "budget.calibrated is false — predictedCycles is null and the "
-            "comparison against the ceiling is undefined; rung 3 must "
-            "land a calibration constant first"
+            "comparison against the ceiling is undefined; per-kernel "
+            "manifest-shape calibration must land a constant first"
         ]
     return []
 
@@ -254,19 +254,18 @@ def build_decision_receipt(
         "ceilings": ceiling.get("ceilings"),
         "claim": {
             "scope": (
-                "Rung-8 launch precondition: gates the manifest-shape "
-                "full-graph dispatch on the rung-2 predicted-wallclock "
-                "budget being calibrated and under the configured "
-                "ceiling. The decision is structured so a downstream "
-                "rung-8 launch receipt can cite both the budget hash "
-                "and the ceiling hash."
+                "Full-graph launch precondition: gates the manifest-shape "
+                "full-graph dispatch on the predicted-wallclock budget "
+                "being calibrated and under the configured ceiling. The "
+                "decision is structured so a downstream full-graph launch "
+                "receipt can cite both the budget hash and the ceiling hash."
             ),
             "notWhat": (
                 "Not a measured wallclock and not a guarantee of "
                 "successful dispatch. Allow only certifies that the "
-                "predicted budget chains back to a rung-3 calibration "
-                "and is under the configured ceiling — runtime "
-                "behavior may still differ."
+                "predicted budget chains back to a per-kernel "
+                "manifest-shape calibration and is under the configured "
+                "ceiling — runtime behavior may still differ."
             ),
         },
     }

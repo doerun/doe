@@ -54,7 +54,7 @@ Locked by `bench/tests/test_nightly_tsir_parity_canary.py`:
 
 Breaking any of these invariants is a cross-artifact contract
 violation; the tests are there to catch the break before it reaches
-Loop 3 promotion.
+per-kernel-family parity promotion.
 
 ## How to regenerate
 

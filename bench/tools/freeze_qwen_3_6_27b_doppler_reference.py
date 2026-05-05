@@ -6,7 +6,7 @@ Walks the per-layer probe directory produced by Doppler's
 materializes a `frozen-reference.manifest.json` conforming to
 ``config/doe-frozen-doppler-reference.schema.json``. Hash-links every
 .npy artifact, records the transcript JSON, and computes the
-fixtureDigest the rung-1 receipt-emit guard chains to.
+fixtureDigest the receipt-hash receipt-emit guard chains to.
 
 Pipeline:
 

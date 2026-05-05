@@ -2,7 +2,7 @@
 """Fingerprint guard for the Cluster B 3 1B HostPlan fixture pair.
 
 Mitigates "Cluster B fixture regen drift" from
-docs/cerebras-north-star.md (Local risk mitigations). The two fixture
+docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations). The two fixture
 files
 
   bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/host-plan.json

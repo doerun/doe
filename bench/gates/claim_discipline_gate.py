@@ -315,7 +315,7 @@ def find_moe_receipt() -> Path | None:
 def find_real_weight_success_receipt() -> Path | None:
     """Return the canonical real-weight parity artifact that promoted.
 
-    L2+ artifacts are diagnostic depth rungs today; they must not unlock
+    L2+ artifacts are diagnostic depth steps today; they must not unlock
     broad real-weight wording in tracked prose.
     """
     for p in sorted(

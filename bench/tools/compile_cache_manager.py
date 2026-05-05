@@ -1,4 +1,4 @@
-"""Content-addressed compile cache for cslc outputs (north-star rung 0).
+"""Content-addressed compile cache for cslc outputs (north-star compile-cache step).
 
 The steps-mode driver materializes per-target `layout.csl` /
 `pe_program.csl` plus metadata sidecars, then runs `cslc` per target.

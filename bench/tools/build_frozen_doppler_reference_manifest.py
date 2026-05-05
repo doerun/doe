@@ -1,7 +1,7 @@
 """Assemble a frozen Doppler reference fixture manifest from captured .npy files.
 
-Mitigates the rung-5 fixture data gap in
-``docs/cerebras-north-star.md`` (Manifest-shape simfabric proof plan):
+Mitigates the frozen-Doppler-reference fixture data gap in
+``docs/cerebras-evidence-ledger-gemma.md`` (Manifest-shape simfabric proof plan):
 the Doe-side schema + validator
 (``config/doe-frozen-doppler-reference.schema.json``,
 ``bench/tools/validate_frozen_doppler_reference.py``) have shipped,
@@ -213,7 +213,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=(
             "Captured via doppler tools/run-program-bundle-reference.js "
-            "--tsir-fixture-dir; serves as the rung-5 frozen Doppler "
+            "--tsir-fixture-dir; serves as the frozen-Doppler-reference frozen Doppler "
             "reference for the Doe manifest-shape simfabric proof plan."
         ),
     )

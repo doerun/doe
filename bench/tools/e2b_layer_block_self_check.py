@@ -1001,7 +1001,7 @@ def main() -> int:
     # C38: Optional real-weight diagnostics, when generated, must either
     # pass exactly their requested smoke-chain depth or honestly report a
     # lane-incomplete runtime boundary while preserving the non-full-model
-    # claim boundary. These artifacts are CSL strategy rungs after L1;
+    # claim boundary. These artifacts are CSL strategy steps after L1;
     # they are not required on fresh clones.
     _diagnostic_depths = (2, 4, 8, 35)
     _c38_seen = False
@@ -1512,7 +1512,7 @@ def main() -> int:
         )
 
     # C43: full-depth smoke diagnostics are model-receipt-visible but
-    # still non-claimable. This locks the next rung toward full E2B
+    # still non-claimable. This locks the next step toward full E2B
     # without allowing L35 smoke-chain files to masquerade as manifest-
     # shape or hardware evidence.
     _depth_diag = receipt.get("sdkLayoutDepthDiagnosticEvidence") or {}

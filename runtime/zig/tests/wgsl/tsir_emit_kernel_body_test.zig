@@ -740,7 +740,7 @@ test "tsir csl attention_scores kv_axis_sharded multi-Q widens Q and output buff
     // plan stitches each query's partials independently. This is the
     // path that unblocks `attn_prefill` per-PE memory at the 27B
     // manifest shape (Doe-gated north-star item; see
-    // docs/cerebras-north-star-qwen.md).
+    // docs/cerebras-evidence-ledger-qwen.md).
     const allocator = std.testing.allocator;
     var semantic = attentionScoresSemantic();
     var body = semantic.body.attention_scores.?;

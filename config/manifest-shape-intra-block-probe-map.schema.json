@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://doe-gpu.github.io/doe/schemas/manifest-shape-intra-block-probe-map.schema.json",
   "title": "Doe manifest-shape intra-block probe-point map",
-  "description": "Schema for probe-map configs consumed by `bench/tools/run_intra_block_probe_receipt.py` (rung 7). Maps each of the four TSIR boundary probe points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`) to the per-kernel dispatch output that lands at that boundary. The recorder uses the map to select which `.npy` snapshots from the per-kernel dispatch scratch dir constitute the four-probe set for one layer, hashes them, and emits a receipt the rung-5 frozen-Doppler fixture comparator can score against.",
+  "description": "Schema for probe-map configs consumed by `bench/tools/run_intra_block_probe_receipt.py` (single-block parity step). Maps each of the four TSIR boundary probe points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`) to the per-kernel dispatch output that lands at that boundary. The recorder uses the map to select which `.npy` snapshots from the per-kernel dispatch scratch dir constitute the four-probe set for one layer, hashes them, and emits a receipt the frozen-Doppler fixture comparator can score against.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "artifactKind", "probePoints"],

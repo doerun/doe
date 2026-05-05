@@ -1,7 +1,7 @@
 // doe-emit-tsir-attention-canary
 //
-// Mitigates rung 6 (attention canary fixture rewire) from
-// docs/cerebras-north-star.md by exercising the TSIR-CSL attention
+// Mitigates attention-canary fixture rewire from
+// docs/cerebras-evidence-ledger-gemma.md by exercising the TSIR-CSL attention
 // emit path (runtime/zig/src/tsir/emit_kernel_body_attention.zig)
 // end-to-end and writing layout.csl + pe_program.csl files that
 // downstream cslc + chain_step_adapter can compile and dispatch.
@@ -18,7 +18,7 @@
 //   doe-emit-tsir-attention-canary --head-dim 256 --out-dir <dir>
 //   doe-emit-tsir-attention-canary --head-dim 512 --out-dir <dir>
 //
-// Multi-PE kv-axis-sharded variant (rung-6 follow-up):
+// Multi-PE kv-axis-sharded variant (attention-canary follow-up):
 //   doe-emit-tsir-attention-canary --head-dim 512 \
 //       --pe-strategy kv_axis_sharded --slots-per-pe 8 \
 //       --out-dir <dir>

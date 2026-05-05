@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Per-kernel manifest-shape dispatch runner with Doppler-probe inputs (rung 3).
+"""Per-kernel manifest-shape dispatch runner with Doppler-probe inputs.
 
-Mitigates "Per-kernel manifest-shape dispatch (rung 3)" from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
+Mitigates "Per-kernel manifest-shape dispatch" from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
 
   > Extend bench/runners/csl-runners/multi_token_decode_orchestrator.py
   > (or a new sibling manifest_kernel_probe_runner.py) to dispatch one
@@ -11,7 +11,7 @@ docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
   > bench/fixtures/tsir-real-doppler-transcripts/. Receipt:
   > bench/out/r3-1-31b-manifest-simfabric-per-kernel/<kernel>.json.
 
-Differences from rung-4 (`bench/tools/run_manifest_shape_layout_receipt.py`):
+Differences from the layout-receipt step (`bench/tools/run_manifest_shape_layout_receipt.py`):
 
   - Inputs come from the per-kernel Doppler probe transcripts and the
     bootstrap input fixtures they cite (not zero-filled). The probe
@@ -19,15 +19,15 @@ Differences from rung-4 (`bench/tools/run_manifest_shape_layout_receipt.py`):
     receipt records the broadcast strategy + probe identity.
   - Receipt is `doe_manifest_shape_per_kernel_dispatch_receipt`,
     `receiptClass: manifest_shape_per_kernel_dispatch`.
-  - Records `dispatchWallclockNs` so callers can derive the rung-2
-    throughput calibration constant (`bytesPerCycle` =
+  - Records `dispatchWallclockNs` so callers can derive the
+    predicted-wallclock throughput calibration constant (`bytesPerCycle` =
     grandTotalOutputBytes / dispatchWallclockNs * cycles_per_ns).
 
 Comparison to a Doppler reference oracle is **not** done here — that's
-rung 6/8/9 (parity rungs against the frozen-Doppler reference fixture
-behind `bench/tools/validate_frozen_doppler_reference.py`). This rung's
-purpose is calibration + per-kernel dispatch plumbing with non-zero
-inputs.
+the attention-canary, full-prefill, and multi-token continuation steps
+(parity steps against the frozen-Doppler reference fixture behind
+`bench/tools/validate_frozen_doppler_reference.py`). This step's purpose
+is calibration + per-kernel dispatch plumbing with non-zero inputs.
 
 Usage:
 
@@ -567,7 +567,7 @@ def materialize_probe_input(
     """Write a manifest-shape `.npy` initialized from probe values.
 
     When `probe_values` is None or empty, the buffer is zero-filled
-    (matches rung-4 behavior for that symbol). Otherwise probe values
+    (matches layout-receipt behavior for that symbol). Otherwise probe values
     are tiled to fill the (pe_count * per_pe_chunk) buffer. Returns
     (byte_length, broadcast_strategy_for_this_symbol).
     """
@@ -993,9 +993,9 @@ def _materialize_inputs(
     int,
     dict[str, str],
 ]:
-    """Like rung-4 but uses probe-broadcast inputs for symbols with a
-    probe entry. Returns the rung-4 quintuple plus a per-symbol
-    broadcast-strategy map for the probe block."""
+    """Like the layout-receipt step but uses probe-broadcast inputs for
+    symbols with a probe entry. Returns the layout-receipt quintuple plus
+    a per-symbol broadcast-strategy map for the probe block."""
     bindings = dict(target.get("compileParams") or {})
     width = int(bindings.get("width") or 0)
     height = int(bindings.get("height") or 1)
@@ -1231,12 +1231,13 @@ def build_kernel_receipt(
                 "Per-kernel manifest-shape dispatch with Doppler-probe "
                 "inputs (tiled to manifest shape). Records bytes-in / "
                 "bytes-out, dispatch exit code, and wall-clock so "
-                "downstream rung-2 calibration can derive the "
+                "downstream predicted-wallclock calibration can derive the "
                 "throughput constant."
             ),
             "notWhat": (
                 "Not a parity claim against the frozen Doppler "
-                "reference; that's rung 6/8/9 once the rung-5 fixture "
+                "reference; that's the attention-canary, full-prefill, and "
+                "multi-token continuation steps once the frozen-Doppler fixture "
                 "lands. Probe inputs are tiled across the manifest-"
                 "shape buffer — values are not numerically meaningful "
                 "for kernels whose probe shape is much smaller than "

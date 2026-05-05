@@ -1,10 +1,10 @@
 # Doe Cerebras evidence ledger — Qwen 3.6 27B
 
-One Doppler-authored Qwen 3.6 27B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Mirrors the Gemma 4 31B evidence trail at [`docs/cerebras-north-star.md`](cerebras-north-star.md).
+One Doppler-authored Qwen 3.6 27B model program, verifiable on browser WebGPU and Cerebras WSE with one source-identity chain. Mirrors the Gemma 4 31B evidence trail at [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md).
 
 **Scoped today**: the full hybrid Qwen 3.6 27B architecture at non-hardware scope: 16 full-attention layers plus 48 gated-DeltaNet SSM layers (conv1d_depthwise -> l2_normalize(q/k) -> linear_attention). WSE receipts remain hardware-gated under R3-2.
 
-External evidence packet: [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md).
+External evidence packet: bundle archive built via [`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md), governance + claim scope in [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md). Lane front door: [`docs/cerebras.md`](cerebras.md).
 
 ## Evidence layers
 

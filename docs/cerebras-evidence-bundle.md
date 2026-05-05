@@ -139,6 +139,9 @@ cross-references inside the receipts resolve as written.
 | `deployment-width-derivation` | Width recommendation derived from the compile-threshold sweep | Reviewers checking deployable smoke-width choices |
 | `full-graph-compile-attempt` | 31B steps-mode full-graph compile-attempt receipt | Reviewers checking manifest-shaped compile target coverage |
 | `full-graph-compile-driver-result` | Driver result backing the full-graph compile attempt | Reviewers checking measured per-target compiler verdicts |
+| `simfabric-cell-source` | Production-named CSL cell source and driver files | Reviewers checking local cell reproducibility |
+| `simfabric-cell-receipt` | Per-cell simfabric receipt | Numerical reviewers checking bounded CSL parity |
+| `simfabric-cells-summary` | Rollup for the authored simfabric cells and their pending families | Reviewers checking cell coverage |
 | `tsir-cross-backend-canary` | Real-kernel TSIR canary summary across MSL, SPIR-V, WebGPU, and WSE3 descriptors | Reviewers checking independent semantic-oracle coverage |
 | `tsir-real-canary-parity-receipt` | Per-kernel parity receipts from the real-kernel TSIR canary | Numerical reviewers; CSL lane may remain typed-deferred |
 | `bounded-decode-receipt` | Bounded simfabric `kv_write -> attention_decode -> sample` receipt | Reviewers checking KV/decode mechanics at bounded shape |
@@ -260,23 +263,33 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
     and the real-kernel TSIR canary. These artifacts reduce local
     unknowns but do not replace a WSE hardware receipt.
 
-11. **The TSIR real-kernel reference and Doe-WebGPU lanes agree for
+11. **Gemma 4 31B AF16 has production-named simfabric cell evidence
+    for the lm-head path.** Backed by `simfabric-cell-source`,
+    `simfabric-cell-receipt`, and `simfabric-cells-summary` artifacts.
+    The current cell is `lm_head_prefill_stable`; it uses the production
+    kernel stem, compiles at bounded shape, runs on local simfabric,
+    stages f16 activation and weights, reduces f32 partials, and compares
+    against a host f32 oracle. This is not hardware, not manifest-shape
+    execution, not full-vocabulary output, and not coverage for every
+    Gemma kernel family.
+
+12. **The TSIR real-kernel reference and Doe-WebGPU lanes agree for
     the bundled canary set.** Backed by the `tsir-cross-backend-canary`
     summary and per-kernel parity receipts. The CSL simfabric lane is
     intentionally typed-deferred when the channel or per-kernel compile
     dirs are not ready.
 
-12. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
+13. **Doppler-equivalent WebGPU and Doe-emitted CSL agree on the L1
    synthetic layer-block contract within `atol=1e-3`.** Explicitly
    labeled *Doppler-equivalent*: a separate WGSL harness matching the
    semantic contract, not Doppler's production inference path.
 
-13. **CSL WebGPU emulator is faster than local CSL simfabric on the
+14. **CSL WebGPU emulator is faster than local CSL simfabric on the
    same host for local debug.** Backed by the L1 emulator speed
    verdict. Scoped explicitly to "local debug ergonomics" per
    `compare_csl_emulator_vs_simfabric_speed.py`.
 
-14. **Unified Doe entrypoint routes to five backend targets, with
+15. **Unified Doe entrypoint routes to five backend targets, with
    runtime-output receipts for three L1 side-by-side lanes.** Backed
    by `rollup/all-lanes-summary-L1.json` plus `target-run-receipt`
    artifacts for `webgpu-wgsl`, `csl-sdklayout`, and

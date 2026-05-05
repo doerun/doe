@@ -156,6 +156,29 @@ INCLUDE_FILES: tuple = (
     "bench/out/r3-1-31b-a3-partial/PROVENANCE.json",
     "bench/out/r3-1-31b-l1-dry/trace.json",
     "bench/out/r3-1-31b-l61-smoke/trace.json",
+    # Gemma AF16 simfabric cell evidence. Source files keep the
+    # production kernel stem; receipts bind bounded simfabric parity.
+    "bench/runners/csl-runners/gemma-4-31b-af16-cells/README.md",
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_layout.csl"
+    ),
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_pe_program.csl"
+    ),
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_run.py"
+    ),
+    (
+        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-"
+        "simfabric-cell/receipt.json"
+    ),
+    (
+        "bench/out/r3-1-31b-gemma-af16-simfabric-cells/"
+        "summary-receipt.json"
+    ),
     # 31B no-hardware evidence promoted after the initial bundle.
     "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json",
     "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json",
@@ -291,6 +314,30 @@ CLAIM_ROLE: dict[str, str] = {
     "bench/out/r3-1-31b-a3-partial/PROVENANCE.json": "promoted-artifact-provenance",
     "bench/out/r3-1-31b-l1-dry/trace.json": "simfabric-31b-l1-smoke-receipt",
     "bench/out/r3-1-31b-l61-smoke/trace.json": "simfabric-31b-l61-smoke-receipt",
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "README.md"
+    ): "simfabric-cell-source",
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_layout.csl"
+    ): "simfabric-cell-source",
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_pe_program.csl"
+    ): "simfabric-cell-source",
+    (
+        "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
+        "lm_head_prefill_stable_run.py"
+    ): "simfabric-cell-source",
+    (
+        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-"
+        "simfabric-cell/receipt.json"
+    ): "simfabric-cell-receipt",
+    (
+        "bench/out/r3-1-31b-gemma-af16-simfabric-cells/"
+        "summary-receipt.json"
+    ): "simfabric-cells-summary",
     "bench/out/r3-1-31b-manifest-compile-attempt/receipt.json": "manifest-compile-attempt",
     "bench/out/r3-1-31b-manifest-compile-attempt/PROVENANCE.json": "promoted-artifact-provenance",
     "bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json": "manifest-compile-sweep",

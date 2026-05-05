@@ -455,7 +455,7 @@ def main() -> int:
                 "Not a Doppler parity claim — token sequence is "
                 "synthetic (random q/kv per step, no real LM head); "
                 "binding to Doppler reference inference waits on the "
-                "frozen-fixture rung. Single-head attention canary "
+                "frozen-fixture step. Single-head attention canary "
                 "(attn_decode width=1); production GQA would broadcast "
                 "across 4 kv_heads."
             ),

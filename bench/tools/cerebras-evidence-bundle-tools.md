@@ -157,7 +157,7 @@ locks most of this pipeline via numbered contracts:
 - Promote manifest-shape runtime — the runtime-path artifact is still a
   blocked checklist for embed, decoder stack, unembed/logits, and parity
   receipts. The attention-core receipt covers only the local/global
-  head-dim plus grouped-KV diagnostic rung, not full attention or model
+  head-dim plus grouped-KV diagnostic step, not full attention or model
   execution.
 - Promote captured Doppler WebGPU graphs to full inference — the capture
   graph proves the shared input surface can be recorded through Doppler's

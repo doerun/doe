@@ -27,9 +27,12 @@ Read this file first. Use the live topical shards under
 
 ## Current status summary
 
-- The current Doe-local checklist for the Doppler -> Doe -> Cerebras path lives
-  in [`docs/cerebras-north-star.md`](cerebras-north-star.md). It is the single
-  place for "what is left" line items, active blocker order, and done criteria.
+- The Doppler → Doe → Cerebras lane has a single front door at
+  [`docs/cerebras.md`](cerebras.md): progress snapshot, source code, reproduce
+  commands, hardware runbook, and rationale. Per-model evidence checklists with
+  active blocker order live at
+  [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md)
+  and [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md).
 - TSIR (Tiled Spatial IR) is the new lowering contract between WGSL IR and
   backend emitters. Phase A compiler surface has landed end-to-end for the
   bootstrap catalog (`fused_gemv`, `rms_norm`, `gather`): target descriptors

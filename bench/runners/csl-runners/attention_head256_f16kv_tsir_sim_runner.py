@@ -20,9 +20,9 @@ zero-filled. Output stays zero (zero-input attention is degenerate)
 and the sha256 matches the same Doppler probe hash the hand-authored
 runner satisfies.
 
-Closes rung 6 of docs/cerebras-north-star.md (Manifest-shape simfabric
-proof plan) for head_dim=256 by routing the canary identity check
-through the TSIR-CSL emit path. head_dim=512 stays on the
+Closes the attention-canary step of docs/cerebras-evidence-ledger-gemma.md
+(Manifest-shape simfabric proof plan) for head_dim=256 by routing the canary
+identity check through the TSIR-CSL emit path. head_dim=512 stays on the
 hand-authored kernel until single-PE memory budget is addressed.
 """
 

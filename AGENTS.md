@@ -72,12 +72,12 @@ For Dawn-vs-Doe performance work, also read:
 - `SKILLS.md`
 - `docs/performance-strategy.md`
 
-For Cerebras hardware bring-up work (Gemma 4 31B and Qwen 3.6 27B), the
-single operator-facing entry point is `docs/cerebras-hardware-runbook.md`.
-Treat it as the front door for "how do I actually run the validation"; the
-governance/claim-scope companion is `docs/hardware-validation-appendix.md`
-(referenced by the bundle packer and claim-discipline gate, do not delete or
-rename).
+For any Cerebras lane work (Doppler → Doe → Cerebras), start at
+`docs/cerebras.md`. That is the single front door — progress snapshot,
+source-code locations, reproduce/build/verify commands, hardware runbook
+pointer, and rationale all in one page. The bundle packer and
+claim-discipline gate depend on `docs/cerebras-evidence-bundle.md` and
+`docs/hardware-validation-appendix.md`; do not delete or rename those.
 
 ## Core principles (adopted)
 

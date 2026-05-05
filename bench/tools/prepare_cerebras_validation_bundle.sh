@@ -98,6 +98,7 @@ fi
 BUNDLE_VERDICT="$(tar -xzOf "$ARCHIVE" bench/out/cerebras-evidence-bundle/summary.json | jq -r '.verdict // "unknown"' 2>/dev/null)"
 BUNDLE_PASSED="$(tar -xzOf "$ARCHIVE" bench/out/cerebras-evidence-bundle/summary.json | jq -r '.passedSteps // "?"' 2>/dev/null)"
 BUNDLE_TOTAL="$(tar -xzOf "$ARCHIVE" bench/out/cerebras-evidence-bundle/summary.json | jq -r '.totalSteps // "?"' 2>/dev/null)"
+REGEN_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 cat > "$POINTER" <<EOF
 # Cerebras evidence bundle — current pointer
 
@@ -106,10 +107,17 @@ cat > "$POINTER" <<EOF
 run. Do not hand-edit; the prep script overwrites this file so it
 always reflects the last successful pack.
 
+> **Freshness check.** This pointer is a snapshot of the *last successful
+> pack* — not a live status. Compare \`regenerated at\` against
+> \`git log -1 --format=%cI HEAD\` before circulating the archive
+> externally. Regenerate via the prep script if the repo has advanced
+> beyond the pinned \`git commit\` below.
+
 ## Latest archive
 
 | Field | Value |
 | --- | --- |
+| regenerated at | \`$REGEN_AT\` |
 | archive | \`$ARCHIVE\` |
 | archive sha256 | \`$ARCHIVE_SHA\` |
 | MANIFEST.txt sha256 | \`$MANIFEST_SHA\` |

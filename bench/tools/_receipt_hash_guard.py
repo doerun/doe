@@ -1,4 +1,4 @@
-"""Schema-enforced hash spine for Doe receipts (north-star rung 1).
+"""Schema-enforced hash spine for Doe receipts.
 
 Imported by Doe receipt writers; rejects emit when the receipt's cited
 identity hashes do not chain back to the live bundle / host-plan / fixture
@@ -88,8 +88,8 @@ def _lookup_field(
 ) -> Any:
     """Look up `field` either at receipt root or under `sourceProgram`.
 
-    Doe receipts come in two shapes: rung-1 receipts (this guard's
-    native shape) put `manifestSha256` / `hostPlanHash` at the root;
+    Doe receipts come in two shapes: hash-spine-native receipts (this
+    guard's native shape) put `manifestSha256` / `hostPlanHash` at the root;
     older receipts (e.g. doe_csl_reference_parity) nest them inside a
     `sourceProgram` block. Look in both places so the guard can wire
     into both shapes without forcing a schema migration.
@@ -175,7 +175,7 @@ def _check_reference_fixture_hash(
     return [
         "manifest_shape * parity receipt missing referenceFixtureHash — "
         "the frozen Doppler reference fixture's digest must be cited so "
-        "downstream readers can re-derive identity (rung 1 contract)"
+        "downstream readers can re-derive identity (receipt-hash contract)"
     ]
 
 

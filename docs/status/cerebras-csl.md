@@ -7,7 +7,7 @@ This is a live topical status shard.
 - Split by subdomain before it exceeds the cap.
 - Dated history lives under `docs/status/archive/`.
 
-Current queue summary lives in `docs/cerebras-north-star.md`. Older entries
+Current queue summary lives in `docs/cerebras-evidence-ledger-gemma.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
 completion.
@@ -148,7 +148,7 @@ emitter-side speed left on the table before WSE-3 evidence.
 The audit also surfaced two redundant-work patterns and a linear chain reduce
 that should be a tree, plus a few low-severity cleanups. Items already in
 flight (Qwen GEMV reduce switched to `reduce_fadds` 2026-04-28; Q4K-input
-SUMMA wedge landed 2026-04-27) are noted but not re-listed.
+SUMMA prototype landed 2026-04-27) are noted but not re-listed.
 
 ### High severity — scalar inner loops should be `@fmacs` over `mem1d_dsd`
 
@@ -235,7 +235,7 @@ Targets to migrate:
     landed fix for the Q4K-input lane (2026-04-27 entry). The af32
     activation lane on the f32 SUMMA path still sends 4× more bytes than
     a f16 broadcast would. Open follow-up: an f16-input SUMMA emitter
-    that mirrors the Q4K wedge.
+    that mirrors the Q4K prototype.
 11. **KV-resident attention exceeds PE memory at `head_dim ≥ 256`** —
     `emit_csl_attention.zig:16-50` documents a 147 KiB / 294 KiB .bss
     footprint vs ~63 KiB PE budget. `emitTiled` with block streaming is
@@ -386,7 +386,7 @@ that `fused_gemv_dequant` emits collectives imports rather than manual
 ## 2026-04-27 — Qwen 3.6 27B Doe-side trio lands; typed-blocker chain pinned
 
 The `feat/qwen-3-6-bringup` branch now carries the parallel of the Gemma
-4 31B Doe-side evidence trio, all sitting on top of the SUMMA wedge merge:
+4 31B Doe-side evidence trio, all sitting on top of the SUMMA prototype merge:
 
 1. **Smoke config.** `runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json`
    mirrors the Gemma 4 31B smoke shape with Qwen's actual numbers: GQA
@@ -480,10 +480,10 @@ tree), which is named in the test's typed-skip pointer.
 - Causal prefill in `AttentionScoresBody` (shared with Gemma; deferred
   until the prefill simfabric ladder lands).
 
-## 2026-04-27 — Fused-dequant SUMMA wedge (Q4K-input) compiles + executes on simfabric with parity
+## 2026-04-27 — Fused-dequant SUMMA prototype (Q4K-input) compiles + executes on simfabric with parity
 
 The `feat/fused-dequant-summa` branch lands the on-PE Q4_K_M dequant SUMMA
-wedge end-to-end:
+prototype end-to-end:
 
 1. **Emitter.** `runtime/zig/src/doe_wgsl/emit_csl_matmul_q4k.zig` produces
    CSL where the B operand is broadcast as raw Q4K bytes and dequanted on
@@ -505,7 +505,7 @@ wedge end-to-end:
    `bench/tools/synthesize_q4k_summa_dispatch_receipt.py` carries three
    modes: `pending`, `compile_and_execute`, `dispatch`.
 4. **Validation gate.** `bench/tests/test_q4k_summa_receipt_parity.py`
-   pins the baseline witness, the wedge structural invariants, and the
+   pins the baseline witness, the prototype structural invariants, and the
    compile_and_execute milestone (cell parity flag + tile shape). Dispatch
    parity tests skip until a multi-token decode chain re-runs with
    `b_dtype=.q4k_block256`.
@@ -518,7 +518,7 @@ is named in the dispatch receipt's `remainingForFullClaim`.
 ## 2026-04-26 — Per-kernel manifest-shape calibration lands; head_dim=256 attention canary closes; manifest-shape simfabric budget gate flips to allow
 
 Three landings against the manifest-shape simfabric proof plan in
-`docs/cerebras-north-star.md`:
+`docs/cerebras-evidence-ledger-gemma.md`:
 
 1. **Rung 3 calibration via canary-proxy.** Manifest-shape simfabric (246x236
    fabric, ~58k PEs) does not finish a single-kernel dispatch in tractable

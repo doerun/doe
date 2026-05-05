@@ -1,13 +1,13 @@
-"""Derive a rung-3-class throughput calibration from canary sim_stats.
+"""Derive a per-kernel manifest-shape-class throughput calibration from canary sim_stats.
 
-Mitigates the rung-3 calibration gap in
-``docs/cerebras-north-star.md`` (Manifest-shape simfabric proof plan):
-the rung-2 wallclock predictor needs a ``bytesPerCycle`` calibration
-constant, and the rung-8 launch gate denies until
+Mitigates the per-kernel manifest-shape calibration gap in
+``docs/cerebras-evidence-ledger-gemma.md`` (Manifest-shape simfabric proof plan):
+the predicted-wallclock wallclock predictor needs a ``bytesPerCycle`` calibration
+constant, and the full-graph-dispatch launch gate denies until
 ``config/manifest-simfabric-budget.json``'s ``calibrationStatus``
 flips off ``<bootstrap-pending-rung-3>``.
 
-The intended source is a real per-kernel manifest-shape rung-3
+The intended source is a real per-kernel manifest-shape per-kernel manifest-shape
 dispatch, but cs_python simfabric simulation at the manifest WSE-3
 fabric (246x236, ~58k PEs) does not finish in tractable wall time on
 local hosts. Until hardware execution lands (R3-1 / R3-3), this tool
@@ -33,7 +33,7 @@ The receipt records per-canary-kernel cycle/byte data, the derived
 ``perPatternCyclesPerCall`` map keyed by host-plan pattern names, and
 the median ``bytesPerCycle`` for unknown patterns. The ``notWhat``
 block names exactly what this is not (manifest-shape evidence) so
-reviewers cannot mistake it for a real rung-3 receipt.
+reviewers cannot mistake it for a real per-kernel manifest-shape receipt.
 """
 
 from __future__ import annotations
@@ -229,7 +229,7 @@ def derive_constants(samples: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute the derived calibration constants.
 
     ``bytesPerCycle`` is the median across canary samples (used by the
-    rung-2 predictor as the fallback for any pattern without a
+    predicted-wallclock predictor as the fallback for any pattern without a
     per-pattern override).
 
     ``perPatternCyclesPerCall`` is keyed by host-plan pattern name;
@@ -275,7 +275,7 @@ def build_receipt(
         "claim": {
             "scope": (
                 "Per-pattern cycles-per-call calibration for the "
-                "rung-2 simfabric wall-clock predictor. Constants are "
+                "predicted-wallclock simfabric wall-clock predictor. Constants are "
                 "derived from the bootstrap canary lane's per-kernel "
                 "sim_stats.json files (8x3 fabric, ~14 simulated "
                 "tiles); the receipt's sha256 is intended to be "
@@ -284,14 +284,14 @@ def build_receipt(
                 "<bootstrap-pending-rung-3> sentinel."
             ),
             "notWhat": (
-                "NOT a manifest-shape rung-3 dispatch receipt. The "
+                "NOT a manifest-shape per-kernel manifest-shape dispatch receipt. The "
                 "manifest-shape simfabric (246x236 fabric, ~58k PEs) "
                 "cannot be exercised in tractable wall-clock on the "
                 "local host where this calibration was produced; "
                 "individual kernel dispatches at manifest shape do "
                 "not finish inside the chain_step_adapter timeout. "
                 "Use this calibration as a bootstrap input until a "
-                "real manifest-shape rung-3 dispatch lands (R3-1 / "
+                "real manifest-shape per-kernel manifest-shape dispatch lands (R3-1 / "
                 "R3-3 hardware path) and supersedes it."
             ),
         },

@@ -2,7 +2,7 @@
 """Verify a returned Cerebras hardware receipt against a packed evidence bundle.
 
 Mitigates "returned hardware receipt is hard to bind manually" from
-docs/cerebras-north-star.md (Local risk mitigations). Given:
+docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations). Given:
 
   --bundle PATH       Either a packed bundle archive (.tar.gz) or an unpacked
                       directory containing BUNDLE_META.json.

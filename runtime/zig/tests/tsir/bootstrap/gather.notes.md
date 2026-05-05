@@ -94,7 +94,7 @@ table tensor at a chunk granularity compatible with fabric streaming.
 Today `integrityExtensions.blockMerkle.roots` exists, but at the
 whole-tensor root level only. Fabric streaming wants per-chunk roots
 at the planner-chosen block size. Scoping that change is out of this
-iteration and belongs to Loop 3 when the gather kernel reaches its
+iteration and belongs to the per-kernel-family parity step when the gather kernel reaches its
 turn in the GEMV → RMSNorm → gather sequence.
 
 ## Status

@@ -229,7 +229,7 @@ class TestTsirManifestLowering(unittest.TestCase):
         parity CLI) all assume the set is a coherent snapshot of a
         single compiler+descriptor state; inconsistency silently
         attributes receipts to a compiler identity that never
-        existed. Catch that before it reaches Loop 3 promotion.
+        existed. Catch that before it reaches per-kernel-family parity promotion.
         """
         paths = sorted(FIXTURE_DIR.glob("*.json"))
         self.assertEqual(len(paths), 12)

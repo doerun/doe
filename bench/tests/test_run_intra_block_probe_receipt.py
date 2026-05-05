@@ -207,7 +207,7 @@ class BuildReceiptTest(unittest.TestCase):
             self.assertEqual(
                 probe["tensorSha256"], probe["fixtureSha256"]
             )
-        # rung-1 spine guard: parity mode requires referenceFixtureHash.
+        # receipt-hash spine guard: parity mode requires referenceFixtureHash.
         self.assertEqual(len(receipt["referenceFixtureHash"] or ""), 64)
 
     def test_parity_mode_blocked_on_one_mismatch(self) -> None:

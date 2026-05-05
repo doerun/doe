@@ -74,7 +74,7 @@ the L=0 probes.
 
 ## 2026-05-01 — Layer C acceptance bar split: end-to-end load-bearing, per-kernel manifest-shape regression net
 
-`docs/cerebras-north-star.md` Layer C acceptance bar now separates the
+`docs/cerebras-evidence-ledger-gemma.md` Layer C acceptance bar now separates the
 load-bearing correctness items (end-to-end prefill + generated-token IDs
 matching the frozen Doppler reference at L=1; per-step logits artifacts
 comparing under the declared Doppler tolerance policy; manifest / HostPlan
@@ -415,7 +415,7 @@ The active queue is now contract-first:
   inference artifacts after the contract lands.
 
 The corresponding queue and invariants are tracked in
-`docs/cerebras-north-star.md`. This is not a runner paper-over: the upstream
+`docs/cerebras-evidence-ledger-gemma.md`. This is not a runner paper-over: the upstream
 graph-to-HostPlan inventory and sample-logits contracts must fail closed before
 any generated-token evidence can be promoted.
 

@@ -3,7 +3,7 @@
 
 Mitigates "Bundle staleness from runtime/zig changes" / "TSIR or
 doe_wgsl edits invalidate emitted hashes" from
-docs/cerebras-north-star.md (Local risk mitigations). Wraps
+docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations). Wraps
 `bench/tools/prepare_cerebras_validation_bundle.sh` with a pre-step
 that computes sha256 of every receipt path the packer's INCLUDE_FILES
 declares, compares against a pinned baseline, and exits non-zero when

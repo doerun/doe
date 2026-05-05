@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Per-kernel manifest-shape layout receipt (rung 4).
+"""Per-kernel manifest-shape layout receipt (layout-receipt).
 
-Mitigates "Layout receipt (rung 4)" from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
+Mitigates "Layout receipt (layout-receipt)" from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
 
   > Per kernel, dispatch with manifest-shape inputs; record
   > `inputBytes`, `outputBytes`, `outputDigest`, `dispatchExitCode`,
@@ -26,7 +26,7 @@ For each compileTarget in the steps-mode host plan, this tool:
   6. Emits a per-kernel `doe_manifest_shape_layout_receipt` JSON with
      `receiptClass: manifest_shape_layout`,
      `comparisonMode: no_oracle`, `dispatchExitCode`, and
-     `bufferAlignment`. Receipt is gated by the rung-1 hash spine
+     `bufferAlignment`. Receipt is gated by the receipt-hash hash spine
      (`bench/tools/_receipt_hash_guard.py`) before write.
   7. Aggregates a `summary.json` covering all kernels.
 
@@ -184,7 +184,7 @@ def classify_exports(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Partition exports into (inputs, outputs).
 
-    Outputs are detected through rung-2's shared symbol classifier.
+    Outputs are detected through predicted-wallclock's shared symbol classifier.
     Bidirectional symbols are treated as outputs — the layout receipt's
     point is that buffers move bytes; reading zero-filled state in is
     still valid plumbing.
@@ -418,8 +418,8 @@ def build_kernel_receipt(
             "notWhat": (
                 "Not a parity claim and not a numerical correctness "
                 "claim. Output digests are zero-input-deterministic "
-                "given a stable kernel; rung 3 produces the per-kernel "
-                "Doppler-probe parity claim, rung 6+ binds parity to "
+                "given a stable kernel; per-kernel manifest-shape produces the per-kernel "
+                "Doppler-probe parity claim, attention-canary+ binds parity to "
                 "the frozen reference fixture."
             ),
         },
@@ -583,7 +583,7 @@ def run_one_kernel(
     dry_run: bool,
     dispatcher: Callable[..., tuple[int, str, str, bool]] | None = None,
 ) -> dict[str, Any]:
-    """Run rung-4 for a single kernel; returns the receipt body.
+    """Run layout-receipt for a single kernel; returns the receipt body.
 
     `dispatcher` lets tests substitute a stub for run_dispatch_subprocess.
     """

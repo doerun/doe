@@ -80,8 +80,9 @@ Outputs:
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
 - Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
-- Cerebras hardware end-to-end runbook (Gemma 4 31B + Qwen 3.6 27B):
-  [`docs/cerebras-hardware-runbook.md`](docs/cerebras-hardware-runbook.md)
+- Cerebras lane (Doppler → Doe → Cerebras work, single front door):
+  [`docs/cerebras.md`](docs/cerebras.md) — progress, source, reproduce, run
+  on hardware, why.
 - TSIR (Tiled Spatial IR) compiler work:
   [`docs/tsir-lowering-plan.md`](docs/tsir-lowering-plan.md),
   [`docs/loop-protocol.md`](docs/loop-protocol.md), live status at

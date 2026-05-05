@@ -113,7 +113,7 @@ class FrozenQwenReferenceFixtureTest(unittest.TestCase):
         )
 
     def test_first_full_attention_layer_probes_present(self) -> None:
-        # The four-probe boundary set (rung-5 expectation) must be
+        # The four-probe boundary set (frozen-Doppler-reference expectation) must be
         # present at L=3, the first full-attention layer in Qwen 3.6's
         # linear x3 -> full hybrid pattern, for downstream parity.
         activations = self.manifest.get("activations") or {}

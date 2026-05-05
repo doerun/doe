@@ -13,7 +13,7 @@ sequenced by [`docs/loop-protocol.md`](../loop-protocol.md).
   is narrative status, not the receipt surface.
 
 This shard exists because `compiler-and-webgpu.md` outgrew its old shard
-target once the TSIR Phase A wedges started landing. The deep 2026-04-24
+target once the TSIR Phase A landings started. The deep 2026-04-24
 TSIR Step 7-12 block now lives under
 [`archive/2026-04-24-tsir.md`](archive/2026-04-24-tsir.md); older TSIR history
 (2026-04-23 TSIR Step 4 increments) lives in
@@ -176,7 +176,7 @@ vocab scale). Then `attn_head256` / `attn_head512` (Move 5 — adds
 
 `docs/tsir-lowering-plan.md` has been re-scoped. The five moves are
 documented in the updated "Scope and phasing" section of the plan and
-drive the remaining Loop 2 / Loop 3 work:
+drive the remaining mechanical-emit and per-kernel-family parity work:
 
 1. **Reference inversion.** For real kernels, `doppler.reference-transcript/v1`
    from Doppler's browser WebGPU run is the parity reference, not the
@@ -342,19 +342,20 @@ Gates protecting Phase A artifacts:
   promote before execution harnesses exist.
 
 The missing path to proof 1 — in priority order: WebGPU/CSL backend
-execution wiring for the parity CLI (Step 8), first Loop 3 receipt for fused_gemv
-against both `webgpu-generic` and `wse3` (Step 9 iter 1), manifest
-binding of that receipt into a Doppler manifest (Step 10), and AOT
-convert-time lowering (Step 11). Each is a multi-day wedge; the Loop 2
-hygiene work through today has made every one of them safer to attempt.
+execution wiring for the parity CLI (Step 8), first per-kernel-family
+parity receipt for fused_gemv against both `webgpu-generic` and `wse3`
+(Step 9 iter 1), manifest binding of that receipt into a Doppler manifest
+(Step 10), and AOT convert-time lowering (Step 11). Each is a substantial
+landing; the mechanical-emit hygiene work through today has made every
+one of them safer to attempt.
 
 ## Archived sub-blocks
 
 Older TSIR entries that no longer need to be in the live shard:
 
 - [`archive/2026-04-24-tsir.md`](archive/2026-04-24-tsir.md) — TSIR Step 7-12
-  bring-up entry block (Loop 1 close, Step 8 oracle subprocess, Step 9 first
-  parity receipts, Step 11/12 AOT and bench surfaces).
+  bring-up entry block (initial-iteration close, Step 8 oracle subprocess,
+  Step 9 first parity receipts, Step 11/12 AOT and bench surfaces).
 
 ## Scope
 
@@ -366,8 +367,8 @@ Use this shard for:
 - TSIR planner (residency, tile factors, PE grid, realization)
 - TSIR mechanical backend emitters (CSL, WebGPU, MSL, HLSL/DXIL, SPIR-V)
 - TSIR manifest-lowering identity contract + fixtures
-- Loop 2 stop-until-green iteration status
-- Loop 3 per-kernel-family parity closure status
+- Mechanical-emit iteration status (hold-until-green discipline)
+- Per-kernel-family parity closure status
 
 Use `compiler-and-webgpu.md` for:
 

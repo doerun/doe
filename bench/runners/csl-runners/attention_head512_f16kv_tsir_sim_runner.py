@@ -72,7 +72,7 @@ HEAD_DIM = 512
 # output=2 KB, attn_scores=28 B → ~32 KB total, well under the 48 KB
 # SRAM ceiling. kv_len=8 would push K+V to 32 KB and total to ~36 KB
 # (still fits); kv_len=15 (matching the head_dim=256 canary) requires
-# multi-PE kv-axis distribution and is the rung-6 follow-up.
+# multi-PE kv-axis distribution and is the attention-canary follow-up.
 KV_LEN = 7
 
 

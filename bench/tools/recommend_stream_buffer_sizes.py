@@ -135,7 +135,7 @@ def main() -> int:
             "Recommendation is evidence-only. Runtime behavior is unchanged "
             "until SdkLayout exposes backpressure and queue-depth telemetry "
             "that confirms these minimums are safe; see R3-2 in "
-            "docs/cerebras-north-star.md."
+            "docs/cerebras-evidence-ledger-gemma.md."
         ),
     }
 

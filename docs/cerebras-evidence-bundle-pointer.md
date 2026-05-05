@@ -5,10 +5,17 @@
 run. Do not hand-edit; the prep script overwrites this file so it
 always reflects the last successful pack.
 
+> **Freshness check.** This pointer is a snapshot of the *last successful
+> pack* — not a live status. Compare `regenerated at` against
+> `git log -1 --format=%cI HEAD` before circulating the archive
+> externally. Regenerate via the prep script if the repo has advanced
+> beyond the pinned `git commit` below.
+
 ## Latest archive
 
 | Field | Value |
 | --- | --- |
+| regenerated at | `2026-04-25T19:27:00Z` |
 | archive | `bench/out/doe-cerebras-evidence-20260425-1927-517490bef2a5.tar.gz` |
 | archive sha256 | `e8cc98a84d270d6a189b99b1680960b225820d9434c928c701b1cc056b1f180c` |
 | MANIFEST.txt sha256 | `fefd0b95aa7c75647b0824d3d3c8cec95c21798e685704c589cc03984ce7e04a` |

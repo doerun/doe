@@ -2,8 +2,8 @@
 //
 // These tests exercise the Phase A compiler-only path: pinned bootstrap
 // WGSL -> Doe IR -> TSIR semantic -> target realization -> split digests.
-// They intentionally stop before backend execution or parity receipts; Loop 3
-// owns simulator/hardware proof.
+// They intentionally stop before backend execution or parity receipts; the
+// per-kernel-family parity step owns simulator/hardware proof.
 
 const std = @import("std");
 const tsir = @import("../../src/tsir/mod.zig");

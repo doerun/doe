@@ -23,10 +23,11 @@ Steps (in order):
  12. Doppler capture graph to CSL attention-core lowering receipt
  13. E2B model receipt refresh after attention-core/lowering restamp
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
- 15. claim-discipline gate (hardware + MoE fronts)
- 16. SdkLayout streaming hardening gate (against any available live
+ 15. Gemma 4 31B AF16 simfabric cell summary refresh
+ 16. claim-discipline gate (hardware + MoE fronts)
+ 17. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 17. schema validation of 31B receipt and receipt-link integrity for
+ 18. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -367,13 +368,19 @@ def main() -> int:
         ],
     ))
 
-    # 15. claim-discipline gate (hardware + MoE fronts).
+    # 15. Gemma 4 31B AF16 simfabric cell evidence.
+    steps.append(run(
+        "gemma4-31b-af16-simfabric-cells",
+        ["python3", "bench/tools/run_gemma4_31b_af16_simfabric_cells.py"],
+    ))
+
+    # 16. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 16. SdkLayout streaming hardening gate against the freshest live
+    # 17. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -392,7 +399,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 17. receipt link integrity (already invoked by self-check STEP 5,
+    # 18. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

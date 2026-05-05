@@ -41,12 +41,12 @@ provider prefers.
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
-| Gemma 4 31B evidence summary | [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md) |
-| Qwen 3.6 27B evidence summary | [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md) |
-| Gemma evidence steps + acceptance bar | [`docs/cerebras-north-star.md`](cerebras-north-star.md) |
-| Qwen evidence steps + acceptance bar | [`docs/cerebras-north-star-qwen.md`](cerebras-north-star-qwen.md) |
+| Cerebras lane front door | [`docs/cerebras.md`](cerebras.md) |
+| Gemma evidence ledger (acceptance bar + blockers) | [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md) |
+| Qwen evidence ledger (acceptance bar + blockers) | [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md) |
+| Live status snapshot | `bench/out/r3-cerebras-status/snapshot.md` (run `bench/tools/cerebras_status_snapshot.py`) |
 | Live status shard | [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) |
-| Active fail-closed queue (Gemma) | `cerebras-north-star.md` § Active fail-closed queue |
+| Active fail-closed queue (Gemma) | `cerebras-evidence-ledger-gemma.md` § Active fail-closed queue |
 
 ## Gemma 4 31B — runner steps
 
@@ -80,9 +80,36 @@ or manifest-shape streaming.
 4. Bind the resulting CSL hardware transcript to the Doppler reference export
    for the same bundle identity and input contract.
 
+### AF16 simfabric cells
+
+Gemma also has a bounded production-named CSL cell under
+`bench/runners/csl-runners/gemma-4-31b-af16-cells/`. Regenerate the local
+receipt set with:
+
+```bash
+python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py
+```
+
+The current cell is `lm_head_prefill_stable`. It compiles and runs the
+dense-GEMV lm-head path at bounded shape, stages f16 activation and weight
+payloads, reduces f32 partials across the row chain, and compares the sink
+output with a host f32 oracle. The summary receipt is:
+
+`bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json`
+
+For endpoint validation, pass:
+
+```bash
+python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py \
+  --cmaddr <operator-supplied>
+```
+
+This is cell-level correctness evidence. It is not full 31B manifest-shape
+execution and does not replace a returned hardware transcript.
+
 ### Current Gemma 31B blocker
 
-`cerebras-north-star.md` Layer C is fail-closed on **Gemma af16 lm-head
+`cerebras-evidence-ledger-gemma.md` Layer C is fail-closed on **Gemma af16 lm-head
 dispatch evidence**. The bounded receipt at
 `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` validates the
 f16 dtype contract but records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound`
@@ -253,16 +280,15 @@ shows `dirty` in the pointer, rebuild from a clean tree before circulation.
 
 ## See also
 
+- [`docs/cerebras.md`](cerebras.md) — single front door for the whole lane
+  (progress, source, reproduce, run on hardware, why).
 - [`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md) — bundle
   source-of-truth (the packer extracts archive-root files from marked sections
   here).
 - [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) —
   governance companion: artifact paths, simfabric-proof scope, publication
   boundaries.
-- [`docs/cerebras-31b-evidence.md`](cerebras-31b-evidence.md) /
-  [`docs/cerebras-27b-qwen-evidence.md`](cerebras-27b-qwen-evidence.md) —
-  external-facing snapshots of what is bound in-tree per model.
-- [`docs/cerebras-north-star.md`](cerebras-north-star.md) /
-  [`docs/cerebras-north-star-qwen.md`](cerebras-north-star-qwen.md) — full
+- [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md) /
+  [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md) — full
   evidence ledgers, integrity invariants, optimization roadmap.
 - [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) — live status shard.

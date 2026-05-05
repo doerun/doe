@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "artifactKind": "doe_cluster_b_fixture_regen_baseline",
-  "purpose": "Pinned sha256 baseline for the Cluster B Gemma 3 1B Doe-CSL host-plan fixtures. cluster_b_fixture_regen_gate.py reads this file and refuses to pass when the live fixture contents drift from the baseline. Mitigates 'Cluster B fixture regen drift' from docs/cerebras-north-star.md (Local risk mitigations).",
+  "purpose": "Pinned sha256 baseline for the Cluster B Gemma 3 1B Doe-CSL host-plan fixtures. cluster_b_fixture_regen_gate.py reads this file and refuses to pass when the live fixture contents drift from the baseline. Mitigates 'Cluster B fixture regen drift' from docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations).",
   "fixtures": [
     {
       "path": "bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/host-plan.json",

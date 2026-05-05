@@ -3,7 +3,7 @@
 
 Parallel to ``bench/tools/verify_per_kernel_byte_identity.py`` (the
 generic two-root comparator) and ``aggregate_qwen_3_6_27b_truncated_decode_compile_attempt.py``
-(the 1L compile aggregator). This tool drives the rung-6 precondition for
+(the 1L compile aggregator). This tool drives the attention-canary precondition for
 Qwen 3.6 27B specifically: emit both the manifest-shape (numLayers from
 the smoke config) bundle and a 1L truncation, then assert every shared
 kernel emits byte-identical layout.csl, pe_program.csl, and

@@ -103,11 +103,11 @@
       "$ref": "#/$defs/hashLinkedPath"
     },
     "firstTokenLogits": {
-      "description": "Optional per-vocab logits .npy for the first decoded token. Used by rungs 6, 8, 9.",
+      "description": "Optional per-vocab logits .npy for the first decoded token. Used by attention-canary, full-prefill, and multi-token continuation steps.",
       "$ref": "#/$defs/hashLinkedPath"
     },
     "activations": {
-      "description": "Per-layer activation snapshots at the four TSIR boundary points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`). Keyed by layer index (0-based string), then by probe-point name. The fixture is required to cover at least one (layer, probe-point) pair; the rung-7 contract calls for L=1 across all four probe points.",
+      "description": "Per-layer activation snapshots at the four TSIR boundary points (`post_rmsnorm`, `post_qkv`, `post_attn`, `post_ffn`). Keyed by layer index (0-based string), then by probe-point name. The fixture is required to cover at least one (layer, probe-point) pair; the single-block parity contract calls for L=1 across all four probe points.",
       "type": "object",
       "additionalProperties": {
         "type": "object",

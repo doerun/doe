@@ -1,7 +1,7 @@
 """Cooperative slot lock around `/dev/dri/renderD128`.
 
 Mitigates "Heavy WebGPU and heavy CSL jobs contend for the same RADV
-render node" from docs/cerebras-north-star.md (Local risk mitigations).
+render node" from docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations).
 
 Heavy CSL runs do not touch the render node, but Doe-WebGPU capture
 runs and AMD Vulkan benchmarks do. When two heavy users overlap on the

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Verify per-kernel byte identity between two host-plan compile roots (rung 6 precondition).
+"""Verify per-kernel byte identity between two host-plan compile roots (attention-canary precondition).
 
-Mitigates the rung-6 precondition from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
+Mitigates the attention-canary precondition from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
 
   > The host-plan tool already accepts `--num-layers`; verify in
   > runtime/zig/src/csl_host_plan_tool.zig that 1-layer emission keeps
@@ -15,7 +15,7 @@ pe_program.metadata.json}` are byte-identical between two emissions
 that differ only in `model_config.numLayers` (or any other parameter
 that affects layer count, not kernel identity). A divergence here is
 a kernel-emit bug — the kernel CSL would be a function of layer
-instance rather than layer class, breaking the 1-layer rung-6 setup.
+instance rather than layer class, breaking the 1-layer attention-canary setup.
 
 The tool compares any two compile roots produced by
 `doe-csl-host-plan-tool`; it's contract-only and does not invoke the
@@ -217,7 +217,7 @@ def build_receipt(
                 "Per-kernel byte identity between two host-plan compile "
                 "roots. Bound iff every shared kernel emits the same "
                 "layout.csl, pe_program.csl, and pe_program.metadata.json "
-                "bytes on both sides — the property rung 6 needs so a "
+                "bytes on both sides — the property attention-canary needs so a "
                 "1-layer emission can stand in for the 60-layer one when "
                 "verifying first-token parity at L=1."
             ),

@@ -24,11 +24,11 @@ DEFAULT_SPLIT_D2H_ROW_TILE_HEIGHT = 1
 
 # Empirical SDK 2.10 / simfabric D2H descriptor element-count cliff. A single
 # tile dispatch whose total output element count (width * height *
-# out_dim_per_pe) reaches 2^16 wedges at memcpy_d2h_start with
+# out_dim_per_pe) reaches 2^16 stalls at memcpy_d2h_start with
 # totalOutputBytes=0 and lastPhaseReached='memcpy_d2h_start'. Below the cliff,
 # the same kernel produces a real partial.npy. Empirically: width=120,
 # height=1, out_dim_per_pe=512 (61,440 elements) lands; width=128, height=1
-# (65,536) wedges. Hardware/cmaddr path may have different limits; this guard
+# (65,536) stalls. Hardware/cmaddr path may have different limits; this guard
 # is for simfabric only and may be tightened or relaxed once the governed
 # width/height sweep records canonical receipts at this boundary.
 SDK_D2H_ELEMENT_COUNT_LIMIT = 65536

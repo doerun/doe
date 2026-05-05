@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Intra-block probe-point receipt (rung 7).
+"""Intra-block probe-point receipt (single-block-parity).
 
-Mitigates "Intra-block probes (rung 7)" from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan):
+Mitigates "Intra-block probes (single-block-parity)" from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
 
   > Add four probe-write hooks at the four TSIR boundary points
   > already encoded in the per-block emit. Probes write `.npy`
   > snapshots into the orchestrator's per-step scratch dir during
-  > dispatch; rung 7 hashes them and compares against the same four
+  > dispatch; single-block-parity hashes them and compares against the same four
   > points in the frozen fixture (refinement 6).
 
 The boundary-emit-time probes are realized as orchestrator-side
-selections: rung 3 (`manifest_kernel_probe_runner.py`) and rung 4
+selections: per-kernel manifest-shape (`manifest_kernel_probe_runner.py`) and layout-receipt
 (`run_manifest_shape_layout_receipt.py`) already write per-kernel
 output `.npy` snapshots into a scratch dir keyed by kernel name. This
 tool reads a probe-point map (kernel+output → probe-point name),
@@ -19,7 +19,7 @@ selects the four boundary buffers from the scratch dir, hashes them,
 and emits a receipt.
 
 When `--frozen-fixture-root` is supplied, the receipt scores each
-probe's sha256 against the rung-5 frozen Doppler fixture's
+probe's sha256 against the frozen-Doppler-reference frozen Doppler fixture's
 `activations[layerIndex][probePoint]` cited sha256, and the
 `comparisonMode` is `parity`. Without the fixture, the receipt is
 emitted with `comparisonMode: no_oracle` and `blocker: fixture_absent`.
@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         required=True,
         help=(
-            "Per-kernel dispatch out dir produced by rung 3 or rung 4. "
+            "Per-kernel dispatch out dir produced by per-kernel manifest-shape or layout-receipt. "
             "The tool reads scratch/<kernel>/out/<symbol>.npy under "
             "this root."
         ),
@@ -177,7 +177,7 @@ def resolve_probe_npy(
 ) -> Path:
     """Return the per-kernel output `.npy` path under the dispatch dir.
 
-    rung 3 / rung 4 write per-kernel scratch under
+    per-kernel manifest-shape / layout-receipt write per-kernel scratch under
     `<dispatch_out_dir>/scratch/<kernel>/out/<symbol>.npy` — that's the
     on-disk location of the output buffer the orchestrator captured.
     """
@@ -317,7 +317,7 @@ def build_receipt(
         )
 
     # Parity mode requires the fixture manifest to have loaded (so
-    # `referenceFixtureHash` can be cited and the rung-1 hash spine
+    # `referenceFixtureHash` can be cited and the receipt-hash hash spine
     # guard accepts the receipt). A `--frozen-fixture-root` that
     # points at a missing/unreadable manifest falls back to no_oracle
     # mode with a blocker.
@@ -387,7 +387,7 @@ def build_receipt(
                 "dispatch scratch dir via the probe map. When a frozen "
                 "Doppler reference fixture is supplied, each probe's "
                 "sha256 is compared against the fixture's cited entry; "
-                "the receipt is the per-block parity claim that rung 8 "
+                "the receipt is the per-block parity claim that full-graph-dispatch "
                 "stacks on top of."
             ),
             "notWhat": (

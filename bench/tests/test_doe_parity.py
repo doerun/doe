@@ -808,7 +808,7 @@ class TestCslRunnerResolution(unittest.TestCase):
     The canary lane prefers the TSIR-emit runner pair
     (_tsir_sim_runner.py + csl-real-canary-compile-tsir/<kernel>/<kernel>/)
     over the hand-authored pair (_sim_runner.py + csl-real-canary-compile/
-    <kernel>/<kernel>/) when both are present, so the rung-6 attention
+    <kernel>/<kernel>/) when both are present, so the attention-canary attention
     canary actually exercises the TSIR-CSL emit body. Hand-authored
     stays as the fallback for kernels without a TSIR-emit runner or
     when the TSIR compile-dir hasn't been materialized in this

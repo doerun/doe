@@ -3,7 +3,7 @@
 
 Companion to ``bench/runners/csl-runners/multi_token_decode_orchestrator_qwen.py``
 (the simfabric chain runner) and ``bench/tools/_receipt_hash_guard.py``
-(the rung-1 hash-spine guard).
+(the receipt-hash guard).
 
 The orchestrator emits a `doe_qwen_3_6_27b_multi_token_decode_chain_trace`
 artifact that captures token sequence, per-step logits digests, and
@@ -27,7 +27,7 @@ Pipeline:
   2. Hash the smoke config + (optional) host plan.
   3. For each declared kernel (kv_write / attn_decode / sample), read
      its compile-dir's per-kernel triple and compute sha256s.
-  4. Emit the typed receipt at ``--out`` with the rung-1 hash spine
+  4. Emit the typed receipt at ``--out`` with the hash spine
      enforced.
 
 Usage::
@@ -186,7 +186,7 @@ def main() -> int:
                 "are bound to (smoke config, per-kernel compile-dir "
                 "triples). Each per-kernel digest hashes the same "
                 "(layout.csl, pe_program.csl, pe_program.metadata.json) "
-                "triple the rung-6 byte-identity verifier uses."
+                "triple the byte-identity verifier uses."
             ),
             "notWhat": (
                 "Not a hardware run. Not a manifest-shape run — manifest "
@@ -194,7 +194,7 @@ def main() -> int:
                 "runs at canary widths (kv_write width=4, attn_decode "
                 "width=1, sample width=2). Not a Doppler parity claim — "
                 "token sequence is synthetic; binding to Doppler "
-                "reference inference waits on the frozen-fixture rung."
+                "reference inference waits on the frozen-fixture step."
             ),
         },
     }

@@ -77,7 +77,7 @@ class NightlyTsirParityCanaryTests(unittest.TestCase):
         recomputed version. If a future change to the parity CLI or the
         canary starts emitting receipts with different digests than the
         fixture, this test turns red and blocks the drift before it
-        reaches Loop 3 promotion.
+        reaches per-kernel-family parity promotion.
         """
         kernel_prefix = "doe.tsir.bootstrap."
         entries = canary.load_fixture_entries(canary.DEFAULT_FIXTURE_DIR)

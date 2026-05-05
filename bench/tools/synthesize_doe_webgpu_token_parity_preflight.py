@@ -2,7 +2,7 @@
 """Synthesize the Doe-WebGPU vs Doppler token-sequence parity preflight.
 
 Mitigates "Doe-WebGPU vs Doppler parity" from
-docs/cerebras-north-star.md (Remaining no-hardware evidence gaps).
+docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware evidence gaps).
 
 The existing parity-receipt at
 `bench/out/r3-1-31b-doe-webgpu-parity/parity-receipt.json` records

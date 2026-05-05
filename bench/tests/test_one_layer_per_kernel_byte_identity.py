@@ -1,7 +1,7 @@
 """Pin the 1-layer == 61-layer per-kernel byte-identity property
-(rung-6 precondition).
+(attention-canary precondition).
 
-Refinement 8 in `docs/cerebras-north-star.md` claims:
+Refinement 8 in `docs/cerebras-evidence-ledger-gemma.md` claims:
 
   > The host-plan tool already accepts numLayers; verify in
   > runtime/zig/src/csl_host_plan_tool.zig that 1-layer emission keeps
@@ -16,7 +16,7 @@ emits the same `layout.csl`, `pe_program.csl`, and
 
 A failure here is a host-plan emit bug — the per-kernel CSL would have
 become a function of layer instance rather than layer class, breaking
-the L=1 stand-in setup that rung-6 first-token parity relies on. The
+the L=1 stand-in setup that attention-canary first-token parity relies on. The
 test compares the Zig host-plan tool's `--mode steps` output without
 invoking `cslc`; it only exercises the layout/pe_program emitter.
 

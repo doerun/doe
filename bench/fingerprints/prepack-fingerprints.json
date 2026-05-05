@@ -32,11 +32,11 @@
     },
     {
       "path": "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.json",
-      "sha256": "d797bfeea902fa36fc48780183cd5035e9a4b14704a55349db11f099639dce59"
+      "sha256": "c478c846ba0eb74ff1d8845851620744572f211b0ffc6ed0f8d5fb0ebd4105a2"
     },
     {
       "path": "bench/out/31b-full-graph/gemma-4-31b-runtime-receipt.md",
-      "sha256": "70bbbc117a3a7d3c651966310536bd37962242f850e3279708ee1f8a2aaecbdb"
+      "sha256": "bbaef050823c5f35f9e914f16270e2462a14ed588700f6d497ae69072a4d63cd"
     },
     {
       "path": "bench/out/doppler-reference/gemma-4-e2b-int4ple-production-final-logits/decode_transcript.json",
@@ -116,7 +116,15 @@
     },
     {
       "path": "bench/out/r3-1-31b-full-graph-compile-attempt/receipt.json",
-      "sha256": "ef47b34a5f7e79d7bb7543d1fd0893acd44bc9cb0ef4581b57d725ee653045eb"
+      "sha256": "0cc485fccb9c7d02e5ee68cfc7c15610988d137985dcf4cfcb8d798f802fc693"
+    },
+    {
+      "path": "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-simfabric-cell/receipt.json",
+      "sha256": "c9463ab36203667050a1a1440bc0f775f8b5da186d6f506af6f2b4c0980680ea"
+    },
+    {
+      "path": "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json",
+      "sha256": "ea2b4e0a5aed28c07d2ae74fb715e1e2789582536e51e5ba73ef9d3ab5dd9aa9"
     },
     {
       "path": "bench/out/r3-1-31b-l1-dry/trace.json",
@@ -176,103 +184,103 @@
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/nightly-tsir-parity-canary.json",
-      "sha256": "62c565b0d268a4915233d603431f8afc92958bd99e41dd34565588d8a1bfecbe"
+      "sha256": "93dbcefa5057cb9190b3739590e20fca0706eea1ffcfed2fe234466476987670"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head256_f16kv.msl/attention_head256_f16kv.parity.json",
-      "sha256": "568472ef926ce851cfaed1a2544ddd2a7986a8974be1973446ff697a158a013d"
+      "sha256": "1e2215efa891bec66f20cb0cc995c96b540e88f5d11110b12e92bdc3b39ed846"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head256_f16kv.spir-v/attention_head256_f16kv.parity.json",
-      "sha256": "6c4df9e38aacb344140479b19d695c586c652b3065a529fb94ede19638fd62d5"
+      "sha256": "1f240a9a6d31cec00c2f021ef05627e1a5d16b9866504340d2e2e8c8db31397f"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head256_f16kv.webgpu-generic/attention_head256_f16kv.parity.json",
-      "sha256": "ddecf6e46972155ad2aa4fd26fdf0c682813af4fb8e84919f2a29401d81fdb37"
+      "sha256": "31b558de321d12667e9e13778a4637269b2cc883b7eac90e1b134d60d008ecda"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head256_f16kv.wse3/attention_head256_f16kv.parity.json",
-      "sha256": "5cb79d6764c70ab2f830ee336efa2118dd1504638dbd027ce723816682dd911e"
+      "sha256": "2a99cda5ee6f69cbb0912ab8eb7279c3cbd88f0f4d54752fb5195e8493ed2876"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head512_f16kv.msl/attention_head512_f16kv.parity.json",
-      "sha256": "f79c6ac204c951ed2608560ca677f2b7b87b177b2316ef46ac0054ce853bf655"
+      "sha256": "12fb9d2a35261a12b5a14ff9e4b890d0b4712d6bc6f296afcdd4c582652d11d9"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head512_f16kv.spir-v/attention_head512_f16kv.parity.json",
-      "sha256": "27bac90b0c12de6ed37507f096531d9a920392fd8ff8581ffd4f10a8e5b4ef63"
+      "sha256": "6318448b1443686d55e33569d6d8c57ea5ed402588121ad66a323984b2c080fa"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head512_f16kv.webgpu-generic/attention_head512_f16kv.parity.json",
-      "sha256": "2cd069b33d84892d0833a55dfc81ef12e63f46873e40320c6ab1df0def628a93"
+      "sha256": "ba4ff96ab87d9d1112a12c6d35c398e301d1326eb1a12ad8828b237f206708eb"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/attention_head512_f16kv.wse3/attention_head512_f16kv.parity.json",
-      "sha256": "036bb981af05d0dba349e7e205def1f26b61cf97f7143a0d60e87d3f2f82688a"
+      "sha256": "30c00d637be0721e9f028a98929a02af0bd6db28a73fc62b278dabe9956fdfc6"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/embed.msl/embed.parity.json",
-      "sha256": "9bd62fa00f55da51be0562b7743c7b926aac73d21091b75a098e83392211ef37"
+      "sha256": "f54267f7233e5c50a19db0cebaa87c749776b0fb531b513b4e97643680647e7b"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/embed.spir-v/embed.parity.json",
-      "sha256": "14d92841acea76dca9c861da13e9b15753d4aacca5b8cea2f9f3747f9c14721b"
+      "sha256": "2ca2b9a1d1c008fe14e2903ff248e516295f6c72600aabfc85c20bfe00adc781"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/embed.webgpu-generic/embed.parity.json",
-      "sha256": "23bf6ba0f26a442ee65b722e2d46e8699c6a3fe14751f034b85319948c9fca83"
+      "sha256": "c6e97633d83f2f62816f160f570e04cd0ed56bed821309a0e84b38364e8a9652"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/embed.wse3/embed.parity.json",
-      "sha256": "4a1b6f87c168232c1f56f569ccb0c8d7d7dab60f3687203f926c730d7fc3334e"
+      "sha256": "005cdb667b9ec23a263c6293036bc53114483606ff0350ff87908ff95bd1f123"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/fused_gemv.msl/fused_gemv.parity.json",
-      "sha256": "f1625b97cf679d7407e9ff356bdce52ed0d9d5744f9f0502fb01f4a76e614205"
+      "sha256": "7926d9bfe2917ecb32b7110a97b9caa0d196682aa2c241fca19b1f27ee8bf0e1"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/fused_gemv.spir-v/fused_gemv.parity.json",
-      "sha256": "74fb647514f7789ab587353799230223b4a804b4ee6d0042474dcea367486244"
+      "sha256": "081cbc8ae6d442e8531fb22281f0a69a006faac91b8cb201214637634161778f"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/fused_gemv.webgpu-generic/fused_gemv.parity.json",
-      "sha256": "f847e9550af7ac233d6f11c0d0d93063964c06d20ee0c0f741e4cdde37c95b7c"
+      "sha256": "6ed4cbf07bcce89c0d4e5c41dbeaf706e8a397c02a9a293e52fc8e6f45b14394"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/fused_gemv.wse3/fused_gemv.parity.json",
-      "sha256": "e9f553f0adc4d323d7bea9a5e0d168155b1542d448593dfee0c76d5b48640454"
+      "sha256": "8feaa4153ebd91e59d14c2c78127f112219cbfb35182af309a72a284205118f8"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/lm_head_gemv.msl/lm_head_gemv.parity.json",
-      "sha256": "c89f7a6772c1eb1e51714fb4d3f09bff1095d480b691f4e223f112b7b1afd8ee"
+      "sha256": "27ee4280c742a88840463a9747f91feab03f460a95f9e54f46cad8f4a2e3543b"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/lm_head_gemv.spir-v/lm_head_gemv.parity.json",
-      "sha256": "35917b2c9267c412b3a2040b1fca28c77d2ae4cb7f0e6ac410b2ceb94ee9b461"
+      "sha256": "aaa2da917f93f161c6fea2eedda960000e97d7df68633f1a71f1bdbd14335deb"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/lm_head_gemv.webgpu-generic/lm_head_gemv.parity.json",
-      "sha256": "75cdfa477ffee6a43c9c37becd763a9db5b685f1ec8bb9ce8a69aed82179856d"
+      "sha256": "7b07816e5d0de896bbab2edf84a14013085166cd47eef06d8b96aee3bf973f2e"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/lm_head_gemv.wse3/lm_head_gemv.parity.json",
-      "sha256": "5814f38b32517c23eea11887eb65f78f2537073257adf8498c2052858f14dc41"
+      "sha256": "0aef0a922e09ca1a9152074e3e9d6d13a0767a97a9e7559a9a0d8de4a7c74dcb"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/rmsnorm.msl/rmsnorm.parity.json",
-      "sha256": "0f0ec3e2969cb6515028b89e75f2ee31f6dd6900cbe2f65a20527fa992b04971"
+      "sha256": "bb93abe5dd9d70933d1bd8f1700cd574312f848d65d6e9223f72b4b77395ce2d"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/rmsnorm.spir-v/rmsnorm.parity.json",
-      "sha256": "dd4e742c888897c8f6638223286aa2ac66af88e695f15263159980cc39995bca"
+      "sha256": "91d96ae0285e8955a7446398d04e377f4a3e94c0ef07066e4ea5cceae736ae36"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/rmsnorm.webgpu-generic/rmsnorm.parity.json",
-      "sha256": "ccf6df49fc54db5b0ac680d1b7c6ea16f986cd7715c0797aec63d08a6b18b423"
+      "sha256": "33891444275d4ec387af677dad725308ad45c7049a4953da4be50a3e277f98a2"
     },
     {
       "path": "bench/out/r3-1-tsir-cross-backend/real-canary-with-transcripts/receipts/rmsnorm.wse3/rmsnorm.parity.json",
-      "sha256": "4da07ae1c8f57af2974219860344135acf2995a0c1f92b18baf187732a58f902"
+      "sha256": "6f373f42986e90f74c8ab1d19f9403cc18b8308f790c2a76e0ac77535c22423f"
     },
     {
       "path": "config/gemma-4-31b-real-weight-fixture.json",
@@ -280,7 +288,7 @@
     },
     {
       "path": "config/gemma-4-e2b-doppler-rdrr-int4ple-fixture.json",
-      "sha256": "b3aaaa3b82a9812cf4cc59b1c583201301a71c2254075ec756beb8a02a5aa4aa"
+      "sha256": "2d6c043a9594be62f6f269bbd5ef84e4795e78dfc3942cc103efd0a70160da8b"
     },
     {
       "path": "config/gemma-4-e2b-real-weight-fixture.json",
@@ -288,15 +296,15 @@
     },
     {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "672d0f905057aa5f8ef931f2c8a15ee81733dae2ea25339bfebc964cccd91730"
+      "sha256": "e40ddb2dae41c29b2439cc85b625bacefab17d784a1b4aa4f0b9d48454cc72b9"
     },
     {
       "path": "docs/claim-discipline.md",
-      "sha256": "761b62171e0c82091ce31ea696e8294e53605821bfd023db9677543462845533"
+      "sha256": "4d3d43d29bec246d0f1ab2cf7b71143086c8d4076dcc49fa24fd0483dfa5b33b"
     },
     {
       "path": "docs/hardware-validation-appendix.md",
-      "sha256": "fc6953747c4681fca1685ebbadbe6b9e7aebdf1d8f89b1818ba772386775d6e8"
+      "sha256": "4d7a98b81313c9842662658c4aee5d71b864424c2287440ad717b4f5ce314364"
     }
   ],
   "missing": []

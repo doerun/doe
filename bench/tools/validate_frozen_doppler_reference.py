@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Validate a frozen Doppler reference fixture against its manifest schema.
 
-Mitigates "Frozen Doppler reference fixture (rung 5)" from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan). The
+Mitigates "Frozen Doppler reference fixture (frozen-Doppler-reference)" from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan). The
 fixture lives at `bench/fixtures/r3-1-31b-doppler-frozen/` (or wherever
 `--root` points) and contains:
 
@@ -22,7 +22,7 @@ every cited artifact:
 
 Finally it recomputes `fixtureDigest` from the cited paths + sha256s and
 verifies it matches the manifest's claim. Downstream receipts reference
-the same digest as `referenceFixtureHash`; the rung-1 receipt-emit guard
+the same digest as `referenceFixtureHash`; the receipt-hash receipt-emit guard
 (`bench/tools/_receipt_hash_guard.py`) refuses receipts whose
 `receiptClass.startswith('manifest_shape')` and `comparisonMode == 'parity'`
 omit the field, so the chain is fully bound.

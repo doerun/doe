@@ -24,7 +24,7 @@ Two regimes:
 The Qwen fixture's contents (when it lands) follow the same shape as
 ``bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/`` — a manifest,
 per-layer activation .npy probes, optional first-token logits, and the
-fixtureDigest the rung-1 receipt-emit guard pins downstream parity
+fixtureDigest the receipt-hash guard pins downstream parity
 receipts against.
 """
 
@@ -139,7 +139,7 @@ def _absent_receipt(root: Path) -> dict[str, Any]:
             "notWhat": (
                 "Not a parity claim. Not a hardware receipt. Validator "
                 "binding only — the parity check itself runs downstream "
-                "once the fixture lands and binds rung-7 receipts via "
+                "once the fixture lands and binds single-block parity receipts via "
                 "referenceFixtureHash."
             ),
         },

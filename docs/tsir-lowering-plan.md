@@ -27,7 +27,7 @@ kernels" framing is partly stale. After the current HostPlan and BF16
 broadcast fixes, `embed`, `lm_head_gemv_stable`, `attn_head256`, and
 `attn_head512` compile at Gemma 3 1B scale. The active simfabric blocker is the
 tiled SUMMA `launchIndex=2` host D2H stall tracked in
-`docs/cerebras-north-star.md`. Bounded residency remains important for 31B and
+`docs/cerebras-evidence-ledger-gemma.md`. Bounded residency remains important for 31B and
 for TSIR correctness, but it is no longer the immediate 3 1B execution proof
 blocker.
 

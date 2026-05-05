@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Predict simfabric wall-clock budget for the manifest-shape graph (rung 2).
+"""Predict simfabric wall-clock budget for the manifest-shape graph (predicted-wallclock).
 
-Mitigates "Predicted simfabric wall-clock (rung 2)" from
-docs/cerebras-north-star.md (Manifest-shape simfabric proof plan). The
-manifest-shape full-graph dispatch (rung 8) cannot launch blindly; if
+Mitigates "Predicted simfabric wall-clock (predicted-wallclock)" from
+docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan). The
+manifest-shape full-graph dispatch (full-graph-dispatch) cannot launch blindly; if
 its predicted wall-clock exceeds the simfabric throughput envelope the
 launch will time out before producing a receipt. This tool reads the
 steps-mode host plan + per-target `pe_program.metadata.json` sidecars
@@ -12,7 +12,7 @@ gate on before launching.
 
 The budget cannot be computed from compile metadata alone; the
 throughput constant (bytes / cycle) must be calibrated from a single
-rung-3 dispatch. Until calibration data lands, the predictor takes
+per-kernel manifest-shape dispatch. Until calibration data lands, the predictor takes
 the throughput constant as input via `--throughput-config`. Without a
 calibration constant, the receipt records `"calibrated": false` and
 the predicted-wallclock-ms field is `null`. With a calibration
@@ -321,7 +321,7 @@ def predict_wallclock(
     """Build the wallclock budget receipt body.
 
     `host_plan_path` and `host_plan_hash` (when provided) are recorded
-    on the receipt so the rung-1 hash spine guard can validate the
+    on the receipt so the receipt-hash hash spine guard can validate the
     chain back to the live host plan file.
     """
     compile_targets = [
@@ -449,7 +449,7 @@ def predict_wallclock(
             ),
             "notWhat": (
                 "Not a measured wallclock; cycle estimates depend on the "
-                "calibration constant from rung 3. Output-byte estimates "
+                "calibration constant from per-kernel manifest-shape. Output-byte estimates "
                 "use the OUTPUT_SYMBOL_PATTERNS heuristic (c, output, "
                 "key_cache, val_cache, value_cache, tokens, ...) "
                 "and may overcount for "
