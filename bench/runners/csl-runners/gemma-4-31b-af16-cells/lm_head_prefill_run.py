@@ -1,5 +1,5 @@
 #!/usr/bin/env cs_python
-"""Gemma 4 31B AF16 lm_head_prefill_stable kernel — simfabric canary.
+"""Gemma 4 31B AF16 lm_head_prefill kernel — simfabric canary.
 
 Compiles a tiny manifest-shaped dense GEMV kernel (`layout.csl` +
 `pe_program.csl`) for Gemma AF16, runs it under simfabric, and verifies
@@ -140,8 +140,8 @@ print(
 
 receipt = {
     "schemaVersion": 1,
-    "artifactKind": "doe_gemma4_31b_af16_lm_head_prefill_stable_simfabric_cell",
-    "kernel": "lm_head_prefill_stable",
+    "artifactKind": "doe_gemma4_31b_af16_lm_head_prefill_simfabric_cell",
+    "kernel": "lm_head_prefill",
     "modelId": "gemma-4-31b-it-text-q4k-ehf16-af16",
     "executionTarget": "simfabric",
     "verdict": "pass" if ok else "fail",
@@ -158,7 +158,7 @@ receipt = {
     "rngSeed": 27,
     "claim": {
         "scope": (
-            "Gemma 4 31B AF16 lm_head_prefill_stable dense-GEMV "
+            "Gemma 4 31B AF16 lm_head_prefill dense-GEMV "
             f"canary compiles via cslc 2.10.0 at width={width}, "
             f"height={height}, in_dim_per_pe={in_dim_per_pe}, "
             f"out_dim_per_pe={out_dim_per_pe}. "

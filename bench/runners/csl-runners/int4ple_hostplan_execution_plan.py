@@ -671,7 +671,7 @@ def _dense_gemv_source_transform(
     weight_item: dict[str, Any] | None,
     source_transform: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
-    if target_name != "lm_head_prefill_stable":
+    if target_name != "lm_head_prefill":
         return source_transform
     params = _dense_gemv_params(compile_params)
     if params is None:
@@ -710,7 +710,7 @@ def _dense_gemv_output_transform(
     target_name: str,
     compile_params: dict[str, int],
 ) -> dict[str, Any] | None:
-    if target_name != "lm_head_prefill_stable" or symbol.lower() != "output":
+    if target_name != "lm_head_prefill" or symbol.lower() != "output":
         return None
     params = _dense_gemv_params(compile_params)
     if params is None:

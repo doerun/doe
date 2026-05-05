@@ -105,8 +105,8 @@ PROBE_TRANSCRIPT_ALIASES = {
     "gelu_decode": "gelu",
     "gelu_prefill": "gelu",
     "kv_write_shared": "kv_write",
-    "lm_head_gemv_stable": "lm_head_gemv",
-    "lm_head_prefill_stable": "lm_head_gemv",
+    "lm_head_gemv": "lm_head_gemv",
+    "lm_head_prefill": "lm_head_gemv",
     "o_gate": "silu_gated",
     "ple_proj": "tiled",
     "ple_rmsnorm": "rmsnorm",
@@ -117,14 +117,13 @@ PROBE_TRANSCRIPT_ALIASES = {
 }
 
 ZERO_DEFAULT_H2D_INPUTS_BY_KERNEL = {
-    "lm_head_gemv_stable": {"activation", "weight"},
-    "lm_head_prefill_stable": {"activation", "weight"},
+    "lm_head_gemv": {"activation", "weight"},
+    "lm_head_prefill": {"activation", "weight"},
 }
 
 DENSE_GEMV_SINK_OUTPUT_KERNELS = {
     "lm_head_gemv",
-    "lm_head_gemv_stable",
-    "lm_head_prefill_stable",
+    "lm_head_prefill",
 }
 DIRECT_DISPATCH_MODE = "monolithic_full_fabric"
 SINGLE_REGION_D2H_MODE = "single_region_copyback"

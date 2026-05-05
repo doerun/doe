@@ -233,11 +233,11 @@ test "execution-v1 preserves explicit prefill and decode logits paths" {
         \\  "steps": [
         \\    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed" },
         \\    { "name": "final_norm_prefill", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" },
-        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill", "weightsKey": "lm_head" },
         \\    { "name": "sample_prefill", "phase": "prefill", "op": "sample", "kernelKey": "sample" },
         \\    { "name": "q_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.q_proj" },
         \\    { "name": "final_norm", "phase": "decode", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" },
-        \\    { "name": "lm_head", "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "lm_head", "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill", "weightsKey": "lm_head" },
         \\    { "name": "sample", "phase": "decode", "op": "sample", "kernelKey": "sample" }
         \\  ]
         \\}
@@ -255,9 +255,9 @@ test "execution-v1 preserves explicit prefill and decode logits paths" {
     try std.testing.expectEqual(@as(usize, 4), plan.prefill_launches.len);
     try std.testing.expectEqual(@as(usize, 4), plan.decode_launches.len);
     try std.testing.expectEqualStrings("dense_gemv", plan.kernels[2].pattern);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable", plan.prefill_launches[2].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill", plan.prefill_launches[2].kernel_name);
     try std.testing.expectEqualStrings("sample", plan.prefill_launches[3].kernel_name);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable", plan.decode_launches[2].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill", plan.decode_launches[2].kernel_name);
     try std.testing.expectEqualStrings("sample", plan.decode_launches[3].kernel_name);
 }
 
@@ -269,7 +269,7 @@ test "execution-v1 rejects compute after phase sample" {
         \\  "grid": { "width": 2, "height": 1 },
         \\  "steps": [
         \\    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed" },
-        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "name": "lm_head_prefill", "phase": "prefill", "op": "matmul", "kernelKey": "lm_head_prefill", "weightsKey": "lm_head" },
         \\    { "name": "sample_prefill", "phase": "prefill", "op": "sample", "kernelKey": "sample" },
         \\    { "name": "post_sample_norm", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm", "weightsKey": "norm" }
         \\  ]

@@ -304,8 +304,8 @@ class CompileTargetBlockerTests(unittest.TestCase):
         self.assertIn("q4_widetile", ROW_KERNEL_TARGETS)
         self.assertIn("q4_decode_gemv", ROW_KERNEL_TARGETS)
 
-    def test_lm_head_gemv_stable_keeps_2d_compile_geometry(self) -> None:
-        self.assertNotIn("lm_head_gemv_stable", ROW_KERNEL_TARGETS)
+    def test_lm_head_gemv_keeps_2d_compile_geometry(self) -> None:
+        self.assertNotIn("lm_head_gemv", ROW_KERNEL_TARGETS)
 
     def test_compile_blocked_reason_skips_cslc(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

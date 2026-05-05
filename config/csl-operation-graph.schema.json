@@ -555,7 +555,7 @@
     "hostIoLayoutFusedGemv": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Host I/O layout for the fused GEMV + Q4K dequant kernel (lm_head_gemv_stable and siblings). Describes the 2-D (in_dim-shard x out_dim-shard) PE grid: width shards in_dim and hosts the east-west reduce chain; height shards out_dim so the per-PE weight buffer stays under the ~48 KiB .data.hi budget. Host stages weight/activation per (pe_x, pe_y) shard and reads D2H from the sink PE (pe_x=width-1) of every pe_y row, concatenating along out_dim to reassemble the full output vector. Verified at bench/out/cslc-lmhead-2d-probe/probe-result.json.",
+      "description": "Host I/O layout for the fused GEMV + Q4K dequant kernel (lm_head_gemv and siblings). Describes the 2-D (in_dim-shard x out_dim-shard) PE grid: width shards in_dim and hosts the east-west reduce chain; height shards out_dim so the per-PE weight buffer stays under the ~48 KiB .data.hi budget. Host stages weight/activation per (pe_x, pe_y) shard and reads D2H from the sink PE (pe_x=width-1) of every pe_y row, concatenating along out_dim to reassemble the full output vector. Verified at bench/out/cslc-lmhead-2d-probe/probe-result.json.",
       "required": ["dimSharding"],
       "properties": {
         "dimSharding": {

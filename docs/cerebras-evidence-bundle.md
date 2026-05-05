@@ -266,7 +266,7 @@ enumerated in `MANIFEST.txt` with its `claim-role` tag.
 11. **Gemma 4 31B AF16 has production-named simfabric cell evidence
     for the lm-head path.** Backed by `simfabric-cell-source`,
     `simfabric-cell-receipt`, and `simfabric-cells-summary` artifacts.
-    The current cell is `lm_head_prefill_stable`; it uses the production
+    The current cell is `lm_head_prefill`; it uses the production
     kernel stem, compiles at bounded shape, runs on local simfabric,
     stages f16 activation and weights, reduces f32 partials, and compares
     against a host f32 oracle. This is not hardware, not manifest-shape

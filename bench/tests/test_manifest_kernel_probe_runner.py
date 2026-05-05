@@ -418,7 +418,7 @@ class MaterializeProbeInputTest(unittest.TestCase):
             scratch = Path(tmp) / "scratch"
             inputs, outputs, input_specs, output_specs, _, strategies = (
                 runner._materialize_inputs(
-                    kernel="lm_head_prefill_stable",
+                    kernel="lm_head_prefill",
                     target={"compileParams": {"width": 2, "height": 2}},
                     metadata={
                         "exports": [
@@ -459,7 +459,7 @@ class MaterializeProbeInputTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             scratch = Path(tmp) / "scratch"
             _, outputs, _, output_specs, _, _ = runner._materialize_inputs(
-                kernel="lm_head_prefill_stable",
+                kernel="lm_head_prefill",
                 target={
                     "compileParams": {
                         "width": 4,
@@ -503,7 +503,7 @@ class MaterializeProbeInputTest(unittest.TestCase):
         self.assertTrue(output_specs[0].endswith(":3,0,1,3"))
         self.assertEqual(
             runner._d2h_mode_for_outputs(
-                kernel="lm_head_prefill_stable",
+                kernel="lm_head_prefill",
                 output_records=outputs,
             ),
             "row_split_copyback",
@@ -948,8 +948,8 @@ class SchedulingAndResumeTest(unittest.TestCase):
     def test_lm_head_timeout_records_d2h_wedge_when_phase_reaches_copyback(self) -> None:
         runner = _load_runner_module()
         receipt = runner.build_kernel_receipt(
-            kernel="lm_head_prefill_stable",
-            compile_dir=Path("/tmp/compile/lm_head_prefill_stable"),
+            kernel="lm_head_prefill",
+            compile_dir=Path("/tmp/compile/lm_head_prefill"),
             compile_params={"width": 4, "height": 3},
             inputs=[
                 {
@@ -1000,8 +1000,8 @@ class SchedulingAndResumeTest(unittest.TestCase):
     def test_lm_head_timeout_records_residency_before_launch_complete(self) -> None:
         runner = _load_runner_module()
         receipt = runner.build_kernel_receipt(
-            kernel="lm_head_prefill_stable",
-            compile_dir=Path("/tmp/compile/lm_head_prefill_stable"),
+            kernel="lm_head_prefill",
+            compile_dir=Path("/tmp/compile/lm_head_prefill"),
             compile_params={"width": 4, "height": 3},
             inputs=[
                 {
@@ -1270,7 +1270,7 @@ class RunOneKernelTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             compile_root = tmp_path / "compile"
-            kernel_dir = compile_root / "lm_head_prefill_stable"
+            kernel_dir = compile_root / "lm_head_prefill"
             kernel_dir.mkdir(parents=True)
             metadata = {
                 "exports": [
@@ -1301,7 +1301,7 @@ class RunOneKernelTest(unittest.TestCase):
             pe.write_text("// pe\n", encoding="utf-8")
             (kernel_dir / "bin").mkdir()
             (kernel_dir / "bin" / "out_2_1.elf").write_bytes(b"\x7fELF")
-            tile_dir = compile_root / "lm_head_prefill_stable_row_tile_h1"
+            tile_dir = compile_root / "lm_head_prefill_row_tile_h1"
             (tile_dir / "bin").mkdir(parents=True)
             source_digest = hashlib.sha256()
             source_digest.update(_sha256_file(layout).encode("ascii"))
@@ -1321,7 +1321,7 @@ class RunOneKernelTest(unittest.TestCase):
                     {
                         "compileTargets": [
                             {
-                                "name": "lm_head_prefill_stable",
+                                "name": "lm_head_prefill",
                                 "compileParams": {
                                     "width": 3,
                                     "height": 2,
@@ -1342,7 +1342,7 @@ class RunOneKernelTest(unittest.TestCase):
             input_fixture = tmp_path / "inputs/lm_head.json"
             _write_probe(
                 probe_dir=probe_dir,
-                kernel="lm_head_prefill_stable",
+                kernel="lm_head_prefill",
                 input_fixture_rel=str(input_fixture.relative_to(tmp_path)),
                 fixture_path=input_fixture,
                 inputs={
@@ -1381,7 +1381,7 @@ class RunOneKernelTest(unittest.TestCase):
             runner.REPO_ROOT = tmp_path
             try:
                 receipt = runner.run_one_kernel(
-                    kernel="lm_head_prefill_stable",
+                    kernel="lm_head_prefill",
                     target=target,
                     compile_root=compile_root,
                     source_root=compile_root,
@@ -1413,7 +1413,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -1563,7 +1563,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -1714,7 +1714,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -1848,7 +1848,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -1990,7 +1990,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "source"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -2115,7 +2115,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "source"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -2289,7 +2289,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -2420,7 +2420,7 @@ class RunOneKernelTest(unittest.TestCase):
                 return 0, "", "", False
 
             result = runner.run_dense_gemv_row_tiled(
-                kernel="lm_head_prefill_stable",
+                kernel="lm_head_prefill",
                 compile_root=tmp_path / "compile",
                 source_root=tmp_path / "compile",
                 compile_params={
@@ -2464,7 +2464,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -2571,7 +2571,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            source_dir = tmp_path / "source" / "lm_head_prefill_stable"
+            source_dir = tmp_path / "source" / "lm_head_prefill"
             source_dir.mkdir(parents=True)
             layout = source_dir / "layout.csl"
             pe = source_dir / "pe_program.csl"
@@ -2643,7 +2643,7 @@ class RunOneKernelTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            kernel = "lm_head_prefill_stable"
+            kernel = "lm_head_prefill"
             source_root = tmp_path / "compile"
             kernel_dir = source_root / kernel
             kernel_dir.mkdir(parents=True)
@@ -2758,7 +2758,7 @@ class RunOneKernelTest(unittest.TestCase):
             host_plan_path = tmp_path / "host-plan.json"
             host_plan_path.write_text("{}", encoding="utf-8")
             receipt = runner.build_kernel_receipt(
-                kernel="lm_head_prefill_stable",
+                kernel="lm_head_prefill",
                 compile_dir=tmp_path / "compile",
                 compile_params={"width": 5, "height": 2},
                 inputs=[],

@@ -785,9 +785,9 @@ class HostPlanRuntimeTimeout(unittest.TestCase):
                 "launches": [
                     {
                         "launchIndex": 4,
-                        "targetName": "lm_head_prefill_stable",
+                        "targetName": "lm_head_prefill",
                         "launchFunction": "compute",
-                        "compileDir": str(tmp / "compile" / "compiled" / "lm_head_prefill_stable"),
+                        "compileDir": str(tmp / "compile" / "compiled" / "lm_head_prefill"),
                         "compileParams": {
                             "width": 160,
                             "height": 512,
@@ -839,7 +839,7 @@ class HostPlanRuntimeTimeout(unittest.TestCase):
                     "status": "succeeded",
                     "blockers": [],
                     "launchIndex": 4,
-                    "targetName": "lm_head_prefill_stable",
+                    "targetName": "lm_head_prefill",
                     "dispatchMode": "dense_gemv_width_tiled_session",
                     "outputs": [
                         {

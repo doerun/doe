@@ -91,7 +91,7 @@ receipt set with:
 python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py
 ```
 
-The current cell is `lm_head_prefill_stable`. It compiles and runs the
+The current cell is `lm_head_prefill`. It compiles and runs the
 dense-GEMV lm-head path at bounded shape, stages f16 activation and weight
 payloads, reduces f32 partials across the row chain, and compares the sink
 output with a host f32 oracle. The summary receipt is:

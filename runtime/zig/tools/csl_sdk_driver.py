@@ -64,7 +64,7 @@ ROW_KERNEL_TARGETS: frozenset[str] = frozenset(
         "attn_decode",
     }
 )
-TILED_KERNEL_TARGETS: frozenset[str] = frozenset({"tiled", "lm_head_prefill_stable"})
+TILED_KERNEL_TARGETS: frozenset[str] = frozenset({"tiled", "lm_head_prefill"})
 
 # Matches `@export_name("<symbol>", <type>[, <bool>]);`.
 # The type pattern uses non-greedy `.+?` anchored on the closing `);` so it

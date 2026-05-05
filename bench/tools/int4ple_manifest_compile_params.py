@@ -259,7 +259,7 @@ def lmhead_gemv_compile_params(
     in_dim_per_pe: int,
     num_blocks_per_row: int,
 ) -> dict[str, int]:
-    """Build the compileParams dict for the `lm_head_gemv_stable` kernel.
+    """Build the compileParams dict for the `lm_head_gemv` kernel.
 
     Emits the four legacy knobs (`out_dim`, `in_dim_per_pe`,
     `num_blocks_per_row` — plus `height=1` when the pre-shard shape
@@ -573,7 +573,7 @@ def manifest_compile_param_projection(
             "in_dim_per_pe": gemv_input_per_pe,
             "num_blocks_per_row": gemv_blocks,
         },
-        "lm_head_gemv_stable": lmhead_gemv_compile_params(
+        "lm_head_gemv": lmhead_gemv_compile_params(
             grid_width=grid_width,
             grid_height=grid_height,
             out_dim_total=lm_head_out_dim,
@@ -601,7 +601,7 @@ def manifest_compile_param_projection(
     # Program Bundle v1 emits specific target names for the same CSL bodies.
     # Keep these aliases explicit so drift shows up in the projection report
     # instead of falling through to width/height-only cslc invocations.
-    params["lm_head_prefill_stable"] = dict(params["tiled"])
+    params["lm_head_prefill"] = dict(params["tiled"])
     params["tiled_31b"] = prefill_q4k_gemv_compile_params(hidden_dim=hidden_dim)
     params["q4_widetile"] = dict(params["gemv"])
     params["q4_decode_gemv"] = dict(params["gemv"])
@@ -637,8 +637,8 @@ def manifest_compile_param_projection(
         target_blockers["attn_head512"] = (
             "csl_compile_params_infeasible_attention_grid_budget"
         )
-    if "out_dim_per_pe" not in params["lm_head_gemv_stable"]:
-        target_blockers["lm_head_gemv_stable"] = (
+    if "out_dim_per_pe" not in params["lm_head_gemv"]:
+        target_blockers["lm_head_gemv"] = (
             "csl_compile_params_infeasible_lmhead_grid_budget"
         )
     if "out_dim_per_pe" not in params["lm_head_gemv"]:

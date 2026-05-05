@@ -863,7 +863,7 @@ test "buildCompileTargets routes af16 metadata to f16 bindings" {
         .kernels = &[_]host.KernelSpec{
             .{ .name = "rmsnorm", .pattern = "rms_norm", .count = 1 },
             .{ .name = "tiled", .pattern = "tiled_matmul", .count = 1 },
-            .{ .name = "lm_head_prefill_stable", .pattern = "dense_gemv", .count = 1 },
+            .{ .name = "lm_head_prefill", .pattern = "dense_gemv", .count = 1 },
         },
         .prefill_launches = &[_]host.LaunchSpec{},
         .decode_launches = &[_]host.LaunchSpec{},
@@ -891,7 +891,7 @@ test "buildCompileTargets uses vocab output width for lm_head GEMV" {
         .pe_grid_height = 4,
         .kernels = &[_]host.KernelSpec{
             .{ .name = "gemv", .pattern = "fused_gemv_dequant", .count = 1 },
-            .{ .name = "lm_head_gemv_stable", .pattern = "fused_gemv_dequant", .count = 1 },
+            .{ .name = "lm_head_gemv", .pattern = "fused_gemv_dequant", .count = 1 },
         },
         .prefill_launches = &[_]host.LaunchSpec{},
         .decode_launches = &[_]host.LaunchSpec{},
@@ -911,7 +911,7 @@ test "buildCompileTargets uses vocab output width for lm_head GEMV" {
     try std.testing.expectEqualStrings("gemv", targets[0].kernel_name);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 128), targets[0].compile_params[3].value);
-    try std.testing.expectEqualStrings("lm_head_gemv_stable", targets[1].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_gemv", targets[1].kernel_name);
     try std.testing.expectEqual(@as(u32, 64), targets[1].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 16), targets[1].compile_params[3].value);
 }
@@ -960,7 +960,7 @@ test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
         .pe_grid_width = 8,
         .pe_grid_height = 4,
         .kernels = &[_]host.KernelSpec{
-            .{ .name = "lm_head_prefill_stable", .pattern = "dense_gemv", .count = 1 },
+            .{ .name = "lm_head_prefill", .pattern = "dense_gemv", .count = 1 },
         },
         .prefill_launches = &[_]host.LaunchSpec{},
         .decode_launches = &[_]host.LaunchSpec{},
@@ -977,20 +977,20 @@ test "buildCompileTargets sizes tied dense lm_head as dense GEMV" {
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
     const targets = try buildCompileTargets(arena.allocator(), plan, config, .f32, &target_buf);
     try std.testing.expectEqual(@as(usize, 5), targets.len);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x0_w32", targets[0].kernel_name);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable", targets[0].base_kernel.?);
+    try std.testing.expectEqualStrings("lm_head_prefill_width_tile_x0_w32", targets[0].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill", targets[0].base_kernel.?);
     try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[0].compile_params[0].value);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[1].value);
     try std.testing.expectEqual(@as(u32, 262144), targets[0].compile_params[2].value);
     try std.testing.expectEqual(@as(u32, 512), targets[0].compile_params[3].value);
     try std.testing.expectEqual(@as(u32, 32), targets[0].compile_params[4].value);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x32_w32", targets[1].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_width_tile_x32_w32", targets[1].kernel_name);
     try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[1].compile_params[0].value);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x64_w32", targets[2].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_width_tile_x64_w32", targets[2].kernel_name);
     try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[2].compile_params[0].value);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x96_w32", targets[3].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_width_tile_x96_w32", targets[3].kernel_name);
     try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[3].compile_params[0].value);
-    try std.testing.expectEqualStrings("lm_head_prefill_stable_width_tile_x128_w32", targets[4].kernel_name);
+    try std.testing.expectEqualStrings("lm_head_prefill_width_tile_x128_w32", targets[4].kernel_name);
     try std.testing.expectEqual(@as(u32, DENSE_GEMV_COMPILE_HIDDEN_TILE_WIDTH), targets[4].compile_params[0].value);
     const metadata = targets[0].metadata orelse return error.TestUnexpectedResult;
     try std.testing.expectEqualStrings("activation", metadata.bindings[0].symbol);

@@ -2464,7 +2464,7 @@ def run_dense_gemv_row_tiled(
     receipt_identity: dict[str, Any] | None = None,
     dispatcher: DispatchFn | None = None,
 ) -> DenseGemvTileRun | None:
-    if kernel not in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}:
+    if kernel not in {"lm_head_gemv", "lm_head_prefill"}:
         return None
     activation_record = _record_by_symbol(input_records, "activation")
     weight_record = _record_by_symbol(input_records, "weight")

@@ -23,7 +23,7 @@ from bench.tools.int4ple_manifest_compile_params import (  # noqa: E402
 DEFAULT_REQUIRED_TARGETS = (
     "embed",
     "tiled",
-    "lm_head_gemv_stable",
+    "lm_head_gemv",
     "attn_head256",
     "attn_head512",
     "sample",
@@ -213,7 +213,7 @@ def _check_coverage(
             minimum=prompt_tokens,
         )
 
-    lm_head = target_params.get("lm_head_gemv_stable") or {}
+    lm_head = target_params.get("lm_head_gemv") or {}
     if lm_head:
         _require_minimum(
             failures=failures,

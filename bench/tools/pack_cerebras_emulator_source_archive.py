@@ -59,9 +59,9 @@ QWEN_CELL_FILES = (
 
 GEMMA_LM_HEAD_FILES = (
     "README.md",
-    "lm_head_prefill_stable_layout.csl",
-    "lm_head_prefill_stable_pe_program.csl",
-    "lm_head_prefill_stable_run.py",
+    "lm_head_prefill_layout.csl",
+    "lm_head_prefill_pe_program.csl",
+    "lm_head_prefill_run.py",
 )
 
 INCLUDE_FILES: tuple[SourceEntry, ...] = (

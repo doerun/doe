@@ -67,7 +67,7 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
             {
                 "kernels": [
                     {"name": "sample", "verdict": "bound"},
-                    {"name": "lm_head_prefill_stable", "verdict": "blocked"},
+                    {"name": "lm_head_prefill", "verdict": "blocked"},
                 ],
             },
         )
@@ -76,17 +76,17 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
             {"verdict": "bound", "blocker": None},
         )
         self._write(
-            f"{dir_rel}/lm_head_prefill_stable.json",
+            f"{dir_rel}/lm_head_prefill.json",
             {"verdict": "blocked", "blocker": "shape_exceeds_d2h_limit"},
         )
         with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
             rows = self.module.per_kernel_rows("gemma", dir_rel)
         summary_row = next(r for r in rows if r["lane"].endswith("summary"))
         self.assertEqual(summary_row["verdict"], "blocked")
-        self.assertIn("lm_head_prefill_stable", summary_row["blocker"])
+        self.assertIn("lm_head_prefill", summary_row["blocker"])
         sample_row = next(r for r in rows if r["lane"].endswith("sample"))
         self.assertEqual(sample_row["verdict"], "bound")
-        lm_row = next(r for r in rows if r["lane"].endswith("lm_head_prefill_stable"))
+        lm_row = next(r for r in rows if r["lane"].endswith("lm_head_prefill"))
         self.assertEqual(lm_row["verdict"], "blocked")
         self.assertEqual(lm_row["blocker"], "shape_exceeds_d2h_limit")
 

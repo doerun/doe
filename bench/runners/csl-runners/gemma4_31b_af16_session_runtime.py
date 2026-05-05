@@ -46,8 +46,8 @@ SESSION_ARTIFACT_PREFIX = "gemma4_31b_af16"
 DEFAULT_PROMPT_TOKEN_IDS = [2, 3]
 LM_HEAD_KERNELS = frozenset({
     "lm_head_gemv",
-    "lm_head_gemv_stable",
-    "lm_head_prefill_stable",
+    "lm_head_gemv",
+    "lm_head_prefill",
 })
 PER_LAYER_INPUT_KERNELS = frozenset({
     "ple_embed",

@@ -161,18 +161,18 @@ INCLUDE_FILES: tuple = (
     "bench/runners/csl-runners/gemma-4-31b-af16-cells/README.md",
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_layout.csl"
+        "lm_head_prefill_layout.csl"
     ),
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_pe_program.csl"
+        "lm_head_prefill_pe_program.csl"
     ),
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_run.py"
+        "lm_head_prefill_run.py"
     ),
     (
-        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-"
+        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-"
         "simfabric-cell/receipt.json"
     ),
     (
@@ -320,18 +320,18 @@ CLAIM_ROLE: dict[str, str] = {
     ): "simfabric-cell-source",
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_layout.csl"
+        "lm_head_prefill_layout.csl"
     ): "simfabric-cell-source",
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_pe_program.csl"
+        "lm_head_prefill_pe_program.csl"
     ): "simfabric-cell-source",
     (
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
-        "lm_head_prefill_stable_run.py"
+        "lm_head_prefill_run.py"
     ): "simfabric-cell-source",
     (
-        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-"
+        "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-"
         "simfabric-cell/receipt.json"
     ): "simfabric-cell-receipt",
     (

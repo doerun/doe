@@ -155,7 +155,7 @@
       "name": "lm_head_prefill",
       "phase": "prefill",
       "op": "matmul",
-      "kernelKey": "lm_head_prefill_stable",
+      "kernelKey": "lm_head_prefill",
       "weightsKey": "lm_head"
     },
     {
@@ -280,7 +280,7 @@
       "name": "lm_head",
       "phase": "decode",
       "op": "matmul",
-      "kernelKey": "lm_head_prefill_stable",
+      "kernelKey": "lm_head_prefill",
       "weightsKey": "lm_head"
     },
     {

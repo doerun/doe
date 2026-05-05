@@ -164,7 +164,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                     "name": "lm_head_prefill",
                     "phase": "prefill",
                     "op": "matmul",
-                    "kernelKey": "lm_head_prefill_stable",
+                    "kernelKey": "lm_head_prefill",
                     "weightsKey": "lm_head",
                 },
                 {
@@ -191,7 +191,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                     "name": "lm_head",
                     "phase": "decode",
                     "op": "matmul",
-                    "kernelKey": "lm_head_prefill_stable",
+                    "kernelKey": "lm_head_prefill",
                     "weightsKey": "lm_head",
                 },
                 {
@@ -212,13 +212,13 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                     "prefill": [
                         {"kernelName": "embed"},
                         {"kernelName": "rmsnorm"},
-                        {"kernelName": "lm_head_prefill_stable"},
+                        {"kernelName": "lm_head_prefill"},
                         {"kernelName": "sample"},
                     ],
                     "decode": [
                         {"kernelName": "gemv"},
                         {"kernelName": "rmsnorm"},
-                        {"kernelName": "lm_head_prefill_stable"},
+                        {"kernelName": "lm_head_prefill"},
                         {"kernelName": "sample"},
                     ],
                 }
@@ -345,9 +345,9 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
                         },
                     },
                     {
-                        "name": "lm_head_prefill_stable",
-                        "layout": "lm_head_prefill_stable/layout.csl",
-                        "peProgram": "lm_head_prefill_stable/pe.csl",
+                        "name": "lm_head_prefill",
+                        "layout": "lm_head_prefill/layout.csl",
+                        "peProgram": "lm_head_prefill/pe.csl",
                         "compileParams": {"width": 1, "height": 1},
                         "metadata": {
                             "bindings": [
@@ -394,7 +394,7 @@ def _materialize_fixture(root: Path) -> dict[str, Path]:
             "hostIoLayout": [],
         },
     )
-    for target in ("embed", "gemv", "rmsnorm", "lm_head_prefill_stable", "sample"):
+    for target in ("embed", "gemv", "rmsnorm", "lm_head_prefill", "sample"):
         _write_json(
             root / "compile" / "compiled" / target / "out.json",
             {"params": {"width": 1, "height": 1}},
@@ -452,7 +452,7 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
             for step in smoke["steps"]:
                 if step.get("name") in {"lm_head", "lm_head_prefill"}:
                     step["op"] = "matmul_q4k"
-                    step["kernelKey"] = "lm_head_gemv_stable"
+                    step["kernelKey"] = "lm_head_gemv"
             paths["smoke"].write_text(
                 json.dumps(smoke, indent=2) + "\n",
                 encoding="utf-8",
@@ -1071,7 +1071,7 @@ class Gemma431BAf16HostPlanStreamingRunnerTest(unittest.TestCase):
                 "unresolvedWeightKeys": [],
             },
             per_kernel={
-                "blockedKernels": ["lm_head_prefill_stable"],
+                "blockedKernels": ["lm_head_prefill"],
                 "staleDryRunOnly": False,
             },
             refresh={"requested": False, "status": "not_requested"},

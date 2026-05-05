@@ -470,14 +470,14 @@ def bind_launch_dataflow(
         "tiled",
         "gemv",
         "lm_head_gemv",
-        "lm_head_gemv_stable",
-        "lm_head_prefill_stable",
+        "lm_head_gemv",
+        "lm_head_prefill",
         "q4_widetile",
         "q4_decode_gemv",
     } or kernel_pattern == PREFILL_Q4K_GEMV_PATTERN:
         is_lm_head = op_name in {"lm_head", "lm_head_prefill"} or (
             kernel_name
-            in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
+            in {"lm_head_gemv", "lm_head_gemv", "lm_head_prefill"}
         )
         is_tiled_kernel = kernel_name == "tiled" or (
             kernel_name == "tiled_31b" and kernel_pattern == "tiled_matmul"
@@ -943,7 +943,7 @@ def transcript_capture_schedule(
         kernel_name = str(record.get("kernelName") or "")
         operation_name = str(record.get("operationName") or "")
         if phase in {"prefill", "decode"} and (
-            kernel_name in {"lm_head_gemv", "lm_head_gemv_stable", "lm_head_prefill_stable"}
+            kernel_name in {"lm_head_gemv", "lm_head_gemv", "lm_head_prefill"}
             or operation_name in {"lm_head", "lm_head_prefill"}
         ):
             record_decode_step = record.get("decodeStepIndex")

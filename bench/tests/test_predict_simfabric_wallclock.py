@@ -361,15 +361,15 @@ class PredictWallclockTest(unittest.TestCase):
             compile_root = Path(scratch) / "compile"
             _write_target(
                 compile_root,
-                "lm_head_prefill_stable",
+                "lm_head_prefill",
                 output_size_expr="out_dim_per_pe",
             )
             host_plan = {
                 "compileTargets": [
                     {
-                        "name": "lm_head_prefill_stable_width_tile_x0_w32",
-                        "layout": "lm_head_prefill_stable/layout.csl",
-                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "name": "lm_head_prefill_width_tile_x0_w32",
+                        "layout": "lm_head_prefill/layout.csl",
+                        "peProgram": "lm_head_prefill/pe_program.csl",
                         "compileParams": {
                             "width": 32,
                             "height": 512,
@@ -377,9 +377,9 @@ class PredictWallclockTest(unittest.TestCase):
                         },
                     },
                     {
-                        "name": "lm_head_prefill_stable_width_tile_x32_w8",
-                        "layout": "lm_head_prefill_stable/layout.csl",
-                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "name": "lm_head_prefill_width_tile_x32_w8",
+                        "layout": "lm_head_prefill/layout.csl",
+                        "peProgram": "lm_head_prefill/pe_program.csl",
                         "compileParams": {
                             "width": 8,
                             "height": 512,
@@ -390,14 +390,14 @@ class PredictWallclockTest(unittest.TestCase):
                 "hostPlan": {
                     "kernels": [
                         {
-                            "name": "lm_head_prefill_stable",
+                            "name": "lm_head_prefill",
                             "pattern": "dense_gemv",
                             "count": 1,
                         }
                     ],
                     "phases": {
                         "prefill": [
-                            {"kernelName": "lm_head_prefill_stable"}
+                            {"kernelName": "lm_head_prefill"}
                         ]
                     },
                 },
@@ -409,8 +409,8 @@ class PredictWallclockTest(unittest.TestCase):
             self.assertEqual(
                 kernel["compileTargets"],
                 [
-                    "lm_head_prefill_stable_width_tile_x0_w32",
-                    "lm_head_prefill_stable_width_tile_x32_w8",
+                    "lm_head_prefill_width_tile_x0_w32",
+                    "lm_head_prefill_width_tile_x32_w8",
                 ],
             )
             self.assertEqual(kernel["outputBytesPerCall"], 2 * 512 * 4)

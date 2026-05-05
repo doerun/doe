@@ -70,8 +70,8 @@ MODEL_LEVEL_PREFILL_STEPS = frozenset({
 MODEL_LEVEL_DECODE_STEPS = frozenset({"final_norm", "lm_head"})
 LM_HEAD_KERNELS = frozenset({
     "lm_head_gemv",
-    "lm_head_gemv_stable",
-    "lm_head_prefill_stable",
+    "lm_head_gemv",
+    "lm_head_prefill",
 })
 DEFAULT_SOURCE_MANIFEST = (
     WORKSPACE_ROOT
@@ -408,7 +408,7 @@ def is_dense_lm_head_step(step: dict[str, Any] | None) -> bool:
         return False
     op = str(step.get("op") or "")
     kernel = str(step.get("kernelKey") or "")
-    return op == "matmul" or kernel == "lm_head_prefill_stable"
+    return op == "matmul" or kernel == "lm_head_prefill"
 
 
 def is_q4k_lm_head_step(step: dict[str, Any] | None) -> bool:
@@ -416,7 +416,7 @@ def is_q4k_lm_head_step(step: dict[str, Any] | None) -> bool:
         return False
     op = str(step.get("op") or "")
     kernel = str(step.get("kernelKey") or "")
-    return op == "matmul_q4k" or kernel in {"lm_head_gemv", "lm_head_gemv_stable"}
+    return op == "matmul_q4k" or kernel in {"lm_head_gemv", "lm_head_gemv"}
 
 
 def tensor_candidates_for_key(

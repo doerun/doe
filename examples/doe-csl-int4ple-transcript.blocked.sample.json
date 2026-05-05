@@ -108,10 +108,10 @@
           "ready": false
         },
         {
-          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill_stable/layout.csl",
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill/layout.csl",
           "layoutPresent": false,
-          "name": "lm_head_prefill_stable",
-          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill_stable/pe_program.csl",
+          "name": "lm_head_prefill",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_prefill/pe_program.csl",
           "peProgramPresent": false,
           "ready": false
         },
@@ -132,10 +132,10 @@
           "ready": false
         },
         {
-          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv_stable/layout.csl",
+          "layoutPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv/layout.csl",
           "layoutPresent": false,
-          "name": "lm_head_gemv_stable",
-          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv_stable/pe_program.csl",
+          "name": "lm_head_gemv",
+          "peProgramPath": "bench/out/doppler-reference/gemma-4-e2b-int4ple-doe-csl-hostplan/compile/lm_head_gemv/pe_program.csl",
           "peProgramPresent": false,
           "ready": false
         },
@@ -639,7 +639,7 @@
         "entry": "main_multicol",
         "fixtureId": "fused-gemv-dequant",
         "kernelFile": "matmul_gemv_subgroup.wgsl",
-        "kernelId": "lm_head_gemv_stable",
+        "kernelId": "lm_head_gemv",
         "operation": "lm_head",
         "stage": "postLayer",
         "status": "fixture_available_not_production_bound"
@@ -649,7 +649,7 @@
         "entry": "main",
         "fixtureId": "tiled-matmul",
         "kernelFile": "matmul_f16w_f32a.wgsl",
-        "kernelId": "lm_head_prefill_stable",
+        "kernelId": "lm_head_prefill",
         "operation": "lm_head_prefill",
         "stage": "postLayer",
         "status": "fixture_available_not_production_bound"
@@ -936,14 +936,14 @@
       },
       {
         "kernelFile": "matmul_gemv_subgroup.wgsl",
-        "kernelId": "lm_head_gemv_stable",
+        "kernelId": "lm_head_gemv",
         "operation": "lm_head",
         "reason": "fixture 'fused-gemv-dequant' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
         "stage": "postLayer"
       },
       {
         "kernelFile": "matmul_f16w_f32a.wgsl",
-        "kernelId": "lm_head_prefill_stable",
+        "kernelId": "lm_head_prefill",
         "operation": "lm_head_prefill",
         "reason": "fixture 'tiled-matmul' is runtime-ready only as an isolated pattern, not as a production transcript kernel",
         "stage": "postLayer"

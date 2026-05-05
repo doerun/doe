@@ -131,7 +131,7 @@ test "lowerJsonToHostPlan accepts paired-gate ops with inputsFrom" {
         \\    { "phase": "prefill", "op": "matmul", "kernelKey": "tiled_up", "weightsKey": "up_proj" },
         \\    { "phase": "prefill", "op": "silu_gated", "kernelKey": "silu_gated", "inputsFrom": ["tiled_gate", "tiled_up"] },
         \\    { "phase": "decode", "op": "attention", "kernelKey": "attn_decode" },
-        \\    { "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill_stable", "weightsKey": "lm_head" },
+        \\    { "phase": "decode", "op": "matmul", "kernelKey": "lm_head_prefill", "weightsKey": "lm_head" },
         \\    { "phase": "decode", "op": "sample", "kernelKey": "sampler", "kind": "sample" }
         \\  ]
         \\}

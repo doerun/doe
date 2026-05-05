@@ -215,22 +215,22 @@ The canonical real-prompt session now has a one-decode root with a `hostplan_ses
 It resumed through real `ple_embed` launch 16 and validated explicit
 `--session-embed-roi-jobs` groups with serialized checkpoint writes.
 
-The active simfabric strategy moved from per-kernel lm-head aggregate-first to making lm-head tiling part of the real HostPlan session. Existing partial-only per-kernel workers were stopped after durable tile receipts; they did not touch `lm_head_prefill_stable.json` or `summary.json`.
+The active simfabric strategy moved from per-kernel lm-head aggregate-first to making lm-head tiling part of the real HostPlan session. Existing partial-only per-kernel workers were stopped after durable tile receipts; they did not touch `lm_head_prefill.json` or `summary.json`.
 
-The HostPlan executor now exposes explicit `dense_gemv_width_tiled_session` mode: a session `lm_head_prefill_stable` launch is intercepted after real activation and weight staging, dispatched through dense-GEMV width-row tiles, host-reduced into the session logits buffer, and presented to the next session launch. Launch receipts can carry `inputBuffers` for receipt-local input->output edges; tile partial receipts can carry `receiptIdentity` with `sessionStepId`, `sessionStateSha256`, `inputActivationSha256`, launch index, and target name; transcripts preserve lm-head `dispatchMode`, `sessionTileIdentity`, and tile coverage beside logits digests.
+The HostPlan executor now exposes explicit `dense_gemv_width_tiled_session` mode: a session `lm_head_prefill` launch is intercepted after real activation and weight staging, dispatched through dense-GEMV width-row tiles, host-reduced into the session logits buffer, and presented to the next session launch. Launch receipts can carry `inputBuffers` for receipt-local input->output edges; tile partial receipts can carry `receiptIdentity` with `sessionStepId`, `sessionStateSha256`, `inputActivationSha256`, launch index, and target name; transcripts preserve lm-head `dispatchMode`, `sessionTileIdentity`, and tile coverage beside logits digests.
 
 This is source and harness infrastructure only until a real prompted session run reaches `output_ready`. The bounded-smoke receipt remains blocked on `dispatch_evidence_lm_head_unbound`; sample remains bound.
 
 ## 2026-04-30 — lm-head D2H envelope and width-row tiling
 
-The generic chain-step adapter now emits `phase:*` breadcrumbs around SDK load/run, H2D, launch, D2H, and stop. For Gemma `lm_head_prefill_stable`, those breadcrumbs show the full `width=160,height=512` manifest target and smaller `height>1` row blocks reach `launch_complete` and then stall in SDK D2H with zero output bytes.
+The generic chain-step adapter now emits `phase:*` breadcrumbs around SDK load/run, H2D, launch, D2H, and stop. For Gemma `lm_head_prefill`, those breadcrumbs show the full `width=160,height=512` manifest target and smaller `height>1` row blocks reach `launch_complete` and then stall in SDK D2H with zero output bytes.
 
 The real simfabric envelope found on this host is `height=1` with hidden-width tiles below the failing full width: `width=120,height=1` writes a real `partial.npy`, while `width=128,height=1` and full `width=160,height=1` stall at D2H. The manifest runner now keeps lm-head evidence classes contract-visible: `monolithic_full_fabric`, `dense_gemv_width_tiled`, `dense_gemv_row_tiled`, and future `resident_weight_session` evidence do not share a silent gate path. Routine refresh keeps the monolithic path unless a tile mode is explicitly requested. Tiled receipts carry phase events, tile-shape D2H safety metadata, coverage, compile identity, weight input scope, and host-reduction metadata. The tiled planner clamps hidden-width chunks under the current simfabric element-count guard and only probes unsafe shapes through explicit diagnostic sweep mode.
 Width-row tiling can now resume only from verified tile partial receipts that match the tile command, input hashes, compile identity, output hash, and shape-safety metadata; bare partial files still do not count. Coverage separates receipts on disk from verified reusable, fresh-emitter, and accepted partials; stale receipt files cannot inflate progress.
 
 The SDK wrapper now defaults Singularity/Apptainer temp and cache paths to `bench/out/scratch/csl-container/` so SIF extraction does not consume tmpfs space. Failed tmpfs rootfs extraction sandboxes were cleared before the next lm-head evidence attempt.
 
-The full `lm_head_prefill_stable` governed receipt is still not bound. The official summary now records `dispatchMode=dense_gemv_width_tiled`, `blocker=dense_gemv_width_tile_dispatch_budget_exhausted`, `tileD2HMode=single_region_copyback`, `maxRowTileHeight=1`, and verified height-1 SDK partials; `sample` was refreshed against the regenerated HostPlan hash and remains bound.
+The full `lm_head_prefill` governed receipt is still not bound. The official summary now records `dispatchMode=dense_gemv_width_tiled`, `blocker=dense_gemv_width_tile_dispatch_budget_exhausted`, `tileD2HMode=single_region_copyback`, `maxRowTileHeight=1`, and verified height-1 SDK partials; `sample` was refreshed against the regenerated HostPlan hash and remains bound.
 
 Diagnostic height-16 split-D2H tiles now carry durable `phase-trace.log` breadcrumbs and still stall at `memcpy_d2h_start`; the dense-GEMV emitter now passes `pe_y`, gates command stream completion to row 0, and assigns row-specific reduction colors, but multi-row dense-GEMV tiles are not claim-eligible until a receipt proves D2H copyback completes.
 
@@ -245,7 +245,7 @@ surfaces, including Qwen q/k norm, causal prefill, gated FFN, convolution,
 linear-attention/DeltaNet, SSM, and recurrence-carry obligations.
 
 The Gemma and Qwen af16 per-kernel summaries were refreshed without inventing
-evidence. Sample is bound for both models. Gemma `lm_head_prefill_stable` now
+evidence. Sample is bound for both models. Gemma `lm_head_prefill` now
 uses the dense-GEMV sink-column D2H region contract in per-kernel and session
 launch adapters, but the full manifest compile still times out before writing
 output bytes. A row-shard lm-head compile/run proves the smaller fabric path
@@ -377,7 +377,7 @@ rejects Q4K lm-head selection unless an explicit Q4K `lm_head.weight` exists.
 HostPlan lowering now allows `sample` in prefill or decode only after an
 immediately preceding same-phase logits producer, and rejects compute after a
 same-phase sample. The tied dense route uses the full-vocabulary
-`lm_head_prefill_stable` SUMMA compile target; the generated target for the
+`lm_head_prefill` SUMMA compile target; the generated target for the
 31B smoke graph covers the vocabulary with one-row logits tiles.
 
 Focused coverage now includes sample-without-logits, explicit prefill/decode

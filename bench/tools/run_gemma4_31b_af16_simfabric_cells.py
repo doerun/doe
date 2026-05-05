@@ -23,11 +23,11 @@ DEFAULT_SUMMARY_OUT = (
 
 CELLS: tuple[dict[str, Any], ...] = (
     {
-        "kernel": "lm_head_prefill_stable",
-        "layout": "lm_head_prefill_stable_layout.csl",
-        "pe_program": "lm_head_prefill_stable_pe_program.csl",
-        "runner": "lm_head_prefill_stable_run.py",
-        "out_dir": "r3-1-31b-gemma-af16-lm-head-prefill-stable-simfabric-cell",
+        "kernel": "lm_head_prefill",
+        "layout": "lm_head_prefill_layout.csl",
+        "pe_program": "lm_head_prefill_pe_program.csl",
+        "runner": "lm_head_prefill_run.py",
+        "out_dir": "r3-1-31b-gemma-af16-lm-head-prefill-simfabric-cell",
         "compile_params": (
             "width:4,height:1,out_dim:4,out_dim_per_pe:4,in_dim_per_pe:32"
         ),

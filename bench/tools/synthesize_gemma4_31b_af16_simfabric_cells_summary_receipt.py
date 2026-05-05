@@ -26,17 +26,17 @@ DEFAULT_OUT = (
 
 CELLS: tuple[dict[str, Any], ...] = (
     {
-        "kernel": "lm_head_prefill_stable",
-        "layout_basename": "lm_head_prefill_stable_layout.csl",
-        "pe_program_basename": "lm_head_prefill_stable_pe_program.csl",
-        "run_basename": "lm_head_prefill_stable_run.py",
+        "kernel": "lm_head_prefill",
+        "layout_basename": "lm_head_prefill_layout.csl",
+        "pe_program_basename": "lm_head_prefill_pe_program.csl",
+        "run_basename": "lm_head_prefill_run.py",
         "receipt_dir_basename": (
-            "r3-1-31b-gemma-af16-lm-head-prefill-stable-simfabric-cell"
+            "r3-1-31b-gemma-af16-lm-head-prefill-simfabric-cell"
         ),
         "layout_was_patched": False,
         "patch_summary": (
             "No patch. The cell source keeps the production "
-            "lm_head_prefill_stable kernel stem and forwards the same "
+            "lm_head_prefill kernel stem and forwards the same "
             "width/height/out_dim/out_dim_per_pe/in_dim_per_pe params as "
             "the manifest HostPlan, with bounded values for local simfabric."
         ),
@@ -189,7 +189,7 @@ def main() -> int:
         "claim": {
             "scope": (
                 "Gemma 4 31B AF16 per-kernel CSL canary evidence for "
-                "the production-named lm_head_prefill_stable dense-GEMV "
+                "the production-named lm_head_prefill dense-GEMV "
                 "kernel. The cell compiles at bounded shape, runs on "
                 "simfabric, stages f16 activation and weight payloads, "
                 "reduces f32 partials across the row chain, and compares "

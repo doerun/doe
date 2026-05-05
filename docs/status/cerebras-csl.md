@@ -86,8 +86,8 @@ The four-lane compact correctness gate
 required lanes — `gemma4_31b_af32`, `gemma4_31b_af16`, `qwen3_6_27b_af32`,
 `qwen3_6_27b_af16` — bind.
 
-Gemma af16 unblock: the monolithic `lm_head_prefill_stable` target was split
-into six smaller `lm_head_prefill_stable_width_tile_x*_w32` tiles (steps
+Gemma af16 unblock: the monolithic `lm_head_prefill` target was split
+into six smaller `lm_head_prefill_width_tile_x*_w32` tiles (steps
 14–19 of the 23-target plan). All 23 compile targets succeeded under the
 80G `MemoryMax` cap with `compileFailedCount=0`. Tiles 14–16 plateaued in
 the 58–61G band; tiles 17–19 in the 18–21G band; zero swap throughout.
@@ -639,7 +639,7 @@ the 2026-04-24 history is at [`archive/2026-04-24.md`](archive/2026-04-24.md).
   Source of truth:
   `bench/out/doppler-reference/gemma-3-1b-doe-csl-hostplan/simulator-evidence.json`.
 - The blocker is no longer kernel architecture — the four kernels previously
-  flagged (`embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`)
+  flagged (`embed`, `lm_head_gemv`, `attn_head256`, `attn_head512`)
   all compile cleanly and at least `embed` runs cleanly under the BF16
   layernorm-broadcast fix landed late+18 / cycle 7. Open work is now the
   simulator wallclock vs simfabric per-launch cost, the TSIR-to-live-path

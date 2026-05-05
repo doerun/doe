@@ -24,7 +24,7 @@ surface is scaffolding for this plan, not a completed pipeline.
 
 Status note, 2026-04-25: the older "WS4 memory blockers choose the first real
 kernels" framing is partly stale. After the current HostPlan and BF16
-broadcast fixes, `embed`, `lm_head_gemv_stable`, `attn_head256`, and
+broadcast fixes, `embed`, `lm_head_gemv`, `attn_head256`, and
 `attn_head512` compile at Gemma 3 1B scale. The active simfabric blocker is the
 tiled SUMMA `launchIndex=2` host D2H stall tracked in
 `docs/cerebras-evidence-ledger-gemma.md`. Bounded residency remains important for 31B and
@@ -342,7 +342,7 @@ path actually needs. The five re-scope moves are:
    family-sequence-driven.
 
 4. **Live HostPlan coverage drives real-kernel selection.** Earlier
-   drafts treated `embed`, `lm_head_gemv_stable`, `attn_head256`, and
+   drafts treated `embed`, `lm_head_gemv`, `attn_head256`, and
    `attn_head512` as the immediate 3 1B blockers because they overflowed
    per-PE memory. That evidence is stale for 3 1B: those kernels now
    compile at the current manifest scale. The real-kernel TSIR order
@@ -442,7 +442,7 @@ KV identity, executing on the same WGSL the manifest already names.
 Using the transcript as reference removes the requirement that the
 Zig interpreter re-derive correctness for every new kernel family;
 the interpreter does not need to cover `attn_head256` or
-`lm_head_gemv_stable` body arithmetic because Doppler already has.
+`lm_head_gemv` body arithmetic because Doppler already has.
 The parity CLI (step 8) accepts either oracle source depending on the
 kernel class: bootstrap kernels route to the Zig oracle; real kernels
 route to the Doppler transcript.
@@ -718,7 +718,7 @@ kernel is:
   dispatch. The emitter reads residency class from the planner, not
   from a local heuristic.
 
-- **`lm_head_gemv_stable`**: 2D layout with
+- **`lm_head_gemv`**: 2D layout with
   `out_dim_per_pe = ceil(out_dim / height)`. The planner decides the
   grid shape based on the target descriptor's `per_pe_working_budget`;
   the emitter honors it.
@@ -1054,7 +1054,7 @@ WS3 is closed when `doppler bundle` for `gemma-4-e2b-it-q4k-ehf16-af32`
 produces:
 
 - `reports/parity/embed.csl-simfabric/` — pass against Doppler transcript
-- `reports/parity/lm_head_gemv_stable.csl-simfabric/` — pass
+- `reports/parity/lm_head_gemv.csl-simfabric/` — pass
 - `reports/parity/attn_head256.csl-simfabric/` — pass (or rejected
   with typed reason if Gemma 4 E2B does not use this variant)
 - `reports/parity/attn_head512.csl-simfabric/` — pass (or rejected

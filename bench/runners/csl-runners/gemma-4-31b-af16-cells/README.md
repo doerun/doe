@@ -6,7 +6,7 @@ HostPlan compile inventory.
 
 ## Current cells
 
-- `lm_head_prefill_stable` — dense GEMV lm-head canary using f16
+- `lm_head_prefill` — dense GEMV lm-head canary using f16
   activation and weight buffers with f32 sink output. The cell exercises the
   collectives_2d reduction path at a bounded shape that completes locally.
 
@@ -21,7 +21,7 @@ python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py
 The runner copies the tracked CSL triple into `bench/out/`, compiles with
 `cslc`, runs the cell with `cs_python`, and writes:
 
-- `bench/out/r3-1-31b-gemma-af16-lm-head-prefill-stable-simfabric-cell/receipt.json`
+- `bench/out/r3-1-31b-gemma-af16-lm-head-prefill-simfabric-cell/receipt.json`
 - `bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json`
 
 For hardware endpoint validation, pass the endpoint through:
@@ -33,7 +33,7 @@ python3 bench/tools/run_gemma4_31b_af16_simfabric_cells.py \
 
 ## What this validates
 
-- The production-named `lm_head_prefill_stable` CSL triple compiles under the
+- The production-named `lm_head_prefill` CSL triple compiles under the
   WSE-3 SDK at bounded shape.
 - f16 activation and f16 weights are staged through SDK 32-bit memcpy words.
 - The PE program converts f16 operands to f32, computes a dense GEMV partial,

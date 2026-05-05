@@ -155,7 +155,7 @@ First real-kernel TSIR fixture under `runtime/zig/tests/tsir/real/embed/`:
 refs (currently just `embed`) produce a fixture-specific rejection
 detail that cites the notes.md and names the exact compiler-extension
 surfaces. Unregistered real-kernel refs (e.g.
-`doe.tsir.real.lm_head_gemv_stable`) produce a blanket rejection
+`doe.tsir.real.lm_head_gemv`) produce a blanket rejection
 pointing at Move 4. 22 tests total in
 `bench/tests/test_doe_tsir_convert_lowering.py`; 56 across that and
 `test_doe_parity.py`.
@@ -167,7 +167,7 @@ orchestrator now routes `doe.tsir.real.embed` to a rejection that
 names the work instead of a generic "not yet covered" message, so the
 remaining gap is audit-visible from receipts alone.
 
-Next real-kernel fixture to sketch: `lm_head_gemv_stable` (reuses
+Next real-kernel fixture to sketch: `lm_head_gemv` (reuses
 `fused_gemv` body, adds `out_dim`-sharding residency at Gemma 4 E2B
 vocab scale). Then `attn_head256` / `attn_head512` (Move 5 — adds
 `attn_head` body op with `stream_kv_tiles` residency).
@@ -195,7 +195,7 @@ drive the remaining mechanical-emit and per-kernel-family parity work:
    manifest bindings as convert outputs. This drives frontend coverage
    off real models instead of off a family-sequencing decision.
 4. **WS4's per-PE blockers drive first real-kernel selection.**
-   `embed`, `lm_head_gemv_stable`, `attn_head256`, `attn_head512`
+   `embed`, `lm_head_gemv`, `attn_head256`, `attn_head512`
    become the first non-bootstrap families through TSIR. The planner
    gains residency classes for `hidden_per_pe`, `out_dim` sharding,
    and `stream_kv_tiles`.

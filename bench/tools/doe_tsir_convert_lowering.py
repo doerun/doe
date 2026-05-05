@@ -395,7 +395,7 @@ def reject_real_kernel_pair(
         detail=(
             f"real-kernel {kernel_ref!r} not yet covered by TSIR "
             "frontend. Move 4 extends frontend coverage to the WS4 "
-            "per-PE blockers first (embed, lm_head_gemv_stable, "
+            "per-PE blockers first (embed, lm_head_gemv, "
             "attn_head256, attn_head512). See "
             "docs/tsir-lowering-plan.md Step 9."
         ),

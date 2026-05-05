@@ -751,7 +751,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                 "embed",
                 "gemv",
                 "attn_decode",
-                "lm_head_gemv_stable",
+                "lm_head_gemv",
                 "sample",
             )
             for target in targets:
@@ -803,7 +803,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                                     "currentPosSource": "decode_position",
                                 },
                                 {"kernelName": "gemv", "repeat": 1},
-                                {"kernelName": "lm_head_gemv_stable", "repeat": 1},
+                                {"kernelName": "lm_head_gemv", "repeat": 1},
                                 {"kernelName": "sample", "repeat": 1},
                             ],
                         },
@@ -816,7 +816,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                                 "count": 1,
                             },
                             {
-                                "name": "lm_head_gemv_stable",
+                                "name": "lm_head_gemv",
                                 "pattern": "fused_gemv_dequant",
                                 "count": 1,
                             },
@@ -872,7 +872,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                             "weightsKey": "layer.0.self_attn.o_proj",
                         },
                         {
-                            "kernelKey": "lm_head_gemv_stable",
+                            "kernelKey": "lm_head_gemv",
                             "name": "lm_head",
                             "op": "matmul_q4k",
                             "phase": "decode",
@@ -1024,7 +1024,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                     "kv_len": "15",
                     "q_len": "15",
                 },
-                "lm_head_gemv_stable": {
+                "lm_head_gemv": {
                     "width": "130",
                     "out_dim": "2017",
                     "in_dim_per_pe": "512",
@@ -1060,7 +1060,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                     ("output", "[*]f32, true"),
                     ("compute", "fn()void"),
                 ],
-                "lm_head_gemv_stable": [
+                "lm_head_gemv": [
                     ("activation", "[*]f32, true"),
                     ("weight", "[*]u8, true"),
                     ("output", "[*]f32, true"),
@@ -1113,7 +1113,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                                 {"kernelName": "tiled", "repeat": 1},
                                 {"kernelName": "attn_head256", "repeat": 1},
                                 {"kernelName": "tiled", "repeat": 1},
-                                {"kernelName": "lm_head_gemv_stable", "repeat": 1},
+                                {"kernelName": "lm_head_gemv", "repeat": 1},
                                 {"kernelName": "sample", "repeat": 1},
                             ],
                         },
@@ -1126,7 +1126,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                                 "count": 1,
                             },
                             {
-                                "name": "lm_head_gemv_stable",
+                                "name": "lm_head_gemv",
                                 "pattern": "fused_gemv_dequant",
                                 "count": 1,
                             },
@@ -1175,7 +1175,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                             "weightsKey": "layer.0.self_attn.o_proj",
                         },
                         {
-                            "kernelKey": "lm_head_gemv_stable",
+                            "kernelKey": "lm_head_gemv",
                             "name": "lm_head",
                             "op": "matmul_q4k",
                             "phase": "decode",
@@ -1772,7 +1772,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                     "Nt": "8",
                     "P": "2",
                 },
-                "lm_head_gemv_stable": {
+                "lm_head_gemv": {
                     "width": "130",
                     "height": "127",
                     "out_dim": "64",
@@ -1878,9 +1878,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                         "compileParams": {"P": 2, "Mt": 8, "Kt": 8, "Nt": 8},
                     },
                     {
-                        "name": "lm_head_prefill_stable",
-                        "layout": "lm_head_prefill_stable/layout.csl",
-                        "peProgram": "lm_head_prefill_stable/pe_program.csl",
+                        "name": "lm_head_prefill",
+                        "layout": "lm_head_prefill/layout.csl",
+                        "peProgram": "lm_head_prefill/pe_program.csl",
                     },
                     {
                         "name": "q4_widetile",
@@ -1904,9 +1904,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
                         },
                     },
                     {
-                        "name": "lm_head_gemv_stable",
-                        "layout": "lm_head_gemv_stable/layout.csl",
-                        "peProgram": "lm_head_gemv_stable/pe_program.csl",
+                        "name": "lm_head_gemv",
+                        "layout": "lm_head_gemv/layout.csl",
+                        "peProgram": "lm_head_gemv/pe_program.csl",
                         "compileParams": {
                             "out_dim": 64,
                             "in_dim_per_pe": 512,
@@ -1959,7 +1959,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         }
         self.assertNotIn("compileBlockedReason", target_by_name["embed"])
         self.assertEqual(targets["tiled"], {"P": 96, "Mt": 16, "Kt": 16, "Nt": 16})
-        self.assertEqual(targets["lm_head_prefill_stable"], targets["tiled"])
+        self.assertEqual(targets["lm_head_prefill"], targets["tiled"])
         expected_q4_gemv = {
             "out_dim": 16,
             "in_dim_per_pe": 512,
@@ -1970,7 +1970,7 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
         self.assertEqual(targets["attn_head256"]["q_len"], 15)
         self.assertIn("q_len_per_pe", targets["attn_head256"])
         self.assertIn("width", targets["attn_head256"])
-        self.assertEqual(targets["lm_head_gemv_stable"]["out_dim"], 2017)
+        self.assertEqual(targets["lm_head_gemv"]["out_dim"], 2017)
         self.assertEqual(targets["sample"]["chunk_size"], 2017)
 
     def test_manifest_compile_param_patch_holds_unsafe_targets_at_diagnostic(self) -> None:
@@ -2126,9 +2126,9 @@ class Int4PleSchedulerReadinessTests(unittest.TestCase):
 
 
 class HostPlanTargetGeometryTests(unittest.TestCase):
-    def test_lm_head_gemv_stable_keeps_projected_2d_height(self) -> None:
+    def test_lm_head_gemv_keeps_projected_2d_height(self) -> None:
         geometry = _target_geometry(
-            "lm_head_gemv_stable",
+            "lm_head_gemv",
             {
                 "width": 302,
                 "height": 190,
@@ -2358,7 +2358,7 @@ class PhaseVariantTargetResolverTests(unittest.TestCase):
             proj["compileScale"]["tiledPerPeFootprintBytes"],
             proj["compileScale"]["tiledBudgetBytes"],
         )
-        self.assertEqual(params["lm_head_prefill_stable"], tiled)
+        self.assertEqual(params["lm_head_prefill"], tiled)
         self.assertIn("tiledDistinctPeProgramCount", "\n".join(proj["warnings"]))
 
 

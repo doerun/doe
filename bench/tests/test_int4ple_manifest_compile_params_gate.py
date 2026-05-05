@@ -87,7 +87,7 @@ class Int4PleManifestCompileParamsGateTests(unittest.TestCase):
                     "rows_per_pe": 1,
                 },
                 "tiled": {"P": 2, "Mt": 8, "Kt": 8, "Nt": 8},
-                "lm_head_gemv_stable": {
+                "lm_head_gemv": {
                     "out_dim": 64,
                     "in_dim_per_pe": 512,
                     "num_blocks_per_row": 2,

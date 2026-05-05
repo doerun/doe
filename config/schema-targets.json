@@ -191,7 +191,7 @@
     },
     {
       "schema": "config/doe-manifest-shape-per-kernel-dispatch-receipt.schema.json",
-      "data": "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/lm_head_prefill_stable.json"
+      "data": "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/lm_head_prefill.json"
     },
     {
       "schema": "config/doe-manifest-shape-per-kernel-dispatch-receipt.schema.json",

@@ -211,7 +211,7 @@
       "name": "lm_head_prefill",
       "phase": "prefill",
       "op": "matmul_q4k",
-      "kernelKey": "lm_head_gemv_stable",
+      "kernelKey": "lm_head_gemv",
       "weightsKey": "lm_head"
     },
     {
@@ -387,7 +387,7 @@
       "name": "lm_head",
       "phase": "decode",
       "op": "matmul_q4k",
-      "kernelKey": "lm_head_gemv_stable",
+      "kernelKey": "lm_head_gemv",
       "weightsKey": "lm_head"
     },
     {

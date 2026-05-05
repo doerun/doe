@@ -59,7 +59,7 @@ class TileShapeSafetyTest(unittest.TestCase):
         )
 
     def test_observed_full_fabric_shape_is_unsafe(self) -> None:
-        # The monolithic Gemma 4 31B af16 lm_head_prefill_stable shape:
+        # The monolithic Gemma 4 31B af16 lm_head_prefill shape:
         # width=160, height=512, out_dim_per_pe=512 -- well past the cliff.
         self.assertFalse(
             M.is_safe_tile_shape(width=160, height=512, out_dim_per_pe=512)

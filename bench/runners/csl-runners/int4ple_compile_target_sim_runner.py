@@ -88,7 +88,7 @@ PLE_PROJ_TARGETS = frozenset({"ple_proj"})
 TILED_Q4K_GEMV_TARGETS = frozenset({"tiled_31b"})
 PREFILL_Q4K_GEMV_PATTERN = "prefill_q4k_gemv"
 PREFILL_Q4K_GEMV_SYMBOL_RESOLUTION_MODE = "runtime_managed_prefill_q4k_gemv"
-SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill_stable"})
+SESSION_TILED_LM_HEAD_TARGETS = frozenset({"lm_head_prefill"})
 PREFILL_ATTENTION_TARGETS = frozenset({"attn_small"})
 RMSNORM_ROI_TARGETS = frozenset({"rmsnorm_prefill", "rmsnorm_decode", "rmsnorm"})
 GATED_PREFILL_TARGETS = frozenset({"gelu_gated_prefill"})
@@ -494,8 +494,8 @@ def host_plan_executor_preflight(
         "embed",
         "tiled",
         "lm_head_gemv",
-        "lm_head_gemv_stable",
-        "lm_head_prefill_stable",
+        "lm_head_gemv",
+        "lm_head_prefill",
         "attn_head256",
         "attn_head512",
         "sample",
@@ -588,8 +588,8 @@ def host_plan_executor_preflight(
 
     lm_head = (
         target_params.get("lm_head_gemv")
-        or target_params.get("lm_head_gemv_stable")
-        or target_params.get("lm_head_prefill_stable")
+        or target_params.get("lm_head_gemv")
+        or target_params.get("lm_head_prefill")
         or {}
     )
     if lm_head:
