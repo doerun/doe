@@ -75,6 +75,14 @@
       "sha256": "3340ca5f96998649eeadda21548fca1d04eb3d7c6a16f91815c21b0babf3428e"
     },
     {
+      "path": "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
+      "sha256": "598ee0777d9b01fe227756cfe0624af094a615102e70db29496717f45ca1d7cf"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json",
+      "sha256": "e18cdfbd23a2f4b75e97e56f1e30527b53930136d570801e3e7718a3a0ada7ef"
+    },
+    {
       "path": "bench/out/r3-1-31b-af16-manifest-simfabric-per-kernel/lm_head_prefill_width_tile_x0_w32.json",
       "sha256": "c40c97afa3467369dcc6bfb8f2197b22edadda364cee483886b15b375780f473"
     },
