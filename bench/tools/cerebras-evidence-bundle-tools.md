@@ -67,6 +67,14 @@ bundle" for the prose workflow; this file is the tool-reference.
   rollup that the E2B cockpit consumes and that the bundle
   includes). Also invoked automatically by the self-check's STEP 4b.
 
+## Related source packer
+
+- **`pack_cerebras_emulator_source_archive.py`** — builds
+  `bench/out/doe-cerebras-emulator-source-<stamp>-<gitShortSha>.tar.gz`.
+  This is not the evidence bundle. It contains runnable CSL source,
+  Python drivers, manifest contracts, `BUNDLE_META.json`, `MANIFEST.txt`,
+  and a root README for external emulator experiments.
+
 ## Artifact trail
 
 ```

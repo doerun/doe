@@ -36,6 +36,7 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 |---|---|
 | Refresh status snapshot | `python3 bench/tools/cerebras_status_snapshot.py` |
 | Build a clean evidence bundle | `bench/tools/prepare_cerebras_validation_bundle.sh` |
+| Build an emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
 | Verify a received bundle archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |

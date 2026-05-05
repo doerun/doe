@@ -37,6 +37,7 @@ provider prefers.
 | Current bundle pointer (auto-generated) | [`docs/cerebras-evidence-bundle-pointer.md`](cerebras-evidence-bundle-pointer.md) |
 | Bundle source (packer extracts archive root files from this) | [`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md) |
 | Build a fresh bundle | `bench/tools/prepare_cerebras_validation_bundle.sh` |
+| Build emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
 | Verify a received archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |

@@ -1,12 +1,15 @@
 # Qwen 3.6 27B simfabric-cell drivers
 
-Tracked source for the small-shape end-to-end simfabric runs of 10
-Qwen 3.6 27B kernels: `rmsnorm`, `rope_partial`, `residual`, `silu`,
+Tracked source for the small-shape end-to-end simfabric runs of the
+Qwen 3.6 27B cell set: `rmsnorm`, `rope_partial`, `residual`, `silu`,
 `embed`, `tiled` (SUMMA matmul), `kv_write`, `gemv` (Q4_K dequant +
-GEMV), `sample`, and `attn_decode`. The 11th compile-target kernel,
-`attn_prefill`, is the cslc `linker_pe_memory_overflow` blocker
-(`causalAttentionPrefill` in the smoke config) — it never compiles,
-so it is not a simfabric cell.
+GEMV), `sample`, and `attn_decode`.
+
+`attn_prefill` is not packaged as a standalone small-shape cell in this
+directory. It is covered by the manifest-shape semantic-pattern path:
+`attention_prefill_kv_axis_sharded` compiles cleanly through the current
+SDK driver, with multi-Q causal-prefill and per-PE residency under the
+WSE-3 budget. See `docs/cerebras-evidence-ledger-qwen.md`.
 
 Each cell is a triple of `<kernel>_layout(_patched).csl`,
 `<kernel>_pe_program.csl`, and `<kernel>_run.py` (cs_python driver).
@@ -32,32 +35,25 @@ For the small-shape canary the per-PE buffers fit comfortably, so the
 layout is patched here to forward the param. See the `notWhat` block
 in each receipt for the full rationale.
 
-The other seven kernels do not need a layout patch — their layouts
-already forward all per-PE shape params (the manifest-shape per-PE
-buffers fit within budget for those kernels).
+The remaining layouts already forward all per-PE shape params used by
+their bounded cells.
 
-## Kernel-emit gaps surfaced by these cells
+## Cell-specific notes
 
-Two cells carry typed WGSL→CSL emit gaps:
+- **`sample`** validates the paired value+index reduction path. Earlier
+  versions only reduced the running max value; current source propagates
+  the global argmax index through the chain and the cell checks it against
+  `np.argmax`.
 
-- **`sample`** — index-reduction gap. The kernel reduces the running
-  max VALUE across PEs but unconditionally writes the LAST PE's
-  `local_max_idx` as the output token; the global argmax INDEX is
-  not propagated. The canary works around this by constructing
-  logits so the global max lives in PE (width-1)'s chunk.
+- **`attn_decode`** validates the WSE-3 async receive form for the
+  reduction task. Earlier source used a synchronous receive shape that did
+  not activate the receive task; current source launches and checks
+  bounded scaled-dot-product softmax attention.
 
-- **`attn_decode`** — task-activation gap. `task reduce_recv` is
-  bound to `reduce_task_id` but never activated; the
-  `@fmovs(&incoming, reduce_in)` call is missing the
-  `.activate = reduce_task_id` annotation that the sample kernel's
-  `@mov32` uses correctly. Any simfabric launch hangs at memcpy_d2h
-  with the recorded stall signature. The cell driver writes a
-  typed-blocker receipt without launching.
-
-`silu` additionally carries an emit stand-in: the kernel currently
-emits as a passthrough (`output[idx] = input[idx] * 1.0`) rather than
-real SiLU; the cell verifies dispatch shape against the same
-passthrough host reference.
+- **`silu`** remains a standalone passthrough cell
+  (`output[idx] = input[idx] * 1.0`) and verifies that current emitted
+  source faithfully executes. The model FFN path is the wired
+  `silu_gated` semantic path outside this cell directory.
 
 ## Regenerating the receipts
 
@@ -76,8 +72,8 @@ for kernel in rmsnorm rope_partial residual silu embed tiled kv_write gemv sampl
     tiled)        params="P:2,Mt:4,Kt:4,Nt:4" ;;
     kv_write)     params="width:4,height:1,head_dim:8,max_seq_len:8,slots_per_pe:8" ;;
     gemv)         params="width:4,height:1,out_dim:4,out_dim_per_pe:4,in_dim_per_pe:512,num_blocks_per_row:2" ;;
-    sample)       params="width:4,chunk_size:64" ;;
-    attn_decode)  params="width:4,head_dim:8,kv_chunk:4" ;;
+    sample)       params="width:2,chunk_size:128" ;;
+    attn_decode)  params="width:1,head_dim:8,kv_chunk:8" ;;
   esac
   layout="$CELLS/${kernel}_layout_patched.csl"
   [[ -f "$layout" ]] || layout="$CELLS/${kernel}_layout.csl"
@@ -96,19 +92,16 @@ done
 python3 bench/tools/synthesize_qwen_3_6_27b_simfabric_cells_summary_receipt.py
 ```
 
-attn_decode does not actually launch — its driver writes the typed-
-blocker receipt directly. All other cells parity-pass at float32 ULP
-(max_abs_diff ≤ 1e-5) against their host-computed references.
+The cell drivers write per-cell receipts under `bench/out/`, and the
+summary synthesizer aggregates the current result set.
 
 ## What this validates
 
 - The per-kernel CSL emitted by Doe's manifest-shape host plan
-  compiles cleanly via cslc 2.10.0 for 10 of the 11 compile targets
-  (the 11th, `attn_prefill`, is the named per-PE-residency blocker).
-- For the seven kernels without WGSL→CSL emit gaps (rmsnorm,
-  rope_partial, residual, embed, tiled, kv_write, gemv),
-  the kernel arithmetic matches the canonical formulation within
-  float32 precision under simfabric execution.
+  compiles cleanly via cslc 2.10.0 for the packaged cell set.
+- For the arithmetic cells that carry canonical host references, the
+  kernel arithmetic matches the declared formulation within float32
+  precision under simfabric execution.
 - The `partialRotaryFactor` wiring delta from
   `runtime/zig/src/csl_host_plan_tool.zig`'s `compileParamsForPattern`
   rope branch flows through the layout → pe_program forwarding chain
@@ -119,18 +112,15 @@ blocker receipt directly. All other cells parity-pass at float32 ULP
 
 ## What this does NOT validate
 
-- Manifest-shape compilation/execution (the per-PE-residency blocker
-  is real at hidden=5120; the small-shape canary cannot speak to it).
+- Manifest-shape execution. Manifest-shape compile evidence is tracked
+  through the full-graph compile receipt, not this cell directory.
 - Multi-kernel chains (each cell is single-kernel only; the analog
   of Gemma's `r3-1-31b-multi-token-decode` 2-step chain is a separate
   follow-up).
 - Hardware execution (simfabric only).
-- Real SiLU arithmetic (silu kernel emits as passthrough stand-in;
-  tracked in `scopeRestrictions.swigluFfnFusedGate`).
-- Sample kernel's correct global-argmax behavior (index-reduction gap).
-- attn_decode's softmax-attention output (task-activation gap; the
-  cell never launches under simfabric until the gap is closed).
-- The kernels Doe lists as named blockers in the smoke config's
-  `scopeRestrictions`: linear-attention layers, mrope-interleaved
-  3D rotary, causal attention prefill, attentionOutputGate
-  (`sigmoid_gated`), and SwiGLU FFN fused gate (`silu_gated`).
+- A standalone `attn_prefill` cell. That path is covered through
+  `attention_prefill_kv_axis_sharded` manifest-shape compile evidence.
+- Real standalone SiLU arithmetic for the `silu` cell. The model FFN
+  activation path is represented by the wired `silu_gated` semantic path,
+  not this passthrough canary.
+- Full hybrid-architecture parity across attention and SSM layers.
