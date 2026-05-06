@@ -263,6 +263,7 @@ INCLUDE_FILES: tuple = (
         "bench/out/r3-2-27b-af16-doppler-csl-splice/"
         "selected-logit-splice/selected-logit-splice.json"
     ),
+    "bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json",
     (
         "bench/out/doppler-reference/"
         "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
@@ -540,6 +541,10 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/out/r3-2-27b-af16-doppler-csl-splice/"
         "selected-logit-splice/selected-logit-splice.json"
     ): "qwen-doppler-csl-selected-logit-splice-receipt",
+    (
+        "bench/out/r3-2-27b-af16-local-simfabric-ceiling/"
+        "receipt.json"
+    ): "qwen-af16-local-simfabric-ceiling",
     (
         "bench/out/doppler-reference/"
         "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"

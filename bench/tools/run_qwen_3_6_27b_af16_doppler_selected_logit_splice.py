@@ -93,7 +93,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-k",
         type=int,
-        default=32,
+        default=64,
         help="Number of Doppler top logits to replay through CSL.",
     )
     parser.add_argument("--chunk-pe-width", type=int, default=CHUNK_PE_WIDTH)

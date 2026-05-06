@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T19:39:52.885958+00:00",
+  "generatedAt": "2026-05-06T21:43:28.651300+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -247,16 +247,16 @@
       "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
       "verdict": "bound",
       "blocker": null,
-      "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, topK=32, tail=final_norm_f16+lm_head_prefill, finalNormMaxAbs=0.00390625, maxLogitAbsDiff=0.111282, decisionMarginLowerBound=3.68678, mode=argmax_decision_bound",
-      "artifactMtime": "2026-05-06T19:38:16.772150+00:00"
+      "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, topK=64, tail=final_norm_f16+lm_head_prefill, finalNormMaxAbs=0.00390625, maxLogitAbsDiff=0.111282, decisionMarginLowerBound=3.68678, mode=argmax_decision_bound",
+      "artifactMtime": "2026-05-06T21:43:04.631374+00:00"
     },
     {
       "lane": "qwen.doppler_csl_splice.selected_logit",
       "artifact": "bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
       "verdict": "bound",
       "blocker": null,
-      "scope": "selected_lm_head_logit, layer=63, promptTokens=18, token=760, topK=32, tail=final_norm_f16+lm_head_prefill, finalNormMaxAbs=0.00195312, maxLogitAbsDiff=0.0486107, decisionMarginLowerBound=3.55903, mode=argmax_decision_bound",
-      "artifactMtime": "2026-05-06T19:39:46.268774+00:00"
+      "scope": "selected_lm_head_logit, layer=63, promptTokens=18, token=760, topK=64, tail=final_norm_f16+lm_head_prefill, finalNormMaxAbs=0.00195312, maxLogitAbsDiff=0.0486107, decisionMarginLowerBound=3.55903, mode=argmax_decision_bound",
+      "artifactMtime": "2026-05-06T21:42:41.907057+00:00"
     },
     {
       "lane": "qwen.hardware_full_prompt",
