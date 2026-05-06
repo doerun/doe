@@ -20,6 +20,7 @@ External evidence packet for Cerebras: bundle archive built via [`docs/cerebras-
 - [ ] Qwen frozen-reference validator — `bench/tests/test_validate_frozen_qwen_3_6_doppler_reference.py` remains fail-closed because the frozen Qwen reference manifest is missing the L=0 probes
 - [x] Frozen 4-of-4 TSIR boundary fixture — `bench/fixtures/r3-1-31b-doppler-frozen/tsir-snapshots/` (`fixtureDigest=8cc17070fedf9c…`); greedy decode of "The color of the sky is" → "blue"
 - [x] Frozen-reference validator — `bench/tools/validate_frozen_doppler_reference.py` (`schemaValid=true`, `bound=true`, `verdict="bound"`)
+- [x] Top-k Doppler to CSL lm-head splice — `bench/tools/run_gemma4_31b_af16_doppler_selected_logit_splice.py`; receipt at `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` binds real Gemma final-prompt state, final RMSNorm, selected tied lm-head rows, generated CSL, and the Doppler top-token decision over the selected candidate set.
 - [x] Multi-PE kv-axis-sharded attention emit — `runtime/zig/src/tsir/emit_kernel_body_attention.zig::emitKvAxisSharded`; identity test 13/13 pass; head_dim=512 fits per-PE SRAM
 - [x] Host-side log-sum-exp stitch — `bench/tools/attention_kv_axis_sharded_stitch.py`
 - [x] Wall-clock budget gate — `bench/tools/check_simfabric_budget_gate.py` (`decision=allow`); 12/12 tests pass

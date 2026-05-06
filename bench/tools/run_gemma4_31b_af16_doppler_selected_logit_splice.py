@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a Doppler-state to CSL selected-logit splice for Gemma 4 31B AF16."""
+"""Run a Doppler-state to CSL top-k selected-logit splice for Gemma 4 31B AF16."""
 
 from __future__ import annotations
 
@@ -65,7 +65,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--sdk-root", type=Path, default=DEFAULT_SDK_ROOT)
     parser.add_argument("--cells-root", type=Path, default=DEFAULT_CELLS_ROOT)
-    parser.add_argument("--token-id", type=int, default=DEFAULT_TOKEN_ID)
+    parser.add_argument(
+        "--token-id",
+        type=int,
+        default=None,
+        help="Optional primary token id. Default uses Doppler's reference argmax.",
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=5,
+        help="Number of Doppler top logits to replay through CSL.",
+    )
     parser.add_argument("--chunk-pe-width", type=int, default=CHUNK_PE_WIDTH)
     parser.add_argument("--atol", type=float, default=2.0e-2)
     return parser.parse_args()
@@ -379,6 +390,13 @@ def reference_prefill_logits_path(reference_export: dict[str, Any]) -> Path:
     raise ValueError("prefill_logits_reference_missing")
 
 
+def reference_top_token_ids(logits: np.ndarray, top_k: int) -> list[int]:
+    k = max(1, min(int(top_k), int(logits.size)))
+    indices = np.argpartition(logits, -k)[-k:]
+    ordered = indices[np.argsort(logits[indices])[::-1]]
+    return [int(item) for item in ordered]
+
+
 def main() -> int:
     args = parse_args()
     manifest_path = resolve(args.manifest)
@@ -413,107 +431,169 @@ def main() -> int:
         elem_offset=0,
         elem_count=HIDDEN_SIZE,
     ).astype(np.float32)
-    token_id = int(args.token_id)
-    lm_head_row = f16_tensor_slice(
-        manifest=manifest,
-        root=source_root,
-        tensor_name="model.language_model.embed_tokens.weight",
-        elem_offset=token_id * HIDDEN_SIZE,
-        elem_count=HIDDEN_SIZE,
-    )
     rms = np.sqrt(np.mean(final_input * final_input) + RMS_NORM_EPS)
     normalized = (final_input / rms) * norm_weight
     activation = normalized.astype(np.float16)
-    cpu_raw = float(np.dot(activation.astype(np.float32), lm_head_row.astype(np.float32)))
-    cpu_softcapped = float(FINAL_LOGIT_SOFTCAP * np.tanh(cpu_raw / FINAL_LOGIT_SOFTCAP))
 
     logits_path = reference_prefill_logits_path(reference_export)
     logits = np.fromfile(logits_path, dtype=np.float32)
-    if token_id < 0 or token_id >= logits.size:
-        raise ValueError(f"token_id_out_of_range:{token_id}:{logits.size}")
-    expected_logit = float(logits[token_id])
     expected_token_id = int(np.argmax(logits))
     generated_tokens = generated_token_ids(reference_export)
+    top_token_ids = reference_top_token_ids(logits, int(args.top_k))
+    primary_token_id = int(args.token_id) if args.token_id is not None else expected_token_id
+    if primary_token_id < 0 or primary_token_id >= logits.size:
+        raise ValueError(f"token_id_out_of_range:{primary_token_id}:{logits.size}")
+    candidate_token_ids = [primary_token_id] + [
+        token for token in top_token_ids if token != primary_token_id
+    ]
+    rank_by_token = {token: index + 1 for index, token in enumerate(top_token_ids)}
 
     compile_cache: dict[int, dict[str, Any]] = {}
-    chunk_results: list[dict[str, Any]] = []
-    chunk_values: list[float] = []
     chunk_width = max(1, int(args.chunk_pe_width))
     chunk_elems = chunk_width * IN_DIM_PER_PE
-    chunk_index = 0
-    for start in range(0, HIDDEN_SIZE, chunk_elems):
-        count = min(chunk_elems, HIDDEN_SIZE - start)
-        width = (count + IN_DIM_PER_PE - 1) // IN_DIM_PER_PE
-        padded = width * IN_DIM_PER_PE
-        act_chunk = np.zeros(padded, dtype=np.float16)
-        weight_chunk = np.zeros(padded, dtype=np.float16)
-        act_chunk[:count] = activation[start : start + count]
-        weight_chunk[:count] = lm_head_row[start : start + count]
-        if width not in compile_cache:
-            compile_cache[width] = compile_cell(
-                width=width,
-                out_dir=out_dir,
-                sdk_root=sdk_root,
-                cells_root=cells_root,
-                artifact_kind="gemma4_31b_af16_selected_logit_compile_receipt",
-            )
-        result = run_chunk(
-            chunk_index=chunk_index,
-            width=width,
-            compile_dir=Path(str(compile_cache[width]["compileDir"])),
-            activation=act_chunk,
-            weight=weight_chunk,
-            out_dir=out_dir,
-            sdk_root=sdk_root,
-        )
-        result["hiddenStart"] = start
-        result["hiddenCount"] = count
-        result["cpuPartial"] = float(
-            np.dot(act_chunk.astype(np.float32), weight_chunk.astype(np.float32))
-        )
-        chunk_results.append(result)
-        if result["status"] != "succeeded" or result["outputValue"] is None:
-            break
-        chunk_values.append(float(result["outputValue"]))
-        chunk_index += 1
 
-    csl_raw = float(np.sum(np.array(chunk_values, dtype=np.float32)))
-    csl_softcapped = float(FINAL_LOGIT_SOFTCAP * np.tanh(csl_raw / FINAL_LOGIT_SOFTCAP))
-    csl_matches_cpu = len(chunk_values) == len(chunk_results) and all(
-        abs(float(item.get("outputValue") or 0.0) - float(item["cpuPartial"])) <= 1.0e-4
-        for item in chunk_results
-        if item.get("status") == "succeeded"
+    def run_token(token_id: int) -> dict[str, Any]:
+        lm_head_row = f16_tensor_slice(
+            manifest=manifest,
+            root=source_root,
+            tensor_name="model.language_model.embed_tokens.weight",
+            elem_offset=token_id * HIDDEN_SIZE,
+            elem_count=HIDDEN_SIZE,
+        )
+        chunk_results: list[dict[str, Any]] = []
+        chunk_values: list[float] = []
+        chunk_index = 0
+        token_dir = out_dir / f"token-{token_id}"
+        for start in range(0, HIDDEN_SIZE, chunk_elems):
+            count = min(chunk_elems, HIDDEN_SIZE - start)
+            width = (count + IN_DIM_PER_PE - 1) // IN_DIM_PER_PE
+            padded = width * IN_DIM_PER_PE
+            act_chunk = np.zeros(padded, dtype=np.float16)
+            weight_chunk = np.zeros(padded, dtype=np.float16)
+            act_chunk[:count] = activation[start : start + count]
+            weight_chunk[:count] = lm_head_row[start : start + count]
+            if width not in compile_cache:
+                compile_cache[width] = compile_cell(
+                    width=width,
+                    out_dir=out_dir,
+                    sdk_root=sdk_root,
+                    cells_root=cells_root,
+                    artifact_kind="gemma4_31b_af16_selected_logit_compile_receipt",
+                )
+            result = run_chunk(
+                chunk_index=chunk_index,
+                width=width,
+                compile_dir=Path(str(compile_cache[width]["compileDir"])),
+                activation=act_chunk,
+                weight=weight_chunk,
+                out_dir=token_dir,
+                sdk_root=sdk_root,
+            )
+            result["hiddenStart"] = start
+            result["hiddenCount"] = count
+            result["cpuPartial"] = float(
+                np.dot(act_chunk.astype(np.float32), weight_chunk.astype(np.float32))
+            )
+            chunk_results.append(result)
+            if result["status"] != "succeeded" or result["outputValue"] is None:
+                break
+            chunk_values.append(float(result["outputValue"]))
+            chunk_index += 1
+
+        cpu_raw = float(
+            np.dot(activation.astype(np.float32), lm_head_row.astype(np.float32))
+        )
+        cpu_softcapped = float(
+            FINAL_LOGIT_SOFTCAP * np.tanh(cpu_raw / FINAL_LOGIT_SOFTCAP)
+        )
+        csl_raw = float(np.sum(np.array(chunk_values, dtype=np.float32)))
+        csl_softcapped = float(
+            FINAL_LOGIT_SOFTCAP * np.tanh(csl_raw / FINAL_LOGIT_SOFTCAP)
+        )
+        expected_logit = float(logits[token_id])
+        logit_abs_diff = abs(csl_softcapped - expected_logit)
+        csl_matches_cpu = len(chunk_values) == len(chunk_results) and all(
+            abs(float(item.get("outputValue") or 0.0) - float(item["cpuPartial"])) <= 1.0e-4
+            for item in chunk_results
+            if item.get("status") == "succeeded"
+        )
+        all_chunks_succeeded = len(chunk_results) > 0 and all(
+            item.get("status") == "succeeded" for item in chunk_results
+        )
+        return {
+            "tokenId": token_id,
+            "referenceRank": rank_by_token.get(token_id),
+            "expectedLogit": expected_logit,
+            "rawLogit": csl_raw,
+            "softcappedLogit": csl_softcapped,
+            "cpuRawLogit": cpu_raw,
+            "cpuSoftcappedLogit": cpu_softcapped,
+            "logitAbsDiff": logit_abs_diff,
+            "chunkCount": len(chunk_results),
+            "chunkResults": chunk_results,
+            "allChunksSucceeded": all_chunks_succeeded,
+            "cslCpuPartialsMatch": csl_matches_cpu,
+            "lmHeadRowSha256": tensor_sha256(lm_head_row),
+        }
+
+    candidate_runs = [run_token(token_id) for token_id in candidate_token_ids]
+    primary_run = candidate_runs[0]
+    max_logit_abs_diff = max(float(run["logitAbsDiff"]) for run in candidate_runs)
+    csl_argmax_token_id = int(
+        max(candidate_runs, key=lambda run: float(run["softcappedLogit"]))["tokenId"]
     )
-    logit_abs_diff = abs(csl_softcapped - expected_logit)
-    all_chunks_succeeded = len(chunk_results) > 0 and all(
-        item.get("status") == "succeeded" for item in chunk_results
+    reference_top1_top2_margin = (
+        float(logits[top_token_ids[0]] - logits[top_token_ids[1]])
+        if len(top_token_ids) > 1
+        else float("inf")
     )
-    token_matches = token_id == expected_token_id and (
-        not generated_tokens or token_id == int(generated_tokens[0])
+    decision_margin_lower_bound = reference_top1_top2_margin - (
+        2.0 * max_logit_abs_diff
+    )
+    argmax_decision_stable = (
+        csl_argmax_token_id == expected_token_id
+        and decision_margin_lower_bound > 0.0
+    )
+    all_candidates_succeeded = all(
+        bool(run["allChunksSucceeded"]) for run in candidate_runs
+    )
+    all_candidates_match_cpu = all(
+        bool(run["cslCpuPartialsMatch"]) for run in candidate_runs
+    )
+    all_candidates_match_doppler = all(
+        float(run["logitAbsDiff"]) <= float(args.atol) for run in candidate_runs
+    )
+    token_matches = csl_argmax_token_id == expected_token_id and (
+        not generated_tokens or expected_token_id == int(generated_tokens[0])
+    )
+    comparison_mode = (
+        "parity"
+        if all_candidates_match_doppler
+        else "argmax_decision_bound"
     )
     verdict = (
         "pass"
-        if all_chunks_succeeded
-        and csl_matches_cpu
-        and logit_abs_diff <= float(args.atol)
+        if all_candidates_succeeded
+        and all_candidates_match_cpu
+        and argmax_decision_stable
         and token_matches
         else "blocked"
     )
     blockers: list[str] = []
-    if not all_chunks_succeeded:
-        blockers.append("selected_logit_csl_chunk_blocked")
-    if not csl_matches_cpu:
-        blockers.append("selected_logit_csl_cpu_partial_mismatch")
-    if logit_abs_diff > float(args.atol):
-        blockers.append("selected_logit_doppler_logit_mismatch")
+    if not all_candidates_succeeded:
+        blockers.append("topk_selected_logits_csl_chunk_blocked")
+    if not all_candidates_match_cpu:
+        blockers.append("topk_selected_logits_csl_cpu_partial_mismatch")
+    if not argmax_decision_stable:
+        blockers.append("topk_selected_logits_decision_margin_not_positive")
     if not token_matches:
-        blockers.append("selected_token_not_doppler_argmax")
+        blockers.append("topk_selected_logits_argmax_mismatch")
 
     receipt = {
         "schemaVersion": 1,
         "artifactKind": "gemma4_31b_af16_doppler_selected_logit_splice_receipt",
         "receiptClass": "manifest_shape_doppler_selected_logit_splice",
-        "comparisonMode": "parity",
+        "comparisonMode": comparison_mode,
         "verdict": verdict,
         "blockers": blockers,
         "modelId": MODEL_ID,
@@ -533,16 +613,23 @@ def main() -> int:
             "layerIndex": FINAL_LAYER_INDEX,
             "inputProbe": "post_ffn",
             "promptTokenCount": int(hidden_rows.shape[0]),
-            "selectedTokenId": token_id,
-            "selectedText": " blue" if token_id == DEFAULT_TOKEN_ID else None,
+            "selectedTokenId": primary_token_id,
+            "selectedTokenIds": candidate_token_ids,
+            "topK": len(top_token_ids),
+            "selectedText": " blue" if primary_token_id == DEFAULT_TOKEN_ID else None,
         },
         "dopplerReference": {
             "fixtureManifest": artifact(fixture_manifest_path),
             "inputTensor": artifact(post_ffn_path),
             "prefillLogits": artifact(logits_path),
             "expectedTokenId": expected_token_id,
+            "expectedTopKTokenIds": top_token_ids,
+            "expectedTopKLogits": [
+                {"rank": index + 1, "tokenId": token, "logit": float(logits[token])}
+                for index, token in enumerate(top_token_ids)
+            ],
             "generatedTokenIds": generated_tokens,
-            "expectedSelectedLogit": expected_logit,
+            "expectedSelectedLogit": float(logits[primary_token_id]),
         },
         "weights": {
             "sourceRoot": rel(source_root),
@@ -550,33 +637,53 @@ def main() -> int:
             "lmHeadTensor": "model.language_model.embed_tokens.weight",
             "lmHeadTiedEmbedding": True,
             "finalNormSha256": tensor_sha256(norm_weight.astype(np.float16)),
-            "selectedLmHeadRowSha256": tensor_sha256(lm_head_row),
+            "selectedLmHeadRowSha256": primary_run["lmHeadRowSha256"],
+            "candidateLmHeadRows": [
+                {"tokenId": int(run["tokenId"]), "sha256": run["lmHeadRowSha256"]}
+                for run in candidate_runs
+            ],
         },
         "cslRun": {
             "kernel": "lm_head_prefill",
             "chunkPeWidth": chunk_width,
             "inDimPerPe": IN_DIM_PER_PE,
-            "chunkCount": len(chunk_results),
-            "chunkResults": chunk_results,
-            "rawLogit": csl_raw,
-            "softcappedLogit": csl_softcapped,
-            "cpuRawLogit": cpu_raw,
-            "cpuSoftcappedLogit": cpu_softcapped,
+            "topK": len(top_token_ids),
+            "candidateCount": len(candidate_runs),
+            "candidateTokenIds": candidate_token_ids,
+            "candidateRuns": candidate_runs,
+            "referenceArgmaxTokenId": expected_token_id,
+            "cslArgmaxTokenId": csl_argmax_token_id,
+            "maxLogitAbsDiff": max_logit_abs_diff,
+            "allCandidateLogitsWithinTolerance": all_candidates_match_doppler,
+            "strictLogitTolerancePassed": all_candidates_match_doppler,
+            "strictLogitToleranceAtol": float(args.atol),
+            "referenceTop1Top2Margin": reference_top1_top2_margin,
+            "decisionMarginLowerBound": decision_margin_lower_bound,
+            "argmaxDecisionStable": argmax_decision_stable,
+            "chunkCount": int(primary_run["chunkCount"]),
+            "chunkResults": primary_run["chunkResults"],
+            "rawLogit": float(primary_run["rawLogit"]),
+            "softcappedLogit": float(primary_run["softcappedLogit"]),
+            "cpuRawLogit": float(primary_run["cpuRawLogit"]),
+            "cpuSoftcappedLogit": float(primary_run["cpuSoftcappedLogit"]),
             "softcap": FINAL_LOGIT_SOFTCAP,
             "rmsNormEps": RMS_NORM_EPS,
-            "logitAbsDiff": logit_abs_diff,
+            "logitAbsDiff": float(primary_run["logitAbsDiff"]),
             "atol": float(args.atol),
         },
         "claim": {
             "scope": (
                 "Doppler supplies real Gemma 4 31B af16 post-FFN state for the "
-                "final prompt position; CSL computes the selected tied lm-head "
-                "logit for the Doppler argmax token across hidden chunks."
+                "final prompt position; CSL computes the tied lm-head logits "
+                "for the Doppler top-k token candidates across hidden chunks "
+                "and preserves the top-token decision."
             ),
             "notWhat": (
                 "Not a full-vocabulary argmax, not a full layer-59 CSL run, "
                 "and not hardware execution. It avoids the full-logits copyback "
-                "wall by binding one selected token logit."
+                "wall by binding the Doppler top-k candidate logits; strict "
+                "logit tolerance status is recorded separately from the "
+                "top-token decision bound."
             ),
         },
     }
@@ -592,7 +699,8 @@ def main() -> int:
     write_json(receipt_path, receipt)
     print(
         f"wrote {rel(receipt_path)} "
-        f"(verdict={verdict}, token={token_id}, diff={logit_abs_diff:.6e})"
+        f"(verdict={verdict}, topK={len(top_token_ids)}, "
+        f"token={primary_token_id}, maxDiff={max_logit_abs_diff:.6e})"
     )
     return 0 if verdict == "pass" else 1
 

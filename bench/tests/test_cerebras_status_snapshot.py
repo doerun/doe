@@ -165,6 +165,35 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
         self.assertIn("layer=63", row["scope"])
         self.assertIn("token=760", row["scope"])
 
+    def test_qwen_selected_logit_splice_summarizes_topk(self) -> None:
+        self._write(
+            self.module.QWEN_SELECTED_LOGIT_SPLICE,
+            {
+                "comparisonMode": "argmax_decision_bound",
+                "verdict": "pass",
+                "blockers": [],
+                "splicePoint": {
+                    "kind": "selected_lm_head_logit",
+                    "layerIndex": 63,
+                    "promptTokenCount": 18,
+                    "selectedTokenId": 760,
+                    "topK": 5,
+                },
+                "cslRun": {
+                    "topK": 5,
+                    "maxLogitAbsDiff": 0.048595428466796875,
+                    "decisionMarginLowerBound": 3.5590591430664062,
+                },
+            },
+        )
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.qwen_selected_logit_splice_row()
+        self.assertEqual(row["verdict"], "bound")
+        self.assertIn("topK=5", row["scope"])
+        self.assertIn("maxLogitAbsDiff=0.0485954", row["scope"])
+        self.assertIn("decisionMarginLowerBound=3.55906", row["scope"])
+        self.assertIn("mode=argmax_decision_bound", row["scope"])
+
     def test_qwen_hardware_path_missing_until_returned_trace(self) -> None:
         with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
             row = self.module.qwen_hardware_path_row()

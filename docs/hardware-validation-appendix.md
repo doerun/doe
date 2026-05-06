@@ -84,7 +84,7 @@ token-to-expert dispatch, shared expert execution, expert output combine, and
 per-expert batching. It should not borrow the E2B or dense-31B receipts, and it
 is not part of the first hardware-access ask.
 
-Do not claim full 31B parity from smoke-shape, selected-logit, or synthetic
+Do not claim full 31B parity from smoke-shape, top-k selected-logit, or synthetic
 receipts. Those receipts only prove the step they execute. Full 31B hardware
 parity requires a returned hardware transcript plus a Doppler reference export
 bound to the same manifest, execution graph, weights, and input set.
@@ -277,10 +277,11 @@ Minimum sufficient ask (same source path either way):
    concrete prompt token IDs. A successful run returns token/logit/KV transcript
    evidence for the prompt; a blocked run returns the named hardware blocker
    and last phase reached.
-2. Current local bridge evidence: selected-logit splice for
-   `<bos>The color of the sky is`, token `3730` (` blue`), using real Gemma
-   31B hidden state, real tied lm-head weights, and generated CSL. This is not
-   full-prompt hardware evidence; it is the strongest local no-hardware check.
+2. Current local bridge evidence: top-k lm-head splice for
+   `<bos>The color of the sky is`, preserving token `3730` (` blue`) as the
+   winner over Doppler's selected candidate set, using real Gemma 31B hidden
+   state, real tied lm-head weights, and generated CSL. This is not full-prompt
+   hardware evidence; it is the strongest local no-hardware check.
 3. Fallback lane: 31B layer-block smoke with optional real-weight smoke slices,
    or Gemma af16 per-kernel cells. These are bounded checks and must be labeled
    as such.

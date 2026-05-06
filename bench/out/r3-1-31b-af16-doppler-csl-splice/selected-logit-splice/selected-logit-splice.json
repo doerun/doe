@@ -2,19 +2,2421 @@
   "artifactKind": "gemma4_31b_af16_doppler_selected_logit_splice_receipt",
   "blockers": [],
   "claim": {
-    "notWhat": "Not a full-vocabulary argmax, not a full layer-59 CSL run, and not hardware execution. It avoids the full-logits copyback wall by binding one selected token logit.",
-    "scope": "Doppler supplies real Gemma 4 31B af16 post-FFN state for the final prompt position; CSL computes the selected tied lm-head logit for the Doppler argmax token across hidden chunks."
+    "notWhat": "Not a full-vocabulary argmax, not a full layer-59 CSL run, and not hardware execution. It avoids the full-logits copyback wall by binding the Doppler top-k candidate logits; strict logit tolerance status is recorded separately from the top-token decision bound.",
+    "scope": "Doppler supplies real Gemma 4 31B af16 post-FFN state for the final prompt position; CSL computes the tied lm-head logits for the Doppler top-k token candidates across hidden chunks and preserves the top-token decision."
   },
-  "comparisonMode": "parity",
+  "comparisonMode": "argmax_decision_bound",
   "cslRun": {
+    "allCandidateLogitsWithinTolerance": false,
+    "argmaxDecisionStable": true,
     "atol": 0.02,
+    "candidateCount": 5,
+    "candidateRuns": [
+      {
+        "allChunksSucceeded": true,
+        "chunkCount": 6,
+        "chunkResults": [
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/activation.npy",
+              "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
+            },
+            "chunkIndex": 0,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 13.983513832092285,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 0,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy",
+              "sha256": "5449406cd8c20f2ef6e6c12251172b98cb5ad1ddc2a87cf9eb4a3d01ff412c53"
+            },
+            "outputSha256": "5449406cd8c20f2ef6e6c12251172b98cb5ad1ddc2a87cf9eb4a3d01ff412c53",
+            "outputValue": 13.983511924743652,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/weight.npy",
+              "sha256": "2d23d186a027a06ae5b3ca5076844bf22d646145b6c66a65ecb55ed855f8a0bd"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/activation.npy",
+              "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
+            },
+            "chunkIndex": 1,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 15.017454147338867,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 1024,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy",
+              "sha256": "b2563ce84d3bffc210a2b2ff9c3fffce787e06f653b2ae88e44e63ba81d92799"
+            },
+            "outputSha256": "b2563ce84d3bffc210a2b2ff9c3fffce787e06f653b2ae88e44e63ba81d92799",
+            "outputValue": 15.017452239990234,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/weight.npy",
+              "sha256": "5623016a9e6cc8774e996dba7e617c6c29421f283f2b501c2926a125a59ad2c7"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/activation.npy",
+              "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
+            },
+            "chunkIndex": 2,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 7.004631042480469,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 2048,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy",
+              "sha256": "86d00ca04916826cb8cbe5d44e8c48f85c4aa8fd9d3b3a0810c93409306bf89b"
+            },
+            "outputSha256": "86d00ca04916826cb8cbe5d44e8c48f85c4aa8fd9d3b3a0810c93409306bf89b",
+            "outputValue": 7.004631042480469,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/weight.npy",
+              "sha256": "9682b6c538b0ab1eeefdc084c15ea71e72ae06903c9c9e573012b0db1a738011"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/activation.npy",
+              "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
+            },
+            "chunkIndex": 3,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 13.789728164672852,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 3072,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy",
+              "sha256": "f8375119663126093a1790b0d1eeb72bf8a1c35ff7080898f182660001593b6e"
+            },
+            "outputSha256": "f8375119663126093a1790b0d1eeb72bf8a1c35ff7080898f182660001593b6e",
+            "outputValue": 13.789728164672852,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/weight.npy",
+              "sha256": "695a88ac3ee08948f1f00de41984183087523f79330221311f241408b51fa8eb"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/activation.npy",
+              "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
+            },
+            "chunkIndex": 4,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 4.878942012786865,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 4096,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy",
+              "sha256": "505c916a23f91c76fd12ce92ecf98538f96c1e4bc7f57d3a3c5a0daab16c50c0"
+            },
+            "outputSha256": "505c916a23f91c76fd12ce92ecf98538f96c1e4bc7f57d3a3c5a0daab16c50c0",
+            "outputValue": 4.878942966461182,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/weight.npy",
+              "sha256": "daa29d2e6e0fca7c94f9169594725b04d9f5580160c83e6ff28930ccc44dca98"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/activation.npy",
+              "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
+            },
+            "chunkIndex": 5,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+              "--width",
+              "8",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy:f32:1:7,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+            "cpuPartial": 2.9069056510925293,
+            "exitCode": 0,
+            "hiddenCount": 256,
+            "hiddenStart": 5120,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy",
+              "sha256": "a09ee00c22b4474bbfb9045c987eb39976f2a4b2df5d06e18412a683d11df99c"
+            },
+            "outputSha256": "a09ee00c22b4474bbfb9045c987eb39976f2a4b2df5d06e18412a683d11df99c",
+            "outputValue": 2.9069058895111084,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=7 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 708,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/phase.log",
+              "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/weight.npy",
+              "sha256": "bf8782b5ebda2d0b0f7c6154467fa4d27bb6b9de22d41fb67e448f0ecf0a651c"
+            },
+            "width": 8
+          }
+        ],
+        "cpuRawLogit": 57.581172943115234,
+        "cpuSoftcappedLogit": 28.73596700115678,
+        "cslCpuPartialsMatch": true,
+        "expectedLogit": 28.744709014892578,
+        "lmHeadRowSha256": "2ebf2c44877f6ad0ca24484b636db369aca76bea856ae383b8dde725fb707032",
+        "logitAbsDiff": 0.008741699047892126,
+        "rawLogit": 57.5811767578125,
+        "referenceRank": 1,
+        "softcappedLogit": 28.735967315844686,
+        "tokenId": 3730
+      },
+      {
+        "allChunksSucceeded": true,
+        "chunkCount": 6,
+        "chunkResults": [
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/activation.npy",
+              "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
+            },
+            "chunkIndex": 0,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 5.405377388000488,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 0,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/output.npy",
+              "sha256": "6d7234b43f7592d1c21ae83a9492667354c3f2466bb33d489f06c9203282eccf"
+            },
+            "outputSha256": "6d7234b43f7592d1c21ae83a9492667354c3f2466bb33d489f06c9203282eccf",
+            "outputValue": 5.405377388000488,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0000/weight.npy",
+              "sha256": "a71bea4f5475e7e9679f1219f3a46e780274ea83be0f4270ac925344b3eec72d"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/activation.npy",
+              "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
+            },
+            "chunkIndex": 1,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 8.303398132324219,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 1024,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/output.npy",
+              "sha256": "199f0278c1636254a3df75d0d888bf03200415a9d18fc220d93739efe7daa871"
+            },
+            "outputSha256": "199f0278c1636254a3df75d0d888bf03200415a9d18fc220d93739efe7daa871",
+            "outputValue": 8.303398132324219,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0001/weight.npy",
+              "sha256": "4769525cad513fe72eb4b5f25f71d1fbedf3e35200aeee2b06b57b3ce2f2a044"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/activation.npy",
+              "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
+            },
+            "chunkIndex": 2,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 4.431482315063477,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 2048,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/output.npy",
+              "sha256": "e7171c399f6251afb2fa3ec64acd162100dea0ab86dd4ca45ada54738ead8604"
+            },
+            "outputSha256": "e7171c399f6251afb2fa3ec64acd162100dea0ab86dd4ca45ada54738ead8604",
+            "outputValue": 4.431483268737793,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0002/weight.npy",
+              "sha256": "a783eb9b441e839ed8c0599056cfbef66604938e0b73074b7b7db5f59111e4ae"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/activation.npy",
+              "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
+            },
+            "chunkIndex": 3,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 7.651602268218994,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 3072,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/output.npy",
+              "sha256": "a6316f9c178ae89dea5dcd7bed9434a2120b8345d87c6f8a250eb1a49355b4b9"
+            },
+            "outputSha256": "a6316f9c178ae89dea5dcd7bed9434a2120b8345d87c6f8a250eb1a49355b4b9",
+            "outputValue": 7.651602268218994,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0003/weight.npy",
+              "sha256": "db067e7cb6c1aa2dc40379a8acb661fa528d9c3246a01b91d1ab7c3563aec103"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/activation.npy",
+              "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
+            },
+            "chunkIndex": 4,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 7.269278526306152,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 4096,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/output.npy",
+              "sha256": "0e56ebea619a427f967ce6f9ecfcd35213e510458a28910f86cd3b42ec4fa868"
+            },
+            "outputSha256": "0e56ebea619a427f967ce6f9ecfcd35213e510458a28910f86cd3b42ec4fa868",
+            "outputValue": 7.2692790031433105,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0004/weight.npy",
+              "sha256": "f87faef401be7c89befbb1a5abb9933783f0e6889e3b58743d18ff8ccd11bbbe"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/activation.npy",
+              "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
+            },
+            "chunkIndex": 5,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+              "--width",
+              "8",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/output.npy:f32:1:7,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+            "cpuPartial": 2.2941155433654785,
+            "exitCode": 0,
+            "hiddenCount": 256,
+            "hiddenStart": 5120,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/output.npy",
+              "sha256": "3178a5bf0eb68d2384ad637187c6c6d2912c8b7349817316fd66547659b321fc"
+            },
+            "outputSha256": "3178a5bf0eb68d2384ad637187c6c6d2912c8b7349817316fd66547659b321fc",
+            "outputValue": 2.2941155433654785,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=7 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 708,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/phase.log",
+              "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-4781/chunk-0005/weight.npy",
+              "sha256": "27f3ddcefaff2d38cf26db95975e721263ad6773011886ade783681b0de4ad40"
+            },
+            "width": 8
+          }
+        ],
+        "cpuRawLogit": 35.355255126953125,
+        "cpuSoftcappedLogit": 24.809421781767,
+        "cslCpuPartialsMatch": true,
+        "expectedLogit": 24.83536148071289,
+        "lmHeadRowSha256": "03c687533b180ada318278d472820d56419293d1afc868cfefcc7ae2b879a25a",
+        "logitAbsDiff": 0.025939698945890655,
+        "rawLogit": 35.355255126953125,
+        "referenceRank": 2,
+        "softcappedLogit": 24.809421781767,
+        "tokenId": 4781
+      },
+      {
+        "allChunksSucceeded": true,
+        "chunkCount": 6,
+        "chunkResults": [
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/activation.npy",
+              "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
+            },
+            "chunkIndex": 0,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 7.004161834716797,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 0,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/output.npy",
+              "sha256": "26fc34f55d9930ca490caf2dd7996f2fd99a1a5e38b38106c0284aac825857a0"
+            },
+            "outputSha256": "26fc34f55d9930ca490caf2dd7996f2fd99a1a5e38b38106c0284aac825857a0",
+            "outputValue": 7.004161834716797,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0000/weight.npy",
+              "sha256": "b6463c69e293b0729049af829de05ca1fbe73e88e4e61566012bec02742c0454"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/activation.npy",
+              "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
+            },
+            "chunkIndex": 1,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 6.679942607879639,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 1024,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/output.npy",
+              "sha256": "fb1ed8dad55d141e5e3683e84c67093ba9e067756562058cd0cb955f7cd96051"
+            },
+            "outputSha256": "fb1ed8dad55d141e5e3683e84c67093ba9e067756562058cd0cb955f7cd96051",
+            "outputValue": 6.679943084716797,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0001/weight.npy",
+              "sha256": "dc4f4f261d4baca61359579737736c0566738c9b741e40c088fca83cd9487313"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/activation.npy",
+              "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
+            },
+            "chunkIndex": 2,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 8.621349334716797,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 2048,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/output.npy",
+              "sha256": "9f3a1526a34a4b0d92f00b1c80a5be9b5a6c91d6a00f85c9e14d182c75453cd9"
+            },
+            "outputSha256": "9f3a1526a34a4b0d92f00b1c80a5be9b5a6c91d6a00f85c9e14d182c75453cd9",
+            "outputValue": 8.62134838104248,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0002/weight.npy",
+              "sha256": "6004f766120fdf76f3d3e968126ae9ba252a0e239d0ebcde3e71d2affa22d612"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/activation.npy",
+              "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
+            },
+            "chunkIndex": 3,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 13.064391136169434,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 3072,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/output.npy",
+              "sha256": "4e4a3993597709f9e449a4d0bdd8e361c0a691aa151a1c376e65e75bbdc35800"
+            },
+            "outputSha256": "4e4a3993597709f9e449a4d0bdd8e361c0a691aa151a1c376e65e75bbdc35800",
+            "outputValue": 13.0643892288208,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0003/weight.npy",
+              "sha256": "4afda96bc65af6d587c6d557d4e4486db4cd63dd407292aaf8c7f5b306247b5d"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/activation.npy",
+              "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
+            },
+            "chunkIndex": 4,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": -2.76796555519104,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 4096,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/output.npy",
+              "sha256": "9420d353ddc66a7d1c0a72da5946ce11377e54096e2fed7aa6b0e467bdd8e210"
+            },
+            "outputSha256": "9420d353ddc66a7d1c0a72da5946ce11377e54096e2fed7aa6b0e467bdd8e210",
+            "outputValue": -2.76796555519104,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0004/weight.npy",
+              "sha256": "0106a245c5e992e981c40ba7ca8f6f079cd7416f425f2dcf20cb01ae74e52eaf"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/activation.npy",
+              "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
+            },
+            "chunkIndex": 5,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+              "--width",
+              "8",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/output.npy:f32:1:7,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+            "cpuPartial": 0.9039696455001831,
+            "exitCode": 0,
+            "hiddenCount": 256,
+            "hiddenStart": 5120,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/output.npy",
+              "sha256": "655ad8323d55ddf72dc3ab601f1f7d281d6c31f553de3a5ce4f23d3648bd0999"
+            },
+            "outputSha256": "655ad8323d55ddf72dc3ab601f1f7d281d6c31f553de3a5ce4f23d3648bd0999",
+            "outputValue": 0.9039695858955383,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=7 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 708,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/phase.log",
+              "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-5213/chunk-0005/weight.npy",
+              "sha256": "6945a0df869b312306945667e3b72e814a743e01c97727a07b1c9e4186340514"
+            },
+            "width": 8
+          }
+        ],
+        "cpuRawLogit": 33.50585174560547,
+        "cpuSoftcappedLogit": 24.19423658182247,
+        "cslCpuPartialsMatch": true,
+        "expectedLogit": 24.18125343322754,
+        "lmHeadRowSha256": "f82dc96af0c0da89f87ae82bb94088b338839cb9f025b64b1d4b960b5168fc04",
+        "logitAbsDiff": 0.01298048136724006,
+        "rawLogit": 33.50584411621094,
+        "referenceRank": 3,
+        "softcappedLogit": 24.19423391459478,
+        "tokenId": 5213
+      },
+      {
+        "allChunksSucceeded": true,
+        "chunkCount": 6,
+        "chunkResults": [
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/activation.npy",
+              "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
+            },
+            "chunkIndex": 0,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 6.787700176239014,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 0,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/output.npy",
+              "sha256": "1a3b770080da78104a18bd6d6e73365612a987684490fed66141e68136186cba"
+            },
+            "outputSha256": "1a3b770080da78104a18bd6d6e73365612a987684490fed66141e68136186cba",
+            "outputValue": 6.787698745727539,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0000/weight.npy",
+              "sha256": "8be39b8f381a89ed860af215e0b8900fdefc1fc6cb3ffa76a5fdbe58af067a95"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/activation.npy",
+              "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
+            },
+            "chunkIndex": 1,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 5.832155227661133,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 1024,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/output.npy",
+              "sha256": "5f8466c47c7005f27a7971777880b5a133b232f78bc03041ff9133fcfaa32b17"
+            },
+            "outputSha256": "5f8466c47c7005f27a7971777880b5a133b232f78bc03041ff9133fcfaa32b17",
+            "outputValue": 5.832155227661133,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0001/weight.npy",
+              "sha256": "16e2df65bed7d92f9a174cc534ae545aa800d60574b623cb3795d2483be58792"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/activation.npy",
+              "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
+            },
+            "chunkIndex": 2,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 8.477341651916504,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 2048,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/output.npy",
+              "sha256": "38a8ba9c0a81d76324273baa104a438c2609b0a2a564f73a4a41efa3c0811076"
+            },
+            "outputSha256": "38a8ba9c0a81d76324273baa104a438c2609b0a2a564f73a4a41efa3c0811076",
+            "outputValue": 8.477340698242188,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0002/weight.npy",
+              "sha256": "45786d63bc67085aaa1de95bc22232a639f5cf177442dcaac9478da891349dbc"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/activation.npy",
+              "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
+            },
+            "chunkIndex": 3,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 5.017836570739746,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 3072,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/output.npy",
+              "sha256": "55e1a3e0085836221fb1676034c321a03cb43f7cd2a2d9e1dc513f200c40c555"
+            },
+            "outputSha256": "55e1a3e0085836221fb1676034c321a03cb43f7cd2a2d9e1dc513f200c40c555",
+            "outputValue": 5.017837047576904,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0003/weight.npy",
+              "sha256": "8c1ccb9a371ba005c5c23915a34d42c2a3e6b16cad85f33d544e67e547d9fb76"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/activation.npy",
+              "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
+            },
+            "chunkIndex": 4,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 5.428567409515381,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 4096,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/output.npy",
+              "sha256": "7208505bc20f77ec7008544b287b5fa72eee8fa5181b53056aefe1a975e1b945"
+            },
+            "outputSha256": "7208505bc20f77ec7008544b287b5fa72eee8fa5181b53056aefe1a975e1b945",
+            "outputValue": 5.428566932678223,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0004/weight.npy",
+              "sha256": "69aa3b5be30dbfd7991c939426d19626827444f69b553d2b484df8287e3bac72"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/activation.npy",
+              "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
+            },
+            "chunkIndex": 5,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+              "--width",
+              "8",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/output.npy:f32:1:7,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+            "cpuPartial": 1.3615249395370483,
+            "exitCode": 0,
+            "hiddenCount": 256,
+            "hiddenStart": 5120,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/output.npy",
+              "sha256": "1c5b6c6fe4b587a58d9fcfa54d07f4c97e71fcc419971735ac185976bd29ccd3"
+            },
+            "outputSha256": "1c5b6c6fe4b587a58d9fcfa54d07f4c97e71fcc419971735ac185976bd29ccd3",
+            "outputValue": 1.3615249395370483,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=7 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 708,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/phase.log",
+              "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-11082/chunk-0005/weight.npy",
+              "sha256": "ed22edcfdc58e911b65773aebbab810f82346b59e7cbb0b5797fd6862aee2855"
+            },
+            "width": 8
+          }
+        ],
+        "cpuRawLogit": 32.905128479003906,
+        "cpuSoftcappedLogit": 23.980806304954456,
+        "cslCpuPartialsMatch": true,
+        "expectedLogit": 24.037384033203125,
+        "lmHeadRowSha256": "ad556d7bfcac36675bb71fa94622b58b27bd12e458335df8a373ba4824620cac",
+        "logitAbsDiff": 0.05657910544323386,
+        "rawLogit": 32.90512466430664,
+        "referenceRank": 4,
+        "softcappedLogit": 23.98080492775989,
+        "tokenId": 11082
+      },
+      {
+        "allChunksSucceeded": true,
+        "chunkCount": 6,
+        "chunkResults": [
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/activation.npy",
+              "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
+            },
+            "chunkIndex": 0,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 38.49150466918945,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 0,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/output.npy",
+              "sha256": "5d68fabde87d4b086a6810eefa5d94c54f1d493ac1caf4af01b69f2321d024b4"
+            },
+            "outputSha256": "5d68fabde87d4b086a6810eefa5d94c54f1d493ac1caf4af01b69f2321d024b4",
+            "outputValue": 38.49150085449219,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0000/weight.npy",
+              "sha256": "0c18ec6cc379336c69fdd661dd6bc37dcd83fb239db1163693318871050b4af5"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/activation.npy",
+              "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
+            },
+            "chunkIndex": 1,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": 25.231914520263672,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 1024,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/output.npy",
+              "sha256": "b7ae475929099dfa344b3873a99ea90c8ca9f729b30de3104d6aeba82498b0a4"
+            },
+            "outputSha256": "b7ae475929099dfa344b3873a99ea90c8ca9f729b30de3104d6aeba82498b0a4",
+            "outputValue": 25.231914520263672,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0001/weight.npy",
+              "sha256": "3d029890a10cb1b195770557c349b5d01fa43e5c59d47fa124ab2907236ced14"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/activation.npy",
+              "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
+            },
+            "chunkIndex": 2,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": -0.8931703567504883,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 2048,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/output.npy",
+              "sha256": "f95e62c4b7660085d79fed6cb43232e9c904608b48f9cc44fe57ca3fd04f87cc"
+            },
+            "outputSha256": "f95e62c4b7660085d79fed6cb43232e9c904608b48f9cc44fe57ca3fd04f87cc",
+            "outputValue": -0.8931677341461182,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0002/weight.npy",
+              "sha256": "6265bf012f997109ef2bc3816c2bcf38438979ba1a92b33884ef0b29003d5d17"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/activation.npy",
+              "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
+            },
+            "chunkIndex": 3,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": -15.513075828552246,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 3072,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/output.npy",
+              "sha256": "d521e8128504096f3f6b7d9ca001a63dfa99171540f573d5d692ea8425b46ec2"
+            },
+            "outputSha256": "d521e8128504096f3f6b7d9ca001a63dfa99171540f573d5d692ea8425b46ec2",
+            "outputValue": -15.51307487487793,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0003/weight.npy",
+              "sha256": "fccf632af3eed16cea503349934e23ec8878b05821f0652b80ccac3cdd5596ef"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/activation.npy",
+              "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
+            },
+            "chunkIndex": 4,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+              "--width",
+              "32",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/output.npy:f32:1:31,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
+            "cpuPartial": -14.30514907836914,
+            "exitCode": 0,
+            "hiddenCount": 1024,
+            "hiddenStart": 4096,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/output.npy",
+              "sha256": "7a23543d7de147478fe4a8499336f2d6d2df87729d62166089bd1ebbfd0ed0e5"
+            },
+            "outputSha256": "7a23543d7de147478fe4a8499336f2d6d2df87729d62166089bd1ebbfd0ed0e5",
+            "outputValue": -14.305146217346191,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=32 words=512 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=31 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 711,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/phase.log",
+              "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 2176,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0004/weight.npy",
+              "sha256": "8fd6fb1df3559e44f633262c6b2ddf56089de2ca5482a02b476223ac68edabe1"
+            },
+            "width": 32
+          },
+          {
+            "activation": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/activation.npy",
+              "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
+            },
+            "chunkIndex": 5,
+            "command": [
+              "/home/x/cerebras-sdk-2.10.0/cs_python",
+              "/home/x/deco/doe/bench/runners/csl-runners/chain_step_adapter.py",
+              "--compile-dir",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+              "--width",
+              "8",
+              "--height",
+              "1",
+              "--chunk-size",
+              "32",
+              "--input",
+              "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/activation.npy:f16:32",
+              "--input",
+              "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/weight.npy:f16:32",
+              "--output",
+              "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/output.npy:f32:1:7,0,1,1",
+              "--phase-trace",
+              "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/phase.log"
+            ],
+            "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
+            "cpuPartial": -0.9135034084320068,
+            "exitCode": 0,
+            "hiddenCount": 256,
+            "hiddenStart": 5120,
+            "output": {
+              "byteLength": 132,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/output.npy",
+              "sha256": "b168d9539f4f25ac5249e3f0dab9c920419d54382f7b6fc45b011e8e87b4e22f"
+            },
+            "outputSha256": "b168d9539f4f25ac5249e3f0dab9c920419d54382f7b6fc45b011e8e87b4e22f",
+            "outputValue": -0.91350257396698,
+            "phaseTail": [
+              "phase:step_start step=0",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=activation width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=activation",
+              "phase:memcpy_h2d_start chunk=16 height=1 step=0 symbol=weight width=8 words=128 x=0 y=0",
+              "phase:memcpy_h2d_complete step=0 symbol=weight",
+              "phase:launch_start function=compute step=0",
+              "phase:launch_complete function=compute step=0",
+              "phase:memcpy_d2h_start chunk=1 height=1 step=0 symbol=output width=1 words=1 x=7 y=0",
+              "phase:memcpy_d2h_complete step=0 symbol=output",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "phaseTrace": {
+              "byteLength": 708,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/phase.log",
+              "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
+            },
+            "status": "succeeded",
+            "stderrTail": [
+              "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
+              "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
+            ],
+            "stdoutTail": [
+              "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/output.npy (float32 shape=(1,))",
+              "phase:step_complete step=0",
+              "phase:stop_start",
+              "phase:stop_complete"
+            ],
+            "timedOut": false,
+            "weight": {
+              "byteLength": 640,
+              "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-496/chunk-0005/weight.npy",
+              "sha256": "87773870be953c6a1c96b9de9e561180f94bfa15a6544c4b963cd3363fd691aa"
+            },
+            "width": 8
+          }
+        ],
+        "cpuRawLogit": 32.0985107421875,
+        "cpuSoftcappedLogit": 23.683275527318862,
+        "cslCpuPartialsMatch": true,
+        "expectedLogit": 23.763450622558594,
+        "lmHeadRowSha256": "c597008e60d1cd69ec0aae0d44bd620be1b90779907832c1621ea5d965c03b22",
+        "logitAbsDiff": 0.08017078333026717,
+        "rawLogit": 32.0985221862793,
+        "referenceRank": 5,
+        "softcappedLogit": 23.683279839228327,
+        "tokenId": 496
+      }
+    ],
+    "candidateTokenIds": [
+      3730,
+      4781,
+      5213,
+      11082,
+      496
+    ],
     "chunkCount": 6,
     "chunkPeWidth": 32,
     "chunkResults": [
       {
         "activation": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/activation.npy",
           "sha256": "bba761f9a07bd61fd8d55728153c108ab83b6d8a66293906e8d09205c691c940"
         },
         "chunkIndex": 0,
@@ -30,13 +2432,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/output.npy:f32:1:31,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy:f32:1:31,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
         "cpuPartial": 13.983513832092285,
@@ -45,7 +2447,7 @@
         "hiddenStart": 0,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy",
           "sha256": "5449406cd8c20f2ef6e6c12251172b98cb5ad1ddc2a87cf9eb4a3d01ff412c53"
         },
         "outputSha256": "5449406cd8c20f2ef6e6c12251172b98cb5ad1ddc2a87cf9eb4a3d01ff412c53",
@@ -66,7 +2468,7 @@
         ],
         "phaseTrace": {
           "byteLength": 711,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/phase.log",
           "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
         },
         "status": "succeeded",
@@ -75,7 +2477,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -83,7 +2485,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0000/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0000/weight.npy",
           "sha256": "2d23d186a027a06ae5b3ca5076844bf22d646145b6c66a65ecb55ed855f8a0bd"
         },
         "width": 32
@@ -91,7 +2493,7 @@
       {
         "activation": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/activation.npy",
           "sha256": "facd13620e2cc000b087e6979ade58073e821d7f27136fa22a555d730054f133"
         },
         "chunkIndex": 1,
@@ -107,13 +2509,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/output.npy:f32:1:31,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy:f32:1:31,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
         "cpuPartial": 15.017454147338867,
@@ -122,7 +2524,7 @@
         "hiddenStart": 1024,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy",
           "sha256": "b2563ce84d3bffc210a2b2ff9c3fffce787e06f653b2ae88e44e63ba81d92799"
         },
         "outputSha256": "b2563ce84d3bffc210a2b2ff9c3fffce787e06f653b2ae88e44e63ba81d92799",
@@ -143,7 +2545,7 @@
         ],
         "phaseTrace": {
           "byteLength": 711,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/phase.log",
           "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
         },
         "status": "succeeded",
@@ -152,7 +2554,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -160,7 +2562,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0001/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0001/weight.npy",
           "sha256": "5623016a9e6cc8774e996dba7e617c6c29421f283f2b501c2926a125a59ad2c7"
         },
         "width": 32
@@ -168,7 +2570,7 @@
       {
         "activation": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/activation.npy",
           "sha256": "eedcf28eed0a0069590a8b2b2913dfc747d33f24dc28fedf5c8eed5daae6f771"
         },
         "chunkIndex": 2,
@@ -184,13 +2586,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/output.npy:f32:1:31,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy:f32:1:31,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
         "cpuPartial": 7.004631042480469,
@@ -199,7 +2601,7 @@
         "hiddenStart": 2048,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy",
           "sha256": "86d00ca04916826cb8cbe5d44e8c48f85c4aa8fd9d3b3a0810c93409306bf89b"
         },
         "outputSha256": "86d00ca04916826cb8cbe5d44e8c48f85c4aa8fd9d3b3a0810c93409306bf89b",
@@ -220,7 +2622,7 @@
         ],
         "phaseTrace": {
           "byteLength": 711,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/phase.log",
           "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
         },
         "status": "succeeded",
@@ -229,7 +2631,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -237,7 +2639,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0002/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0002/weight.npy",
           "sha256": "9682b6c538b0ab1eeefdc084c15ea71e72ae06903c9c9e573012b0db1a738011"
         },
         "width": 32
@@ -245,7 +2647,7 @@
       {
         "activation": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/activation.npy",
           "sha256": "4149b0074b8744ddb30acea597868ab2750d99d22e00c10a2b99db9df4b1916e"
         },
         "chunkIndex": 3,
@@ -261,13 +2663,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/output.npy:f32:1:31,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy:f32:1:31,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
         "cpuPartial": 13.789728164672852,
@@ -276,7 +2678,7 @@
         "hiddenStart": 3072,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy",
           "sha256": "f8375119663126093a1790b0d1eeb72bf8a1c35ff7080898f182660001593b6e"
         },
         "outputSha256": "f8375119663126093a1790b0d1eeb72bf8a1c35ff7080898f182660001593b6e",
@@ -297,7 +2699,7 @@
         ],
         "phaseTrace": {
           "byteLength": 711,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/phase.log",
           "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
         },
         "status": "succeeded",
@@ -306,7 +2708,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -314,7 +2716,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0003/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0003/weight.npy",
           "sha256": "695a88ac3ee08948f1f00de41984183087523f79330221311f241408b51fa8eb"
         },
         "width": 32
@@ -322,7 +2724,7 @@
       {
         "activation": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/activation.npy",
           "sha256": "9b429361e88dafda223c87c3390f79a3f76bcd837ce5b2f9b760d9425892819b"
         },
         "chunkIndex": 4,
@@ -338,13 +2740,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/output.npy:f32:1:31,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy:f32:1:31,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0032/compiled",
         "cpuPartial": 4.878942012786865,
@@ -353,7 +2755,7 @@
         "hiddenStart": 4096,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy",
           "sha256": "505c916a23f91c76fd12ce92ecf98538f96c1e4bc7f57d3a3c5a0daab16c50c0"
         },
         "outputSha256": "505c916a23f91c76fd12ce92ecf98538f96c1e4bc7f57d3a3c5a0daab16c50c0",
@@ -374,7 +2776,7 @@
         ],
         "phaseTrace": {
           "byteLength": 711,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/phase.log",
           "sha256": "1f384e0a0def8fa4db7dc9da801452f5b1e15efc1393ca8182ba75fee99b9575"
         },
         "status": "succeeded",
@@ -383,7 +2785,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -391,7 +2793,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 2176,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0004/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0004/weight.npy",
           "sha256": "daa29d2e6e0fca7c94f9169594725b04d9f5580160c83e6ff28930ccc44dca98"
         },
         "width": 32
@@ -399,7 +2801,7 @@
       {
         "activation": {
           "byteLength": 640,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/activation.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/activation.npy",
           "sha256": "f4ea6f28ed7aaccb584cf7a1ec0b7bf3e409e44510050a686e8b77f51346d159"
         },
         "chunkIndex": 5,
@@ -415,13 +2817,13 @@
           "--chunk-size",
           "32",
           "--input",
-          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/activation.npy:f16:32",
+          "activation:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/activation.npy:f16:32",
           "--input",
-          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/weight.npy:f16:32",
+          "weight:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/weight.npy:f16:32",
           "--output",
-          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/output.npy:f32:1:7,0,1,1",
+          "output:/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy:f32:1:7,0,1,1",
           "--phase-trace",
-          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/phase.log"
+          "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/phase.log"
         ],
         "compileDir": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/compile-w0008/compiled",
         "cpuPartial": 2.9069056510925293,
@@ -430,7 +2832,7 @@
         "hiddenStart": 5120,
         "output": {
           "byteLength": 132,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/output.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy",
           "sha256": "a09ee00c22b4474bbfb9045c987eb39976f2a4b2df5d06e18412a683d11df99c"
         },
         "outputSha256": "a09ee00c22b4474bbfb9045c987eb39976f2a4b2df5d06e18412a683d11df99c",
@@ -451,7 +2853,7 @@
         ],
         "phaseTrace": {
           "byteLength": 708,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/phase.log",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/phase.log",
           "sha256": "d5f7fbf4ec9413993ca7eeaef4bb6bd787b2e85682a7326d665e70e7f436bf80"
         },
         "status": "succeeded",
@@ -460,7 +2862,7 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/output.npy (float32 shape=(1,))",
+          "[adapter] wrote output -> /home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/output.npy (float32 shape=(1,))",
           "phase:step_complete step=0",
           "phase:stop_start",
           "phase:stop_complete"
@@ -468,7 +2870,7 @@
         "timedOut": false,
         "weight": {
           "byteLength": 640,
-          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/chunk-0005/weight.npy",
+          "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/token-3730/chunk-0005/weight.npy",
           "sha256": "bf8782b5ebda2d0b0f7c6154467fa4d27bb6b9de22d41fb67e448f0ecf0a651c"
         },
         "width": 8
@@ -476,17 +2878,59 @@
     ],
     "cpuRawLogit": 57.581172943115234,
     "cpuSoftcappedLogit": 28.73596700115678,
+    "cslArgmaxTokenId": 3730,
+    "decisionMarginLowerBound": 3.749005967519153,
     "inDimPerPe": 32,
     "kernel": "lm_head_prefill",
     "logitAbsDiff": 0.008741699047892126,
+    "maxLogitAbsDiff": 0.08017078333026717,
     "rawLogit": 57.5811767578125,
+    "referenceArgmaxTokenId": 3730,
+    "referenceTop1Top2Margin": 3.9093475341796875,
     "rmsNormEps": 1e-06,
     "softcap": 30.0,
-    "softcappedLogit": 28.735967315844686
+    "softcappedLogit": 28.735967315844686,
+    "strictLogitToleranceAtol": 0.02,
+    "strictLogitTolerancePassed": false,
+    "topK": 5
   },
   "dopplerReference": {
     "expectedSelectedLogit": 28.744709014892578,
     "expectedTokenId": 3730,
+    "expectedTopKLogits": [
+      {
+        "logit": 28.744709014892578,
+        "rank": 1,
+        "tokenId": 3730
+      },
+      {
+        "logit": 24.83536148071289,
+        "rank": 2,
+        "tokenId": 4781
+      },
+      {
+        "logit": 24.18125343322754,
+        "rank": 3,
+        "tokenId": 5213
+      },
+      {
+        "logit": 24.037384033203125,
+        "rank": 4,
+        "tokenId": 11082
+      },
+      {
+        "logit": 23.763450622558594,
+        "rank": 5,
+        "tokenId": 496
+      }
+    ],
+    "expectedTopKTokenIds": [
+      3730,
+      4781,
+      5213,
+      11082,
+      496
+    ],
     "fixtureManifest": {
       "byteLength": 3735,
       "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/frozen-reference.manifest.json",
@@ -531,10 +2975,40 @@
     "layerIndex": 59,
     "promptTokenCount": 7,
     "selectedText": " blue",
-    "selectedTokenId": 3730
+    "selectedTokenId": 3730,
+    "selectedTokenIds": [
+      3730,
+      4781,
+      5213,
+      11082,
+      496
+    ],
+    "topK": 5
   },
   "verdict": "pass",
   "weights": {
+    "candidateLmHeadRows": [
+      {
+        "sha256": "2ebf2c44877f6ad0ca24484b636db369aca76bea856ae383b8dde725fb707032",
+        "tokenId": 3730
+      },
+      {
+        "sha256": "03c687533b180ada318278d472820d56419293d1afc868cfefcc7ae2b879a25a",
+        "tokenId": 4781
+      },
+      {
+        "sha256": "f82dc96af0c0da89f87ae82bb94088b338839cb9f025b64b1d4b960b5168fc04",
+        "tokenId": 5213
+      },
+      {
+        "sha256": "ad556d7bfcac36675bb71fa94622b58b27bd12e458335df8a373ba4824620cac",
+        "tokenId": 11082
+      },
+      {
+        "sha256": "c597008e60d1cd69ec0aae0d44bd620be1b90779907832c1621ea5d965c03b22",
+        "tokenId": 496
+      }
+    ],
     "finalNormSha256": "02bde86fee13be1e7d898e2d0b60306002d6a1f09e64706ef575e22054517663",
     "finalNormTensor": "model.language_model.norm.weight",
     "lmHeadTensor": "model.language_model.embed_tokens.weight",

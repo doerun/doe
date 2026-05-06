@@ -247,8 +247,18 @@ def selected_logit_splice_row(lane: str, artifact: str) -> dict:
         scope_parts.append(f"promptTokens={splice.get('promptTokenCount')}")
     if splice.get("selectedTokenId") is not None:
         scope_parts.append(f"token={splice.get('selectedTokenId')}")
-    if csl_run.get("logitAbsDiff") is not None:
+    if csl_run.get("topK") is not None:
+        scope_parts.append(f"topK={csl_run.get('topK')}")
+    if csl_run.get("maxLogitAbsDiff") is not None:
+        scope_parts.append(f"maxLogitAbsDiff={csl_run.get('maxLogitAbsDiff'):.6g}")
+    elif csl_run.get("logitAbsDiff") is not None:
         scope_parts.append(f"logitAbsDiff={csl_run.get('logitAbsDiff'):.6g}")
+    if csl_run.get("decisionMarginLowerBound") is not None:
+        scope_parts.append(
+            f"decisionMarginLowerBound={csl_run.get('decisionMarginLowerBound'):.6g}"
+        )
+    if d.get("comparisonMode"):
+        scope_parts.append(f"mode={d.get('comparisonMode')}")
     return _row(
         lane,
         artifact,

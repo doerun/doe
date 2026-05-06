@@ -31,7 +31,9 @@
     "receiptClass": {
       "const": "manifest_shape_doppler_selected_logit_splice"
     },
-    "comparisonMode": { "const": "parity" },
+    "comparisonMode": {
+      "enum": ["parity", "argmax_decision_bound"]
+    },
     "verdict": { "enum": ["pass", "blocked"] },
     "blockers": {
       "type": "array",

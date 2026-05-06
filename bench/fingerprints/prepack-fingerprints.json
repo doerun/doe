@@ -88,7 +88,7 @@
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
-      "sha256": "7880c895415ea559a7f180e17dd345551750981ca442c1b8498ec8fddc65e341"
+      "sha256": "7fc2e36c47256c125d99ce1a1a82c1a68d06589c81d2e6bb7b53754fa1128649"
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/launch-receipts/launch-0001.json",
@@ -335,12 +335,28 @@
       "sha256": "6f373f42986e90f74c8ab1d19f9403cc18b8308f790c2a76e0ac77535c22423f"
     },
     {
+      "path": "bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
+      "sha256": "6c95c474f676deae9bc37485d9d411c369d1b743ca2b3633cb6eaad0861d8d67"
+    },
+    {
+      "path": "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
+      "sha256": "d1dd8dc49586550610e6c258f029e419ed66246d7851d6b9ed431c00e0a85d5e"
+    },
+    {
+      "path": "bench/out/r3-2-27b-af16-manifest-simfabric-predicted-wallclock/budget.json",
+      "sha256": "f125df0a13d32785d0a1cd89c46adca9b3ff61513e4cc01b9aefa9c52ccfbc00"
+    },
+    {
+      "path": "bench/out/r3-2-27b-qwen-simfabric-cells/summary-receipt.json",
+      "sha256": "2b5fb1242ec01fe6e27261e303b691ed32acfe0f3db563a63bc3fa1969382662"
+    },
+    {
       "path": "config/doe-frozen-doppler-reference.schema.json",
       "sha256": "ba5a325cfc33f843991ed2d5ace3550ba4ae837577e61c73f45012b0c4c913b3"
     },
     {
       "path": "config/doppler-selected-logit-splice-receipt.schema.json",
-      "sha256": "7f01d53fa4ae446a6f5fe1c6179602b4ce599f942609eb8d3b2bea7de5bfcdaa"
+      "sha256": "f99cf3dbb58fe98a07e79316e36f1a3d0bfc982cd1e1446d80bffffeea02f631"
     },
     {
       "path": "config/doppler-to-csl-splice-receipt.schema.json",
@@ -360,15 +376,15 @@
     },
     {
       "path": "config/qwen-3-6-27b-real-weight-fixture.json",
-      "sha256": "bc6c70e7549c36c97a534b83277855a3f4b04d3190587bba9f47df50a123957f"
+      "sha256": "4ac5272d6621c9866a37778c215c7e42e1d9777795c9376b006c122c0490a468"
     },
     {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "6db75dcead210f3c2d0d92f1b93f3b1040332887eb2e4c2319d1e44d591bac38"
+      "sha256": "87091ca6e9fd70f503e93ea09c0c92a82bcc047fd40999e696433544365d6036"
     },
     {
       "path": "docs/cerebras-hardware-runbook.md",
-      "sha256": "ba6c8b21370fd5dc217cc19ba9c9452ed4124aba5eca218c0d87d33a33f91fa1"
+      "sha256": "4e374aa72afc3e9730aa5ef36711ba7caf0a926865b8ffafcb251c156dc6f956"
     },
     {
       "path": "docs/claim-discipline.md",
@@ -376,7 +392,7 @@
     },
     {
       "path": "docs/hardware-validation-appendix.md",
-      "sha256": "047942f16ff58803f68877fe15e828bc7345635b2cef1a19279c001a0b1b6d39"
+      "sha256": "69a58447abcac65fc3dc93ae6acde744b86c422178ce2dbcce5a0f8f564934af"
     }
   ],
   "missing": []

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T18:06:24.673164+00:00",
+  "generatedAt": "2026-05-06T19:11:54.868272+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -247,16 +247,16 @@
       "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
       "verdict": "bound",
       "blocker": null,
-      "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417",
-      "artifactMtime": "2026-05-06T17:16:22.678936+00:00"
+      "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, topK=5, maxLogitAbsDiff=0.0801708, decisionMarginLowerBound=3.74901, mode=argmax_decision_bound",
+      "artifactMtime": "2026-05-06T19:08:25.734102+00:00"
     },
     {
       "lane": "qwen.doppler_csl_splice.selected_logit",
       "artifact": "bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
       "verdict": "bound",
       "blocker": null,
-      "scope": "selected_lm_head_logit, layer=63, promptTokens=18, token=760, logitAbsDiff=0.0133286",
-      "artifactMtime": "2026-05-06T15:11:51.171939+00:00"
+      "scope": "selected_lm_head_logit, layer=63, promptTokens=18, token=760, topK=5, maxLogitAbsDiff=0.0485954, decisionMarginLowerBound=3.55906, mode=argmax_decision_bound",
+      "artifactMtime": "2026-05-06T19:08:48.916767+00:00"
     },
     {
       "lane": "qwen.hardware_full_prompt",

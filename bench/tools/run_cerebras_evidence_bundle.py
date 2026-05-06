@@ -25,10 +25,11 @@ Steps (in order):
  14. Gemma-4 E2B manifest-shape Doe/CSL runtime-path contract
  15. Gemma 4 31B AF16 simfabric cell summary refresh
  16. Gemma 4 31B AF16 local ceiling + Doppler-to-CSL splice receipts
- 17. claim-discipline gate (hardware + MoE fronts)
- 18. SdkLayout streaming hardening gate (against any available live
+ 17. Qwen 3.6 27B AF16 Doppler-to-CSL top-k splice receipt
+ 18. claim-discipline gate (hardware + MoE fronts)
+ 19. SdkLayout streaming hardening gate (against any available live
      trace with streamTelemetry; skipped cleanly when none is fresh)
- 19. schema validation of 31B receipt and receipt-link integrity for
+ 20. schema validation of 31B receipt and receipt-link integrity for
      both E2B and 31B
 
 Each step contributes to
@@ -375,7 +376,7 @@ def main() -> int:
         ["python3", "bench/tools/run_gemma4_31b_af16_simfabric_cells.py"],
     ))
 
-    # 16. Gemma 4 31B AF16 local ceiling + Doppler-to-CSL splice receipts.
+    # 16/17. AF16 local ceiling + Doppler-to-CSL splice receipts.
     steps.append(run(
         "gemma4-31b-af16-local-simfabric-ceiling",
         ["python3", "bench/tools/synthesize_gemma4_31b_af16_local_ceiling_receipt.py"],
@@ -400,6 +401,13 @@ def main() -> int:
         ],
     ))
     steps.append(run(
+        "qwen3-6-27b-af16-splice-selected-logit",
+        [
+            "python3",
+            "bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py",
+        ],
+    ))
+    steps.append(run(
         "gemma4-31b-af16-splice-last-layer-tail-token",
         [
             "python3",
@@ -414,13 +422,13 @@ def main() -> int:
         ],
     ))
 
-    # 17. claim-discipline gate (hardware + MoE fronts).
+    # 18. claim-discipline gate (hardware + MoE fronts).
     steps.append(run(
         "claim-discipline-gate",
         ["python3", "bench/gates/claim_discipline_gate.py"],
     ))
 
-    # 18. SdkLayout streaming hardening gate against the freshest live
+    # 19. SdkLayout streaming hardening gate against the freshest live
     # trace that carries streamTelemetry; skipped cleanly if no such
     # trace exists today.
     trace = find_live_trace_with_telemetry()
@@ -439,7 +447,7 @@ def main() -> int:
              "--trace", rel(trace)],
         ))
 
-    # 19. receipt link integrity (already invoked by self-check STEP 5,
+    # 20. receipt link integrity (already invoked by self-check STEP 5,
     # but we rerun standalone so a failure surfaces as its own step).
     steps.append(run(
         "receipt-link-integrity",

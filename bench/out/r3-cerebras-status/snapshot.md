@@ -3,7 +3,7 @@
 This file is **generated** by `bench/tools/cerebras_status_snapshot.py`.
 Do not edit by hand. Re-run the tool to refresh.
 
-Generated: `2026-05-06T18:06:24.673164+00:00`
+Generated: `2026-05-06T19:11:54.868272+00:00`
 
 | Lane | Verdict | Scope | Blocker | Artifact mtime | Artifact |
 | --- | --- | --- | --- | --- | --- |
@@ -37,8 +37,8 @@ Generated: `2026-05-06T18:06:24.673164+00:00`
 | `gemma.local_simfabric_ceiling` | ❌ blocked | memcpy_d2h_start | simfabric_d2h_copyback_stall_after_launch_complete | 2026-05-06T17:12:13.624156+00:00 | `bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json` |
 | `gemma.doppler_csl_splice.single_block_hidden` | ❌ blocked | single_block_hidden, layer=59, promptTokens=7, handoffPromptTokens=7 | launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259 | 2026-05-06T17:16:15.522389+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json` |
 | `gemma.doppler_csl_splice.last_layer_tail_token` | ❌ blocked | last_layer_tail_token, layer=59, promptTokens=7 | csl_splice_token_absent | 2026-05-06T17:16:22.797834+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json` |
-| `gemma.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417 |  | 2026-05-06T17:16:22.678936+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
-| `qwen.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=63, promptTokens=18, token=760, logitAbsDiff=0.0133286 |  | 2026-05-06T15:11:51.171939+00:00 | `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
+| `gemma.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=59, promptTokens=7, token=3730, topK=5, maxLogitAbsDiff=0... |  | 2026-05-06T19:08:25.734102+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
+| `qwen.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=63, promptTokens=18, token=760, topK=5, maxLogitAbsDiff=0... |  | 2026-05-06T19:08:48.916767+00:00 | `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
 | `qwen.hardware_full_prompt` | ❓ missing | runner=bench/tools/run_qwen3_6_27b_af16_hardware_path.sh | returned hardware trace absent | n/a | `bench/out/hardware-run/qwen3-6-27b-af16-trace.json` |
 | `qwen.local_simfabric_ceiling` | ❌ blocked | hostplan_launch_blocked | embed_roi_launch_timeout | 2026-05-06T18:00:35.476926+00:00 | `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json` |
 | `qwen.multi_token_decode` | ❌ blocked |  | boundKernelCount=0/3 | 2026-05-04T14:51:01.824465+00:00 | `bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json` |
