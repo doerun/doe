@@ -415,6 +415,85 @@ def _load_embed_roi_adapter_module():
 
 
 class EmbedRoiPartialCheckpointTest(unittest.TestCase):
+    def test_embed_roi_launch_timeout_writes_typed_receipt(self) -> None:
+        launch = {
+            "launchIndex": 7,
+            "function": "compute",
+            "resolvedOutputs": [
+                {"symbol": "output", "buffer": "activation:embed"}
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            compile_dir = root / "compile"
+            compile_dir.mkdir()
+            progress_path = root / "progress.jsonl"
+
+            with (
+                mock.patch.object(
+                    runner,
+                    "build_embed_roi_spec",
+                    return_value=(
+                        {
+                            "prompt": {"tokenCount": 1},
+                            "sublaunches": [{}],
+                        },
+                        "roi-digest-before-compile-dir",
+                    ),
+                ),
+                mock.patch.object(
+                    runner,
+                    "_compile_embed_roi_target",
+                    return_value=compile_dir,
+                ),
+                mock.patch.object(
+                    runner,
+                    "_tokenized_prompt_path",
+                    return_value=root / "prompt.u32",
+                ),
+                mock.patch.object(
+                    runner,
+                    "cs_python_executable",
+                    return_value="/usr/bin/python3",
+                ),
+                mock.patch.object(
+                    runner.subprocess,
+                    "run",
+                    side_effect=subprocess.TimeoutExpired(
+                        cmd=["adapter"],
+                        timeout=3,
+                        output="phase:run\n",
+                        stderr="stalled\n",
+                    ),
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "embed_roi_launch_timeout",
+                ):
+                    runner._execute_embed_roi_launch(
+                        runtime_dir=root,
+                        launch=launch,
+                        buffer_files={},
+                        export={},
+                        progress_path=progress_path,
+                        cmaddr=None,
+                        timeout_seconds=3,
+                    )
+
+            receipt_path = root / "launch-receipts" / "launch-0007.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["status"], "blocked")
+            self.assertEqual(receipt["blockers"], ["embed_roi_launch_timeout"])
+            self.assertEqual(receipt["timeoutSeconds"], 3)
+            self.assertEqual(receipt["stdoutTail"], ["phase:run"])
+            self.assertEqual(receipt["stderrTail"], ["stalled"])
+            self.assertIn(
+                "embed_roi_launch_timeout",
+                progress_path.read_text(encoding="utf-8"),
+            )
+
     def test_partial_checkpoint_round_trips_by_spec_hash(self) -> None:
         adapter = _load_embed_roi_adapter_module()
         import numpy as np

@@ -498,6 +498,10 @@ and writes a receipt that records the first observed local blocker:
 python3 bench/tools/run_qwen3_6_27b_af16_local_simfabric_ceiling.py
 ```
 
+The Qwen probe forwards the same embedding ROI controls as the hardware
+wrapper. The default is recorded in the receipt; pass
+`--session-embed-roi-hidden-per-pe 0` to use the HostPlan compile parameter.
+
 Receipt path:
 
 `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json`

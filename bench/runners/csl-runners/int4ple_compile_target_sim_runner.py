@@ -2182,7 +2182,8 @@ def _prefill_gemv_split_d2h_rows(
     output_tile_cols: int,
     output_region_height: int,
 ) -> bool:
-    del output_region_height
+    if int(output_region_height) > 1:
+        return True
     return int(output_tile_cols) >= SDK_D2H_ELEMENT_COUNT_LIMIT
 
 
@@ -4208,6 +4209,7 @@ def _execute_embed_roi_launch(
     export: dict[str, Any],
     progress_path: Path,
     cmaddr: str | None,
+    timeout_seconds: int | None,
     hidden_per_pe_override: int = 0,
 ) -> dict[str, Any]:
     launch_index = int(launch.get("launchIndex") or 0)
@@ -4265,12 +4267,52 @@ def _execute_embed_roi_launch(
         "--progress-out",
         str(progress_path),
     ]
-    completed = subprocess.run(
-        command,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    timeout = timeout_seconds if timeout_seconds and timeout_seconds > 0 else None
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = (
+            exc.stdout.decode("utf-8", "replace")
+            if isinstance(exc.stdout, bytes)
+            else (exc.stdout or "")
+        )
+        stderr = (
+            exc.stderr.decode("utf-8", "replace")
+            if isinstance(exc.stderr, bytes)
+            else (exc.stderr or "")
+        )
+        receipt = {
+            "schemaVersion": 1,
+            "artifactKind": "int4ple_embed_roi_launch_receipt",
+            "status": "blocked",
+            "compileDir": str(roi_compile_dir),
+            "launchFunction": str(launch.get("function") or "compute"),
+            "launchIndex": launch_index,
+            "blockers": ["embed_roi_launch_timeout"],
+            "timeoutSeconds": timeout,
+            "stdoutTail": (
+                stdout.strip().splitlines()[-3:] if stdout.strip() else []
+            ),
+            "stderrTail": (
+                stderr.strip().splitlines()[-3:] if stderr.strip() else []
+            ),
+            "roiSpecPath": str(spec_path),
+            "roiSpecSha256": roi_digest,
+        }
+        write_json(receipt_path, receipt)
+        append_progress(
+            progress_path,
+            "embed_roi_launch_timeout",
+            launchIndex=launch_index,
+            timeoutSeconds=timeout,
+        )
+        raise ValueError("embed_roi_launch_timeout") from exc
     if not receipt_path.is_file():
         raise ValueError("embed_roi_launch_receipt_missing")
     receipt = load_json(receipt_path)
@@ -4375,6 +4417,7 @@ def _execute_embed_roi_launch_group(
     progress_path: Path,
     cmaddr: str | None,
     jobs: int,
+    timeout_seconds: int | None,
     hidden_per_pe_override: int = 0,
 ) -> list[dict[str, Any]]:
     def run_one(launch: dict[str, Any]) -> dict[str, Any]:
@@ -4387,6 +4430,7 @@ def _execute_embed_roi_launch_group(
             export=export,
             progress_path=progress_path,
             cmaddr=cmaddr,
+            timeout_seconds=timeout_seconds,
             hidden_per_pe_override=hidden_per_pe_override,
         )
         output = receipt.get("output") or {}
@@ -5005,6 +5049,7 @@ def execute_hostplan_runtime(
                         progress_path=progress_path,
                         cmaddr=cmaddr,
                         jobs=max(1, int(session_embed_roi_jobs)),
+                        timeout_seconds=launch_timeout_seconds,
                         hidden_per_pe_override=max(
                             0,
                             int(session_embed_roi_hidden_per_pe),
@@ -5059,6 +5104,7 @@ def execute_hostplan_runtime(
                     export=export,
                     progress_path=progress_path,
                     cmaddr=cmaddr,
+                    timeout_seconds=launch_timeout_seconds,
                     hidden_per_pe_override=max(
                         0,
                         int(session_embed_roi_hidden_per_pe),

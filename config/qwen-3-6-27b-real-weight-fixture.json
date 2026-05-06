@@ -4,9 +4,9 @@
   "modelId": "qwen-3-6-27b-q4k-ehaf16",
   "modelFamily": "qwen3",
   "laneLabel": "stretch_scale_target",
-  "laneLabelNote": "27B is the second dense scale target after Gemma 4 31B per the Qwen north-star checklist. Linear-attention (DeltaNet SSM) layers in the manifest are out of this fixture's scope; smoke config carries the named blocker. This pin covers the full-attention layer pattern only.",
-  "fixtureName": "qwen-3-6-27b-layer-block-L0-real-weight",
-  "purpose": "Pin the canonical bundle for Qwen 3.6 27B full-attention layer-block real-weight parity. Parallels config/gemma-4-31b-real-weight-fixture.json. Every hash below pins the Qwen program so the parity harness rejects fixture drift at validate-time.",
+  "laneLabelNote": "27B is the companion scale target after Gemma 4 31B. The current HostPlan lane carries both full-attention layers and DeltaNet SSM layers; this fixture pins the hosted af16 manifest plus the shared Q4K weight pack used by the Qwen hardware wrapper.",
+  "fixtureName": "qwen-3-6-27b-af16-real-weight",
+  "purpose": "Pin the canonical hosted Qwen 3.6 27B af16 bundle used by the full-prompt HostPlan hardware path. Parallels config/gemma-4-31b-real-weight-fixture.json. Every hash below pins the Qwen program so the parity harness rejects fixture drift at validate-time.",
 
   "bundle": {
     "manifest": {
@@ -53,7 +53,7 @@
     "queryKeyNorm": true,
     "attentionOutputGate": true,
     "outputGateType": "swish",
-    "note": "Manifest-shape Qwen 3.6 27B: head_dim=256, hidden=5120, GQA 24:4. Layer pattern is linear_attention x3 then full_attention every 4 layers. This fixture covers the 16 full-attention layers only; the 48 linear-attention layers are explicit named blockers in the smoke config."
+    "note": "Manifest-shape Qwen 3.6 27B: head_dim=256, hidden=5120, GQA 24:4. Layer pattern is linear_attention x3 then full_attention every 4 layers. The current HostPlan lane includes the 16 full-attention layers and the 48 DeltaNet SSM layers."
   },
 
   "weightTileMap": {
@@ -142,11 +142,11 @@
   },
 
   "scopeRestrictionsCarryOver": {
-    "linearAttentionLayers": "named_blocker",
-    "mropeInterleaved": "named_blocker",
-    "causalAttentionPrefill": "named_blocker",
-    "attentionOutputGate": "wiring_landed_smoke_config_rebind_pending",
-    "swigluFfnFusedGate": "wiring_landed_smoke_config_rebind_pending",
-    "carryOverNote": "These are lifted from runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json scopeRestrictions. The audit's smoke-contract verdict treats the wiring-landed entries as advisory — the smoke config's plain `silu` and dropped `o_gate` are still contract-valid until the rebind lands."
+    "linearAttentionLayers": "hostplan_bound",
+    "mropeInterleaved": "contract_surface_bound",
+    "causalAttentionPrefill": "attention_prefill_kv_axis_sharded_bound",
+    "attentionOutputGate": "sigmoid_gated_bound",
+    "swigluFfnFusedGate": "silu_gated_bound",
+    "carryOverNote": "The Qwen smoke config and HostPlan lane now carry the SSM body ops, attention output gate, gated FFN op, and causal prefill attention routing. Hardware execution remains the missing returned artifact."
   }
 }

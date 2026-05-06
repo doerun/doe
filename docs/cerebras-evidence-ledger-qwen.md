@@ -12,7 +12,7 @@ External evidence packet: bundle archive built via [`docs/cerebras-evidence-bund
 |---|---|---|---|
 | A. Per-kernel byte-identity | Smoke | No | 2/2 pass (1L vs 64L) |
 | B. 27B manifest-shape full-graph cslc compile | Manifest | Yes | **bound clean**: current receipt records `blocker.class="none"` and no accepted compile blockers. Hardware execution remains R3-2 gated. |
-| C. 27B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | full-prompt HostPlan hardware wrapper is authored; per-kernel cells pass under documented canary constraints; WSE receipt remains R3-2 gated |
+| C. 27B graph-shape execution receipt | Manifest, simfabric or WSE | Yes | full-prompt HostPlan hardware wrapper is authored; local simfabric probe records the first HostPlan blocker; per-kernel cells pass under documented canary constraints; WSE receipt remains R3-2 gated |
 
 ## Bound today (no hardware)
 
@@ -34,7 +34,7 @@ External evidence packet: bundle archive built via [`docs/cerebras-evidence-bund
 - [x] Frozen Doppler reference validator binding — `bench/tools/validate_qwen_3_6_27b_frozen_doppler_reference.py` (typed-blocker when fixture absent)
 - [x] Selected-logit Doppler to CSL splice — `bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py`; receipt at `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` binds real Qwen final-prompt state, final RMSNorm, selected Q4_K_M lm-head row, generated CSL, and Doppler prefill-logit parity.
 - [x] Full-prompt hardware path packaging — `bench/tools/run_qwen3_6_27b_af16_hardware_path.sh`, `bench/runners/csl-runners/qwen3_6_27b_af16_hostplan_streaming_runner.py`, and `bench/fixtures/cerebras-hostplans/qwen3-6-27b-af16/` package the Qwen af16 HostPlan path for operator-side execution.
-- [x] Local simfabric ceiling probe tool — `bench/tools/run_qwen3_6_27b_af16_local_simfabric_ceiling.py` records the first observed local Qwen HostPlan blocker into `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json` when run.
+- [x] Local simfabric ceiling probe receipt — `bench/tools/run_qwen3_6_27b_af16_local_simfabric_ceiling.py` records the first observed local Qwen HostPlan blocker into `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json`; current receipt records `hostplan_launch_blocked` at the embedding ROI launch.
 - [x] External evidence doc
 
 ## Doppler-gated (cross-repo)

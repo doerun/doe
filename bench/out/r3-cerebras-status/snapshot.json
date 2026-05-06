@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T16:39:42.328222+00:00",
+  "generatedAt": "2026-05-06T18:06:24.673164+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -29,10 +29,10 @@
     {
       "lane": "qwen.per_kernel.summary",
       "artifact": "bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/summary.json",
-      "verdict": "missing",
-      "blocker": null,
+      "verdict": "blocked",
+      "blocker": "21/22 kernels not bound: embed,rmsnorm,rmsnorm_prefill,rmsnorm_decode,ssm_conv1d_depthwise,ssm_l2_normalize,ssm_linear_attention,tiled,rope_parti",
       "scope": "",
-      "artifactMtime": null
+      "artifactMtime": "2026-05-06T18:02:30.787234+00:00"
     },
     {
       "lane": "qwen.per_kernel.attn_decode",
@@ -40,7 +40,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.436985+00:00"
+      "artifactMtime": "2026-05-06T18:01:23.295941+00:00"
     },
     {
       "lane": "qwen.per_kernel.attn_prefill_kv_axis_sharded",
@@ -48,7 +48,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.150389+00:00"
+      "artifactMtime": "2026-05-06T18:01:21.661133+00:00"
     },
     {
       "lane": "qwen.per_kernel.embed",
@@ -56,7 +56,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.374552+00:00"
+      "artifactMtime": "2026-05-06T18:01:18.992851+00:00"
     },
     {
       "lane": "qwen.per_kernel.gemv",
@@ -64,7 +64,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.428040+00:00"
+      "artifactMtime": "2026-05-06T18:01:23.282748+00:00"
     },
     {
       "lane": "qwen.per_kernel.kv_write",
@@ -72,7 +72,15 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.433215+00:00"
+      "artifactMtime": "2026-05-06T18:01:23.290177+00:00"
+    },
+    {
+      "lane": "qwen.per_kernel.lm_head_gemv",
+      "artifact": "bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/lm_head_gemv.json",
+      "verdict": "blocked",
+      "blocker": "dry_run",
+      "scope": "",
+      "artifactMtime": "2026-05-06T18:01:22.893342+00:00"
     },
     {
       "lane": "qwen.per_kernel.o_gate",
@@ -80,7 +88,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.154169+00:00"
+      "artifactMtime": "2026-05-06T18:01:21.819638+00:00"
     },
     {
       "lane": "qwen.per_kernel.residual",
@@ -88,7 +96,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.157508+00:00"
+      "artifactMtime": "2026-05-06T18:01:21.968851+00:00"
     },
     {
       "lane": "qwen.per_kernel.residual_decode",
@@ -96,7 +104,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.161309+00:00"
+      "artifactMtime": "2026-05-06T18:01:22.265311+00:00"
     },
     {
       "lane": "qwen.per_kernel.residual_prefill",
@@ -104,7 +112,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.160759+00:00"
+      "artifactMtime": "2026-05-06T18:01:22.124539+00:00"
     },
     {
       "lane": "qwen.per_kernel.rmsnorm",
@@ -112,7 +120,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.380062+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.144353+00:00"
     },
     {
       "lane": "qwen.per_kernel.rmsnorm_decode",
@@ -120,7 +128,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.385545+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.438096+00:00"
     },
     {
       "lane": "qwen.per_kernel.rmsnorm_prefill",
@@ -128,7 +136,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.384749+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.297653+00:00"
     },
     {
       "lane": "qwen.per_kernel.rope_partial",
@@ -136,7 +144,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.476921+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.536191+00:00"
     },
     {
       "lane": "qwen.per_kernel.sample",
@@ -144,7 +152,7 @@
       "verdict": "bound",
       "blocker": null,
       "scope": "",
-      "artifactMtime": "2026-04-30T02:49:30.107192+00:00"
+      "artifactMtime": "2026-05-06T18:02:30.785543+00:00"
     },
     {
       "lane": "qwen.per_kernel.silu_gated",
@@ -152,7 +160,23 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:37.164527+00:00"
+      "artifactMtime": "2026-05-06T18:01:22.417172+00:00"
+    },
+    {
+      "lane": "qwen.per_kernel.silu_gated_decode",
+      "artifact": "bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/silu_gated_decode.json",
+      "verdict": "blocked",
+      "blocker": "dry_run",
+      "scope": "",
+      "artifactMtime": "2026-05-06T18:01:22.715689+00:00"
+    },
+    {
+      "lane": "qwen.per_kernel.silu_gated_prefill",
+      "artifact": "bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/silu_gated_prefill.json",
+      "verdict": "blocked",
+      "blocker": "dry_run",
+      "scope": "",
+      "artifactMtime": "2026-05-06T18:01:22.572391+00:00"
     },
     {
       "lane": "qwen.per_kernel.ssm_conv1d_depthwise",
@@ -160,7 +184,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.386889+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.439976+00:00"
     },
     {
       "lane": "qwen.per_kernel.ssm_l2_normalize",
@@ -168,7 +192,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.387573+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.440708+00:00"
     },
     {
       "lane": "qwen.per_kernel.ssm_linear_attention",
@@ -176,7 +200,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.388716+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.441903+00:00"
     },
     {
       "lane": "qwen.per_kernel.tiled",
@@ -184,7 +208,7 @@
       "verdict": "blocked",
       "blocker": "dry_run",
       "scope": "",
-      "artifactMtime": "2026-04-29T20:44:34.474985+00:00"
+      "artifactMtime": "2026-05-06T18:01:19.533830+00:00"
     },
     {
       "lane": "gemma.bounded_smoke",
@@ -200,7 +224,7 @@
       "verdict": "blocked",
       "blocker": "simfabric_d2h_copyback_stall_after_launch_complete",
       "scope": "memcpy_d2h_start",
-      "artifactMtime": "2026-05-06T15:18:45.318537+00:00"
+      "artifactMtime": "2026-05-06T17:12:13.624156+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.single_block_hidden",
@@ -208,7 +232,7 @@
       "verdict": "blocked",
       "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259",
       "scope": "single_block_hidden, layer=59, promptTokens=7, handoffPromptTokens=7",
-      "artifactMtime": "2026-05-06T15:22:48.583650+00:00"
+      "artifactMtime": "2026-05-06T17:16:15.522389+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.last_layer_tail_token",
@@ -216,7 +240,7 @@
       "verdict": "blocked",
       "blocker": "csl_splice_token_absent",
       "scope": "last_layer_tail_token, layer=59, promptTokens=7",
-      "artifactMtime": "2026-05-06T15:22:55.665658+00:00"
+      "artifactMtime": "2026-05-06T17:16:22.797834+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.selected_logit",
@@ -224,7 +248,7 @@
       "verdict": "bound",
       "blocker": null,
       "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417",
-      "artifactMtime": "2026-05-06T15:22:55.520622+00:00"
+      "artifactMtime": "2026-05-06T17:16:22.678936+00:00"
     },
     {
       "lane": "qwen.doppler_csl_splice.selected_logit",
@@ -245,10 +269,10 @@
     {
       "lane": "qwen.local_simfabric_ceiling",
       "artifact": "bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json",
-      "verdict": "missing",
-      "blocker": null,
-      "scope": "",
-      "artifactMtime": null
+      "verdict": "blocked",
+      "blocker": "embed_roi_launch_timeout",
+      "scope": "hostplan_launch_blocked",
+      "artifactMtime": "2026-05-06T18:00:35.476926+00:00"
     },
     {
       "lane": "qwen.multi_token_decode",
@@ -264,7 +288,7 @@
       "verdict": "pass_with_documented_canary_constraints",
       "blocker": null,
       "scope": "",
-      "artifactMtime": "2026-05-06T15:18:45.285968+00:00"
+      "artifactMtime": "2026-05-06T17:12:13.581347+00:00"
     },
     {
       "lane": "qwen.simfabric_cells",

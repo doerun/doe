@@ -24,6 +24,7 @@ RUNNER = (
     REPO_ROOT
     / "bench/runners/csl-runners/qwen3_6_27b_af16_hostplan_streaming_runner.py"
 )
+DEFAULT_EMBED_ROI_HIDDEN_PER_PE = 512
 PROMPT_TOKEN_IDS = [
     248045,
     846,
@@ -73,9 +74,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cslc-executable", default="cslc")
     parser.add_argument("--skip-sdk-compile", action="store_true")
     parser.add_argument(
+        "--session-embed-roi-hidden-per-pe",
+        type=int,
+        default=DEFAULT_EMBED_ROI_HIDDEN_PER_PE,
+        help=(
+            "Forwarded to the HostPlan runner. Zero uses the HostPlan "
+            "compile parameter."
+        ),
+    )
+    parser.add_argument(
+        "--session-embed-roi-jobs",
+        type=int,
+        default=1,
+        help="Forwarded to the HostPlan runner.",
+    )
+    parser.add_argument(
         "--stop-after-launch",
         type=int,
         default=-1,
+        help="Forwarded to the HostPlan runner.",
+    )
+    parser.add_argument(
+        "--launch-timeout-seconds",
+        type=int,
+        default=120,
         help="Forwarded to the HostPlan runner.",
     )
     return parser.parse_args()
@@ -127,6 +149,7 @@ def build_receipt(
     session_dir: Path,
     sdk_compile: dict[str, Any] | None,
     runner_result: dict[str, Any],
+    runner_options: dict[str, Any],
 ) -> dict[str, Any]:
     trace = load_json(trace_path) if trace_path.is_file() else {}
     progress_path = session_dir / "progress.jsonl"
@@ -145,6 +168,8 @@ def build_receipt(
     blocker = first_blocker(trace)
     if event and event.get("phase") == "hostplan_launch_blocked":
         blocker = str(event.get("error") or blocker or "hostplan_launch_blocked")
+    if not blocker and runner_options.get("stopAfterLaunch", -1) >= 0:
+        blocker = "operator_stop_after_launch"
     if not blocker and not event and status != "output_ready":
         blocker = "no_session_progress_emitted"
     verdict = "unblocked" if status == "output_ready" else "blocked"
@@ -160,6 +185,7 @@ def build_receipt(
         "artifacts": artifact_paths,
         "artifactHashes": artifact_hashes,
         "sdkCompile": sdk_compile,
+        "runnerOptions": runner_options,
         "runner": runner_result,
         "claim": {
             "scope": (
@@ -209,6 +235,12 @@ def main() -> int:
         "32",
         "--session-lm-head-tile-dispatch-budget",
         "0",
+        "--session-embed-roi-hidden-per-pe",
+        str(args.session_embed_roi_hidden_per_pe),
+        "--session-embed-roi-jobs",
+        str(args.session_embed_roi_jobs),
+        "--launch-timeout-seconds",
+        str(args.launch_timeout_seconds),
         "--session-prefill-q4k-gemv-output-pe-rows",
         "4",
         "--session-out-dir",
@@ -227,6 +259,12 @@ def main() -> int:
         session_dir=session_dir,
         sdk_compile=sdk_compile,
         runner_result=runner_result,
+        runner_options={
+            "sessionEmbedRoiHiddenPerPe": args.session_embed_roi_hidden_per_pe,
+            "sessionEmbedRoiJobs": args.session_embed_roi_jobs,
+            "stopAfterLaunch": args.stop_after_launch,
+            "launchTimeoutSeconds": args.launch_timeout_seconds,
+        },
     )
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(

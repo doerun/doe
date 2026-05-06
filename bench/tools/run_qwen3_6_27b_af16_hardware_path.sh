@@ -26,6 +26,8 @@ skip_archive_verify=0
 skip_fetch=0
 skip_hf_login=0
 dry_run=0
+session_embed_roi_hidden_per_pe="${DOE_SESSION_EMBED_ROI_HIDDEN_PER_PE:-512}"
+session_embed_roi_jobs="${DOE_SESSION_EMBED_ROI_JOBS:-1}"
 
 usage() {
   cat <<'EOF'
@@ -49,6 +51,11 @@ Common options:
   --skip-fetch               Do not fetch Clocksmith/rdrr; validate local files.
   --skip-hf-login            Do not call hf auth login.
   --dry-run                  Print the runner command without launching it.
+  --session-embed-roi-hidden-per-pe <n>
+                             Forwarded to the HostPlan runner. Default: 512.
+                             Use 0 to keep the HostPlan compile parameter.
+  --session-embed-roi-jobs <n>
+                             Forwarded to the HostPlan runner. Default: 1.
 
 HostPlan options:
   --hostplan-root <path>     Directory containing host-plan.json,
@@ -152,6 +159,14 @@ while [[ $# -gt 0 ]]; do
     --dry-run)
       dry_run=1
       shift
+      ;;
+    --session-embed-roi-hidden-per-pe)
+      session_embed_roi_hidden_per_pe="${2:-}"
+      shift 2
+      ;;
+    --session-embed-roi-jobs)
+      session_embed_roi_jobs="${2:-}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -339,6 +354,8 @@ runner_cmd=(
   --session-lm-head-dispatch-mode dense_gemv_width_tiled_session
   --session-lm-head-tile-width 32
   --session-lm-head-tile-dispatch-budget 0
+  --session-embed-roi-hidden-per-pe "$session_embed_roi_hidden_per_pe"
+  --session-embed-roi-jobs "$session_embed_roi_jobs"
   --session-prefill-q4k-gemv-output-pe-rows 4
   --session-out-dir "$session_out_dir"
   --out "$trace_out"
