@@ -4,11 +4,11 @@
   "fingerprints": [
     {
       "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/frozen-reference.manifest.json",
-      "sha256": "69f92218eb4a7411a3bd6adde821cf15d8b9e7afbcde2490be5812c678b26772"
+      "sha256": "8a92d64c1b388c3d663cc3b486305b2306be8c26aa9ff165b5aa73c5095f9f84"
     },
     {
       "path": "bench/fixtures/r3-1-31b-doppler-frozen-af16/reference-report.json",
-      "sha256": "60cab9e65a5bdd71335fb609045a1c12a9fb78700ac298b0595d4787c0b4bc69"
+      "sha256": "2fb7461b38654956a498a76efd7cf8fde82f8523374254bd1993fd4d17fe810d"
     },
     {
       "path": "bench/out/26b-moe-lane/lane-status.json",
@@ -84,11 +84,27 @@
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json",
-      "sha256": "34e52353b8738bd73498861d3af1c01815528c9e36a5dbfb34c58a2f154070e5"
+      "sha256": "81dee1dedca08a2d6b97c0f49d5123f25a8b5f9ea27229cd469b493393e0ebce"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
+      "sha256": "7880c895415ea559a7f180e17dd345551750981ca442c1b8498ec8fddc65e341"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/launch-receipts/launch-0001.json",
+      "sha256": "9000b531c7aaa1f3e94fa9f7e99f35f883d51ea2d8d8e57355df0ef4eae8abfd"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch-shards/batch-0000-phase.log",
+      "sha256": "c8d6e8038c74b28aba6f4ad0323076ab228b98e890f0983b62fdc98a0871bee6"
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/single-block-hidden.json",
-      "sha256": "5aed70102650f9b59329f0b3e424665a5fb4c62892ef8e296780287196c8cac5"
+      "sha256": "6bf3a1752f922550e6924527174326ff0a39d3f8cba2a7972e2ca1dd6f36bdec"
+    },
+    {
+      "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json",
+      "sha256": "76fc21b819b1d1ed5622e232041a141ab21aa24c5c925ec1faee5c300bc407be"
     },
     {
       "path": "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
@@ -323,8 +339,12 @@
       "sha256": "ba5a325cfc33f843991ed2d5ace3550ba4ae837577e61c73f45012b0c4c913b3"
     },
     {
+      "path": "config/doppler-selected-logit-splice-receipt.schema.json",
+      "sha256": "7f01d53fa4ae446a6f5fe1c6179602b4ce599f942609eb8d3b2bea7de5bfcdaa"
+    },
+    {
       "path": "config/doppler-to-csl-splice-receipt.schema.json",
-      "sha256": "f8be9e6f5aae96d17fcb7ff5ee59b3d72294423e9813cb2aae34b6196df63330"
+      "sha256": "d6075d566ce07f17fc317c404a67dd4e00acc4fc05e09e2b477dbb33e6f3813d"
     },
     {
       "path": "config/gemma-4-31b-real-weight-fixture.json",
@@ -340,7 +360,7 @@
     },
     {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "80e92c0f2c0ec70019feaea0d924deee96a062424f8f48bb08c03e58adbbb31f"
+      "sha256": "52a4c065b1da98c7f387462034bf5d3b7a49c6b51636521283eec657e7176e63"
     },
     {
       "path": "docs/claim-discipline.md",
@@ -348,7 +368,7 @@
     },
     {
       "path": "docs/hardware-validation-appendix.md",
-      "sha256": "4d7a98b81313c9842662658c4aee5d71b864424c2287440ad717b4f5ce314364"
+      "sha256": "9a106f58e83374ab97eb3624724995329adda5373c8034828ac39c0cb8f7aea4"
     }
   ],
   "missing": []

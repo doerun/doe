@@ -11,3 +11,7 @@ phase:memcpy_h2d_complete step=0 symbol=weight
 phase:launch_start function=compute step=0
 phase:launch_complete function=compute step=0
 phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0
+phase:memcpy_d2h_complete step=0 symbol=output
+phase:step_complete step=0
+phase:stop_start
+phase:stop_complete

@@ -3,15 +3,14 @@
   "blockedLaunch": {
     "batchRuntime": {
       "adapterStepBudget": 1,
-      "exitCode": -1,
+      "exitCode": 0,
       "pendingStepCount": 1,
       "shardCount": 1,
       "splitD2HRows": false,
-      "timedOut": true
+      "timedOut": false
     },
     "blockers": [
-      "prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259",
-      "prefill_q4k_gemv_tile_timeout:0:0:0"
+      "prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259"
     ],
     "compileIdentity": {
       "fabricHeight": 6,
@@ -35,59 +34,7 @@
       ],
       "width": 11
     },
-    "firstBlockedTile": {
-      "activation": {
-        "path": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/row-0000/src-00000/out-00000/in/activation.npy",
-        "sha256": "b6621b231659d772686cedafa1ce5e89d048290fe8d3f889e6a37950746729fb"
-      },
-      "batchPath": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch-shards/batch-0000.json",
-      "batchPhaseTracePath": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch-shards/batch-0000-phase.log",
-      "batchShardIndex": 0,
-      "batchStepIndex": 0,
-      "compileBlockCount": 21,
-      "compileSourceCols": 5376,
-      "exitCode": -1,
-      "output": {
-        "path": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/row-0000/src-00000/out-00000/out/output.npy",
-        "sha256": "",
-        "totalBytes": 0
-      },
-      "outputStart": 0,
-      "outputStatus": "missing",
-      "phaseTail": [
-        "phase:step_start step=0",
-        "phase:memcpy_h2d_start chunk=256 height=4 step=0 symbol=activation width=11 words=11264 x=0 y=0",
-        "phase:memcpy_h2d_complete step=0 symbol=activation",
-        "phase:memcpy_h2d_start chunk=8064 height=4 step=0 symbol=weight width=11 words=354816 x=0 y=0",
-        "phase:memcpy_h2d_complete step=0 symbol=weight",
-        "phase:launch_start function=compute step=0",
-        "phase:launch_complete function=compute step=0",
-        "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0"
-      ],
-      "reuseStatus": "missing",
-      "reusedOutput": false,
-      "rowIndex": 0,
-      "sourceBlockCount": 21,
-      "sourceBlockStart": 0,
-      "sourceColStart": 0,
-      "sourceCols": 5376,
-      "sourceTileIndex": 0,
-      "stderrTail": [
-        "\u001b[34m[INFO]\u001b[0m === Calling container-hosted python ===",
-        "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
-      ],
-      "stdoutTail": [
-        "phase:launch_start function=compute step=0",
-        "phase:launch_complete function=compute step=0",
-        "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0"
-      ],
-      "timedOut": true,
-      "wallclockNs": 240073727573,
-      "weight": {
-        "path": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/row-0000/src-00000/out-00000/in/weight.npy",
-        "sha256": "379f3af152befe8083028e17bbd2a1422ee212ae659081abeec30a688c34b716"
-      }
-    },
+    "firstBlockedTile": null,
     "kernelPattern": "prefill_q4k_gemv",
     "launchIndex": 1,
     "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/launch-receipts/launch-0001.json",
@@ -104,7 +51,7 @@
       "tileCount": 1
     }
   },
-  "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259; prefill_q4k_gemv_tile_timeout:0:0:0",
+  "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259",
   "bootstrap": {
     "artifactKind": "int4ple_hostplan_executor_runtime_bootstrap",
     "blockers": [],
@@ -4732,7 +4679,7 @@
   "runtime": {
     "artifactKind": "int4ple_hostplan_executor_runtime",
     "blockers": [
-      "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259; prefill_q4k_gemv_tile_timeout:0:0:0"
+      "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259"
     ],
     "bufferDir": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/buffers",
     "executedLaunchCount": 1,

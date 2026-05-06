@@ -20,7 +20,7 @@
   },
   "comparisonMode": "parity",
   "cslRun": {
-    "command": "bench/tools/run_gemma4_31b_af16_doppler_csl_splice.py --kind single_block_hidden --allow-blocked --q4k-tile-dispatch-budget 1",
+    "command": "bench/tools/run_gemma4_31b_af16_doppler_csl_splice.py --kind single_block_hidden --q4k-tile-dispatch-budget 1 --allow-blocked",
     "outputTensor": null,
     "outputTokenId": null,
     "status": "blocked"

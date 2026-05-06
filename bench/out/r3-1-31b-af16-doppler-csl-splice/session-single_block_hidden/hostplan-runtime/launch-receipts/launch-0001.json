@@ -2,10 +2,10 @@
   "artifactKind": "int4ple_tiled_q4k_gemv_launch_receipt",
   "batchRuntime": {
     "adapterStepBudget": 1,
-    "adapterWallclockNsSum": 240073727573,
+    "adapterWallclockNsSum": 208896390484,
     "batchPath": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch.json",
     "budgetLimited": true,
-    "exitCode": -1,
+    "exitCode": 0,
     "maxOutputPeRows": 4,
     "pendingStepCount": 1,
     "requestedJobCount": 1,
@@ -14,7 +14,7 @@
     "shards": [
       {
         "batchPath": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch-shards/batch-0000.json",
-        "exitCode": -1,
+        "exitCode": 0,
         "phaseTracePath": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/batch-shards/batch-0000-phase.log",
         "shardIndex": 0,
         "stderrTail": [
@@ -22,24 +22,23 @@
           "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
         ],
         "stdoutTail": [
-          "phase:launch_start function=compute step=0",
-          "phase:launch_complete function=compute step=0",
-          "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0"
+          "phase:step_complete step=0",
+          "phase:stop_start",
+          "phase:stop_complete"
         ],
-        "timedOut": true,
-        "wallclockNs": 240073727573
+        "timedOut": false,
+        "wallclockNs": 208896390484
       }
     ],
     "splitD2HRows": false,
     "tileDispatchBudget": 1,
-    "timedOut": true,
+    "timedOut": false,
     "totalTaskCountBeforeBudget": 259,
-    "wallclockNs": 240073727573,
+    "wallclockNs": 208896390484,
     "workerCount": 1
   },
   "blockers": [
-    "prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259",
-    "prefill_q4k_gemv_tile_timeout:0:0:0"
+    "prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259"
   ],
   "compileIdentity": {
     "fabricHeight": 6,
@@ -127,14 +126,14 @@
       "batchStepIndex": 0,
       "compileBlockCount": 21,
       "compileSourceCols": 5376,
-      "exitCode": -1,
+      "exitCode": 0,
       "output": {
         "path": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/row-0000/src-00000/out-00000/out/output.npy",
-        "sha256": "",
-        "totalBytes": 0
+        "sha256": "eb3b56212ef3c956e9a30f91be0c0668c7d3ef71f7186ff6ed496bab9fa1d587",
+        "totalBytes": 1024
       },
       "outputStart": 0,
-      "outputStatus": "missing",
+      "outputStatus": "ready",
       "phaseTail": [
         "phase:step_start step=0",
         "phase:memcpy_h2d_start chunk=256 height=4 step=0 symbol=activation width=11 words=11264 x=0 y=0",
@@ -143,7 +142,9 @@
         "phase:memcpy_h2d_complete step=0 symbol=weight",
         "phase:launch_start function=compute step=0",
         "phase:launch_complete function=compute step=0",
-        "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0"
+        "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0",
+        "phase:memcpy_d2h_complete step=0 symbol=output",
+        "phase:step_complete step=0"
       ],
       "reuseStatus": "missing",
       "reusedOutput": false,
@@ -158,12 +159,12 @@
         "\u001b[34m[INFO]\u001b[0m Using direct rootfs: /home/x/cerebras-sdk-2.10.0/.direct-rootfs"
       ],
       "stdoutTail": [
-        "phase:launch_start function=compute step=0",
-        "phase:launch_complete function=compute step=0",
-        "phase:memcpy_d2h_start chunk=56 height=4 step=0 symbol=output width=1 words=224 x=10 y=0"
+        "phase:step_complete step=0",
+        "phase:stop_start",
+        "phase:stop_complete"
       ],
-      "timedOut": true,
-      "wallclockNs": 240073727573,
+      "timedOut": false,
+      "wallclockNs": 208896390484,
       "weight": {
         "path": "/home/x/deco/doe/bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/tiled-q4k-gemv/launch-0001/row-0000/src-00000/out-00000/in/weight.npy",
         "sha256": "379f3af152befe8083028e17bbd2a1422ee212ae659081abeec30a688c34b716"

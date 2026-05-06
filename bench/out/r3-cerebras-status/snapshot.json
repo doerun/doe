@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T15:14:19.476927+00:00",
+  "generatedAt": "2026-05-06T15:24:24.146651+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -200,15 +200,15 @@
       "verdict": "blocked",
       "blocker": "simfabric_d2h_copyback_stall_after_launch_complete",
       "scope": "memcpy_d2h_start",
-      "artifactMtime": "2026-05-05T21:38:11.385258+00:00"
+      "artifactMtime": "2026-05-06T15:18:45.318537+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.single_block_hidden",
       "artifact": "bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json",
       "verdict": "blocked",
-      "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259; prefill_q4k_gemv_tile_timeout:0:0:0",
+      "blocker": "launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259",
       "scope": "single_block_hidden, layer=59, promptTokens=7, handoffPromptTokens=7",
-      "artifactMtime": "2026-05-05T20:30:07.082262+00:00"
+      "artifactMtime": "2026-05-06T15:22:48.583650+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.last_layer_tail_token",
@@ -216,7 +216,7 @@
       "verdict": "blocked",
       "blocker": "csl_splice_token_absent",
       "scope": "last_layer_tail_token, layer=59, promptTokens=7",
-      "artifactMtime": "2026-05-05T19:46:23.336336+00:00"
+      "artifactMtime": "2026-05-06T15:22:55.665658+00:00"
     },
     {
       "lane": "gemma.doppler_csl_splice.selected_logit",
@@ -224,7 +224,7 @@
       "verdict": "bound",
       "blocker": null,
       "scope": "selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417",
-      "artifactMtime": "2026-05-05T20:30:39.072140+00:00"
+      "artifactMtime": "2026-05-06T15:22:55.520622+00:00"
     },
     {
       "lane": "qwen.doppler_csl_splice.selected_logit",
@@ -248,7 +248,7 @@
       "verdict": "pass_with_documented_canary_constraints",
       "blocker": null,
       "scope": "",
-      "artifactMtime": "2026-05-05T21:38:11.349965+00:00"
+      "artifactMtime": "2026-05-06T15:18:45.285968+00:00"
     },
     {
       "lane": "qwen.simfabric_cells",
