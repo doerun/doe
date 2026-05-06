@@ -15,13 +15,13 @@ always reflects the last successful pack.
 
 | Field | Value |
 | --- | --- |
-| regenerated at | `2026-05-06T15:46:45Z` |
-| archive | `bench/out/doe-cerebras-evidence-20260506-1146-627cb4c50716.tar.gz` |
-| archive sha256 | `27f91b78d106bfbc4dd8c72b1151a2cd4c7d9ec16e645419d06d143048a213d6` |
-| MANIFEST.txt sha256 | `eaaa48ee72bc7d3c296fb5161adb57acf2c366005b2497b7bf2ff13216fac97e` |
-| BUNDLE_META.json sha256 | `9056511176ab34e2271b5fec3cf6a3cc063c002ef1e34d60f75bf2327ab73f43` |
-| archive size (bytes) | `1052319` |
-| git commit | `627cb4c50716044aef9d3a5eb5bf7828c7020c98` |
+| regenerated at | `2026-05-06T17:18:26Z` |
+| archive | `bench/out/doe-cerebras-evidence-20260506-1318-2dd569878f30.tar.gz` |
+| archive sha256 | `aa3c5a07d2af552d1638f9844aa0821abd551c1ceaf962ac45463cd6053a462f` |
+| MANIFEST.txt sha256 | `ad1c9b08161782303133c0e4125cc65306a36064f15000cd7a9c2b6d292ecc78` |
+| BUNDLE_META.json sha256 | `ce902546df945233a9e7f82bd47ed872dc3b5fcc312aa8cd2a388ee7ec69dda2` |
+| archive size (bytes) | `1075127` |
+| git commit | `2dd569878f3009875186ff5a55c2b5352ab8a544` |
 | git dirty | `clean` |
 | evidence bundle verdict | `passed` (28/28 steps) |
 
