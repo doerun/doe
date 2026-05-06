@@ -1,0 +1,37 @@
+param memcpy_params;
+const channels: i16 = 128;
+const kernel_size: i16 = 4;
+param num_tokens: i16;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+var input: [num_tokens * channels]f16 = @zeros([num_tokens * channels]f16);
+var weight: [channels * kernel_size]f16 = @zeros([channels * kernel_size]f16);
+var output: [num_tokens * channels]f16 = @zeros([num_tokens * channels]f16);
+var bias: [channels]f16 = @zeros([channels]f16);
+var input_ptr: [*]f16 = &input;
+var weight_ptr: [*]f16 = &weight;
+var output_ptr: [*]f16 = &output;
+var bias_ptr: [*]f16 = &bias;
+
+fn compute() void {
+    for (@range(i16, num_tokens)) |t| {
+        for (@range(i16, channels)) |c| {
+            var acc: f16 = bias[@as(u32, c)];
+            for (@range(i16, kernel_size)) |k| {
+                const t_in: i16 = t - (kernel_size - 1 - k);
+                if (t_in >= 0) {
+                    acc += input[@as(u32, t_in) * @as(u32, channels) + @as(u32, c)] * weight[@as(u32, c) * @as(u32, kernel_size) + @as(u32, k)];
+                }
+            }
+            output[@as(u32, t) * @as(u32, channels) + @as(u32, c)] = acc;
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(bias_ptr, "bias");
+    @export_symbol(compute);
+}

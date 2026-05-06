@@ -1,0 +1,33 @@
+{
+  "variables": [
+    {"name":"query","sizeExpr":"head_dim","elemType":"f16"},
+    {"name":"key","sizeExpr":"kv_chunk * head_dim","elemType":"f16"},
+    {"name":"val","sizeExpr":"kv_chunk * head_dim","elemType":"f16"},
+    {"name":"output","sizeExpr":"head_dim","elemType":"f16"},
+    {"name":"decode_position","sizeExpr":"1","elemType":"u32"},
+    {"name":"decode_sliding_window","sizeExpr":"1","elemType":"u32"},
+    {"name":"scratch_in","sizeExpr":"1","elemType":"f16"},
+    {"name":"scratch_out","sizeExpr":"1","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"query_ptr","backing":"query","elemType":"f16"},
+    {"name":"key_ptr","backing":"key","elemType":"f16"},
+    {"name":"val_ptr","backing":"val","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"},
+    {"name":"decode_position_ptr","backing":"decode_position","elemType":"u32"},
+    {"name":"decode_sliding_window_ptr","backing":"decode_sliding_window","elemType":"u32"}
+  ],
+  "exports": [
+    {"symbol":"query","pointer":"query_ptr","backing":"query","sizeExpr":"head_dim","elemType":"f16"},
+    {"symbol":"key","pointer":"key_ptr","backing":"key","sizeExpr":"kv_chunk * head_dim","elemType":"f16"},
+    {"symbol":"val","pointer":"val_ptr","backing":"val","sizeExpr":"kv_chunk * head_dim","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"head_dim","elemType":"f16"},
+    {"symbol":"position","pointer":"decode_position_ptr","backing":"decode_position","sizeExpr":"1","elemType":"u32"},
+    {"symbol":"sliding_window","pointer":"decode_sliding_window_ptr","backing":"decode_sliding_window","sizeExpr":"1","elemType":"u32"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"scale","type":"f16","expr":"0.125"},
+    {"kind":"const","name":"reduce_task_id","type":"local_task_id","expr":"@get_local_task_id(10)"},
+    {"kind":"const","name":"norm_task_id","type":"local_task_id","expr":"@get_local_task_id(11)"}
+  ]
+}

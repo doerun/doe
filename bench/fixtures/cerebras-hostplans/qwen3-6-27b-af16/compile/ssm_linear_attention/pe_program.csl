@@ -1,0 +1,60 @@
+param memcpy_params;
+const key_dim: i16 = 128;
+const value_dim: i16 = 128;
+param value_dim_per_pe: i16;
+param a_log: f16;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+var query: [value_dim_per_pe]f16 = @zeros([value_dim_per_pe]f16);
+var key: [key_dim]f16 = @zeros([key_dim]f16);
+var value: [key_dim]f16 = @zeros([key_dim]f16);
+var gate: [value_dim_per_pe]f16 = @zeros([value_dim_per_pe]f16);
+var linear_state: [value_dim_per_pe * key_dim]f16 = @zeros([value_dim_per_pe * key_dim]f16);
+var output: [value_dim_per_pe]f16 = @zeros([value_dim_per_pe]f16);
+var query_ptr: [*]f16 = &query;
+var key_ptr: [*]f16 = &key;
+var value_ptr: [*]f16 = &value;
+var gate_ptr: [*]f16 = &gate;
+var linear_state_ptr: [*]f16 = &linear_state;
+var output_ptr: [*]f16 = &output;
+
+fn compute() void {
+    const alpha: f16 = 1.0 - math.exp(-a_log);
+    const decay: f16 = 1.0 - alpha;
+    for (@range(i16, value_dim_per_pe)) |d| {
+        var prev_dot: f16 = 0.0;
+        for (@range(i16, key_dim)) |k| {
+            prev_dot += linear_state[@as(u32, d) * @as(u32, key_dim) + @as(u32, k)] * key[@as(u32, k)];
+        }
+        const q_d: f16 = query[@as(u32, d)];
+        const correction: f16 = q_d - prev_dot;
+        const scaled_correction: f16 = alpha * correction;
+        for (@range(i16, key_dim)) |k| {
+            const k_in: f16 = key[@as(u32, k)];
+            const idx: u32 = @as(u32, d) * @as(u32, key_dim) + @as(u32, k);
+            const prev_state: f16 = linear_state[idx];
+            const delta: f16 = scaled_correction * k_in;
+            linear_state[idx] = decay * prev_state + delta;
+        }
+    }
+    for (@range(i16, value_dim_per_pe)) |d| {
+        var acc: f16 = 0.0;
+        for (@range(i16, key_dim)) |k| {
+            acc += linear_state[@as(u32, d) * @as(u32, key_dim) + @as(u32, k)] * value[@as(u32, k)];
+        }
+        const g: f16 = gate[@as(u32, d)];
+        const sigmoid_g: f16 = 1.0 / (1.0 + math.exp(-g));
+        output[@as(u32, d)] = acc + sigmoid_g * query[@as(u32, d)];
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(query_ptr, "query");
+    @export_symbol(key_ptr, "key");
+    @export_symbol(value_ptr, "value");
+    @export_symbol(gate_ptr, "gate");
+    @export_symbol(linear_state_ptr, "linear_state");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

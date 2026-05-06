@@ -1,0 +1,77 @@
+param width: u16;
+param memcpy_params;
+const head_dim: i16 = 256;
+param kv_len: i16;
+const query_seq_len: u32 = 8;
+param slots_per_pe: i16;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+const layout_mod = @import_module("<layout>");
+const attn_scale: f16 = 6.25e-2;
+const local_kv_len: u32 = @as(u32, slots_per_pe) * @as(u32, head_dim);
+const partials_len: u32 = @as(u32, head_dim) + 2;
+var query: [query_seq_len * @as(u32, head_dim)]f16 = @zeros([query_seq_len * @as(u32, head_dim)]f16);
+var key: [local_kv_len]f16 = @zeros([local_kv_len]f16);
+var value: [local_kv_len]f16 = @zeros([local_kv_len]f16);
+var output: [query_seq_len * partials_len]f16 = @zeros([query_seq_len * partials_len]f16);
+var attn_scores: [slots_per_pe]f16 = @zeros([slots_per_pe]f16);
+var query_ptr: [*]f16 = &query;
+var key_ptr: [*]f16 = &key;
+var value_ptr: [*]f16 = &value;
+var output_ptr: [*]f16 = &output;
+
+fn compute() void {
+    const pe_x = layout_mod.get_x_coord();
+    const pe_y = layout_mod.get_y_coord();
+    const pe_id: u32 = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x);
+    const slot_base: u32 = @as(u32, pe_id) * @as(u32, slots_per_pe);
+    for (@range(u32, query_seq_len)) |q| {
+        const q_row_offset: u32 = q * @as(u32, head_dim);
+        const out_row_offset: u32 = q * partials_len;
+        const q_pos: u32 = @as(u32, kv_len) - query_seq_len + q;
+        var local_max: f16 = -65504.0;
+        for (@range(i16, slots_per_pe)) |k| {
+            const gk: u32 = slot_base + @as(u32, k);
+            if (gk >= @as(u32, kv_len)) {
+                attn_scores[@as(u32, k)] = -65504.0;
+                continue;
+            }
+            var dot: f16 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                dot += query[q_row_offset + @as(u32, d)] * key[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            var sc: f16 = dot * attn_scale;
+            if (gk > q_pos) {
+                sc = -65504.0;
+            }
+            attn_scores[@as(u32, k)] = sc;
+            if (sc > local_max) {
+                local_max = sc;
+            }
+        }
+        var local_sum_exp: f16 = 0.0;
+        for (@range(i16, slots_per_pe)) |k| {
+            const e = math.exp(attn_scores[@as(u32, k)] - local_max);
+            attn_scores[@as(u32, k)] = e;
+            local_sum_exp += e;
+        }
+        for (@range(i16, head_dim)) |d| {
+            var acc: f16 = 0.0;
+            for (@range(i16, slots_per_pe)) |k| {
+                acc += value[@as(u32, k) * @as(u32, head_dim) + @as(u32, d)] * attn_scores[@as(u32, k)];
+            }
+            output[out_row_offset + @as(u32, d)] = acc;
+        }
+        output[out_row_offset + @as(u32, head_dim)] = local_max;
+        output[out_row_offset + @as(u32, head_dim) + 1] = local_sum_exp;
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(query_ptr, "query");
+    @export_symbol(key_ptr, "key");
+    @export_symbol(value_ptr, "value");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

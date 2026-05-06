@@ -1,11 +1,8 @@
 # Cerebras hardware runbook
 
-Single operator-facing entry point for testing Doe's Gemma 4 31B and Qwen 3.6 27B
-lanes end-to-end on Cerebras WSE/WSC. This is the practical "how to actually
-run the validation" doc; deeper architecture, claim taxonomy, and acceptance
+Operator-facing entry point for testing Doe's Gemma 4 31B and Qwen 3.6 27B
+lanes on Cerebras WSE/WSC. Deeper architecture, claim taxonomy, and acceptance
 bars live under the cross-references at the bottom.
-
-If you read one page, read this one.
 
 ## What this runbook covers
 
@@ -15,13 +12,14 @@ and the same hardware-ask shape:
 - Gemma 4 31B dense — primary first hardware target
 - Qwen 3.6 27B hybrid (full-attention + DeltaNet SSM) — second model target
 
-The Gemma lane has one primary full-prompt HostPlan runner and two bounded
-fallback surfaces. Keep the labels separate:
+Each lane now has a full-prompt af16 HostPlan runner and bounded fallback
+surfaces. Keep the labels separate:
 
 - **Full-prompt af16 HostPlan runner.** Uses the Doppler Gemma 4 31B af16
-  manifest, real Q4K weight shards, generated HostPlan/CSL, and concrete prompt
-  token IDs. This is the hardware target that can return a token/logit/KV
-  transcript or a fail-closed hardware blocker.
+  or Qwen 3.6 27B af16 manifest, real Q4K weight shards, generated
+  HostPlan/CSL, and concrete prompt token IDs. This is the hardware target
+  that can return a token/logit/KV transcript or a fail-closed hardware
+  blocker.
 - **Layer-block smoke runner.** Bounded shape only. Useful for SDK, endpoint,
   receipt-shape, and optional real-weight smoke checks. Not a full-prompt run.
 - **Per-kernel cells.** Bounded kernel checks. Useful for targeted parity and
@@ -49,6 +47,7 @@ provider prefers.
 | Build emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
 | Verify a received archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
 | Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --cmaddr <endpoint>` |
+| Run Qwen full-prompt hardware path | `bench/tools/run_qwen3_6_27b_af16_hardware_path.sh --cmaddr <endpoint>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
@@ -81,9 +80,9 @@ The hardware host must also provide the Cerebras SDK surface: `cslc` on `PATH`
 or passed with `--cslc-executable`, and a Python environment that can import
 `cerebras.sdk.runtime.sdkruntimepybind`.
 
-The full-prompt Gemma runner also needs the hosted Doppler Gemma 4 31B af16
-RDRR artifact and its shared af32 Q4K weight pack. Both are hosted in
-`Clocksmith/rdrr`; no safetensors conversion is part of the hardware path.
+The full-prompt wrappers fetch hosted Doppler RDRR artifacts from
+`Clocksmith/rdrr`; no safetensors conversion is part of the HostPlan hardware
+path. The Gemma manual fetch is:
 
 ```bash
 export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
@@ -161,6 +160,36 @@ input instead, pass `--rebuild-hostplan`:
 
 ```bash
 bench/tools/run_gemma4_31b_af16_hardware_path.sh \
+  --cmaddr "$CMADDR" \
+  --rebuild-hostplan
+```
+
+If the evidence archive is supplied separately instead of through the repo,
+pass `--archive <path>`.
+
+## Scripted Qwen run
+
+The Qwen wrapper uses the same operator shape as Gemma: archive verification,
+hosted RDRR fetch, RDRR validation, SDK compile from the bundled HostPlan
+source, then full-prompt hardware execution. The endpoint is the required run
+parameter.
+
+```bash
+export CMADDR=<operator-supplied>
+
+bench/tools/run_qwen3_6_27b_af16_hardware_path.sh \
+  --cmaddr "$CMADDR"
+```
+
+`Clocksmith/rdrr` is publicly fetchable. Pass `--hf-token <token>` only if the
+host wants authenticated Hugging Face access.
+
+The default path does not require `zig`; it uses the bundled HostPlan source
+and compiles it with `cslc`. To regenerate HostPlan/CSL from the execution-v1
+input instead, pass `--rebuild-hostplan`:
+
+```bash
+bench/tools/run_qwen3_6_27b_af16_hardware_path.sh \
   --cmaddr "$CMADDR" \
   --rebuild-hostplan
 ```
@@ -323,15 +352,106 @@ is historical local evidence. The current hardware target is the full-prompt
 af16 HostPlan runner above; a returned hardware trace is what closes or names
 the remaining token/logit/KV blocker.
 
-## Qwen 3.6 27B — runner steps
+## Qwen 3.6 27B runner steps
 
-Qwen does not yet have a single `layer_block_smoke` driver equivalent to
-Gemma's. The validation surface is per-kernel CSL cells under
-`bench/runners/csl-runners/qwen-3-6-27b-cells/`, plus the
-`multi_token_decode_orchestrator_qwen.py` chain driver. Each cell is a small
-end-to-end CSL kernel with its own `cs_python` driver.
+### Full-prompt af16 HostPlan run
 
-### L1 cell smoke (first hardware ask)
+The scripted path above is the preferred operator command. The manual sequence
+below is the same path expanded for audit.
+
+Fetch the hosted model artifact if a validated RDRR copy is not already
+mounted. The af16 manifest references the shared Q4K primary weight pack
+through `weightsRef`, so both paths must be present under the same local root:
+
+```bash
+export HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+export HUGGINGFACE_HUB_CACHE="${HUGGINGFACE_HUB_CACHE:-$HF_HOME/hub}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
+export DOE_RDRR_ROOT="${DOE_RDRR_ROOT:-$PWD/../rdrr-cache/Clocksmith-rdrr}"
+
+hf download Clocksmith/rdrr \
+  --repo-type model \
+  --revision 3dee21b3b12d65ac7fef9b24cbf759cacc953a67 \
+  --include "models/qwen-3-6-27b-q4k-eaf16/*" \
+  --include "models/qwen-3-6-27b-q4k-ehaf16/*" \
+  --local-dir "$DOE_RDRR_ROOT"
+
+export DOE_QWEN3_6_27B_AF16_MANIFEST="$DOE_RDRR_ROOT/models/qwen-3-6-27b-q4k-eaf16/manifest.json"
+```
+
+Build the generated HostPlan/CSL bundle from source, then compile every target
+with the SDK driver:
+
+```bash
+zig build csl-host-plan-tool
+
+runtime/zig/zig-out/bin/doe-csl-host-plan-tool \
+  --input runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json \
+  --bundle-root bench/out/hardware-run/qwen3-6-27b-af16-hostplan \
+  --mode steps \
+  --cslc-executable cslc
+
+python3 runtime/zig/tools/csl_sdk_driver.py \
+  bench/out/hardware-run/qwen3-6-27b-af16-hostplan/simulator-plan.json \
+  --cslc-executable cslc
+```
+
+Replace `cslc` with the SDK-local executable path if it is not on `PATH`.
+
+Run the full-prompt HostPlan against the endpoint. The prompt token IDs are
+the Qwen chat-template form of `The color of the sky is`; the Doppler
+reference continuation starts with token `760` (`The`).
+
+```bash
+python3 bench/runners/csl-runners/qwen3_6_27b_af16_hostplan_streaming_runner.py \
+  --source-doppler-manifest "$DOE_QWEN3_6_27B_AF16_MANIFEST" \
+  --smoke-config runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json \
+  --host-plan bench/out/hardware-run/qwen3-6-27b-af16-hostplan/host-plan.json \
+  --simulator-plan bench/out/hardware-run/qwen3-6-27b-af16-hostplan/simulator-plan.json \
+  --runtime-config bench/out/hardware-run/qwen3-6-27b-af16-hostplan/runtime-config.json \
+  --compile-root bench/out/hardware-run/qwen3-6-27b-af16-hostplan/compile \
+  --prefill-token-count 18 \
+  --decode-token-count 8 \
+  --prompt-token-id 248045 \
+  --prompt-token-id 846 \
+  --prompt-token-id 198 \
+  --prompt-token-id 760 \
+  --prompt-token-id 1829 \
+  --prompt-token-id 314 \
+  --prompt-token-id 279 \
+  --prompt-token-id 12515 \
+  --prompt-token-id 369 \
+  --prompt-token-id 248046 \
+  --prompt-token-id 198 \
+  --prompt-token-id 248045 \
+  --prompt-token-id 74455 \
+  --prompt-token-id 198 \
+  --prompt-token-id 248068 \
+  --prompt-token-id 271 \
+  --prompt-token-id 248069 \
+  --prompt-token-id 271 \
+  --execute \
+  --cmaddr <operator-supplied> \
+  --session-lm-head-dispatch-mode dense_gemv_width_tiled_session \
+  --session-lm-head-tile-width 32 \
+  --session-lm-head-tile-dispatch-budget 0 \
+  --session-prefill-q4k-gemv-output-pe-rows 4 \
+  --session-out-dir bench/out/hardware-run/qwen3-6-27b-af16-session \
+  --out bench/out/hardware-run/qwen3-6-27b-af16-trace.json
+```
+
+Return:
+
+- `bench/out/hardware-run/qwen3-6-27b-af16-trace.json`
+- `bench/out/hardware-run/qwen3-6-27b-af16-session/trace.json`
+- `bench/out/hardware-run/qwen3-6-27b-af16-session/progress.jsonl`
+- any `*.driver-result.json` files under `bench/out/hardware-run/`
+
+### Bounded cell checks
+
+Qwen also keeps per-kernel CSL cells under
+`bench/runners/csl-runners/qwen-3-6-27b-cells/`. Each cell is a bounded
+kernel check with its own `cs_python` driver.
 
 Run any one cell against a reachable endpoint:
 
@@ -366,30 +486,29 @@ cs_python bench/runners/csl-runners/multi_token_decode_orchestrator_qwen.py \
     --cmaddr <operator-supplied>
 ```
 
-This is correctness-oriented chain evidence, not a single-shape layer-block
-hardware proof.
+This is correctness-oriented chain evidence, not a replacement for the
+full-prompt HostPlan hardware path above.
 
-### Steps after L1 succeeds
+### Local simfabric ceiling probe
 
-1. All 10 cells dispatch and parity-check against a reachable endpoint.
-2. Multi-token decode chain runs end-to-end with bound transcript.
-3. Manifest-shape with the GQA 24:4 / `head_dim=256` / `hidden=5120` /
-   partial-rotary 0.25 / mropeSection contract from
-   `runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json`.
-4. Bind to the Qwen Doppler reference fixture under
-   `bench/fixtures/r3-2-27b-doppler-frozen/`.
+The local probe below uses the same Qwen full-prompt runner without `cmaddr`
+and writes a receipt that records the first observed local blocker:
+
+```bash
+python3 bench/tools/run_qwen3_6_27b_af16_local_simfabric_ceiling.py
+```
+
+Receipt path:
+
+`bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json`
 
 ### Current Qwen 27B blocker
 
-The Qwen full-graph manifest compile receipt reports `blocker.class="none"`
-and the per-kernel cells pass 10/10. The live engineering blocker is the
-**`gemv` collectives compile path on the production Qwen smoke shape** at
-manifest scale; per-kernel cells exercise GEMV in isolation but the manifest-
-shape SDK fanout still needs hardware-side validation. Token-output evidence
-is also blocked on lm-head dispatch, causal prefill attention, q/k norm, gated
-FFN, depthwise convolution, linear attention/DeltaNet/SSM state, and recurrence-
-carry receipts being bound to the HostPlan/CSL execution path; see the live
-status shard for ordering.
+The Qwen full-graph manifest compile receipt reports `blocker.class="none"`;
+the selected-logit Doppler-to-CSL splice is bound; the per-kernel cells pass
+10/10 under documented canary constraints. The missing evidence is a returned
+full-prompt hardware trace from `run_qwen3_6_27b_af16_hardware_path.sh`, or a
+fail-closed trace naming the first hardware-side blocker.
 
 ## What receipt fields we need back
 
@@ -463,11 +582,9 @@ and verdict line. Example body:
 > We will not publish endpoint identity, fabric identity, queue details,
 > hardware timing, or performance comparisons without written approval.
 
-The Qwen 27B ask uses the same email shape and the Qwen evidence summary
-instead, but the Qwen layer-block smoke runner equivalent of
-`gemma_4_31b_layer_block_smoke.py` is not yet authored. Until it lands, the
-Qwen path is gated on completing that runner; do not cite a Qwen runner
-filename in an external bundle.
+The Qwen 27B ask uses the same email shape with
+`bench/tools/run_qwen3_6_27b_af16_hardware_path.sh` and the Qwen evidence
+summary.
 
 ## Local pre-flight before sending
 

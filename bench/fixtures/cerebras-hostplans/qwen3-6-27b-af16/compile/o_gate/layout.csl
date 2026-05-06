@@ -1,0 +1,47 @@
+// Layout: gated activation (gelu/silu/sigmoid), one activation vector per PE.
+
+param width: u16;
+param height: u16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = height,
+});
+
+layout {
+    @set_rectangle(width, height);
+
+    for (@range(u16, height)) |pe_y| {
+        for (@range(u16, width)) |pe_x| {
+            @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
+                .memcpy_params = memcpy.get_params(pe_x),
+            });
+        }
+    }
+
+    @export_name("input", [*]f16, true);
+    @export_name("gate", [*]f16, true);
+    @export_name("output", [*]f16, true);
+    @export_name("output_chunk_0000", [*]u32, true);
+    @export_name("output_chunk_0001", [*]u32, true);
+    @export_name("output_chunk_0002", [*]u32, true);
+    @export_name("output_chunk_0003", [*]u32, true);
+    @export_name("output_chunk_0004", [*]u32, true);
+    @export_name("output_chunk_0005", [*]u32, true);
+    @export_name("output_chunk_0006", [*]u32, true);
+    @export_name("output_chunk_0007", [*]u32, true);
+    @export_name("output_chunk_0008", [*]u32, true);
+    @export_name("output_chunk_0009", [*]u32, true);
+    @export_name("output_chunk_0010", [*]u32, true);
+    @export_name("output_chunk_0011", [*]u32, true);
+    @export_name("output_chunk_0012", [*]u32, true);
+    @export_name("output_chunk_0013", [*]u32, true);
+    @export_name("output_chunk_0014", [*]u32, true);
+    @export_name("output_chunk_0015", [*]u32, true);
+    @export_name("output_chunk_0016", [*]u32, true);
+    @export_name("output_chunk_0017", [*]u32, true);
+    @export_name("output_chunk_0018", [*]u32, true);
+    @export_name("output_chunk_0019", [*]u32, true);
+    @export_name("output_chunk_0020", [*]u32, true);
+    @export_name("compute", fn()void);
+}

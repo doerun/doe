@@ -1,0 +1,32 @@
+{
+  "variables": [
+    {"name":"activation","sizeExpr":"in_dim_per_pe","elemType":"f16"},
+    {"name":"weight","sizeExpr":"out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16","elemType":"u8"},
+    {"name":"output","sizeExpr":"out_dim_per_pe","elemType":"f16"},
+    {"name":"partial","sizeExpr":"out_dim_per_pe","elemType":"f32"},
+    {"name":"reduced","sizeExpr":"out_dim_per_pe","elemType":"f32"},
+    {"name":"weight_col","sizeExpr":"out_dim_per_pe","elemType":"f32"}
+  ],
+  "pointers": [
+    {"name":"activation_ptr","backing":"activation","elemType":"f16"},
+    {"name":"partial_ptr","backing":"partial","elemType":"f32"},
+    {"name":"weight_ptr","backing":"weight","elemType":"u8"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"},
+    {"name":"reduced_ptr","backing":"reduced","elemType":"f32"}
+  ],
+  "exports": [
+    {"symbol":"activation","pointer":"activation_ptr","backing":"activation","sizeExpr":"in_dim_per_pe","elemType":"f16"},
+    {"symbol":"partial","pointer":"partial_ptr","backing":"partial","sizeExpr":"out_dim_per_pe","elemType":"f32"},
+    {"symbol":"weight","pointer":"weight_ptr","backing":"weight","sizeExpr":"out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16","elemType":"u8"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"out_dim_per_pe","elemType":"f16"},
+    {"symbol":"reduced","pointer":"reduced_ptr","backing":"reduced","sizeExpr":"out_dim_per_pe","elemType":"f32"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"host_reduce","type":"i16","expr":"0"},
+    {"kind":"const","name":"QK_K","type":"u32","expr":"256"},
+    {"kind":"const","name":"QK_K_I16","type":"i16","expr":"256"},
+    {"kind":"const","name":"Q4K_BLOCK_BYTES","type":"u32","expr":"144"},
+    {"kind":"const","name":"Q4K_BLOCK_BYTES_I16","type":"i16","expr":"144"},
+    {"kind":"const","name":"reduce_done_id","type":"local_task_id","expr":"@get_local_task_id(12)"}
+  ]
+}

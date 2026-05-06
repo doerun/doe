@@ -42,6 +42,23 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
+## 2026-05-06 — Qwen full-prompt hardware path packaged
+
+Qwen now has the same operator surface as the Gemma af16 HostPlan lane:
+`bench/tools/run_qwen3_6_27b_af16_hardware_path.sh` fetches the hosted
+`Clocksmith/rdrr` Qwen af16 manifest plus shared Q4K weight pack, verifies the
+evidence archive, compiles the bundled HostPlan source, and launches
+`bench/runners/csl-runners/qwen3_6_27b_af16_hostplan_streaming_runner.py`
+against the endpoint. The tracked HostPlan source fixture is
+`bench/fixtures/cerebras-hostplans/qwen3-6-27b-af16/`.
+
+The local no-hardware probe is
+`bench/tools/run_qwen3_6_27b_af16_local_simfabric_ceiling.py`; when run it
+writes `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json` with the
+first observed local HostPlan blocker. Returned hardware traces land under
+`bench/out/hardware-run/qwen3-6-27b-af16-*` and are reflected by
+`bench/tools/cerebras_status_snapshot.py`.
+
 ## 2026-05-06 — Qwen selected-logit Doppler to CSL splice bound
 
 Qwen now has the same local bridge proof class as Gemma's selected-logit

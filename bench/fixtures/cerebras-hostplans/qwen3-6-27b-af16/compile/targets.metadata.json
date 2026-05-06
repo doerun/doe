@@ -1,0 +1,26 @@
+{
+  "targets": [
+    {"name":"embed","baseKernel":"embed","phase":null,"layout":"embed/layout.csl","peProgram":"embed/pe_program.csl"},
+    {"name":"rmsnorm","baseKernel":"rmsnorm","phase":null,"layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"rmsnorm_prefill","baseKernel":"rmsnorm","phase":"prefill","layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"rmsnorm_decode","baseKernel":"rmsnorm","phase":"decode","layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"ssm_conv1d_depthwise","baseKernel":"ssm_conv1d_depthwise","phase":null,"layout":"ssm_conv1d_depthwise/layout.csl","peProgram":"ssm_conv1d_depthwise/pe_program.csl"},
+    {"name":"ssm_l2_normalize","baseKernel":"ssm_l2_normalize","phase":null,"layout":"ssm_l2_normalize/layout.csl","peProgram":"ssm_l2_normalize/pe_program.csl"},
+    {"name":"ssm_linear_attention","baseKernel":"ssm_linear_attention","phase":null,"layout":"ssm_linear_attention/layout.csl","peProgram":"ssm_linear_attention/pe_program.csl"},
+    {"name":"tiled","baseKernel":"tiled","phase":null,"layout":"tiled/layout.csl","peProgram":"tiled/pe_program.csl"},
+    {"name":"rope_partial","baseKernel":"rope_partial","phase":null,"layout":"rope_partial/layout.csl","peProgram":"rope_partial/pe_program.csl"},
+    {"name":"attn_prefill_kv_axis_sharded","baseKernel":"attn_prefill_kv_axis_sharded","phase":null,"layout":"attn_prefill_kv_axis_sharded/layout.csl","peProgram":"attn_prefill_kv_axis_sharded/pe_program.csl"},
+    {"name":"o_gate","baseKernel":"o_gate","phase":null,"layout":"o_gate/layout.csl","peProgram":"o_gate/pe_program.csl"},
+    {"name":"residual","baseKernel":"residual","phase":null,"layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"residual_prefill","baseKernel":"residual","phase":"prefill","layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"residual_decode","baseKernel":"residual","phase":"decode","layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"silu_gated","baseKernel":"silu_gated","phase":null,"layout":"silu_gated/layout.csl","peProgram":"silu_gated/pe_program.csl"},
+    {"name":"silu_gated_prefill","baseKernel":"silu_gated","phase":"prefill","layout":"silu_gated/layout.csl","peProgram":"silu_gated/pe_program.csl"},
+    {"name":"silu_gated_decode","baseKernel":"silu_gated","phase":"decode","layout":"silu_gated/layout.csl","peProgram":"silu_gated/pe_program.csl"},
+    {"name":"lm_head_gemv","baseKernel":"lm_head_gemv","phase":null,"layout":"lm_head_gemv/layout.csl","peProgram":"lm_head_gemv/pe_program.csl"},
+    {"name":"sample","baseKernel":"sample","phase":null,"layout":"sample/layout.csl","peProgram":"sample/pe_program.csl"},
+    {"name":"gemv","baseKernel":"gemv","phase":null,"layout":"gemv/layout.csl","peProgram":"gemv/pe_program.csl"},
+    {"name":"kv_write","baseKernel":"kv_write","phase":null,"layout":"kv_write/layout.csl","peProgram":"kv_write/pe_program.csl"},
+    {"name":"attn_decode","baseKernel":"attn_decode","phase":null,"layout":"attn_decode/layout.csl","peProgram":"attn_decode/pe_program.csl"}
+  ]
+}

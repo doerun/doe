@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_runtime_config",
+  "target": "wse3",
+  "contract": "explicit_runtime_config",
+  "mode": "compile-only",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "modelConfig": {
+    "hiddenDim": 5120,
+    "numHeads": 24,
+    "headDim": 256,
+    "numLayers": 64,
+    "vocabSize": 248320,
+    "maxSeqLen": 4096,
+    "quantFormat": "q4k",
+    "ffnExpansionFactor": 4,
+    "ffnMatrixCount": 3
+  },
+  "maxDecodeTokens": 128,
+  "timeoutMs": 30000,
+  "batchSize": 1,
+  "weightMappingStatus": {
+    "status": "blocked",
+    "proofStatus": "not_proven",
+    "reason": "execution-v1 did not provide artifact-backed weightMappings",
+    "syntheticWeights": false
+  },
+  "weightMappings": [
+  ],
+  "memoryPlan": {
+    "grid": { "width": 251, "height": 213 },
+    "residencyMode": "layer_streaming",
+    "totalModelBytes": 29470228480,
+    "totalPersistentBytes": 84961284,
+    "totalStreamedBytes": 29386342400,
+    "persistentBytesPerPe": 1590,
+    "streamedWorkingSetBytesPerPe": 47562,
+    "fits": true
+  },
+  "stateBuffers": [
+    { "name": "kv_cache", "kind": "kv_cache", "bytesPerPe": 1570 },
+    { "name": "activation_scratch", "kind": "scratch", "bytesPerPe": 2 },
+    { "name": "decode_position", "kind": "position", "bytesPerPe": 1 },
+    { "name": "output_logits", "kind": "scratch", "bytesPerPe": 19 }
+  ]
+}

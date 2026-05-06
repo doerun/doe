@@ -44,6 +44,10 @@ QWEN_SELECTED_LOGIT_SPLICE = (
     "bench/out/r3-2-27b-af16-doppler-csl-splice/"
     "selected-logit-splice/selected-logit-splice.json"
 )
+QWEN_HARDWARE_TRACE = "bench/out/hardware-run/qwen3-6-27b-af16-trace.json"
+QWEN_LOCAL_SIMFABRIC_CEILING = (
+    "bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json"
+)
 QWEN_MULTI_TOKEN_DECODE = "bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json"
 GEMMA_SIMFABRIC_CELLS = (
     "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json"
@@ -286,6 +290,44 @@ def qwen_multi_token_decode_row() -> dict:
     )
 
 
+def qwen_hardware_path_row() -> dict:
+    d = _load_json(QWEN_HARDWARE_TRACE)
+    if d is None:
+        return _row(
+            "qwen.hardware_full_prompt",
+            QWEN_HARDWARE_TRACE,
+            "missing",
+            "returned hardware trace absent",
+            scope="runner=bench/tools/run_qwen3_6_27b_af16_hardware_path.sh",
+        )
+    verdict, blocker = _verdict_from_status(d.get("status"), d.get("blockers"))
+    return _row(
+        "qwen.hardware_full_prompt",
+        QWEN_HARDWARE_TRACE,
+        verdict,
+        blocker,
+        scope="runner=bench/tools/run_qwen3_6_27b_af16_hardware_path.sh",
+    )
+
+
+def qwen_local_simfabric_ceiling_row() -> dict:
+    d = _load_json(QWEN_LOCAL_SIMFABRIC_CEILING)
+    if d is None:
+        return _row(
+            "qwen.local_simfabric_ceiling",
+            QWEN_LOCAL_SIMFABRIC_CEILING,
+            "missing",
+            None,
+        )
+    return _row(
+        "qwen.local_simfabric_ceiling",
+        QWEN_LOCAL_SIMFABRIC_CEILING,
+        d.get("verdict") or "unknown",
+        d.get("blocker"),
+        scope=d.get("lastPhaseReached") or "",
+    )
+
+
 def gemma_simfabric_cells_row() -> dict:
     d = _load_json(GEMMA_SIMFABRIC_CELLS)
     if d is None:
@@ -380,6 +422,8 @@ def collect_rows() -> list[dict]:
     ))
     rows.append(gemma_selected_logit_splice_row())
     rows.append(qwen_selected_logit_splice_row())
+    rows.append(qwen_hardware_path_row())
+    rows.append(qwen_local_simfabric_ceiling_row())
     rows.append(qwen_multi_token_decode_row())
     rows.append(gemma_simfabric_cells_row())
     rows.append(qwen_simfabric_cells_row())

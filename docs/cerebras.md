@@ -23,7 +23,7 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 |---|---|
 | TSIR (semantic + planner + emitters) | `runtime/zig/src/tsir/` |
 | CSL emit (classifier/template path) | `runtime/zig/src/doe_wgsl/emit_csl_*.zig` |
-| Hardware runners (Gemma layer-block + Qwen cells) | `bench/runners/csl-runners/` |
+| Hardware runners (Gemma/Qwen HostPlan + bounded cells) | `bench/runners/csl-runners/` |
 | Bundle / verify / status tools | `bench/tools/cerebras_*`, `bench/tools/*evidence*`, `bench/tools/synthesize_*` |
 | TSIR architecture plan | [`docs/tsir-lowering-plan.md`](tsir-lowering-plan.md) |
 | CSL abstraction stack | [`docs/csl-architecture.md`](csl-architecture.md) |
@@ -39,6 +39,7 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --cmaddr <endpoint>` |
+| Run Qwen full-prompt hardware path | `bench/tools/run_qwen3_6_27b_af16_hardware_path.sh --cmaddr <endpoint>` |
 | Run blocking gates locally | `python3 bench/runners/run_blocking_gates.py` |
 
 ## Run on hardware

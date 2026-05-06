@@ -1,0 +1,18 @@
+{
+  "variables": [
+    {"name":"logits","sizeExpr":"chunk_size","elemType":"f32"},
+    {"name":"output_token","sizeExpr":"1","elemType":"u32"}
+  ],
+  "pointers": [
+    {"name":"logits_ptr","backing":"logits","elemType":"f32"},
+    {"name":"tokens_ptr","backing":"output_token","elemType":"u32"}
+  ],
+  "exports": [
+    {"symbol":"logits","pointer":"logits_ptr","backing":"logits","sizeExpr":"chunk_size","elemType":"f32"},
+    {"symbol":"tokens","pointer":"tokens_ptr","backing":"output_token","sizeExpr":"1","elemType":"u32"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"temperature","type":"f32","expr":"1.0"},
+    {"kind":"param","name":"softcap","type":"f32","expr":"0.0"}
+  ]
+}

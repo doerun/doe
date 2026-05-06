@@ -1,0 +1,103 @@
+// PE program: fused GEMV + Q4K dequant (auto-generated from WGSL)
+// Each PE dequants its weight slice and computes partial dot products.
+// collectives_2d reduce_fadds accumulates f32 partials; the sink stores f16 output.
+
+param c2d_params;
+param memcpy_params;
+param pe_id: i16;
+param num_pes: i16;
+
+param out_dim_per_pe: i16;
+param in_dim_per_pe: i16;
+param num_blocks_per_row: i16;
+param host_reduce: i16 = 0;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const mpi_x = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.x,
+    .queues = [2]u16{2, 4},
+    .dest_dsr_ids = [1]u16{1},
+    .src0_dsr_ids = [1]u16{1},
+    .src1_dsr_ids = [1]u16{1},
+});
+const math = @import_module("<math>");
+
+const QK_K: u32 = 256;
+const QK_K_I16: i16 = 256;
+const Q4K_BLOCK_BYTES: u32 = 144;
+const Q4K_BLOCK_BYTES_I16: i16 = 144;
+
+var activation: [in_dim_per_pe]f16 = @zeros([in_dim_per_pe]f16);
+var weight: [out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8 = @zeros([out_dim_per_pe * num_blocks_per_row * Q4K_BLOCK_BYTES_I16]u8);
+var output: [out_dim_per_pe]f16 = @zeros([out_dim_per_pe]f16);
+var partial: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var reduced: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+var weight_col: [out_dim_per_pe]f32 = @zeros([out_dim_per_pe]f32);
+
+var activation_ptr: [*]f16 = &activation;
+var partial_ptr: [*]f32 = &partial;
+var weight_ptr: [*]u8 = &weight;
+var output_ptr: [*]f16 = &output;
+var reduced_ptr: [*]f32 = &reduced;
+
+const reduce_done_id: local_task_id = @get_local_task_id(12);
+
+fn compute() void {
+    for (@range(i16, out_dim_per_pe)) |row| {
+        partial[@as(u32, row)] = 0.0;
+    }
+    var partial_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim_per_pe} -> partial[i] });
+    var weight_col_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{out_dim_per_pe} -> weight_col[i] });
+
+    for (@range(i16, num_blocks_per_row)) |blk| {
+        const act_off = @as(u32, blk) * QK_K;
+        for (@range(u32, 128)) |i| {
+            for (@range(i16, out_dim_per_pe)) |row| {
+                const row_base = @as(u32, row) * @as(u32, num_blocks_per_row) * Q4K_BLOCK_BYTES;
+                const blk_base = row_base + @as(u32, blk) * Q4K_BLOCK_BYTES;
+                const d_bits = @as(u16, weight[blk_base]) | (@as(u16, weight[blk_base + 1]) << 8);
+                const d = @as(f32, @bitcast(f16, d_bits));
+                const byte = weight[blk_base + 16 + i];
+                weight_col[@as(u32, row)] = @as(f32, byte & 0x0F) * d;
+            }
+            const x_lo = @as(f32, activation[act_off + i * 2]);
+            @fmacs(partial_dsd, partial_dsd, weight_col_dsd, x_lo);
+            for (@range(i16, out_dim_per_pe)) |row| {
+                const row_base = @as(u32, row) * @as(u32, num_blocks_per_row) * Q4K_BLOCK_BYTES;
+                const blk_base = row_base + @as(u32, blk) * Q4K_BLOCK_BYTES;
+                const d_bits = @as(u16, weight[blk_base]) | (@as(u16, weight[blk_base + 1]) << 8);
+                const d = @as(f32, @bitcast(f16, d_bits));
+                const byte = weight[blk_base + 16 + i];
+                weight_col[@as(u32, row)] = @as(f32, byte >> 4) * d;
+            }
+            const x_hi = @as(f32, activation[act_off + i * 2 + 1]);
+            @fmacs(partial_dsd, partial_dsd, weight_col_dsd, x_hi);
+        }
+    }
+
+    if (host_reduce != 0) {
+        sys_mod.unblock_cmd_stream();
+        return;
+    }
+    mpi_x.init();
+    mpi_x.reduce_fadds(@as(u16, num_pes - 1), @ptrcast([*]f32, &partial), @ptrcast([*]f32, &reduced), @as(u16, out_dim_per_pe), reduce_done_id);
+}
+
+task reduce_done_task() void {
+    if (pe_id == num_pes - 1) {
+        for (@range(i16, out_dim_per_pe)) |row| {
+            output[@as(u32, row)] = @as(f16, reduced[@as(u32, row)]);
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @bind_local_task(reduce_done_task, reduce_done_id);
+    @export_symbol(activation_ptr, "activation");
+    @export_symbol(partial_ptr, "partial");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(reduced_ptr, "reduced");
+    @export_symbol(compute);
+}

@@ -165,6 +165,38 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
         self.assertIn("layer=63", row["scope"])
         self.assertIn("token=760", row["scope"])
 
+    def test_qwen_hardware_path_missing_until_returned_trace(self) -> None:
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.qwen_hardware_path_row()
+        self.assertEqual(row["verdict"], "missing")
+        self.assertEqual(row["blocker"], "returned hardware trace absent")
+        self.assertIn("run_qwen3_6_27b_af16_hardware_path.sh", row["scope"])
+
+    def test_qwen_hardware_path_bound_from_output_ready_trace(self) -> None:
+        self._write(
+            self.module.QWEN_HARDWARE_TRACE,
+            {"status": "output_ready", "blockers": []},
+        )
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.qwen_hardware_path_row()
+        self.assertEqual(row["verdict"], "bound")
+        self.assertIsNone(row["blocker"])
+
+    def test_qwen_local_simfabric_ceiling_row(self) -> None:
+        self._write(
+            self.module.QWEN_LOCAL_SIMFABRIC_CEILING,
+            {
+                "verdict": "blocked",
+                "blocker": "qwen_prefill_q4k_gemv_blocked",
+                "lastPhaseReached": "hostplan_launch_blocked",
+            },
+        )
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.qwen_local_simfabric_ceiling_row()
+        self.assertEqual(row["verdict"], "blocked")
+        self.assertEqual(row["blocker"], "qwen_prefill_q4k_gemv_blocked")
+        self.assertEqual(row["scope"], "hostplan_launch_blocked")
+
     def test_bounded_smoke_blocker_count(self) -> None:
         self._write(
             self.module.GEMMA_BOUNDED_SMOKE,

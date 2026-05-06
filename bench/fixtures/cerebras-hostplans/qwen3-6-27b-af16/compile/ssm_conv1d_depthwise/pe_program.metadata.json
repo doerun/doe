@@ -1,0 +1,25 @@
+{
+  "variables": [
+    {"name":"input","sizeExpr":"num_tokens * channels","elemType":"f16"},
+    {"name":"weight","sizeExpr":"channels * kernel_size","elemType":"f16"},
+    {"name":"output","sizeExpr":"num_tokens * channels","elemType":"f16"},
+    {"name":"bias","sizeExpr":"channels","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"input_ptr","backing":"input","elemType":"f16"},
+    {"name":"weight_ptr","backing":"weight","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"},
+    {"name":"bias_ptr","backing":"bias","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"input","pointer":"input_ptr","backing":"input","sizeExpr":"num_tokens * channels","elemType":"f16"},
+    {"symbol":"weight","pointer":"weight_ptr","backing":"weight","sizeExpr":"channels * kernel_size","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"num_tokens * channels","elemType":"f16"},
+    {"symbol":"bias","pointer":"bias_ptr","backing":"bias","sizeExpr":"channels","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"channels","type":"i16","expr":"128"},
+    {"kind":"const","name":"kernel_size","type":"i16","expr":"4"},
+    {"kind":"const","name":"t_in","type":"i16","expr":"t - (kernel_size - 1 - k)"}
+  ]
+}

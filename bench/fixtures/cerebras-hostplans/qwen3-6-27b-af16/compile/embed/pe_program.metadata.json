@@ -1,0 +1,18 @@
+{
+  "variables": [
+    {"name":"indices","sizeExpr":"tokens_per_chunk","elemType":"u32"},
+    {"name":"table","sizeExpr":"rows_per_pe * hidden_per_pe","elemType":"f16"},
+    {"name":"output","sizeExpr":"tokens_per_chunk * hidden_per_pe","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"indices_ptr","backing":"indices","elemType":"u32"},
+    {"name":"table_ptr","backing":"table","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"indices","pointer":"indices_ptr","backing":"indices","sizeExpr":"tokens_per_chunk","elemType":"u32"},
+    {"symbol":"table","pointer":"table_ptr","backing":"table","sizeExpr":"rows_per_pe * hidden_per_pe","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"tokens_per_chunk * hidden_per_pe","elemType":"f16"}
+  ],
+  "compileTimeConstants": []
+}

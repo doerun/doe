@@ -1,0 +1,123 @@
+// PE program: SUMMA tiled matmul (auto-generated from WGSL)
+// P×P PE grid, collectives_2d for row/column broadcasts.
+// C[M,N] = A[M,K] * B^T[N,K]
+
+param c2d_params;
+param memcpy_params;
+param Mt: i16;
+param Kt: i16;
+param Nt: i16;
+param P: u16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const mpi_x = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.x,
+    .queues = [2]u16{2, 4},
+    .dest_dsr_ids = [1]u16{1},
+    .src0_dsr_ids = [1]u16{1},
+    .src1_dsr_ids = [1]u16{1},
+});
+const mpi_y = @import_module("<collectives_2d/pe>", .{
+    .dim_params = c2d_params.y,
+    .queues = [2]u16{3, 5},
+    .dest_dsr_ids = [1]u16{2},
+    .src0_dsr_ids = [1]u16{2},
+    .src1_dsr_ids = [1]u16{2},
+});
+
+var A_tile = @zeros([Mt * Kt]f16);
+var B_tile = @zeros([Kt * Nt]f16);
+var C_tile = @zeros([Mt * Nt]f16);
+var A_buf  = @zeros([Mt * Kt]f16);
+var B_buf  = @zeros([Kt * Nt]f16);
+
+var A_ptr: [*]f16 = &A_tile;
+var B_ptr: [*]f16 = &B_tile;
+var C_ptr: [*]f16 = &C_tile;
+
+var step: u16 = 0;
+var px: u16 = 0;
+var py: u16 = 0;
+
+const exit_task_id:    local_task_id = @get_local_task_id(12);
+const compute_task_id: local_task_id = @get_local_task_id(13);
+const x_done_id:       local_task_id = @get_local_task_id(14);
+const y_done_id:       local_task_id = @get_local_task_id(15);
+
+var x_done: bool = false;
+var y_done: bool = false;
+
+fn compute() void {
+    if (step == 0) {
+        mpi_x.init();
+        mpi_y.init();
+        px = mpi_x.pe_id;
+        py = mpi_y.pe_id;
+    }
+
+    const Ap = if (px == step) &A_tile else &A_buf;
+    const Bp = if (py == step) &B_tile else &B_buf;
+
+    x_done = false;
+    y_done = false;
+
+    mpi_x.broadcast(step, @ptrcast([*]u32, Ap), Mt * Kt, x_done_id);
+    mpi_y.broadcast(step, @ptrcast([*]u32, Bp), Kt * Nt, y_done_id);
+}
+
+task x_done_task() void {
+    x_done = true;
+    if (y_done) @activate(compute_task_id);
+}
+
+task y_done_task() void {
+    y_done = true;
+    if (x_done) @activate(compute_task_id);
+}
+
+task compute_step() void {
+    const Ap = if (px == step) &A_tile else &A_buf;
+    const Bp = if (py == step) &B_tile else &B_buf;
+
+    // Local GEMM step: accumulate Ap * Bp into C_tile via @fmacs.
+    // Matches canonical SUMMA pattern from csl-extras gemm-collectives_2d/pe.csl:
+    // A_dsd declared outside k-loop, advanced by @increment_dsd_offset each k.
+    var A_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> A_tile[i] });
+    A_dsd = @set_dsd_base_addr(A_dsd, Ap);
+    for (@range(i16, Kt)) |k| {
+        var C_dsd = @get_dsd(mem1d_dsd, .{ .tensor_access = |i|{Mt} -> C_tile[i] });
+        for (@range(i16, Nt)) |j| {
+            const b_val = Bp.*[@as(u32, j) * @as(u32, Kt) + @as(u32, k)];
+            for (@range(i16, Mt)) |ii| {
+                const c_idx = @as(u32, j) * @as(u32, Mt) + @as(u32, ii);
+                const a_idx = @as(u32, k) * @as(u32, Mt) + @as(u32, ii);
+                C_tile[c_idx] += Ap.*[a_idx] * b_val;
+            }
+            C_dsd = @increment_dsd_offset(C_dsd, Mt, f16);
+        }
+        A_dsd = @increment_dsd_offset(A_dsd, Mt, f16);
+    }
+
+    step += 1;
+    if (step != P) {
+        compute();
+    } else {
+        @activate(exit_task_id);
+    }
+}
+
+task exit_task() void {
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @bind_local_task(x_done_task, x_done_id);
+    @bind_local_task(y_done_task, y_done_id);
+    @bind_local_task(compute_step, compute_task_id);
+    @bind_local_task(exit_task, exit_task_id);
+
+    @export_symbol(A_ptr, "a");
+    @export_symbol(B_ptr, "b");
+    @export_symbol(C_ptr, "c");
+    @export_symbol(compute);
+}

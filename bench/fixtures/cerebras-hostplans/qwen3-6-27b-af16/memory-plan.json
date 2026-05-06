@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_memory_plan",
+  "target": "wse3",
+  "contract": "explicit_memory_plan",
+  "grid": { "width": 251, "height": 213 },
+  "peCount": 53463,
+  "residencyMode": "layer_streaming",
+  "totalModelBytes": 29470228480,
+  "totalPersistentBytes": 84961284,
+  "totalStreamedBytes": 29386342400,
+  "persistentBytesPerPe": 1590,
+  "streamedWorkingSetBytesPerPe": 47562,
+  "totalSramAvailable": 2627813376,
+  "utilizationPct": 100,
+  "fits": true,
+  "buffers": [
+    { "name": "kv_cache", "kind": "kv_cache", "placement": "kv_cache", "bytesTotal": 83886080, "bytesPerPe": 1570 },
+    { "name": "activation_scratch", "kind": "activation_scratch", "placement": "persistent", "bytesTotal": 81920, "bytesPerPe": 2 },
+    { "name": "decode_position", "kind": "decode_position", "placement": "persistent", "bytesTotal": 4, "bytesPerPe": 1 },
+    { "name": "output_logits", "kind": "output_logits", "placement": "persistent", "bytesTotal": 993280, "bytesPerPe": 19 },
+    { "name": "token_embeddings", "kind": "embeddings", "placement": "streamed", "bytesTotal": 2542796800, "bytesPerPe": 47562 },
+    { "name": "layer_weights", "kind": "layer_weights", "placement": "streamed", "bytesTotal": 26843545600, "bytesPerPe": 7846 }
+  ],
+  "streamStages": [
+    { "name": "embedding_rows", "kind": "embedding_rows", "repeatCount": 1, "bytesTotal": 2542796800, "bytesPerPe": 47562 },
+    { "name": "layer_weights", "kind": "layer_weights", "repeatCount": 64, "bytesTotal": 419430400, "bytesPerPe": 7846 }
+  ]
+}

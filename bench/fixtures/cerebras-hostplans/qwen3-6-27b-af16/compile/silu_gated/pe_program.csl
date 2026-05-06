@@ -1,0 +1,326 @@
+param memcpy_params;
+param chunk_size: i16 = 1024;
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+var gate: [chunk_size]f16 = @zeros([chunk_size]f16);
+var input: [chunk_size]f16 = @zeros([chunk_size]f16);
+var output: [chunk_size]f16 = @zeros([chunk_size]f16);
+var output_chunk_0000: [128]u32 = @zeros([128]u32);
+var output_chunk_0001: [128]u32 = @zeros([128]u32);
+var output_chunk_0002: [128]u32 = @zeros([128]u32);
+var output_chunk_0003: [128]u32 = @zeros([128]u32);
+var output_chunk_0004: [128]u32 = @zeros([128]u32);
+var output_chunk_0005: [128]u32 = @zeros([128]u32);
+var output_chunk_0006: [128]u32 = @zeros([128]u32);
+var output_chunk_0007: [128]u32 = @zeros([128]u32);
+var output_chunk_0008: [128]u32 = @zeros([128]u32);
+var output_chunk_0009: [128]u32 = @zeros([128]u32);
+var output_chunk_0010: [128]u32 = @zeros([128]u32);
+var output_chunk_0011: [128]u32 = @zeros([128]u32);
+var output_chunk_0012: [128]u32 = @zeros([128]u32);
+var output_chunk_0013: [128]u32 = @zeros([128]u32);
+var output_chunk_0014: [128]u32 = @zeros([128]u32);
+var output_chunk_0015: [128]u32 = @zeros([128]u32);
+var output_chunk_0016: [128]u32 = @zeros([128]u32);
+var output_chunk_0017: [128]u32 = @zeros([128]u32);
+var output_chunk_0018: [128]u32 = @zeros([128]u32);
+var output_chunk_0019: [128]u32 = @zeros([128]u32);
+var output_chunk_0020: [128]u32 = @zeros([128]u32);
+var gate_ptr: [*]f16 = &gate;
+var input_ptr: [*]f16 = &input;
+var output_ptr: [*]f16 = &output;
+var output_chunk_0000_ptr: [*]u32 = &output_chunk_0000;
+var output_chunk_0001_ptr: [*]u32 = &output_chunk_0001;
+var output_chunk_0002_ptr: [*]u32 = &output_chunk_0002;
+var output_chunk_0003_ptr: [*]u32 = &output_chunk_0003;
+var output_chunk_0004_ptr: [*]u32 = &output_chunk_0004;
+var output_chunk_0005_ptr: [*]u32 = &output_chunk_0005;
+var output_chunk_0006_ptr: [*]u32 = &output_chunk_0006;
+var output_chunk_0007_ptr: [*]u32 = &output_chunk_0007;
+var output_chunk_0008_ptr: [*]u32 = &output_chunk_0008;
+var output_chunk_0009_ptr: [*]u32 = &output_chunk_0009;
+var output_chunk_0010_ptr: [*]u32 = &output_chunk_0010;
+var output_chunk_0011_ptr: [*]u32 = &output_chunk_0011;
+var output_chunk_0012_ptr: [*]u32 = &output_chunk_0012;
+var output_chunk_0013_ptr: [*]u32 = &output_chunk_0013;
+var output_chunk_0014_ptr: [*]u32 = &output_chunk_0014;
+var output_chunk_0015_ptr: [*]u32 = &output_chunk_0015;
+var output_chunk_0016_ptr: [*]u32 = &output_chunk_0016;
+var output_chunk_0017_ptr: [*]u32 = &output_chunk_0017;
+var output_chunk_0018_ptr: [*]u32 = &output_chunk_0018;
+var output_chunk_0019_ptr: [*]u32 = &output_chunk_0019;
+var output_chunk_0020_ptr: [*]u32 = &output_chunk_0020;
+
+fn silu(x: f16) f16 {
+    var z = -x;
+    if (z < -15.0) z = -15.0;
+    if (z > 15.0) z = 15.0;
+    return x / (1.0 + math.exp(z));
+}
+
+fn compute() void {
+    for (@range(i16, chunk_size)) |i| {
+        const idx = @as(u32, i);
+        output[idx] = silu(gate[idx]) * input[idx];
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 0;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0000[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0000[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 128;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0001[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0001[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 256;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0002[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0002[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 384;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0003[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0003[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 512;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0004[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0004[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 640;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0005[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0005[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 768;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0006[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0006[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 896;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0007[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0007[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1024;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0008[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0008[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1152;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0009[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0009[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1280;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0010[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0010[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1408;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0011[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0011[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1536;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0012[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0012[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1664;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0013[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0013[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1792;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0014[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0014[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 1920;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0015[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0015[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 2048;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0016[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0016[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 2176;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0017[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0017[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 2304;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0018[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0018[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 2432;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0019[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0019[@as(u32, word)] = 0;
+        }
+    }
+    for (@range(i16, 128)) |word| {
+        const pair = @as(u32, word) + 2560;
+        const base = pair * 2;
+        if (base + 1 < @as(u32, chunk_size)) {
+            const lo: u32 = @as(u32, @bitcast(u16, output[base]));
+            const hi: u32 = @as(u32, @bitcast(u16, output[base + 1]));
+            output_chunk_0020[@as(u32, word)] = lo | (hi << 16);
+        } else {
+            output_chunk_0020[@as(u32, word)] = 0;
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(gate_ptr, "gate");
+    @export_symbol(input_ptr, "input");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(output_chunk_0000_ptr, "output_chunk_0000");
+    @export_symbol(output_chunk_0001_ptr, "output_chunk_0001");
+    @export_symbol(output_chunk_0002_ptr, "output_chunk_0002");
+    @export_symbol(output_chunk_0003_ptr, "output_chunk_0003");
+    @export_symbol(output_chunk_0004_ptr, "output_chunk_0004");
+    @export_symbol(output_chunk_0005_ptr, "output_chunk_0005");
+    @export_symbol(output_chunk_0006_ptr, "output_chunk_0006");
+    @export_symbol(output_chunk_0007_ptr, "output_chunk_0007");
+    @export_symbol(output_chunk_0008_ptr, "output_chunk_0008");
+    @export_symbol(output_chunk_0009_ptr, "output_chunk_0009");
+    @export_symbol(output_chunk_0010_ptr, "output_chunk_0010");
+    @export_symbol(output_chunk_0011_ptr, "output_chunk_0011");
+    @export_symbol(output_chunk_0012_ptr, "output_chunk_0012");
+    @export_symbol(output_chunk_0013_ptr, "output_chunk_0013");
+    @export_symbol(output_chunk_0014_ptr, "output_chunk_0014");
+    @export_symbol(output_chunk_0015_ptr, "output_chunk_0015");
+    @export_symbol(output_chunk_0016_ptr, "output_chunk_0016");
+    @export_symbol(output_chunk_0017_ptr, "output_chunk_0017");
+    @export_symbol(output_chunk_0018_ptr, "output_chunk_0018");
+    @export_symbol(output_chunk_0019_ptr, "output_chunk_0019");
+    @export_symbol(output_chunk_0020_ptr, "output_chunk_0020");
+    @export_symbol(compute);
+}

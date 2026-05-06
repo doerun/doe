@@ -1,0 +1,37 @@
+{
+  "artifactKind": "execution_v1_source_graph_inventory",
+  "decodeTail": [
+    "rmsnorm",
+    "lm_head_gemv",
+    "sample"
+  ],
+  "hostPlanPath": "bench/fixtures/cerebras-hostplans/qwen3-6-27b-af16/host-plan.json",
+  "modelLayerCount": 64,
+  "prefillTail": [
+    "rmsnorm",
+    "lm_head_gemv",
+    "sample"
+  ],
+  "requiredKernels": [
+    "embed",
+    "rmsnorm",
+    "ssm_conv1d_depthwise",
+    "ssm_l2_normalize",
+    "ssm_linear_attention",
+    "tiled",
+    "rope_partial",
+    "attn_prefill_kv_axis_sharded",
+    "o_gate",
+    "residual",
+    "silu_gated",
+    "lm_head_gemv",
+    "sample",
+    "gemv",
+    "kv_write",
+    "attn_decode"
+  ],
+  "schemaVersion": 1,
+  "source": "runtime/zig/examples/execution-v1/qwen-3-6-27b-smoke.json",
+  "sourceGraphSha256": "ce63064ff9c40448d55b618612687034e2f3def7bd1b3f0dc617323dcb62fc51",
+  "sourceSha256": "3064d2d1d6a7fa5e17fbb5a6db5ac7695b39294f7f02be68f3aa25d341927108"
+}

@@ -40,9 +40,10 @@ source of truth for any bundle in hand.
 The first hardware validation target is Gemma 4 31B dense. It is the
 highest-value inference target, it has a uniform dense transformer execution
 shape, and it maps better to a first Cerebras proof than Gemma 4 26B/A4B MoE.
-The 31B lane should start with the af16 full-prompt HostPlan runner. The
-smoke-shape layer-block path remains a bounded fallback for endpoint and
-receipt-shape checks.
+The 31B lane should start with the af16 full-prompt HostPlan runner. Qwen
+3.6 27B now has the matching af16 HostPlan wrapper for a companion hybrid
+architecture run. The smoke-shape layer-block path remains a bounded fallback
+for endpoint and receipt-shape checks.
 
 The concrete 31B steps are:
 
@@ -59,6 +60,18 @@ The concrete 31B steps are:
 5. Bind the returned token/logit/KV transcript, or the fail-closed hardware
    blocker, to the Doppler reference export for the same model identity and
    input contract.
+
+The concrete Qwen companion step is:
+
+```bash
+bench/tools/run_qwen3_6_27b_af16_hardware_path.sh --cmaddr <endpoint>
+```
+
+That wrapper fetches `Clocksmith/rdrr` model path
+`models/qwen-3-6-27b-q4k-eaf16` plus the shared
+`models/qwen-3-6-27b-q4k-ehaf16` weight pack, verifies the evidence archive,
+compiles the bundled Qwen HostPlan source, and runs the chat-template prompt
+for `The color of the sky is` against the endpoint.
 
 Gemma 4 E2B remains a control lane. It is useful for cheap failure
 reproduction, smaller bundle checks, bounded simfabric diagnostics, and

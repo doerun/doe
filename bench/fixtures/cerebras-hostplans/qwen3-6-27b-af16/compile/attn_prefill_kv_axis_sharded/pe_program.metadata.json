@@ -1,0 +1,34 @@
+{
+  "variables": [
+    {"name":"query","sizeExpr":"query_seq_len * @as(u32, head_dim)","elemType":"f16"},
+    {"name":"key","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"name":"value","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"name":"output","sizeExpr":"query_seq_len * partials_len","elemType":"f16"},
+    {"name":"attn_scores","sizeExpr":"slots_per_pe","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"query_ptr","backing":"query","elemType":"f16"},
+    {"name":"key_ptr","backing":"key","elemType":"f16"},
+    {"name":"value_ptr","backing":"value","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"query","pointer":"query_ptr","backing":"query","sizeExpr":"query_seq_len * @as(u32, head_dim)","elemType":"f16"},
+    {"symbol":"key","pointer":"key_ptr","backing":"key","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"symbol":"value","pointer":"value_ptr","backing":"value","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"query_seq_len * partials_len","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"head_dim","type":"i16","expr":"256"},
+    {"kind":"const","name":"query_seq_len","type":"u32","expr":"8"},
+    {"kind":"const","name":"attn_scale","type":"f16","expr":"6.25e-2"},
+    {"kind":"const","name":"local_kv_len","type":"u32","expr":"@as(u32, slots_per_pe) * @as(u32, head_dim)"},
+    {"kind":"const","name":"partials_len","type":"u32","expr":"@as(u32, head_dim) + 2"},
+    {"kind":"const","name":"pe_id","type":"u32","expr":"@as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x)"},
+    {"kind":"const","name":"slot_base","type":"u32","expr":"@as(u32, pe_id) * @as(u32, slots_per_pe)"},
+    {"kind":"const","name":"q_row_offset","type":"u32","expr":"q * @as(u32, head_dim)"},
+    {"kind":"const","name":"out_row_offset","type":"u32","expr":"q * partials_len"},
+    {"kind":"const","name":"q_pos","type":"u32","expr":"@as(u32, kv_len) - query_seq_len + q"},
+    {"kind":"const","name":"gk","type":"u32","expr":"slot_base + @as(u32, k)"}
+  ]
+}

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Gemma 4 31B af16 HostPlan streaming-runner front door.
+"""INT4PLE af16 HostPlan streaming-runner front door.
 
-This runner owns the operational contract for real Gemma 4 31B af16
-prefill/decode on the Cerebras simulator. It performs the source-derivable
-front-door work and delegates the session-scoped runtime contract to
-``gemma4_31b_af16_session_runtime``:
+This runner owns the operational contract for real af16 prefill/decode
+through generated HostPlan/CSL. Gemma 4 31B is the default lane; other lanes
+may pass explicit model, manifest, config, and claim fields. It performs the
+source-derivable front-door work and delegates the session-scoped runtime
+contract to ``gemma4_31b_af16_session_runtime``:
 
   - resolve the af16 Doppler manifest through its weightsRef primary;
   - validate shard presence and declared sizes without copying weight bytes;
@@ -57,6 +58,19 @@ MODEL_ID = "gemma-4-31b-it-text-q4k-ehf16-af16"
 LANE_KEY = "q4k-ehf16-af16"
 TRACE_ARTIFACT_KIND = "doe_gemma4_31b_af16_hostplan_streaming_trace"
 SESSION_ARTIFACT_PREFIX = "gemma4_31b_af16"
+DEFAULT_CLAIM_SCOPE = (
+    "Gemma 4 31B af16 real-inference runner front door, weight staging "
+    "plan, dispatch expansion, per-kernel refresh command, and resumable "
+    "HostPlan session contract are materialized."
+)
+DEFAULT_CLAIM_NOT_WHAT = (
+    "Not a generated token transcript until status is output_ready and "
+    "blockers is empty."
+)
+DEFAULT_CLAIM_SUMMARY = (
+    "The runnable contract exists; current artifacts remain blocked before "
+    "end-to-end CSL output."
+)
 PLE_EMBED_KEY_PREFIX = "per_layer_inputs.embedTokensPerLayer.layer"
 PLE_PROJECTION_KEY_PREFIX = "per_layer_inputs.perLayerModelProjection.layer"
 PLE_PROJECTION_NORM_KEY_PREFIX = "per_layer_inputs.perLayerProjectionNorm.layer"
@@ -134,6 +148,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lane-key", default=LANE_KEY)
     parser.add_argument("--trace-artifact-kind", default=TRACE_ARTIFACT_KIND)
     parser.add_argument("--session-artifact-prefix", default=SESSION_ARTIFACT_PREFIX)
+    parser.add_argument("--claim-scope", default=DEFAULT_CLAIM_SCOPE)
+    parser.add_argument("--claim-not-what", default=DEFAULT_CLAIM_NOT_WHAT)
+    parser.add_argument("--claim-summary", default=DEFAULT_CLAIM_SUMMARY)
     parser.add_argument("--smoke-config", type=Path, default=DEFAULT_SMOKE_CONFIG)
     parser.add_argument("--host-plan", type=Path, default=DEFAULT_HOST_PLAN)
     parser.add_argument("--simulator-plan", type=Path, default=DEFAULT_SIMULATOR_PLAN)
@@ -1462,18 +1479,12 @@ def build_trace(args: argparse.Namespace) -> dict[str, Any]:
         "status": "blocked" if blockers else "output_ready",
         "blockers": blockers,
         "claim": {
-            "scope": (
-                "Gemma 4 31B af16 real-inference runner front door, weight "
-                "staging plan, dispatch expansion, per-kernel refresh command, "
-                "and resumable HostPlan session contract are materialized."
+            "scope": str(getattr(args, "claim_scope", DEFAULT_CLAIM_SCOPE)),
+            "notWhat": str(
+                getattr(args, "claim_not_what", DEFAULT_CLAIM_NOT_WHAT)
             ),
-            "notWhat": (
-                "Not a generated token transcript until status is output_ready "
-                "and blockers is empty."
-            ),
-            "summary": (
-                "The runnable contract exists; current artifacts remain "
-                "blocked before end-to-end CSL output."
+            "summary": str(
+                getattr(args, "claim_summary", DEFAULT_CLAIM_SUMMARY)
             ),
         },
     }

@@ -1,0 +1,41 @@
+{
+  "variables": [
+    {"name":"query","sizeExpr":"value_dim_per_pe","elemType":"f16"},
+    {"name":"key","sizeExpr":"key_dim","elemType":"f16"},
+    {"name":"value","sizeExpr":"key_dim","elemType":"f16"},
+    {"name":"gate","sizeExpr":"value_dim_per_pe","elemType":"f16"},
+    {"name":"linear_state","sizeExpr":"value_dim_per_pe * key_dim","elemType":"f16"},
+    {"name":"output","sizeExpr":"value_dim_per_pe","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"query_ptr","backing":"query","elemType":"f16"},
+    {"name":"key_ptr","backing":"key","elemType":"f16"},
+    {"name":"value_ptr","backing":"value","elemType":"f16"},
+    {"name":"gate_ptr","backing":"gate","elemType":"f16"},
+    {"name":"linear_state_ptr","backing":"linear_state","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"query","pointer":"query_ptr","backing":"query","sizeExpr":"value_dim_per_pe","elemType":"f16"},
+    {"symbol":"key","pointer":"key_ptr","backing":"key","sizeExpr":"key_dim","elemType":"f16"},
+    {"symbol":"value","pointer":"value_ptr","backing":"value","sizeExpr":"key_dim","elemType":"f16"},
+    {"symbol":"gate","pointer":"gate_ptr","backing":"gate","sizeExpr":"value_dim_per_pe","elemType":"f16"},
+    {"symbol":"linear_state","pointer":"linear_state_ptr","backing":"linear_state","sizeExpr":"value_dim_per_pe * key_dim","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"value_dim_per_pe","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"key_dim","type":"i16","expr":"128"},
+    {"kind":"const","name":"value_dim","type":"i16","expr":"128"},
+    {"kind":"const","name":"alpha","type":"f16","expr":"1.0 - math.exp(-a_log)"},
+    {"kind":"const","name":"decay","type":"f16","expr":"1.0 - alpha"},
+    {"kind":"const","name":"q_d","type":"f16","expr":"query[@as(u32, d)]"},
+    {"kind":"const","name":"correction","type":"f16","expr":"q_d - prev_dot"},
+    {"kind":"const","name":"scaled_correction","type":"f16","expr":"alpha * correction"},
+    {"kind":"const","name":"k_in","type":"f16","expr":"key[@as(u32, k)]"},
+    {"kind":"const","name":"idx","type":"u32","expr":"@as(u32, d) * @as(u32, key_dim) + @as(u32, k)"},
+    {"kind":"const","name":"prev_state","type":"f16","expr":"linear_state[idx]"},
+    {"kind":"const","name":"delta","type":"f16","expr":"scaled_correction * k_in"},
+    {"kind":"const","name":"g","type":"f16","expr":"gate[@as(u32, d)]"},
+    {"kind":"const","name":"sigmoid_g","type":"f16","expr":"1.0 / (1.0 + math.exp(-g))"}
+  ]
+}

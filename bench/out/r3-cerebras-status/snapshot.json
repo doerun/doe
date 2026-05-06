@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T15:24:24.146651+00:00",
+  "generatedAt": "2026-05-06T16:39:42.328222+00:00",
   "tool": "bench/tools/cerebras_status_snapshot.py",
   "rows": [
     {
@@ -233,6 +233,22 @@
       "blocker": null,
       "scope": "selected_lm_head_logit, layer=63, promptTokens=18, token=760, logitAbsDiff=0.0133286",
       "artifactMtime": "2026-05-06T15:11:51.171939+00:00"
+    },
+    {
+      "lane": "qwen.hardware_full_prompt",
+      "artifact": "bench/out/hardware-run/qwen3-6-27b-af16-trace.json",
+      "verdict": "missing",
+      "blocker": "returned hardware trace absent",
+      "scope": "runner=bench/tools/run_qwen3_6_27b_af16_hardware_path.sh",
+      "artifactMtime": null
+    },
+    {
+      "lane": "qwen.local_simfabric_ceiling",
+      "artifact": "bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json",
+      "verdict": "missing",
+      "blocker": null,
+      "scope": "",
+      "artifactMtime": null
     },
     {
       "lane": "qwen.multi_token_decode",

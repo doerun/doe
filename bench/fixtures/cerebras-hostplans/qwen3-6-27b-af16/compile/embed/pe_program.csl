@@ -1,0 +1,51 @@
+// PE program: embedding gather (auto-generated from WGSL)
+// 2-D layout: width x height shards rows. Host orchestrates chunked
+// dispatch across tokens and hidden slices (see emit_csl_gather.zig header).
+
+param memcpy_params;
+param width: u16;
+param height: u16;
+param rows_per_pe: i16;
+param hidden_size: i16;
+param hidden_per_pe: i16;
+param num_tokens: i16;
+param tokens_per_chunk: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const layout_mod = @import_module("<layout>");
+
+var indices: [tokens_per_chunk]u32 = @zeros([tokens_per_chunk]u32);
+var table: [rows_per_pe * hidden_per_pe]f16 = @zeros([rows_per_pe * hidden_per_pe]f16);
+var output: [tokens_per_chunk * hidden_per_pe]f16 = @zeros([tokens_per_chunk * hidden_per_pe]f16);
+
+var indices_ptr: [*]u32 = &indices;
+var table_ptr: [*]f16 = &table;
+var output_ptr: [*]f16 = &output;
+
+fn compute() void {
+    const pe_x = layout_mod.get_x_coord();
+    const pe_y = layout_mod.get_y_coord();
+    const flat_pe_id = @as(u32, pe_y) * @as(u32, width) + @as(u32, pe_x);
+    const row_start = flat_pe_id * @as(u32, rows_per_pe);
+    const row_end = row_start + @as(u32, rows_per_pe);
+
+    for (@range(i16, tokens_per_chunk)) |t| {
+        const token_id = indices[@as(u32, t)];
+        if (token_id >= row_start and token_id < row_end) {
+            const local_row = token_id - row_start;
+            for (@range(i16, hidden_per_pe)) |d| {
+                const src = local_row * @as(u32, hidden_per_pe) + @as(u32, d);
+                const dst = @as(u32, t) * @as(u32, hidden_per_pe) + @as(u32, d);
+                output[dst] = table[src];
+            }
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(indices_ptr, "indices");
+    @export_symbol(table_ptr, "table");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

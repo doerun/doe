@@ -16,10 +16,11 @@ bundled.
 <!-- archive:README.md:start -->
 # Cerebras evidence bundle: README
 
-Packed software-only evidence bundle for Doe's Gemma-4-on-Cerebras lane.
-Use the run order below. The current external ask leads with the Gemma 4 31B
-af16 full-prompt HostPlan hardware transcript; the E2B artifacts remain
-control evidence and smaller repro fixtures.
+Packed software-only evidence bundle for Doe's Cerebras lane. Use the run
+order below. The current external ask leads with the Gemma 4 31B af16
+full-prompt HostPlan hardware transcript. Qwen 3.6 27B has the matching
+companion HostPlan wrapper. The E2B artifacts remain control evidence and
+smaller repro fixtures.
 
 ## What's at the archive root
 
@@ -28,7 +29,7 @@ control evidence and smaller repro fixtures.
   dirty-tree flag, host OS, cs_python availability on the bundler.
 - `MANIFEST.txt`: sha256 + claim-role + path for every file inside.
 - `CLAIM_SCOPE.md`: backed claims, excluded claims, and receipt paths.
-- `MODEL_ACCESS.md`: cache roots, canonical Gemma 4 31B and E2B
+- `MODEL_ACCESS.md`: cache roots, canonical Gemma 4 31B, Qwen 3.6 27B, and E2B
   artifact identities, download/materialization commands, validation
   commands, and demo scope.
 - `CEREBRAS_ASK.md`: operator-facing distillation: exact endpoint
@@ -66,18 +67,20 @@ cross-references inside the receipts resolve as written.
    and the external dependencies that unlock further claims. Every
    backed claim points at a `claim-role` listed in `MANIFEST.txt`.
 
-4. **Read `MODEL_ACCESS.md`.** It pins the raw 31B Hugging Face
-   snapshot, the Doppler Q4K/af16 artifact, the E2B control artifacts,
-   the writable Hugging Face cache env vars, and the first-demo scope.
+4. **Read `MODEL_ACCESS.md`.** It pins the Gemma and Qwen Doppler
+   Q4K/af16 artifacts, the raw 31B Hugging Face snapshot used by the
+   bounded fallback, the E2B control artifacts, the writable Hugging Face
+   cache env vars, and the first-demo scope.
    The E2B helper
    `python3 bench/tools/prepare_gemma4_e2b_access.py --print-shell`
    remains available for the smaller control lane.
 
 5. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
    the external ask. The first requested run is the Gemma 4 31B af16
-   full-prompt HostPlan runner. It also enumerates endpoint access
-   and Cerebras-assisted source checkout paths, plus the exact command,
-   receipt fields, and publication boundaries for either.
+   full-prompt HostPlan runner; Qwen 3.6 27B is available through the
+   matching wrapper. It also enumerates endpoint access and
+   Cerebras-assisted source checkout paths, plus the exact command,
+   receipt fields, and publication boundaries for either lane.
    `docs/hardware-validation-appendix.md` is its parent document with
    the fuller context.
 
@@ -388,7 +391,7 @@ If any of 1-7 fails, reject the bundle and request a rebuild.
 <!-- archive:CLAIM_SCOPE.md:end -->
 
 <!-- archive:MODEL_ACCESS.md:start -->
-# Gemma 4 model access handoff
+# Gemma 4 and Qwen model access handoff
 
 Model/cache metadata for the Cerebras evidence handoff. It pins
 the local artifact identities and the environment variables that make
@@ -413,6 +416,7 @@ export DOE_MODELS_ROOT=/home/x/model-downloads
 export DOE_GEMMA4_31B_SAFETENSORS_DIR=/home/x/model-downloads/gemma-4-31B-it
 export DOE_RDRR_ROOT=/home/x/model-downloads/Clocksmith-rdrr
 export DOE_GEMMA4_31B_AF16_MANIFEST=/home/x/model-downloads/Clocksmith-rdrr/models/gemma-4-31b-it-text-q4k-ehf16-af16/manifest.json
+export DOE_QWEN3_6_27B_AF16_MANIFEST=/home/x/model-downloads/Clocksmith-rdrr/models/qwen-3-6-27b-q4k-eaf16/manifest.json
 export DOE_GEMMA4_E2B_SAFETENSORS_DIR=/home/x/model-downloads/gemma4-e2b-it
 export DOE_GEMMA4_E2B_RDRR_ROOT=/home/x/deco/doppler/models/local/gemma-4-e2b-it-q4k-ehf16-af32-int4ple
 ```
@@ -452,6 +456,26 @@ its shared Q4K weight pack:
 - expected shard-set hash:
   `sha256:54933058e14fa0be4480912e641b897730db3e8ee7e871bdb2a92fd404ade146`
 - active Doe use: Gemma 4 31B af16 HostPlan runner, selected-logit
+  splice receipt, and hardware transcript path
+
+The Qwen companion hardware lane starts from the Doppler af16 manifest and
+its shared Q4K weight pack:
+
+- upstream model id: `Qwen/Qwen3.6-27B`
+- hosted RDRR repo: `Clocksmith/rdrr`
+- hosted af16 revision:
+  `3dee21b3b12d65ac7fef9b24cbf759cacc953a67`
+- hosted af16 path:
+  `models/qwen-3-6-27b-q4k-eaf16`
+- hosted shared Q4K primary path:
+  `models/qwen-3-6-27b-q4k-ehaf16`
+- Doppler af16 manifest:
+  `$DOE_QWEN3_6_27B_AF16_MANIFEST`
+- expected manifest id:
+  `qwen-3-6-27b-q4k-eaf16`
+- expected shard-set hash:
+  `sha256:f355a595b115d4a40041bcb2fbe4d131316e422e65df28e5ed4573d2c9051108`
+- active Doe use: Qwen 3.6 27B af16 HostPlan runner, selected-logit
   splice receipt, and hardware transcript path
 
 The canonical raw checkpoint source for the BF16/text oracle lane is
@@ -500,6 +524,19 @@ hf download Clocksmith/rdrr \
   --revision e6f36589da5f860d9da9b10efdc945434f1f1be2 \
   --include "models/gemma-4-31b-it-text-q4k-ehf16-af16/*" \
   --include "models/gemma-4-31b-it-text-q4k-ehf16-af32/*" \
+  --local-dir "$DOE_RDRR_ROOT"
+```
+
+Download the hosted Qwen RDRR pair used by the af16 hardware lane. The af16
+manifest references the ehaf16 shared Q4K primary weight pack through
+`weightsRef`:
+
+```bash
+hf download Clocksmith/rdrr \
+  --repo-type model \
+  --revision 3dee21b3b12d65ac7fef9b24cbf759cacc953a67 \
+  --include "models/qwen-3-6-27b-q4k-eaf16/*" \
+  --include "models/qwen-3-6-27b-q4k-ehaf16/*" \
   --local-dir "$DOE_RDRR_ROOT"
 ```
 
@@ -628,11 +665,12 @@ on the endpoint. Tight and single-purpose. The rest of the bundle's
 documents are reviewer-facing; this one is for the person pressing
 Enter on the hardware.
 
-Before running, read `MODEL_ACCESS.md` in the bundle. It pins the raw
-31B Hugging Face snapshot, the Doppler Q4K/af16 artifact, writable
-Hugging Face cache env vars, and the claim boundary. The primary
-hardware ask is the Gemma 4 31B af16 full-prompt HostPlan run. The
-layer-block runner is a bounded fallback, not the main claim.
+Before running, read `MODEL_ACCESS.md` in the bundle. It pins model-access
+policy, writable Hugging Face cache env vars, and the claim boundary. The
+primary hardware ask is the Gemma 4 31B af16 full-prompt HostPlan run. Qwen
+3.6 27B now has a matching af16 full-prompt HostPlan wrapper for the companion
+hybrid-architecture lane. The layer-block runner is a bounded fallback, not
+the main claim.
 
 Current local bridge evidence: the selected-token lm-head splice at
 `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`
@@ -667,8 +705,8 @@ Cerebras-provided endpoint:
 runs the same commands internally and returns the receipt artifacts:
 
 1. **Clone Doe at the archive commit** and verify the archive.
-2. **Fetch the Doppler Gemma 4 31B af16 RDRR artifact** from
-   `Clocksmith/rdrr`, or mount an already-validated copy.
+2. **Fetch the Doppler RDRR artifact** from `Clocksmith/rdrr`, or mount an
+   already-validated copy.
 3. **Build generated CSL, compile it with cslc, run the full-prompt
    HostPlan runner, and return the trace artifacts.**
 4. **Redact what your policy requires.** Every `hardware.*` field has
@@ -692,9 +730,9 @@ python3 -m pip install numpy jsonschema huggingface_hub
 mkdir -p bench/out/hardware-run
 ```
 
-Then run the wrapper. It performs the hosted RDRR fetch and validation,
+Then run the Gemma wrapper. It performs the hosted RDRR fetch and validation,
 bundled archive verification, SDK compile from the bundled HostPlan source,
-and full-prompt hardware execution. The endpoint is the only required run
+and full-prompt hardware execution. The endpoint is the required run
 parameter.
 
 ```bash
@@ -717,6 +755,19 @@ bench/tools/run_gemma4_31b_af16_hardware_path.sh \
 
 If the evidence archive is supplied separately instead of through the repo,
 pass `--archive <path>`.
+
+For the Qwen companion lane, use the matching wrapper:
+
+```bash
+bench/tools/run_qwen3_6_27b_af16_hardware_path.sh \
+  --cmaddr "$CMADDR"
+```
+
+That wrapper fetches `Clocksmith/rdrr` revision
+`3dee21b3b12d65ac7fef9b24cbf759cacc953a67`, model path
+`models/qwen-3-6-27b-q4k-eaf16`, and the shared weight pack
+`models/qwen-3-6-27b-q4k-ehaf16`. It uses the bundled HostPlan source under
+`bench/fixtures/cerebras-hostplans/qwen3-6-27b-af16/`.
 
 The hardware host must also provide the Cerebras SDK surface: `cslc` on
 `PATH` or passed with `--cslc-executable`, and a Python environment that can

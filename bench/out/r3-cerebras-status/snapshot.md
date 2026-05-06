@@ -3,7 +3,7 @@
 This file is **generated** by `bench/tools/cerebras_status_snapshot.py`.
 Do not edit by hand. Re-run the tool to refresh.
 
-Generated: `2026-05-06T15:24:24.146651+00:00`
+Generated: `2026-05-06T16:39:42.328222+00:00`
 
 | Lane | Verdict | Scope | Blocker | Artifact mtime | Artifact |
 | --- | --- | --- | --- | --- | --- |
@@ -36,6 +36,8 @@ Generated: `2026-05-06T15:24:24.146651+00:00`
 | `gemma.doppler_csl_splice.last_layer_tail_token` | ❌ blocked | last_layer_tail_token, layer=59, promptTokens=7 | csl_splice_token_absent | 2026-05-06T15:22:55.665658+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json` |
 | `gemma.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417 |  | 2026-05-06T15:22:55.520622+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
 | `qwen.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=63, promptTokens=18, token=760, logitAbsDiff=0.0133286 |  | 2026-05-06T15:11:51.171939+00:00 | `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
+| `qwen.hardware_full_prompt` | ❓ missing | runner=bench/tools/run_qwen3_6_27b_af16_hardware_path.sh | returned hardware trace absent | n/a | `bench/out/hardware-run/qwen3-6-27b-af16-trace.json` |
+| `qwen.local_simfabric_ceiling` | ❓ missing |  |  | n/a | `bench/out/r3-2-27b-af16-local-simfabric-ceiling/receipt.json` |
 | `qwen.multi_token_decode` | ❌ blocked |  | boundKernelCount=0/3 | 2026-05-04T14:51:01.824465+00:00 | `bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json` |
 | `gemma.simfabric_cells` | ⚠️ pass_with_documented_canary_constraints |  |  | 2026-05-06T15:18:45.285968+00:00 | `bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json` |
 | `qwen.simfabric_cells` | ⚠️ pass_with_documented_canary_constraints |  |  | 2026-05-04T14:50:55.394919+00:00 | `bench/out/r3-2-27b-qwen-simfabric-cells/summary-receipt.json` |

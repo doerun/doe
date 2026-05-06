@@ -1,0 +1,47 @@
+// PE program: token sampling (auto-generated from WGSL)
+// Bounded smoke: local argmax over each PE logit chunk.
+
+param memcpy_params;
+param pe_id: i16;
+param num_pes: i16;
+param chunk_size: i16;
+param reduce_color: color;
+param temperature: f32 = 1.0;
+param softcap: f32 = 0.0;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var logits: [chunk_size]f32 = @zeros([chunk_size]f32);
+var output_token: [1]u32 = @zeros([1]u32);
+
+var logits_ptr: [*]f32 = &logits;
+var tokens_ptr: [*]u32 = &output_token;
+
+var local_max_val: f32 = -3.4028235e+38;
+var local_max_idx: u32 = 0;
+
+fn compute() void {
+    local_max_val = -3.4028235e+38;
+    local_max_idx = 0;
+    const offset = @as(u32, pe_id) * @as(u32, chunk_size);
+
+    for (@range(i16, chunk_size)) |i| {
+        var val = logits[@as(u32, i)];
+        if (softcap != 0.0) val = softcap * math.tanh(val / softcap);
+        val /= temperature;
+        if (val > local_max_val) {
+            local_max_val = val;
+            local_max_idx = offset + @as(u32, i);
+        }
+    }
+
+    output_token[0] = local_max_idx;
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(logits_ptr, "logits");
+    @export_symbol(tokens_ptr, "tokens");
+    @export_symbol(compute);
+}

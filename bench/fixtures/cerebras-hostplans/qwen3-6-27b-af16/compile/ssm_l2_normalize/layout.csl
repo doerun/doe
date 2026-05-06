@@ -1,0 +1,26 @@
+// Layout: Qwen 3.6 gated-DeltaNet SSM body op.
+
+param width: u16;
+param height: u16;
+param hidden_size: i16 = 128;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = height,
+});
+
+layout {
+    @set_rectangle(width, height);
+
+    for (@range(u16, height)) |pe_y| {
+        for (@range(u16, width)) |pe_x| {
+            @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
+                .memcpy_params = memcpy.get_params(pe_x),
+            });
+        }
+    }
+
+    @export_name("input", [*]f16, true);
+    @export_name("output", [*]f16, true);
+    @export_name("compute", fn()void);
+}

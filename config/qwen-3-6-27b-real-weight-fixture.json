@@ -21,6 +21,22 @@
     }
   },
 
+  "hostedRdrr": {
+    "repoId": "Clocksmith/rdrr",
+    "repoType": "model",
+    "revision": "3dee21b3b12d65ac7fef9b24cbf759cacc953a67",
+    "manifestPath": "models/qwen-3-6-27b-q4k-eaf16/manifest.json",
+    "sharedWeightPackPath": "models/qwen-3-6-27b-q4k-ehaf16/",
+    "modelId": "qwen-3-6-27b-q4k-eaf16",
+    "weightsRef": {
+      "artifactRoot": "../qwen-3-6-27b-q4k-ehaf16",
+      "manifestDigest": "sha256:d30c1dd87d5e23f4eda13cb57059deda571b3a9ffdf98b064e6401ca6fb640dc",
+      "shardSetHash": "sha256:f355a595b115d4a40041bcb2fbe4d131316e422e65df28e5ed4573d2c9051108"
+    },
+    "hardwarePathWrapper": "bench/tools/run_qwen3_6_27b_af16_hardware_path.sh",
+    "materializationCommand": "hf download Clocksmith/rdrr --repo-type model --revision 3dee21b3b12d65ac7fef9b24cbf759cacc953a67 --include 'models/qwen-3-6-27b-q4k-eaf16/*' --include 'models/qwen-3-6-27b-q4k-ehaf16/*' --local-dir $DOE_RDRR_ROOT"
+  },
+
   "modelShape": {
     "numLayers": 64,
     "fullAttentionLayerCount": 16,
@@ -116,6 +132,7 @@
   "weightsDir": {
     "pathPlaceholder": "bench/out/qwen-3-6-27b-real-weights/",
     "status": "absent",
+    "hardwarePathNote": "The full-prompt HostPlan hardware path consumes hosted RDRR directly through hostedRdrr. This directory remains the legacy layer-block slice contract.",
     "contract": "Tile per layer per module under weightTileMap. Manifest-shape file sizes (bytes) follow shapeValues * elemSize(dtype). Validator cross-checks file sizes against modelShape via bench/tools/audit_qwen_3_6_27b_smoke_contract.py --pin config/qwen-3-6-27b-real-weight-fixture.json.",
     "expectedWeightSetSha256": null,
     "expectedWeightSetSha256Note": "Pinned when an HF-derived extractor lands. Null today; the smoke-contract audit reports per-tile presence without verifying byte content.",

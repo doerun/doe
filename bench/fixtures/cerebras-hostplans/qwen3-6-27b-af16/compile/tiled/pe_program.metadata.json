@@ -1,0 +1,25 @@
+{
+  "variables": [
+    {"name":"A_tile","sizeExpr":"Mt * Kt","elemType":"f16"},
+    {"name":"B_tile","sizeExpr":"Kt * Nt","elemType":"f16"},
+    {"name":"C_tile","sizeExpr":"Mt * Nt","elemType":"f16"},
+    {"name":"A_buf","sizeExpr":"Mt * Kt","elemType":"f16"},
+    {"name":"B_buf","sizeExpr":"Kt * Nt","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"A_ptr","backing":"A_tile","elemType":"f16"},
+    {"name":"B_ptr","backing":"B_tile","elemType":"f16"},
+    {"name":"C_ptr","backing":"C_tile","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"a","pointer":"A_ptr","backing":"A_tile","sizeExpr":"Mt * Kt","elemType":"f16"},
+    {"symbol":"b","pointer":"B_ptr","backing":"B_tile","sizeExpr":"Kt * Nt","elemType":"f16"},
+    {"symbol":"c","pointer":"C_ptr","backing":"C_tile","sizeExpr":"Mt * Nt","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"exit_task_id","type":"local_task_id","expr":"@get_local_task_id(12)"},
+    {"kind":"const","name":"compute_task_id","type":"local_task_id","expr":"@get_local_task_id(13)"},
+    {"kind":"const","name":"x_done_id","type":"local_task_id","expr":"@get_local_task_id(14)"},
+    {"kind":"const","name":"y_done_id","type":"local_task_id","expr":"@get_local_task_id(15)"}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "variables": [
+    {"name":"input","sizeExpr":"hidden_size","elemType":"f16"},
+    {"name":"output","sizeExpr":"hidden_size","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"input_ptr","backing":"input","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"input","pointer":"input_ptr","backing":"input","sizeExpr":"hidden_size","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"hidden_size","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"hidden_size","type":"i16","expr":"128"},
+    {"kind":"const","name":"y0","type":"f16","expr":"math.sqrt(x)"},
+    {"kind":"const","name":"l2_eps","type":"f16","expr":"1e-6"}
+  ]
+}

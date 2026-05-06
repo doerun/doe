@@ -1,0 +1,32 @@
+{
+  "variables": [
+    {"name":"key_proj","sizeExpr":"head_dim","elemType":"f16"},
+    {"name":"val_proj","sizeExpr":"head_dim","elemType":"f16"},
+    {"name":"key_cache","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"name":"val_cache","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"name":"position","sizeExpr":"1","elemType":"u32"}
+  ],
+  "pointers": [
+    {"name":"key_proj_ptr","backing":"key_proj","elemType":"f16"},
+    {"name":"val_proj_ptr","backing":"val_proj","elemType":"f16"},
+    {"name":"key_cache_ptr","backing":"key_cache","elemType":"f16"},
+    {"name":"val_cache_ptr","backing":"val_cache","elemType":"f16"},
+    {"name":"position_ptr","backing":"position","elemType":"u32"}
+  ],
+  "exports": [
+    {"symbol":"key_proj","pointer":"key_proj_ptr","backing":"key_proj","sizeExpr":"head_dim","elemType":"f16"},
+    {"symbol":"val_proj","pointer":"val_proj_ptr","backing":"val_proj","sizeExpr":"head_dim","elemType":"f16"},
+    {"symbol":"key_cache","pointer":"key_cache_ptr","backing":"key_cache","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"symbol":"val_cache","pointer":"val_cache_ptr","backing":"val_cache","sizeExpr":"local_kv_len","elemType":"f16"},
+    {"symbol":"position","pointer":"position_ptr","backing":"position","sizeExpr":"1","elemType":"u32"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"head_dim","type":"i16","expr":"256"},
+    {"kind":"param","name":"max_seq_len","type":"i16","expr":"4096"},
+    {"kind":"const","name":"local_kv_len","type":"u32","expr":"@as(u32, slots_per_pe) * @as(u32, head_dim)"},
+    {"kind":"const","name":"global_pos","type":"u32","expr":"position[0]"},
+    {"kind":"const","name":"owning_pe","type":"u32","expr":"global_pos / @as(u32, slots_per_pe)"},
+    {"kind":"const","name":"local_slot","type":"u32","expr":"global_pos - owning_pe * @as(u32, slots_per_pe)"},
+    {"kind":"const","name":"base","type":"u32","expr":"local_slot * @as(u32, head_dim)"}
+  ]
+}
