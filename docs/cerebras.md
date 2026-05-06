@@ -40,6 +40,8 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --cmaddr <endpoint>` |
 | Run Qwen full-prompt hardware path | `bench/tools/run_qwen3_6_27b_af16_hardware_path.sh --cmaddr <endpoint>` |
+| Run Gemma final-norm selected-logit check | `python3 bench/tools/run_gemma4_31b_af16_doppler_selected_logit_splice.py` |
+| Run Qwen final-norm selected-logit check | `python3 bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py` |
 | Run blocking gates locally | `python3 bench/runners/run_blocking_gates.py` |
 
 ## Run on hardware

@@ -1,0 +1,45 @@
+param memcpy_params;
+param hidden_size: i16 = 5120;
+param weight_offset: i16 = 0;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var input: [hidden_size]f16 = @zeros([hidden_size]f16);
+var weight: [hidden_size]f16 = @zeros([hidden_size]f16);
+var output: [hidden_size]f16 = @zeros([hidden_size]f16);
+
+var input_ptr: [*]f16 = &input;
+var weight_ptr: [*]f16 = &weight;
+var output_ptr: [*]f16 = &output;
+
+fn sqrt_nr(x: f32) f32 {
+    const y0: f32 = math.sqrt(x);
+    return 0.5 * (y0 + x / y0);
+}
+
+fn compute() void {
+    var sum_sq: f32 = 0.0;
+    for (@range(i16, hidden_size)) |i| {
+        const v: f32 = @as(f32, input[@as(u32, i)]);
+        sum_sq += v * v;
+    }
+    const mean_sq: f32 = sum_sq / @as(f32, hidden_size);
+    const inv_rms: f32 = 1.0 / sqrt_nr(mean_sq + 0.000001);
+    for (@range(i16, hidden_size)) |d| {
+        var scale: f32 = @as(f32, weight[@as(u32, d)]);
+        if (weight_offset != 0) {
+            scale += 1.0;
+        }
+        const v: f32 = @as(f32, input[@as(u32, d)]);
+        output[@as(u32, d)] = @as(f16, v * inv_rms * scale);
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(input_ptr, "input");
+    @export_symbol(weight_ptr, "weight");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

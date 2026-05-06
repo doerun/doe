@@ -181,6 +181,10 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
                 },
                 "cslRun": {
                     "topK": 5,
+                    "tailKernels": ["final_norm_f16", "lm_head_prefill"],
+                    "finalNorm": {
+                        "maxAbsDiffVsHostF16": 0.001953125,
+                    },
                     "maxLogitAbsDiff": 0.048595428466796875,
                     "decisionMarginLowerBound": 3.5590591430664062,
                 },
@@ -190,6 +194,8 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
             row = self.module.qwen_selected_logit_splice_row()
         self.assertEqual(row["verdict"], "bound")
         self.assertIn("topK=5", row["scope"])
+        self.assertIn("tail=final_norm_f16+lm_head_prefill", row["scope"])
+        self.assertIn("finalNormMaxAbs=0.00195312", row["scope"])
         self.assertIn("maxLogitAbsDiff=0.0485954", row["scope"])
         self.assertIn("decisionMarginLowerBound=3.55906", row["scope"])
         self.assertIn("mode=argmax_decision_bound", row["scope"])

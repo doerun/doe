@@ -88,7 +88,7 @@
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
-      "sha256": "7fc2e36c47256c125d99ce1a1a82c1a68d06589c81d2e6bb7b53754fa1128649"
+      "sha256": "04a60d9e4d509643fe436c9a789a25577b4b79bd25232d49796cf8bb9660beb0"
     },
     {
       "path": "bench/out/r3-1-31b-af16-doppler-csl-splice/session-single_block_hidden/hostplan-runtime/launch-receipts/launch-0001.json",
@@ -336,7 +336,7 @@
     },
     {
       "path": "bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json",
-      "sha256": "6c95c474f676deae9bc37485d9d411c369d1b743ca2b3633cb6eaad0861d8d67"
+      "sha256": "9dad93b7c5e55c2e8d37d8e8bef65c2be52f04f1e9da77542258ba218992c331"
     },
     {
       "path": "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
@@ -356,7 +356,7 @@
     },
     {
       "path": "config/doppler-selected-logit-splice-receipt.schema.json",
-      "sha256": "f99cf3dbb58fe98a07e79316e36f1a3d0bfc982cd1e1446d80bffffeea02f631"
+      "sha256": "fb11dac3889dca616ec929a400b9cff99d67606a33bdb5f6527163c5c0147183"
     },
     {
       "path": "config/doppler-to-csl-splice-receipt.schema.json",
@@ -380,11 +380,11 @@
     },
     {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "87091ca6e9fd70f503e93ea09c0c92a82bcc047fd40999e696433544365d6036"
+      "sha256": "e9f7171a5ab97c91c5d65668eb19d85f73193b25e38f4a70b7c1e6385b0568b8"
     },
     {
       "path": "docs/cerebras-hardware-runbook.md",
-      "sha256": "4e374aa72afc3e9730aa5ef36711ba7caf0a926865b8ffafcb251c156dc6f956"
+      "sha256": "0868d0f09d6388df713fb5cda11d7eaf4268a9336007f3a26d3d68ff0c202d68"
     },
     {
       "path": "docs/claim-discipline.md",
@@ -392,7 +392,7 @@
     },
     {
       "path": "docs/hardware-validation-appendix.md",
-      "sha256": "69a58447abcac65fc3dc93ae6acde744b86c422178ce2dbcce5a0f8f564934af"
+      "sha256": "33c31f9d0cd206b167a2415e87ade24e593911cecac50ee053a627ace566ba04"
     }
   ],
   "missing": []

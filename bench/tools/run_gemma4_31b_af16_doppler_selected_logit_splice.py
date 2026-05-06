@@ -46,6 +46,9 @@ DEFAULT_SDK_ROOT = Path("/home/x/cerebras-sdk-2.10.0")
 DEFAULT_CELLS_ROOT = (
     REPO_ROOT / "bench/runners/csl-runners/gemma-4-31b-af16-cells"
 )
+DEFAULT_TAIL_CELLS_ROOT = (
+    REPO_ROOT / "bench/runners/csl-runners/doppler-csl-splice-cells"
+)
 CHAIN_STEP_ADAPTER = RUNNER_DIR / "chain_step_adapter.py"
 HIDDEN_SIZE = 5376
 IN_DIM_PER_PE = 32
@@ -54,6 +57,7 @@ FINAL_LAYER_INDEX = 59
 DEFAULT_TOKEN_ID = 3730
 FINAL_LOGIT_SOFTCAP = 30.0
 RMS_NORM_EPS = 1.0e-6
+FINAL_NORM_ATOL = 5.0e-3
 ADAPTER_WATCHDOG = 240
 
 
@@ -65,6 +69,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--sdk-root", type=Path, default=DEFAULT_SDK_ROOT)
     parser.add_argument("--cells-root", type=Path, default=DEFAULT_CELLS_ROOT)
+    parser.add_argument("--tail-cells-root", type=Path, default=DEFAULT_TAIL_CELLS_ROOT)
     parser.add_argument(
         "--token-id",
         type=int,
@@ -74,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-k",
         type=int,
-        default=5,
+        default=32,
         help="Number of Doppler top logits to replay through CSL.",
     )
     parser.add_argument("--chunk-pe-width", type=int, default=CHUNK_PE_WIDTH)
@@ -275,6 +280,75 @@ def compile_cell(
     }
 
 
+def compile_final_norm_cell(
+    *,
+    hidden_size: int,
+    weight_offset: bool,
+    out_dir: Path,
+    sdk_root: Path,
+    tail_cells_root: Path,
+    artifact_kind: str,
+) -> dict[str, Any]:
+    compile_root = out_dir / "compile-final-norm-f16"
+    compile_root.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        tail_cells_root / "final_norm_f16_layout.csl",
+        compile_root / "layout.csl",
+    )
+    shutil.copy2(
+        tail_cells_root / "final_norm_f16_pe_program.csl",
+        compile_root / "pe_program.csl",
+    )
+    compile_dir = compile_root / "compiled"
+    if compile_dir.exists():
+        shutil.rmtree(compile_dir)
+    command = [
+        str(sdk_root / "cslc"),
+        "layout.csl",
+        "--arch=wse3",
+        "--fabric-dims=11,5",
+        "--fabric-offsets=4,1",
+        (
+            "--params="
+            f"hidden_size:{hidden_size},"
+            f"weight_offset:{1 if weight_offset else 0}"
+        ),
+        "--memcpy",
+        "--channels=1",
+        "-o",
+        "compiled",
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=compile_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    receipt = {
+        "schemaVersion": 1,
+        "artifactKind": artifact_kind,
+        "status": "succeeded" if completed.returncode == 0 else "blocked",
+        "blockers": [] if completed.returncode == 0 else [f"cslc_exit_{completed.returncode}"],
+        "compileDir": rel(compile_dir),
+        "command": command,
+        "params": {
+            "hiddenSize": hidden_size,
+            "weightOffset": bool(weight_offset),
+        },
+        "stdoutTail": completed.stdout.splitlines()[-8:],
+        "stderrTail": completed.stderr.splitlines()[-8:],
+    }
+    receipt_path = compile_root / "compile-receipt.json"
+    write_json(receipt_path, receipt)
+    if completed.returncode != 0:
+        raise RuntimeError(f"final_norm_f16_cslc_failed:{hidden_size}")
+    return {
+        "compileDir": compile_dir,
+        "compileReceipt": receipt_path,
+    }
+
+
 def run_adapter(command: list[str], *, cwd: Path) -> tuple[int, str, str, bool]:
     process = subprocess.Popen(
         command,
@@ -371,6 +445,89 @@ def run_chunk(
     }
 
 
+def run_final_norm_cell(
+    *,
+    compile_dir: Path,
+    input_hidden: np.ndarray,
+    norm_weight: np.ndarray,
+    expected_activation: np.ndarray,
+    out_dir: Path,
+    sdk_root: Path,
+) -> dict[str, Any]:
+    norm_dir = out_dir / "final-norm-csl"
+    norm_dir.mkdir(parents=True, exist_ok=True)
+    input_path = norm_dir / "input.npy"
+    weight_path = norm_dir / "weight.npy"
+    output_path = norm_dir / "output.npy"
+    phase_path = norm_dir / "phase.log"
+    hidden_size = int(expected_activation.size)
+    np.save(input_path, input_hidden.astype(np.float16, copy=False))
+    np.save(weight_path, norm_weight.astype(np.float16, copy=False))
+    command = [
+        str(sdk_root / "cs_python"),
+        str(CHAIN_STEP_ADAPTER),
+        "--compile-dir",
+        str(compile_dir),
+        "--width",
+        "1",
+        "--height",
+        "1",
+        "--chunk-size",
+        str(hidden_size),
+        "--input",
+        f"input:{input_path}:f16:{hidden_size}",
+        "--input",
+        f"weight:{weight_path}:f16:{hidden_size}",
+        "--output",
+        f"output:{output_path}:f16:{hidden_size}:0,0,1,1",
+        "--phase-trace",
+        str(phase_path),
+    ]
+    exit_code, stdout, stderr, timed_out = run_adapter(command, cwd=REPO_ROOT)
+    output_ready = output_path.is_file()
+    actual = np.array([], dtype=np.float16)
+    if output_ready:
+        actual = np.load(output_path, allow_pickle=False).astype(np.float16).reshape(-1)
+        output_ready = actual.size == hidden_size
+    expected_f16 = expected_activation.astype(np.float16, copy=False).reshape(-1)
+    max_abs = (
+        float(np.max(np.abs(actual.astype(np.float32) - expected_f16.astype(np.float32))))
+        if output_ready
+        else None
+    )
+    exact_match = bool(output_ready and np.array_equal(actual, expected_f16))
+    within_atol = bool(
+        output_ready
+        and max_abs is not None
+        and max_abs <= FINAL_NORM_ATOL
+    )
+    return {
+        "kernel": "final_norm_f16",
+        "status": "succeeded" if exit_code == 0 and output_ready else "blocked",
+        "compileDir": rel(compile_dir),
+        "input": artifact(input_path),
+        "weight": artifact(weight_path),
+        "output": artifact(output_path) if output_path.is_file() else None,
+        "outputSha256": sha256_file(output_path) if output_path.is_file() else "",
+        "phaseTrace": artifact(phase_path) if phase_path.is_file() else None,
+        "phaseTail": (
+            phase_path.read_text(encoding="utf-8").splitlines()[-12:]
+            if phase_path.is_file()
+            else []
+        ),
+        "hiddenSize": hidden_size,
+        "maxAbsDiffVsHostF16": max_abs,
+        "exactMatchVsHostF16": exact_match,
+        "atol": FINAL_NORM_ATOL,
+        "withinAtol": within_atol,
+        "exitCode": exit_code,
+        "timedOut": timed_out,
+        "stdoutTail": stdout.splitlines()[-4:],
+        "stderrTail": stderr.splitlines()[-4:],
+        "command": command,
+    }
+
+
 def generated_token_ids(reference_export: dict[str, Any]) -> list[int]:
     transcript = reference_export.get("decodeTranscript") or {}
     generated = transcript.get("generatedTokenIds")
@@ -405,6 +562,7 @@ def main() -> int:
     out_dir = resolve(args.out_dir)
     sdk_root = resolve(args.sdk_root)
     cells_root = resolve(args.cells_root)
+    tail_cells_root = resolve(args.tail_cells_root)
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -433,7 +591,31 @@ def main() -> int:
     ).astype(np.float32)
     rms = np.sqrt(np.mean(final_input * final_input) + RMS_NORM_EPS)
     normalized = (final_input / rms) * norm_weight
-    activation = normalized.astype(np.float16)
+    host_activation = normalized.astype(np.float16)
+    final_norm_compile = compile_final_norm_cell(
+        hidden_size=HIDDEN_SIZE,
+        weight_offset=False,
+        out_dir=out_dir,
+        sdk_root=sdk_root,
+        tail_cells_root=tail_cells_root,
+        artifact_kind="gemma4_31b_af16_final_norm_f16_compile_receipt",
+    )
+    final_norm_run = run_final_norm_cell(
+        compile_dir=Path(str(final_norm_compile["compileDir"])),
+        input_hidden=final_input,
+        norm_weight=norm_weight,
+        expected_activation=host_activation,
+        out_dir=out_dir,
+        sdk_root=sdk_root,
+    )
+    final_norm_output = final_norm_run.get("output") or {}
+    if final_norm_run["status"] == "succeeded" and final_norm_output.get("path"):
+        activation = np.load(
+            resolve(Path(str(final_norm_output["path"]))),
+            allow_pickle=False,
+        ).astype(np.float16)
+    else:
+        activation = host_activation
 
     logits_path = reference_prefill_logits_path(reference_export)
     logits = np.fromfile(logits_path, dtype=np.float32)
@@ -574,6 +756,8 @@ def main() -> int:
     verdict = (
         "pass"
         if all_candidates_succeeded
+        and final_norm_run["status"] == "succeeded"
+        and bool(final_norm_run.get("withinAtol"))
         and all_candidates_match_cpu
         and argmax_decision_stable
         and token_matches
@@ -582,6 +766,10 @@ def main() -> int:
     blockers: list[str] = []
     if not all_candidates_succeeded:
         blockers.append("topk_selected_logits_csl_chunk_blocked")
+    if final_norm_run["status"] != "succeeded":
+        blockers.append("final_norm_csl_blocked")
+    elif not final_norm_run.get("withinAtol"):
+        blockers.append("final_norm_csl_host_f16_exceeds_tolerance")
     if not all_candidates_match_cpu:
         blockers.append("topk_selected_logits_csl_cpu_partial_mismatch")
     if not argmax_decision_stable:
@@ -637,6 +825,7 @@ def main() -> int:
             "lmHeadTensor": "model.language_model.embed_tokens.weight",
             "lmHeadTiedEmbedding": True,
             "finalNormSha256": tensor_sha256(norm_weight.astype(np.float16)),
+            "finalNormCslOutputSha256": str(final_norm_run.get("outputSha256") or ""),
             "selectedLmHeadRowSha256": primary_run["lmHeadRowSha256"],
             "candidateLmHeadRows": [
                 {"tokenId": int(run["tokenId"]), "sha256": run["lmHeadRowSha256"]}
@@ -644,6 +833,8 @@ def main() -> int:
             ],
         },
         "cslRun": {
+            "tailKernels": ["final_norm_f16", "lm_head_prefill"],
+            "finalNorm": final_norm_run,
             "kernel": "lm_head_prefill",
             "chunkPeWidth": chunk_width,
             "inDimPerPe": IN_DIM_PER_PE,
@@ -674,9 +865,9 @@ def main() -> int:
         "claim": {
             "scope": (
                 "Doppler supplies real Gemma 4 31B af16 post-FFN state for the "
-                "final prompt position; CSL computes the tied lm-head logits "
-                "for the Doppler top-k token candidates across hidden chunks "
-                "and preserves the top-token decision."
+                "final prompt position; CSL computes final RMSNorm plus the "
+                "tied lm-head logits for the Doppler top-k token candidates "
+                "across hidden chunks and preserves the top-token decision."
             ),
             "notWhat": (
                 "Not a full-vocabulary argmax, not a full layer-59 CSL run, "

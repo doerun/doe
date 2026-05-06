@@ -1,0 +1,23 @@
+// Layout: one-PE f16 RMSNorm for Doppler-to-CSL tail splices.
+
+param hidden_size: i16 = 5120;
+param weight_offset: i16 = 0;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = 1,
+    .height = 1,
+});
+
+layout {
+    @set_rectangle(1, 1);
+    @set_tile_code(0, 0, "pe_program.csl", .{
+        .memcpy_params = memcpy.get_params(0),
+        .hidden_size = hidden_size,
+        .weight_offset = weight_offset,
+    });
+
+    @export_name("input", [*]f16, true);
+    @export_name("weight", [*]f16, true);
+    @export_name("output", [*]f16, true);
+    @export_name("compute", fn()void);
+}

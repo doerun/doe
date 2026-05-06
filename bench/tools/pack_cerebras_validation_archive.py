@@ -193,6 +193,14 @@ INCLUDE_FILES: tuple = (
         "lm_head_prefill_run.py"
     ),
     (
+        "bench/runners/csl-runners/doppler-csl-splice-cells/"
+        "final_norm_f16_layout.csl"
+    ),
+    (
+        "bench/runners/csl-runners/doppler-csl-splice-cells/"
+        "final_norm_f16_pe_program.csl"
+    ),
+    (
         "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-"
         "simfabric-cell/receipt.json"
     ),
@@ -459,6 +467,14 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/runners/csl-runners/gemma-4-31b-af16-cells/"
         "lm_head_prefill_run.py"
     ): "simfabric-cell-source",
+    (
+        "bench/runners/csl-runners/doppler-csl-splice-cells/"
+        "final_norm_f16_layout.csl"
+    ): "doppler-csl-splice-cell-source",
+    (
+        "bench/runners/csl-runners/doppler-csl-splice-cells/"
+        "final_norm_f16_pe_program.csl"
+    ): "doppler-csl-splice-cell-source",
     (
         "bench/out/r3-1-31b-gemma-af16-lm-head-prefill-"
         "simfabric-cell/receipt.json"

@@ -64,7 +64,13 @@
       "additionalProperties": true
     },
     "dopplerReference": { "type": "object" },
-    "weights": { "type": "object" },
+    "weights": {
+      "type": "object",
+      "properties": {
+        "finalNormCslOutputSha256": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
     "cslRun": {
       "type": "object",
       "required": [
@@ -94,7 +100,41 @@
         "softcap": { "type": ["number", "null"] },
         "rmsNormEps": { "type": "number" },
         "logitAbsDiff": { "type": "number" },
-        "atol": { "type": "number" }
+        "atol": { "type": "number" },
+        "topK": { "type": "integer" },
+        "candidateCount": { "type": "integer" },
+        "candidateTokenIds": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "candidateRuns": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "tailKernels": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "finalNorm": {
+          "type": "object",
+          "properties": {
+            "kernel": { "const": "final_norm_f16" },
+            "status": { "type": "string" },
+            "maxAbsDiffVsHostF16": { "type": ["number", "null"] },
+            "exactMatchVsHostF16": { "type": "boolean" },
+            "atol": { "type": "number" },
+            "withinAtol": { "type": "boolean" },
+            "outputSha256": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "maxLogitAbsDiff": { "type": "number" },
+        "decisionMarginLowerBound": { "type": "number" },
+        "referenceArgmaxTokenId": { "type": "integer" },
+        "cslArgmaxTokenId": { "type": "integer" },
+        "strictLogitTolerancePassed": { "type": "boolean" },
+        "strictLogitToleranceAtol": { "type": "number" },
+        "argmaxDecisionStable": { "type": "boolean" }
       },
       "additionalProperties": true
     },

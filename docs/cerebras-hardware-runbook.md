@@ -199,20 +199,21 @@ pass `--archive <path>`.
 
 ## Current local evidence
 
-The strongest local no-hardware check is the top-k lm-head splice:
+The strongest local no-hardware check is the final-norm plus selected-logit splice:
 `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`.
 It uses the real Gemma 4 31B af16 hidden state for
 `<bos>The color of the sky is`, real tied lm-head weights, and generated CSL.
-The CSL path computes Doppler's top candidate logits, keeps token `3730`
-(` blue`) as the winner, and records the max selected-logit diff plus the
-decision margin bound in the receipt. The companion Qwen receipt at
+The CSL path computes final RMSNorm and the selected lm-head candidate logits,
+keeps token `3730` (` blue`) as the winner, and records the candidate-count,
+max selected-logit diff, final-norm diff, and decision margin bound in the
+receipt. The companion Qwen receipt at
 `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`
 does the same for Qwen 3.6 27B.
 
 Do not treat that as full hardware parity. It is the bridge proof that says the
 same model artifact and generated CSL preserve the local reference's top-token
-decision on manifest-shape candidate logits. The hardware run below is the
-full-prompt validation path.
+decision on manifest-shape candidate logits after CSL-owned final norm. The
+hardware run below is the full-prompt validation path.
 
 ## Gemma 4 31B runner steps
 

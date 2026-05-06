@@ -249,6 +249,14 @@ def selected_logit_splice_row(lane: str, artifact: str) -> dict:
         scope_parts.append(f"token={splice.get('selectedTokenId')}")
     if csl_run.get("topK") is not None:
         scope_parts.append(f"topK={csl_run.get('topK')}")
+    tail_kernels = csl_run.get("tailKernels") or []
+    if isinstance(tail_kernels, list) and tail_kernels:
+        scope_parts.append("tail=" + "+".join(str(item) for item in tail_kernels))
+    final_norm = csl_run.get("finalNorm") or {}
+    if isinstance(final_norm, dict):
+        max_abs = final_norm.get("maxAbsDiffVsHostF16")
+        if max_abs is not None:
+            scope_parts.append(f"finalNormMaxAbs={max_abs:.6g}")
     if csl_run.get("maxLogitAbsDiff") is not None:
         scope_parts.append(f"maxLogitAbsDiff={csl_run.get('maxLogitAbsDiff'):.6g}")
     elif csl_run.get("logitAbsDiff") is not None:

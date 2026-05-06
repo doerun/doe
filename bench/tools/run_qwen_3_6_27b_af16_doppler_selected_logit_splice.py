@@ -23,9 +23,11 @@ from bench.tools._receipt_hash_guard import enforce_receipt_hash_spine  # noqa: 
 from bench.tools.run_gemma4_31b_af16_doppler_selected_logit_splice import (  # noqa: E402
     DEFAULT_CELLS_ROOT,
     DEFAULT_SDK_ROOT,
+    DEFAULT_TAIL_CELLS_ROOT,
     IN_DIM_PER_PE,
     artifact,
     compile_cell,
+    compile_final_norm_cell,
     f16_tensor_slice,
     generated_token_ids,
     load_json,
@@ -34,6 +36,7 @@ from bench.tools.run_gemma4_31b_af16_doppler_selected_logit_splice import (  # n
     rel,
     resolve,
     run_chunk,
+    run_final_norm_cell,
     sha256_bytes,
     sha256_file,
     tensor_sha256,
@@ -80,6 +83,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--sdk-root", type=Path, default=DEFAULT_SDK_ROOT)
     parser.add_argument("--cells-root", type=Path, default=DEFAULT_CELLS_ROOT)
+    parser.add_argument("--tail-cells-root", type=Path, default=DEFAULT_TAIL_CELLS_ROOT)
     parser.add_argument(
         "--token-id",
         type=int,
@@ -89,7 +93,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--top-k",
         type=int,
-        default=5,
+        default=32,
         help="Number of Doppler top logits to replay through CSL.",
     )
     parser.add_argument("--chunk-pe-width", type=int, default=CHUNK_PE_WIDTH)
@@ -241,6 +245,7 @@ def main() -> int:
     out_dir = resolve(args.out_dir)
     sdk_root = resolve(args.sdk_root)
     cells_root = resolve(args.cells_root)
+    tail_cells_root = resolve(args.tail_cells_root)
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -273,7 +278,31 @@ def main() -> int:
     rms = np.sqrt(np.mean(final_input * final_input) + rms_norm_eps)
     norm_scale = norm_weight + (1.0 if rms_norm_weight_offset else 0.0)
     normalized = (final_input / rms) * norm_scale
-    activation = normalized.astype(np.float16)
+    host_activation = normalized.astype(np.float16)
+    final_norm_compile = compile_final_norm_cell(
+        hidden_size=HIDDEN_SIZE,
+        weight_offset=rms_norm_weight_offset,
+        out_dir=out_dir,
+        sdk_root=sdk_root,
+        tail_cells_root=tail_cells_root,
+        artifact_kind="qwen_3_6_27b_af16_final_norm_f16_compile_receipt",
+    )
+    final_norm_run = run_final_norm_cell(
+        compile_dir=Path(str(final_norm_compile["compileDir"])),
+        input_hidden=final_input,
+        norm_weight=norm_weight,
+        expected_activation=host_activation,
+        out_dir=out_dir,
+        sdk_root=sdk_root,
+    )
+    final_norm_output = final_norm_run.get("output") or {}
+    if final_norm_run["status"] == "succeeded" and final_norm_output.get("path"):
+        activation = np.load(
+            resolve(Path(str(final_norm_output["path"]))),
+            allow_pickle=False,
+        ).astype(np.float16)
+    else:
+        activation = host_activation
 
     logits_path = reference_prefill_logits_path(reference_export)
     logits = np.fromfile(logits_path, dtype=np.float32)
@@ -430,6 +459,8 @@ def main() -> int:
     verdict = (
         "pass"
         if all_candidates_succeeded
+        and final_norm_run["status"] == "succeeded"
+        and bool(final_norm_run.get("withinAtol"))
         and all_candidates_match_cpu
         and argmax_decision_stable
         and token_matches
@@ -438,6 +469,10 @@ def main() -> int:
     blockers: list[str] = []
     if not all_candidates_succeeded:
         blockers.append("topk_selected_logits_csl_chunk_blocked")
+    if final_norm_run["status"] != "succeeded":
+        blockers.append("final_norm_csl_blocked")
+    elif not final_norm_run.get("withinAtol"):
+        blockers.append("final_norm_csl_host_f16_exceeds_tolerance")
     if not all_candidates_match_cpu:
         blockers.append("topk_selected_logits_csl_cpu_partial_mismatch")
     if not argmax_decision_stable:
@@ -507,6 +542,7 @@ def main() -> int:
             "lmHeadTiedEmbedding": tie_word_embeddings,
             "rmsNormWeightOffset": rms_norm_weight_offset,
             "finalNormSha256": tensor_sha256(norm_weight.astype(np.float16)),
+            "finalNormCslOutputSha256": str(final_norm_run.get("outputSha256") or ""),
             "selectedLmHeadQ4RowSha256": primary_run["lmHeadQ4RowSha256"],
             "selectedLmHeadDequantizedRowSha256": primary_run[
                 "lmHeadDequantizedRowSha256"
@@ -521,6 +557,8 @@ def main() -> int:
             ],
         },
         "cslRun": {
+            "tailKernels": ["final_norm_f16", "lm_head_prefill"],
+            "finalNorm": final_norm_run,
             "kernel": "lm_head_prefill",
             "chunkPeWidth": chunk_width,
             "inDimPerPe": IN_DIM_PER_PE,
@@ -551,9 +589,9 @@ def main() -> int:
         "claim": {
             "scope": (
                 "Doppler supplies real Qwen 3.6 27B af16 post-FFN state for "
-                "the final prompt position; CSL computes the q4k lm-head logits "
-                "for the Doppler top-k token candidates across hidden chunks "
-                "and preserves the top-token decision."
+                "the final prompt position; CSL computes final RMSNorm plus "
+                "the q4k lm-head logits for the Doppler top-k token candidates "
+                "across hidden chunks and preserves the top-token decision."
             ),
             "notWhat": (
                 "Not a full-vocabulary argmax, not a full layer-63 CSL run, "

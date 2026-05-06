@@ -42,6 +42,15 @@ exact parity and logits comparison status explicit. `max_abs` is the Doppler
 tolerance-backed logits gate unless a reference export declares
 `sha256_exact`.
 
+## 2026-05-06 — Gemma and Qwen CSL tail checks widened
+
+The selected-logit splice scripts for Gemma 4 31B and Qwen 3.6 27B now move
+final RMSNorm into CSL before replaying selected lm-head candidate rows. The
+receipts record final-norm diff, candidate-count, selected-logit diff, decision
+margin, and the strict-logit-tolerance verdict. The proof remains scoped to the
+selected candidate set and top-token decision; full-vocabulary logits and full
+decoder-layer replay still require the graph execution path.
+
 ## 2026-05-06 — Qwen full-prompt hardware path packaged
 
 Qwen now has the same operator surface as the Gemma af16 HostPlan lane:
@@ -59,19 +68,19 @@ first observed local HostPlan blocker. Returned hardware traces land under
 `bench/out/hardware-run/qwen3-6-27b-af16-*` and are reflected by
 `bench/tools/cerebras_status_snapshot.py`.
 
-## 2026-05-06 — Qwen top-k Doppler to CSL splice bound
+## 2026-05-06 — Qwen Doppler to CSL splice bound
 
-Qwen now has the same local bridge proof class as Gemma's top-k selected-logit
-lane. `bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py`
+Qwen now has the same local bridge proof class as Gemma's selected-logit lane.
+`bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py`
 loads Doppler's final-layer `post_ffn` fixture for
-`The color of the sky is`, applies Qwen final RMSNorm with the manifest's
-weight-offset rule, reads the selected real `lm_head.weight` rows from
-Q4_K_M storage, dequantizes those rows to the CSL cell input dtype, and runs
-the selected dense lm-head dots through CSL chunks.
+`The color of the sky is`, runs Qwen final RMSNorm in CSL with the manifest's
+weight-offset rule, reads the selected real `lm_head.weight` rows from Q4_K_M
+storage, dequantizes those rows to the CSL cell input dtype, and runs the
+selected dense lm-head dots through CSL chunks.
 
 Receipt:
 `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`.
-The claim remains deliberately narrow: top-k candidate logits and top-token
+The claim remains deliberately narrow: selected candidate logits and top-token
 decision only, not full-vocabulary argmax, not layer-63 replay, and not
 hardware execution.
 

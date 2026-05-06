@@ -455,8 +455,8 @@ its shared Q4K weight pack:
   `gemma-4-31b-it-text-q4k-ehf16-af16`
 - expected shard-set hash:
   `sha256:54933058e14fa0be4480912e641b897730db3e8ee7e871bdb2a92fd404ade146`
-- active Doe use: Gemma 4 31B af16 HostPlan runner, top-k lm-head
-  splice receipt, and hardware transcript path
+- active Doe use: Gemma 4 31B af16 HostPlan runner, final-norm plus
+  selected-logit splice receipt, and hardware transcript path
 
 The Qwen companion hardware lane starts from the Doppler af16 manifest and
 its shared Q4K weight pack:
@@ -475,8 +475,8 @@ its shared Q4K weight pack:
   `qwen-3-6-27b-q4k-eaf16`
 - expected shard-set hash:
   `sha256:f355a595b115d4a40041bcb2fbe4d131316e422e65df28e5ed4573d2c9051108`
-- active Doe use: Qwen 3.6 27B af16 HostPlan runner, top-k lm-head
-  splice receipt, and hardware transcript path
+- active Doe use: Qwen 3.6 27B af16 HostPlan runner, final-norm plus
+  selected-logit splice receipt, and hardware transcript path
 
 The canonical raw checkpoint source for the BF16/text oracle lane is
 `google/gemma-4-E2B-it` from Hugging Face:
@@ -672,21 +672,23 @@ primary hardware ask is the Gemma 4 31B af16 full-prompt HostPlan run. Qwen
 hybrid-architecture lane. The layer-block runner is a bounded fallback, not
 the main claim.
 
-Current local bridge evidence: the top-k lm-head splice at
+Current local bridge evidence: the final-norm plus selected-logit splice at
 `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`
 uses the real Gemma 4 31B af16 hidden state for
 `<bos>The color of the sky is`, real tied lm-head weights, and generated CSL.
-It computes Doppler's top candidate logits, keeps token `3730` (` blue`) as
-the winner, and records the max selected-logit diff plus the decision margin
-bound in the receipt.
+It computes final RMSNorm and Doppler's selected lm-head candidate logits,
+keeps token `3730` (` blue`) as the winner, and records the candidate-count,
+max selected-logit diff, final-norm diff, and decision margin bound in the
+receipt.
 This is not full hardware parity; it is the local bridge proof the hardware
 path is meant to extend.
 
 The Qwen companion receipt is
 `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`.
-It binds the real Qwen 3.6 27B final-prompt state, final RMSNorm, selected
-Q4_K_M lm-head rows, generated CSL, and the same top-token decision check. It
-has the same boundary: top-k local proof, not a hardware receipt.
+It binds the real Qwen 3.6 27B final-prompt state, CSL-owned final RMSNorm,
+selected Q4_K_M lm-head rows, generated CSL, and the same top-token decision
+check. It has the same boundary: selected-logit local proof, not a hardware
+receipt.
 
 ## Two paths
 
