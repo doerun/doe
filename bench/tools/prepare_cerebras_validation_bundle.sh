@@ -63,6 +63,9 @@ if [[ "$SIM_STATS_WAS_CLEAN" -eq 1 && -n "$(git status --porcelain -- sim_stats.
     git restore -- sim_stats.json
 fi
 
+step "1b/4  restore volatile receipt counters" \
+    python3 bench/tools/restore_volatile_cerebras_receipt_fields.py
+
 step "2/4  prepack guard: prepack_hash_drift_guard.py" \
     python3 bench/tools/prepack_hash_drift_guard.py
 

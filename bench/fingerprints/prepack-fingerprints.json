@@ -359,8 +359,16 @@
       "sha256": "cea53e6cd706f56590e1d7f22d743a9799e88118a24e91eb9082e828890edcd6"
     },
     {
+      "path": "config/qwen-3-6-27b-real-weight-fixture.json",
+      "sha256": "bc6c70e7549c36c97a534b83277855a3f4b04d3190587bba9f47df50a123957f"
+    },
+    {
       "path": "docs/cerebras-evidence-bundle.md",
-      "sha256": "a24776a78960bcba4a766a42682c5fcce1fcc9bbb035ad115640e7b7f9c6d9ca"
+      "sha256": "6db75dcead210f3c2d0d92f1b93f3b1040332887eb2e4c2319d1e44d591bac38"
+    },
+    {
+      "path": "docs/cerebras-hardware-runbook.md",
+      "sha256": "ba6c8b21370fd5dc217cc19ba9c9452ed4124aba5eca218c0d87d33a33f91fa1"
     },
     {
       "path": "docs/claim-discipline.md",
@@ -368,7 +376,7 @@
     },
     {
       "path": "docs/hardware-validation-appendix.md",
-      "sha256": "9a106f58e83374ab97eb3624724995329adda5373c8034828ac39c0cb8f7aea4"
+      "sha256": "047942f16ff58803f68877fe15e828bc7345635b2cef1a19279c001a0b1b6d39"
     }
   ],
   "missing": []
