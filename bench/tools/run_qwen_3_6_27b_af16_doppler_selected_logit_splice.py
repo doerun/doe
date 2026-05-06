@@ -20,6 +20,12 @@ if str(RUNNER_DIR) not in sys.path:
     sys.path.insert(0, str(RUNNER_DIR))
 
 from bench.tools._receipt_hash_guard import enforce_receipt_hash_spine  # noqa: E402
+from bench.tools.doppler_rdrr_q4k import (  # noqa: E402
+    Q4_K_M_BLOCK_BYTES,
+    Q4_K_M_BLOCK_ELEMENTS,
+    dequantize_q4km_flat_bytes,
+    read_tensor_byte_range,
+)
 from bench.tools.run_gemma4_31b_af16_doppler_selected_logit_splice import (  # noqa: E402
     DEFAULT_CELLS_ROOT,
     DEFAULT_SDK_ROOT,
@@ -69,8 +75,6 @@ HIDDEN_SIZE = 5120
 CHUNK_PE_WIDTH = 32
 FINAL_LAYER_INDEX = 63
 DEFAULT_TOKEN_ID = 760
-QK_K = 256
-Q4K_BLOCK_BYTES = 144
 
 
 def parse_args() -> argparse.Namespace:
@@ -101,86 +105,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def tensor_byte_slice(
-    *,
-    manifest: dict[str, Any],
-    root: Path,
-    tensor_name: str,
-    byte_offset: int,
-    byte_count: int,
-) -> bytes:
-    tensors = manifest.get("tensors") or {}
-    tensor = tensors.get(tensor_name)
-    if not isinstance(tensor, dict):
-        raise ValueError(f"tensor_missing:{tensor_name}")
-    spans = tensor.get("spans")
-    if not isinstance(spans, list):
-        spans = [
-            {
-                "shardIndex": tensor.get("shard"),
-                "offset": tensor.get("offset"),
-                "size": tensor.get("size"),
-            }
-        ]
-    shards = manifest.get("shards") or []
-    chunks: list[bytes] = []
-    cursor = 0
-    for span in spans:
-        if not isinstance(span, dict):
-            continue
-        span_size = int(span.get("size") or 0)
-        span_start = cursor
-        span_end = cursor + span_size
-        cursor = span_end
-        req_start = max(byte_offset, span_start)
-        req_end = min(byte_offset + byte_count, span_end)
-        if req_start >= req_end:
-            continue
-        shard_index = int(span.get("shardIndex") or 0)
-        shard = shards[shard_index]
-        shard_path = root / str(shard["filename"])
-        with shard_path.open("rb") as handle:
-            handle.seek(int(span.get("offset") or 0) + (req_start - span_start))
-            chunks.append(handle.read(req_end - req_start))
-    data = b"".join(chunks)
-    if len(data) != byte_count:
-        raise ValueError(f"tensor_byte_slice_short:{tensor_name}:{len(data)}<{byte_count}")
-    return data
-
-
-def dequantize_q4km_block(block_bytes: bytes) -> np.ndarray:
-    if len(block_bytes) != Q4K_BLOCK_BYTES:
-        raise ValueError(f"q4k_block_size:{len(block_bytes)}")
-    block = np.frombuffer(block_bytes, dtype=np.uint8)
-    d = float(np.frombuffer(block_bytes[0:2], dtype=np.dtype("<f2"))[0])
-    dmin = float(np.frombuffer(block_bytes[2:4], dtype=np.dtype("<f2"))[0])
-    scale_bits = np.zeros(8, dtype=np.uint8)
-    min_bits = np.zeros(8, dtype=np.uint8)
-    for i in range(4):
-        scale_bits[i] = block[4 + i] & 0x3F
-        scale_bits[i + 4] = ((block[4 + i] >> 6) & 0x03) << 4
-        min_bits[i] = block[8 + i] & 0x3F
-        min_bits[i + 4] = ((block[8 + i] >> 6) & 0x03) << 4
-    for i in range(4):
-        scale_bits[i + 4] |= block[12 + i] & 0x0F
-        min_bits[i + 4] |= (block[12 + i] >> 4) & 0x0F
-    scales = d * scale_bits.astype(np.float32)
-    min_offsets = dmin * min_bits.astype(np.float32)
-    result = np.zeros(QK_K, dtype=np.float32)
-    for chunk in range(4):
-        chunk_base = chunk * 64
-        byte_base = 16 + chunk * 32
-        for i in range(32):
-            packed = int(block[byte_base + i])
-            lo = packed & 0x0F
-            hi = (packed >> 4) & 0x0F
-            sb0 = (chunk_base + i) // 32
-            sb1 = (chunk_base + 32 + i) // 32
-            result[chunk_base + i] = scales[sb0] * lo - min_offsets[sb0]
-            result[chunk_base + 32 + i] = scales[sb1] * hi - min_offsets[sb1]
-    return result
-
-
 def q4km_tensor_row(
     *,
     manifest: dict[str, Any],
@@ -202,21 +126,20 @@ def q4km_tensor_row(
     cols = int(shape[1])
     if row_index < 0 or row_index >= rows:
         raise ValueError(f"row_index_out_of_range:{row_index}:{rows}")
-    blocks_per_row = (cols + QK_K - 1) // QK_K
-    row_bytes = tensor_byte_slice(
-        manifest=manifest,
-        root=root,
+    blocks_per_row = (cols + Q4_K_M_BLOCK_ELEMENTS - 1) // Q4_K_M_BLOCK_ELEMENTS
+    row_bytes = read_tensor_byte_range(
+        root,
+        manifest,
         tensor_name=tensor_name,
-        byte_offset=row_index * blocks_per_row * Q4K_BLOCK_BYTES,
-        byte_count=blocks_per_row * Q4K_BLOCK_BYTES,
+        byte_start=row_index * blocks_per_row * Q4_K_M_BLOCK_BYTES,
+        byte_count=blocks_per_row * Q4_K_M_BLOCK_BYTES,
     )
-    parts = [
-        dequantize_q4km_block(
-            row_bytes[i * Q4K_BLOCK_BYTES : (i + 1) * Q4K_BLOCK_BYTES]
-        )
-        for i in range(blocks_per_row)
-    ]
-    return np.concatenate(parts)[:cols].astype(np.float32), row_bytes
+    values = dequantize_q4km_flat_bytes(
+        row_bytes,
+        blocks_per_row,
+        [1, blocks_per_row * Q4_K_M_BLOCK_ELEMENTS],
+    )
+    return np.asarray(values[:cols], dtype=np.float32), row_bytes
 
 
 def optional_artifact(path: Path) -> dict[str, Any] | None:
