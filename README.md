@@ -12,8 +12,7 @@ In practice that means embedding where Dawn is too heavy, lowering kernels to
 multiple GPU and spatial backends from the same IR, and emitting artifact-
 backed receipts that bind every claim to a specific build.
 
-If you want the published npm surface, start with
-[`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
+Published npm surface: [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
 
 ## Tenants
 
@@ -21,11 +20,11 @@ The repo carries five tenants under that umbrella:
 
 | Tenant | Role |
 |---|---|
-| Dawn replacement (Zig WebGPU runtime) | runtime tenant — the embeddable WebGPU runtime story; see [`docs/thesis.md`](docs/thesis.md). |
-| Vulkan / Metal / D3D12 emitters | backend tenant — multi-target lowering from the WGSL compiler (`runtime/zig/src/doe_wgsl/`). |
-| Cerebras (TSIR / HostPlan / CSL) | spatial retargeting tenant — Tiled Spatial IR plus host-plan and CSL emit (`runtime/zig/src/tsir/`, `runtime/zig/src/doe_wgsl/emit_csl_*`). |
-| Lean proof pipeline | verification tenant — proof-eliminated runtime branches and verified artifacts (`pipeline/lean/`). |
-| Benchmarks and evidence bundles | proof tenant — claim-discipline gates, parity receipts, hardware-validation bundles (`bench/`). |
+| Dawn replacement (Zig WebGPU runtime) | runtime tenant; embeddable WebGPU runtime details in [`docs/thesis.md`](docs/thesis.md). |
+| Vulkan / Metal / D3D12 emitters | backend tenant; multi-target lowering from the WGSL compiler (`runtime/zig/src/doe_wgsl/`). |
+| Cerebras (TSIR / HostPlan / CSL) | spatial retargeting tenant; Tiled Spatial IR plus host-plan and CSL emit (`runtime/zig/src/tsir/`, `runtime/zig/src/doe_wgsl/emit_csl_*`). |
+| Lean proof pipeline | verification tenant; proof-eliminated runtime branches and verified artifacts (`pipeline/lean/`). |
+| Benchmarks and evidence bundles | proof tenant; claim-discipline gates, parity receipts, hardware-validation bundles (`bench/`). |
 
 Same discipline applied to different targets: shader/program bodies stay
 visible, lowering preserves identity, and every claim has a receipt path.
@@ -37,7 +36,7 @@ visible, lowering preserves identity, and every claim has a receipt path.
 - Explicit behavior: no silent fallback, explicit runtime boundaries, and
   artifact-backed benchmarking instead of hand-wavy claims.
 - Performance work with receipts: current results live in
-  [`docs/status.md`](docs/status.md) and `bench/out/*`, not in prose.
+  [`docs/status.md`](docs/status.md) and `bench/out/*`.
 
 ## Current evidence
 
@@ -69,9 +68,10 @@ Outputs:
 - Competitive today: native, package, embedded, and server-side JavaScript
   lanes.
 - `doe-gpu/browser` is a browser shim over the browser's incumbent WebGPU
-  implementation. It is not the Chromium replacement story.
+  implementation. Chromium replacement work lives under the experimental
+  `browser/chromium/` lane.
 - [`browser/chromium/`](browser/chromium/README.md) is an experimental future
-  lane, not the front-door product surface.
+  lane outside the current product surface.
 
 ## Start here
 
@@ -80,9 +80,9 @@ Outputs:
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
 - Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
-- Cerebras lane (Doppler → Doe → Cerebras work, single front door):
-  [`docs/cerebras.md`](docs/cerebras.md) — progress, source, reproduce, run
-  on hardware, why.
+- Cerebras lane (Doppler → Doe → Cerebras):
+  [`docs/cerebras.md`](docs/cerebras.md). Progress, source, reproduce,
+  hardware runbook, rationale.
 - TSIR (Tiled Spatial IR) compiler work:
   [`docs/tsir-lowering-plan.md`](docs/tsir-lowering-plan.md),
   [`docs/loop-protocol.md`](docs/loop-protocol.md), live status at
@@ -109,7 +109,7 @@ node packages/doe-gpu/scripts/build-addon.js
 node packages/doe-gpu/test/smoke/test-smoke-load.js
 ```
 
-That smoke path checks load and export wiring. It does not require a GPU.
+That smoke path checks load and export wiring without requiring a GPU.
 
 ## Legacy package names
 

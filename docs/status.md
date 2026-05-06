@@ -1,15 +1,13 @@
 # Doe status
 
-This file is the front door for Doe project status.
-
-Read this file first. Use the live topical shards under
-[`docs/status/`](status/) for active details and
-[`docs/status/archive/`](status/archive/) for dated history.
+Status index for Doe. Live topical shards live under
+[`docs/status/`](status/). Dated history lives under
+[`docs/status/archive/`](status/archive/).
 
 ## How to use the status log
 
-- Keep this file concise. It is the mandatory-reading summary, not the full
-  ledger.
+- Keep this file concise. It indexes current status; full detail belongs in
+  topical shards.
 - Add new entries to the top of the relevant live topical shard.
 - Prefer subdomain splits over file growth. Live shards have a soft target of
   ~1500 lines; once a shard reaches that range, split by subdomain (e.g.
@@ -22,15 +20,14 @@ Read this file first. Use the live topical shards under
   pieces" are explicitly allowed maintenance. Substantive content
   corrections go in a new entry that links back to the original.
 - When a task leaves placeholders, temporary methodology choices, or follow-up
-  work, record that in the relevant topical shard and refresh this front door
-  only if the current summary materially changes.
+  work, record that in the relevant topical shard and refresh this index only
+  if the current summary materially changes.
 
 ## Current status summary
 
-- The Doppler → Doe → Cerebras lane has a single front door at
+- The Doppler → Doe → Cerebras lane is indexed at
   [`docs/cerebras.md`](cerebras.md): progress snapshot, source code, reproduce
-  commands, hardware runbook, and rationale. Per-model evidence checklists with
-  active blocker order live at
+  commands, hardware runbook, and rationale. Per-model evidence checklists live at
   [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md)
   and [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md).
 - TSIR (Tiled Spatial IR) is the new lowering contract between WGSL IR and
@@ -166,7 +163,7 @@ Read this file first. Use the live topical shards under
   `bench/out/scratch/bun-null-backend-20260415.meta.json` and
   `bench/out/scratch/gemma64.bun-package.warm.ir.compare.postinstall.json`.
   These remain narrow Apple Metal package lanes, not a blanket Metal claim.
-- The promoted package compare front door now covers Apple Metal, AMD Vulkan,
+- The promoted package compare index now covers Apple Metal, AMD Vulkan,
   and local D3D12 for Node/Bun cold and warm Gemma64/Gemma1B package profiles.
   D3D12 remains a promoted contract pending Windows/D3D12 host evidence; older
   AMD Vulkan Gemma270M package compares remain explicit config-backed local
@@ -310,14 +307,14 @@ Read this file first. Use the live topical shards under
 
 ## Current follow-up highlights
 
-- Proof-backed shader metric evidence is now front-doored at
+- Proof-backed shader metric evidence is indexed at
   `bench/out/proof-metrics/latest/proof_metrics_summary.{json,md}`; the
   reporter entrypoint, build flavors, and refresh pattern are documented in
-  `bench/README.md` under "Proof-backed shader metric front door". A fresh
+  `bench/README.md` under "Proof-backed shader metric index". A fresh
   Vulkan-host timing pass is still the next refresh step.
 - Status history is now split into LOC-capped live topical shards plus a dated
   archive; future follow-ups should go into the relevant topical shard instead
-  of bloating this front door.
+  of expanding this index.
 
 ## Live topical shards
 

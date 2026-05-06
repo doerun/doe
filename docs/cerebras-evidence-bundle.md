@@ -1,8 +1,7 @@
 # Cerebras evidence bundle
 
-This is the single source document for the Cerebras evidence-bundle
-governance pages. The packer extracts the marked sections below into
-the archive-root files reviewers expect:
+Cerebras evidence-bundle governance source. The packer extracts the marked
+sections below into the archive-root files reviewers expect:
 
 - `README.md`
 - `CLAIM_SCOPE.md`
@@ -15,30 +14,27 @@ is auto-generated after pack + verify and would be stale if it were
 bundled.
 
 <!-- archive:README.md:start -->
-# Cerebras evidence bundle — README
+# Cerebras evidence bundle: README
 
-You are holding a packed software-only evidence bundle for Doe's
-Gemma-4-on-Cerebras lane. This file is the front door. Read it first,
-then follow the run order below. The current external ask leads with
-the Gemma 4 31B af16 full-prompt HostPlan hardware transcript; the
-E2B artifacts remain substantive control evidence and smaller repro
-fixtures.
+Packed software-only evidence bundle for Doe's Gemma-4-on-Cerebras lane.
+Use the run order below. The current external ask leads with the Gemma 4 31B
+af16 full-prompt HostPlan hardware transcript; the E2B artifacts remain
+control evidence and smaller repro fixtures.
 
 ## What's at the archive root
 
-- `README.md` — this file.
-- `BUNDLE_META.json` — build stamp: UTC timestamp, git commit,
+- `README.md`: this file.
+- `BUNDLE_META.json`: build stamp: UTC timestamp, git commit,
   dirty-tree flag, host OS, cs_python availability on the bundler.
-- `MANIFEST.txt` — sha256 + claim-role + path for every file inside.
-- `CLAIM_SCOPE.md` — what this bundle proves and, explicitly, what
-  it does not. Read before drawing any conclusions.
-- `MODEL_ACCESS.md` — cache roots, canonical Gemma 4 31B and E2B
+- `MANIFEST.txt`: sha256 + claim-role + path for every file inside.
+- `CLAIM_SCOPE.md`: backed claims, excluded claims, and receipt paths.
+- `MODEL_ACCESS.md`: cache roots, canonical Gemma 4 31B and E2B
   artifact identities, download/materialization commands, validation
   commands, and demo scope.
-- `CEREBRAS_ASK.md` — operator-facing distillation: exact endpoint
+- `CEREBRAS_ASK.md`: operator-facing distillation: exact endpoint
   access needed, exact command to run, exact receipt fields to
   return, publication boundaries.
-- `LOCAL_INSPECTION.md` — commands for reviewers who want to browse
+- `LOCAL_INSPECTION.md`: commands for reviewers who want to browse
   the evidence in a browser (status dashboard, E2B side-by-side,
   SDK-GUI-style viewer) with the same tools the bundler uses.
 
@@ -62,7 +58,7 @@ cross-references inside the receipts resolve as written.
    acting on the contents.
 
 2. **Read `BUNDLE_META.json`.** If `gitDirtyTree: true`, the bundle
-   was built from an uncommitted working tree — prefer a clean
+   was built from an uncommitted working tree. Prefer a clean
    rebuild before external circulation.
 
 3. **Read `CLAIM_SCOPE.md`.** It enumerates the claims this bundle
@@ -79,18 +75,16 @@ cross-references inside the receipts resolve as written.
 
 5. **Read `CEREBRAS_ASK.md`.** The operator-facing distillation of
    the external ask. The first requested run is the Gemma 4 31B af16
-   full-prompt HostPlan runner. It also enumerates two paths —
-   endpoint access (we run the runner) or Cerebras-assisted source
-   checkout run (Cerebras runs it internally, returns the receipt) —
-   plus the exact command, receipt fields, and publication boundaries
-   for either.
+   full-prompt HostPlan runner. It also enumerates endpoint access
+   and Cerebras-assisted source checkout paths, plus the exact command,
+   receipt fields, and publication boundaries for either.
    `docs/hardware-validation-appendix.md` is its parent document with
    the fuller context.
 
 6. **Read `LOCAL_INSPECTION.md`** if you want to browse the
    evidence in a browser. Lists local-server commands for the
    status dashboard, E2B side-by-side demo, and SDK-GUI-style
-   spatial compute viewer — all consuming the same bundle files without
+   spatial compute viewer, all consuming the same bundle files without
    unpacking SDK binaries.
 
 7. **Spot-check the receipts.** `MANIFEST.txt` gives a claim-role
@@ -172,7 +166,7 @@ from a clean tree before external use.
 <!-- archive:README.md:end -->
 
 <!-- archive:CLAIM_SCOPE.md:start -->
-# Cerebras evidence bundle — claim scope
+# Cerebras evidence bundle: claim scope
 
 This document is the **terms-of-bundle** for
 `doe-cerebras-evidence-<YYYYMMDD-HHMM>-<shortSha>[-dirty].tar.gz`. It
@@ -396,7 +390,7 @@ If any of 1-7 fails, reject the bundle and request a rebuild.
 <!-- archive:MODEL_ACCESS.md:start -->
 # Gemma 4 model access handoff
 
-This is the model/cache side of the Cerebras evidence handoff. It pins
+Model/cache metadata for the Cerebras evidence handoff. It pins
 the local artifact identities and the environment variables that make
 the raw SafeTensors, Doppler RDRR, and hardware-run commands resolve
 consistently.
@@ -627,7 +621,7 @@ green until the corresponding model-level and hardware receipts exist.
 <!-- archive:MODEL_ACCESS.md:end -->
 
 <!-- archive:CEREBRAS_ASK.md:start -->
-# Cerebras operator — the ask
+# Cerebras operator: ask
 
 Operator-facing page for whoever at Cerebras is running the validation
 on the endpoint. Tight and single-purpose. The rest of the bundle's
@@ -655,7 +649,7 @@ It binds the real Qwen 3.6 27B final-prompt state, final RMSNorm, selected
 Q4_K_M lm-head row, generated CSL, and Doppler prefill-logit parity. It has
 the same boundary: selected-logit local proof, not a hardware receipt.
 
-## Two paths — either works
+## Two paths
 
 **Path A: endpoint access.** We run the runner from our side against a
 Cerebras-provided endpoint:
@@ -937,7 +931,7 @@ disagree, the appendix wins.
 <!-- archive:CEREBRAS_ASK.md:end -->
 
 <!-- archive:LOCAL_INSPECTION.md:start -->
-# Bundle — local inspection
+# Bundle: local inspection
 
 Commands for a reviewer who has unpacked the bundle into a repo
 checkout and wants to browse the evidence with the same browser tools

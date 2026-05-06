@@ -1,8 +1,7 @@
 # Doe ↔ Cerebras
 
-Single front door for the Doppler → Doe → Cerebras lane. Everything below is
-one click away. If you want to skim, this page is enough; everything else
-exists to back specific claims.
+Index for the Doppler → Doe → Cerebras lane: current status, source locations,
+reproduce commands, hardware runbook, bundle pointer, and claim scope.
 
 ## Progress at a glance
 
@@ -10,9 +9,8 @@ exists to back specific claims.
 python3 bench/tools/cerebras_status_snapshot.py
 ```
 
-Writes `bench/out/r3-cerebras-status/snapshot.{json,md}` — a per-lane verdict
-table built from real receipts (no embedded counts in prose; the snapshot is
-the count). Re-run any time; it reflects the current artifacts.
+Writes `bench/out/r3-cerebras-status/snapshot.{json,md}`. The snapshot is a
+per-lane verdict table built from receipts and carries the current counts.
 
 Live narrative status: [`docs/status/cerebras-csl.md`](status/cerebras-csl.md).
 Per-model evidence checklists with acceptance bars and active blocker queues:
@@ -45,17 +43,17 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 
 ## Run on hardware
 
-Operator how-to (commands, two paths to a hardware receipt, climb steps,
-required receipt fields, publication boundaries, email asks):
+Operator runbook: commands, hardware receipt paths, required receipt fields,
+publication boundaries, and email text:
 [`docs/cerebras-hardware-runbook.md`](cerebras-hardware-runbook.md).
 
-Bundle pointer (auto-generated; carries archive sha256 + pinned commit +
-`regenerated at` timestamp):
+Bundle pointer with archive sha256, pinned commit, and regenerated timestamp:
 [`docs/cerebras-evidence-bundle-pointer.md`](cerebras-evidence-bundle-pointer.md).
 
-Bundle source (the packer extracts archive-root files like `README.md`,
-`CLAIM_SCOPE.md`, `MODEL_ACCESS.md`, `CEREBRAS_ASK.md`, `LOCAL_INSPECTION.md`
-from marked sections of this file): [`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md).
+Bundle source. The packer extracts archive-root files like `README.md`,
+`CLAIM_SCOPE.md`, `MODEL_ACCESS.md`, `CEREBRAS_ASK.md`, and
+`LOCAL_INSPECTION.md` from marked sections of this file:
+[`docs/cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md).
 
 Governance + claim scope: [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md).
 
@@ -63,14 +61,14 @@ Governance + claim scope: [`docs/hardware-validation-appendix.md`](hardware-vali
 
 - Project rationale: [`docs/thesis.md`](thesis.md).
 - Practitioner pain points: [`docs/problems-addressed.md`](problems-addressed.md).
-- Why these two model targets (non-MoE, Q4K → f16, dense + hybrid): see the
-  hero copy on the public site, plus the per-model evidence ledgers above.
+- Model target rationale: dense Gemma plus hybrid Qwen, both on the Q4K → f16
+  contract. See the public page copy and the per-model ledgers above.
 
-## What is *not* in this front door
+## Scope notes
 
 - Embedded counts (e.g. "23/23 pass"). Run the snapshot.
 - Roadmap timing. Status snapshot + evidence ledgers carry current state;
-  blockers are named, not estimated.
+  blockers are named without estimates.
 - Internal iteration jargon. Build-iteration vs parity-iteration discipline
   for the TSIR rewrite lives in [`docs/loop-protocol.md`](loop-protocol.md);
-  it is not the cerebras lane's progress signal.
+  it sits outside the Cerebras lane progress signal.
