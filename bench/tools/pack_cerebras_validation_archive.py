@@ -239,6 +239,35 @@ INCLUDE_FILES: tuple = (
         "bench/out/r3-1-31b-af16-doppler-csl-splice/"
         "selected-logit-splice/selected-logit-splice.json"
     ),
+    (
+        "bench/out/r3-2-27b-af16-doppler-csl-splice/"
+        "selected-logit-splice/selected-logit-splice.json"
+    ),
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "program-bundle.node.json"
+    ),
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "reference-report.json"
+    ),
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "int4ple-export/doppler_int4ple_reference_export.json"
+    ),
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "int4ple-export/final_logits.f32"
+    ),
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "tsir-fixture/layer_63/post_ffn.npy"
+    ),
     "bench/out/r3-1-31b-af16-full-graph-compile-attempt/receipt.json",
     "bench/out/r3-2-27b-af16-full-graph-compile-attempt/receipt.json",
     (
@@ -467,6 +496,35 @@ CLAIM_ROLE: dict[str, str] = {
         "bench/out/r3-1-31b-af16-doppler-csl-splice/"
         "selected-logit-splice/selected-logit-splice.json"
     ): "doppler-csl-selected-logit-splice-receipt",
+    (
+        "bench/out/r3-2-27b-af16-doppler-csl-splice/"
+        "selected-logit-splice/selected-logit-splice.json"
+    ): "qwen-doppler-csl-selected-logit-splice-receipt",
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "program-bundle.node.json"
+    ): "qwen-doppler-program-bundle-reference",
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "reference-report.json"
+    ): "qwen-doppler-reference-report",
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "int4ple-export/doppler_int4ple_reference_export.json"
+    ): "qwen-doppler-int4ple-reference-export",
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "int4ple-export/final_logits.f32"
+    ): "qwen-doppler-prefill-logits",
+    (
+        "bench/out/doppler-reference/"
+        "qwen-3-6-27b-eaf16-the-color-of-the-sky-is-prefill-decode8/"
+        "tsir-fixture/layer_63/post_ffn.npy"
+    ): "qwen-doppler-final-layer-post-ffn",
     (
         "bench/out/r3-1-31b-af16-full-graph-compile-attempt/"
         "receipt.json"

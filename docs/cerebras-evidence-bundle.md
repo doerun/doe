@@ -649,6 +649,12 @@ It computes token `3730` (` blue`) with
 This is not full hardware parity; it is the local bridge proof the hardware
 path is meant to extend.
 
+The Qwen companion receipt is
+`bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json`.
+It binds the real Qwen 3.6 27B final-prompt state, final RMSNorm, selected
+Q4_K_M lm-head row, generated CSL, and Doppler prefill-logit parity. It has
+the same boundary: selected-logit local proof, not a hardware receipt.
+
 ## Two paths — either works
 
 **Path A: endpoint access.** We run the runner from our side against a

@@ -3,7 +3,7 @@
 This file is **generated** by `bench/tools/cerebras_status_snapshot.py`.
 Do not edit by hand. Re-run the tool to refresh.
 
-Generated: `2026-05-05T21:27:14.393569+00:00`
+Generated: `2026-05-06T15:14:19.476927+00:00`
 
 | Lane | Verdict | Scope | Blocker | Artifact mtime | Artifact |
 | --- | --- | --- | --- | --- | --- |
@@ -31,12 +31,13 @@ Generated: `2026-05-05T21:27:14.393569+00:00`
 | `qwen.per_kernel.ssm_linear_attention` | ❌ blocked |  | dry_run | 2026-04-29T20:44:34.388716+00:00 | `bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/ssm_linear_attention.json` |
 | `qwen.per_kernel.tiled` | ❌ blocked |  | dry_run | 2026-04-29T20:44:34.474985+00:00 | `bench/out/r3-2-27b-af16-manifest-simfabric-per-kernel/tiled.json` |
 | `gemma.bounded_smoke` | ❌ blocked |  | inference_evidence_gate.session_transcript_not_output_ready (+9 more) | 2026-05-05T17:02:40.250607+00:00 | `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` |
-| `gemma.local_simfabric_ceiling` | ❌ blocked | memcpy_d2h_start | simfabric_d2h_copyback_stall_after_launch_complete | 2026-05-05T20:35:39.879954+00:00 | `bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json` |
+| `gemma.local_simfabric_ceiling` | ❌ blocked | memcpy_d2h_start | simfabric_d2h_copyback_stall_after_launch_complete | 2026-05-05T21:38:11.385258+00:00 | `bench/out/r3-1-31b-af16-local-simfabric-ceiling/receipt.json` |
 | `gemma.doppler_csl_splice.single_block_hidden` | ❌ blocked | single_block_hidden, layer=59, promptTokens=7, handoffPromptTokens=7 | launch[1]_blocked:prefill_q4k_gemv_tile_dispatch_budget_exhausted:1<259; prefill_q4k_ge... | 2026-05-05T20:30:07.082262+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/single_block_hidden-run.json` |
 | `gemma.doppler_csl_splice.last_layer_tail_token` | ❌ blocked | last_layer_tail_token, layer=59, promptTokens=7 | csl_splice_token_absent | 2026-05-05T19:46:23.336336+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/last-layer-tail-token.json` |
 | `gemma.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=59, promptTokens=7, token=3730, logitAbsDiff=0.0087417 |  | 2026-05-05T20:30:39.072140+00:00 | `bench/out/r3-1-31b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
+| `qwen.doppler_csl_splice.selected_logit` | ✅ bound | selected_lm_head_logit, layer=63, promptTokens=18, token=760, logitAbsDiff=0.0133286 |  | 2026-05-06T15:11:51.171939+00:00 | `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` |
 | `qwen.multi_token_decode` | ❌ blocked |  | boundKernelCount=0/3 | 2026-05-04T14:51:01.824465+00:00 | `bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json` |
-| `gemma.simfabric_cells` | ⚠️ pass_with_documented_canary_constraints |  |  | 2026-05-05T20:35:39.843257+00:00 | `bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json` |
+| `gemma.simfabric_cells` | ⚠️ pass_with_documented_canary_constraints |  |  | 2026-05-05T21:38:11.349965+00:00 | `bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json` |
 | `qwen.simfabric_cells` | ⚠️ pass_with_documented_canary_constraints |  |  | 2026-05-04T14:50:55.394919+00:00 | `bench/out/r3-2-27b-qwen-simfabric-cells/summary-receipt.json` |
 | `gemma.phase7_session` | 🔄 in_progress |  | lastCompleteLaunch=26; lastEvent=prefill_q4k_gemv_group_start; target=tiled_31b | 2026-05-05T06:16:22.884942+00:00 | `bench/out/r3-1-31b-af16-hostplan-session-bos-raw-sky-color-is-fast-embed512/progress.jsonl` |
 | `gemma.phase7_trace_synth` | ❌ blocked |  | manifest_kernel_dispatch_not_bound | 2026-05-04T17:37:55.344452+00:00 | `bench/out/r3-1-31b-af16-hostplan-streaming/trace-bos-raw-sky-color-is-fast-embed512-exec.json` |

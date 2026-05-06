@@ -143,6 +143,28 @@ class CerebrasStatusSnapshotTests(unittest.TestCase):
         self.assertEqual(row["verdict"], "blocked")
         self.assertEqual(row["blocker"], "boundKernelCount=0/3")
 
+    def test_qwen_selected_logit_splice_bound(self) -> None:
+        self._write(
+            self.module.QWEN_SELECTED_LOGIT_SPLICE,
+            {
+                "verdict": "pass",
+                "blockers": [],
+                "splicePoint": {
+                    "kind": "selected_lm_head_logit",
+                    "layerIndex": 63,
+                    "promptTokenCount": 18,
+                    "selectedTokenId": 760,
+                },
+                "cslRun": {"logitAbsDiff": 0.01332855},
+            },
+        )
+        with mock.patch.object(self.module, "REPO_ROOT", self.tmp):
+            row = self.module.qwen_selected_logit_splice_row()
+        self.assertEqual(row["verdict"], "bound")
+        self.assertIsNone(row["blocker"])
+        self.assertIn("layer=63", row["scope"])
+        self.assertIn("token=760", row["scope"])
+
     def test_bounded_smoke_blocker_count(self) -> None:
         self._write(
             self.module.GEMMA_BOUNDED_SMOKE,

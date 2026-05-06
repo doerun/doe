@@ -23,7 +23,10 @@
   "properties": {
     "schemaVersion": { "const": 1 },
     "artifactKind": {
-      "const": "gemma4_31b_af16_doppler_selected_logit_splice_receipt"
+      "enum": [
+        "gemma4_31b_af16_doppler_selected_logit_splice_receipt",
+        "qwen_3_6_27b_af16_doppler_selected_logit_splice_receipt"
+      ]
     },
     "receiptClass": {
       "const": "manifest_shape_doppler_selected_logit_splice"
@@ -86,7 +89,7 @@
         "softcappedLogit": { "type": "number" },
         "cpuRawLogit": { "type": "number" },
         "cpuSoftcappedLogit": { "type": "number" },
-        "softcap": { "type": "number" },
+        "softcap": { "type": ["number", "null"] },
         "rmsNormEps": { "type": "number" },
         "logitAbsDiff": { "type": "number" },
         "atol": { "type": "number" }

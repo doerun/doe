@@ -32,6 +32,7 @@ External evidence packet: bundle archive built via [`docs/cerebras-evidence-bund
 - [x] Partial-rotary `num_pairs` sourced from manifest — host-plan tool reads `partialRotaryFactor` (head_dim=256, factor=0.25 → num_pairs=32)
 - [x] Wall-clock budget gate — `decision=allow` (ceiling raised 1.5× to cover Qwen prediction; Gemma still passes)
 - [x] Frozen Doppler reference validator binding — `bench/tools/validate_qwen_3_6_27b_frozen_doppler_reference.py` (typed-blocker when fixture absent)
+- [x] Selected-logit Doppler to CSL splice — `bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py`; receipt at `bench/out/r3-2-27b-af16-doppler-csl-splice/selected-logit-splice/selected-logit-splice.json` binds real Qwen final-prompt state, final RMSNorm, selected Q4_K_M lm-head row, generated CSL, and Doppler prefill-logit parity.
 - [x] External evidence doc
 
 ## Doppler-gated (cross-repo)

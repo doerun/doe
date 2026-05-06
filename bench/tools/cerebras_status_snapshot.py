@@ -40,6 +40,10 @@ GEMMA_SELECTED_LOGIT_SPLICE = (
     "bench/out/r3-1-31b-af16-doppler-csl-splice/"
     "selected-logit-splice/selected-logit-splice.json"
 )
+QWEN_SELECTED_LOGIT_SPLICE = (
+    "bench/out/r3-2-27b-af16-doppler-csl-splice/"
+    "selected-logit-splice/selected-logit-splice.json"
+)
 QWEN_MULTI_TOKEN_DECODE = "bench/out/r3-2-27b-qwen-multi-token-decode/receipt.json"
 GEMMA_SIMFABRIC_CELLS = (
     "bench/out/r3-1-31b-gemma-af16-simfabric-cells/summary-receipt.json"
@@ -221,15 +225,10 @@ def gemma_splice_row(lane: str, artifact: str, run_artifact: str | None = None) 
     )
 
 
-def gemma_selected_logit_splice_row() -> dict:
-    d = _load_json(GEMMA_SELECTED_LOGIT_SPLICE)
+def selected_logit_splice_row(lane: str, artifact: str) -> dict:
+    d = _load_json(artifact)
     if d is None:
-        return _row(
-            "gemma.doppler_csl_splice.selected_logit",
-            GEMMA_SELECTED_LOGIT_SPLICE,
-            "missing",
-            None,
-        )
+        return _row(lane, artifact, "missing", None)
     splice = d.get("splicePoint") or {}
     csl_run = d.get("cslRun") or {}
     blockers = d.get("blockers") or []
@@ -247,11 +246,25 @@ def gemma_selected_logit_splice_row() -> dict:
     if csl_run.get("logitAbsDiff") is not None:
         scope_parts.append(f"logitAbsDiff={csl_run.get('logitAbsDiff'):.6g}")
     return _row(
-        "gemma.doppler_csl_splice.selected_logit",
-        GEMMA_SELECTED_LOGIT_SPLICE,
+        lane,
+        artifact,
         verdict,
         blocker,
         scope=", ".join(scope_parts),
+    )
+
+
+def gemma_selected_logit_splice_row() -> dict:
+    return selected_logit_splice_row(
+        "gemma.doppler_csl_splice.selected_logit",
+        GEMMA_SELECTED_LOGIT_SPLICE,
+    )
+
+
+def qwen_selected_logit_splice_row() -> dict:
+    return selected_logit_splice_row(
+        "qwen.doppler_csl_splice.selected_logit",
+        QWEN_SELECTED_LOGIT_SPLICE,
     )
 
 
@@ -366,6 +379,7 @@ def collect_rows() -> list[dict]:
         GEMMA_SPLICE_LAST_LAYER_TAIL_TOKEN,
     ))
     rows.append(gemma_selected_logit_splice_row())
+    rows.append(qwen_selected_logit_splice_row())
     rows.append(qwen_multi_token_decode_row())
     rows.append(gemma_simfabric_cells_row())
     rows.append(qwen_simfabric_cells_row())

@@ -201,6 +201,7 @@ def compile_cell(
     out_dir: Path,
     sdk_root: Path,
     cells_root: Path,
+    artifact_kind: str = "gemma4_31b_af16_selected_logit_compile_receipt",
 ) -> dict[str, Any]:
     compile_root = out_dir / f"compile-w{width:04d}"
     compile_root.mkdir(parents=True, exist_ok=True)
@@ -237,7 +238,7 @@ def compile_cell(
     )
     receipt = {
         "schemaVersion": 1,
-        "artifactKind": "gemma4_31b_af16_selected_logit_compile_receipt",
+        "artifactKind": artifact_kind,
         "status": "succeeded" if completed.returncode == 0 else "blocked",
         "blockers": [] if completed.returncode == 0 else [f"cslc_exit_{completed.returncode}"],
         "compileDir": rel(compile_dir),
@@ -454,6 +455,7 @@ def main() -> int:
                 out_dir=out_dir,
                 sdk_root=sdk_root,
                 cells_root=cells_root,
+                artifact_kind="gemma4_31b_af16_selected_logit_compile_receipt",
             )
         result = run_chunk(
             chunk_index=chunk_index,
