@@ -48,7 +48,7 @@ provider prefers.
 | Build a fresh bundle | `bench/tools/prepare_cerebras_validation_bundle.sh` |
 | Build emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
 | Verify a received archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
-| Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --archive <path> --hf-token <token> --cmaddr <endpoint>` |
+| Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --cmaddr <endpoint>` |
 | Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
@@ -62,27 +62,17 @@ provider prefers.
 ## Operator setup
 
 All commands in this section run from the Doe repository root unless a command
-explicitly changes directory. The evidence archive is not a complete source
-checkout. Start from the archive commit, then verify the archive from that
-checkout:
+explicitly changes directory. For a repo-published bundle, clone the pinned
+checkout and let the wrapper verify the bundled archive:
 
 ```bash
-export ARCHIVE=/path/to/doe-cerebras-evidence-<stamp>-<sha>.tar.gz
-export DOE_COMMIT="$(
-  tar -xOf "$ARCHIVE" BUNDLE_META.json |
-    python3 -c 'import json,sys; print(json.load(sys.stdin)["gitCommit"])'
-)"
-
 git clone https://github.com/doe-gpu/doe.git
 cd doe
-git checkout "$DOE_COMMIT"
+git checkout <bundle-commit>
 
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install numpy jsonschema huggingface_hub
-
-python3 bench/tools/verify_cerebras_validation_archive.py \
-  --archive "$ARCHIVE"
 
 mkdir -p bench/out/hardware-run
 ```
@@ -150,37 +140,33 @@ PY
 
 ## Scripted Gemma run
 
-The wrapper below performs the common operator steps after checkout: archive
-verification, hosted RDRR fetch, RDRR validation, HostPlan build, SDK compile,
-and full-prompt hardware execution. It takes only the values the local operator
-has to provide.
+The wrapper below performs the common operator steps after checkout: bundled
+archive verification, hosted RDRR fetch, RDRR validation, SDK compile, and
+full-prompt hardware execution. The checkout carries the evidence archive and
+bundled HostPlan source, so the endpoint is the only required run parameter.
 
 ```bash
 export CMADDR=<operator-supplied>
 
 bench/tools/run_gemma4_31b_af16_hardware_path.sh \
-  --archive "$ARCHIVE" \
-  --hf-token <token> \
   --cmaddr "$CMADDR"
 ```
 
-If the host does not have `zig`, provide a prebuilt HostPlan directory instead
-of rebuilding from source:
+`Clocksmith/rdrr` is publicly fetchable. Pass `--hf-token <token>` only if the
+host wants authenticated Hugging Face access.
+
+The default path does not require `zig`; it uses the bundled HostPlan source
+and compiles it with `cslc`. To regenerate HostPlan/CSL from the execution-v1
+input instead, pass `--rebuild-hostplan`:
 
 ```bash
 bench/tools/run_gemma4_31b_af16_hardware_path.sh \
-  --archive "$ARCHIVE" \
-  --hf-token <token> \
   --cmaddr "$CMADDR" \
-  --use-existing-hostplan \
-  --hostplan-root <prebuilt-hostplan-dir>
+  --rebuild-hostplan
 ```
 
-`<prebuilt-hostplan-dir>` must contain `host-plan.json`,
-`simulator-plan.json`, `runtime-config.json`, and `compile/`. Without `zig` or
-a prebuilt HostPlan directory, the generated CSL/HostPlan path cannot be
-materialized on that host. In that case use Path A and let us drive the same
-run against the endpoint.
+If the evidence archive is supplied separately instead of through the repo,
+pass `--archive <path>`.
 
 ## Current local evidence
 

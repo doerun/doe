@@ -1,0 +1,27 @@
+{
+  "targets": [
+    {"name":"embed","baseKernel":"embed","phase":null,"layout":"embed/layout.csl","peProgram":"embed/pe_program.csl"},
+    {"name":"rmsnorm","baseKernel":"rmsnorm","phase":null,"layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"rmsnorm_prefill","baseKernel":"rmsnorm","phase":"prefill","layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"rmsnorm_decode","baseKernel":"rmsnorm","phase":"decode","layout":"rmsnorm/layout.csl","peProgram":"rmsnorm/pe_program.csl"},
+    {"name":"tiled_31b","baseKernel":"tiled_31b","phase":null,"layout":"tiled_31b/layout.csl","peProgram":"tiled_31b/pe_program.csl"},
+    {"name":"rope","baseKernel":"rope","phase":null,"layout":"rope/layout.csl","peProgram":"rope/pe_program.csl"},
+    {"name":"attn_small","baseKernel":"attn_small","phase":null,"layout":"attn_small/layout.csl","peProgram":"attn_small/pe_program.csl"},
+    {"name":"residual","baseKernel":"residual","phase":null,"layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"residual_prefill","baseKernel":"residual","phase":"prefill","layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"residual_decode","baseKernel":"residual","phase":"decode","layout":"residual/layout.csl","peProgram":"residual/pe_program.csl"},
+    {"name":"gelu_gated","baseKernel":"gelu_gated","phase":null,"layout":"gelu_gated/layout.csl","peProgram":"gelu_gated/pe_program.csl"},
+    {"name":"gelu_gated_prefill","baseKernel":"gelu_gated","phase":"prefill","layout":"gelu_gated/layout.csl","peProgram":"gelu_gated/pe_program.csl"},
+    {"name":"gelu_gated_decode","baseKernel":"gelu_gated","phase":"decode","layout":"gelu_gated/layout.csl","peProgram":"gelu_gated/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x0_w32","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x32_w32","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x64_w32","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x96_w32","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x128_w32","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"lm_head_prefill_width_tile_x160_w8","baseKernel":"lm_head_prefill","phase":null,"layout":"lm_head_prefill/layout.csl","peProgram":"lm_head_prefill/pe_program.csl"},
+    {"name":"sample","baseKernel":"sample","phase":null,"layout":"sample/layout.csl","peProgram":"sample/pe_program.csl"},
+    {"name":"gemv","baseKernel":"gemv","phase":null,"layout":"gemv/layout.csl","peProgram":"gemv/pe_program.csl"},
+    {"name":"kv_write","baseKernel":"kv_write","phase":null,"layout":"kv_write/layout.csl","peProgram":"kv_write/pe_program.csl"},
+    {"name":"attn_decode_sliding","baseKernel":"attn_decode_sliding","phase":null,"layout":"attn_decode_sliding/layout.csl","peProgram":"attn_decode_sliding/pe_program.csl"}
+  ]
+}

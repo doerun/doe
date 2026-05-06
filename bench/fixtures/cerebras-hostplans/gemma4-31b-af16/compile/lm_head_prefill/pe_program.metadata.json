@@ -1,0 +1,22 @@
+{
+  "variables": [
+    {"name":"activation","sizeExpr":"in_dim_per_pe","elemType":"f16"},
+    {"name":"weight","sizeExpr":"out_dim_per_pe * in_dim_per_pe","elemType":"f16"},
+    {"name":"partial","sizeExpr":"out_dim_per_pe","elemType":"f32"},
+    {"name":"output","sizeExpr":"out_dim_per_pe","elemType":"f32"},
+    {"name":"activation_f32","sizeExpr":"in_dim_per_pe","elemType":"f32"}
+  ],
+  "pointers": [
+    {"name":"activation_ptr","backing":"activation","elemType":"f16"},
+    {"name":"weight_ptr","backing":"weight","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f32"}
+  ],
+  "exports": [
+    {"symbol":"activation","pointer":"activation_ptr","backing":"activation","sizeExpr":"in_dim_per_pe","elemType":"f16"},
+    {"symbol":"weight","pointer":"weight_ptr","backing":"weight","sizeExpr":"out_dim_per_pe * in_dim_per_pe","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"out_dim_per_pe","elemType":"f32"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"const","name":"reduce_done_id","type":"local_task_id","expr":"@get_local_task_id(12)"}
+  ]
+}

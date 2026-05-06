@@ -1,0 +1,7 @@
+{
+  "exports": [
+    {"name":"logits","type":"[*]f32","kind":"device_variable","mutable":true},
+    {"name":"tokens","type":"[*]u32","kind":"device_variable","mutable":true},
+    {"name":"compute","type":"fn()void","kind":"device_function","mutable":false}
+  ]
+}

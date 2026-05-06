@@ -1,0 +1,39 @@
+// Layout: KV cache write on a 2-D PE grid.
+// width = num_heads (head axis), height = position-shard count.
+// Each PE (pe_x, pe_y) owns head pe_x's slot range starting at
+// pe_y * slots_per_pe. The pe_program receives pe_id = pe_y so the
+// slot-axis ownership guard `owning_pe == pe_id` works on the
+// position-shard axis (not the head axis). num_pes = height.
+
+param width: i16;
+param height: i16;
+param head_dim: i16;
+param max_seq_len: i16;
+param slots_per_pe: i16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = height,
+});
+
+layout {
+    @set_rectangle(width, height);
+
+    for (@range(i16, width)) |pe_x| {
+        for (@range(i16, height)) |pe_y| {
+            @set_tile_code(pe_x, pe_y, "pe_program.csl", .{
+                .memcpy_params = memcpy.get_params(pe_x),
+                .pe_id = pe_y,
+                .num_pes = height,
+                .head_dim = head_dim, .max_seq_len = max_seq_len, .slots_per_pe = slots_per_pe,
+            });
+        }
+    }
+
+    @export_name("key_proj", [*]f16, true);
+    @export_name("val_proj", [*]f16, true);
+    @export_name("key_cache", [*]f16, true);
+    @export_name("val_cache", [*]f16, true);
+    @export_name("position", [*]u32, true);
+    @export_name("compute", fn()void);
+}

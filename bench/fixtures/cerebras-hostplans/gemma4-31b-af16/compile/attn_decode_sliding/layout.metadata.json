@@ -1,0 +1,11 @@
+{
+  "exports": [
+    {"name":"query","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"key","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"val","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"output","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"position","type":"[*]u32","kind":"device_variable","mutable":true},
+    {"name":"sliding_window","type":"[*]u32","kind":"device_variable","mutable":true},
+    {"name":"compute","type":"fn()void","kind":"device_function","mutable":false}
+  ]
+}

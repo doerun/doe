@@ -1,0 +1,43 @@
+// Layout: token sampling with fabric reduce chain.
+
+param width: i16;
+param chunk_size: i16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = 1,
+});
+
+const reduce_color: color = @get_color(4);
+
+layout {
+    @set_rectangle(width, 1);
+
+    for (@range(i16, width)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = width,
+            .reduce_color = reduce_color,
+            .chunk_size = chunk_size,
+        });
+
+        if (pe_x == 0) {
+            @set_color_config(pe_x, 0, reduce_color, .{
+                .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },
+            });
+        } else if (pe_x == width - 1) {
+            @set_color_config(pe_x, 0, reduce_color, .{
+                .routes = .{ .rx = .{WEST}, .tx = .{RAMP} },
+            });
+        } else {
+            @set_color_config(pe_x, 0, reduce_color, .{
+                .routes = .{ .rx = .{WEST}, .tx = .{EAST} },
+            });
+        }
+    }
+
+    @export_name("logits", [*]f32, true);
+    @export_name("tokens", [*]u32, true);
+    @export_name("compute", fn()void);
+}

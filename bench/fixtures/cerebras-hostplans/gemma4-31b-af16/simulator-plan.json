@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "csl_simulator_plan",
+  "target": "wse3",
+  "contract": "explicit_simulator_launch",
+  "driver": {
+    "protocol": "doe.csl.simulator/v1",
+    "executableEnvVar": "DOE_CSL_SIM_EXECUTABLE",
+    "failClosedIfMissing": true,
+    "executablePath": "/home/x/deco/doe/runtime/zig/tools/csl_sdk_driver.py"
+  },
+  "inputs": {
+    "hostPlanArtifactPath": "host-plan.json",
+    "runtimeConfigPath": "runtime-config.json",
+    "compileRootPath": "compile",
+    "compileTargets": [
+      { "name": "embed", "pattern": "gather", "layout": "embed/layout.csl", "peProgram": "embed/pe_program.csl", "compileParams": { "width": 481, "height": 123, "hidden_size": 5376, "hidden_per_pe": 44, "rows_per_pe": 5, "num_tokens": 16, "tokens_per_chunk": 16 } },
+      { "name": "rmsnorm", "pattern": "rms_norm", "layout": "rmsnorm/layout.csl", "peProgram": "rmsnorm/pe_program.csl", "compileParams": { "width": 481, "height": 1, "hidden_size": 5376 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "rmsnorm_prefill", "pattern": "rms_norm", "layout": "rmsnorm/layout.csl", "peProgram": "rmsnorm/pe_program.csl", "compileParams": { "width": 481, "height": 1, "hidden_size": 5376 }, "metadata": {
+        "targetPhase": "prefill",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "rmsnorm_decode", "pattern": "rms_norm", "layout": "rmsnorm/layout.csl", "peProgram": "rmsnorm/pe_program.csl", "compileParams": { "width": 1, "height": 1, "hidden_size": 5376 }, "metadata": {
+        "targetPhase": "decode",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "hidden_size" }, "perPeShape": { "kind": "csl_array", "elements": "hidden_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "tiled_31b", "pattern": "prefill_q4k_gemv", "layout": "tiled_31b/layout.csl", "peProgram": "tiled_31b/pe_program.csl", "compileParams": { "width": 42, "height": 1, "out_dim": 112, "out_dim_per_pe": 112, "in_dim_per_pe": 512, "num_blocks_per_row": 2, "output_pe_rows": 1 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_matrix_to_prefill_q4k_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "u8", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * num_blocks_per_row * 144" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * num_blocks_per_row * 144" }, "stagingTransform": { "kind": "q4km_rowwise_to_prefill_q4k_gemv_weight_tiles" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "prefill_q4k_gemv_row_tiles_to_logical_matrix" }, "weightSource": null }
+        ]
+      } },
+      { "name": "rope", "pattern": "rope", "layout": "rope/layout.csl", "peProgram": "rope/pe_program.csl", "compileParams": { "width": 481, "head_dim": 256, "num_pairs": 128 } },
+      { "name": "attn_small", "pattern": "attention_tiled", "layout": "attn_small/layout.csl", "peProgram": "attn_small/pe_program.csl", "compileParams": { "width": 481, "height": 1, "head_dim": 256, "q_len": 4096, "q_len_per_pe": 9, "block_size": 16 } },
+      { "name": "residual", "pattern": "residual", "layout": "residual/layout.csl", "peProgram": "residual/pe_program.csl", "compileParams": { "width": 481, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "residual", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "residual_prefill", "pattern": "residual", "layout": "residual/layout.csl", "peProgram": "residual/pe_program.csl", "compileParams": { "width": 481, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "prefill",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "residual", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "residual_decode", "pattern": "residual", "layout": "residual/layout.csl", "peProgram": "residual/pe_program.csl", "compileParams": { "width": 1, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "decode",
+        "bindings": [
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "residual", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "gelu_gated", "pattern": "gelu_gated", "layout": "gelu_gated/layout.csl", "peProgram": "gelu_gated/pe_program.csl", "compileParams": { "width": 481, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "gate", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "gelu_gated_prefill", "pattern": "gelu_gated", "layout": "gelu_gated/layout.csl", "peProgram": "gelu_gated/pe_program.csl", "compileParams": { "width": 481, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "prefill",
+        "bindings": [
+          { "symbol": "gate", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "gelu_gated_decode", "pattern": "gelu_gated", "layout": "gelu_gated/layout.csl", "peProgram": "gelu_gated/pe_program.csl", "compileParams": { "width": 1, "height": 1, "chunk_size": 5376 }, "metadata": {
+        "targetPhase": "decode",
+        "bindings": [
+          { "symbol": "gate", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "input", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null },
+          { "symbol": "output", "access": "read_write", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "chunk_size" }, "perPeShape": { "kind": "csl_array", "elements": "chunk_size" }, "stagingTransform": null, "detileTransform": null, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x0_w32", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 32, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x32_w32", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 32, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x64_w32", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 32, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x96_w32", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 32, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x128_w32", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 32, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "lm_head_prefill_width_tile_x160_w8", "pattern": "dense_gemv", "layout": "lm_head_prefill/layout.csl", "peProgram": "lm_head_prefill/pe_program.csl", "compileParams": { "width": 8, "height": 512, "out_dim": 262144, "out_dim_per_pe": 512, "in_dim_per_pe": 32 }, "metadata": {
+        "targetPhase": "base",
+        "bindings": [
+          { "symbol": "activation", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "in_dim_per_pe" }, "stagingTransform": { "kind": "logical_vector_to_dense_gemv_activation_shards" }, "detileTransform": null, "weightSource": null },
+          { "symbol": "weight", "access": "read", "elemType": "f16", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe * in_dim_per_pe" }, "stagingTransform": { "kind": "tied_f16_embedding_to_dense_gemv_shards" }, "detileTransform": null, "weightSource": "runtime_weight_mapping" },
+          { "symbol": "output", "access": "read_write", "elemType": "f32", "bindingShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "perPeShape": { "kind": "csl_array", "elements": "out_dim_per_pe" }, "stagingTransform": null, "detileTransform": { "kind": "dense_gemv_row_shards_to_logits" }, "weightSource": null }
+        ]
+      } },
+      { "name": "sample", "pattern": "sample", "layout": "sample/layout.csl", "peProgram": "sample/pe_program.csl", "compileParams": { "width": 256, "height": 1, "chunk_size": 1024 } },
+      { "name": "gemv", "pattern": "fused_gemv_dequant", "layout": "gemv/layout.csl", "peProgram": "gemv/pe_program.csl", "compileParams": { "width": 481, "height": 123, "out_dim": 5376, "out_dim_per_pe": 44, "in_dim_per_pe": 512, "num_blocks_per_row": 2 } },
+      { "name": "kv_write", "pattern": "kv_write", "layout": "kv_write/layout.csl", "peProgram": "kv_write/pe_program.csl", "compileParams": { "width": 32, "height": 123, "head_dim": 256, "max_seq_len": 4096, "slots_per_pe": 34 } },
+      { "name": "attn_decode_sliding", "pattern": "attention_decode", "layout": "attn_decode_sliding/layout.csl", "peProgram": "attn_decode_sliding/pe_program.csl", "compileParams": { "width": 481, "height": 1, "head_dim": 256, "kv_chunk": 9 } }
+    ]
+  },
+  "runtime": {
+    "peGrid": { "width": 481, "height": 123 },
+    "prefillLaunchCount": 19,
+    "decodeLaunchCount": 19,
+    "weightMappingCount": 0,
+    "stateBufferCount": 5,
+    "maxDecodeTokens": 128,
+    "timeoutMs": 30000,
+    "batchSize": 1,
+    "eosTokenId": 1
+  },
+  "outputs": {
+    "stdoutPath": "stdout.log",
+    "stderrPath": "stderr.log",
+    "tracePath": "trace.json"
+  }
+}

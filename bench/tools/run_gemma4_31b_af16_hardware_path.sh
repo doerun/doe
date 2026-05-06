@@ -10,7 +10,7 @@ readonly AF32_WEIGHT_PATH="models/gemma-4-31b-it-text-q4k-ehf16-af32"
 readonly SMOKE_CONFIG="runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json"
 readonly RUNNER="bench/runners/csl-runners/gemma4_31b_af16_hostplan_streaming_runner.py"
 readonly DEFAULT_OUT_ROOT="bench/out/hardware-run"
-readonly DEFAULT_HOSTPLAN_DIR="bench/out/hardware-run/gemma4-31b-af16-hostplan"
+readonly DEFAULT_HOSTPLAN_DIR="bench/fixtures/cerebras-hostplans/gemma4-31b-af16"
 
 archive=""
 cmaddr="${CMADDR:-}"
@@ -20,7 +20,8 @@ cslc_executable="${DOE_CSLC_EXECUTABLE:-cslc}"
 rdrr_root="${DOE_RDRR_ROOT:-}"
 out_root="$DEFAULT_OUT_ROOT"
 hostplan_dir="$DEFAULT_HOSTPLAN_DIR"
-use_existing_hostplan=0
+rebuild_hostplan=0
+skip_sdk_compile=0
 skip_archive_verify=0
 skip_fetch=0
 skip_hf_login=0
@@ -29,15 +30,14 @@ usage() {
   cat <<'EOF'
 Usage:
   bench/tools/run_gemma4_31b_af16_hardware_path.sh \
-    --archive <evidence.tar.gz> \
-    --hf-token <token> \
     --cmaddr <endpoint>
 
 Required for hardware execution:
   --cmaddr <endpoint>        Cerebras endpoint passed to the runner.
 
 Common options:
-  --archive <path>           Verify the evidence archive before running.
+  --archive <path>           Verify this archive before running.
+                             Default: archive named by the bundle pointer.
   --hf-token <token>         Login token for fetching Clocksmith/rdrr.
   --rdrr-root <path>         Local root for the Clocksmith/rdrr checkout.
                              Default: ../rdrr-cache/Clocksmith-rdrr.
@@ -48,11 +48,16 @@ Common options:
   --skip-fetch               Do not fetch Clocksmith/rdrr; validate local files.
   --skip-hf-login            Do not call hf auth login.
 
-No-Zig / prebuilt-HostPlan path:
-  --use-existing-hostplan    Skip zig build and csl_sdk_driver.py.
+HostPlan options:
   --hostplan-root <path>     Directory containing host-plan.json,
                              simulator-plan.json, runtime-config.json,
                              and compile/.
+                             Default: bundled Gemma af16 HostPlan source.
+  --rebuild-hostplan         Regenerate HostPlan/CSL from execution-v1 input.
+                             Requires zig.
+  --skip-sdk-compile         Do not run csl_sdk_driver.py. Use only when
+                             --hostplan-root already contains SDK compile
+                             outputs under compile/.
 
 This script does not clone Doe or create a virtualenv. Run it from a checkout
 at the evidence-bundle commit after installing numpy, jsonschema, and
@@ -119,7 +124,15 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --use-existing-hostplan)
-      use_existing_hostplan=1
+      rebuild_hostplan=0
+      shift
+      ;;
+    --rebuild-hostplan)
+      rebuild_hostplan=1
+      shift
+      ;;
+    --skip-sdk-compile)
+      skip_sdk_compile=1
       shift
       ;;
     --skip-archive-verify)
@@ -169,9 +182,18 @@ if missing:
     raise SystemExit(2)
 PY
 
+if [[ -z "$archive" && "$skip_archive_verify" -eq 0 ]]; then
+  archive="$(
+    sed -n 's/^| archive | `\(bench\/out\/doe-cerebras-evidence-[^`]*\.tar\.gz\)` |$/\1/p' \
+      docs/cerebras-evidence-bundle-pointer.md 2>/dev/null | head -1
+  )"
+fi
+
 if [[ -n "$archive" && "$skip_archive_verify" -eq 0 ]]; then
   "$python_bin" bench/tools/verify_cerebras_validation_archive.py \
     --archive "$archive"
+elif [[ "$skip_archive_verify" -eq 0 ]]; then
+  die "no bundled archive found under bench/out/; pass --archive <path> or --skip-archive-verify"
 fi
 
 rdrr_root="${rdrr_root:-$REPO_ROOT/../rdrr-cache/Clocksmith-rdrr}"
@@ -248,13 +270,10 @@ validate_hostplan_dir() {
   [[ -d "$dir/compile" ]] || die "missing $dir/compile"
 }
 
-if [[ "$use_existing_hostplan" -eq 1 ]]; then
-  validate_hostplan_dir "$hostplan_dir"
-else
+if [[ "$rebuild_hostplan" -eq 1 ]]; then
   if ! command -v zig >/dev/null 2>&1; then
-    die "zig is required to build the HostPlan. Provide --use-existing-hostplan --hostplan-root <dir> with host-plan.json, simulator-plan.json, runtime-config.json, and compile/."
+    die "zig is required with --rebuild-hostplan; omit --rebuild-hostplan to use the bundled HostPlan source"
   fi
-  need_cmd "$cslc_executable"
 
   zig build csl-host-plan-tool
 
@@ -263,12 +282,15 @@ else
     --bundle-root "$(rel_path "$hostplan_dir")" \
     --mode steps \
     --cslc-executable "$cslc_executable"
+fi
 
+validate_hostplan_dir "$hostplan_dir"
+
+if [[ "$skip_sdk_compile" -eq 0 ]]; then
+  need_cmd "$cslc_executable"
   "$python_bin" runtime/zig/tools/csl_sdk_driver.py \
     "$(rel_path "$hostplan_dir")/simulator-plan.json" \
     --cslc-executable "$cslc_executable"
-
-  validate_hostplan_dir "$hostplan_dir"
 fi
 
 readonly session_out_dir="$out_root/gemma4-31b-af16-session"

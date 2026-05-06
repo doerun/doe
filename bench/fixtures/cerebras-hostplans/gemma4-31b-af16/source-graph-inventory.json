@@ -1,0 +1,33 @@
+{
+  "artifactKind": "execution_v1_source_graph_inventory",
+  "decodeTail": [
+    "rmsnorm",
+    "lm_head_prefill",
+    "sample"
+  ],
+  "hostPlanPath": "bench/out/r3-1-31b-af16-manifest-fullgraph-compile-steps/host-plan.json",
+  "modelLayerCount": 61,
+  "prefillTail": [
+    "rmsnorm",
+    "lm_head_prefill",
+    "sample"
+  ],
+  "requiredKernels": [
+    "embed",
+    "rmsnorm",
+    "tiled_31b",
+    "rope",
+    "attn_small",
+    "residual",
+    "gelu_gated",
+    "lm_head_prefill",
+    "sample",
+    "gemv",
+    "kv_write",
+    "attn_decode_sliding"
+  ],
+  "schemaVersion": 1,
+  "source": "runtime/zig/examples/execution-v1/gemma-4-31b-af16-smoke.json",
+  "sourceGraphSha256": "2c5e8c2028346a47a43f759d8e451b9824fe21e38d1e2f0102db2bfdbbb1711c",
+  "sourceSha256": "01f83fc72370920c9aa914216aa505f34c0296dbaa1a0d055173e8a26893fddd"
+}

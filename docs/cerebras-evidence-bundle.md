@@ -677,56 +677,46 @@ runs the same commands internally and returns the receipt artifacts:
 
 ## What to run
 
-Clone the source checkout at the archive commit and verify the archive:
+Clone the source checkout. For a repo-published bundle, the archive is already
+in the checkout and the wrapper verifies it before running:
 
 ```bash
-export ARCHIVE=/path/to/doe-cerebras-evidence-<stamp>-<sha>.tar.gz
-export DOE_COMMIT="$(
-  tar -xOf "$ARCHIVE" BUNDLE_META.json |
-    python3 -c 'import json,sys; print(json.load(sys.stdin)["gitCommit"])'
-)"
-
 git clone https://github.com/doe-gpu/doe.git
 cd doe
-git checkout "$DOE_COMMIT"
+git checkout <bundle-commit>
 
 python3 -m venv .venv
 . .venv/bin/activate
 python3 -m pip install numpy jsonschema huggingface_hub
 
-python3 bench/tools/verify_cerebras_validation_archive.py \
-  --archive "$ARCHIVE"
-
 mkdir -p bench/out/hardware-run
 ```
 
 Then run the wrapper. It performs the hosted RDRR fetch and validation,
-generated HostPlan build, SDK compile, and full-prompt hardware execution:
+bundled archive verification, SDK compile from the bundled HostPlan source,
+and full-prompt hardware execution. The endpoint is the only required run
+parameter.
 
 ```bash
 export CMADDR=<operator-supplied>
 
 bench/tools/run_gemma4_31b_af16_hardware_path.sh \
-  --archive "$ARCHIVE" \
-  --hf-token <token> \
   --cmaddr "$CMADDR"
 ```
 
-If this host cannot run `zig`, use a prebuilt HostPlan directory:
+`Clocksmith/rdrr` is publicly fetchable. Pass `--hf-token <token>` only if the
+host wants authenticated Hugging Face access. The default path does not require
+`zig`; use `--rebuild-hostplan` only when regenerating HostPlan/CSL from the
+execution-v1 input:
 
 ```bash
 bench/tools/run_gemma4_31b_af16_hardware_path.sh \
-  --archive "$ARCHIVE" \
-  --hf-token <token> \
   --cmaddr "$CMADDR" \
-  --use-existing-hostplan \
-  --hostplan-root <prebuilt-hostplan-dir>
+  --rebuild-hostplan
 ```
 
-`<prebuilt-hostplan-dir>` must contain `host-plan.json`,
-`simulator-plan.json`, `runtime-config.json`, and `compile/`. Without `zig` or
-a prebuilt HostPlan directory, use endpoint access and we can drive the same
-run from our side.
+If the evidence archive is supplied separately instead of through the repo,
+pass `--archive <path>`.
 
 The hardware host must also provide the Cerebras SDK surface: `cslc` on
 `PATH` or passed with `--cslc-executable`, and a Python environment that can

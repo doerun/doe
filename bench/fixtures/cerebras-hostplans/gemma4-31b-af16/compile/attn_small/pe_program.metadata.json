@@ -1,0 +1,28 @@
+{
+  "variables": [
+    {"name":"query","sizeExpr":"q_len_per_pe * head_dim","elemType":"f16"},
+    {"name":"key","sizeExpr":"block_size * head_dim","elemType":"f16"},
+    {"name":"val","sizeExpr":"block_size * head_dim","elemType":"f16"},
+    {"name":"output","sizeExpr":"q_len_per_pe * head_dim","elemType":"f16"},
+    {"name":"m_state","sizeExpr":"q_len_per_pe","elemType":"f16"},
+    {"name":"l_state","sizeExpr":"q_len_per_pe","elemType":"f16"},
+    {"name":"score_cache","sizeExpr":"block_size","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"query_ptr","backing":"query","elemType":"f16"},
+    {"name":"key_ptr","backing":"key","elemType":"f16"},
+    {"name":"val_ptr","backing":"val","elemType":"f16"},
+    {"name":"output_ptr","backing":"output","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"query","pointer":"query_ptr","backing":"query","sizeExpr":"q_len_per_pe * head_dim","elemType":"f16"},
+    {"symbol":"key","pointer":"key_ptr","backing":"key","sizeExpr":"block_size * head_dim","elemType":"f16"},
+    {"symbol":"val","pointer":"val_ptr","backing":"val","sizeExpr":"block_size * head_dim","elemType":"f16"},
+    {"symbol":"output","pointer":"output_ptr","backing":"output","sizeExpr":"q_len_per_pe * head_dim","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"block_size","type":"i16","expr":"16"},
+    {"kind":"param","name":"q_len_per_pe","type":"i16","expr":"q_len"},
+    {"kind":"param","name":"scale","type":"f16","expr":"0.125"}
+  ]
+}

@@ -1,0 +1,85 @@
+// PE program: tiled Flash Attention for prefill (streaming KV).
+// Host streams K/V block-by-block into the exported k/v buffers,
+// launching `compute_tile` once per tile; a final `finalize` pass
+// normalizes the accumulated output. See
+// bench/out/cslc-attn-streaming-probe/probe-result.json for the
+// per-PE feasibility map that drives the host-chosen
+// (block_size, q_len_per_pe) sizing.
+
+param memcpy_params;
+param head_dim: i16;
+param block_size: i16 = 16;
+param q_len: i16;
+param q_len_per_pe: i16 = q_len;
+param scale: f16 = 0.125;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var query: [q_len_per_pe * head_dim]f16 = @zeros([q_len_per_pe * head_dim]f16);
+var query_ptr: [*]f16 = &query;
+var key: [block_size * head_dim]f16 = @zeros([block_size * head_dim]f16);
+var key_ptr: [*]f16 = &key;
+var val: [block_size * head_dim]f16 = @zeros([block_size * head_dim]f16);
+var val_ptr: [*]f16 = &val;
+var output: [q_len_per_pe * head_dim]f16 = @zeros([q_len_per_pe * head_dim]f16);
+var output_ptr: [*]f16 = &output;
+
+var m_state: [q_len_per_pe]f16 = @zeros([q_len_per_pe]f16);
+var l_state: [q_len_per_pe]f16 = @zeros([q_len_per_pe]f16);
+
+var score_cache: [block_size]f16 = @zeros([block_size]f16);
+
+fn compute() void {
+    for (@range(i16, q_len_per_pe)) |qi| {
+        var m_i: f16 = m_state[@as(u32, qi)];
+        var l_i: f16 = l_state[@as(u32, qi)];
+        var blk_max: f16 = -65504.0;
+        for (@range(i16, block_size)) |bi| {
+            var score: f16 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                score += query[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]
+                    * key[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            score *= scale;
+            score_cache[@as(u32, bi)] = score;
+            if (score > blk_max) blk_max = score;
+        }
+        const m_new = (if (m_i > blk_max) m_i else blk_max);
+        const rescale = math.exp(m_i - m_new);
+        l_i *= rescale;
+        for (@range(i16, head_dim)) |d| {
+            output[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)] *= rescale;
+        }
+        for (@range(i16, block_size)) |bi| {
+            const w = math.exp(score_cache[@as(u32, bi)] - m_new);
+            l_i += w;
+            for (@range(i16, head_dim)) |d| {
+                output[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)]
+                    += w * val[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+        }
+        m_state[@as(u32, qi)] = m_new;
+        l_state[@as(u32, qi)] = l_i;
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+fn finalize() void {
+    for (@range(i16, q_len_per_pe)) |qi| {
+        const inv = 1.0 / l_state[@as(u32, qi)];
+        for (@range(i16, head_dim)) |d| {
+            output[@as(u32, qi) * @as(u32, head_dim) + @as(u32, d)] *= inv;
+        }
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(query_ptr, "query");
+    @export_symbol(key_ptr, "key");
+    @export_symbol(val_ptr, "val");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+    @export_symbol(finalize);
+}

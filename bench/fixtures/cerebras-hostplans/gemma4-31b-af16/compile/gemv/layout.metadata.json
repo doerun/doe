@@ -1,0 +1,10 @@
+{
+  "exports": [
+    {"name":"activation","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"weight","type":"[*]u8","kind":"device_variable","mutable":true},
+    {"name":"output","type":"[*]f16","kind":"device_variable","mutable":true},
+    {"name":"partial","type":"[*]f32","kind":"device_variable","mutable":true},
+    {"name":"reduced","type":"[*]f32","kind":"device_variable","mutable":true},
+    {"name":"compute","type":"fn()void","kind":"device_function","mutable":false}
+  ]
+}

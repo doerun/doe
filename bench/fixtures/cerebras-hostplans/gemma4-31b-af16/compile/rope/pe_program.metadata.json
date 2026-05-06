@@ -1,0 +1,23 @@
+{
+  "variables": [
+    {"name":"input","sizeExpr":"head_dim","elemType":"f16"},
+    {"name":"cos_table","sizeExpr":"num_pairs","elemType":"f16"},
+    {"name":"sin_table","sizeExpr":"num_pairs","elemType":"f16"}
+  ],
+  "pointers": [
+    {"name":"input_ptr","backing":"input","elemType":"f16"},
+    {"name":"cos_table_ptr","backing":"cos_table","elemType":"f16"},
+    {"name":"sin_table_ptr","backing":"sin_table","elemType":"f16"}
+  ],
+  "exports": [
+    {"symbol":"input","pointer":"input_ptr","backing":"input","sizeExpr":"head_dim","elemType":"f16"},
+    {"symbol":"cos_table","pointer":"cos_table_ptr","backing":"cos_table","sizeExpr":"num_pairs","elemType":"f16"},
+    {"symbol":"sin_table","pointer":"sin_table_ptr","backing":"sin_table","sizeExpr":"num_pairs","elemType":"f16"}
+  ],
+  "compileTimeConstants": [
+    {"kind":"param","name":"interleaved","type":"bool","expr":"true"},
+    {"kind":"param","name":"mrope_t_pairs","type":"i16","expr":"0"},
+    {"kind":"param","name":"mrope_h_pairs","type":"i16","expr":"0"},
+    {"kind":"param","name":"mrope_w_pairs","type":"i16","expr":"0"}
+  ]
+}
