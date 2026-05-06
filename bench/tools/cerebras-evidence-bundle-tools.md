@@ -12,9 +12,10 @@ bundle" for the prose workflow; this file is the tool-reference.
 ## One-command driver
 
 - **`prepare_cerebras_validation_bundle.sh`** — the everyday
-  entry point. Chains gates → pack → verify and fails fast on
-  any step. Produces the git-sha-stamped archive and prints its
-  path + size + commit. Use before external circulation.
+  entry point. Chains gates, volatile receipt cleanup, prepack guard,
+  pack, verify, and pointer refresh. Produces the git-sha-stamped
+  archive and prints its path + size + commit. Use before external
+  circulation.
 
 ## Underlying tools (called by the prep script, usable standalone)
 
@@ -46,6 +47,10 @@ bundle" for the prose workflow; this file is the tool-reference.
   archive-root governance files are extracted from marked sections in
   `docs/cerebras-evidence-bundle.md`. Every file in MANIFEST has a
   sha256 + claim-role.
+- **`restore_volatile_cerebras_receipt_fields.py`** — restores tracked
+  simulator launch receipts when the gate changed only volatile runtime
+  counter fields. Structural receipt drift stays dirty for the prepack
+  guard.
 - **`verify_cerebras_validation_archive.py`** — extracts the
   archive to a temp dir, re-hashes every manifest entry, validates
   BUNDLE_META required fields + claim-role taxonomy, runs the
@@ -81,6 +86,8 @@ bundle" for the prose workflow; this file is the tool-reference.
 bench/tools/prepare_cerebras_validation_bundle.sh
   ├── run_cerebras_evidence_bundle.py
   │     └── bench/out/cerebras-evidence-bundle/summary.json     (rollup)
+  ├── restore_volatile_cerebras_receipt_fields.py               (counter-only receipt cleanup)
+  ├── prepack_hash_drift_guard.py
   ├── pack_cerebras_validation_archive.py
   │     └── bench/out/doe-cerebras-evidence-<stamp>.tar.gz       (archive)
   │           ├── BUNDLE_META.json
