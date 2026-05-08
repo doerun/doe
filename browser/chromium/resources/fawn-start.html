@@ -92,6 +92,17 @@ h1 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.source-link {
+  color: #6f8779;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 120ms ease;
+}
+.source-link:hover {
+  color: #b6d2c1;
+}
 .fps-graph {
   display: block;
   width: min(280px, calc(100vw - 48px));
@@ -150,6 +161,7 @@ h1 {
   <div class="gpu-info" id="gpu-info"></div>
   <div class="gpu-info frame-info" id="frame">-- ms · -- fps</div>
   <canvas class="fps-graph" id="fps-graph"></canvas>
+  <a class="source-link" href="https://github.com/doe-gpu/doe" target="_blank" rel="noopener noreferrer">doe-gpu on GitHub</a>
 </div>
 <script>
 const WGSL_OVERLAY = `
