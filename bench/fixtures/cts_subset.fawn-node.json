@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "workdir": "bench/vendor/dawn/third_party/webgpu-cts",
-  "commandTemplate": "node tools/run_node --quiet --gpu-provider {repo_root}/cts/fawn-node-gpu-provider.js {query}",
+  "commandTemplate": "node tools/run_node --quiet --gpu-provider {repo_root}/bench/cts/fawn-node-gpu-provider.js {query}",
   "requiredPaths": [
     "node_modules/ts-node",
     "node_modules/typescript"

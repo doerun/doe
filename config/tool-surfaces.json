@@ -118,14 +118,14 @@
       "shipped": false,
       "summary": "Repo-only CTS provider shims used by Doe benchmark and conformance workflows.",
       "rootPaths": [
-        "cts"
+        "bench/cts"
       ],
       "entrypoints": [
-        "cts/fawn-node-gpu-provider.js",
-        "cts/fawn-node-gpu-provider.cjs"
+        "bench/cts/fawn-node-gpu-provider.js",
+        "bench/cts/fawn-node-gpu-provider.cjs"
       ],
       "docs": [
-        "cts/README.md",
+        "bench/cts/README.md",
         "bench/README.md",
         "docs/internal-tooling.md"
       ]

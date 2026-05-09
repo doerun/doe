@@ -1215,7 +1215,7 @@ resolves its entries against repo root.
 - `run_cts_subset.py`
   - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
   - query configs can now carry structured query metadata (`id`, `bucket`, `notes`) plus preflight requirements, so reports include per-bucket pass/fail counts instead of a flat raw-query list.
-  - preferred Doe CTS config is `bench/fixtures/cts_subset.fawn-node.json` (literal current compatibility filename), which drives the vendored WebGPU CTS through Doe via `cts/fawn-node-gpu-provider.js`.
+  - preferred Doe CTS config is `bench/fixtures/cts_subset.fawn-node.json` (literal current compatibility filename), which drives the vendored WebGPU CTS through Doe via `bench/cts/fawn-node-gpu-provider.js`.
   - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
 - `run_csl_governed_lane.py`
   - runs the non-hardware CSL smoke surface:

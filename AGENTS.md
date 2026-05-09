@@ -20,7 +20,12 @@ Default assumptions:
   contributor tooling under `runtime/zig/` are repo-only unless the tooling
   manifest marks them `audience=public`
 - legacy npm names `@simulatte/webgpu` and `@simulatte/webgpu-doe` redirect to
-  `doe-gpu`; `dawn-research/` and `nursery/` are archive surfaces
+  `doe-gpu`
+- `dawn-research/` is a Gerrit CL analysis pipeline (research surface; see
+  `pipeline/agent/README.md`) referenced by `config/tool-surfaces.json`
+- `nursery/` carries active surfaces consumed by CI workflows
+  (`nursery/chromium/`, `nursery/webgpu/` referenced by `.github/workflows/`);
+  the name is historical, not a sign that the trees are dead
 
 Do not infer public product commitments from repo-only tools, scripts, or
 historical docs.

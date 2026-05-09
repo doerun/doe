@@ -46,8 +46,8 @@ Repo-only directories should not be treated as public product commitments unless
 
 In practice:
 
-- `bench/`, `browser/chromium/`, `cts/`, `examples/`, `pipeline/`, top-level
-  `scripts/`, and `demos/` are internal
+- `bench/` (including `bench/cts/`), `browser/chromium/`, `examples/`,
+  `pipeline/`, top-level `scripts/`, and `demos/` are internal
 - `packages/doe-gpu/` is the public npm surface
 - overlapping helpers are allowed, but repo workflows are still owned by the
   repo tooling, not by the npm package
