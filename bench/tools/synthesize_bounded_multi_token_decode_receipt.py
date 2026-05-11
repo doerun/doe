@@ -3,7 +3,7 @@
 existing single-step bounded chain.
 
 Mitigates "Bounded integrated KV decode+sample receipt extension" from
-docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware evidence gaps).
+docs/cerebras-model-ledgers.md (Remaining no-hardware evidence gaps).
 
 The single-step chain already proves:
   kv_write -> attention_decode -> sample

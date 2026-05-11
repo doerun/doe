@@ -1,12 +1,7 @@
 # Doe status: compiler and WebGPU
 
-This is a live topical status shard.
-
-- Add new entries at the top.
-- Soft target: keep this file under ~1500 lines; split by subdomain or by
-  date suffix when it gets uncomfortably long. See `docs/status.md` for the
-  full sharding policy.
-- Dated history lives under `docs/status/archive/`.
+This is a live topical status shard. Follow the shared shard policy in
+[`README.md`](README.md).
 
 **Scope notice:** 2026-04-24 TSIR entries moved to
 [`tsir.md`](./tsir.md); 2026-04-23 TSIR Step 4 history lives in

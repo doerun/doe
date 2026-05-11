@@ -41,7 +41,7 @@
 //     single-PE path, just stitched outside the kernel. Mirrors the
 //     slot-sharded KV pattern (host-side stitch). Unblocks head_dim=512
 //     at kv_len ≥ 15 — the next-tier attention-canary follow-up in
-//     `docs/cerebras-evidence-ledger-gemma.md`.
+//     `docs/cerebras-model-ledgers.md`.
 
 const std = @import("std");
 const schema = @import("schema.zig");

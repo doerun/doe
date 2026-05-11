@@ -1,7 +1,7 @@
 """Pin the 1-layer == 61-layer per-kernel byte-identity property
 (attention-canary precondition).
 
-Refinement 8 in `docs/cerebras-evidence-ledger-gemma.md` claims:
+Refinement 8 in `docs/cerebras-model-ledgers.md` claims:
 
   > The host-plan tool already accepts numLayers; verify in
   > runtime/zig/src/csl_host_plan_tool.zig that 1-layer emission keeps

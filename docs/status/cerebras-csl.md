@@ -1,29 +1,21 @@
 # Doe status: Cerebras and CSL
 
-This is a live topical status shard.
+This is a live topical status shard. Follow the shared shard policy in
+[`README.md`](README.md).
 
-- Add new entries at the top.
-- Keep this file under 1200 lines.
-- Split by subdomain before it exceeds the cap.
-- Dated history lives under `docs/status/archive/`.
-
-Current queue summary lives in `docs/cerebras-evidence-ledger-gemma.md`. Older entries
+Current queue summary lives in `docs/cerebras-model-ledgers.md`. Older entries
 below are historical status, including the WS4 memory-blocker framing. The
 active Gemma 4 31B af16 blocker is real-session token/logit/KV transcript
 completion.
 
 ## Lane status
 
-Lane verdicts and blockers are not restated in this doc. Run:
-
-```
-python3 bench/tools/cerebras_status_snapshot.py
-```
-
-The snapshot reads receipts directly and writes
+Lane verdicts and blockers are not restated in this doc. The status snapshot
+documented in [`../cerebras.md`](../cerebras.md) reads
+receipts directly and writes
 `bench/out/r3-cerebras-status/snapshot.{md,json}`. Every row points at the
-underlying artifact and shows its mtime. Re-run the tool whenever you want
-the current truth — drift is impossible because nothing else holds state.
+underlying artifact and shows its mtime. Refresh the snapshot whenever you want
+the current truth.
 
 This doc retains dated context entries (architecture, named blockers,
 follow-up work) below. Numbers, verdicts, and "which launch are we on"
@@ -560,7 +552,7 @@ is named in the dispatch receipt's `remainingForFullClaim`.
 ## 2026-04-26 — Per-kernel manifest-shape calibration lands; head_dim=256 attention canary closes; manifest-shape simfabric budget gate flips to allow
 
 Three landings against the manifest-shape simfabric proof plan in
-`docs/cerebras-evidence-ledger-gemma.md`:
+`docs/cerebras-model-ledgers.md`:
 
 1. **Rung 3 calibration via canary-proxy.** Manifest-shape simfabric (246x236
    fabric, ~58k PEs) does not finish a single-kernel dispatch in tractable

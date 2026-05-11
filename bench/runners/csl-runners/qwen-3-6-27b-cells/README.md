@@ -9,7 +9,7 @@ GEMV), `sample`, and `attn_decode`.
 directory. It is covered by the manifest-shape semantic-pattern path:
 `attention_prefill_kv_axis_sharded` compiles cleanly through the current
 SDK driver, with multi-Q causal-prefill and per-PE residency under the
-WSE-3 budget. See `docs/cerebras-evidence-ledger-qwen.md`.
+WSE-3 budget. See `docs/cerebras-model-ledgers.md`.
 
 Each cell is a triple of `<kernel>_layout(_patched).csl`,
 `<kernel>_pe_program.csl`, and `<kernel>_run.py` (cs_python driver).

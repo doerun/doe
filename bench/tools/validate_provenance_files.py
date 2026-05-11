@@ -2,7 +2,7 @@
 """Validate every PROVENANCE.json under bench/out/ against config/doe-provenance.schema.json.
 
 Mitigates the "Ad-hoc PROVENANCE.json files drift" risk from
-docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations). Walks bench/out/
+docs/cerebras-model-ledgers.md (Local risk mitigations). Walks bench/out/
 for files named PROVENANCE.json, validates each against the canonical
 schema, and emits a machine-readable report of conformance + a
 non-zero exit on any validation failure.

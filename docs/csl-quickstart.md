@@ -11,7 +11,7 @@ Exit 0 iff every gate passes. Structured summary at
 
 ## Read next
 
-- `docs/cerebras-evidence-ledger-gemma.md` — current evidence ledger and active
+- `docs/cerebras-model-ledgers.md` — current evidence ledger and active
   blocker order.
 - `docs/csl-architecture.md` — the abstraction stack Doe uses to
   retarget Cerebras CSL.

@@ -164,7 +164,7 @@ locks most of this pipeline via numbered contracts:
   `bench/runners/csl-runners/e2b_layer_block_smoke.py` or
   `bench/runners/run_csl_governed_lane.py` for those.
 - Produce a Cerebras hardware receipt — that requires a reachable
-  CS / WSC endpoint; see `docs/hardware-validation-appendix.md`.
+  CS / WSC endpoint; see `docs/cerebras-hardware-runbook.md`.
 - Replace full real-weight parity — the bundle now includes E2B L1
   BF16-derived and RDRR-derived smoke-contract parity plus bundled
   declared-depth diagnostics, but those diagnostics are not

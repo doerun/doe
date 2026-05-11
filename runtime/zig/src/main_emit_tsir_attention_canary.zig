@@ -1,7 +1,7 @@
 // doe-emit-tsir-attention-canary
 //
 // Mitigates attention-canary fixture rewire from
-// docs/cerebras-evidence-ledger-gemma.md by exercising the TSIR-CSL attention
+// docs/cerebras-model-ledgers.md by exercising the TSIR-CSL attention
 // emit path (runtime/zig/src/tsir/emit_kernel_body_attention.zig)
 // end-to-end and writing layout.csl + pe_program.csl files that
 // downstream cslc + chain_step_adapter can compile and dispatch.

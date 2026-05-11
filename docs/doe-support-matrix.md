@@ -566,10 +566,18 @@ AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The
 
 ---
 
-## Current status (2026-03-28)
+## Current evidence
 
-| Tier | Status | Blocking Gaps |
-|------|--------|--------------|
-| doe-core | **Operational (CLI/process-bridge)** | Fresh strict evidence exists on AMD Vulkan and Apple Metal, but the latest artifacts are still overall diagnostic (`upload_1kb` on AMD release, `upload_1mb` on Apple Metal comparable). Provider-module in-process path still depends on provider callbacks; Doe-native Bun FFI adapter trampoline remains incomplete. |
-| doe-runtime | **Not yet shippable** | Fresh Apple Metal runtime release bundle now packages ABI gate, stripped binary metadata, native consumer validation, compare-dev, Metal sync/timing gates, and CTS publication, but non-Apple runtime slices and fresh Windows D3D12 runtime evidence are still missing. |
-| chromium | **Not yet shippable** | No rebase cadence demonstrated, no security patch SLA, no browser smoke tests, operational commitments undocumented |
+This matrix defines tier meaning and claim boundaries. It is not the live
+status surface.
+
+Current evidence and blockers live in:
+
+- [`docs/status.md`](status.md) for routing
+- [`docs/status/runtime-backends-and-bench.md`](status/runtime-backends-and-bench.md)
+  for backend and benchmark-lane narrative status
+- `bench/out/**/{*.json,*.claim.json}` for compare, claim, and run receipts
+
+Do not add dated status tables here. If a lane's claim level changes, update
+the owning status shard and artifact-backed claim output, then keep this file
+limited to the tier definitions and demotion rules.

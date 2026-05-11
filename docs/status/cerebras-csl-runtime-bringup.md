@@ -1,18 +1,16 @@
 # Doe status: Cerebras CSL runtime bring-up
 
 This is a live topical sub-shard split from `docs/status/cerebras-csl.md`.
-
-- Add new entries at the top only when they belong to the Gemma/Qwen CSL runtime bring-up subdomain.
-- Keep this file under 1200 lines.
-- Dated archive material still belongs under `docs/status/archive/`.
+Follow the shared shard policy in [`README.md`](README.md); add entries here
+only when they belong to the Gemma/Qwen CSL runtime bring-up subdomain.
 
 ## Lane status
 
-This sub-shard does not restate verdicts or current launch index. Run
-`python3 bench/tools/cerebras_status_snapshot.py` and read
-`bench/out/r3-cerebras-status/snapshot.md`. The snapshot is the only place
-that holds current state for this lane; it reads receipts and the live
-Phase-7 `progress.jsonl` directly.
+This sub-shard does not restate verdicts or current launch index. Run the
+status snapshot documented in [`../cerebras.md`](../cerebras.md) and read
+`bench/out/r3-cerebras-status/snapshot.md`. The snapshot is the only place that
+holds current state for this lane; it reads receipts and the live Phase-7
+`progress.jsonl` directly.
 
 Dated bring-up entries below describe architecture and named blockers, not
 "which launch are we on" or "what is the current verdict". Don't add those
@@ -74,7 +72,7 @@ the L=0 probes.
 
 ## 2026-05-01 — Layer C acceptance bar split: end-to-end load-bearing, per-kernel manifest-shape regression net
 
-`docs/cerebras-evidence-ledger-gemma.md` Layer C acceptance bar now separates the
+`docs/cerebras-model-ledgers.md` Layer C acceptance bar now separates the
 load-bearing correctness items (end-to-end prefill + generated-token IDs
 matching the frozen Doppler reference at L=1; per-step logits artifacts
 comparing under the declared Doppler tolerance policy; manifest / HostPlan
@@ -415,7 +413,7 @@ The active queue is now contract-first:
   inference artifacts after the contract lands.
 
 The corresponding queue and invariants are tracked in
-`docs/cerebras-evidence-ledger-gemma.md`. This is not a runner paper-over: the upstream
+`docs/cerebras-model-ledgers.md`. This is not a runner paper-over: the upstream
 graph-to-HostPlan inventory and sample-logits contracts must fail closed before
 any generated-token evidence can be promoted.
 

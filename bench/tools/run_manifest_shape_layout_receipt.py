@@ -2,7 +2,7 @@
 """Per-kernel manifest-shape layout receipt (layout-receipt).
 
 Mitigates "Layout receipt (layout-receipt)" from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan):
 
   > Per kernel, dispatch with manifest-shape inputs; record
   > `inputBytes`, `outputBytes`, `outputDigest`, `dispatchExitCode`,

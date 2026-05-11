@@ -1,7 +1,7 @@
 """Derive a per-kernel manifest-shape-class throughput calibration from canary sim_stats.
 
 Mitigates the per-kernel manifest-shape calibration gap in
-``docs/cerebras-evidence-ledger-gemma.md`` (Manifest-shape simfabric proof plan):
+``docs/cerebras-model-ledgers.md`` (Manifest-shape simfabric proof plan):
 the predicted-wallclock wallclock predictor needs a ``bytesPerCycle`` calibration
 constant, and the full-graph-dispatch launch gate denies until
 ``config/manifest-simfabric-budget.json``'s ``calibrationStatus``

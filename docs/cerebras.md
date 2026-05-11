@@ -1,7 +1,7 @@
 # Doe ↔ Cerebras
 
 Index for the Doppler → Doe → Cerebras lane: current status, source locations,
-reproduce commands, hardware runbook, bundle pointer, and claim scope.
+hardware runbook, bundle pointer, and claim scope.
 
 ## Progress at a glance
 
@@ -14,8 +14,7 @@ per-lane verdict table built from receipts and carries the current counts.
 
 Live narrative status: [`docs/status/cerebras-csl.md`](status/cerebras-csl.md).
 Per-model evidence checklists with acceptance bars and active blocker queues:
-[`cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md),
-[`cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md).
+[`cerebras-model-ledgers.md`](cerebras-model-ledgers.md).
 
 ## Source code
 
@@ -30,19 +29,11 @@ Per-model evidence checklists with acceptance bars and active blocker queues:
 
 ## Reproduce
 
-| Goal | Command |
-|---|---|
-| Refresh status snapshot | `python3 bench/tools/cerebras_status_snapshot.py` |
-| Build a clean evidence bundle | `bench/tools/prepare_cerebras_validation_bundle.sh` |
-| Build an emulator source archive | `python3 bench/tools/pack_cerebras_emulator_source_archive.py` |
-| Verify a received bundle archive | `python3 bench/tools/verify_cerebras_validation_archive.py --archive <path>` |
-| Summarize an archive without unpacking | `bench/tools/summarize_cerebras_evidence_archive.sh <path>` |
-| Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
-| Run Gemma full-prompt hardware path | `bench/tools/run_gemma4_31b_af16_hardware_path.sh --cmaddr <endpoint>` |
-| Run Qwen full-prompt hardware path | `bench/tools/run_qwen3_6_27b_af16_hardware_path.sh --cmaddr <endpoint>` |
-| Run Gemma final-norm selected-logit check | `python3 bench/tools/run_gemma4_31b_af16_doppler_selected_logit_splice.py` |
-| Run Qwen final-norm selected-logit check | `python3 bench/tools/run_qwen_3_6_27b_af16_doppler_selected_logit_splice.py` |
-| Run blocking gates locally | `python3 bench/runners/run_blocking_gates.py` |
+Use the operator runbook for exact commands:
+[`docs/cerebras-hardware-runbook.md`](cerebras-hardware-runbook.md).
+
+The status snapshot command above is intentionally the only command repeated in
+this front door.
 
 ## Run on hardware
 
@@ -50,7 +41,8 @@ Operator runbook: commands, hardware receipt paths, required receipt fields,
 publication boundaries, and email text:
 [`docs/cerebras-hardware-runbook.md`](cerebras-hardware-runbook.md).
 
-Bundle pointer with archive sha256, pinned commit, and regenerated timestamp:
+Bundle pointer with archive sha256, pinned commit, regenerated timestamp, and
+verification commands:
 [`docs/cerebras-evidence-bundle-pointer.md`](cerebras-evidence-bundle-pointer.md).
 
 Bundle source. The packer extracts archive-root files like `README.md`,
@@ -69,7 +61,7 @@ Governance + claim scope: [`docs/hardware-validation-appendix.md`](hardware-vali
 
 ## Scope notes
 
-- Embedded counts (e.g. "23/23 pass"). Run the snapshot.
+- Embedded pass totals. Run the snapshot.
 - Roadmap timing. Status snapshot + evidence ledgers carry current state;
   blockers are named without estimates.
 - Internal iteration jargon. Build-iteration vs parity-iteration discipline

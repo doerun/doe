@@ -3,7 +3,7 @@
 
 Runs a parameterizable matrix of cells (each cell = one subprocess invocation)
 under per-lane concurrency caps. Designed for the kind of overnight 31B
-evidence sweep described in `docs/cerebras-evidence-ledger-gemma.md` R2-5a + R3-1, but
+evidence sweep described in `docs/cerebras-model-ledgers.md` R2-5a + R3-1, but
 the matrix shape stays generic so this orchestrator outlives any single sweep.
 
 Lanes:

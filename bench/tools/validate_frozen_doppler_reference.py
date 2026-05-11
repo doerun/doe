@@ -2,7 +2,7 @@
 """Validate a frozen Doppler reference fixture against its manifest schema.
 
 Mitigates "Frozen Doppler reference fixture (frozen-Doppler-reference)" from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan). The
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan). The
 fixture lives at `bench/fixtures/r3-1-31b-doppler-frozen/` (or wherever
 `--root` points) and contains:
 

@@ -2,7 +2,7 @@
 """Synthesize the TSIR canary expansion preflight receipt.
 
 Mitigates "TSIR kernel coverage", "TSIR backend coverage", and "TSIR
-numerical statuses" from docs/cerebras-evidence-ledger-gemma.md (Remaining
+numerical statuses" from docs/cerebras-model-ledgers.md (Remaining
 no-hardware evidence gaps).
 
 Today the nightly TSIR parity canary covers 6 fixtures

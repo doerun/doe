@@ -2,7 +2,7 @@
 """Derive deployment-shape widths from a manifest-compile threshold sweep.
 
 Mitigates "Deployment-shape width generator" from
-docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware evidence gaps).
+docs/cerebras-model-ledgers.md (Remaining no-hardware evidence gaps).
 
 The manifest-compile sweep in
 `bench/out/r3-1-31b-manifest-compile-sweep/sweep-summary.json` records

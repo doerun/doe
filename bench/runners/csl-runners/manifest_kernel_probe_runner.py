@@ -2,7 +2,7 @@
 """Per-kernel manifest-shape dispatch runner with Doppler-probe inputs.
 
 Mitigates "Per-kernel manifest-shape dispatch" from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan):
 
   > Extend bench/runners/csl-runners/multi_token_decode_orchestrator.py
   > (or a new sibling manifest_kernel_probe_runner.py) to dispatch one

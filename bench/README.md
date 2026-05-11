@@ -2223,6 +2223,6 @@ Regression surface that protects the pipeline:
 
 The bundle is scoped to **evidence + hashes + commands only** — no SDK
 binaries, weight bytes, or simulator logs. See
-`docs/hardware-validation-appendix.md` for the parent ask and
+`docs/cerebras-hardware-runbook.md` for the parent ask and
 `docs/cerebras-evidence-bundle.md` for the bundle's own reviewer
 workflow.

@@ -12,7 +12,7 @@ the shards under [`docs/status/`](status/).
 - [`thesis.md`](thesis.md) — what Doe is and why it exists
 - [`architecture.md`](architecture.md) — high-level shape of the runtime + compiler + bench surfaces
 - [`process.md`](process.md) — gate modes, blocking vs advisory, release rules
-- [`status.md`](status.md) — concise status front door; dated history under `docs/status/`
+- [`status.md`](status.md) — concise status front door; shard policy under `docs/status/README.md`
 - [`problems-addressed.md`](problems-addressed.md) — practitioner pain points the runtime targets
 - [`glossary.md`](glossary.md) — terminology used across docs
 - [`repo-taxonomy.md`](repo-taxonomy.md) — what lives where; tenant boundaries
@@ -29,9 +29,8 @@ gate depend on the bundle and appendix files; do not rename.
 - [`cerebras-hardware-runbook.md`](cerebras-hardware-runbook.md) — operator how-to for hardware receipts
 - [`cerebras-evidence-bundle.md`](cerebras-evidence-bundle.md) — bundle source (parsed by the prep script)
 - [`cerebras-evidence-bundle-pointer.md`](cerebras-evidence-bundle-pointer.md) — auto-generated archive pointer
-- [`cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md) — Gemma 4 31B evidence ledger
-- [`cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md) — Qwen 3.6 27B evidence ledger
-- [`hardware-validation-appendix.md`](hardware-validation-appendix.md) — governance + claim scope
+- [`cerebras-model-ledgers.md`](cerebras-model-ledgers.md) — model acceptance bars and blocker queues
+- [`hardware-validation-appendix.md`](hardware-validation-appendix.md) — bundle compatibility and claim-governance appendix
 
 ## CSL (Cerebras shader language) layer
 

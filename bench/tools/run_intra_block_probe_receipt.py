@@ -2,7 +2,7 @@
 """Intra-block probe-point receipt (single-block-parity).
 
 Mitigates "Intra-block probes (single-block-parity)" from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan):
 
   > Add four probe-write hooks at the four TSIR boundary points
   > already encoded in the per-block emit. Probes write `.npy`

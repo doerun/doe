@@ -2,15 +2,12 @@
 
 This is a live topical status shard for the Tiled Spatial IR (TSIR) work
 defined in [`docs/tsir-lowering-plan.md`](../tsir-lowering-plan.md) and
-sequenced by [`docs/loop-protocol.md`](../loop-protocol.md).
+sequenced by [`docs/loop-protocol.md`](../loop-protocol.md). Follow the shared
+shard policy in [`README.md`](README.md).
 
-- Add new TSIR entries at the top.
-- Keep this file under 1200 lines.
-- Split by subdomain before it exceeds the cap.
-- Dated history lives under [`archive/`](archive/).
-- Parity receipts themselves land under `reports/parity/` and are bound
-  into Doppler manifests at `integrityExtensions.lowerings[]`; this shard
-  is narrative status, not the receipt surface.
+Parity receipts themselves land under `reports/parity/` and are bound into
+Doppler manifests at `integrityExtensions.lowerings[]`; this shard is narrative
+status, not the receipt surface.
 
 This shard exists because `compiler-and-webgpu.md` outgrew its old shard
 target once the TSIR Phase A landings started. The deep 2026-04-24

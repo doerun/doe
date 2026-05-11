@@ -1,11 +1,7 @@
 # Doe status: runtime backends and benchmark lanes
 
-This is a live topical status shard.
-
-- Add new entries at the top.
-- Keep this file under 1200 lines.
-- Split by subdomain before it exceeds the cap.
-- Dated history lives under `docs/status/archive/`.
+This is a live topical status shard. Follow the shared shard policy in
+[`README.md`](README.md).
 
 ## Current state
 

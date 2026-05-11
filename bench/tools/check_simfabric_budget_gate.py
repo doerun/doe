@@ -2,7 +2,7 @@
 """Gate the manifest-shape full-graph dispatch on the predicted budget.
 
 Mitigates the predicted-wallclock followup item from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan):
 
   > The full-graph dispatch will not launch unless the budget is under a
   > configured ceiling in `config/manifest-simfabric-budget.json` — that

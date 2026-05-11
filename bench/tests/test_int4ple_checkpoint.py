@@ -1,6 +1,6 @@
 """Tests for `int4ple_checkpoint` durable HostPlan resume support.
 
-Backs row R2-5a of `docs/cerebras-evidence-ledger-gemma.md`. The five scenarios cover the
+Backs row R2-5a of `docs/cerebras-model-ledgers.md`. The five scenarios cover the
 contract documented in the design sketch: persist/load happy path, identity
 drift rejection (with the typed code), buffer corruption rejection (with the
 typed code), and idempotent stop+resume cycles.

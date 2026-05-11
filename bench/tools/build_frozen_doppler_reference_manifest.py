@@ -1,7 +1,7 @@
 """Assemble a frozen Doppler reference fixture manifest from captured .npy files.
 
 Mitigates the frozen-Doppler-reference fixture data gap in
-``docs/cerebras-evidence-ledger-gemma.md`` (manifest-shape simfabric proof plan):
+``docs/cerebras-model-ledgers.md`` (manifest-shape simfabric proof plan):
 the Doe-side schema + validator
 (``config/doe-frozen-doppler-reference.schema.json``,
 ``bench/tools/validate_frozen_doppler_reference.py``) have shipped,

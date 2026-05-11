@@ -1,6 +1,6 @@
 """Durable HostPlan checkpoint persistence and resume validation.
 
-Backs row R2-5a in `docs/cerebras-evidence-ledger-gemma.md`. The HostPlan launch loop
+Backs row R2-5a in `docs/cerebras-model-ledgers.md`. The HostPlan launch loop
 in `int4ple_compile_target_sim_runner.execute_hostplan_runtime` already
 persists per-launch D2H output buffers to disk and threads them through
 `buffer_files[symbol] -> Path`. Resume reduces to reconstructing that

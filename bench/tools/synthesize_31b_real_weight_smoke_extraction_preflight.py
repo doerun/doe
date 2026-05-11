@@ -2,7 +2,7 @@
 """Synthesize the 31B real-weight smoke-shape extraction preflight.
 
 Mitigates "Real-weight Doppler reference" smoke-shape projection
-extraction from docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware
+extraction from docs/cerebras-model-ledgers.md (Remaining no-hardware
 evidence gaps).
 
 The 31B real-weight pin (`bench/out/r3-1-31b-real-weights/pin.json`)

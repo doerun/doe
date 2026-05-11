@@ -266,18 +266,12 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 
 ## Current state
 
-| Layer | Files | Lines | Status |
-|-------|-------|-------|--------|
-| Lexer/Parser/AST | token, lexer, ast, parser, parser_decl, parser_expr, parser_stmt | 2,575 | Production, sharded |
-| Semantic analysis | sema, sema_attrs, sema_body, sema_helpers, sema_resolve, sema_types | 1,821 | Production, sharded |
-| IR + validation | ir, ir_builder, ir_validate | 1,263 | Production |
-| IR → MSL | emit_msl, emit_msl_ir, emit_msl_maps, emit_msl_stage, emit_msl_texture | 1,206 | Production, compute + vertex/fragment |
-| IR → HLSL | emit_hlsl, emit_hlsl_maps, emit_hlsl_stage | 1,059 | Production, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation) |
-| IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation); samplers/graphics incomplete |
-| IR → DXIL (native) | dxil_spec, dxil_bitcode, dxil_builder, dxil_serialize, dxil_container, emit_dxil_native, emit_dxil | 2,670 | Primary path; native LLVM 3.7 bitcode + DXBC container, DXC fallback available |
-| Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
-| Public API + tests | mod.zig, mod_*_test.zig, emit_*_test.zig, coverage_*_test.zig | Sharded | All four translateTo* wired; tests split by backend, coverage, and integration concern |
-| **Total** | **~80 files** | **~16,000+** | Approximate; file/line counts are approximate and have grown since the original audit |
+This document describes the compiler architecture, not live coverage totals.
+Current compiler/runtime status belongs in
+[`docs/status/compiler-and-webgpu.md`](./status/compiler-and-webgpu.md), and
+TSIR implementation status belongs in [`docs/status/tsir.md`](./status/tsir.md).
+Counts, pass/fail totals, and benchmark results should come from artifacts and
+gates, not from prose in this architecture note.
 
 ## Related docs
 
@@ -294,31 +288,9 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
   parity-iteration discipline that drives incremental TSIR + parity
   landing
 
-## Remaining work (current reality)
+## Remaining work
 
-1. **The current compute kernel corpus is now on the native Vulkan path, but the surface is still intentionally narrow.**
-   - The native compute slice now includes storage-buffer runtime arrays, workgroup/storage atomics, `dot`, `sin`, `fract`, `texture_2d<f32>`, `texture_storage_2d<rgba8unorm, write>`, `textureLoad`, `textureStore`, Vulkan image/view creation, texture upload/query/destroy commands, and descriptor-image writes for `.texture` / `.storage_texture` bindings.
-   - Remaining Vulkan work is now narrower:
-     - sampled samplers / `textureSample*`
-     - broader texture/storage-texture format coverage
-     - graphics-stage IO and render-pipeline integration
-
-2. **Shader-side vertex/fragment emission is functional across all backends.**
-   - Vertex/fragment builtins, stage IO, struct I/O decomposition, inter-stage locations, interpolation decorations, MRT, frag_depth, and discard are parsed, lowered to IR, and emitted correctly by MSL, HLSL, and SPIR-V.
-   - Render pipeline runtime integration (render pass wiring, location assignment at pipeline creation, draw command encoding) remains open.
-
-3. **SPIR-V validation/build proof is still outstanding.**
-   - The native SPIR-V path has moved well beyond the original stub state, but it still needs an actual build/validation pass (`zig build`, `spirv-val`) to prove the current emitter/runtime integration.
-
-4. **Compiler correctness coverage is still thin.**
-   - The compiler is still primarily exercised by benchmark kernels and runtime usage.
-   - A dedicated shader-focused test suite is still needed for parser/sema/IR/emitter regressions.
-
-5. **File-size debt still exists, but the old list is stale.**
-   - `sema.zig` was already sharded and should not be listed as the original blocker anymore.
-   - `parser.zig` and likely `emit_spirv.zig` still need sharding to stay aligned with the 999-line policy.
-
-6. **Native DXIL is implemented but needs broader validation.**
-   - The primary D3D12 path is now `IR -> native DXIL bytecode` (no external DXC).
-   - DXC fallback remains available via `emitWithToolchainConfig`.
-   - Remaining: DXIL validator coverage, vertex/fragment completeness, production Windows evidence.
+Do not maintain a second live backlog in this architecture doc. Track current
+compiler gaps in [`docs/status/compiler-and-webgpu.md`](./status/compiler-and-webgpu.md)
+or, for TSIR-specific work, [`docs/status/tsir.md`](./status/tsir.md). Keep
+this document focused on the stable pipeline shape and backend strategy.

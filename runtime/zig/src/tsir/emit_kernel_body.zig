@@ -97,7 +97,7 @@ pub const KvCachePeStrategy = enum { full_per_pe, slot_sharded };
 ///     pattern: kernel emits per-PE pieces, host does the cross-PE
 ///     reduce). This unblocks `head_dim=512` at `kv_len ≥ 15`, which
 ///     the single-PE path cannot fit (see
-///     `docs/cerebras-evidence-ledger-gemma.md` attention-canary follow-up).
+///     `docs/cerebras-model-ledgers.md` attention-canary follow-up).
 pub const AttentionPeStrategy = enum { full_per_pe, kv_axis_sharded };
 pub const AttentionPeIdSource = enum { tile_param, layout_coordinates };
 

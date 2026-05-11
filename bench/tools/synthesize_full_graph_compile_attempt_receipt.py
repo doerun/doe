@@ -2,7 +2,7 @@
 """Synthesize the 31B full-graph compile attempt receipt.
 
 Mitigates "Full inference graph compile" from
-docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware evidence gaps).
+docs/cerebras-model-ledgers.md (Remaining no-hardware evidence gaps).
 
 The existing manifest-shape compile-attempt receipt
 (`bench/out/r3-1-31b-manifest-compile-attempt/`) and the threshold

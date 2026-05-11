@@ -2,7 +2,7 @@
 """Verify per-kernel byte identity between two host-plan compile roots (attention-canary precondition).
 
 Mitigates the attention-canary precondition from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan):
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan):
 
   > The host-plan tool already accepts `--num-layers`; verify in
   > runtime/zig/src/csl_host_plan_tool.zig that 1-layer emission keeps

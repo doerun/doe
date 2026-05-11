@@ -2,7 +2,7 @@
 """Materialize Gemma-4 31B layer-block weight slices (smoke shape).
 
 Closes "Real-weight Doppler smoke-shape projection extraction" from
-docs/cerebras-evidence-ledger-gemma.md (Remaining no-hardware evidence gaps).
+docs/cerebras-model-ledgers.md (Remaining no-hardware evidence gaps).
 
 The 31B real-weight pin lives at bench/out/r3-1-31b-real-weights/, but
 the parity audit flips to weights_audit_failed when the smoke-shape

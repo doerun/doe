@@ -81,8 +81,8 @@ cross-references inside the receipts resolve as written.
    matching wrapper. It also enumerates endpoint access and
    Cerebras-assisted source checkout paths, plus the exact command,
    receipt fields, and publication boundaries for either lane.
-   `docs/hardware-validation-appendix.md` is its parent document with
-   the fuller context.
+   `docs/cerebras-hardware-runbook.md` is its parent document with
+   the fuller operator context.
 
 6. **Read `LOCAL_INSPECTION.md`** if you want to browse the
    evidence in a browser. Lists local-server commands for the
@@ -158,7 +158,7 @@ cross-references inside the receipts resolve as written.
 
 ## Contact and next steps
 
-The external ask lives in `docs/hardware-validation-appendix.md`.
+The external ask lives in `docs/cerebras-hardware-runbook.md`.
 Nothing in this bundle should be circulated externally until its
 verifier passes and `CLAIM_SCOPE.md` has been reviewed against what
 you plan to claim.
@@ -176,10 +176,10 @@ This document is the **terms-of-bundle** for
 is included in every such archive as `CLAIM_SCOPE.md` and states what
 the bundle **does** and **does not** back with evidence.
 
-It is distinct from `docs/hardware-validation-appendix.md`, which is
-the external-facing outreach document describing what Cerebras would
-need to run. This document is for the bundle itself: what it is honest
-to say once a reviewer holds a copy.
+It is distinct from `docs/cerebras-hardware-runbook.md`, which is the
+operator-facing document describing what Cerebras would need to run.
+This document is for the bundle itself: what it is honest to say once a
+reviewer holds a copy.
 
 ## What this bundle claims
 
@@ -772,9 +772,9 @@ That wrapper fetches `Clocksmith/rdrr` revision
 `models/qwen-3-6-27b-q4k-ehaf16`. It uses the bundled HostPlan source under
 `bench/fixtures/cerebras-hostplans/qwen3-6-27b-af16/`.
 
-The hardware host must also provide the Cerebras SDK surface: `cslc` on
-`PATH` or passed with `--cslc-executable`, and a Python environment that can
-import `cerebras.sdk.runtime.sdkruntimepybind`.
+Before running on hardware, confirm the Cerebras SDK is available: expose
+`cslc` through `PATH` or `--cslc-executable`, and use a Python environment that
+can import `cerebras.sdk.runtime.sdkruntimepybind`.
 
 The wrapper expands to the commands below. Keep them here for audit and for
 operators who prefer each step separated.
@@ -979,9 +979,9 @@ email thread this archive came from, or the sender address on the
 outreach message. The Doe team is the point of contact; we handle the
 interpretation side of anything that comes back.
 
-`docs/hardware-validation-appendix.md` is the parent appendix;
+`docs/cerebras-hardware-runbook.md` is the parent runbook;
 `CEREBRAS_ASK.md` is its operational distillation. If the two ever
-disagree, the appendix wins.
+disagree, the runbook wins.
 <!-- archive:CEREBRAS_ASK.md:end -->
 
 <!-- archive:LOCAL_INSPECTION.md:start -->

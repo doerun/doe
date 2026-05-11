@@ -2,7 +2,7 @@
 """Predict simfabric wall-clock budget for the manifest-shape graph (predicted-wallclock).
 
 Mitigates "Predicted simfabric wall-clock (predicted-wallclock)" from
-docs/cerebras-evidence-ledger-gemma.md (Manifest-shape simfabric proof plan). The
+docs/cerebras-model-ledgers.md (Manifest-shape simfabric proof plan). The
 manifest-shape full-graph dispatch (full-graph-dispatch) cannot launch blindly; if
 its predicted wall-clock exceeds the simfabric throughput envelope the
 launch will time out before producing a receipt. This tool reads the

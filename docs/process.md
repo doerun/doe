@@ -65,7 +65,7 @@
   archive (manifest sha integrity, claim-role taxonomy,
   BUNDLE_META completeness, live claim-discipline scan). All
   three must pass before the archive is attached to an external
-  ask. See `docs/hardware-validation-appendix.md` for the parent
+  ask. See `docs/cerebras-hardware-runbook.md` for the parent
   ask and `docs/cerebras-evidence-bundle.md` for the bundle's own
   workflow.
 - run spec-diff hard gate (canonical constant parity against in-tree spec headers; targets declared in `config/spec-diff-targets.json`):

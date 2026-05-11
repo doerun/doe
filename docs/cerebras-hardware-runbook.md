@@ -52,11 +52,10 @@ provider prefers.
 | Verify a returned hardware receipt | `python3 bench/tools/verify_returned_hardware_receipt.py --receipt <path>` |
 | Governance + claim boundaries | [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) |
 | Cerebras lane front door | [`docs/cerebras.md`](cerebras.md) |
-| Gemma evidence ledger (acceptance bar + blockers) | [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md) |
-| Qwen evidence ledger (acceptance bar + blockers) | [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md) |
+| Model ledgers (acceptance bars + blockers) | [`docs/cerebras-model-ledgers.md`](cerebras-model-ledgers.md) |
 | Live status snapshot | `bench/out/r3-cerebras-status/snapshot.md` (run `bench/tools/cerebras_status_snapshot.py`) |
 | Live status shard | [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) |
-| Active fail-closed queue (Gemma) | `cerebras-evidence-ledger-gemma.md` § Active fail-closed queue |
+| Active fail-closed queue (Gemma) | `cerebras-model-ledgers.md` § Active fail-closed queue |
 
 ## Operator setup
 
@@ -345,7 +344,7 @@ execution and does not replace a returned hardware transcript.
 
 ### Current Gemma 31B blocker
 
-`cerebras-evidence-ledger-gemma.md` Layer C is fail-closed on **Gemma af16 lm-head
+`cerebras-model-ledgers.md` Layer C is fail-closed on **Gemma af16 lm-head
 dispatch evidence**. The bounded receipt at
 `bench/out/r3-1-31b-af16-bounded-inference-smoke/receipt.json` validates the
 f16 dtype contract but records `inferenceEvidenceGate.dispatch_evidence_lm_head_unbound`
@@ -473,7 +472,7 @@ semantic-pattern path `attention_prefill_kv_axis_sharded`, which
 compiles cleanly under the current SDK driver with multi-Q
 causal-prefill and per-PE residency under the WSE-3 budget. The earlier
 `linker_pe_memory_overflow` blocker is closed; see
-[`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md)
+[`docs/cerebras-model-ledgers.md`](cerebras-model-ledgers.md)
 for the audit trail.
 
 The aggregator at
@@ -619,9 +618,7 @@ shows `dirty` in the pointer, rebuild from a clean tree before circulation.
   source-of-truth (the packer extracts archive-root files from marked sections
   here).
 - [`docs/hardware-validation-appendix.md`](hardware-validation-appendix.md) —
-  governance companion: artifact paths, simfabric-proof scope, publication
-  boundaries.
-- [`docs/cerebras-evidence-ledger-gemma.md`](cerebras-evidence-ledger-gemma.md) /
-  [`docs/cerebras-evidence-ledger-qwen.md`](cerebras-evidence-ledger-qwen.md) — full
-  evidence ledgers, integrity invariants, optimization roadmap.
+  bundle compatibility and claim-governance companion.
+- [`docs/cerebras-model-ledgers.md`](cerebras-model-ledgers.md) — full
+  model evidence ledgers, integrity invariants, optimization roadmap.
 - [`docs/status/cerebras-csl.md`](status/cerebras-csl.md) — live status shard.

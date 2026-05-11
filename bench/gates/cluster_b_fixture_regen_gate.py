@@ -2,7 +2,7 @@
 """Cluster B Gemma 3 1B Doe-CSL host-plan fixture regen drift gate.
 
 Mitigates "Cluster B fixture regen drift" from
-docs/cerebras-evidence-ledger-gemma.md (Local risk mitigations).
+docs/cerebras-model-ledgers.md (Local risk mitigations).
 
 The Cluster B clean-tree bundle gate reads two pinned fixture files
 (`host-plan.json` and `doppler-program-bundle.json` under
