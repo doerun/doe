@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "artifactKind": "tint-compiler-evidence",
-  "generatedAt": "2026-05-25T20:03:57.334586Z",
+  "generatedAt": "2026-05-25T20:28:18.439031Z",
   "comparisonStatus": "comparable",
   "claimStatus": "claimable",
   "corpus": {
@@ -13,12 +13,12 @@
   "toolchains": {
     "doe": {
       "name": "doe-wgsl",
-      "version": "6843b658b6aa9e7f6ec5af05ca8e3b2ceb4f8aa9",
+      "version": "48b751ba2386529ce2efb777bce89624016e8c2f",
       "command": [
         "runtime/zig/zig-out/bin/doe-runtime-compile-report",
         "--emit-msl"
       ],
-      "sourceRevision": "6843b658b6aa9e7f6ec5af05ca8e3b2ceb4f8aa9",
+      "sourceRevision": "48b751ba2386529ce2efb777bce89624016e8c2f",
       "artifactPath": "runtime/zig/zig-out/bin/doe-runtime-compile-report",
       "artifactSha256": "d689189b0d10fe8403716c22fb825aa3ee2b9760cc14cc4f0463cf92710918a0"
     },
@@ -32,6 +32,17 @@
       "sourceRevision": "dawn-vendor",
       "artifactPath": "bench/vendor/dawn/out/Release/tint",
       "artifactSha256": "385723b6f2b45cefab2b9b5cccfa55ac77e772fa8425b3f29016569f09756865"
+    },
+    "tintWarm": {
+      "name": "tint-benchmark",
+      "version": "dawn-vendor",
+      "command": [
+        "bench/vendor/dawn/out/Release/tint_benchmark",
+        "--benchmark_format=json"
+      ],
+      "sourceRevision": "dawn-vendor",
+      "artifactPath": "bench/vendor/dawn/out/Release/tint_benchmark",
+      "artifactSha256": "913fa6606b7856b590520bd9214bebbac32feab4463c9961b787c9884185dd69"
     }
   },
   "phaseModel": {
@@ -55,7 +66,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 9583
+          "total": 9625
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_noop_compute_msl/doe/compile-report.json"
       },
@@ -67,7 +78,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 26280
+          "total": 26903
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_noop_compute_msl/tint/output.msl"
       },
@@ -79,9 +90,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 174.24,
-          "p95": 138.95,
-          "p99": 71.89
+          "p50": 179.51,
+          "p95": 139.74,
+          "p99": 86.52
         }
       }
     },
@@ -98,7 +109,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 12833
+          "total": 13084
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_passthrough_vertex_msl/doe/compile-report.json"
       },
@@ -110,7 +121,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 34727
+          "total": 34209
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_passthrough_vertex_msl/tint/output.msl"
       },
@@ -122,9 +133,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 170.61,
-          "p95": 141.22,
-          "p99": 90.9
+          "p50": 161.46,
+          "p95": 103.64,
+          "p99": 83.37
         }
       }
     },
@@ -141,7 +152,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 15708
+          "total": 15750
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_relu_msl/doe/compile-report.json"
       },
@@ -153,7 +164,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 55915
+          "total": 55632
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_relu_msl/tint/output.msl"
       },
@@ -165,9 +176,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 255.97,
-          "p95": 200.95,
-          "p99": 170.27
+          "p50": 253.22,
+          "p95": 183.54,
+          "p99": 157.66
         }
       }
     },
@@ -184,7 +195,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 19208
+          "total": 19375
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_silu_msl/doe/compile-report.json"
       },
@@ -196,7 +207,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 57099
+          "total": 58213
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_silu_msl/tint/output.msl"
       },
@@ -208,9 +219,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 197.27,
-          "p95": 147.27,
-          "p99": 125.99
+          "p50": 200.45,
+          "p95": 158.38,
+          "p99": 143.86
         }
       }
     },
@@ -227,7 +238,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 11916
+          "total": 13666
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_scale_f32_msl/doe/compile-report.json"
       },
@@ -239,7 +250,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 50561
+          "total": 50549
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_scale_f32_msl/tint/output.msl"
       },
@@ -251,9 +262,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 324.31,
-          "p95": 228.67,
-          "p99": 192.46
+          "p50": 269.89,
+          "p95": 204.45,
+          "p99": 89.05
         }
       }
     },
@@ -270,7 +281,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 18125
+          "total": 18167
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_residual_add_msl/doe/compile-report.json"
       },
@@ -282,7 +293,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 58778
+          "total": 58948
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_residual_add_msl/tint/output.msl"
       },
@@ -294,9 +305,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 224.29,
-          "p95": 190.9,
-          "p99": 145.18
+          "p50": 224.48,
+          "p95": 164.5,
+          "p99": 129.41
         }
       }
     },
@@ -313,7 +324,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 35333
+          "total": 34833
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rmsnorm_msl/doe/compile-report.json"
       },
@@ -325,7 +336,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 146878
+          "total": 147357
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rmsnorm_msl/tint/output.msl"
       },
@@ -337,9 +348,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 315.7,
-          "p95": 267.83,
-          "p99": 239.69
+          "p50": 323.04,
+          "p95": 283.52,
+          "p99": 268.85
         }
       }
     },
@@ -356,7 +367,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 22709
+          "total": 23333
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_gelu_msl/doe/compile-report.json"
       },
@@ -368,7 +379,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 73573
+          "total": 72876
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_gelu_msl/tint/output.msl"
       },
@@ -380,9 +391,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 223.98,
-          "p95": 176.09,
-          "p99": 145.16
+          "p50": 212.33,
+          "p95": 183.97,
+          "p99": 154.68
         }
       }
     },
@@ -399,7 +410,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 28875
+          "total": 29000
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rope_msl/doe/compile-report.json"
       },
@@ -411,7 +422,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 94434
+          "total": 93287
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rope_msl/tint/output.msl"
       },
@@ -423,9 +434,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 227.04,
-          "p95": 184.61,
-          "p99": 122.1
+          "p50": 221.68,
+          "p95": 182.06,
+          "p99": 151.01
         }
       }
     },
@@ -442,7 +453,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 45125
+          "total": 44125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_softmax_msl/doe/compile-report.json"
       },
@@ -454,7 +465,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 190990
+          "total": 191322
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_softmax_msl/tint/output.msl"
       },
@@ -466,9 +477,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 323.25,
-          "p95": 289.86,
-          "p99": 262.99
+          "p50": 333.59,
+          "p95": 294.78,
+          "p99": 283.34
         }
       }
     },
@@ -485,7 +496,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 45417
+          "total": 45708
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_layernorm_msl/doe/compile-report.json"
       },
@@ -497,7 +508,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 201683
+          "total": 204189
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_layernorm_msl/tint/output.msl"
       },
@@ -509,9 +520,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 344.07,
-          "p95": 299.77,
-          "p99": 279.35
+          "p50": 346.72,
+          "p95": 292.68,
+          "p99": 178.17
         }
       }
     },
@@ -528,7 +539,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 24084
+          "total": 23958
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_matmul_naive_msl/doe/compile-report.json"
       },
@@ -540,7 +551,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 92294
+          "total": 92353
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_matmul_naive_msl/tint/output.msl"
       },
@@ -552,9 +563,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 283.22,
-          "p95": 237.58,
-          "p99": 217.96
+          "p50": 285.48,
+          "p95": 235.48,
+          "p99": 199.78
         }
       }
     },
@@ -571,7 +582,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 76500
+          "total": 77417
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_attention_decode_msl/doe/compile-report.json"
       },
@@ -583,7 +594,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 313861
+          "total": 316023
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_attention_decode_msl/tint/output.msl"
       },
@@ -595,9 +606,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 310.28,
-          "p95": 289.31,
-          "p99": 272.03
+          "p50": 308.21,
+          "p95": 287.11,
+          "p99": 275.69
         }
       }
     },
@@ -614,7 +625,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 81958
+          "total": 80958
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_matmul_tiled_msl/doe/compile-report.json"
       },
@@ -626,7 +637,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 273109
+          "total": 271853
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_matmul_tiled_msl/tint/output.msl"
       },
@@ -638,9 +649,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 233.23,
-          "p95": 202.68,
-          "p99": 145.63
+          "p50": 235.8,
+          "p95": 220.29,
+          "p99": 213.53
         }
       }
     },
@@ -657,7 +668,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 38750
+          "total": 38625
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_fused_gemv_dequant_msl/doe/compile-report.json"
       },
@@ -669,7 +680,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 156212
+          "total": 156131
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_fused_gemv_dequant_msl/tint/output.msl"
       },
@@ -681,9 +692,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 303.13,
-          "p95": 256.63,
-          "p99": 234.2
+          "p50": 304.22,
+          "p95": 257.02,
+          "p99": 161.62
         }
       }
     },
@@ -700,7 +711,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 43875
+          "total": 43416
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_multi_entry_msl/doe/compile-report.json"
       },
@@ -712,7 +723,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 297477
+          "total": 290109
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_multi_entry_msl/tint/output.msl"
       },
@@ -724,9 +735,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 578.01,
-          "p95": 513.09,
-          "p99": 454.3
+          "p50": 568.21,
+          "p95": 502.69,
+          "p99": 269.0
         }
       }
     },
@@ -743,7 +754,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 33292
+          "total": 33250
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_stress_many_bindings_msl/doe/compile-report.json"
       },
@@ -755,7 +766,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 115307
+          "total": 116061
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_stress_many_bindings_msl/tint/output.msl"
       },
@@ -767,9 +778,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 246.35,
-          "p95": 208.12,
-          "p99": 175.68
+          "p50": 249.06,
+          "p95": 213.86,
+          "p99": 194.5
         }
       }
     },
@@ -786,7 +797,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 90916
+          "total": 93042
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_decode_msl/doe/compile-report.json"
       },
@@ -798,7 +809,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 393441
+          "total": 390839
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_decode_msl/tint/output.msl"
       },
@@ -810,9 +821,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 332.75,
-          "p95": 312.37,
-          "p99": 289.29
+          "p50": 320.07,
+          "p95": 288.83,
+          "p99": 220.27
         }
       }
     },
@@ -829,7 +840,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 75625
+          "total": 75875
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_prefill_msl/doe/compile-report.json"
       },
@@ -841,7 +852,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 295122
+          "total": 296043
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_prefill_msl/tint/output.msl"
       },
@@ -853,9 +864,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 290.24,
-          "p95": 271.92,
-          "p99": 251.92
+          "p50": 290.17,
+          "p95": 268.19,
+          "p99": 253.33
         }
       }
     },
@@ -872,7 +883,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 21667
+          "total": 21750
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gather_msl/doe/compile-report.json"
       },
@@ -884,7 +895,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 73118
+          "total": 73337
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gather_msl/tint/output.msl"
       },
@@ -896,9 +907,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 237.46,
-          "p95": 197.56,
-          "p99": 146.26
+          "p50": 237.18,
+          "p95": 203.15,
+          "p99": 171.2
         }
       }
     },
@@ -915,7 +926,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 22208
+          "total": 21125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gelu_msl/doe/compile-report.json"
       },
@@ -927,7 +938,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 65221
+          "total": 65254
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gelu_msl/tint/output.msl"
       },
@@ -939,9 +950,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 193.68,
-          "p95": 151.48,
-          "p99": 128.51
+          "p50": 208.89,
+          "p95": 178.53,
+          "p99": 175.05
         }
       }
     },
@@ -958,7 +969,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 43000
+          "total": 42333
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_gemv_msl/doe/compile-report.json"
       },
@@ -970,7 +981,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 170261
+          "total": 171446
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_gemv_msl/tint/output.msl"
       },
@@ -982,9 +993,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 295.96,
-          "p95": 264.76,
-          "p99": 230.22
+          "p50": 304.99,
+          "p95": 265.9,
+          "p99": 246.47
         }
       }
     },
@@ -1001,7 +1012,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 82208
+          "total": 82084
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_tiled_msl/doe/compile-report.json"
       },
@@ -1013,7 +1024,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 271702
+          "total": 269576
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_tiled_msl/tint/output.msl"
       },
@@ -1025,9 +1036,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 230.51,
-          "p95": 209.69,
-          "p99": 193.99
+          "p50": 228.41,
+          "p95": 207.68,
+          "p99": 188.83
         }
       }
     },
@@ -1044,7 +1055,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 18625
+          "total": 19875
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_residual_msl/doe/compile-report.json"
       },
@@ -1056,7 +1067,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 59046
+          "total": 58382
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_residual_msl/tint/output.msl"
       },
@@ -1068,9 +1079,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 217.03,
-          "p95": 158.3,
-          "p99": 121.4
+          "p50": 193.75,
+          "p95": 142.59,
+          "p99": 114.42
         }
       }
     },
@@ -1087,7 +1098,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 51083
+          "total": 51125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rmsnorm_msl/doe/compile-report.json"
       },
@@ -1099,7 +1110,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 336643
+          "total": 333673
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rmsnorm_msl/tint/output.msl"
       },
@@ -1111,9 +1122,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 559.01,
-          "p95": 506.57,
-          "p99": 479.61
+          "p50": 552.66,
+          "p95": 497.74,
+          "p99": 466.88
         }
       }
     },
@@ -1130,7 +1141,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 29833
+          "total": 29125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rope_msl/doe/compile-report.json"
       },
@@ -1142,7 +1153,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 94784
+          "total": 93561
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rope_msl/tint/output.msl"
       },
@@ -1154,9 +1165,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 217.72,
-          "p95": 174.32,
-          "p99": 128.33
+          "p50": 221.24,
+          "p95": 183.31,
+          "p99": 172.53
         }
       }
     },
@@ -1173,7 +1184,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 46583
+          "total": 46959
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_sample_msl/doe/compile-report.json"
       },
@@ -1185,7 +1196,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 295894
+          "total": 296466
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_sample_msl/tint/output.msl"
       },
@@ -1197,9 +1208,9 @@
         "status": "claimable",
         "reasons": [],
         "deltaPercent": {
-          "p50": 535.2,
-          "p95": 472.87,
-          "p99": 434.45
+          "p50": 531.33,
+          "p95": 479.14,
+          "p99": 450.72
         }
       }
     }

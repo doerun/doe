@@ -102,6 +102,25 @@ class TestCompareDoeVsTintCompilation(unittest.TestCase):
 
         self.assertEqual(escaped, "atan2-const-eval\\.wgsl")
 
+    def test_toolchain_info_includes_tint_warm_binary(self) -> None:
+        cfg = {
+            "comparison": {
+                "binaryPath": "missing/tint",
+                "warmBinaryPath": "missing/tint_benchmark",
+            }
+        }
+        args = type("Args", (), {"doe_emit_binary": "missing/doe-runtime-compile-report"})()
+
+        toolchains = self.module.build_toolchain_info(cfg, args)
+
+        self.assertIn("tintWarm", toolchains)
+        self.assertEqual(toolchains["tintWarm"]["name"], "tint-benchmark")
+        self.assertEqual(toolchains["tintWarm"]["artifactSha256"], None)
+        self.assertEqual(
+            toolchains["tintWarm"]["command"],
+            ["missing/tint_benchmark", "--benchmark_format=json"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "artifactKind": "claim-report",
-  "generatedAt": "2026-05-25T20:03:55.874871+00:00",
+  "generatedAt": "2026-05-25T20:28:16.600909+00:00",
   "claimMode": "release",
   "claimPolicy": {
     "mode": "release",
@@ -53,21 +53,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 174.24,
-        "p95": 138.95,
-        "p99": 71.89
+        "p50": 179.51,
+        "p95": 139.74,
+        "p99": 86.52
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 174.24,
-        "p95": 138.95,
-        "p99": 71.89
+        "p50": 179.51,
+        "p95": 139.74,
+        "p99": 86.52
       },
       "warmIterations": 25,
-      "doeP50Ns": 9583,
-      "tintWarmP50Ns": 26280
+      "doeP50Ns": 9625,
+      "tintWarmP50Ns": 26903
     },
     {
       "shader": "compilation_trivial_passthrough_vertex_msl",
@@ -79,21 +79,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 170.61,
-        "p95": 141.22,
-        "p99": 90.9
+        "p50": 161.46,
+        "p95": 103.64,
+        "p99": 83.37
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 170.61,
-        "p95": 141.22,
-        "p99": 90.9
+        "p50": 161.46,
+        "p95": 103.64,
+        "p99": 83.37
       },
       "warmIterations": 25,
-      "doeP50Ns": 12833,
-      "tintWarmP50Ns": 34727
+      "doeP50Ns": 13084,
+      "tintWarmP50Ns": 34209
     },
     {
       "shader": "compilation_simple_relu_msl",
@@ -105,21 +105,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 255.97,
-        "p95": 200.95,
-        "p99": 170.27
+        "p50": 253.22,
+        "p95": 183.54,
+        "p99": 157.66
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 255.97,
-        "p95": 200.95,
-        "p99": 170.27
+        "p50": 253.22,
+        "p95": 183.54,
+        "p99": 157.66
       },
       "warmIterations": 25,
-      "doeP50Ns": 15708,
-      "tintWarmP50Ns": 55915
+      "doeP50Ns": 15750,
+      "tintWarmP50Ns": 55632
     },
     {
       "shader": "compilation_simple_silu_msl",
@@ -131,21 +131,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 197.27,
-        "p95": 147.27,
-        "p99": 125.99
+        "p50": 200.45,
+        "p95": 158.38,
+        "p99": 143.86
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 197.27,
-        "p95": 147.27,
-        "p99": 125.99
+        "p50": 200.45,
+        "p95": 158.38,
+        "p99": 143.86
       },
       "warmIterations": 25,
-      "doeP50Ns": 19208,
-      "tintWarmP50Ns": 57099
+      "doeP50Ns": 19375,
+      "tintWarmP50Ns": 58213
     },
     {
       "shader": "compilation_simple_scale_f32_msl",
@@ -157,21 +157,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 324.31,
-        "p95": 228.67,
-        "p99": 192.46
+        "p50": 269.89,
+        "p95": 204.45,
+        "p99": 89.05
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 324.31,
-        "p95": 228.67,
-        "p99": 192.46
+        "p50": 269.89,
+        "p95": 204.45,
+        "p99": 89.05
       },
       "warmIterations": 25,
-      "doeP50Ns": 11916,
-      "tintWarmP50Ns": 50561
+      "doeP50Ns": 13666,
+      "tintWarmP50Ns": 50549
     },
     {
       "shader": "compilation_simple_residual_add_msl",
@@ -183,21 +183,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 224.29,
-        "p95": 190.9,
-        "p99": 145.18
+        "p50": 224.48,
+        "p95": 164.5,
+        "p99": 129.41
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 224.29,
-        "p95": 190.9,
-        "p99": 145.18
+        "p50": 224.48,
+        "p95": 164.5,
+        "p99": 129.41
       },
       "warmIterations": 25,
-      "doeP50Ns": 18125,
-      "tintWarmP50Ns": 58778
+      "doeP50Ns": 18167,
+      "tintWarmP50Ns": 58948
     },
     {
       "shader": "compilation_moderate_rmsnorm_msl",
@@ -209,21 +209,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 315.7,
-        "p95": 267.83,
-        "p99": 239.69
+        "p50": 323.04,
+        "p95": 283.52,
+        "p99": 268.85
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 315.7,
-        "p95": 267.83,
-        "p99": 239.69
+        "p50": 323.04,
+        "p95": 283.52,
+        "p99": 268.85
       },
       "warmIterations": 25,
-      "doeP50Ns": 35333,
-      "tintWarmP50Ns": 146878
+      "doeP50Ns": 34833,
+      "tintWarmP50Ns": 147357
     },
     {
       "shader": "compilation_moderate_gelu_msl",
@@ -235,21 +235,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 223.98,
-        "p95": 176.09,
-        "p99": 145.16
+        "p50": 212.33,
+        "p95": 183.97,
+        "p99": 154.68
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 223.98,
-        "p95": 176.09,
-        "p99": 145.16
+        "p50": 212.33,
+        "p95": 183.97,
+        "p99": 154.68
       },
       "warmIterations": 25,
-      "doeP50Ns": 22709,
-      "tintWarmP50Ns": 73573
+      "doeP50Ns": 23333,
+      "tintWarmP50Ns": 72876
     },
     {
       "shader": "compilation_moderate_rope_msl",
@@ -261,21 +261,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 227.04,
-        "p95": 184.61,
-        "p99": 122.1
+        "p50": 221.68,
+        "p95": 182.06,
+        "p99": 151.01
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 227.04,
-        "p95": 184.61,
-        "p99": 122.1
+        "p50": 221.68,
+        "p95": 182.06,
+        "p99": 151.01
       },
       "warmIterations": 25,
-      "doeP50Ns": 28875,
-      "tintWarmP50Ns": 94434
+      "doeP50Ns": 29000,
+      "tintWarmP50Ns": 93287
     },
     {
       "shader": "compilation_moderate_softmax_msl",
@@ -287,21 +287,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 323.25,
-        "p95": 289.86,
-        "p99": 262.99
+        "p50": 333.59,
+        "p95": 294.78,
+        "p99": 283.34
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 323.25,
-        "p95": 289.86,
-        "p99": 262.99
+        "p50": 333.59,
+        "p95": 294.78,
+        "p99": 283.34
       },
       "warmIterations": 25,
-      "doeP50Ns": 45125,
-      "tintWarmP50Ns": 190990
+      "doeP50Ns": 44125,
+      "tintWarmP50Ns": 191322
     },
     {
       "shader": "compilation_moderate_layernorm_msl",
@@ -313,21 +313,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 344.07,
-        "p95": 299.77,
-        "p99": 279.35
+        "p50": 346.72,
+        "p95": 292.68,
+        "p99": 178.17
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 344.07,
-        "p95": 299.77,
-        "p99": 279.35
+        "p50": 346.72,
+        "p95": 292.68,
+        "p99": 178.17
       },
       "warmIterations": 25,
-      "doeP50Ns": 45417,
-      "tintWarmP50Ns": 201683
+      "doeP50Ns": 45708,
+      "tintWarmP50Ns": 204189
     },
     {
       "shader": "compilation_moderate_matmul_naive_msl",
@@ -339,21 +339,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 283.22,
-        "p95": 237.58,
-        "p99": 217.96
+        "p50": 285.48,
+        "p95": 235.48,
+        "p99": 199.78
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 283.22,
-        "p95": 237.58,
-        "p99": 217.96
+        "p50": 285.48,
+        "p95": 235.48,
+        "p99": 199.78
       },
       "warmIterations": 25,
-      "doeP50Ns": 24084,
-      "tintWarmP50Ns": 92294
+      "doeP50Ns": 23958,
+      "tintWarmP50Ns": 92353
     },
     {
       "shader": "compilation_complex_attention_decode_msl",
@@ -365,21 +365,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 310.28,
-        "p95": 289.31,
-        "p99": 272.03
+        "p50": 308.21,
+        "p95": 287.11,
+        "p99": 275.69
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 310.28,
-        "p95": 289.31,
-        "p99": 272.03
+        "p50": 308.21,
+        "p95": 287.11,
+        "p99": 275.69
       },
       "warmIterations": 25,
-      "doeP50Ns": 76500,
-      "tintWarmP50Ns": 313861
+      "doeP50Ns": 77417,
+      "tintWarmP50Ns": 316023
     },
     {
       "shader": "compilation_complex_matmul_tiled_msl",
@@ -391,21 +391,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 233.23,
-        "p95": 202.68,
-        "p99": 145.63
+        "p50": 235.8,
+        "p95": 220.29,
+        "p99": 213.53
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 233.23,
-        "p95": 202.68,
-        "p99": 145.63
+        "p50": 235.8,
+        "p95": 220.29,
+        "p99": 213.53
       },
       "warmIterations": 25,
-      "doeP50Ns": 81958,
-      "tintWarmP50Ns": 273109
+      "doeP50Ns": 80958,
+      "tintWarmP50Ns": 271853
     },
     {
       "shader": "compilation_complex_fused_gemv_dequant_msl",
@@ -417,21 +417,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 303.13,
-        "p95": 256.63,
-        "p99": 234.2
+        "p50": 304.22,
+        "p95": 257.02,
+        "p99": 161.62
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 303.13,
-        "p95": 256.63,
-        "p99": 234.2
+        "p50": 304.22,
+        "p95": 257.02,
+        "p99": 161.62
       },
       "warmIterations": 25,
-      "doeP50Ns": 38750,
-      "tintWarmP50Ns": 156212
+      "doeP50Ns": 38625,
+      "tintWarmP50Ns": 156131
     },
     {
       "shader": "compilation_complex_multi_entry_msl",
@@ -443,21 +443,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 578.01,
-        "p95": 513.09,
-        "p99": 454.3
+        "p50": 568.21,
+        "p95": 502.69,
+        "p99": 269.0
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 578.01,
-        "p95": 513.09,
-        "p99": 454.3
+        "p50": 568.21,
+        "p95": 502.69,
+        "p99": 269.0
       },
       "warmIterations": 25,
-      "doeP50Ns": 43875,
-      "tintWarmP50Ns": 297477
+      "doeP50Ns": 43416,
+      "tintWarmP50Ns": 290109
     },
     {
       "shader": "compilation_stress_many_bindings_msl",
@@ -469,21 +469,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 246.35,
-        "p95": 208.12,
-        "p99": 175.68
+        "p50": 249.06,
+        "p95": 213.86,
+        "p99": 194.5
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 246.35,
-        "p95": 208.12,
-        "p99": 175.68
+        "p50": 249.06,
+        "p95": 213.86,
+        "p99": 194.5
       },
       "warmIterations": 25,
-      "doeP50Ns": 33292,
-      "tintWarmP50Ns": 115307
+      "doeP50Ns": 33250,
+      "tintWarmP50Ns": 116061
     },
     {
       "shader": "compilation_inference_attention_decode_msl",
@@ -495,21 +495,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 332.75,
-        "p95": 312.37,
-        "p99": 289.29
+        "p50": 320.07,
+        "p95": 288.83,
+        "p99": 220.27
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 332.75,
-        "p95": 312.37,
-        "p99": 289.29
+        "p50": 320.07,
+        "p95": 288.83,
+        "p99": 220.27
       },
       "warmIterations": 25,
-      "doeP50Ns": 90916,
-      "tintWarmP50Ns": 393441
+      "doeP50Ns": 93042,
+      "tintWarmP50Ns": 390839
     },
     {
       "shader": "compilation_inference_attention_prefill_msl",
@@ -521,21 +521,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 290.24,
-        "p95": 271.92,
-        "p99": 251.92
+        "p50": 290.17,
+        "p95": 268.19,
+        "p99": 253.33
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 290.24,
-        "p95": 271.92,
-        "p99": 251.92
+        "p50": 290.17,
+        "p95": 268.19,
+        "p99": 253.33
       },
       "warmIterations": 25,
-      "doeP50Ns": 75625,
-      "tintWarmP50Ns": 295122
+      "doeP50Ns": 75875,
+      "tintWarmP50Ns": 296043
     },
     {
       "shader": "compilation_inference_gather_msl",
@@ -547,21 +547,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 237.46,
-        "p95": 197.56,
-        "p99": 146.26
+        "p50": 237.18,
+        "p95": 203.15,
+        "p99": 171.2
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 237.46,
-        "p95": 197.56,
-        "p99": 146.26
+        "p50": 237.18,
+        "p95": 203.15,
+        "p99": 171.2
       },
       "warmIterations": 25,
-      "doeP50Ns": 21667,
-      "tintWarmP50Ns": 73118
+      "doeP50Ns": 21750,
+      "tintWarmP50Ns": 73337
     },
     {
       "shader": "compilation_inference_gelu_msl",
@@ -573,21 +573,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 193.68,
-        "p95": 151.48,
-        "p99": 128.51
+        "p50": 208.89,
+        "p95": 178.53,
+        "p99": 175.05
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 193.68,
-        "p95": 151.48,
-        "p99": 128.51
+        "p50": 208.89,
+        "p95": 178.53,
+        "p99": 175.05
       },
       "warmIterations": 25,
-      "doeP50Ns": 22208,
-      "tintWarmP50Ns": 65221
+      "doeP50Ns": 21125,
+      "tintWarmP50Ns": 65254
     },
     {
       "shader": "compilation_inference_matmul_gemv_msl",
@@ -599,21 +599,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 295.96,
-        "p95": 264.76,
-        "p99": 230.22
+        "p50": 304.99,
+        "p95": 265.9,
+        "p99": 246.47
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 295.96,
-        "p95": 264.76,
-        "p99": 230.22
+        "p50": 304.99,
+        "p95": 265.9,
+        "p99": 246.47
       },
       "warmIterations": 25,
-      "doeP50Ns": 43000,
-      "tintWarmP50Ns": 170261
+      "doeP50Ns": 42333,
+      "tintWarmP50Ns": 171446
     },
     {
       "shader": "compilation_inference_matmul_tiled_msl",
@@ -625,21 +625,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 230.51,
-        "p95": 209.69,
-        "p99": 193.99
+        "p50": 228.41,
+        "p95": 207.68,
+        "p99": 188.83
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 230.51,
-        "p95": 209.69,
-        "p99": 193.99
+        "p50": 228.41,
+        "p95": 207.68,
+        "p99": 188.83
       },
       "warmIterations": 25,
-      "doeP50Ns": 82208,
-      "tintWarmP50Ns": 271702
+      "doeP50Ns": 82084,
+      "tintWarmP50Ns": 269576
     },
     {
       "shader": "compilation_inference_residual_msl",
@@ -651,21 +651,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 217.03,
-        "p95": 158.3,
-        "p99": 121.4
+        "p50": 193.75,
+        "p95": 142.59,
+        "p99": 114.42
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 217.03,
-        "p95": 158.3,
-        "p99": 121.4
+        "p50": 193.75,
+        "p95": 142.59,
+        "p99": 114.42
       },
       "warmIterations": 25,
-      "doeP50Ns": 18625,
-      "tintWarmP50Ns": 59046
+      "doeP50Ns": 19875,
+      "tintWarmP50Ns": 58382
     },
     {
       "shader": "compilation_inference_rmsnorm_msl",
@@ -677,21 +677,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 559.01,
-        "p95": 506.57,
-        "p99": 479.61
+        "p50": 552.66,
+        "p95": 497.74,
+        "p99": 466.88
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 559.01,
-        "p95": 506.57,
-        "p99": 479.61
+        "p50": 552.66,
+        "p95": 497.74,
+        "p99": 466.88
       },
       "warmIterations": 25,
-      "doeP50Ns": 51083,
-      "tintWarmP50Ns": 336643
+      "doeP50Ns": 51125,
+      "tintWarmP50Ns": 333673
     },
     {
       "shader": "compilation_inference_rope_msl",
@@ -703,21 +703,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 217.72,
-        "p95": 174.32,
-        "p99": 128.33
+        "p50": 221.24,
+        "p95": 183.31,
+        "p99": 172.53
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 217.72,
-        "p95": 174.32,
-        "p99": 128.33
+        "p50": 221.24,
+        "p95": 183.31,
+        "p99": 172.53
       },
       "warmIterations": 25,
-      "doeP50Ns": 29833,
-      "tintWarmP50Ns": 94784
+      "doeP50Ns": 29125,
+      "tintWarmP50Ns": 93561
     },
     {
       "shader": "compilation_inference_sample_msl",
@@ -729,21 +729,21 @@
         "warm.p99"
       ],
       "deltaPercent": {
-        "p50": 535.2,
-        "p95": 472.87,
-        "p99": 434.45
+        "p50": 531.33,
+        "p95": 479.14,
+        "p99": 450.72
       },
       "baselineSampleCount": 200,
       "comparisonSampleCount": 200,
       "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 535.2,
-        "p95": 472.87,
-        "p99": 434.45
+        "p50": 531.33,
+        "p95": 479.14,
+        "p99": 450.72
       },
       "warmIterations": 25,
-      "doeP50Ns": 46583,
-      "tintWarmP50Ns": 295894
+      "doeP50Ns": 46959,
+      "tintWarmP50Ns": 296466
     }
   ]
 }

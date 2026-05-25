@@ -10,6 +10,27 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Tint compiler evidence pins warm benchmark identity
+
+Doe-vs-Tint compiler evidence now records the `tint_benchmark` binary in the
+toolchain block alongside the Doe compiler-report binary and the Tint CLI. The
+compiler evidence gate requires compiler artifact hashes for comparable reports
+and requires the warm Tint benchmark artifact hash for claimable reports, so
+in-process Tint timing evidence cannot be separated from the exact binary that
+produced it.
+
+Refreshed compiler evidence:
+
+- `bench/out/tint-compiler-evidence.json`
+- `bench/out/compilation/doe-vs-tint.msl.claim.json`
+
+Verified:
+
+- `python3 bench/native-compare/compare_doe_vs_tint_compilation.py --config bench/native-compare/compare_doe_vs_tint.config.json --claim-mode release --evidence-out bench/out/tint-compiler-evidence.json`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json --require-claimable`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_tint_compiler_evidence_gate.py bench/tests/test_compare_doe_vs_tint_compilation.py -q`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report examples/tint-compiler-evidence.sample.json`
+
 ## 2026-05-25 — Apple Metal Tint warm corpus evidence
 
 The Doe-vs-Tint compiler lane now has a reproducible path for true

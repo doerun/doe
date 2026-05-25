@@ -137,6 +137,26 @@ def validate_side_result(
     return failures, blockers
 
 
+def toolchain_artifact_blockers(
+    toolchains: Any,
+    names: tuple[str, ...],
+) -> list[str]:
+    blockers: list[str] = []
+    if not isinstance(toolchains, dict):
+        return ["toolchains must be object"]
+
+    for name in names:
+        toolchain = toolchains.get(name)
+        if not isinstance(toolchain, dict):
+            blockers.append(f"toolchains.{name} must be object")
+            continue
+        if not is_non_empty_string(toolchain.get("artifactPath")):
+            blockers.append(f"toolchains.{name}.artifactPath must be non-empty")
+        if not is_sha256(toolchain.get("artifactSha256")):
+            blockers.append(f"toolchains.{name}.artifactSha256 must be sha256 hex")
+    return blockers
+
+
 def row_blockers(row: dict[str, Any], required_phases: list[str]) -> tuple[list[str], bool]:
     row_id = str(row.get("shaderId") or "unknown")
     failures: list[str] = []
@@ -262,6 +282,19 @@ def evaluate_report(payload: dict[str, Any], require_claimable: bool = False) ->
 
     comparison_status = payload.get("comparisonStatus")
     claim_status = payload.get("claimStatus")
+    needs_claimable_gate = (
+        comparison_status == "comparable"
+        or claim_status == "claimable"
+        or require_claimable
+    )
+    if needs_claimable_gate:
+        claim_blockers.extend(
+            toolchain_artifact_blockers(payload.get("toolchains"), ("doe", "tint"))
+        )
+    if claim_status == "claimable" or require_claimable or claimable_rows > 0:
+        claim_blockers.extend(
+            toolchain_artifact_blockers(payload.get("toolchains"), ("tintWarm",))
+        )
     if not rows:
         if comparison_status == "comparable":
             claim_blockers.append("comparisonStatus=comparable requires at least one row")

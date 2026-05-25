@@ -67,6 +67,9 @@
         },
         "tint": {
           "$ref": "#/$defs/toolchain"
+        },
+        "tintWarm": {
+          "$ref": "#/$defs/toolchain"
         }
       }
     },

@@ -26,6 +26,14 @@
       "sourceRevision": "sample",
       "artifactPath": "",
       "artifactSha256": null
+    },
+    "tintWarm": {
+      "name": "tint-benchmark",
+      "version": "sample",
+      "command": ["tint_benchmark"],
+      "sourceRevision": "sample",
+      "artifactPath": "",
+      "artifactSha256": null
     }
   },
   "phaseModel": {

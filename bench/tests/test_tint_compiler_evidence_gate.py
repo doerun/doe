@@ -67,16 +67,24 @@ def claimable_report() -> dict:
                 "version": "unit",
                 "command": ["doe"],
                 "sourceRevision": "unit",
-                "artifactPath": "",
-                "artifactSha256": None,
+                "artifactPath": "runtime/zig/zig-out/bin/doe-runtime-compile-report",
+                "artifactSha256": "4" * 64,
             },
             "tint": {
                 "name": "tint",
                 "version": "unit",
                 "command": ["tint"],
                 "sourceRevision": "unit",
-                "artifactPath": "",
-                "artifactSha256": None,
+                "artifactPath": "bench/vendor/dawn/out/Release/tint",
+                "artifactSha256": "5" * 64,
+            },
+            "tintWarm": {
+                "name": "tint-benchmark",
+                "version": "unit",
+                "command": ["tint_benchmark"],
+                "sourceRevision": "unit",
+                "artifactPath": "bench/vendor/dawn/out/Release/tint_benchmark",
+                "artifactSha256": "6" * 64,
             },
         },
         "phaseModel": {
@@ -201,6 +209,25 @@ class TintCompilerEvidenceGateTests(unittest.TestCase):
         result = self.module.evaluate_report(payload, require_claimable=True)
         self.assertFalse(result["ok"])
         self.assertTrue(any("summary.claimableRows must be 1" in item for item in result["failures"]))
+
+    def test_claimable_report_requires_compiler_artifact_hashes(self) -> None:
+        payload = claimable_report()
+        payload["toolchains"]["doe"]["artifactSha256"] = None
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("toolchains.doe.artifactSha256 must be sha256 hex" in item for item in result["failures"])
+        )
+
+    def test_claimable_report_requires_tint_warm_artifact_hash(self) -> None:
+        payload = claimable_report()
+        payload["toolchains"]["tintWarm"]["artifactPath"] = ""
+        payload["toolchains"]["tintWarm"]["artifactSha256"] = None
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("toolchains.tintWarm.artifactSha256 must be sha256 hex" in item for item in result["failures"])
+        )
 
 
 if __name__ == "__main__":

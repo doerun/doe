@@ -1212,6 +1212,11 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
 def build_toolchain_info(cfg, args):
     doe_emit_path = REPO_ROOT / args.doe_emit_binary
     tint_path = REPO_ROOT / cfg["comparison"]["binaryPath"]
+    tint_warm_path = (
+        REPO_ROOT / cfg["comparison"].get("warmBinaryPath")
+        if cfg["comparison"].get("warmBinaryPath")
+        else None
+    )
     revision = git_revision()
     return {
         "doe": {
@@ -1233,6 +1238,26 @@ def build_toolchain_info(cfg, args):
             "sourceRevision": "dawn-vendor",
             "artifactPath": repo_relative(tint_path) if tint_path.exists() else "",
             "artifactSha256": file_sha256(tint_path) if tint_path.is_file() else None,
+        },
+        "tintWarm": {
+            "name": "tint-benchmark",
+            "version": "dawn-vendor" if tint_warm_path and tint_warm_path.is_file() else "missing",
+            "command": (
+                [repo_relative(tint_warm_path), "--benchmark_format=json"]
+                if tint_warm_path
+                else ["tint_benchmark"]
+            ),
+            "sourceRevision": "dawn-vendor",
+            "artifactPath": (
+                repo_relative(tint_warm_path)
+                if tint_warm_path and tint_warm_path.exists()
+                else ""
+            ),
+            "artifactSha256": (
+                file_sha256(tint_warm_path)
+                if tint_warm_path and tint_warm_path.is_file()
+                else None
+            ),
         },
     }
 
