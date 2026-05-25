@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
   "artifactKind": "claim-report",
-  "generatedAt": "2026-04-16T12:34:04.649377+00:00",
+  "generatedAt": "2026-05-25T19:46:46.595365+00:00",
   "claimMode": "release",
   "claimPolicy": {
+    "mode": "release",
     "minTimedSamples": 15,
     "requiredPositivePercentiles": [
       "warm.p50",
@@ -11,24 +12,24 @@
       "warm.p99"
     ],
     "timerOverheadBudgetPercent": 1.0,
-    "timerOverheadP50Ns": 50,
     "policySource": "config/benchmark-methodology-thresholds.json (claimabilityDefaults)",
-    "deltaPercentConvention": "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
+    "deltaPercentConvention": "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster",
+    "timerOverheadP50Ns": 0
   },
   "compareConfigPath": "bench/native-compare/compare_doe_vs_tint.benchmark-corpus.config.json",
   "target": "msl",
   "binaryProvenance": {
     "doe": {
-      "path": "/home/x/deco/doe/runtime/zig/zig-out/bin/doe-compilation-bench",
-      "sha256": "3158bbda355d44cf9bd0948b480ed8793de8fdfb53cf8be1f62e137d1dacc6b9"
+      "path": "/Users/xyz/deco/doe/runtime/zig/zig-out/bin/doe-compilation-bench",
+      "sha256": "188a88a378ee72cf11ee6212c5a13d5f067ecc6f65bf01a7ea92cf0fcee4a234"
     },
     "tint": {
-      "path": "/home/x/deco/doe/bench/vendor/dawn/out/Release/tint",
-      "sha256": "aacc72c460af7c093c088a0fbe8ad1d5e87dd18bbad6a1d10965fb7de68965a2"
+      "path": "/Users/xyz/deco/doe/bench/vendor/dawn/out/Release/tint",
+      "sha256": "385723b6f2b45cefab2b9b5cccfa55ac77e772fa8425b3f29016569f09756865"
     },
     "tintWarm": {
-      "path": "/home/x/deco/doe/bench/vendor/dawn/out/Release/tint_benchmark",
-      "sha256": "588e2f0fc51e4b475fc87651f11f0706c390ddcfa7b97ec26b741906d7dc1c15"
+      "path": "/Users/xyz/deco/doe/bench/vendor/dawn/out/Release/tint_benchmark",
+      "sha256": "bcc605c88735f6183fa246ef432b346f8ceb766505799342d6f4249918cbc20c"
     }
   },
   "timingScopeSymmetry": {
@@ -38,11 +39,9 @@
     "notes": "both sides measure per-iteration in-process compile cost; Doe per-iteration timer overhead is reported in claimPolicy.timerOverheadP50Ns and gated by claimPolicy.timerOverheadBudgetPercent"
   },
   "comparisonStatus": "comparable",
-  "claimStatus": "not_claimable",
-  "pass": false,
-  "reasons": [
-    "5 of 13 rows not claimable"
-  ],
+  "claimStatus": "claimable",
+  "pass": true,
+  "reasons": [],
   "workloads": [
     {
       "shader": "atan2-const-eval.wgsl",
@@ -53,54 +52,74 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 108.81,
+        "p95": 105.89,
+        "p99": 104.19
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 106.49,
-        "p95": 46.65,
-        "p99": 45.78
+        "p50": 108.81,
+        "p95": 105.89,
+        "p99": 104.19
       },
       "warmIterations": 25,
-      "doeP50Ns": 1348111,
-      "tintWarmP50Ns": 2783720
+      "doeP50Ns": 1322833,
+      "tintWarmP50Ns": 2762193
     },
     {
       "shader": "cluster-lights.wgsl",
-      "claimable": false,
-      "reasons": [
-        "warm.p99 delta -43.05% not positive"
-      ],
+      "claimable": true,
+      "reasons": [],
       "requiredPositivePercentiles": [
         "warm.p50",
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 146.98,
+        "p95": 128.93,
+        "p99": 77.46
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 106.53,
-        "p95": 86.49,
-        "p99": -43.05
+        "p50": 146.98,
+        "p95": 128.93,
+        "p99": 77.46
       },
       "warmIterations": 25,
-      "doeP50Ns": 84379,
-      "tintWarmP50Ns": 174271
+      "doeP50Ns": 76958,
+      "tintWarmP50Ns": 190072
     },
     {
       "shader": "metaball-isosurface.wgsl",
-      "claimable": false,
-      "reasons": [
-        "warm.p99 delta -10.57% not positive"
-      ],
+      "claimable": true,
+      "reasons": [],
       "requiredPositivePercentiles": [
         "warm.p50",
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 188.75,
+        "p95": 178.76,
+        "p99": 166.47
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 87.96,
-        "p95": 79.56,
-        "p99": -10.57
+        "p50": 188.75,
+        "p95": 178.76,
+        "p99": 166.47
       },
       "warmIterations": 25,
-      "doeP50Ns": 223311,
-      "tintWarmP50Ns": 419737
+      "doeP50Ns": 146208,
+      "tintWarmP50Ns": 422175
     },
     {
       "shader": "particles.wgsl",
@@ -111,14 +130,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 677.79,
+        "p95": 643.66,
+        "p99": 595.32
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 623.03,
-        "p95": 407.19,
-        "p99": 117.76
+        "p50": 677.79,
+        "p95": 643.66,
+        "p99": 595.32
       },
       "warmIterations": 25,
-      "doeP50Ns": 110829,
-      "tintWarmP50Ns": 801325
+      "doeP50Ns": 98750,
+      "tintWarmP50Ns": 768071
     },
     {
       "shader": "shadow-fragment.wgsl",
@@ -129,75 +156,100 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 151.47,
+        "p95": 114.69,
+        "p99": 79.02
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 20.4,
-        "p95": 13.71,
-        "p99": 6.93
+        "p50": 151.47,
+        "p95": 114.69,
+        "p99": 79.02
       },
       "warmIterations": 25,
-      "doeP50Ns": 52419,
-      "tintWarmP50Ns": 63113
+      "doeP50Ns": 33167,
+      "tintWarmP50Ns": 83406
     },
     {
       "shader": "skinned-shadowed-pbr-fragment.wgsl",
-      "claimable": false,
-      "reasons": [
-        "warm.p99 delta -14.50% not positive"
-      ],
+      "claimable": true,
+      "reasons": [],
       "requiredPositivePercentiles": [
         "warm.p50",
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 192.1,
+        "p95": 193.54,
+        "p99": 190.18
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 214.66,
-        "p95": 201.5,
-        "p99": -14.5
+        "p50": 192.1,
+        "p95": 193.54,
+        "p99": 190.18
       },
       "warmIterations": 25,
-      "doeP50Ns": 258958,
-      "tintWarmP50Ns": 814848
+      "doeP50Ns": 234375,
+      "tintWarmP50Ns": 684613
     },
     {
       "shader": "skinned-shadowed-pbr-vertex.wgsl",
-      "claimable": false,
-      "reasons": [
-        "warm.p95 delta -24.75% not positive",
-        "warm.p99 delta -59.44% not positive"
-      ],
+      "claimable": true,
+      "reasons": [],
       "requiredPositivePercentiles": [
         "warm.p50",
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 182.12,
+        "p95": 162.06,
+        "p99": 133.29
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 50.13,
-        "p95": -24.75,
-        "p99": -59.44
+        "p50": 182.12,
+        "p95": 162.06,
+        "p99": 133.29
       },
       "warmIterations": 25,
-      "doeP50Ns": 85100,
-      "tintWarmP50Ns": 127763
+      "doeP50Ns": 55708,
+      "tintWarmP50Ns": 157162
     },
     {
       "shader": "unity_webgpu_000002778DE78280.cs.spv",
-      "claimable": false,
-      "reasons": [
-        "warm.p99 delta -30.51% not positive"
-      ],
+      "claimable": true,
+      "reasons": [],
       "requiredPositivePercentiles": [
         "warm.p50",
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 197.45,
+        "p95": 179.21,
+        "p99": 171.57
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 150.5,
-        "p95": 142.8,
-        "p99": -30.51
+        "p50": 197.45,
+        "p95": 179.21,
+        "p99": 171.57
       },
       "warmIterations": 25,
-      "doeP50Ns": 84529,
-      "tintWarmP50Ns": 211746
+      "doeP50Ns": 81792,
+      "tintWarmP50Ns": 243287
     },
     {
       "shader": "unity_webgpu_000002778DE78280.cs.wgsl",
@@ -208,14 +260,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 191.54,
+        "p95": 170.45,
+        "p99": 161.48
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 167.26,
-        "p95": 153.27,
-        "p99": 119.12
+        "p50": 191.54,
+        "p95": 170.45,
+        "p99": 161.48
       },
       "warmIterations": 25,
-      "doeP50Ns": 119014,
-      "tintWarmP50Ns": 318078
+      "doeP50Ns": 118625,
+      "tintWarmP50Ns": 345835
     },
     {
       "shader": "unity_webgpu_000002778F740030.fs.spv",
@@ -226,14 +286,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 331.63,
+        "p95": 327.83,
+        "p99": 275.38
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 348.2,
-        "p95": 349.86,
-        "p99": 342.86
+        "p50": 331.63,
+        "p95": 327.83,
+        "p99": 275.38
       },
       "warmIterations": 25,
-      "doeP50Ns": 1744418,
-      "tintWarmP50Ns": 7818546
+      "doeP50Ns": 1492750,
+      "tintWarmP50Ns": 6443129
     },
     {
       "shader": "unity_webgpu_000002778F740030.fs.wgsl",
@@ -244,14 +312,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 263.29,
+        "p95": 251.81,
+        "p99": 251.11
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 311.69,
-        "p95": 320.47,
-        "p99": 340.73
+        "p50": 263.29,
+        "p95": 251.81,
+        "p99": 251.11
       },
       "warmIterations": 25,
-      "doeP50Ns": 3427290,
-      "tintWarmP50Ns": 14109793
+      "doeP50Ns": 3009250,
+      "tintWarmP50Ns": 10932416
     },
     {
       "shader": "unity_webgpu_0000017E9E2D81A0.vs.spv",
@@ -262,14 +338,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 267.27,
+        "p95": 256.54,
+        "p99": 190.78
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 269.55,
-        "p95": 261.02,
-        "p99": 234.61
+        "p50": 267.27,
+        "p95": 256.54,
+        "p99": 190.78
       },
       "warmIterations": 25,
-      "doeP50Ns": 722713,
-      "tintWarmP50Ns": 2670772
+      "doeP50Ns": 621584,
+      "tintWarmP50Ns": 2282873
     },
     {
       "shader": "unity_webgpu_0000017E9E2D81A0.vs.wgsl",
@@ -280,14 +364,22 @@
         "warm.p95",
         "warm.p99"
       ],
+      "deltaPercent": {
+        "p50": 229.52,
+        "p95": 226.92,
+        "p99": 218.25
+      },
+      "baselineSampleCount": 200,
+      "comparisonSampleCount": 200,
+      "warmComparisonSampleCount": 25,
       "warmDeltaPercent": {
-        "p50": 256.6,
-        "p95": 255.35,
-        "p99": 250.67
+        "p50": 229.52,
+        "p95": 226.92,
+        "p99": 218.25
       },
       "warmIterations": 25,
-      "doeP50Ns": 1343172,
-      "tintWarmP50Ns": 4789756
+      "doeP50Ns": 1190250,
+      "tintWarmP50Ns": 3922062
     }
   ]
 }

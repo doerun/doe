@@ -10,6 +10,35 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Local Tint toolchain and claimable corpus evidence
+
+The Dawn bootstrapper now supports the local MacBook layout where
+`bench/vendor/dawn` already contains ignored build outputs but is not yet a
+source checkout. The bootstrap path can initialize that existing directory,
+sync Dawn dependencies, bootstrap depot_tools-backed GN/CIPD, and build the
+Tint CLI plus `tint_benchmark` without deleting the existing Dawn delegate
+library under `bench/vendor/dawn/out/Release`.
+
+Fresh local Tint toolchain state:
+
+- `bench/fixtures/dawn_tint_runtime_state.json`
+
+Fresh compiler evidence:
+
+- `bench/out/tint-compiler-evidence.benchmark-corpus.json`
+- `bench/out/compilation/doe-vs-tint-benchmark.msl.claim.json`
+- `bench/out/tint-compiler-evidence.json`
+- `bench/out/compilation/doe-vs-tint.msl.claim.json`
+
+Verified:
+
+- `python3 bench/tools/bootstrap_dawn.py --source-dir bench/vendor/dawn --build-dir bench/vendor/dawn/out/Release --build-system gn --targets tint tint_benchmark --branch main --gn-args 'is_debug=false' --init-existing-source-dir --fetch-depth 1 --sync-deps --gn-bin .tooling/depot_tools/gn --gclient-bin .tooling/depot_tools/gclient --output-state bench/fixtures/dawn_tint_runtime_state.json`
+- `python3 bench/native-compare/compare_doe_vs_tint_compilation.py --config bench/native-compare/compare_doe_vs_tint.benchmark-corpus.config.json --claim-mode release --evidence-out bench/out/tint-compiler-evidence.benchmark-corpus.json`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.benchmark-corpus.json --require-claimable`
+- `python3 bench/native-compare/compare_doe_vs_tint_compilation.py --config bench/native-compare/compare_doe_vs_tint.config.json --claim-mode release --evidence-out bench/out/tint-compiler-evidence.json`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json`
+- `python3 -m pytest bench/tests/test_bootstrap_dawn.py bench/tests/test_tint_compiler_evidence_gate.py -q`
+
 ## 2026-05-25 — Tint benchmark-corpus diagnostic evidence
 
 The Doe-vs-Tint compiler evidence runner now treats an unavailable Tint

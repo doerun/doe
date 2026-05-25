@@ -86,6 +86,35 @@ def probe_executable(path: str) -> tuple[bool, str]:
     return True, out
 
 
+def depot_tools_dir_for_gn(path: str | None) -> Path | None:
+    if not path or "depot_tools" not in path:
+        return None
+
+    gn_path = Path(path).resolve()
+    depot_tools_dir = gn_path.parent
+    if (depot_tools_dir / "ensure_bootstrap").is_file():
+        return depot_tools_dir
+    return None
+
+
+def bootstrap_depot_tools_dir(depot_tools_dir: Path) -> None:
+    run([str(depot_tools_dir / "ensure_bootstrap")], cwd=depot_tools_dir)
+
+
+def maybe_bootstrap_depot_tools(path: str, detail: str) -> bool:
+    if "depot_tools" not in path:
+        return False
+    if "unable to find gn in your $path" not in detail.lower():
+        return False
+
+    depot_tools_dir = depot_tools_dir_for_gn(path)
+    if depot_tools_dir is None:
+        return False
+
+    bootstrap_depot_tools_dir(depot_tools_dir)
+    return True
+
+
 def read_json(path: Path) -> dict:
     if not path.exists():
         return {}
@@ -109,7 +138,7 @@ def resolve_dependency(name: str, explicit: str | None, *, hint: str | None = No
         candidate = Path(explicit)
         if not candidate.exists():
             raise RuntimeError(f"explicit {name} path not found: {explicit}")
-        return str(candidate)
+        return str(candidate.resolve())
     return check_dependency(name) if hint is None else resolve_dependency_with_hint(name, hint)
 
 
@@ -214,12 +243,12 @@ def bootstrap_dawn_buildtools(source_dir: Path) -> None:
     run([git_exe, "-C", str(buildtools_dir), "checkout", revision])
 
 
-def install_gn_from_cipd(source_dir: Path) -> None:
+def install_gn_from_cipd(source_dir: Path, cipd_path: str | None = None) -> None:
     gn_path = gn_buildtools_path(source_dir)
     if gn_path.exists():
         return
 
-    cipd = shutil.which("cipd")
+    cipd = cipd_path or shutil.which("cipd")
     if not cipd:
         return
 
@@ -280,7 +309,11 @@ def resolve_gn_binary(gn_path: str | None, *, fallback_to_depot: bool = True) ->
     for candidate, source in ordered:
         ok, detail = probe_executable(candidate)
         if ok and Path(candidate).exists():
-            return candidate
+            return str(Path(candidate).resolve())
+        if maybe_bootstrap_depot_tools(candidate, detail):
+            ok, detail = probe_executable(candidate)
+            if ok and Path(candidate).exists():
+                return str(Path(candidate).resolve())
         failures.append(f"{candidate} ({source}): {detail}")
 
     if ordered and not fallback_to_depot and gn_path:
@@ -364,6 +397,30 @@ def parse_args() -> argparse.Namespace:
         help="Do not fetch/update the Dawn repository.",
     )
     parser.add_argument(
+        "--sync-deps",
+        action="store_true",
+        help="Run Dawn gclient sync before configuring the build.",
+    )
+    parser.add_argument(
+        "--gclient-bin",
+        default=None,
+        help="Path to gclient when not on PATH.",
+    )
+    parser.add_argument(
+        "--init-existing-source-dir",
+        action="store_true",
+        help=(
+            "Initialize --source-dir as a Dawn checkout when it already exists "
+            "without .git. Existing ignored build outputs are preserved."
+        ),
+    )
+    parser.add_argument(
+        "--fetch-depth",
+        type=int,
+        default=0,
+        help="Optional shallow fetch/clone depth. Use 0 for a full checkout.",
+    )
+    parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Skip build after configure.",
@@ -391,22 +448,126 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def ensure_repo(source_dir: Path, repo_url: str, branch: str, skip_fetch: bool) -> None:
+def clone_repo(
+    git_exe: str,
+    source_dir: Path,
+    repo_url: str,
+    branch: str,
+    fetch_depth: int,
+) -> None:
+    cmd = [git_exe, "clone"]
+    if fetch_depth > 0:
+        cmd.extend(["--depth", str(fetch_depth), "--branch", branch])
+    cmd.extend([repo_url, str(source_dir)])
+    run(cmd)
+    run([git_exe, "checkout", branch], cwd=source_dir)
+
+
+def init_existing_repo(
+    git_exe: str,
+    source_dir: Path,
+    repo_url: str,
+    branch: str,
+    fetch_depth: int,
+) -> None:
+    run([git_exe, "init"], cwd=source_dir)
+    run([git_exe, "remote", "add", "origin", repo_url], cwd=source_dir)
+    fetch_cmd = [git_exe, "fetch", "origin", branch]
+    if fetch_depth > 0:
+        fetch_cmd.extend(["--depth", str(fetch_depth)])
+    run(fetch_cmd, cwd=source_dir)
+    run([git_exe, "checkout", "-B", branch, "FETCH_HEAD"], cwd=source_dir)
+
+
+def ensure_repo(
+    source_dir: Path,
+    repo_url: str,
+    branch: str,
+    skip_fetch: bool,
+    *,
+    init_existing_source_dir: bool = False,
+    fetch_depth: int = 0,
+) -> None:
     git_exe = check_dependency("git")
+    if fetch_depth < 0:
+        raise ValueError("--fetch-depth must be non-negative")
+
     if not source_dir.exists():
-        run([git_exe, "clone", repo_url, str(source_dir)])
-        run([git_exe, "checkout", branch], cwd=source_dir)
+        clone_repo(git_exe, source_dir, repo_url, branch, fetch_depth)
         return
 
     if not (source_dir / ".git").exists():
-        raise RuntimeError(f"{source_dir} exists but is not a git repo; set --clean-build and remove manually")
+        if not init_existing_source_dir:
+            raise RuntimeError(
+                f"{source_dir} exists but is not a git repo; pass "
+                "--init-existing-source-dir to preserve ignored build outputs "
+                "and initialize it as the Dawn checkout"
+            )
+        init_existing_repo(git_exe, source_dir, repo_url, branch, fetch_depth)
+        return
 
     if skip_fetch:
         return
 
-    run([git_exe, "fetch", "--all"], cwd=source_dir)
+    if fetch_depth > 0:
+        run(
+            [git_exe, "fetch", "origin", branch, "--depth", str(fetch_depth)],
+            cwd=source_dir,
+        )
+    else:
+        run([git_exe, "fetch", "--all"], cwd=source_dir)
     run([git_exe, "checkout", branch], cwd=source_dir)
-    run([git_exe, "pull", "origin", branch], cwd=source_dir)
+    pull_cmd = [git_exe, "pull", "origin", branch]
+    if fetch_depth > 0:
+        pull_cmd.insert(2, "--ff-only")
+    run(pull_cmd, cwd=source_dir)
+
+
+def resolve_gclient_binary(
+    gclient_path: str | None,
+    depot_tools_dir: Path | None,
+) -> str:
+    if gclient_path:
+        candidate = Path(gclient_path)
+        if not candidate.exists():
+            raise RuntimeError(f"explicit gclient path not found: {gclient_path}")
+        return str(candidate.resolve())
+    if depot_tools_dir is not None:
+        candidate = depot_tools_dir / "gclient"
+        if candidate.exists():
+            return str(candidate)
+    return resolve_dependency_with_hint(
+        "gclient",
+        hint="Install depot_tools or pass --gclient-bin.",
+    )
+
+
+def sync_dawn_deps(
+    source_dir: Path,
+    gclient_path: str | None,
+    depot_tools_dir: Path | None,
+    *,
+    no_history: bool,
+) -> None:
+    gclient_file = source_dir / ".gclient"
+    if not gclient_file.exists():
+        template = source_dir / "scripts" / "standalone.gclient"
+        if not template.is_file():
+            raise FileNotFoundError(
+                f"standalone gclient template not found: {template}"
+            )
+        gclient_file.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+
+    gclient = resolve_gclient_binary(gclient_path, depot_tools_dir)
+    env = os.environ.copy()
+    if depot_tools_dir is not None:
+        env["DEPOT_TOOLS_DIR"] = str(depot_tools_dir)
+        env["PATH"] = f"{depot_tools_dir}{os.pathsep}{env.get('PATH', '')}"
+
+    cmd = [gclient, "sync"]
+    if no_history:
+        cmd.append("--no-history")
+    run(cmd, cwd=source_dir, env=env)
 
 
 def configure_build(
@@ -462,9 +623,17 @@ def configure_build_gn(
     gn_path: str | None,
     skip_gn_bootstrap: bool,
 ) -> None:
+    depot_tools_dir = depot_tools_dir_for_gn(gn_path)
+    cipd_path = None
+    if depot_tools_dir is not None:
+        bootstrap_depot_tools_dir(depot_tools_dir)
+        depot_cipd = depot_tools_dir / "cipd"
+        if depot_cipd.is_file():
+            cipd_path = str(depot_cipd)
+
     if not skip_gn_bootstrap:
         bootstrap_dawn_buildtools(source_dir)
-        install_gn_from_cipd(source_dir)
+        install_gn_from_cipd(source_dir, cipd_path)
 
     buildtools_gn = gn_buildtools_path(source_dir)
     preferred_path = buildtools_gn if buildtools_gn.exists() else None
@@ -589,7 +758,24 @@ def main() -> int:
                 else:
                     child.unlink()
 
-        ensure_repo(source_dir, args.repo_url, args.branch, args.skip_fetch)
+        ensure_repo(
+            source_dir,
+            args.repo_url,
+            args.branch,
+            args.skip_fetch,
+            init_existing_source_dir=args.init_existing_source_dir,
+            fetch_depth=args.fetch_depth,
+        )
+        depot_tools_dir = depot_tools_dir_for_gn(args.gn_bin)
+        if args.sync_deps:
+            if depot_tools_dir is not None:
+                bootstrap_depot_tools_dir(depot_tools_dir)
+            sync_dawn_deps(
+                source_dir,
+                args.gclient_bin,
+                depot_tools_dir,
+                no_history=args.fetch_depth > 0,
+            )
         if args.build_system == "cmake":
             configure_build(source_dir, build_dir, args.build_type, args.generator)
             build_targets_cmake(build_dir, args.targets, args.parallel)

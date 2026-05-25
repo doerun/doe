@@ -397,6 +397,8 @@ def command_version(command, fallback):
         )
     except (OSError, subprocess.TimeoutExpired):
         return fallback
+    if proc.returncode != 0:
+        return fallback
     text = "\n".join(part.strip() for part in (proc.stdout, proc.stderr) if part.strip())
     return text.splitlines()[0].strip() if text else fallback
 
@@ -1136,7 +1138,7 @@ def build_toolchain_info(cfg, args):
         },
         "tint": {
             "name": "tint",
-            "version": command_version([str(tint_path), "--version"], "missing")
+            "version": command_version([str(tint_path), "--version"], "dawn-vendor")
             if tint_path.is_file()
             else "missing",
             "command": [repo_relative(tint_path), "--format=msl"],

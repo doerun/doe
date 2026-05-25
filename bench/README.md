@@ -1382,7 +1382,7 @@ binary built from source (`dawn_perf_tests`) and a filter mapping by workload.
 Build Dawn in this repo:
 
 ```bash
-python3 bench/bootstrap_dawn.py \
+python3 bench/tools/bootstrap_dawn.py \
   --source-dir bench/vendor/dawn \
   --build-dir bench/vendor/dawn/out/Release \
   --build-system gn \
@@ -1390,6 +1390,27 @@ python3 bench/bootstrap_dawn.py \
   --targets dawn_perf_tests \
   --parallel 8
 ```
+
+If `bench/vendor/dawn` already exists only as an ignored build-output holder,
+preserve it and initialize the source checkout in place:
+
+```bash
+python3 bench/tools/bootstrap_dawn.py \
+  --source-dir bench/vendor/dawn \
+  --build-dir bench/vendor/dawn/out/Release \
+  --build-system gn \
+  --targets tint tint_benchmark \
+  --branch main \
+  --gn-args 'is_debug=false' \
+  --init-existing-source-dir \
+  --sync-deps \
+  --gn-bin .tooling/depot_tools/gn \
+  --gclient-bin .tooling/depot_tools/gclient \
+  --output-state bench/fixtures/dawn_tint_runtime_state.json
+```
+
+Use `--fetch-depth 1` on local evidence hosts when you only need the current
+branch state for benchmark-tool binaries.
 
 ```bash
 python3 bench/cli.py compare \
