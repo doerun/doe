@@ -486,7 +486,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertEqual(smoke_config["workloads"], "bench/workloads/workloads.apple.metal.smoke.json")
         self.assertEqual(compare_config["workloads"], "bench/workloads/workloads.apple.metal.json")
         self.assertEqual(release_config["workloads"], "bench/workloads/workloads.apple.metal.json")
-        self.assertIn("--backend-lane metal_doe_directional", smoke_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_comparable", smoke_config["baseline"]["commandTemplate"])
         self.assertIn("--backend-lane metal_doe_directional", explore_config["baseline"]["commandTemplate"])
         self.assertIn("--backend-lane metal_doe_directional", breadth_config["baseline"]["commandTemplate"])
         self.assertIn("--backend-lane metal_doe_comparable", compare_config["baseline"]["commandTemplate"])

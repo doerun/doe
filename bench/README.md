@@ -39,6 +39,14 @@ This module is self-contained and does not depend on external runtime code.
 - `claim` to evaluate claim policy over an existing compare report
 - `list` to inspect executors, products, surfaces, or workload catalogs
 
+Python-only benchmark and gate commands do not require checked-in JavaScript
+dependencies. Browser ORT and package-lane commands that load
+`onnxruntime-web` must restore the bench dependency tree from the lockfile:
+
+```sh
+npm --prefix bench ci
+```
+
 ```sh
 python3 bench/cli.py run \
   --product doe \

@@ -30,6 +30,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Bench JavaScript dependencies are restored from bench/package-lock.json.
+bench/node_modules/
+
 # Local benchmark outputs and overrides
 bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
