@@ -3,6 +3,19 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Browser bench preflight fails closed on missing executors
+
+The Chromium browser lane preflight now treats the resolved browser executable
+and Doe runtime library as required in `--mode bench`. General/build preflight
+still reports them as warnings, but a benchmark preflight no longer passes when
+the run wrapper would fail immediately on missing paths.
+
+Verified:
+
+- `./browser/chromium/scripts/preflight.sh --mode bench`
+- `FAWN_CHROME_BIN=/tmp/not-a-chromium FAWN_DOE_LIB=/tmp/not-a-doe-lib ./browser/chromium/scripts/preflight.sh --mode bench`
+- `FAWN_CHROME_BIN=/tmp/not-a-chromium FAWN_DOE_LIB=/tmp/not-a-doe-lib ./browser/chromium/scripts/preflight.sh --mode general`
+
 ## 2026-05-25 — Apple Metal preflight checks executor artifacts
 
 The local Apple Metal preflight now verifies the actual compare-lane executor

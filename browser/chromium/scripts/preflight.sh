@@ -58,18 +58,29 @@ check_path() {
   local label="$1"
   local path="$2"
   local kind="$3"
+  local required="$4"
   if [[ "${kind}" == "exec" ]]; then
     if [[ -x "${path}" ]]; then
       printf "[ok]   %s -> %s\n" "${label}" "${path}"
     else
-      printf "[warn] %s missing executable: %s\n" "${label}" "${path}" >&2
+      if [[ "${required}" == "required" ]]; then
+        printf "[fail] %s missing executable: %s\n" "${label}" "${path}" >&2
+        failure_count=$((failure_count + 1))
+      else
+        printf "[warn] %s missing executable: %s\n" "${label}" "${path}" >&2
+      fi
     fi
     return 0
   fi
   if [[ -f "${path}" ]]; then
     printf "[ok]   %s -> %s\n" "${label}" "${path}"
   else
-    printf "[warn] %s missing file: %s\n" "${label}" "${path}" >&2
+    if [[ "${required}" == "required" ]]; then
+      printf "[fail] %s missing file: %s\n" "${label}" "${path}" >&2
+      failure_count=$((failure_count + 1))
+    else
+      printf "[warn] %s missing file: %s\n" "${label}" "${path}" >&2
+    fi
   fi
 }
 
@@ -105,8 +116,12 @@ fi
 echo
 chrome_bin="$(fawn_resolve_chrome_binary)"
 doe_lib="$(fawn_resolve_doe_lib)"
-check_path "chrome-bin" "${chrome_bin}" "exec"
-check_path "doe-lib" "${doe_lib}" "file"
+path_required="optional"
+if [[ "${mode}" == "bench" ]]; then
+  path_required="required"
+fi
+check_path "chrome-bin" "${chrome_bin}" "exec" "${path_required}"
+check_path "doe-lib" "${doe_lib}" "file" "${path_required}"
 
 echo
 if [[ "${failure_count}" -gt 0 ]]; then
