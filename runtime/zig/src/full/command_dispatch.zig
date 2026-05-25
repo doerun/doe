@@ -8,10 +8,10 @@ const async_diagnostics_command = @import("lifecycle/wgpu_async_diagnostics_comm
 pub fn execute(self: anytype, command: model.Command) !?runtime_types.NativeExecutionResult {
     const full_command = model.as_full_command(command) orelse return null;
     return switch (full_command) {
-        .render_draw => |payload| try render_commands.executeRenderDraw(self, payload),
-        .draw_indirect => |payload| try render_commands.executeRenderDraw(self, payload),
-        .draw_indexed_indirect => |payload| try render_commands.executeRenderDraw(self, payload),
-        .render_pass => |payload| try render_commands.executeRenderDraw(self, payload),
+        .render_draw => |payload| try render_commands.executeRenderDraw(self, payload, false),
+        .draw_indirect => |payload| try render_commands.executeRenderDraw(self, payload, true),
+        .draw_indexed_indirect => |payload| try render_commands.executeRenderDraw(self, payload, true),
+        .render_pass => |payload| try render_commands.executeRenderDraw(self, payload, false),
         .sampler_create => |payload| try sampler_commands.executeSamplerCreate(self, payload),
         .sampler_destroy => |payload| try sampler_commands.executeSamplerDestroy(self, payload),
         .surface_create => |payload| try surface_commands.executeSurfaceCreate(self, payload),

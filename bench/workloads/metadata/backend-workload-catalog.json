@@ -7852,7 +7852,7 @@
         "apple_metal_extended": {
           "api": "metal",
           "benchmarkClass": "directional",
-          "comparabilityNotes": "Directional-only on this Metal host lane for now: Doe doe_metal currently reports execution errors for this workload shape, so it is excluded from strict comparable/claim lanes until backend support is restored.; coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage",
+          "comparabilityNotes": "Directional-only on this Metal host lane pending fresh governed apples-to-apples evidence. Targeted reruns execute on both Doe and Dawn delegate after explicit indirect command coverage, so strict comparable status remains withheld until a governed report is recorded.; coverage gap: no matching compare artifact in the latest triaged corpus (bench/out/apple-metal/compare/20260416T212500Z/dawn-vs-doe.apple.metal.compare.json); re-run the explore preset to produce an artifact before triage",
           "comparable": false,
           "driver": "1.0.0",
           "family": "m3",

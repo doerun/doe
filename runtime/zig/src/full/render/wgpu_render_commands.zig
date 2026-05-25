@@ -21,7 +21,32 @@ const render_temp_texture = @import("wgpu_render_temp_texture.zig");
 const rc = @import("wgpu_render_constants.zig");
 const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
 
-pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCommand) !abi_execution.NativeExecutionResult {
+fn writeRepeatedIndirectArgs(
+    comptime Args: type,
+    allocator: std.mem.Allocator,
+    write_buffer: anytype,
+    encoder: abi_base.WGPUCommandEncoder,
+    indirect_buffer: abi_base.WGPUBuffer,
+    draw_count: u32,
+    args: Args,
+) bool {
+    const count = @as(usize, @intCast(draw_count));
+    const record_size = @sizeOf(Args);
+    const total_bytes = std.math.mul(usize, count, record_size) catch return false;
+    const bytes = allocator.alloc(u8, total_bytes) catch return false;
+    defer allocator.free(bytes);
+
+    const record = std.mem.asBytes(&args);
+    var offset: usize = 0;
+    while (offset < total_bytes) : (offset += record_size) {
+        @memcpy(bytes[offset .. offset + record_size], record);
+    }
+
+    write_buffer(encoder, indirect_buffer, 0, bytes.ptr, @as(u64, @intCast(bytes.len)));
+    return true;
+}
+
+pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCommand, allow_multi_draw_indirect: bool) !abi_execution.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
     }
@@ -389,7 +414,15 @@ pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCom
         };
         break :blk pipeline;
     };
-    const p0_state = render_p0_mod.prepare(self, procs, render_api, indexed_draw, rc.RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE);
+    const p0_state = render_p0_mod.prepare(
+        self,
+        procs,
+        render_api,
+        indexed_draw,
+        allow_multi_draw_indirect,
+        render.draw_count,
+        rc.RENDER_MULTI_DRAW_INDIRECT_BUFFER_HANDLE,
+    );
     defer render_p0_mod.deinit(p0_state, procs);
     const command_encoder_write_buffer = p0_state.command_encoder_write_buffer;
     const occlusion_query_set = p0_state.occlusion_query_set;
@@ -486,14 +519,14 @@ pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCom
         return .{ .status = .@"error", .status_message = "deviceCreateCommandEncoder returned null" };
     }
     defer procs.wgpuCommandEncoderRelease(encoder);
-    const use_multi_draw_indexed = render.encode_mode == .render_pass and
+    var use_multi_draw_indexed = render.encode_mode == .render_pass and
         indexed_draw and
         render.pipeline_mode == .static and
         render.bind_group_mode == .no_change and
         render_indirect_buffer != null and
         command_encoder_write_buffer != null and
         render_api.render_pass_encoder_multi_draw_indexed_indirect != null;
-    const use_multi_draw = render.encode_mode == .render_pass and
+    var use_multi_draw = render.encode_mode == .render_pass and
         !indexed_draw and
         render.pipeline_mode == .static and
         render.bind_group_mode == .no_change and
@@ -508,8 +541,15 @@ pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCom
             .base_vertex = render.base_vertex,
             .first_instance = render.first_instance,
         };
-        const draw_args_bytes = std.mem.asBytes(&draw_args);
-        command_encoder_write_buffer.?(encoder, render_indirect_buffer, 0, draw_args_bytes.ptr, @as(u64, draw_args_bytes.len));
+        use_multi_draw_indexed = writeRepeatedIndirectArgs(
+            render_types_mod.RenderDrawIndexedIndirectArgs,
+            self.core.allocator,
+            command_encoder_write_buffer.?,
+            encoder,
+            render_indirect_buffer,
+            render.draw_count,
+            draw_args,
+        );
     } else if (use_multi_draw) {
         const draw_args = render_types_mod.RenderDrawIndirectArgs{
             .vertex_count = render.vertex_count,
@@ -517,8 +557,15 @@ pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCom
             .first_vertex = render.first_vertex,
             .first_instance = render.first_instance,
         };
-        const draw_args_bytes = std.mem.asBytes(&draw_args);
-        command_encoder_write_buffer.?(encoder, render_indirect_buffer, 0, draw_args_bytes.ptr, @as(u64, draw_args_bytes.len));
+        use_multi_draw = writeRepeatedIndirectArgs(
+            render_types_mod.RenderDrawIndirectArgs,
+            self.core.allocator,
+            command_encoder_write_buffer.?,
+            encoder,
+            render_indirect_buffer,
+            render.draw_count,
+            draw_args,
+        );
     }
 
     const temp_result = render_temp_texture.setupTempRenderTexture(

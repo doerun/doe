@@ -3,6 +3,25 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — P0 multi-draw fixtures use explicit indirect commands
+
+The `render_multidraw` and `render_multidraw_indexed` fixtures now exercise
+the explicit `draw_indirect` / `draw_indexed_indirect` command path instead of
+implicitly enabling multi-draw from ordinary direct render draws. The WebGPU
+full path now sizes and writes one indirect argument record per requested draw
+before using the p0 multi-draw API; if the argument staging write cannot be
+prepared, execution falls back to the regular draw loop.
+
+Fresh directional evidence:
+
+- `bench/out/apple-metal/explore/20260525T181045Z/runtime-comparisons.apple.metal.explore/run-artifacts/doe/doe-render_multidraw-20260525T181045Z.run.json`
+- `bench/out/apple-metal/explore/20260525T181045Z/runtime-comparisons.apple.metal.explore/run-artifacts/doe/doe-render_multidraw_indexed-20260525T181045Z.run.json`
+- `bench/out/apple-metal/explore/20260525T181126Z/runtime-comparisons.apple.metal.explore/run-artifacts/dawn_delegate/dawn_delegate-render_multidraw-20260525T181126Z.run.json`
+- `bench/out/apple-metal/explore/20260525T181126Z/runtime-comparisons.apple.metal.explore/run-artifacts/dawn_delegate/dawn_delegate-render_multidraw_indexed-20260525T181126Z.run.json`
+
+The rows remain directional until governed apples-to-apples evidence is
+recorded.
+
 ## 2026-05-25 — Browser gate now records forced-runtime identity
 
 The Chromium Track A browser gate now validates explicit runtime-selection

@@ -1,6 +1,6 @@
 [
   {
-    "kind": "draw_indexed",
+    "kind": "draw_indexed_indirect",
     "drawCount": 2000,
     "vertexCount": 3,
     "instanceCount": 1,

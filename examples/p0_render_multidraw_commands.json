@@ -1,6 +1,6 @@
 [
   {
-    "kind": "render_draw",
+    "kind": "draw_indirect",
     "drawCount": 2000,
     "vertexCount": 3,
     "instanceCount": 1,
