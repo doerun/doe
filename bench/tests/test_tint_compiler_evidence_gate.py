@@ -96,6 +96,15 @@ def claimable_report() -> dict:
                     "status": "comparable",
                     "reasons": [],
                 },
+                "claimability": {
+                    "status": "claimable",
+                    "reasons": [],
+                    "deltaPercent": {
+                        "p50": 12.5,
+                        "p95": 8.0,
+                        "p99": 4.0,
+                    },
+                },
             }
         ],
         "summary": {
@@ -144,6 +153,15 @@ class TintCompilerEvidenceGateTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("comparable row must not carry comparability reasons" in item for item in result["failures"])
+        )
+
+    def test_claimable_row_rejects_diagnostic_reasons(self) -> None:
+        payload = claimable_report()
+        payload["rows"][0]["claimability"]["reasons"] = ["missing warm tint samples"]
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("claimable row must not carry claimability reasons" in item for item in result["failures"])
         )
 
     def test_summary_counts_must_match_rows(self) -> None:

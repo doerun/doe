@@ -53,6 +53,7 @@ TARGET_MAP = {"msl": "msl", "spirv": "spv", "hlsl": "hlsl"}
 TINT_BENCHMARK_TARGET_MAP = {"msl": "GenerateMSL", "spirv": "GenerateSPIRV", "hlsl": "GenerateHLSL"}
 DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
 DEFAULT_TINT_WARM_REPETITIONS = 9
+DEFAULT_DOE_EMIT_BINARY = "runtime/zig/zig-out/bin/doe-runtime-compile-report"
 SCHEMA_VERSION = 3
 _TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
 fn main() {}
@@ -95,6 +96,19 @@ def parse_args():
             "Claim policy mode. local requires >=7 timed samples and positive p50/p95; "
             "release requires >=15 timed samples and positive p50/p95/p99."
         ),
+    )
+    parser.add_argument(
+        "--evidence-out",
+        default="",
+        help=(
+            "Optional tint-compiler-evidence JSON path. The report is diagnostic "
+            "unless the timed rows, compiler outputs, validation, and claim gate all pass."
+        ),
+    )
+    parser.add_argument(
+        "--doe-emit-binary",
+        default=DEFAULT_DOE_EMIT_BINARY,
+        help="Doe compiler-report binary used to emit validation-bound MSL outputs.",
     )
     return parser.parse_args()
 
@@ -354,6 +368,285 @@ def file_sha256(path):
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def bytes_sha256(value):
+    return hashlib.sha256(value).hexdigest()
+
+
+def stable_json_sha256(value):
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return bytes_sha256(payload)
+
+
+def repo_relative(path):
+    try:
+        return str(Path(path).resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def command_version(command, fallback):
+    try:
+        proc = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return fallback
+    text = "\n".join(part.strip() for part in (proc.stdout, proc.stderr) if part.strip())
+    return text.splitlines()[0].strip() if text else fallback
+
+
+def git_revision():
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return proc.stdout.strip()
+    except subprocess.CalledProcessError:
+        return "unknown"
+
+
+def normalize_schema_target(target):
+    if target == "spv":
+        return "spirv"
+    if target == "spirv":
+        return "spirv"
+    if target in {"msl", "hlsl", "dxil"}:
+        return target
+    return target
+
+
+def infer_shader_stage(shader_path):
+    try:
+        source = Path(shader_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return "mixed"
+    stages = []
+    for marker, stage in (
+        ("@compute", "compute"),
+        ("@vertex", "vertex"),
+        ("@fragment", "fragment"),
+    ):
+        if marker in source:
+            stages.append(stage)
+    return stages[0] if len(stages) == 1 else "mixed"
+
+
+def validation_result_not_run(reason):
+    return {
+        "status": "not_run",
+        "tool": "",
+        "reason": reason,
+    }
+
+
+def validate_msl_output(path):
+    try:
+        find_proc = subprocess.run(
+            ["xcrun", "-find", "metal"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return validation_result_not_run("xcrun unavailable")
+
+    metal_path = find_proc.stdout.strip()
+    if find_proc.returncode != 0 or not metal_path:
+        return validation_result_not_run("metal compiler unavailable")
+
+    with tempfile.TemporaryDirectory(prefix="doe-tint-msl-validate-") as tmpdir:
+        air_path = Path(tmpdir) / "shader.air"
+        proc = subprocess.run(
+            ["xcrun", "-sdk", "macosx", "metal", "-c", str(path), "-o", str(air_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    if proc.returncode != 0:
+        diagnostic = (proc.stderr or proc.stdout or "metal validation failed").strip()
+        return {
+            "status": "failed",
+            "tool": "xcrun metal",
+            "reason": diagnostic[:500],
+        }
+    return {
+        "status": "passed",
+        "tool": "xcrun metal",
+        "reason": "",
+    }
+
+
+def make_compiler_result(
+    *,
+    status,
+    diagnostic_code,
+    output_sha256=None,
+    ir_sha256=None,
+    validation_status="not_run",
+    validation_tool="",
+    phase_total_ns=0,
+    receipt_path="",
+):
+    timings = {"total": int(phase_total_ns)} if status == "ok" and phase_total_ns else {}
+    return {
+        "status": status,
+        "diagnosticCode": diagnostic_code,
+        "outputSha256": output_sha256 if status == "ok" else None,
+        "irSha256": ir_sha256 if status == "ok" else None,
+        "validationStatus": validation_status,
+        "validationTool": validation_tool,
+        "phaseTimingsNs": timings,
+        "receiptPath": receipt_path if status == "ok" else "",
+    }
+
+
+def get_record_total_ns(record, side):
+    if not record or record.get("status") != "compared":
+        return 0
+    if side == "doe":
+        return int(record.get("baseline", {}).get("p50_ns", 0) or 0)
+    warm_total = int(record.get("comparison", {}).get("warm", {}).get("p50_ns", 0) or 0)
+    if warm_total:
+        return warm_total
+    return int(record.get("comparison", {}).get("p50_ns", 0) or 0)
+
+
+def compile_doe_evidence_output(shader, target, record, evidence_dir, doe_emit_binary, dry_run):
+    if normalize_schema_target(target) != "msl":
+        return make_compiler_result(
+            status="unsupported",
+            diagnostic_code="doe_evidence_only_supports_msl_output",
+        )
+    if dry_run:
+        return make_compiler_result(
+            status="unsupported",
+            diagnostic_code="dry_run_no_doe_output",
+        )
+
+    doe_bin = REPO_ROOT / doe_emit_binary
+    if not doe_bin.is_file():
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="missing_doe_emit_binary",
+        )
+
+    row_dir = evidence_dir / shader["name"] / "doe"
+    row_dir.mkdir(parents=True, exist_ok=True)
+    output_path = row_dir / "output.msl"
+    receipt_path = row_dir / "compile-report.json"
+    cmd = [
+        str(doe_bin),
+        "--shader-path",
+        shader["path"],
+        "--shader-name",
+        shader["name"],
+        "--emit-msl",
+        str(output_path),
+        "--out",
+        str(receipt_path),
+    ]
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    if proc.returncode != 0 or not output_path.is_file():
+        diagnostic_path = row_dir / "compile.stderr.txt"
+        diagnostic_path.write_text(proc.stderr or proc.stdout or "Doe compile failed", encoding="utf-8")
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="doe_compile_failed",
+        )
+
+    validation = validate_msl_output(output_path)
+    if validation["status"] != "passed":
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code=f"doe_msl_validation_{validation['status']}",
+        )
+
+    phase_total_ns = get_record_total_ns(record, "doe")
+    if phase_total_ns <= 0:
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="missing_doe_timing_evidence",
+        )
+
+    return make_compiler_result(
+        status="ok",
+        diagnostic_code="",
+        output_sha256=file_sha256(output_path),
+        ir_sha256=file_sha256(receipt_path) if receipt_path.is_file() else None,
+        validation_status="passed",
+        validation_tool=validation["tool"],
+        phase_total_ns=phase_total_ns,
+        receipt_path=repo_relative(receipt_path),
+    )
+
+
+def compile_tint_evidence_output(cfg, shader, target, record, evidence_dir, dry_run):
+    schema_target = normalize_schema_target(target)
+    if schema_target != "msl":
+        return make_compiler_result(
+            status="unsupported",
+            diagnostic_code="tint_evidence_only_supports_msl_output",
+        )
+    if dry_run:
+        return make_compiler_result(
+            status="unsupported",
+            diagnostic_code="dry_run_no_tint_output",
+        )
+
+    tint_bin = REPO_ROOT / cfg["comparison"]["binaryPath"]
+    if not tint_bin.is_file():
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="missing_tint_binary",
+        )
+
+    row_dir = evidence_dir / shader["name"] / "tint"
+    row_dir.mkdir(parents=True, exist_ok=True)
+    output_path = row_dir / "output.msl"
+    stderr_path = row_dir / "compile.stderr.txt"
+    cmd = [str(tint_bin), "--format=msl", shader["path"]]
+    proc = subprocess.run(cmd, check=False, capture_output=True)
+    if proc.returncode != 0:
+        stderr_path.write_bytes(proc.stderr or proc.stdout or b"Tint compile failed")
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="tint_compile_failed",
+        )
+
+    output_path.write_bytes(proc.stdout)
+    validation = validate_msl_output(output_path)
+    if validation["status"] != "passed":
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code=f"tint_msl_validation_{validation['status']}",
+        )
+
+    phase_total_ns = get_record_total_ns(record, "tint")
+    if phase_total_ns <= 0:
+        return make_compiler_result(
+            status="failed",
+            diagnostic_code="missing_tint_timing_evidence",
+        )
+
+    return make_compiler_result(
+        status="ok",
+        diagnostic_code="",
+        output_sha256=file_sha256(output_path),
+        validation_status="passed",
+        validation_tool=validation["tool"],
+        phase_total_ns=phase_total_ns,
+        receipt_path=repo_relative(output_path),
+    )
 
 
 def build_claim_report(
@@ -826,6 +1119,235 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
     return records
 
 
+def build_toolchain_info(cfg, args):
+    doe_emit_path = REPO_ROOT / args.doe_emit_binary
+    tint_path = REPO_ROOT / cfg["comparison"]["binaryPath"]
+    revision = git_revision()
+    return {
+        "doe": {
+            "name": "doe-wgsl",
+            "version": command_version([str(doe_emit_path), "--version"], revision)
+            if doe_emit_path.is_file()
+            else "missing",
+            "command": [repo_relative(doe_emit_path), "--emit-msl"],
+            "sourceRevision": revision,
+            "artifactPath": repo_relative(doe_emit_path) if doe_emit_path.exists() else "",
+            "artifactSha256": file_sha256(doe_emit_path) if doe_emit_path.is_file() else None,
+        },
+        "tint": {
+            "name": "tint",
+            "version": command_version([str(tint_path), "--version"], "missing")
+            if tint_path.is_file()
+            else "missing",
+            "command": [repo_relative(tint_path), "--format=msl"],
+            "sourceRevision": "dawn-vendor",
+            "artifactPath": repo_relative(tint_path) if tint_path.exists() else "",
+            "artifactSha256": file_sha256(tint_path) if tint_path.is_file() else None,
+        },
+    }
+
+
+def build_claimability(record, claim_workload, comparable):
+    delta = {}
+    if record:
+        delta = record.get("warmDeltaPercent") or record.get("deltaPercent") or {}
+    claim_reasons = []
+    if not comparable:
+        claim_reasons.append("row is not comparable")
+    if not record or record.get("status") != "compared":
+        claim_reasons.append(f"row not compared: {record.get('reason', 'missing record') if record else 'missing record'}")
+    if not record or not record.get("comparison", {}).get("warm", {}).get("p50_ns"):
+        claim_reasons.append("missing in-process Tint warm timing evidence")
+    if claim_workload:
+        claim_reasons.extend(str(reason) for reason in claim_workload.get("reasons", []))
+        if not claim_workload.get("claimable"):
+            claim_reasons.append("legacy claim gate did not mark the row claimable")
+    else:
+        claim_reasons.append("missing claim gate workload result")
+
+    deduped_reasons = []
+    for reason in claim_reasons:
+        if reason and reason not in deduped_reasons:
+            deduped_reasons.append(reason)
+
+    if comparable and claim_workload and claim_workload.get("claimable") and not deduped_reasons:
+        return {
+            "status": "claimable",
+            "reasons": [],
+            "deltaPercent": {
+                "p50": delta.get("p50"),
+                "p95": delta.get("p95"),
+                "p99": delta.get("p99"),
+            },
+        }
+    return {
+        "status": "diagnostic",
+        "reasons": deduped_reasons or ["row is diagnostic"],
+        "deltaPercent": {
+            "p50": delta.get("p50"),
+            "p95": delta.get("p95"),
+            "p99": delta.get("p99"),
+        },
+    }
+
+
+def build_row_comparability(record, doe_result, tint_result):
+    reasons = []
+    if not record or record.get("status") != "compared":
+        reasons.append(f"row not compared: {record.get('reason', 'missing record') if record else 'missing record'}")
+    if doe_result.get("status") != "ok":
+        reasons.append(f"doe evidence status: {doe_result.get('diagnosticCode') or doe_result.get('status')}")
+    if tint_result.get("status") != "ok":
+        reasons.append(f"tint evidence status: {tint_result.get('diagnosticCode') or tint_result.get('status')}")
+    if record and not record.get("comparison", {}).get("warm", {}).get("p50_ns"):
+        reasons.append("missing in-process Tint warm timing evidence")
+
+    deduped_reasons = []
+    for reason in reasons:
+        if reason and reason not in deduped_reasons:
+            deduped_reasons.append(reason)
+    if not deduped_reasons:
+        return {"status": "comparable", "reasons": []}
+    return {"status": "diagnostic", "reasons": deduped_reasons}
+
+
+def build_evidence_report(cfg, shaders, target, records, claim_report, args):
+    evidence_out = REPO_ROOT / args.evidence_out
+    evidence_dir = evidence_out.with_name(f"{evidence_out.stem}.artifacts")
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+
+    records_by_shader = {record.get("shader"): record for record in records}
+    claim_by_shader = {}
+    if claim_report:
+        claim_by_shader = {workload.get("shader"): workload for workload in claim_report.get("workloads", [])}
+
+    rows = []
+    tool_gap_codes = {gap["name"]: gap["code"] for gap in cfg.get("_toolGaps", [])}
+    for shader in shaders:
+        record = records_by_shader.get(shader["name"])
+        shader_target = normalize_schema_target(shader.get("target", target))
+        source_sha = file_sha256(shader["path"])
+        if tool_gap_codes:
+            doe_result = make_compiler_result(
+                status="failed",
+                diagnostic_code=tool_gap_codes.get("doe", "tool_preflight_blocked"),
+            )
+            tint_result = make_compiler_result(
+                status="failed",
+                diagnostic_code=(
+                    tool_gap_codes.get("tint")
+                    or tool_gap_codes.get("tintWarm")
+                    or "tool_preflight_blocked"
+                ),
+            )
+        else:
+            doe_result = compile_doe_evidence_output(
+                shader,
+                shader_target,
+                record,
+                evidence_dir,
+                args.doe_emit_binary,
+                args.dry_run,
+            )
+            tint_result = compile_tint_evidence_output(
+                cfg,
+                shader,
+                shader_target,
+                record,
+                evidence_dir,
+                args.dry_run,
+            )
+        comparability = build_row_comparability(record, doe_result, tint_result)
+        claimability = build_claimability(
+            record,
+            claim_by_shader.get(shader["name"]),
+            comparability["status"] == "comparable",
+        )
+        rows.append(
+            {
+                "shaderId": shader.get("workloadId", shader["name"]),
+                "sourceSha256": source_sha,
+                "target": shader_target,
+                "shaderStage": infer_shader_stage(shader["path"]),
+                "doe": doe_result,
+                "tint": tint_result,
+                "comparability": comparability,
+                "claimability": claimability,
+            }
+        )
+
+    comparable_rows = sum(1 for row in rows if row["comparability"]["status"] == "comparable")
+    claimable_rows = sum(1 for row in rows if row["claimability"]["status"] == "claimable")
+    summary_reasons = []
+    for row in rows:
+        summary_reasons.extend(row["comparability"]["reasons"])
+        summary_reasons.extend(row["claimability"]["reasons"])
+    summary_reasons = list(dict.fromkeys(reason for reason in summary_reasons if reason))
+
+    corpus_manifest = [
+        {
+            "shaderId": shader.get("workloadId", shader["name"]),
+            "path": repo_relative(shader["path"]),
+            "sha256": file_sha256(shader["path"]),
+            "target": normalize_schema_target(shader.get("target", target)),
+        }
+        for shader in shaders
+    ]
+    report = {
+        "schemaVersion": 1,
+        "artifactKind": "tint-compiler-evidence",
+        "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+        "comparisonStatus": "comparable" if comparable_rows == len(rows) else "diagnostic",
+        "claimStatus": "claimable" if claimable_rows == len(rows) else "diagnostic",
+        "corpus": {
+            "id": cfg["run"].get("outStem", "doe-vs-tint"),
+            "source": str(cfg.get("_sourceLabel", cfg.get("corpusDir", "bench/kernels/compilation-corpus"))),
+            "sourceSha256": stable_json_sha256(corpus_manifest),
+            "manifestPath": str(cfg.get("_configPath", "")),
+        },
+        "toolchains": build_toolchain_info(cfg, args),
+        "phaseModel": {
+            "timingScope": "whole-compile",
+            "units": "ns",
+            "requiredPhases": ["total"],
+        },
+        "rows": rows,
+        "summary": {
+            "rowCount": len(rows),
+            "comparableRows": comparable_rows,
+            "claimableRows": claimable_rows,
+            "reasons": summary_reasons,
+        },
+    }
+    evidence_out.parent.mkdir(parents=True, exist_ok=True)
+    evidence_out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+def required_tool_gaps(cfg):
+    gaps = []
+    checks = [
+        ("doe", REPO_ROOT / cfg["baseline"]["binaryPath"], "missing_doe_bench_binary"),
+        ("tint", REPO_ROOT / cfg["comparison"]["binaryPath"], "missing_tint_binary"),
+    ]
+    warm_binary_path = cfg["comparison"].get("warmBinaryPath")
+    if warm_binary_path:
+        checks.append(("tintWarm", REPO_ROOT / warm_binary_path, "missing_tint_warm_binary"))
+    for name, path, code in checks:
+        if not path.is_file():
+            gaps.append({"name": name, "path": str(path), "code": code})
+    return gaps
+
+
+def evidence_args_for_target(args, target, targets):
+    if not args.evidence_out or len(targets) == 1:
+        return args
+    cloned = argparse.Namespace(**vars(args))
+    evidence_out = Path(args.evidence_out)
+    cloned.evidence_out = str(evidence_out.with_name(f"{evidence_out.stem}.{target}{evidence_out.suffix}"))
+    return cloned
+
+
 def write_report(records, out_path):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
@@ -924,12 +1446,40 @@ def main():
     print(f"shaders: {len(shaders)} selected from {source_label}")
 
     cfg["_configPath"] = args.config
+    cfg["_sourceLabel"] = source_label
 
     for target in targets:
         print(f"\n=== target: {target} ===")
+        target_evidence_args = evidence_args_for_target(args, target, targets)
 
         doe_out = REPO_ROOT / out_dir / f"doe-{target}.ndjson"
         os.makedirs(doe_out.parent, exist_ok=True)
+
+        tool_gaps = required_tool_gaps(cfg)
+        if tool_gaps and target_evidence_args.evidence_out:
+            cfg["_toolGaps"] = tool_gaps
+            for gap in tool_gaps:
+                print(f"diagnostic: {gap['code']}: {gap['path']}", file=sys.stderr)
+            records = build_report(cfg, shaders, target, {}, {})
+            gap_reason = ",".join(gap["code"] for gap in tool_gaps)
+            for record in records:
+                if record.get("status") == "skipped":
+                    record["reason"] = gap_reason
+            evidence_report = build_evidence_report(
+                cfg,
+                shaders,
+                target,
+                records,
+                None,
+                target_evidence_args,
+            )
+            print(
+                f"wrote diagnostic compiler evidence: {REPO_ROOT / target_evidence_args.evidence_out} "
+                f"status: {evidence_report['claimStatus']}"
+            )
+            cfg.pop("_toolGaps", None)
+            continue
+        cfg.pop("_toolGaps", None)
 
         doe_results, calibration = run_doe_bench(cfg, shaders, target, doe_out, args.dry_run)
         tint_results = run_tint_bench(cfg, shaders, target, iterations, warmup, args.dry_run)
@@ -940,6 +1490,7 @@ def main():
         write_report(records, report_path)
         print_summary(records, target)
 
+        claim_report = None
         if not args.dry_run:
             claim_report = build_claim_report(
                 cfg=cfg,
@@ -966,6 +1517,20 @@ def main():
                 for w in non_claim[:10]:
                     print(f"  - {w['shader']}: {'; '.join(w['reasons'])}")
             print(f"\nwrote claim report: {claim_path}")
+
+        if target_evidence_args.evidence_out:
+            evidence_report = build_evidence_report(
+                cfg,
+                shaders,
+                target,
+                records,
+                claim_report,
+                target_evidence_args,
+            )
+            print(
+                f"\nwrote compiler evidence: {REPO_ROOT / target_evidence_args.evidence_out} "
+                f"status: {evidence_report['claimStatus']}"
+            )
 
 
 if __name__ == "__main__":

@@ -68,6 +68,15 @@
       "comparability": {
         "status": "diagnostic",
         "reasons": ["sample report is not a comparable Tint run"]
+      },
+      "claimability": {
+        "status": "diagnostic",
+        "reasons": ["sample report is schema coverage only"],
+        "deltaPercent": {
+          "p50": null,
+          "p95": null,
+          "p99": null
+        }
       }
     }
   ],

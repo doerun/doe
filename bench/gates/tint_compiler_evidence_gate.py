@@ -181,7 +181,25 @@ def row_blockers(row: dict[str, Any], required_phases: list[str]) -> tuple[list[
         if not isinstance(reasons, list) or not reasons:
             failures.append(f"{row_id}: diagnostic row requires comparability reasons")
 
-    return failures, claimable and status == "comparable"
+    claimability = row.get("claimability")
+    if not isinstance(claimability, dict):
+        failures.append(f"{row_id}: missing claimability object")
+        return failures, False
+
+    claim_status = claimability.get("status")
+    claim_reasons = claimability.get("reasons")
+    if claim_status == "claimable":
+        if claim_reasons:
+            failures.append(f"{row_id}: claimable row must not carry claimability reasons")
+            claimable = False
+        if not claimable or status != "comparable":
+            failures.append(f"{row_id}: claimable row has blocking evidence gaps")
+    else:
+        claimable = False
+        if not isinstance(claim_reasons, list) or not claim_reasons:
+            failures.append(f"{row_id}: diagnostic claimability requires reasons")
+
+    return failures, claimable and status == "comparable" and claim_status == "claimable"
 
 
 def evaluate_report(payload: dict[str, Any], require_claimable: bool = False) -> dict[str, Any]:

@@ -10,6 +10,23 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Doe-vs-Tint evidence report emitter
+
+The legacy Doe-vs-Tint compilation runner can now emit the
+`tint-compiler-evidence` report consumed by the compiler evidence gate:
+
+```sh
+python3 bench/native-compare/compare_doe_vs_tint_compilation.py \
+  --config bench/native-compare/compare_doe_vs_tint.config.json \
+  --evidence-out bench/out/tint-compiler-evidence.json
+```
+
+The report binds toolchain identity, shader source hashes, compiler output
+hashes, Metal validation receipts for MSL rows, whole-compile timing evidence,
+row comparability, and row claimability. Missing Tint/Dawn binaries now produce
+a schema-valid diagnostic evidence report instead of an unsupported compiler
+claim.
+
 ## 2026-05-25 — Doe-vs-Tint compiler evidence gate
 
 Added a schema-backed gate for compiler evidence against Tint:

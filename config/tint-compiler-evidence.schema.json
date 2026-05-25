@@ -185,7 +185,8 @@
         "shaderStage",
         "doe",
         "tint",
-        "comparability"
+        "comparability",
+        "claimability"
       ],
       "properties": {
         "shaderId": {
@@ -222,6 +223,29 @@
               "type": "array",
               "items": {
                 "type": "string"
+              }
+            }
+          }
+        },
+        "claimability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reasons"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["claimable", "diagnostic"]
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "deltaPercent": {
+              "type": "object",
+              "additionalProperties": {
+                "type": ["number", "null"]
               }
             }
           }
