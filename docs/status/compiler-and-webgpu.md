@@ -10,6 +10,24 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Tint benchmark-corpus diagnostic evidence
+
+The Doe-vs-Tint compiler evidence runner now treats an unavailable Tint
+benchmark-corpus source script as diagnostic evidence instead of aborting
+before report emission. Zero-row compiler evidence reports are schema-valid
+only when they remain diagnostic and carry a summary reason.
+
+Fresh diagnostic artifacts:
+
+- `bench/out/tint-compiler-evidence.benchmark-corpus.json`
+- `bench/out/tint-compiler-evidence.json`
+
+Verified:
+
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.benchmark-corpus.json`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json`
+- `python3 -m pytest bench/tests/test_tint_compiler_evidence_gate.py -q`
+
 ## 2026-05-25 — Doe-vs-Tint evidence report emitter
 
 The legacy Doe-vs-Tint compilation runner can now emit the

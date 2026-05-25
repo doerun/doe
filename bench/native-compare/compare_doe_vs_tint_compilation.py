@@ -1279,6 +1279,11 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
     comparable_rows = sum(1 for row in rows if row["comparability"]["status"] == "comparable")
     claimable_rows = sum(1 for row in rows if row["claimability"]["status"] == "claimable")
     summary_reasons = []
+    for gap_kind in ("_sourceGaps", "_toolGaps"):
+        for gap in cfg.get(gap_kind, []):
+            code = gap.get("code", "preflight_gap")
+            path = gap.get("path", "")
+            summary_reasons.append(f"{code}: {path}" if path else code)
     for row in rows:
         summary_reasons.extend(row["comparability"]["reasons"])
         summary_reasons.extend(row["claimability"]["reasons"])
@@ -1297,8 +1302,8 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
         "schemaVersion": 1,
         "artifactKind": "tint-compiler-evidence",
         "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
-        "comparisonStatus": "comparable" if comparable_rows == len(rows) else "diagnostic",
-        "claimStatus": "claimable" if claimable_rows == len(rows) else "diagnostic",
+        "comparisonStatus": "comparable" if rows and comparable_rows == len(rows) else "diagnostic",
+        "claimStatus": "claimable" if rows and claimable_rows == len(rows) else "diagnostic",
         "corpus": {
             "id": cfg["run"].get("outStem", "doe-vs-tint"),
             "source": str(cfg.get("_sourceLabel", cfg.get("corpusDir", "bench/kernels/compilation-corpus"))),
@@ -1336,6 +1341,22 @@ def required_tool_gaps(cfg):
     for name, path, code in checks:
         if not path.is_file():
             gaps.append({"name": name, "path": str(path), "code": code})
+    return gaps
+
+
+def source_gaps_for_config(cfg):
+    gaps = []
+    script_path = cfg.get("tintBenchmarkInputsScriptPath")
+    if script_path:
+        path = REPO_ROOT / script_path
+        if not path.is_file():
+            gaps.append(
+                {
+                    "name": "tintBenchmarkInputsScript",
+                    "path": str(path),
+                    "code": "missing_tint_benchmark_input_script",
+                }
+            )
     return gaps
 
 
@@ -1431,7 +1452,15 @@ def main():
     cfg["run"]["iterations"] = iterations
     cfg["run"]["warmup"] = warmup
 
-    if "tintBenchmarkInputsScriptPath" in cfg:
+    source_gaps = source_gaps_for_config(cfg)
+    if source_gaps and args.evidence_out:
+        shaders = []
+        source_label = cfg["tintBenchmarkInputsScriptPath"]
+    elif source_gaps:
+        gap = source_gaps[0]
+        print(f"error: {gap['code']}: {gap['path']}", file=sys.stderr)
+        sys.exit(1)
+    elif "tintBenchmarkInputsScriptPath" in cfg:
         benchmark_names = args.workload_id or cfg.get("shaderNames", [])
         shaders = discover_tint_benchmark_rows(cfg["tintBenchmarkInputsScriptPath"], benchmark_names)
         source_label = cfg["tintBenchmarkInputsScriptPath"]
@@ -1454,6 +1483,25 @@ def main():
 
         doe_out = REPO_ROOT / out_dir / f"doe-{target}.ndjson"
         os.makedirs(doe_out.parent, exist_ok=True)
+
+        if source_gaps and target_evidence_args.evidence_out:
+            cfg["_sourceGaps"] = source_gaps
+            for gap in source_gaps:
+                print(f"diagnostic: {gap['code']}: {gap['path']}", file=sys.stderr)
+            evidence_report = build_evidence_report(
+                cfg,
+                shaders,
+                target,
+                [],
+                None,
+                target_evidence_args,
+            )
+            print(
+                f"wrote diagnostic compiler evidence: {REPO_ROOT / target_evidence_args.evidence_out} "
+                f"status: {evidence_report['claimStatus']}"
+            )
+            cfg.pop("_sourceGaps", None)
+            continue
 
         tool_gaps = required_tool_gaps(cfg)
         if tool_gaps and target_evidence_args.evidence_out:

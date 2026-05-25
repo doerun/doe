@@ -224,8 +224,8 @@ def evaluate_report(payload: dict[str, Any], require_claimable: bool = False) ->
         failures.append("corpus.sourceSha256 must be a lowercase sha256")
 
     rows = payload.get("rows")
-    if not isinstance(rows, list) or not rows:
-        failures.append("rows must be a non-empty array")
+    if not isinstance(rows, list):
+        failures.append("rows must be an array")
         rows = []
 
     for row in rows:
@@ -262,6 +262,14 @@ def evaluate_report(payload: dict[str, Any], require_claimable: bool = False) ->
 
     comparison_status = payload.get("comparisonStatus")
     claim_status = payload.get("claimStatus")
+    if not rows:
+        if comparison_status == "comparable":
+            claim_blockers.append("comparisonStatus=comparable requires at least one row")
+        if claim_status == "claimable":
+            claim_blockers.append("claimStatus=claimable requires at least one row")
+        reasons = summary.get("reasons") if isinstance(summary, dict) else None
+        if not reasons:
+            failures.append("zero-row diagnostic reports require summary.reasons")
     if comparison_status == "comparable" and comparable_rows != len(rows):
         claim_blockers.append("comparisonStatus=comparable requires every row comparable")
     if claim_status == "claimable":

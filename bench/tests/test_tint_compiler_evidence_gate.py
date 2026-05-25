@@ -137,6 +137,37 @@ class TintCompilerEvidenceGateTests(unittest.TestCase):
         self.assertTrue(result["ok"], result["failures"])
         self.assertEqual(result["summary"]["claimableRows"], 1)
 
+    def test_zero_row_diagnostic_report_passes(self) -> None:
+        payload = claimable_report()
+        payload["comparisonStatus"] = "diagnostic"
+        payload["claimStatus"] = "diagnostic"
+        payload["rows"] = []
+        payload["summary"] = {
+            "rowCount": 0,
+            "comparableRows": 0,
+            "claimableRows": 0,
+            "reasons": [
+                "missing_tint_benchmark_input_script: bench/vendor/dawn/src/tint/cmd/bench/generate_benchmark_inputs.py"
+            ],
+        }
+        jsonschema.Draft202012Validator(self.schema).validate(payload)
+        result = self.module.evaluate_report(payload)
+        self.assertTrue(result["ok"], result["failures"])
+        self.assertEqual(result["summary"]["claimStatus"], "diagnostic")
+
+    def test_zero_row_claimable_report_fails(self) -> None:
+        payload = claimable_report()
+        payload["rows"] = []
+        payload["summary"] = {
+            "rowCount": 0,
+            "comparableRows": 0,
+            "claimableRows": 0,
+            "reasons": [],
+        }
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("requires at least one row" in item for item in result["failures"]))
+
     def test_claimable_report_rejects_missing_tint_validation(self) -> None:
         payload = claimable_report()
         payload["rows"][0]["tint"]["validationStatus"] = "not_run"
