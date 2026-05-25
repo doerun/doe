@@ -3,6 +3,19 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Native delegate identity is pinned in run receipts
+
+Run receipts now unwrap `env` launchers before hashing the benchmark runner and
+record `runtimeIdentity.nativeDelegate` for Dawn-backed native lanes when the
+delegate WebGPU library is discoverable from the launch library path. This keeps
+Dawn-vs-Doe evidence tied to both the shared runner binary and the delegated
+Dawn library instead of hashing the shell wrapper.
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_run_artifact.py bench/tests/test_compare_from_artifacts.py bench/tests/test_report_conformance.py -q`
+- `python3 bench/cli.py run-config --side comparison --config bench/native-compare/compare.config.apple.metal.release.json --workload-filter compute_concurrent_execution_single --out bench/out/apple-metal/identity-check/dawn-vs-doe.apple.metal.identity-check.json --workspace bench/out/apple-metal/identity-check/runtime-comparisons.apple.metal.identity-check`
+
 ## 2026-05-25 — Browser smoke and layered diagnostics refreshed
 
 Fresh browser-lane diagnostics were generated through the wrapper entrypoints

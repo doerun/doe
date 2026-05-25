@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import shutil
 from datetime import datetime, timezone
@@ -21,6 +22,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_ARTIFACT_SCHEMA_VERSION = 1
 SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS = {1, 2}
 RUN_ARTIFACT_KIND = "run-receipt"
+ENV_WRAPPER = "env"
+ENV_PATH_VARS = ("DYLD_LIBRARY_PATH", "LD_LIBRARY_PATH", "PATH")
+DAWN_BACKEND_MARKERS = ("dawn_delegate", "dawn_direct")
+DAWN_DELEGATE_LIBRARY_NAMES = (
+    "libwebgpu_dawn.dylib",
+    "libwebgpu_dawn.so",
+    "libwebgpu_dawn.dll",
+    "webgpu_dawn.dll",
+)
 
 
 def _safe_float(value: Any) -> float | None:
@@ -136,7 +146,31 @@ def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
     return samples
 
 
+def _is_env_assignment(token: str) -> bool:
+    name, separator, _value = token.partition("=")
+    return bool(separator and name and not name.startswith("-"))
+
+
+def _unwrap_env_command(command: list[str]) -> list[str]:
+    if not command or command[0] != ENV_WRAPPER:
+        return command
+    index = 1
+    while index < len(command):
+        token = command[index]
+        if token == "--":
+            return command[index + 1 :]
+        if _is_env_assignment(token):
+            index += 1
+            continue
+        if token in ("-i", "-0"):
+            index += 1
+            continue
+        return command[index:]
+    return []
+
+
 def _resolve_binary(command: list[str]) -> tuple[str, str]:
+    command = _unwrap_env_command(command)
     if not command:
         return "", ""
     raw_binary = command[0]
@@ -148,6 +182,65 @@ def _resolve_binary(command: list[str]) -> tuple[str, str]:
         return raw_binary, ""
     resolved_path = Path(resolved)
     return str(resolved_path), file_sha256(resolved_path)
+
+
+def _env_search_paths(command: list[str]) -> list[Path]:
+    if not command or command[0] != ENV_WRAPPER:
+        return []
+
+    paths: list[Path] = []
+    index = 1
+    while index < len(command):
+        token = command[index]
+        if token == "--":
+            break
+        if not _is_env_assignment(token):
+            if token in ("-i", "-0"):
+                index += 1
+                continue
+            break
+        name, _separator, value = token.partition("=")
+        if name in ENV_PATH_VARS:
+            for raw_part in value.split(os.pathsep):
+                part = raw_part.strip()
+                if not part or part.startswith("$"):
+                    continue
+                paths.append(Path(part))
+        index += 1
+    return paths
+
+
+def _resolve_dawn_delegate_library(command: list[str]) -> tuple[str, str] | None:
+    search_paths = _env_search_paths(command)
+    if not search_paths:
+        search_paths = [Path("bench/vendor/dawn/out/Release")]
+
+    for directory in search_paths:
+        for library_name in DAWN_DELEGATE_LIBRARY_NAMES:
+            candidate = directory / library_name
+            if candidate.is_file():
+                return str(candidate), file_sha256(candidate)
+    return None
+
+
+def _native_delegate_identity(
+    *,
+    executor_id: str,
+    execution_backend: str,
+    command: list[str],
+) -> dict[str, str] | None:
+    identity_key = f"{executor_id} {execution_backend}".lower()
+    if not any(marker in identity_key for marker in DAWN_BACKEND_MARKERS):
+        return None
+    resolved = _resolve_dawn_delegate_library(command)
+    if resolved is None:
+        return None
+    library_path, library_sha256 = resolved
+    return {
+        "kind": "dawn",
+        "libraryPath": library_path,
+        "librarySha256": library_sha256,
+    }
 
 
 def _infer_runtime_host(
@@ -236,6 +329,13 @@ def _runtime_identity(
         ).strip(),
         "providerName": provider_name,
     }
+    native_delegate = _native_delegate_identity(
+        executor_id=executor_id,
+        execution_backend=str(trace_meta.get("executionBackend", "")).strip(),
+        command=[str(part) for part in command],
+    )
+    if native_delegate is not None:
+        payload["nativeDelegate"] = native_delegate
     payload.update(_package_identity(provider_name))
     # Apple Metal pipeline cache state + warmup telemetry. The Zig runtime
     # emits a nested `pipelineCache` object in trace_meta containing state

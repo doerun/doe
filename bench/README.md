@@ -349,6 +349,9 @@ Use the benchmark taxonomy from `docs/benchmark-taxonomy.md`:
   - legacy name for the per-product receipt artifact
 - `run receipt`
   - the output of running one product on one workload
+  - includes the runner binary identity and, for native delegate lanes such as
+    Dawn, the delegated WebGPU library identity when it is discoverable from
+    the launch environment
 - `compare report`
   - the output of joining isolated run receipts for the same workload and
     surface

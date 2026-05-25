@@ -248,6 +248,28 @@
         },
         "packageLockHash": {
           "type": "string"
+        },
+        "nativeDelegate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "libraryPath",
+            "librarySha256"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "libraryPath": {
+              "type": "string",
+              "minLength": 1
+            },
+            "librarySha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
         }
       }
     },

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -114,6 +115,19 @@ def _make_run_result() -> dict:
     }
 
 
+def _with_sample_command_and_backend(
+    run_result: dict,
+    *,
+    command: list[str],
+    execution_backend: str,
+) -> dict:
+    cloned = json.loads(json.dumps(run_result))
+    sample = cloned["commandSamples"][0]
+    sample["command"] = command
+    sample["traceMeta"]["executionBackend"] = execution_backend
+    return cloned
+
+
 class TestRunReceiptRoundTrip(unittest.TestCase):
     def test_build_receipt_has_required_fields(self) -> None:
         artifact = build_run_artifact(
@@ -135,6 +149,68 @@ class TestRunReceiptRoundTrip(unittest.TestCase):
         self.assertEqual(artifact["invocation"]["iterations"], 2)
         self.assertEqual(len(artifact["samples"]), 1)
         self.assertEqual(artifact["execution"]["timedSampleCount"], 1)
+
+    def test_env_wrapped_command_resolves_runner_binary(self) -> None:
+        artifact = build_run_artifact(
+            run_result=_with_sample_command_and_backend(
+                _make_run_result(),
+                command=[
+                    "env",
+                    "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+                    sys.executable,
+                    "--backend",
+                    "native",
+                ],
+                execution_backend="doe_metal",
+            ),
+            product="doe",
+            executor_id="doe_direct_metal",
+            workload_spec=_make_spec(),
+            run_config=_make_run_config(),
+            iterations=2,
+            warmup=0,
+            workload_contract_path=WORKLOAD_MANIFEST_PATH,
+        )
+        self.assertEqual(artifact["runtimeIdentity"]["binaryPath"], sys.executable)
+        self.assertEqual(
+            artifact["runtimeIdentity"]["binarySha256"],
+            hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest(),
+        )
+        self.assertNotIn("nativeDelegate", artifact["runtimeIdentity"])
+
+    def test_dawn_delegate_receipt_pins_delegate_library(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            library_path = Path(tmpdir) / "libwebgpu_dawn.dylib"
+            library_path.write_bytes(b"test-dawn-delegate-library")
+            artifact = build_run_artifact(
+                run_result=_with_sample_command_and_backend(
+                    _make_run_result(),
+                    command=[
+                        "env",
+                        f"DYLD_LIBRARY_PATH={tmpdir}:$DYLD_LIBRARY_PATH",
+                        sys.executable,
+                        "--backend",
+                        "native",
+                    ],
+                    execution_backend="dawn_delegate",
+                ),
+                product="dawn_delegate",
+                executor_id="dawn_delegate_metal",
+                workload_spec=_make_spec(),
+                run_config=_make_run_config(),
+                iterations=2,
+                warmup=0,
+                workload_contract_path=WORKLOAD_MANIFEST_PATH,
+            )
+            self.assertEqual(artifact["runtimeIdentity"]["binaryPath"], sys.executable)
+            self.assertEqual(
+                artifact["runtimeIdentity"]["nativeDelegate"],
+                {
+                    "kind": "dawn",
+                    "libraryPath": str(library_path),
+                    "librarySha256": hashlib.sha256(library_path.read_bytes()).hexdigest(),
+                },
+            )
 
     def test_write_and_load_round_trip(self) -> None:
         artifact = build_run_artifact(
