@@ -923,18 +923,18 @@ def run_tint_warm_bench(cfg, shaders, target, dry_run):
 
     repetitions = int(cfg["run"].get("warmRepetitions", DEFAULT_TINT_WARM_REPETITIONS))
     min_time = cfg["run"].get("warmMinTime", DEFAULT_TINT_WARM_MIN_TIME)
-    selected_names = {shader.get("benchmarkName", shader["name"]) for shader in shaders}
-    command = [
-        str(warm_bin),
-        f"--benchmark_filter={benchmark_prefix}/.*",
-        f"--benchmark_min_time={min_time}",
-        f"--benchmark_repetitions={repetitions}",
-        "--benchmark_report_aggregates_only=false",
-        "--benchmark_format=json",
-    ]
 
     if dry_run:
-        print(f"[dry-run] {' '.join(command)}")
+        for shader in shaders:
+            benchmark_name = preferred_tint_warm_benchmark_name(shader)
+            command = build_tint_warm_command(
+                warm_bin,
+                benchmark_prefix,
+                benchmark_name,
+                min_time,
+                repetitions,
+            )
+            print(f"[dry-run] {' '.join(command)}")
         return {
             shader["name"]: {
                 "p50_ns": 0,
@@ -945,33 +945,121 @@ def run_tint_warm_bench(cfg, shaders, target, dry_run):
             for shader in shaders
         }
 
-    proc = subprocess.run(command, check=True, capture_output=True, text=True)
-    payload = json.loads(proc.stdout)
-    samples_by_name = {}
-    for benchmark in payload.get("benchmarks", []):
-        if benchmark.get("run_type") != "iteration":
-            continue
-        benchmark_name = benchmark.get("name", "")
-        if not benchmark_name.startswith(f"{benchmark_prefix}/"):
-            continue
-        short_name = benchmark_name.split("/", 1)[1]
-        if short_name not in selected_names:
-            continue
-        sample_ns = duration_to_ns(benchmark.get("real_time"), benchmark.get("time_unit"))
-        if sample_ns is None:
-            continue
-        samples_by_name.setdefault(short_name, []).append(sample_ns)
-
     results = {}
     for shader in shaders:
-        benchmark_name = shader.get("benchmarkName", shader["name"])
-        samples = samples_by_name.get(benchmark_name, [])
+        benchmark_name = preferred_tint_warm_benchmark_name(shader)
+        command = build_tint_warm_command(
+            warm_bin,
+            benchmark_prefix,
+            benchmark_name,
+            min_time,
+            repetitions,
+        )
+        proc = subprocess.run(command, check=False, capture_output=True, text=True)
+        if proc.returncode != 0:
+            diagnostic = (proc.stderr or proc.stdout or "tint_benchmark failed").strip()
+            print(
+                f"  warning: tint_benchmark failed on {shader['name']}: {diagnostic[:200]}",
+                file=sys.stderr,
+            )
+            continue
+        try:
+            payload = parse_google_benchmark_json(proc.stdout)
+        except ValueError as exc:
+            print(
+                f"  warning: tint_benchmark JSON parse failed on {shader['name']}: {exc}",
+                file=sys.stderr,
+            )
+            continue
+
+        aliases = tint_warm_benchmark_aliases(shader)
+        samples = []
+        for benchmark in payload.get("benchmarks", []):
+            if benchmark.get("run_type") != "iteration":
+                continue
+            name = benchmark.get("name", "")
+            if not name.startswith(f"{benchmark_prefix}/"):
+                continue
+            short_name = name.split("/", 1)[1]
+            if short_name not in aliases:
+                continue
+            sample_ns = duration_to_ns(benchmark.get("real_time"), benchmark.get("time_unit"))
+            if sample_ns is not None:
+                samples.append(sample_ns)
         if not samples:
             continue
         result = ns_stats(samples)
         result["timingNote"] = "in-process tint_benchmark real_time samples"
         results[shader["name"]] = result
     return results
+
+
+def build_tint_warm_command(warm_bin, benchmark_prefix, benchmark_name, min_time, repetitions):
+    return [
+        str(warm_bin),
+        f"--benchmark_filter=^{benchmark_prefix}/{google_benchmark_filter_literal(benchmark_name)}$",
+        f"--benchmark_min_time={min_time}",
+        f"--benchmark_repetitions={repetitions}",
+        "--benchmark_report_aggregates_only=false",
+        "--benchmark_format=json",
+    ]
+
+
+def google_benchmark_filter_literal(value):
+    special = set(".+*?^$()[]{}|\\")
+    return "".join(f"\\{char}" if char in special else char for char in str(value))
+
+
+def parse_google_benchmark_json(text):
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("missing JSON object")
+    return json.loads(text[start:])
+
+
+def preferred_tint_warm_benchmark_name(shader):
+    benchmark_name = str(shader.get("benchmarkName", "")).strip()
+    if benchmark_name:
+        return benchmark_name
+    workload_id = str(shader.get("workloadId", "")).strip()
+    if workload_id:
+        return f"{workload_id}.wgsl"
+    path_name = Path(str(shader.get("path", ""))).name
+    return path_name or str(shader["name"])
+
+
+def tint_warm_benchmark_aliases(shader):
+    aliases = {
+        str(shader.get("name", "")).strip(),
+        str(shader.get("benchmarkName", "")).strip(),
+    }
+    path_name = Path(str(shader.get("path", ""))).name
+    if path_name:
+        aliases.add(path_name)
+    workload_id = str(shader.get("workloadId", "")).strip()
+    if workload_id:
+        aliases.add(workload_id)
+        aliases.add(f"{workload_id}.wgsl")
+    return {alias for alias in aliases if alias}
+
+
+def build_tint_warm_alias_map(shaders):
+    alias_to_shader = {}
+    collisions = {}
+    for shader in shaders:
+        shader_name = shader["name"]
+        for alias in tint_warm_benchmark_aliases(shader):
+            existing = alias_to_shader.get(alias)
+            if existing and existing != shader_name:
+                collisions.setdefault(alias, {existing}).add(shader_name)
+                continue
+            alias_to_shader[alias] = shader_name
+    if collisions:
+        details = ", ".join(
+            f"{alias}: {sorted(names)}" for alias, names in sorted(collisions.items())
+        )
+        raise RuntimeError(f"ambiguous Tint warm benchmark aliases: {details}")
+    return alias_to_shader
 
 
 def compute_delta(baseline_ns, comparison_ns):

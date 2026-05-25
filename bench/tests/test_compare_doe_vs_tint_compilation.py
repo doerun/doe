@@ -61,6 +61,47 @@ class TestCompareDoeVsTintCompilation(unittest.TestCase):
 
         self.assertEqual(version, "tool-version")
 
+    def test_tint_warm_alias_map_includes_materialized_workload_name(self) -> None:
+        aliases = self.module.build_tint_warm_alias_map(
+            [
+                {
+                    "name": "compilation_alpha_msl",
+                    "workloadId": "compilation_alpha_msl",
+                    "path": "/repo/bench/kernels/alpha.wgsl",
+                }
+            ]
+        )
+
+        self.assertEqual(aliases["compilation_alpha_msl"], "compilation_alpha_msl")
+        self.assertEqual(aliases["compilation_alpha_msl.wgsl"], "compilation_alpha_msl")
+        self.assertEqual(aliases["alpha.wgsl"], "compilation_alpha_msl")
+
+    def test_preferred_tint_warm_benchmark_name_uses_materialized_workload(self) -> None:
+        name = self.module.preferred_tint_warm_benchmark_name(
+            {
+                "name": "compilation_alpha_msl",
+                "workloadId": "compilation_alpha_msl",
+                "path": "/repo/bench/kernels/alpha.wgsl",
+            }
+        )
+
+        self.assertEqual(name, "compilation_alpha_msl.wgsl")
+
+    def test_parse_google_benchmark_json_skips_warning_prefix(self) -> None:
+        payload = self.module.parse_google_benchmark_json(
+            "warning text\n"
+            "{\n"
+            "  \"benchmarks\": []\n"
+            "}\n"
+        )
+
+        self.assertEqual(payload, {"benchmarks": []})
+
+    def test_google_benchmark_filter_literal_keeps_hyphen_plain(self) -> None:
+        escaped = self.module.google_benchmark_filter_literal("atan2-const-eval.wgsl")
+
+        self.assertEqual(escaped, "atan2-const-eval\\.wgsl")
+
 
 if __name__ == "__main__":
     unittest.main()

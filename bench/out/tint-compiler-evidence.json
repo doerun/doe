@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "artifactKind": "tint-compiler-evidence",
-  "generatedAt": "2026-05-25T19:47:45.044028Z",
-  "comparisonStatus": "diagnostic",
-  "claimStatus": "diagnostic",
+  "generatedAt": "2026-05-25T20:03:57.334586Z",
+  "comparisonStatus": "comparable",
+  "claimStatus": "claimable",
   "corpus": {
     "id": "doe-vs-tint",
     "source": "bench/workloads/workloads.apple.metal.json",
@@ -13,12 +13,12 @@
   "toolchains": {
     "doe": {
       "name": "doe-wgsl",
-      "version": "108173379eaf7d5ca2c567dbee234e299680294e",
+      "version": "6843b658b6aa9e7f6ec5af05ca8e3b2ceb4f8aa9",
       "command": [
         "runtime/zig/zig-out/bin/doe-runtime-compile-report",
         "--emit-msl"
       ],
-      "sourceRevision": "108173379eaf7d5ca2c567dbee234e299680294e",
+      "sourceRevision": "6843b658b6aa9e7f6ec5af05ca8e3b2ceb4f8aa9",
       "artifactPath": "runtime/zig/zig-out/bin/doe-runtime-compile-report",
       "artifactSha256": "d689189b0d10fe8403716c22fb825aa3ee2b9760cc14cc4f0463cf92710918a0"
     },
@@ -55,7 +55,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 11209
+          "total": 9583
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_noop_compute_msl/doe/compile-report.json"
       },
@@ -67,32 +67,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 4591791
+          "total": 26280
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_noop_compute_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 174.24,
+          "p95": 138.95,
+          "p99": 71.89
         }
       }
     },
@@ -109,7 +98,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 13875
+          "total": 12833
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_passthrough_vertex_msl/doe/compile-report.json"
       },
@@ -121,32 +110,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 4709250
+          "total": 34727
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_trivial_passthrough_vertex_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 170.61,
+          "p95": 141.22,
+          "p99": 90.9
         }
       }
     },
@@ -163,7 +141,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 17500
+          "total": 15708
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_relu_msl/doe/compile-report.json"
       },
@@ -175,32 +153,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 4967833
+          "total": 55915
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_relu_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 255.97,
+          "p95": 200.95,
+          "p99": 170.27
         }
       }
     },
@@ -217,7 +184,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 21458
+          "total": 19208
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_silu_msl/doe/compile-report.json"
       },
@@ -229,32 +196,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5139792
+          "total": 57099
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_silu_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 197.27,
+          "p95": 147.27,
+          "p99": 125.99
         }
       }
     },
@@ -271,7 +227,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 14292
+          "total": 11916
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_scale_f32_msl/doe/compile-report.json"
       },
@@ -283,32 +239,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 4994583
+          "total": 50561
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_scale_f32_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 324.31,
+          "p95": 228.67,
+          "p99": 192.46
         }
       }
     },
@@ -325,7 +270,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 20500
+          "total": 18125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_residual_add_msl/doe/compile-report.json"
       },
@@ -337,32 +282,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5060750
+          "total": 58778
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_simple_residual_add_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 224.29,
+          "p95": 190.9,
+          "p99": 145.18
         }
       }
     },
@@ -379,7 +313,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 37750
+          "total": 35333
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rmsnorm_msl/doe/compile-report.json"
       },
@@ -391,32 +325,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 7219875
+          "total": 146878
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rmsnorm_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 315.7,
+          "p95": 267.83,
+          "p99": 239.69
         }
       }
     },
@@ -433,7 +356,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 24750
+          "total": 22709
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_gelu_msl/doe/compile-report.json"
       },
@@ -445,32 +368,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5365292
+          "total": 73573
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_gelu_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 223.98,
+          "p95": 176.09,
+          "p99": 145.16
         }
       }
     },
@@ -487,7 +399,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 32042
+          "total": 28875
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rope_msl/doe/compile-report.json"
       },
@@ -499,32 +411,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 6337875
+          "total": 94434
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_rope_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 227.04,
+          "p95": 184.61,
+          "p99": 122.1
         }
       }
     },
@@ -541,7 +442,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 47083
+          "total": 45125
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_softmax_msl/doe/compile-report.json"
       },
@@ -553,32 +454,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 8191917
+          "total": 190990
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_softmax_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 323.25,
+          "p95": 289.86,
+          "p99": 262.99
         }
       }
     },
@@ -595,7 +485,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 48375
+          "total": 45417
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_layernorm_msl/doe/compile-report.json"
       },
@@ -607,32 +497,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 8470042
+          "total": 201683
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_layernorm_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 344.07,
+          "p95": 299.77,
+          "p99": 279.35
         }
       }
     },
@@ -649,7 +528,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 25625
+          "total": 24084
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_matmul_naive_msl/doe/compile-report.json"
       },
@@ -661,32 +540,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 6048292
+          "total": 92294
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_moderate_matmul_naive_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 283.22,
+          "p95": 237.58,
+          "p99": 217.96
         }
       }
     },
@@ -703,7 +571,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 80042
+          "total": 76500
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_attention_decode_msl/doe/compile-report.json"
       },
@@ -715,32 +583,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 10729792
+          "total": 313861
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_attention_decode_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 310.28,
+          "p95": 289.31,
+          "p99": 272.03
         }
       }
     },
@@ -757,7 +614,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 83084
+          "total": 81958
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_matmul_tiled_msl/doe/compile-report.json"
       },
@@ -769,32 +626,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 9730084
+          "total": 273109
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_matmul_tiled_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 233.23,
+          "p95": 202.68,
+          "p99": 145.63
         }
       }
     },
@@ -811,7 +657,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 41375
+          "total": 38750
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_fused_gemv_dequant_msl/doe/compile-report.json"
       },
@@ -823,32 +669,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 7560584
+          "total": 156212
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_fused_gemv_dequant_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 303.13,
+          "p95": 256.63,
+          "p99": 234.2
         }
       }
     },
@@ -865,7 +700,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 45875
+          "total": 43875
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_multi_entry_msl/doe/compile-report.json"
       },
@@ -877,32 +712,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 8064708
+          "total": 297477
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_complex_multi_entry_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 578.01,
+          "p95": 513.09,
+          "p99": 454.3
         }
       }
     },
@@ -919,7 +743,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 35250
+          "total": 33292
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_stress_many_bindings_msl/doe/compile-report.json"
       },
@@ -931,32 +755,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 6492292
+          "total": 115307
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_stress_many_bindings_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 246.35,
+          "p95": 208.12,
+          "p99": 175.68
         }
       }
     },
@@ -973,7 +786,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 95042
+          "total": 90916
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_decode_msl/doe/compile-report.json"
       },
@@ -985,32 +798,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 12590959
+          "total": 393441
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_decode_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 332.75,
+          "p95": 312.37,
+          "p99": 289.29
         }
       }
     },
@@ -1027,7 +829,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 79500
+          "total": 75625
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_prefill_msl/doe/compile-report.json"
       },
@@ -1039,32 +841,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 10171250
+          "total": 295122
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_attention_prefill_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 290.24,
+          "p95": 271.92,
+          "p99": 251.92
         }
       }
     },
@@ -1081,7 +872,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 23625
+          "total": 21667
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gather_msl/doe/compile-report.json"
       },
@@ -1093,32 +884,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5365916
+          "total": 73118
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gather_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 237.46,
+          "p95": 197.56,
+          "p99": 146.26
         }
       }
     },
@@ -1135,7 +915,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 23084
+          "total": 22208
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gelu_msl/doe/compile-report.json"
       },
@@ -1147,32 +927,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5246500
+          "total": 65221
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_gelu_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 193.68,
+          "p95": 151.48,
+          "p99": 128.51
         }
       }
     },
@@ -1189,7 +958,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 45292
+          "total": 43000
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_gemv_msl/doe/compile-report.json"
       },
@@ -1201,32 +970,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 7985584
+          "total": 170261
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_gemv_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 295.96,
+          "p95": 264.76,
+          "p99": 230.22
         }
       }
     },
@@ -1243,7 +1001,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 85209
+          "total": 82208
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_tiled_msl/doe/compile-report.json"
       },
@@ -1255,32 +1013,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 10464167
+          "total": 271702
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_matmul_tiled_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 230.51,
+          "p95": 209.69,
+          "p99": 193.99
         }
       }
     },
@@ -1297,7 +1044,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 20209
+          "total": 18625
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_residual_msl/doe/compile-report.json"
       },
@@ -1309,32 +1056,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 5039958
+          "total": 59046
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_residual_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 217.03,
+          "p95": 158.3,
+          "p99": 121.4
         }
       }
     },
@@ -1351,7 +1087,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 54625
+          "total": 51083
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rmsnorm_msl/doe/compile-report.json"
       },
@@ -1363,32 +1099,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 9856417
+          "total": 336643
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rmsnorm_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 559.01,
+          "p95": 506.57,
+          "p99": 479.61
         }
       }
     },
@@ -1405,7 +1130,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 31584
+          "total": 29833
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rope_msl/doe/compile-report.json"
       },
@@ -1417,32 +1142,21 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 6298500
+          "total": 94784
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_rope_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 217.72,
+          "p95": 174.32,
+          "p99": 128.33
         }
       }
     },
@@ -1459,7 +1173,7 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 49625
+          "total": 46583
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_sample_msl/doe/compile-report.json"
       },
@@ -1471,49 +1185,29 @@
         "validationStatus": "passed",
         "validationTool": "xcrun metal",
         "phaseTimingsNs": {
-          "total": 8742500
+          "total": 295894
         },
         "receiptPath": "bench/out/tint-compiler-evidence.artifacts/compilation_inference_sample_msl/tint/output.msl"
       },
       "comparability": {
-        "status": "diagnostic",
-        "reasons": [
-          "missing in-process Tint warm timing evidence"
-        ]
+        "status": "comparable",
+        "reasons": []
       },
       "claimability": {
-        "status": "diagnostic",
-        "reasons": [
-          "row is not comparable",
-          "missing in-process Tint warm timing evidence",
-          "no warm in-process Tint samples (config lacks warmBinaryPath)",
-          "warm comparison sample count 0 < release floor 15",
-          "p50 delta missing",
-          "p95 delta missing",
-          "p99 delta missing",
-          "legacy claim gate did not mark the row claimable"
-        ],
+        "status": "claimable",
+        "reasons": [],
         "deltaPercent": {
-          "p50": null,
-          "p95": null,
-          "p99": null
+          "p50": 535.2,
+          "p95": 472.87,
+          "p99": 434.45
         }
       }
     }
   ],
   "summary": {
     "rowCount": 27,
-    "comparableRows": 0,
-    "claimableRows": 0,
-    "reasons": [
-      "missing in-process Tint warm timing evidence",
-      "row is not comparable",
-      "no warm in-process Tint samples (config lacks warmBinaryPath)",
-      "warm comparison sample count 0 < release floor 15",
-      "p50 delta missing",
-      "p95 delta missing",
-      "p99 delta missing",
-      "legacy claim gate did not mark the row claimable"
-    ]
+    "comparableRows": 27,
+    "claimableRows": 27,
+    "reasons": []
   }
 }

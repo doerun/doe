@@ -417,6 +417,9 @@ That document defines:
 - Compilation workloads may also publish a real warm/in-process Tint view from
   Dawn's `tint_benchmark` target when the compare config provides
   `comparison.warmBinaryPath`.
+- For Doe-owned workload rows, first materialize the WGSL corpus into the local
+  Dawn Tint benchmark input set and rebuild the benchmark harness:
+  `python3 bench/tools/materialize_tint_warm_corpus.py --workloads bench/workloads/workloads.apple.metal.json --dawn-source-dir bench/vendor/dawn --build-dir bench/vendor/dawn/out/Release --target msl --build --ninja-bin ninja --output-state bench/fixtures/dawn_tint_warm_corpus_state.json`
 - Raw Tint timings remain the auditable source metric; the corrected view is a
   presentation aid so process startup does not get mistaken for compile work.
   The warm view is separate again: it is a true in-process Tint measurement,

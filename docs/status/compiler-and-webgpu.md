@@ -10,6 +10,31 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Apple Metal Tint warm corpus evidence
+
+The Doe-vs-Tint compiler lane now has a reproducible path for true
+warm/in-process Tint timing on Doe-owned Apple Metal WGSL workload rows. The
+materializer copies the selected WGSL rows into the ignored local Dawn checkout,
+normalizes copied benchmark input text for Dawn's generated C++ header, widens
+the local MSL writer benchmark's array-length bindpoint coverage for the Doe
+corpus, and rebuilds `tint_benchmark`.
+
+Fresh local warm-corpus state:
+
+- `bench/fixtures/dawn_tint_warm_corpus_state.json`
+
+Fresh compiler evidence:
+
+- `bench/out/tint-compiler-evidence.json`
+- `bench/out/compilation/doe-vs-tint.msl.claim.json`
+
+Verified:
+
+- `python3 bench/tools/materialize_tint_warm_corpus.py --workloads bench/workloads/workloads.apple.metal.json --dawn-source-dir bench/vendor/dawn --build-dir bench/vendor/dawn/out/Release --target msl --build --ninja-bin ninja --output-state bench/fixtures/dawn_tint_warm_corpus_state.json`
+- `python3 bench/native-compare/compare_doe_vs_tint_compilation.py --config bench/native-compare/compare_doe_vs_tint.config.json --claim-mode release --evidence-out bench/out/tint-compiler-evidence.json`
+- `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json --require-claimable`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_materialize_tint_warm_corpus.py bench/tests/test_compare_doe_vs_tint_compilation.py -q`
+
 ## 2026-05-25 — Local Tint toolchain and claimable corpus evidence
 
 The Dawn bootstrapper now supports the local MacBook layout where

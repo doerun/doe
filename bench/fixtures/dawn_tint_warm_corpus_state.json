@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "tint-warm-corpus-materialization",
+  "generatedAt": "2026-05-25T20:01:04.993116Z",
+  "workloadsPath": "bench/workloads/workloads.apple.metal.json",
+  "dawnSourceDir": "bench/vendor/dawn",
+  "dawnBuildDir": "bench/vendor/dawn/out/Release",
+  "target": "msl",
+  "benchmarkInputsScriptPath": "bench/vendor/dawn/src/tint/cmd/bench/generate_benchmark_inputs.py",
+  "benchmarkInputsScriptSha256": "8f800cb14551d165a61f9f32ced92e2da7395cb62e8ff776e0d42804febd352c",
+  "mslWriterBenchPath": "bench/vendor/dawn/src/tint/cmd/bench/msl/writer_bench.cc",
+  "mslWriterBenchSha256": "1e0d328cc31e11936b52e1430cec39116f975c5bfb42cd6c8a930f46c1798730",
+  "tintBenchmarkPath": "bench/vendor/dawn/out/Release/tint_benchmark",
+  "tintBenchmarkSha256": "913fa6606b7856b590520bd9214bebbac32feab4463c9961b787c9884185dd69",
+  "built": true,
+  "rows": [
+    {
+      "workloadId": "compilation_trivial_noop_compute_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_trivial_noop_compute_msl.wgsl",
+      "sourceSha256": "0e88698096320b7a1e81a4ebe37897aebb71c3e6c9cfd085624e287e3c673073",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_trivial_passthrough_vertex_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_trivial_passthrough_vertex_msl.wgsl",
+      "sourceSha256": "ed605c9b978c4cbd86db61ebbd8c2241e4d5d65ffa5c0b2e82259a9d8aa479c9",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_simple_relu_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/simple_relu.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_simple_relu_msl.wgsl",
+      "sourceSha256": "a79c6bb744a3c13f734f1e17a2f9f617c05aac7ae3d64f67c9cc98945f459acc",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_simple_silu_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/simple_silu.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_simple_silu_msl.wgsl",
+      "sourceSha256": "ee4333fda2c7598f43655cd67598f7c34493e01001bec8f4f5167de3ec4094ec",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_simple_scale_f32_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_simple_scale_f32_msl.wgsl",
+      "sourceSha256": "21f18f6bad8c79bd9246f27b0eb25b714f666b7c8ffbd4f56ae0841589d4cab3",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_simple_residual_add_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/simple_residual_add.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_simple_residual_add_msl.wgsl",
+      "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_rmsnorm_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_rmsnorm_msl.wgsl",
+      "sourceSha256": "7a9ba6860ccf30a363f9da36c6fcb46e8b3fcdf8b30b4000f7f0704e72a8f511",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_gelu_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_gelu.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_gelu_msl.wgsl",
+      "sourceSha256": "846366f6ede966339046655492a3e6824446f5e13f0115502efa0b113313ae95",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_rope_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_rope.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_rope_msl.wgsl",
+      "sourceSha256": "3ea8c10372222e8836327bd0403b8a9f6f2648e369bce09b51697d122b3123e6",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_softmax_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_softmax.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_softmax_msl.wgsl",
+      "sourceSha256": "eafa9347d477e95b1a639a5c46bac76de2270740c6b249baff1e3c403fbd0481",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_layernorm_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_layernorm_msl.wgsl",
+      "sourceSha256": "dcaf21f3dfb8ebd91165bc41ffe2eb0076337543e78e0d60cc2aebca77a87467",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_moderate_matmul_naive_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_moderate_matmul_naive_msl.wgsl",
+      "sourceSha256": "691551e04ff875ec882b45993477ec40f432185921e3b0f7f77aec0e5e2b817b",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_complex_attention_decode_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_complex_attention_decode_msl.wgsl",
+      "sourceSha256": "66abbe70b2a2dfef3de111388510c5c2b0a937257f1b4240d85a32d5523337af",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_complex_matmul_tiled_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_complex_matmul_tiled_msl.wgsl",
+      "sourceSha256": "33d1e963ed359997b7a334ca77da0e94951c38bd620b9fd6264d783bea6c97b9",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_complex_fused_gemv_dequant_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_complex_fused_gemv_dequant_msl.wgsl",
+      "sourceSha256": "c2c71685c1663f3995f301551ed983f514e2fb3d5f7d0487daf792b637b71a56",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_complex_multi_entry_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_complex_multi_entry_msl.wgsl",
+      "sourceSha256": "19f491a1a1e81a13fa640a361a87401b98d22f351fe4eafdff8b2a144032339a",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_stress_many_bindings_msl",
+      "shaderPath": "bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_stress_many_bindings_msl.wgsl",
+      "sourceSha256": "e093a962268bbac3a4e20e20118d5f6ac71324765df1f4a58c191f6743294db6",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_attention_decode_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/attention-decode.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_attention_decode_msl.wgsl",
+      "sourceSha256": "d12cda916546e9c518d89bba45e9d0617a60d382c004adb440221840ee76487b",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_attention_prefill_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/attention-prefill.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_attention_prefill_msl.wgsl",
+      "sourceSha256": "f1715944f604a096aba7b65060218f366f04930a9dec33f80bcc166dc03cd8bb",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_gather_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/gather.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_gather_msl.wgsl",
+      "sourceSha256": "062496b48017bd03cf9be3535566c71d6f18b3c86e831ff3c533f8125e7e430f",
+      "asciiNormalized": true
+    },
+    {
+      "workloadId": "compilation_inference_gelu_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/gelu.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_gelu_msl.wgsl",
+      "sourceSha256": "62073cfc865c60d67a7e01da58bfaf50348009d58101ce9eba377992c9629bb4",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_matmul_gemv_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/matmul-gemv.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_matmul_gemv_msl.wgsl",
+      "sourceSha256": "523638d5e326b2162ea2e467e698d7d25252e771ab56f4b40555d33906ab54bf",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_matmul_tiled_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/matmul-tiled.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_matmul_tiled_msl.wgsl",
+      "sourceSha256": "964fcc3c3aed8966fa41f7f76910b6857916a543ec4c516ccafcbe43bf609f5c",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_residual_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/residual.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_residual_msl.wgsl",
+      "sourceSha256": "75ba7169ecc1af5f1ee94a94e775c3229fb833e61c0cb16af36a3fc045a31c62",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_rmsnorm_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/rmsnorm.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_rmsnorm_msl.wgsl",
+      "sourceSha256": "0c0161d275a82b454a626aaffb47e014b371ebc4b1fd6def806b182e586cb497",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_rope_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/rope.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_rope_msl.wgsl",
+      "sourceSha256": "185032b2848ed1e2cb9c2450c0360b77e557cd4f0cb2ec5f5206c37c32471c0e",
+      "asciiNormalized": false
+    },
+    {
+      "workloadId": "compilation_inference_sample_msl",
+      "shaderPath": "bench/inference-pipeline/kernels/sample.wgsl",
+      "target": "msl",
+      "dawnBenchmarkPath": "test/tint/benchmark/doe/compilation_inference_sample_msl.wgsl",
+      "sourceSha256": "a8b526119e769b5265686291eac4fc81974fab9b372fb39b348845cb6ba6a7a6",
+      "asciiNormalized": false
+    }
+  ]
+}
