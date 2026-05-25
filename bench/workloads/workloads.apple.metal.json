@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "ownership": "generated",
   "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
-  "generatorInputHash": "3cde2a172102b03fae3752c8429bc7bf43f09bed5c9bdb03b0a39b119e8d67b6",
-  "generatedAt": "2026-04-18T01:21:14.912402+00:00",
+  "generatorInputHash": "76959edd503d4a0a1c98a94c6a4771c92e9ae4f8ef47e018222a7d7a38dd2ef9",
+  "generatedAt": "2026-05-25T18:55:36.743694+00:00",
   "workloads": [
     {
       "id": "compute_matvec_32768x2048_f32",
@@ -1393,6 +1393,7 @@
       "api": "metal",
       "applesToApplesVetted": true,
       "benchmarkClass": "comparable",
+      "claimEligible": true,
       "commandsPath": "examples/copy_buffer_to_texture_commands.json",
       "comparabilityCandidate": {
         "enabled": false,
@@ -1407,15 +1408,14 @@
       "domain": "copy",
       "driver": "1.0.0",
       "family": "m3",
-      "baselineCommandRepeat": 400,
-      "baselineTimingDivisor": 400,
+      "baselineCommandRepeat": 2000,
+      "baselineTimingDivisor": 2000,
       "name": "copy buffer-to-texture contract",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "comparisonCommandRepeat": 400,
-      "comparisonTimingDivisor": 400,
-      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence across 400 repeated copies.",
+      "comparisonCommandRepeat": 2000,
+      "comparisonTimingDivisor": 2000,
+      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
       "vendor": "apple",
-      "claimEligible": false,
       "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "governed"
@@ -1494,6 +1494,7 @@
       "api": "metal",
       "applesToApplesVetted": true,
       "benchmarkClass": "comparable",
+      "claimEligible": true,
       "commandsPath": "examples/copy_texture_to_texture_commands.json",
       "comparabilityCandidate": {
         "enabled": false,
@@ -1508,16 +1509,15 @@
       "domain": "copy",
       "driver": "1.0.0",
       "family": "m3",
-      "baselineCommandRepeat": 400,
-      "baselineTimingDivisor": 400,
+      "baselineCommandRepeat": 2000,
+      "baselineTimingDivisor": 2000,
       "name": "copy texture-to-texture contract",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce workload-unit wall tail volatility.",
+      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
       "vendor": "apple",
-      "claimEligible": false,
       "workloadOrigin": "doe_contract_with_dawn_mapping",
-      "comparisonCommandRepeat": 400,
-      "comparisonTimingDivisor": 400,
+      "comparisonCommandRepeat": 2000,
+      "comparisonTimingDivisor": 2000,
       "cohorts": [
         "governed"
       ]
