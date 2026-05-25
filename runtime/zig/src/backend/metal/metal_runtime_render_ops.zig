@@ -41,16 +41,21 @@ pub fn render_draw(self: anytype, cmd: model_render_types.RenderDrawCommand, que
         }
     }
 
-    const icb = if (is_bundle) try self.ensure_icb(cmd.draw_count, cmd.vertex_count, cmd.instance_count, red_pl) else null;
     try self.ensure_streaming_render_encoder();
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     const encode_start = common_timing.now_ns();
     if (is_bundle) {
-        bridge.metal_bridge_render_encoder_execute_icb(
+        bridge.metal_bridge_render_encoder_draw(
             self.streaming_render_encoder,
-            icb,
+            0x00000004,
             cmd.draw_count,
+            cmd.vertex_count,
+            cmd.instance_count,
+            0,
+            0,
+            red_pl,
+            self.render_pipeline,
         );
     } else {
         bridge.metal_bridge_render_encoder_draw(

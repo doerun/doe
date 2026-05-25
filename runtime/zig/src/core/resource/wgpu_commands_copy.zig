@@ -206,6 +206,7 @@ pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_e
 
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
+    const setup_start_ns = std.time.nanoTimestamp();
     const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
@@ -214,7 +215,9 @@ pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_e
         return .{ .status = .@"error", .status_message = "deviceCreateCommandEncoder returned null" };
     }
     defer procs.wgpuCommandEncoderRelease(encoder);
+    const setup_end_ns = std.time.nanoTimestamp();
 
+    const encode_start_ns = std.time.nanoTimestamp();
     switch (copy.direction) {
         .buffer_to_buffer => {
             const src_size = try resources.requiredBytes(bytes, copy.src.offset);
@@ -417,8 +420,17 @@ pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_e
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
+    const encode_end_ns = std.time.nanoTimestamp();
+    const setup_ns = if (setup_end_ns > setup_start_ns)
+        @as(u64, @intCast(setup_end_ns - setup_start_ns))
+    else
+        0;
+    const encode_ns = if (encode_end_ns > encode_start_ns)
+        @as(u64, @intCast(encode_end_ns - encode_start_ns))
+    else
+        0;
     if (command_buffer == null) {
-        return .{ .status = .@"error", .status_message = "commandEncoderFinish returned null" };
+        return .{ .status = .@"error", .status_message = "commandEncoderFinish returned null", .setup_ns = setup_ns, .encode_ns = encode_ns };
     }
     defer procs.wgpuCommandBufferRelease(command_buffer);
 
@@ -433,6 +445,8 @@ pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_e
             .texture_to_buffer => "copy-texture-to-buffer command submitted",
             .texture_to_texture => "copy-texture-to-texture command submitted",
         },
+        .setup_ns = setup_ns,
+        .encode_ns = encode_ns,
         .submit_wait_ns = submit_wait_ns,
     };
 }

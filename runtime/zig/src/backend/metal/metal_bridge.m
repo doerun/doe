@@ -586,15 +586,24 @@ void metal_bridge_blit_encoder_copy_buffer_to_texture(
     id<MTLBuffer> src = (__bridge id<MTLBuffer>)src_h;
     id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
     MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
-    [encoder copyFromBuffer:src
-               sourceOffset:(NSUInteger)src_offset
-          sourceBytesPerRow:(NSUInteger)src_bytes_per_row
-        sourceBytesPerImage:(NSUInteger)src_rows_per_image * (NSUInteger)src_bytes_per_row
-                 sourceSize:copy_size
-                  toTexture:dst
-           destinationSlice:0
-           destinationLevel:(NSUInteger)dst_mip_level
-          destinationOrigin:MTLOriginMake(0, 0, 0)];
+    SEL copy_sel = @selector(copyFromBuffer:sourceOffset:sourceBytesPerRow:sourceBytesPerImage:sourceSize:toTexture:destinationSlice:destinationLevel:destinationOrigin:);
+    typedef void (*CopyBufferToTextureFn)(id, SEL, id<MTLBuffer>, NSUInteger, NSUInteger, NSUInteger, MTLSize, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin);
+    static CopyBufferToTextureFn copy_fn = NULL;
+    if (copy_fn == NULL) {
+        copy_fn = (CopyBufferToTextureFn)(IMP)[(id)encoder methodForSelector:copy_sel];
+    }
+    copy_fn(
+        encoder,
+        copy_sel,
+        src,
+        (NSUInteger)src_offset,
+        (NSUInteger)src_bytes_per_row,
+        (NSUInteger)src_rows_per_image * (NSUInteger)src_bytes_per_row,
+        copy_size,
+        dst,
+        0,
+        (NSUInteger)dst_mip_level,
+        MTLOriginMake(0, 0, 0));
 }
 
 void metal_bridge_blit_encoder_copy_texture_to_buffer(
@@ -638,15 +647,24 @@ void metal_bridge_blit_encoder_copy_texture_to_texture(
     id<MTLTexture> src = (__bridge id<MTLTexture>)src_texture_h;
     id<MTLTexture> dst = (__bridge id<MTLTexture>)dst_texture_h;
     MTLSize copy_size = MTLSizeMake(width, height, depth_or_array_layers);
-    [encoder copyFromTexture:src
-                 sourceSlice:0
-                 sourceLevel:(NSUInteger)src_mip_level
-                sourceOrigin:MTLOriginMake(0, 0, 0)
-                  sourceSize:copy_size
-                   toTexture:dst
-            destinationSlice:0
-            destinationLevel:(NSUInteger)dst_mip_level
-           destinationOrigin:MTLOriginMake(0, 0, 0)];
+    SEL copy_sel = @selector(copyFromTexture:sourceSlice:sourceLevel:sourceOrigin:sourceSize:toTexture:destinationSlice:destinationLevel:destinationOrigin:);
+    typedef void (*CopyTextureToTextureFn)(id, SEL, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin, MTLSize, id<MTLTexture>, NSUInteger, NSUInteger, MTLOrigin);
+    static CopyTextureToTextureFn copy_fn = NULL;
+    if (copy_fn == NULL) {
+        copy_fn = (CopyTextureToTextureFn)(IMP)[(id)encoder methodForSelector:copy_sel];
+    }
+    copy_fn(
+        encoder,
+        copy_sel,
+        src,
+        0,
+        (NSUInteger)src_mip_level,
+        MTLOriginMake(0, 0, 0),
+        copy_size,
+        dst,
+        0,
+        (NSUInteger)dst_mip_level,
+        MTLOriginMake(0, 0, 0));
 }
 
 void metal_bridge_end_blit_encoding(MetalHandle encoder_h) {
@@ -938,16 +956,56 @@ void metal_bridge_render_encoder_draw(
     id<MTLRenderCommandEncoder> encoder  = (__bridge id<MTLRenderCommandEncoder>)encoder_h;
     id<MTLRenderPipelineState>  pipeline = (__bridge id<MTLRenderPipelineState>)pipeline_h;
     const MTLPrimitiveType primitive = wgpu_to_mtl_primitive(topology);
+    SEL set_pipeline_sel = @selector(setRenderPipelineState:);
+    typedef void (*SetPipelineFn)(id, SEL, id<MTLRenderPipelineState>);
+    SetPipelineFn set_pipeline_fn = (SetPipelineFn)(IMP)[(id)encoder methodForSelector:set_pipeline_sel];
 
-    for (uint32_t i = 0; i < draw_count; i++) {
+    if (first_instance == 0 && instance_count == 1) {
+        SEL draw_sel = @selector(drawPrimitives:vertexStart:vertexCount:);
+        typedef void (*DrawPrimitivesSingleInstanceFn)(id, SEL, MTLPrimitiveType, NSUInteger, NSUInteger);
+        DrawPrimitivesSingleInstanceFn draw_fn = (DrawPrimitivesSingleInstanceFn)(IMP)[(id)encoder methodForSelector:draw_sel];
         if (redundant_pipeline) {
-            [encoder setRenderPipelineState:pipeline];
+            for (uint32_t i = 0; i < draw_count; i++) {
+                set_pipeline_fn(encoder, set_pipeline_sel, pipeline);
+                draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count);
+            }
+            return;
         }
-        [encoder drawPrimitives:primitive
-                    vertexStart:first_vertex
-                    vertexCount:vertex_count
-                  instanceCount:instance_count
-                    baseInstance:first_instance];
+        for (uint32_t i = 0; i < draw_count; i++) {
+            draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count);
+        }
+        return;
+    }
+
+    if (first_instance == 0) {
+        SEL draw_sel = @selector(drawPrimitives:vertexStart:vertexCount:instanceCount:);
+        typedef void (*DrawPrimitivesFn)(id, SEL, MTLPrimitiveType, NSUInteger, NSUInteger, NSUInteger);
+        DrawPrimitivesFn draw_fn = (DrawPrimitivesFn)(IMP)[(id)encoder methodForSelector:draw_sel];
+        if (redundant_pipeline) {
+            for (uint32_t i = 0; i < draw_count; i++) {
+                set_pipeline_fn(encoder, set_pipeline_sel, pipeline);
+                draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count, instance_count);
+            }
+            return;
+        }
+        for (uint32_t i = 0; i < draw_count; i++) {
+            draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count, instance_count);
+        }
+        return;
+    }
+
+    SEL draw_sel = @selector(drawPrimitives:vertexStart:vertexCount:instanceCount:baseInstance:);
+    typedef void (*DrawPrimitivesBaseInstanceFn)(id, SEL, MTLPrimitiveType, NSUInteger, NSUInteger, NSUInteger, NSUInteger);
+    DrawPrimitivesBaseInstanceFn draw_fn = (DrawPrimitivesBaseInstanceFn)(IMP)[(id)encoder methodForSelector:draw_sel];
+    if (redundant_pipeline) {
+        for (uint32_t i = 0; i < draw_count; i++) {
+            set_pipeline_fn(encoder, set_pipeline_sel, pipeline);
+            draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count, instance_count, first_instance);
+        }
+        return;
+    }
+    for (uint32_t i = 0; i < draw_count; i++) {
+        draw_fn(encoder, draw_sel, primitive, first_vertex, vertex_count, instance_count, first_instance);
     }
 }
 
