@@ -1,8 +1,0 @@
-{
-  "logitsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-force-not-safe-exact-tie/input.logits.bin",
-  "outputPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-force-not-safe-exact-tie/doe.stable-token.json",
-  "vocabSize": 262144,
-  "mode": "buffer-readback",
-  "topCandidates": 5,
-  "label": "seatbelt-safe-unsafe-prefill-force-not-safe-exact-tie-stable-token"
-}

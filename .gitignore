@@ -38,41 +38,12 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-# Bench outputs — keep bulky run workspaces disposable, but allow only the
-# portable JSON artifact surfaces needed by the run/compare/claim stack and the
-# static bench viewer.
-bench/out/*
-!bench/out/**/
+# Bench outputs are generated evidence. Stable tracked receipts live either in
+# reports/ or as explicitly tracked historical fixtures; new run workspaces stay
+# local unless intentionally force-added.
 bench/out/**
-!bench/out/**/
+!bench/out/
 !bench/out/README.local.md
-!bench/out/*.run.json
-!bench/out/**/*.run.json
-!bench/out/*.compare.json
-!bench/out/**/*.compare.json
-!bench/out/*.compare-dev.json
-!bench/out/**/*.compare-dev.json
-!bench/out/*.release.json
-!bench/out/**/*.release.json
-!bench/out/*.smoke.json
-!bench/out/**/*.smoke.json
-!bench/out/*.claim.json
-!bench/out/**/*.claim.json
-!bench/out/*.erratum.md
-!bench/out/**/*.erratum.md
-!bench/out/*.determinism.json
-!bench/out/**/*.determinism.json
-!bench/out/*.commands.annotated.json
-!bench/out/**/*.commands.annotated.json
-!bench/out/test-inventory*.json
-!bench/out/cube/latest/cube.summary.json
-!bench/out/cube/latest/cube.rows.json
-!bench/out/visualization/latest/inventory.json
-!bench/out/visualization/latest/pipeline.summary.json
-!bench/out/visualization/latest/cube.summary.json
-!bench/out/visualization/latest/cube.rows.json
-!bench/out/proof-metrics/latest/proof_metrics_summary.json
-!bench/out/proof-metrics/latest/proof_metrics_summary.md
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson
 
@@ -175,6 +146,7 @@ runtime/zig/examples/simulator/**/compile/**/corefile.cs1
 # bench/runners/csl-runners/streaming_executor_*.py. The rest of
 # bench/out/streaming-executor (compile outputs, ELFs, traces) stays
 # ignored.
+!bench/out/streaming-executor/
 !bench/out/streaming-executor/*-source/
 !bench/out/streaming-executor/*-source/**/*.csl
 

@@ -36,7 +36,8 @@ visible, lowering preserves identity, and every claim has a receipt path.
 - Explicit behavior: no silent fallback, explicit runtime boundaries, and
   artifact-backed benchmarking instead of hand-wavy claims.
 - Performance work with receipts: current results live in
-  [`docs/status.md`](docs/status.md) and `bench/out/*`.
+  [`docs/status.md`](docs/status.md), with public README receipt paths indexed
+  in [`reports/claim-index.json`](reports/claim-index.json).
 
 ## Current evidence
 
@@ -44,11 +45,8 @@ These charts summarize the current public benchmark lanes. A positive percent me
 
 ![Doe package benchmark claims](assets/readme/package-claims.svg)
 
-Outputs:
-- Node package, AMD Vulkan: [benchmark output](bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
-- Bun package, AMD Vulkan: [benchmark output](bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
-- Node package, Apple Metal: [benchmark output](bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
-- Bun package, Apple Metal: [benchmark output](bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
+Receipt paths for these charted lanes are listed in
+[`reports/claim-index.json`](reports/claim-index.json).
 
 ## Additional benchmark outputs
 
@@ -56,12 +54,8 @@ Additional benchmark outputs also exist for ONNX Runtime (ORT) and broader compa
 
 ![Doe ORT benchmark claims](assets/readme/ort-claims.svg)
 
-Outputs:
-- Native ORT, AMD Vulkan: [benchmark output](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json) / [benchmark output](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json)
-- Node ORT, AMD Vulkan: [benchmark output](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json) / [benchmark output](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json)
-- Bun ORT, AMD Vulkan: [benchmark output](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json) / [benchmark output](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json)
-- Node ORT, Apple Metal: [benchmark output](bench/out/apple-metal-ort-node/20260415T005827Z/gemma270m.compare.json)
-- Bun ORT, Apple Metal: [benchmark output](bench/out/apple-metal-ort-bun/20260415T005827Z/gemma270m-prefill32-decode1.compare.json)
+Receipt paths for these charted lanes are listed in
+[`reports/claim-index.json`](reports/claim-index.json).
 
 ## Current product surface
 
