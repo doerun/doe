@@ -298,7 +298,7 @@ function resolvePlaywrightEntry(dopplerRepoPath) {
     }
   }
   throw new Error(
-    "Could not resolve Playwright. Install playwright-core under browser/chromium or playwright under ../doppler."
+    "Could not resolve Playwright. Run npm --prefix browser/chromium ci or install playwright under ../doppler."
   );
 }
 

@@ -395,7 +395,7 @@ async function loadChromiumDriver() {
   }
 
   throw new Error(
-    "Playwright not found. Install with: npm install --prefix browser/chromium playwright-core",
+    "Playwright not found. Install with: npm --prefix browser/chromium ci",
   );
 }
 

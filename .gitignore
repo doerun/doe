@@ -108,6 +108,7 @@ browser/chromium/cache
 browser/chromium/depot_tools/
 browser/chromium/depot_tools
 browser/chromium/node_modules/
+browser/chromium_webgpu_lane/node_modules/
 browser/chromium/src/
 browser/chromium/src
 browser/chromium/chromium/

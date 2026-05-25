@@ -239,7 +239,7 @@ Run from repo root:
 
 ```bash
 # install runtime dependency once (uses your Chromium binary, no Playwright browser download required)
-npm install --prefix browser/chromium playwright-core
+npm --prefix browser/chromium ci
 
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
 ./browser/chromium/scripts/run-smoke.sh \

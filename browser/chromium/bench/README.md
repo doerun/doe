@@ -64,7 +64,7 @@ This module implements a layered browser benchmark superset for Chromium Track A
 From `` root:
 
 ```bash
-npm install --prefix browser/chromium playwright-core
+npm --prefix browser/chromium ci
 ./browser/chromium/scripts/run-bench.sh
 ```
 
