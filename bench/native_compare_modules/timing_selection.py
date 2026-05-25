@@ -9,7 +9,8 @@ from typing import Any
 from native_compare_modules.reporting import NS_PER_MS, safe_float, safe_int
 
 
-RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-macro", "p0-render", "p0-render-macro"}
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "p0-render"}
+HOST_KERNEL_PREWARM_TIMING_SUFFIX = "host-kernel-prewarm"
 
 _ENCODE_PLAUSIBILITY_RATIO = 0.05
 
@@ -90,6 +91,10 @@ def parse_execution_row_total_ns_rows(path: Path) -> list[int]:
     return durations
 
 
+def trace_has_kernel_dispatch(path: Path) -> bool:
+    return any(row.get("command") == "kernel_dispatch" for row in parse_trace_rows(path))
+
+
 def maybe_adjust_timing_for_ignored_first_ops(
     *,
     measured_ms: float,
@@ -153,6 +158,64 @@ def canonical_timing_source(source: str) -> str:
     return source.split("+", 1)[0]
 
 
+def host_kernel_prewarm_ns(trace_meta: dict[str, Any]) -> int:
+    return max(0, safe_int(trace_meta.get("hostKernelPrewarmTotalNs"), default=0))
+
+
+def timing_source_includes_host_kernel_prewarm(source: str) -> bool:
+    return HOST_KERNEL_PREWARM_TIMING_SUFFIX in {
+        part.strip() for part in str(source or "").split("+")[1:]
+    }
+
+
+def operation_total_with_host_kernel_prewarm_ns(
+    trace_meta: dict[str, Any],
+    *,
+    include_host_kernel_prewarm: bool,
+) -> int:
+    execution_total_ns = safe_int(trace_meta.get("executionTotalNs"), default=-1)
+    if execution_total_ns <= 0:
+        return execution_total_ns
+    if not include_host_kernel_prewarm:
+        return execution_total_ns
+    return execution_total_ns + host_kernel_prewarm_ns(trace_meta)
+
+
+def effective_setup_total_ns_for_sample(sample: dict[str, Any]) -> int:
+    trace_meta = sample.get("traceMeta", {})
+    if not isinstance(trace_meta, dict):
+        return 0
+    setup_ns = max(0, safe_int(trace_meta.get("executionSetupTotalNs"), default=0))
+    source = str(sample.get("timingSource", "")).strip()
+    timing = sample.get("timing", {})
+    if isinstance(timing, dict):
+        source = str(timing.get("traceMetaSource", source)).strip() or source
+    if (
+        canonical_timing_source(source) == "doe-execution-total-ns"
+        and timing_source_includes_host_kernel_prewarm(source)
+    ):
+        setup_ns += host_kernel_prewarm_ns(trace_meta)
+    return setup_ns
+
+
+def effective_execution_total_ns_for_sample(sample: dict[str, Any]) -> int:
+    trace_meta = sample.get("traceMeta", {})
+    if not isinstance(trace_meta, dict):
+        return 0
+    total_ns = max(0, safe_int(trace_meta.get("executionTotalNs"), default=0))
+    source = str(sample.get("timingSource", "")).strip()
+    timing = sample.get("timing", {})
+    if isinstance(timing, dict):
+        source = str(timing.get("traceMetaSource", source)).strip() or source
+    if (
+        total_ns > 0
+        and canonical_timing_source(source) == "doe-execution-total-ns"
+        and timing_source_includes_host_kernel_prewarm(source)
+    ):
+        total_ns += host_kernel_prewarm_ns(trace_meta)
+    return total_ns
+
+
 def classify_timing_source(source: str) -> str:
     canonical = canonical_timing_source(source)
     if canonical in (
@@ -200,6 +263,7 @@ def pick_measured_timing_ms(
     execution_dispatch_count = safe_int(trace_meta.get("executionDispatchCount"), default=0)
     execution_row_count = safe_int(trace_meta.get("executionRowCount"), default=0)
     execution_success_count = safe_int(trace_meta.get("executionSuccessCount"), default=0)
+    include_host_kernel_prewarm = trace_has_kernel_dispatch(trace_jsonl)
 
     has_execution_evidence = (
         execution_dispatch_count > 0
@@ -265,6 +329,29 @@ def pick_measured_timing_ms(
         ):
             pass
         else:
+            if canonical_source == "doe-execution-total-ns":
+                operation_total_ns = operation_total_with_host_kernel_prewarm_ns(
+                    trace_meta,
+                    include_host_kernel_prewarm=include_host_kernel_prewarm,
+                )
+                if operation_total_ns > execution_total_ns:
+                    measured_ms = float(operation_total_ns) / NS_PER_MS
+                    source = f"{source}+{HOST_KERNEL_PREWARM_TIMING_SUFFIX}"
+                    timing_meta = {
+                        "source": "trace-meta",
+                        "traceMetaSource": source,
+                        "traceMetaTimingMs": measured_ms,
+                        "executionTotalNs": execution_total_ns,
+                        "hostKernelPrewarmTotalNs": host_kernel_prewarm_ns(trace_meta),
+                        "operationTotalWithHostKernelPrewarmNs": operation_total_ns,
+                        "wallTimeMs": wall_ms,
+                    }
+                    measured_ms = maybe_normalize_by_repeat(
+                        measured_ms,
+                        timing_meta,
+                        canonical_source=canonical_source,
+                    )
+                    return measured_ms, source, timing_meta
             timing_meta = {
                 "source": "trace-meta",
                 "traceMetaSource": source,
@@ -328,11 +415,21 @@ def pick_measured_timing_ms(
         return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
-        measured_ms = float(execution_total_ns) / NS_PER_MS
+        operation_total_ns = operation_total_with_host_kernel_prewarm_ns(
+            trace_meta,
+            include_host_kernel_prewarm=include_host_kernel_prewarm,
+        )
+        source = "doe-execution-total-ns"
+        if operation_total_ns > execution_total_ns:
+            source = f"{source}+{HOST_KERNEL_PREWARM_TIMING_SUFFIX}"
+        measured_ms = float(operation_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
-            "traceMetaSource": "doe-execution-total-ns",
+            "traceMetaSource": source,
             "traceMetaTimingMs": measured_ms,
+            "executionTotalNs": execution_total_ns,
+            "hostKernelPrewarmTotalNs": host_kernel_prewarm_ns(trace_meta),
+            "operationTotalWithHostKernelPrewarmNs": operation_total_ns,
             "executionDispatchCount": execution_dispatch_count,
             "executionRowCount": execution_row_count,
             "executionSuccessCount": execution_success_count,
@@ -343,7 +440,7 @@ def pick_measured_timing_ms(
             timing_meta,
             canonical_source="doe-execution-total-ns",
         )
-        return measured_ms, "doe-execution-total-ns", timing_meta
+        return measured_ms, source, timing_meta
 
     gpu_timestamp_total_ns = safe_int(
         trace_meta.get("executionGpuTimestampTotalNs"), default=-1

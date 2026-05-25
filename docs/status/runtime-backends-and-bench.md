@@ -3,6 +3,29 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Apple Metal release claim uses complete operation timing
+
+Apple Metal native Doe-vs-Dawn release evidence has been refreshed after two
+timing-scope fixes in the compare harness:
+
+- render macro workloads now keep full operation timing instead of encode-only
+  timing; encode-only selection remains limited to render domains where encode
+  is the comparable operation scope.
+- kernel-dispatch traces now fold host kernel prewarm into selected operation
+  timing when the trace actually contains `kernel_dispatch`; non-kernel copy
+  and render traces keep their ordinary operation timing source.
+
+Release artifacts:
+
+- `bench/out/apple-metal/release/20260525T184401Z/runtime-comparisons.apple.metal.release/run-artifacts/doe/`
+- `bench/out/apple-metal/release/20260525T184443Z/runtime-comparisons.apple.metal.release/run-artifacts/dawn_delegate/`
+- `bench/out/apple-metal/release/20260525T184443Z/dawn-vs-doe.apple.metal.release.compare.json`
+- `bench/out/apple-metal/release/20260525T184443Z/dawn-vs-doe.apple.metal.release.claim.json`
+
+The broader local compare lane still includes diagnostic/non-claim rows for
+methodology auditing. Marketing or release claims should cite the release claim
+artifact above, whose selector excludes rows that are not claim-eligible.
+
 ## 2026-05-25 — P0 multi-draw fixtures use explicit indirect commands
 
 The `render_multidraw` and `render_multidraw_indexed` fixtures now exercise

@@ -35,7 +35,12 @@ from native_compare_modules.comparability_upload_contract import (
 )
 from native_compare_modules.normalization import sample_normalized_elapsed_ms
 from native_compare_modules.reporting import parse_int, safe_float, safe_int, valid_sync_mode
-from native_compare_modules.timing_selection import canonical_timing_source, classify_timing_source
+from native_compare_modules.timing_selection import (
+    canonical_timing_source,
+    classify_timing_source,
+    effective_execution_total_ns_for_sample,
+    effective_setup_total_ns_for_sample,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _PACKAGE_EXECUTION_BACKENDS = frozenset({
@@ -73,11 +78,14 @@ def _median_phase_fractions(
         trace_meta = sample.get("traceMeta", {})
         if not isinstance(trace_meta, dict):
             continue
-        total = safe_int(trace_meta.get("executionTotalNs"), default=0)
+        total = effective_execution_total_ns_for_sample(sample)
         if total <= 0:
             continue
         for phase_key, field_name in _TIMING_PHASE_FIELDS:
-            phase_total = safe_int(trace_meta.get(field_name), default=0)
+            if field_name == "executionSetupTotalNs":
+                phase_total = effective_setup_total_ns_for_sample(sample)
+            else:
+                phase_total = safe_int(trace_meta.get(field_name), default=0)
             fractions[phase_key].append(phase_total / total)
     return fractions
 
@@ -350,5 +358,4 @@ def assess_native_shader_artifact_equivalence(
         "strict native Vulkan compare requires explicit SPIR-V artifacts for kernel_dispatch workloads; "
         f"missing {missing_summary}",
     )
-
 

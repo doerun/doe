@@ -7,7 +7,11 @@ from typing import Any
 from native_compare_modules import timing_sanity
 from native_compare_modules.reporting import safe_float, safe_int
 from native_compare_modules.timing_interpretation import workload_unit_wall_view
-from native_compare_modules.timing_selection import canonical_timing_source
+from native_compare_modules.timing_selection import (
+    canonical_timing_source,
+    effective_execution_total_ns_for_sample,
+    effective_setup_total_ns_for_sample,
+)
 
 END_TO_END_CLAIM_UNDERCOVERAGE_RATIO = 0.5
 
@@ -114,10 +118,10 @@ def _median_phase_fractions(
         tm = sample.get("traceMeta", {})
         if not isinstance(tm, dict):
             continue
-        total = safe_int(tm.get("executionTotalNs"), default=0)
+        total = effective_execution_total_ns_for_sample(sample)
         if total <= 0:
             continue
-        setup = safe_int(tm.get("executionSetupTotalNs"), default=0)
+        setup = effective_setup_total_ns_for_sample(sample)
         encode = safe_int(tm.get("executionEncodeTotalNs"), default=0)
         submit_wait = safe_int(tm.get("executionSubmitWaitTotalNs"), default=0)
         fractions["setup"].append(setup / total)

@@ -273,7 +273,7 @@ allowed under their surface contracts.
 Current selection priorities in compare harness:
 1. Explicit `traceMeta.timingMs`/`timingSource` when present, valid, and compatible with domain timing policy.
 2. Upload-domain workload-total execution durations (`doe-execution-workload-total-ns`) when execution evidence exists.
-3. Render/render-macro encode totals (`doe-execution-encode-ns`) only when encode is a plausible share of total execution on that side; render-bundle workloads use total execution timing.
+3. Render and p0-render encode totals (`doe-execution-encode-ns`) only when encode is a plausible share of total execution on that side; render-macro, p0-render-macro, and render-bundle workloads use total execution timing.
 4. Execution total (`doe-execution-total-ns`) when execution evidence exists.
 5. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
 6. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
