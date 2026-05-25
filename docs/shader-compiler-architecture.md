@@ -163,6 +163,18 @@ claim can promote.
 
 Structural similarity: both follow WGSL → AST → semantic analysis → typed IR → per-backend emission. Doe is ~15x smaller and does not yet have optimization passes, but does have robustness injection (bounds checks on arrays, runtime-sized arrays, vectors, matrices, and texture coordinates, with Lean-proven bounds elimination for dispatch-fit patterns).
 
+Doe-vs-Tint compiler claims now use an explicit evidence contract:
+
+- report schema:
+  [`config/tint-compiler-evidence.schema.json`](../config/tint-compiler-evidence.schema.json)
+- gate:
+  `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json`
+
+The gate requires toolchain identity, source and output hashes, validation
+status, per-phase timing symmetry, and row-level comparability before a report
+can be marked claimable. Diagnostic reports remain useful for compiler bring-up
+but cannot support a Doe-over-Tint claim.
+
 ## Why custom Zig IR (not SPIR-V as universal IR)
 
 SPIR-V was evaluated as a universal IR: WGSL → SPIR-V → all backends.

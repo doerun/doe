@@ -10,6 +10,21 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-25 — Doe-vs-Tint compiler evidence gate
+
+Added a schema-backed gate for compiler evidence against Tint:
+
+- `config/tint-compiler-evidence.schema.json`
+- `bench/gates/tint_compiler_evidence_gate.py`
+- `examples/tint-compiler-evidence.sample.json`
+- `bench/tests/test_tint_compiler_evidence_gate.py`
+
+The gate keeps compiler bring-up reports diagnostic until each row binds Doe
+and Tint toolchain identity, source/output hashes, validation status, phase
+timing symmetry, and row-level comparability. Claim lanes can pass
+`--require-claimable` to fail closed unless the report is fully comparable and
+claimable.
+
 ## 2026-04-24 — Track C first-zero diagnostic receipt
 
 Added a schema-backed diagnostic front door for the native Doe WebGPU

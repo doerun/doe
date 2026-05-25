@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "tint-compiler-evidence",
+  "generatedAt": "2026-05-25T00:00:00Z",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "corpus": {
+    "id": "sample-wgsl-smoke",
+    "source": "examples",
+    "sourceSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "manifestPath": "examples/tint-compiler-evidence.sample.json"
+  },
+  "toolchains": {
+    "doe": {
+      "name": "doe-wgsl",
+      "version": "sample",
+      "command": ["doe-zig-runtime", "compile-wgsl"],
+      "sourceRevision": "sample",
+      "artifactPath": "",
+      "artifactSha256": null
+    },
+    "tint": {
+      "name": "tint",
+      "version": "sample",
+      "command": ["tint"],
+      "sourceRevision": "sample",
+      "artifactPath": "",
+      "artifactSha256": null
+    }
+  },
+  "phaseModel": {
+    "timingScope": "phase",
+    "units": "ns",
+    "requiredPhases": ["parse", "sema", "lower", "emit", "total"]
+  },
+  "rows": [
+    {
+      "shaderId": "sample-compute-copy",
+      "sourceSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "target": "spirv",
+      "shaderStage": "compute",
+      "doe": {
+        "status": "ok",
+        "diagnosticCode": "",
+        "outputSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "irSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "validationStatus": "passed",
+        "validationTool": "sample-validator",
+        "phaseTimingsNs": {
+          "parse": 1,
+          "sema": 1,
+          "lower": 1,
+          "emit": 1,
+          "total": 4
+        },
+        "receiptPath": "bench/out/scratch/sample/doe.json"
+      },
+      "tint": {
+        "status": "failed",
+        "diagnosticCode": "sample_missing_tint_run",
+        "outputSha256": null,
+        "irSha256": null,
+        "validationStatus": "not_run",
+        "validationTool": "",
+        "phaseTimingsNs": {},
+        "receiptPath": ""
+      },
+      "comparability": {
+        "status": "diagnostic",
+        "reasons": ["sample report is not a comparable Tint run"]
+      }
+    }
+  ],
+  "summary": {
+    "rowCount": 1,
+    "comparableRows": 0,
+    "claimableRows": 0,
+    "reasons": ["sample report is schema coverage only"]
+  }
+}

@@ -77,6 +77,14 @@ The priority is not "smaller compiler"; it is a smaller compiler that emits
 valid code, explains failures, and gives the browser path less hidden runtime
 work.
 
+The claim boundary for this lane is now schema-backed by
+[`config/tint-compiler-evidence.schema.json`](../config/tint-compiler-evidence.schema.json)
+and gated by
+[`bench/gates/tint_compiler_evidence_gate.py`](../bench/gates/tint_compiler_evidence_gate.py).
+A report can be diagnostic while the lane is still collecting comparable Tint
+phase timing and validation receipts; `claimStatus=claimable` requires every
+row to carry comparable Doe and Tint compiler evidence.
+
 ### Runtime: Doe vs Dawn
 
 The runtime lane should keep using strict compare policy from

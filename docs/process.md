@@ -90,6 +90,9 @@
 - run DXIL structural validation gate (opt-in):
   `python3 bench/dxil_validate_gate.py`
   validates that the native DXIL emitter produces structurally correct DXBC containers (header magic, version, part bounds, DXIL program sub-header, LLVM bitcode magic). Also exercises the Zig-level `dxil_validate.zig` and `emit_dxil_test.zig` inline tests via `zig build test-wgsl`. Opt-in via `--with-dxil-validate-gate` in `run_blocking_gates.py`.
+- run Doe-vs-Tint compiler evidence gate (opt-in):
+  `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json`
+  validates schema, corpus hashes, toolchain identity, per-shader source/output hashes, validation status, comparable phase timings, and row-level comparability before compiler evidence can support Doe-vs-Tint claims. Add `--require-claimable` for claim lanes.
 - run CTS baseline regression gate (opt-in):
   `python3 bench/tools/cts_baseline_compare.py --baseline bench/out/cts-baseline/<baseline>.json --current bench/out/cts-baseline/<current>.json --policy config/cts-baseline-policy.json --gate`
   compares a new CTS run against a stored baseline snapshot and detects regressions (tests that were passing but now fail). Policy in `config/cts-baseline-policy.json` controls `maxNewFailures`, `requireNoRegressions`, and `gateMode` (advisory in v0). Opt-in via `--with-cts-baseline-gate` in `run_blocking_gates.py`.

@@ -110,6 +110,10 @@
       "data": "config/shader-toolchain.json"
     },
     {
+      "schema": "config/tint-compiler-evidence.schema.json",
+      "data": "examples/tint-compiler-evidence.sample.json"
+    },
+    {
       "schema": "config/doe-wgsl-host-plan.schema.json",
       "data": "examples/doe-wgsl-host-plan.sample.json"
     },

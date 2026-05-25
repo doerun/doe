@@ -14,6 +14,9 @@ Gate classes:
 - **Correctness** (`check_correctness.py`, `claim_*.py`,
   `claim_discipline_gate.py`) — block release when claim language
   drifts from artifact reality.
+- **Compiler evidence** (`tint_compiler_evidence_gate.py`) — block
+  Doe-vs-Tint compiler claims unless reports carry schema-valid corpus,
+  toolchain, hash, validation, timing-phase, and comparability evidence.
 - **Cerebras lane** (`cerebras_artifact_gate.py`,
   `doe_private_strategy_leak_gate.py`) — claim discipline + leak
   prevention for Doppler → Doe → Cerebras evidence.

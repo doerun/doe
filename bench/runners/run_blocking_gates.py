@@ -98,9 +98,29 @@ def parse_args() -> argparse.Namespace:
         help="Run shader_artifact_gate.py after trace gate.",
     )
     parser.add_argument(
+        "--with-tint-compiler-evidence-gate",
+        action="store_true",
+        help="Run tint_compiler_evidence_gate.py for Doe-vs-Tint compiler receipts.",
+    )
+    parser.add_argument(
         "--shader-artifact-schema",
         default="config/shader-artifact.schema.json",
         help="Shader artifact schema path passed to shader_artifact_gate.py.",
+    )
+    parser.add_argument(
+        "--tint-compiler-evidence-report",
+        default="bench/out/tint-compiler-evidence.json",
+        help="Doe-vs-Tint compiler evidence report path.",
+    )
+    parser.add_argument(
+        "--tint-compiler-evidence-schema",
+        default="config/tint-compiler-evidence.schema.json",
+        help="Schema path passed to tint_compiler_evidence_gate.py.",
+    )
+    parser.add_argument(
+        "--tint-compiler-evidence-require-claimable",
+        action="store_true",
+        help="Require claimable Doe-vs-Tint compiler evidence.",
     )
     parser.add_argument(
         "--shader-artifact-require-manifest",
@@ -628,6 +648,7 @@ def main() -> int:
     trace_gate = gates_dir / "trace_gate.py"
     backend_selection_gate = gates_dir / "backend_selection_gate.py"
     shader_artifact_gate = gates_dir / "shader_artifact_gate.py"
+    tint_compiler_evidence_gate = gates_dir / "tint_compiler_evidence_gate.py"
     spirv_val_gate = gates_dir / "spirv_val_gate.py"
     dxil_validate_gate = gates_dir / "dxil_validate_gate.py"
     sync_conformance_gate = gates_dir / "sync_conformance_gate.py"
@@ -976,6 +997,33 @@ def main() -> int:
             if args.shader_artifact_require_spirv_validation and not spirv_val:
                 shader_artifact_command.append("--require-spirv-validation")
             run_gate("shader-artifact", shader_artifact_command)
+
+        if args.with_tint_compiler_evidence_gate:
+            tint_report_path = Path(args.tint_compiler_evidence_report)
+            if not tint_report_path.exists():
+                print(
+                    "FAIL: missing --tint-compiler-evidence-report: "
+                    f"{tint_report_path}"
+                )
+                return 1
+            tint_schema_path = Path(args.tint_compiler_evidence_schema)
+            if not tint_schema_path.exists():
+                print(
+                    "FAIL: missing --tint-compiler-evidence-schema: "
+                    f"{tint_schema_path}"
+                )
+                return 1
+            tint_gate_command = [
+                sys.executable,
+                str(tint_compiler_evidence_gate),
+                "--report",
+                str(tint_report_path),
+                "--schema",
+                str(tint_schema_path),
+            ]
+            if args.tint_compiler_evidence_require_claimable:
+                tint_gate_command.append("--require-claimable")
+            run_gate("tint-compiler-evidence", tint_gate_command)
 
         if args.with_spirv_val_gate:
             spirv_val_command = [
