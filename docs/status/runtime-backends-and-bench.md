@@ -13,15 +13,17 @@ claim-eligible release rows.
   repeat/window contract instead of the previous smoke-sized window.
 - the default texture-to-texture command fixture now uses the larger transfer
   shape used by the stronger copy fixtures instead of the tiny smoke fixture.
-- the release claim policy can select workload-unit wall timing for copy rows
-  whose per-copy operation timing is below the useful measurement floor.
+- both sides now run the copy rows with deferred queue sync, so the repeated
+  copy stream is encoded as one drained workload unit.
+- the release claim policy can still select workload-unit wall timing for copy
+  rows whose per-copy operation timing is below the useful measurement floor.
 
 Release artifacts:
 
-- `bench/out/apple-metal/release/20260525T185714Z/runtime-comparisons.apple.metal.release/run-artifacts/doe/`
-- `bench/out/apple-metal/release/20260525T185811Z/runtime-comparisons.apple.metal.release/run-artifacts/dawn_delegate/`
-- `bench/out/apple-metal/release/20260525T185811Z/dawn-vs-doe.apple.metal.release.compare.json`
-- `bench/out/apple-metal/release/20260525T185811Z/dawn-vs-doe.apple.metal.release.claim.json`
+- `bench/out/apple-metal/release/20260525T190747Z/runtime-comparisons.apple.metal.release/run-artifacts/doe/`
+- `bench/out/apple-metal/release/20260525T190829Z/runtime-comparisons.apple.metal.release/run-artifacts/dawn_delegate/`
+- `bench/out/apple-metal/release/20260525T190829Z/dawn-vs-doe.apple.metal.release.compare.json`
+- `bench/out/apple-metal/release/20260525T190829Z/dawn-vs-doe.apple.metal.release.claim.json`
 
 The broader local compare lane can still carry diagnostic/non-claim rows for
 methodology auditing. Marketing or release claims should cite the release claim

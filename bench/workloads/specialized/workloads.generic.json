@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "ownership": "generated",
   "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
-  "generatorInputHash": "76959edd503d4a0a1c98a94c6a4771c92e9ae4f8ef47e018222a7d7a38dd2ef9",
-  "generatedAt": "2026-05-25T18:55:36.743694+00:00",
+  "generatorInputHash": "2b54bfaefbe2197259bddcf52616d611ee5a963b5057fab817c2b097c9c4e3e8",
+  "generatedAt": "2026-05-25T19:07:21.779234+00:00",
   "workloads": [
     {
       "id": "compute_kernel_dispatch_100",

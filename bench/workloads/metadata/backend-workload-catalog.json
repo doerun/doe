@@ -6827,13 +6827,17 @@
           "claimEligible": true,
           "description": "Comparable copy contract covering buffer-to-texture transfer path.",
           "driver": "1.0.0",
+          "extraArgs": [
+            "--queue-sync-mode",
+            "deferred"
+          ],
           "family": "m3",
           "baselineCommandRepeat": 2000,
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonCommandRepeat": 2000,
           "comparisonTimingDivisor": 2000,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence at 2000 repeats with deferred queue sync so repeated copies are encoded as one drained workload unit.",
           "vendor": "apple"
         },
         "local_d3d12_extended": {
@@ -7247,13 +7251,17 @@
           "claimEligible": true,
           "description": "Comparable copy contract covering texture-to-texture transfer path.",
           "driver": "1.0.0",
+          "extraArgs": [
+            "--queue-sync-mode",
+            "deferred"
+          ],
           "family": "m3",
           "baselineCommandRepeat": 2000,
           "baselineTimingDivisor": 2000,
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparisonCommandRepeat": 2000,
           "comparisonTimingDivisor": 2000,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 2000 repeats with deferred queue sync so repeated copies are encoded as one drained workload unit.",
           "vendor": "apple"
         },
         "local_d3d12_extended": {

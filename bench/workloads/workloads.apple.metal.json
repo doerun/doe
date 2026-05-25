@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "ownership": "generated",
   "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
-  "generatorInputHash": "76959edd503d4a0a1c98a94c6a4771c92e9ae4f8ef47e018222a7d7a38dd2ef9",
-  "generatedAt": "2026-05-25T18:55:36.743694+00:00",
+  "generatorInputHash": "2b54bfaefbe2197259bddcf52616d611ee5a963b5057fab817c2b097c9c4e3e8",
+  "generatedAt": "2026-05-25T19:07:21.779234+00:00",
   "workloads": [
     {
       "id": "compute_matvec_32768x2048_f32",
@@ -1414,9 +1414,13 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "comparisonCommandRepeat": 2000,
       "comparisonTimingDivisor": 2000,
-      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
+      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence at 2000 repeats with deferred queue sync so repeated copies are encoded as one drained workload unit.",
       "vendor": "apple",
       "workloadOrigin": "doe_contract_with_dawn_mapping",
+      "extraArgs": [
+        "--queue-sync-mode",
+        "deferred"
+      ],
       "cohorts": [
         "governed"
       ]
@@ -1513,9 +1517,13 @@
       "baselineTimingDivisor": 2000,
       "name": "copy texture-to-texture contract",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 2000 repeats; claimability uses workload-unit wall when selected per-copy operation timing falls below the measurement noise floor.",
+      "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 2000 repeats with deferred queue sync so repeated copies are encoded as one drained workload unit.",
       "vendor": "apple",
       "workloadOrigin": "doe_contract_with_dawn_mapping",
+      "extraArgs": [
+        "--queue-sync-mode",
+        "deferred"
+      ],
       "comparisonCommandRepeat": 2000,
       "comparisonTimingDivisor": 2000,
       "cohorts": [
