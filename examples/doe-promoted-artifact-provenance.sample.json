@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "doe_sample_promoted_artifact_provenance",
+  "promotedAt": "2026-05-25T00:00:00Z",
+  "purpose": "Sample promoted-artifact provenance sidecar used by schema gates.",
+  "produced": {
+    "runner": "sample",
+    "invocation": "schema coverage only",
+    "result": "examples/doe-promoted-artifact-provenance.sample.json"
+  },
+  "promoted": [
+    {
+      "destination": "bench/out/sample/receipt.json",
+      "source": "bench/out/sample-source/receipt.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sourceMtimeUnix": 0
+    }
+  ],
+  "claim": {
+    "scope": "Schema coverage for promoted-artifact provenance sidecars.",
+    "notWhat": "This sample is not evidence for runtime correctness, performance, or model behavior.",
+    "summary": "schema sample only"
+  },
+  "reviewerNotes": {
+    "howToReproduceLocally": "Run python3 bench/gates/schema_gate.py."
+  }
+}

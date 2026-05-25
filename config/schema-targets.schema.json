@@ -26,7 +26,8 @@
         "required": ["schema", "glob"],
         "properties": {
           "schema": { "type": "string", "minLength": 1 },
-          "glob": { "type": "string", "minLength": 1 }
+          "glob": { "type": "string", "minLength": 1 },
+          "allowEmpty": { "type": "boolean" }
         }
       }
     }

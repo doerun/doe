@@ -3,6 +3,19 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Schema gate no longer depends on local generated bench output
+
+The schema gate now treats generated `bench/out/` data targets as optional when
+the local artifact is absent, while still validating those artifacts when they
+exist. The provenance sidecar contract keeps positive schema coverage through
+`examples/doe-promoted-artifact-provenance.sample.json`, and provenance globs
+that scan generated bundle sidecars are explicitly marked `allowEmpty`.
+
+Verified:
+
+- `python3 bench/gates/schema_gate.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_schema_gate.py bench/tests/test_config_schemas.py -q`
+
 ## 2026-05-25 — Native delegate identity is pinned in run receipts
 
 Run receipts now unwrap `env` launchers before hashing the benchmark runner and

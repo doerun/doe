@@ -751,7 +751,11 @@
     },
     {
       "schema": "config/doe-promoted-artifact-provenance.schema.json",
-      "data": "bench/out/r3-1-31b-real-weights/PROVENANCE.json"
+      "data": "examples/doe-promoted-artifact-provenance.sample.json"
+    },
+    {
+      "schema": "config/doe-provenance.schema.json",
+      "data": "examples/doe-promoted-artifact-provenance.sample.json"
     }
   ],
   "globTargets": [
@@ -769,11 +773,13 @@
     },
     {
       "schema": "config/doe-promoted-artifact-provenance.schema.json",
-      "glob": "bench/out/r3-1-*/PROVENANCE.json"
+      "glob": "bench/out/r3-1-*/PROVENANCE.json",
+      "allowEmpty": true
     },
     {
       "schema": "config/doe-provenance.schema.json",
-      "glob": "bench/out/r3-1-*/PROVENANCE.json"
+      "glob": "bench/out/r3-1-*/PROVENANCE.json",
+      "allowEmpty": true
     }
   ]
 }

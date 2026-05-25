@@ -30,6 +30,9 @@ class ValidationTarget:
     data_rel: str
 
 
+OPTIONAL_GENERATED_DATA_PREFIXES = ("bench/out/",)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -38,6 +41,11 @@ def parse_args() -> argparse.Namespace:
         help="Repository root. Auto-detected when omitted.",
     )
     return parser.parse_args()
+
+
+def is_optional_generated_data(data_rel: str) -> bool:
+    normalized = data_rel.replace("\\", "/")
+    return any(normalized.startswith(prefix) for prefix in OPTIONAL_GENERATED_DATA_PREFIXES)
 
 
 def format_error_path(error: jsonschema.ValidationError) -> str:
@@ -55,6 +63,8 @@ def validate_target(root: Path, target: ValidationTarget) -> list[str]:
         failures.append(f"missing schema: {target.schema_rel}")
         return failures
     if not data_path.exists():
+        if is_optional_generated_data(target.data_rel):
+            return failures
         failures.append(f"missing data: {target.data_rel}")
         return failures
 
@@ -133,6 +143,7 @@ def load_schema_target_registry(root: Path) -> list[ValidationTarget]:
     for glob_target in registry_payload.get("globTargets", []):
         schema_rel = glob_target.get("schema")
         glob_pattern = glob_target.get("glob")
+        allow_empty = glob_target.get("allowEmpty") is True
         if not isinstance(schema_rel, str) or not isinstance(glob_pattern, str):
             raise ValueError(f"invalid registry glob target entry: {glob_target}")
         var_found = False
@@ -146,7 +157,7 @@ def load_schema_target_registry(root: Path) -> list[ValidationTarget]:
                     data_rel=str(data_path.relative_to(root)),
                 )
             )
-        if not var_found:
+        if not var_found and not allow_empty:
             raise ValueError(f"schema target glob has no matches: {glob_pattern}")
 
     return targets
