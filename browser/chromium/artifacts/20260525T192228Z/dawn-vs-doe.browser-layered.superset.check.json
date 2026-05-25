@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "errorCount": 0,
+  "errors": [],
+  "summary": {
+    "rowCount": 80,
+    "high": 26,
+    "medium": 42,
+    "non_projectable": 12,
+    "l1_browser_api": 68,
+    "l0_only": 12
+  },
+  "requiredModes": [
+    "dawn",
+    "doe"
+  ],
+  "reportChecked": true,
+  "promotionChecked": false,
+  "projectionContractHash": "15fe480a69d0a1baf753aea33b970a93d95f14390496e86f62ed913157967df4",
+  "sourceWorkloadsSha256": "a99a6db97983405fff1c21f176656114cc9c82a2e7ec9c9554ad31de347bdec5"
+}

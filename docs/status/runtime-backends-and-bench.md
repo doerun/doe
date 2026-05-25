@@ -3,6 +3,23 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Browser smoke and layered diagnostics refreshed
+
+Fresh browser-lane diagnostics were generated through the wrapper entrypoints
+after bench-mode preflight was tightened. Use the artifacts as the source of
+truth for runtime identity, fallback state, required-row status, and browser
+proxy timings:
+
+- `browser/chromium/artifacts/20260525T192219Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+- `browser/chromium/artifacts/20260525T192228Z/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- `browser/chromium/artifacts/20260525T192228Z/dawn-vs-doe.browser-layered.superset.check.json`
+- `browser/chromium/artifacts/20260525T192228Z/dawn-vs-doe.browser-layered.superset.summary.json`
+
+Verified:
+
+- `./browser/chromium/scripts/run-smoke.sh --mode both --strict`
+- `./browser/chromium/scripts/run-bench.sh --mode both`
+
 ## 2026-05-25 — Browser bench preflight fails closed on missing executors
 
 The Chromium browser lane preflight now treats the resolved browser executable
