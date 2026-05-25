@@ -55,13 +55,13 @@ pub fn main() !void {
     try support.appendCase(&case_results, arena, try cases.createQueueCase(arena, cfg, &linked_queue, &ring_queue));
 
     const waiter_nodes = try cases.makeWaiterNodes(arena);
-    var linked_singleflight = cases.LinkedSingleflightBench{ .nodes = waiter_nodes };
     var flat_singleflight = cases.FlatSingleflightBench{
         .allocator = arena,
         .nodes = waiter_nodes,
     };
     defer flat_singleflight.deinit();
-    try support.appendCase(&case_results, arena, try cases.createSingleflightCase(arena, cfg, &linked_singleflight, &flat_singleflight));
+    var intrusive_singleflight = cases.IntrusiveSingleflightBench{ .nodes = waiter_nodes };
+    try support.appendCase(&case_results, arena, try cases.createSingleflightCase(arena, cfg, &flat_singleflight, &intrusive_singleflight));
 
     const artifact = support.Artifact{
         .host = try support.makeHostMetadata(arena),

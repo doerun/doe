@@ -41,17 +41,13 @@ pub fn normalizeExecutionStatusCode(
     var out_len: usize = 0;
     var last_was_separator = true;
 
-    var index: usize = 0;
-    while (index < source.len) {
-        const alnum_run = byte_scan.countLeadingAlnum(source[index..]);
-        if (alnum_run > 0) {
-            var run_index: usize = 0;
-            while (run_index < alnum_run and out_len < buffer.len) : (run_index += 1) {
-                buffer[out_len] = std.ascii.toLower(source[index + run_index]);
+    for (source) |byte| {
+        if (std.ascii.isAlphabetic(byte) or std.ascii.isDigit(byte)) {
+            if (out_len < buffer.len) {
+                buffer[out_len] = std.ascii.toLower(byte);
                 out_len += 1;
             }
             last_was_separator = false;
-            index += alnum_run;
             continue;
         }
         if (!last_was_separator and out_len < buffer.len) {
@@ -59,9 +55,6 @@ pub fn normalizeExecutionStatusCode(
             out_len += 1;
             last_was_separator = true;
         }
-        index += 1;
-        while (index < source.len and byte_scan.countLeadingAlnum(source[index .. index + 1]) == 0) : (index += 1) {}
-        if (out_len >= buffer.len) break;
     }
 
     while (out_len > 0 and buffer[out_len - 1] == '_') {

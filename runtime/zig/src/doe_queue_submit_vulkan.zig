@@ -20,9 +20,10 @@ const builtin = @import("builtin");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 const shared = @import("doe_queue_submit_shared.zig");
 const vulkan_compute = @import("doe_vulkan_compute_native.zig");
-const vk_upload = @import("backend/vulkan/vk_upload.zig");
+const vk_upload = queue_submit_ops.vulkan_upload;
 
 const cast = native_helpers.cast;
 const DoeCommandBuffer = native_types.DoeCommandBuffer;

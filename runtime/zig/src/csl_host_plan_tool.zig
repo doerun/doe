@@ -8,6 +8,7 @@ const mem_plan = wgsl.emit_csl_mem_plan;
 const simulator = wgsl.emit_csl_simulator;
 const csl_spec = @import("doe_wgsl/csl_spec.zig");
 const bindings = @import("csl_host_plan_bindings.zig");
+const tool_config = @import("csl_host_plan_tool_config.zig");
 const dense_gemv_host_plan = @import("csl_dense_gemv_host_plan.zig");
 const materialize = @import("csl_host_plan_materialize.zig");
 const Mode = enum {
@@ -22,39 +23,6 @@ const Args = struct {
     cslc_executable: ?[]const u8 = null,
     driver_executable_path: ?[]const u8 = null,
 };
-const BundleConfigJson = struct {
-    modelConfig: ?ModelConfigJson = null,
-    session: ?SessionJson = null,
-    const ModelConfigJson = struct {
-        hiddenDim: u32,
-        numHeads: u32,
-        headDim: u32,
-        linearKeyHeadDim: ?u32 = null,
-        linearValueHeadDim: ?u32 = null,
-        linearConvKernelDim: ?u32 = null,
-        globalHeadDim: ?u32 = null,
-        numKeyValueHeads: ?u32 = null,
-        numLayers: u32,
-        vocabSize: u32,
-        maxSeqLen: u32,
-        quantFormat: []const u8,
-        ffnExpansionFactor: u32 = 4,
-        ffnMatrixCount: u32 = 3,
-        pleWidth: ?u32 = null,
-        pleVocabSize: ?u32 = null,
-        partialRotaryFactor: f32 = 1.0,
-        mropeSection: ?[3]u32 = null,
-    };
-    const SessionJson = struct {
-        compute: ?ComputeJson = null,
-        const ComputeJson = struct {
-            defaults: ?DefaultsJson = null,
-            const DefaultsJson = struct {
-                activationDtype: ?[]const u8 = null,
-            };
-        };
-    };
-};
 const MAX_KERNELS: usize = 64;
 const PHASE_TARGET_SUFFIXES = [_][]const u8{ "prefill", "decode" };
 const PHASE_SPECIALIZED_KERNELS = [_][]const u8{ "rmsnorm", "residual", "gelu", "gelu_gated", "silu_gated", "sigmoid_gated" };
@@ -62,7 +30,6 @@ const PHASE_COMPILE_TARGET_COUNT: usize = PHASE_TARGET_SUFFIXES.len * PHASE_SPEC
 const MAX_COMPILE_TARGETS: usize = MAX_KERNELS + PHASE_COMPILE_TARGET_COUNT;
 const MAX_LAUNCHES: usize = 1024;
 const MAX_STATE_BUFFERS: usize = 16;
-const SHA256_HEX_LEN: usize = 64;
 const PREFILL_Q4K_GEMV_IN_DIM_PER_PE: u32 = 512;
 const PREFILL_Q4K_GEMV_OUT_DIM_PER_PE: u32 = 112;
 const PREFILL_Q4K_GEMV_DEFAULT_OUTPUT_PE_ROWS: u32 = 1;
@@ -141,195 +108,6 @@ fn readFileAllocAbsoluteAware(allocator: std.mem.Allocator, path: []const u8, ma
     const file = try std.fs.openFileAbsolute(resolved_path, .{});
     defer file.close();
     return try file.readToEndAlloc(allocator, max_bytes);
-}
-fn parseBundleModelConfig(allocator: std.mem.Allocator, payload: []const u8) !?host.ModelConfig {
-    const parsed = try std.json.parseFromSlice(BundleConfigJson, allocator, payload, .{
-        .ignore_unknown_fields = true,
-    });
-    defer parsed.deinit();
-    const model_config = parsed.value.modelConfig orelse return null;
-    return .{
-        .hidden_dim = model_config.hiddenDim,
-        .num_heads = model_config.numHeads,
-        .head_dim = model_config.headDim,
-        .linear_key_head_dim = model_config.linearKeyHeadDim,
-        .linear_value_head_dim = model_config.linearValueHeadDim,
-        .linear_conv_kernel_dim = model_config.linearConvKernelDim,
-        .global_head_dim = model_config.globalHeadDim,
-        .num_key_value_heads = model_config.numKeyValueHeads,
-        .num_layers = model_config.numLayers,
-        .vocab_size = model_config.vocabSize,
-        .max_seq_len = model_config.maxSeqLen,
-        .quant_format = parseQuantFormat(model_config.quantFormat) orelse return error.InvalidArgument,
-        .ffn_expansion_factor = model_config.ffnExpansionFactor,
-        .ffn_matrix_count = model_config.ffnMatrixCount,
-        .ple_width = model_config.pleWidth,
-        .ple_vocab_size = model_config.pleVocabSize,
-        .partial_rotary_factor = model_config.partialRotaryFactor,
-        .mrope_section = model_config.mropeSection,
-    };
-}
-fn parseBundleActivationDtype(allocator: std.mem.Allocator, payload: []const u8) !?[]const u8 {
-    const parsed = try std.json.parseFromSlice(BundleConfigJson, allocator, payload, .{
-        .ignore_unknown_fields = true,
-    });
-    defer parsed.deinit();
-    const session = parsed.value.session orelse return null;
-    const compute = session.compute orelse return null;
-    const defaults = compute.defaults orelse return null;
-    return defaults.activationDtype;
-}
-// CSL activation-dtype admission for the bundle session.
-//
-// Door-level admission is permissive for the dtypes Doe has lowering shape
-// for. f32 is the legacy lane and is fully supported. f16 is admitted as
-// a Track-2 work-in-progress lane: this gate intentionally lets the
-// session through, and individual op emit paths (`emit_kernel_body*.zig`)
-// hold the closed-fail surface via their `requireElem(_, .f32)` checks.
-// As Track-2 lands per-op f16 coverage, those op-level assertions are
-// where the dtype routing widens.
-//
-// Anything other than f32 / f16 is still rejected at the door — the
-// lowering surface has no shape for bf16 / int8 / etc. yet.
-fn admitCslActivationDtype(dtype: ?[]const u8) !void {
-    const raw = dtype orelse return;
-    if (std.mem.eql(u8, raw, "f32")) return;
-    if (std.mem.eql(u8, raw, "f16")) return;
-    return error.InvalidArgument;
-}
-fn activationDtypeScalar(dtype: ?[]const u8) !wgsl.ir.ScalarType {
-    const raw = dtype orelse return .f32;
-    if (std.mem.eql(u8, raw, "f32")) return .f32;
-    if (std.mem.eql(u8, raw, "f16")) return .f16;
-    return error.InvalidArgument;
-}
-fn parseQuantFormat(raw: []const u8) ?host.ModelConfig.QuantFormat {
-    if (std.mem.eql(u8, raw, "f16")) return .f16;
-    if (std.mem.eql(u8, raw, "q4k")) return .q4k;
-    if (std.mem.eql(u8, raw, "q8_0")) return .q8_0;
-    return null;
-}
-fn parseWeightDtype(raw: []const u8) ?host_runtime.WeightMapping.Dtype {
-    if (std.mem.eql(u8, raw, "f16")) return .f16;
-    if (std.mem.eql(u8, raw, "u8_q4k")) return .u8_q4k;
-    if (std.mem.eql(u8, raw, "u8_q8")) return .u8_q8;
-    return null;
-}
-fn jsonObject(value: std.json.Value) !std.json.ObjectMap {
-    return switch (value) {
-        .object => |object| object,
-        else => error.InvalidArgument,
-    };
-}
-fn jsonArray(value: std.json.Value) !std.json.Array {
-    return switch (value) {
-        .array => |array| array,
-        else => error.InvalidArgument,
-    };
-}
-fn jsonString(value: std.json.Value) ![]const u8 {
-    return switch (value) {
-        .string => |string| string,
-        else => error.InvalidArgument,
-    };
-}
-fn jsonU32(value: std.json.Value) !u32 {
-    return switch (value) {
-        .integer => |integer| std.math.cast(u32, integer) orelse error.InvalidArgument,
-        else => error.InvalidArgument,
-    };
-}
-fn jsonU64(value: std.json.Value) !u64 {
-    return switch (value) {
-        .integer => |integer| std.math.cast(u64, integer) orelse error.InvalidArgument,
-        else => error.InvalidArgument,
-    };
-}
-fn optionalJsonStringDup(allocator: std.mem.Allocator, value: ?std.json.Value) !?[]const u8 {
-    const raw = value orelse return null;
-    return switch (raw) {
-        .null => null,
-        else => try allocator.dupe(u8, try jsonString(raw)),
-    };
-}
-fn optionalJsonU32(value: ?std.json.Value) !?u32 {
-    const raw = value orelse return null;
-    return switch (raw) {
-        .null => null,
-        else => try jsonU32(raw),
-    };
-}
-fn parseSha256(raw: []const u8) ![]const u8 {
-    if (raw.len != SHA256_HEX_LEN) return error.InvalidArgument;
-    for (raw) |c| {
-        const is_digit = c >= '0' and c <= '9';
-        const is_lower_hex = c >= 'a' and c <= 'f';
-        if (!is_digit and !is_lower_hex) return error.InvalidArgument;
-    }
-    return raw;
-}
-fn parseWeightPeRange(value: std.json.Value) !struct { start: u32, end: u32 } {
-    const array = try jsonArray(value);
-    if (array.items.len != 2) return error.InvalidArgument;
-    const start = try jsonU32(array.items[0]);
-    const end = try jsonU32(array.items[1]);
-    if (end <= start) return error.InvalidArgument;
-    return .{ .start = start, .end = end };
-}
-fn parseWeightShape(allocator: std.mem.Allocator, value: std.json.Value) ![]const u64 {
-    const array = try jsonArray(value);
-    if (array.items.len == 0) return error.InvalidArgument;
-    const shape = try allocator.alloc(u64, array.items.len);
-    errdefer allocator.free(shape);
-    for (array.items, 0..) |item, idx| {
-        const dim = try jsonU64(item);
-        if (dim == 0) return error.InvalidArgument;
-        shape[idx] = dim;
-    }
-    return shape;
-}
-fn parseWeightQuant(allocator: std.mem.Allocator, value: std.json.Value) !host_runtime.WeightMapping.QuantMetadata {
-    const object = try jsonObject(value);
-    return .{
-        .format = try allocator.dupe(u8, try jsonString(object.get("format") orelse return error.InvalidArgument)),
-        .storage_dtype = try allocator.dupe(u8, try jsonString(object.get("storageDtype") orelse return error.InvalidArgument)),
-        .source_dtype = try optionalJsonStringDup(allocator, object.get("sourceDtype")),
-        .block_size_elements = try optionalJsonU32(object.get("blockSizeElements")),
-        .block_size_bytes = try optionalJsonU32(object.get("blockSizeBytes")),
-        .encoding = try optionalJsonStringDup(allocator, object.get("encoding")),
-    };
-}
-fn parseBundleWeightMappings(
-    allocator: std.mem.Allocator,
-    payload: []const u8,
-) ![]const host_runtime.WeightMapping {
-    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, payload, .{});
-    defer parsed.deinit();
-    const root = try jsonObject(parsed.value);
-    const mappings_value = root.get("weightMappings") orelse return &.{};
-    const mappings_array = try jsonArray(mappings_value);
-    if (mappings_array.items.len == 0) return &.{};
-    const mappings = try allocator.alloc(host_runtime.WeightMapping, mappings_array.items.len);
-    errdefer allocator.free(mappings);
-    for (mappings_array.items, 0..) |mapping_value, idx| {
-        const mapping = try jsonObject(mapping_value);
-        const pe_range = try parseWeightPeRange(mapping.get("peRange") orelse return error.InvalidArgument);
-        const dtype_text = try jsonString(mapping.get("dtype") orelse return error.InvalidArgument);
-        mappings[idx] = .{
-            .shard_name = try allocator.dupe(u8, try jsonString(mapping.get("shard") orelse return error.InvalidArgument)),
-            .shard_path = try allocator.dupe(u8, try jsonString(mapping.get("path") orelse return error.InvalidArgument)),
-            .shard_sha256 = try allocator.dupe(u8, try parseSha256(try jsonString(mapping.get("sha256") orelse return error.InvalidArgument))),
-            .pe_buffer = try allocator.dupe(u8, try jsonString(mapping.get("peBuffer") orelse return error.InvalidArgument)),
-            .pe_start = pe_range.start,
-            .pe_end = pe_range.end,
-            .dtype = parseWeightDtype(dtype_text) orelse return error.InvalidArgument,
-            .tensor_name = try allocator.dupe(u8, try jsonString(mapping.get("tensor") orelse return error.InvalidArgument)),
-            .tensor_offset_bytes = try jsonU64(mapping.get("offsetBytes") orelse return error.InvalidArgument),
-            .tensor_shape = try parseWeightShape(allocator, mapping.get("shape") orelse return error.InvalidArgument),
-            .quant = try parseWeightQuant(allocator, mapping.get("quant") orelse return error.InvalidArgument),
-        };
-    }
-    return mappings;
 }
 fn buildCompileTargets(
     allocator: std.mem.Allocator,
@@ -667,9 +445,9 @@ pub fn main() !void {
         },
     };
     const input_bytes = try readFileAllocAbsoluteAware(allocator, args.input_path, 1 << 20);
-    const activation_dtype = try parseBundleActivationDtype(allocator, input_bytes);
-    try admitCslActivationDtype(activation_dtype);
-    const activation_elem = try activationDtypeScalar(activation_dtype);
+    const activation_dtype = try tool_config.parseBundleActivationDtype(allocator, input_bytes);
+    try tool_config.admitCslActivationDtype(activation_dtype);
+    const activation_elem = try tool_config.activationDtypeScalar(activation_dtype);
     var kernel_buf: [MAX_KERNELS]host.KernelSpec = undefined;
     var prefill_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
     var decode_buf: [MAX_LAUNCHES]host.LaunchSpec = undefined;
@@ -689,13 +467,13 @@ pub fn main() !void {
             &decode_buf,
         ),
     };
-    const model_config = (try parseBundleModelConfig(allocator, input_bytes));
+    const model_config = (try tool_config.parseBundleModelConfig(allocator, input_bytes));
     var target_buf: [MAX_COMPILE_TARGETS]host_plan.CompileTarget = undefined;
     const targets = try buildCompileTargets(allocator, plan, model_config, activation_elem, &target_buf);
     const cslc_plan = try host_plan.makeCslcPlan(args.cslc_executable);
     if (args.bundle_root) |bundle_root| {
         const resolved_model_config = model_config orelse return error.InvalidArgument;
-        const weight_mappings = try parseBundleWeightMappings(allocator, input_bytes);
+        const weight_mappings = try tool_config.parseBundleWeightMappings(allocator, input_bytes);
         const memory = mem_plan.planMemory(resolved_model_config, plan, .{});
         var state_buffer_buf: [MAX_STATE_BUFFERS]host_runtime.StateBuffer = undefined;
         const state_buffers = buildStateBuffers(memory, &state_buffer_buf);
@@ -758,7 +536,7 @@ test "parseBundleWeightMappings preserves artifact-backed RDRR tensor metadata" 
         \\  ]
         \\}
     ;
-    const mappings = try parseBundleWeightMappings(arena.allocator(), payload);
+    const mappings = try tool_config.parseBundleWeightMappings(arena.allocator(), payload);
     try std.testing.expectEqual(@as(usize, 1), mappings.len);
     try std.testing.expectEqualStrings("shard_00038.bin", mappings[0].shard_name);
     try std.testing.expectEqualStrings("/models/gemma/shard_00038.bin", mappings[0].shard_path);
@@ -783,18 +561,18 @@ test "csl activation dtype admission: f32 + f16 admitted at door, others rejecte
         \\  }
         \\}
     ;
-    const dtype = try parseBundleActivationDtype(arena.allocator(), payload);
+    const dtype = try tool_config.parseBundleActivationDtype(arena.allocator(), payload);
     try std.testing.expectEqualStrings("f16", dtype.?);
     // f16 is admitted at the door; per-op fail-closed lives in the
     // emit_kernel_body*.zig requireElem assertions until Track 2 lands
     // per-op f16 coverage.
-    try admitCslActivationDtype(dtype);
-    try admitCslActivationDtype("f32");
-    try admitCslActivationDtype(null);
-    try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("bf16"));
-    try std.testing.expectError(error.InvalidArgument, admitCslActivationDtype("int8"));
-    try std.testing.expectEqual(wgsl.ir.ScalarType.f16, try activationDtypeScalar(dtype));
-    try std.testing.expectEqual(wgsl.ir.ScalarType.f32, try activationDtypeScalar(null));
+    try tool_config.admitCslActivationDtype(dtype);
+    try tool_config.admitCslActivationDtype("f32");
+    try tool_config.admitCslActivationDtype(null);
+    try std.testing.expectError(error.InvalidArgument, tool_config.admitCslActivationDtype("bf16"));
+    try std.testing.expectError(error.InvalidArgument, tool_config.admitCslActivationDtype("int8"));
+    try std.testing.expectEqual(wgsl.ir.ScalarType.f16, try tool_config.activationDtypeScalar(dtype));
+    try std.testing.expectEqual(wgsl.ir.ScalarType.f32, try tool_config.activationDtypeScalar(null));
 }
 test "buildCompileTargets emits phase variants for elementwise kernels" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -1045,6 +823,6 @@ test "buildCompileTargets uses Qwen linear SSM dims with state-sharded linear_at
 test "parseBundleWeightMappings leaves absent mapping input empty" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
-    const mappings = try parseBundleWeightMappings(arena.allocator(), "{}");
+    const mappings = try tool_config.parseBundleWeightMappings(arena.allocator(), "{}");
     try std.testing.expectEqual(@as(usize, 0), mappings.len);
 }

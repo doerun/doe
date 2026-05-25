@@ -15,7 +15,8 @@ pub fn Registry(comptime Node: type) type {
         pub const Entry = struct {
             in_use: bool = false,
             key: u64 = 0,
-            waiters: std.ArrayListUnmanaged(*Node) = .{},
+            head: ?*Node = null,
+            tail: ?*Node = null,
         };
 
         pub const JoinResult = struct {
@@ -32,13 +33,20 @@ pub fn Registry(comptime Node: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            for (self.entries) |*entry| {
-                entry.waiters.deinit(self.allocator);
-            }
             if (self.entries.len > 0) {
                 self.allocator.free(self.entries);
             }
             self.entries = &.{};
+        }
+
+        fn appendWaiter(entry: *Entry, node: *Node) void {
+            @field(node, "next") = null;
+            if (entry.tail) |tail| {
+                @field(tail, "next") = node;
+            } else {
+                entry.head = node;
+            }
+            entry.tail = node;
         }
 
         fn ensureEntryStorage(self: *Self) !void {
@@ -57,7 +65,7 @@ pub fn Registry(comptime Node: type) type {
 
             for (self.entries) |*entry| {
                 if (!entry.in_use or entry.key != key) continue;
-                try entry.waiters.append(self.allocator, node);
+                appendWaiter(entry, node);
                 return .{ .entry = entry, .leader = false };
             }
 
@@ -67,7 +75,7 @@ pub fn Registry(comptime Node: type) type {
                     .in_use = true,
                     .key = key,
                 };
-                try entry.waiters.append(self.allocator, node);
+                appendWaiter(entry, node);
                 return .{ .entry = entry, .leader = true };
             }
             return error.RegistryFull;
@@ -77,17 +85,11 @@ pub fn Registry(comptime Node: type) type {
             self.mutex.lock();
             defer self.mutex.unlock();
 
-            if (!entry.in_use or entry.waiters.items.len == 0) return null;
+            if (!entry.in_use or entry.head == null) return null;
 
-            var head: ?*Node = null;
-            var index = entry.waiters.items.len;
-            while (index > 0) {
-                index -= 1;
-                const node = entry.waiters.items[index];
-                @field(node, "next") = head;
-                head = node;
-            }
-            entry.waiters.clearRetainingCapacity();
+            const head = entry.head;
+            entry.head = null;
+            entry.tail = null;
             entry.in_use = false;
             return head;
         }

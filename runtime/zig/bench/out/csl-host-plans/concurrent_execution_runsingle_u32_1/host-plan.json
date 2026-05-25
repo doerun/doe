@@ -18,14 +18,14 @@
     "eosTokenId": null
   },
   "compileTargets": [
-    { "name": "concurrent_execution_runsingle_u32", "layout": "bench/out/csl-host-plans/concurrent_execution_runsingle_u32_1/layout.csl", "peProgram": "bench/out/csl-host-plans/concurrent_execution_runsingle_u32_1/pe_program.csl" }
+    { "name": "concurrent_execution_runsingle_u32", "pattern": "kernel_dispatch_translation_unavailable", "layout": "bench/out/csl-host-plans/concurrent_execution_runsingle_u32_1/layout.csl", "peProgram": "bench/out/csl-host-plans/concurrent_execution_runsingle_u32_1/pe_program.csl" }
   ],
   "cslc": {
     "executable": "cslc",
     "discovery": "implicit_path_lookup",
     "validation": {
       "command": ["cslc", "--version"],
-      "minimumVersion": "1.4.0"
+      "minimumVersion": "2.10.0"
     }
   }
 }

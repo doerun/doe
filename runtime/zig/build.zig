@@ -823,12 +823,13 @@ pub fn build(b: *std.Build) void {
         }),
     });
     webgpu_plan_executor.linkLibC();
-    const dawn_webgpu_include = "../../bench/vendor/dawn/third_party/webgpu-headers/src";
     const dawn_shared_include_candidates = [_][]const u8{
         "../../bench/vendor/dawn/third_party/webgpu-headers/src",
         "../../bench/vendor/dawn/out/Release/gen/include",
+        "../../bench/vendor/dawn/out/Release/gen/include/dawn",
+        "../../bench/vendor/node-webgpu-package/out/cmake-release/gen/include/dawn",
+        "../../bench/vendor/node-webgpu-package/out/cmake-release/gen/include/dawn/wire/client",
     };
-    webgpu_plan_executor.addIncludePath(b.path(dawn_webgpu_include));
     addExistingIncludePaths(webgpu_plan_executor, b, &dawn_shared_include_candidates);
     const install_webgpu_plan_executor = b.addInstallArtifact(webgpu_plan_executor, .{});
     const webgpu_plan_executor_step = b.step("webgpu-plan-executor", "Build the standalone direct WebGPU plan executor");

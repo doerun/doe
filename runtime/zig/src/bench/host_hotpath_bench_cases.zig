@@ -54,7 +54,7 @@ const StatusBench = struct {
         return support.checksumSlice(normalized);
     }
 
-    fn runSimd(self: *StatusBench) !u64 {
+    fn runRuntime(self: *StatusBench) !u64 {
         var buffer: [160]u8 = undefined;
         const normalized = trace_text.normalizeExecutionStatusCode(self.input, self.fallback, &buffer);
         return support.checksumSlice(normalized);
@@ -65,7 +65,7 @@ const StatusBench = struct {
         return support.checksumSlice(support.normalizeExecutionStatusCodeScalar(self.input, self.fallback, &buffer));
     }
 
-    fn hashSimd(self: *StatusBench) u64 {
+    fn hashRuntime(self: *StatusBench) u64 {
         var buffer: [160]u8 = undefined;
         return support.checksumSlice(trace_text.normalizeExecutionStatusCode(self.input, self.fallback, &buffer));
     }
@@ -295,14 +295,20 @@ pub const BenchWaitNode = struct {
     id: usize,
 };
 
-pub const LinkedSingleflightBench = struct {
+pub const IntrusiveSingleflightBench = struct {
     nodes: []BenchWaitNode,
 
-    pub fn run(self: *LinkedSingleflightBench) !u64 {
+    pub fn run(self: *IntrusiveSingleflightBench) !u64 {
         var head: ?*BenchWaitNode = null;
+        var tail: ?*BenchWaitNode = null;
         for (self.nodes) |*node| {
-            node.next = head;
-            head = node;
+            node.next = null;
+            if (tail) |last| {
+                last.next = node;
+            } else {
+                head = node;
+            }
+            tail = node;
         }
 
         var checksum: u64 = 0;
@@ -434,19 +440,19 @@ pub fn createStatusCase(
 ) !CaseResult {
     var bench = StatusBench{ .input = input, .fallback = fallback };
     const scalar = try support.measure(StatusBench, allocator, cfg.iterations, cfg.warmup, &bench, StatusBench.runScalar);
-    const simd = try support.measure(StatusBench, allocator, cfg.iterations, cfg.warmup, &bench, StatusBench.runSimd);
+    const runtime = try support.measure(StatusBench, allocator, cfg.iterations, cfg.warmup, &bench, StatusBench.runRuntime);
     const scalar_hash = bench.hashScalar();
-    const simd_hash = bench.hashSimd();
+    const runtime_hash = bench.hashRuntime();
     return .{
         .category = "trace",
         .case_id = case_id,
         .description = description,
-        .variants = try buildVariants(allocator, cfg.iterations, cfg.warmup, input.len, input.len, "scalar", scalar, scalar_hash, "simd", simd, simd_hash),
+        .variants = try buildVariants(allocator, cfg.iterations, cfg.warmup, input.len, input.len, "scalar_reference", scalar, scalar_hash, "runtime", runtime, runtime_hash),
         .comparison = .{
-            .baseline_variant = "scalar",
-            .candidate_variant = "simd",
-            .speedup = support.speedup(scalar.mean_ns, simd.mean_ns),
-            .output_hash_match = scalar_hash == simd_hash,
+            .baseline_variant = "scalar_reference",
+            .candidate_variant = "runtime",
+            .speedup = support.speedup(scalar.mean_ns, runtime.mean_ns),
+            .output_hash_match = scalar_hash == runtime_hash,
         },
     };
 }
@@ -634,33 +640,33 @@ pub fn makeWaiterNodes(allocator: std.mem.Allocator) ![]BenchWaitNode {
 pub fn createSingleflightCase(
     allocator: std.mem.Allocator,
     cfg: support.Config,
-    linked: *LinkedSingleflightBench,
     flat: *FlatSingleflightBench,
+    intrusive: *IntrusiveSingleflightBench,
 ) !CaseResult {
-    const linked_stats = try support.measure(LinkedSingleflightBench, allocator, cfg.iterations, cfg.warmup, linked, LinkedSingleflightBench.run);
     const flat_stats = try support.measure(FlatSingleflightBench, allocator, cfg.iterations, cfg.warmup, flat, FlatSingleflightBench.run);
+    const intrusive_stats = try support.measure(IntrusiveSingleflightBench, allocator, cfg.iterations, cfg.warmup, intrusive, IntrusiveSingleflightBench.run);
     return .{
         .category = "coordination",
         .case_id = "singleflight_join_take_512",
-        .description = "Linked waiter chains versus flat waiter storage for join/take reconstruction.",
+        .description = "Flat waiter storage versus intrusive waiter chains for join/take reconstruction.",
         .variants = try buildVariants(
             allocator,
             cfg.iterations,
             cfg.warmup,
             SINGLEFLIGHT_WAITERS * @sizeOf(BenchWaitNode),
             SINGLEFLIGHT_WAITERS,
-            "linked",
-            linked_stats,
-            linked_stats.checksum,
             "flat_waiters",
             flat_stats,
             flat_stats.checksum,
+            "intrusive_waiters",
+            intrusive_stats,
+            intrusive_stats.checksum,
         ),
         .comparison = .{
-            .baseline_variant = "linked",
-            .candidate_variant = "flat_waiters",
-            .speedup = support.speedup(linked_stats.mean_ns, flat_stats.mean_ns),
-            .output_hash_match = linked_stats.checksum == flat_stats.checksum,
+            .baseline_variant = "flat_waiters",
+            .candidate_variant = "intrusive_waiters",
+            .speedup = support.speedup(flat_stats.mean_ns, intrusive_stats.mean_ns),
+            .output_hash_match = flat_stats.checksum == intrusive_stats.checksum,
         },
     };
 }
