@@ -3,6 +3,24 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Browser gate now records forced-runtime identity
+
+The Chromium Track A browser gate now validates explicit runtime-selection
+evidence for both Dawn and Doe modes. Smoke and layered browser artifacts carry
+forced mode, selected runtime, fallback status, selector version, launch-args
+hash, and Doe runtime artifact hash for Doe mode.
+
+Current refreshed evidence:
+
+- `browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+- `browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- `browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.summary.json`
+- `browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.check.json`
+- `bench/out/browser-promotion/20260525T163954Z/browser_gate.json`
+
+The gate passes with zero failures. The output remains diagnostic; the next
+promotion boundary is a formal browser claim lane.
+
 ## Current state
 
 - Apple Metal native Doe-vs-Dawn fair-cold compare defaults are in place.

@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-25T16:40:03.923397Z",
+  "reportKind": "browser-layered-superset-summary",
+  "benchmarkClass": "directional",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "invocation": {
+    "argv": [
+      "--chrome",
+      "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--mode",
+      "both",
+      "--strict-run",
+      "--require-promotion-approvals",
+      "--promotion-approvals",
+      "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-promotion-approvals.json",
+      "--out",
+      "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--summary-out",
+      "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.summary.json",
+      "--check-out",
+      "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.check.json",
+      "--dawn-chrome",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    ],
+    "cwd": "/Users/xyz/deco/doe",
+    "pythonExecutable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+  },
+  "inputs": {
+    "workloads": "/Users/xyz/deco/doe/bench/workloads/specialized/workloads.amd.vulkan.superset.json",
+    "rules": "/Users/xyz/deco/doe/browser/chromium/bench/projection-rules.json",
+    "manifest": "/Users/xyz/deco/doe/browser/chromium/bench/generated/browser_projection_manifest.json",
+    "workflows": "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-workflow-manifest.json",
+    "chrome": "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+    "dawnChrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "doeChrome": "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+    "doeLib": "/Users/xyz/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+    "mode": "both",
+    "apiSurface": "native",
+    "promotionApprovals": "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-promotion-approvals.json"
+  },
+  "commands": {
+    "generate": [
+      "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "/Users/xyz/deco/doe/browser/chromium/scripts/generate-browser-projection-manifest.py",
+      "--workloads",
+      "/Users/xyz/deco/doe/bench/workloads/specialized/workloads.amd.vulkan.superset.json",
+      "--rules",
+      "/Users/xyz/deco/doe/browser/chromium/bench/projection-rules.json",
+      "--out",
+      "/Users/xyz/deco/doe/browser/chromium/bench/generated/browser_projection_manifest.json"
+    ],
+    "run": [
+      "node",
+      "/Users/xyz/deco/doe/browser/chromium/scripts/webgpu-playwright-layered-bench.mjs",
+      "--mode",
+      "both",
+      "--chrome",
+      "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--dawn-chrome",
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "--doe-chrome",
+      "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+      "--doe-lib",
+      "/Users/xyz/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+      "--manifest",
+      "/Users/xyz/deco/doe/browser/chromium/bench/generated/browser_projection_manifest.json",
+      "--workflows",
+      "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-workflow-manifest.json",
+      "--headless",
+      "true",
+      "--out",
+      "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--api-surface",
+      "native",
+      "--strict"
+    ],
+    "check": [
+      "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+      "/Users/xyz/deco/doe/browser/chromium/scripts/check-browser-benchmark-superset.py",
+      "--workloads",
+      "/Users/xyz/deco/doe/bench/workloads/specialized/workloads.amd.vulkan.superset.json",
+      "--manifest",
+      "/Users/xyz/deco/doe/browser/chromium/bench/generated/browser_projection_manifest.json",
+      "--workflows",
+      "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-workflow-manifest.json",
+      "--json",
+      "--report",
+      "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+      "--require-modes",
+      "dawn,doe",
+      "--require-promotion-approvals",
+      "--promotion-approvals",
+      "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-promotion-approvals.json"
+    ]
+  },
+  "artifacts": {
+    "layeredReportPath": "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "checkResultPath": "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.check.json",
+    "summaryPath": "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.summary.json",
+    "manifestPath": "/Users/xyz/deco/doe/browser/chromium/bench/generated/browser_projection_manifest.json",
+    "workflowsPath": "/Users/xyz/deco/doe/browser/chromium/bench/workflows/browser-workflow-manifest.json"
+  },
+  "projectionContract": {
+    "projectionContractHash": "15fe480a69d0a1baf753aea33b970a93d95f14390496e86f62ed913157967df4",
+    "sourceWorkloadsSha256": "a99a6db97983405fff1c21f176656114cc9c82a2e7ec9c9554ad31de347bdec5",
+    "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",
+    "sourceWorkloadsPath": "bench/workloads/specialized/workloads.amd.vulkan.superset.json",
+    "rulesPath": "browser/chromium/bench/projection-rules.json"
+  },
+  "check": {
+    "ok": true,
+    "errorCount": 0,
+    "errors": [],
+    "summary": {
+      "rowCount": 80,
+      "high": 26,
+      "medium": 42,
+      "non_projectable": 12,
+      "l1_browser_api": 68,
+      "l0_only": 12
+    },
+    "requiredModes": [
+      "dawn",
+      "doe"
+    ],
+    "reportChecked": true,
+    "promotionChecked": true,
+    "projectionContractHash": "15fe480a69d0a1baf753aea33b970a93d95f14390496e86f62ed913157967df4",
+    "sourceWorkloadsSha256": "a99a6db97983405fff1c21f176656114cc9c82a2e7ec9c9554ad31de347bdec5"
+  },
+  "projection": {
+    "rowCount": 80,
+    "high": 26,
+    "medium": 42,
+    "non_projectable": 12,
+    "l1_browser_api": 68,
+    "l0_only": 12
+  },
+  "run": {
+    "status": "report_present",
+    "reason": "",
+    "reportPath": "/Users/xyz/deco/doe/browser/chromium/artifacts/20260525T163954Z/dawn-vs-doe.browser-layered.superset.diagnostic.json",
+    "reportPresent": true,
+    "skipRun": false,
+    "strictRun": true,
+    "modeOrder": [
+      "dawn",
+      "doe"
+    ],
+    "l1": {
+      "dawn": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0
+      },
+      "doe": {
+        "ok": 68,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 12,
+        "missing": 0,
+        "requiredFailures": 0
+      }
+    },
+    "l2": {
+      "dawn": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0
+      },
+      "doe": {
+        "ok": 4,
+        "fail": 0,
+        "unsupported": 0,
+        "l0_only": 0,
+        "missing": 0,
+        "requiredFailures": 0
+      }
+    },
+    "overallRequiredFailures": 0,
+    "browserEnvironmentEvidence": {
+      "pageTargetKind": "server",
+      "pageTargetPort": 54217,
+      "pageTargetWarning": null,
+      "dataUrlFallbackEnabled": false
+    },
+    "runtimeSelections": [
+      {
+        "selectionMode": "dawn",
+        "selectedRuntime": "dawn",
+        "forcedMode": "dawn",
+        "fallbackApplied": false,
+        "fallbackReasonCode": "",
+        "hiddenFallbackAllowed": false,
+        "selectorVersion": "browser-runtime-selector-v1",
+        "artifactIdentity": {
+          "browserExecutablePath": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          "doeLibPath": null,
+          "doeLibSha256": null
+        },
+        "launchArgsHash": "e3e787322d3f25ed5cbf14aa704afa7225771d4bb18abac9155ec4ec8b24355b"
+      },
+      {
+        "selectionMode": "doe",
+        "selectedRuntime": "doe",
+        "forcedMode": "doe",
+        "fallbackApplied": false,
+        "fallbackReasonCode": "",
+        "hiddenFallbackAllowed": false,
+        "selectorVersion": "browser-runtime-selector-v1",
+        "artifactIdentity": {
+          "browserExecutablePath": "/Users/xyz/deco/doe/browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+          "doeLibPath": "/Users/xyz/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+          "doeLibSha256": "53d291bdaf6f1c33d9ab951bcbb2476e9c6b49f2d14eac7bafa8de1dd96a42ea"
+        },
+        "launchArgsHash": "e989aea85b523d268e274978974dff510a779bbc73070349f2acc17dc9613caa"
+      }
+    ]
+  }
+}

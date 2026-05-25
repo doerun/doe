@@ -85,6 +85,7 @@ const ARTIFACTS_ROOT = resolve(ROOT, "browser/chromium/artifacts");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-layered.diagnostic.json";
 const DEFAULT_API_SURFACE = "native";
 const HASH_ALGORITHM = "sha256";
+const RUNTIME_SELECTOR_VERSION = "browser-runtime-selector-v1";
 
 const DEFAULT_ITERATIONS = {
   upload: 300,
@@ -197,6 +198,11 @@ function stableObject(value) {
 function hashHex(value) {
   const canonical = JSON.stringify(stableObject(value));
   return createHash(HASH_ALGORITHM).update(canonical).digest("hex");
+}
+
+function fileHashHex(pathValue) {
+  if (!pathValue || !existsSync(pathValue)) return null;
+  return createHash(HASH_ALGORITHM).update(readFileSync(pathValue)).digest("hex");
 }
 
 function attachHashChain(entries, moduleName) {
@@ -638,6 +644,28 @@ function runtimeArgs(mode, doeLibPath) {
     "--use-webgpu-runtime=doe",
     `--doe-webgpu-library-path=${doeLibPath}`,
   ];
+}
+
+function runtimeArtifactIdentity(mode, args, chromePath) {
+  return {
+    browserExecutablePath: chromePath,
+    doeLibPath: mode === "doe" ? args.doeLibPath : null,
+    doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
+  };
+}
+
+function buildRuntimeSelection(mode, args, chromePath, launchArgs) {
+  return {
+    selectionMode: mode,
+    selectedRuntime: mode,
+    forcedMode: mode,
+    fallbackApplied: false,
+    fallbackReasonCode: "",
+    hiddenFallbackAllowed: false,
+    selectorVersion: RUNTIME_SELECTOR_VERSION,
+    artifactIdentity: runtimeArtifactIdentity(mode, args, chromePath),
+    launchArgsHash: hashHex(launchArgs),
+  };
 }
 
 async function probeRuntime(page, browserSurfaceArgs) {
@@ -1447,6 +1475,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
   const workflowResultsById = new Map();
   const runtimeEvidence = {
     modeRequested: mode,
+    runtimeSelection: buildRuntimeSelection(mode, args, chromePath, launchArgs),
     apiSurface: args.apiSurface,
     pageTargetKind: pageTarget.kind,
     pageTargetPort: Number.isInteger(pageTarget.port) ? pageTarget.port : null,
@@ -1685,6 +1714,12 @@ async function main() {
           mode,
           elapsedMs: 0,
           launchArgs: [],
+          runtimeSelection: buildRuntimeSelection(
+            mode,
+            args,
+            args.modeChromePaths[mode] ?? args.chromePath,
+            [],
+          ),
           runtimeProbe: {
             webgpuAvailable: false,
             adapterAvailable: false,
@@ -1694,6 +1729,12 @@ async function main() {
           },
           runtimeEvidence: {
             modeRequested: mode,
+            runtimeSelection: buildRuntimeSelection(
+              mode,
+              args,
+              args.modeChromePaths[mode] ?? args.chromePath,
+              [],
+            ),
             pageTargetKind: pageTarget.kind,
             pageTargetPort: null,
             pageTargetWarning: pageTarget.warning ?? null,
@@ -1726,6 +1767,7 @@ async function main() {
         chromePath: modeRun.chromePath,
         elapsedMs: modeRun.elapsedMs,
         launchArgs: modeRun.launchArgs,
+        runtimeSelection: modeRun.runtimeEvidence.runtimeSelection,
         runtimeProbe: modeRun.runtimeProbe,
         runtimeEvidence: modeRun.runtimeEvidence,
         modeFailure: modeRun.modeFailure,
@@ -1805,6 +1847,7 @@ async function main() {
       pageTargetWarning: pageTarget.warning ?? null,
       dataUrlFallbackEnabled: args.allowDataUrlFallback,
     },
+    runtimeSelections: modeRunDetailsWithHashes.map((entry) => entry.runtimeSelection),
     methodology: {
       scenarioIterations: args.iterations,
       strictMode: args.strict,

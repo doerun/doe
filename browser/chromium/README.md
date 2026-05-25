@@ -12,8 +12,8 @@ path selected by `FAWN_CHROMIUM_LANE_DIR` for external-volume setups.
 
 This integration layer is used for:
 
-1. An experimental future challenger path to replace Dawn behind
-   `navigator.gpu` in Chromium.
+1. The strategic challenger path to replace Dawn behind `navigator.gpu` in
+   Chromium-family browsers.
 2. Planning, contracts, and diagnostics for Chromium-facing Doe bring-up.
 
 This layer is intentionally process-heavy and contract-first. It exists to
@@ -25,13 +25,18 @@ In scope:
 
 1. Integration architecture, contracts, and rollout policy.
 2. Test/gate/benchmark plans for Chromium-facing work.
-3. Optional internal module designs (`2D SDF`, `path`, `effects`, `compute services`, `resource scheduler`).
+3. Forced-Doe browser diagnostics, runtime identity, fallback taxonomy, and
+   WebGPU workload evidence.
+4. Archived optional internal module designs (`2D SDF`, `path`, `effects`,
+   `compute services`, `resource scheduler`).
 
 Out of scope:
 
 1. Direct edits to core runtime execution in `runtime/zig/src`.
 2. Redefining Doe stage order or existing gate precedence.
-3. Claims of browser-wide replacement semantics.
+3. Claims of browser-wide replacement semantics before browser-lane artifacts
+   pass the required gates.
+4. Broad Chromium fork divergence outside WebGPU runtime integration.
 
 ## Isolation contract
 
@@ -89,7 +94,7 @@ Terminology used in this directory:
 
 ## Program shape
 
-Track A (browser): experimental challenger path for `navigator.gpu` via Doe.
+Track A (browser): strategic Dawn replacement path for `navigator.gpu` via Doe.
 
 Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
@@ -97,8 +102,8 @@ Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
 ### Objective
 
-Prove that Doe could swap the runtime implementation seam while keeping browser
-behavior and process topology stable.
+Prove that Doe can own the WebGPU runtime implementation seam while keeping
+browser behavior and process topology stable.
 
 ### Design constraints
 
@@ -109,6 +114,7 @@ behavior and process topology stable.
 2. Keep Dawn available as first-class fallback at every stage.
 3. Use explicit runtime selection flagging and kill switches.
 4. Preserve deterministic artifacts for all quality decisions.
+5. Disable hidden fallback in claim mode so forced-Doe evidence is real.
 
 ### Integration principle
 

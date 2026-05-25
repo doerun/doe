@@ -16,6 +16,7 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -127,6 +128,52 @@ def validate_ownership(payload: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{label} runtimeSelection must be object"]
+    if payload.get("selectionMode") != mode:
+        errors.append(f"{label} selectionMode must be {mode}")
+    if payload.get("selectedRuntime") != mode:
+        errors.append(f"{label} selectedRuntime must be {mode}")
+    if payload.get("forcedMode") != mode:
+        errors.append(f"{label} forcedMode must be {mode}")
+    if payload.get("fallbackApplied") is not False:
+        errors.append(f"{label} fallbackApplied must be false")
+    if payload.get("fallbackReasonCode") != "":
+        errors.append(f"{label} fallbackReasonCode must be empty")
+    if payload.get("hiddenFallbackAllowed") is not False:
+        errors.append(f"{label} hiddenFallbackAllowed must be false")
+    if not isinstance(payload.get("selectorVersion"), str) or not payload["selectorVersion"].strip():
+        errors.append(f"{label} selectorVersion must be non-empty")
+    if not isinstance(payload.get("launchArgsHash"), str) or not re.fullmatch(
+        r"[a-f0-9]{64}", payload["launchArgsHash"]
+    ):
+        errors.append(f"{label} launchArgsHash must be sha256 hex")
+
+    artifact = payload.get("artifactIdentity")
+    if not isinstance(artifact, dict):
+        errors.append(f"{label} artifactIdentity must be object")
+        return errors
+    if not isinstance(artifact.get("browserExecutablePath"), str) or not artifact[
+        "browserExecutablePath"
+    ].strip():
+        errors.append(f"{label} artifactIdentity.browserExecutablePath must be non-empty")
+    if mode == "doe":
+        if not isinstance(artifact.get("doeLibPath"), str) or not artifact["doeLibPath"].strip():
+            errors.append(f"{label} artifactIdentity.doeLibPath must be non-empty for doe")
+        if not isinstance(artifact.get("doeLibSha256"), str) or not re.fullmatch(
+            r"[a-f0-9]{64}", artifact["doeLibSha256"]
+        ):
+            errors.append(f"{label} artifactIdentity.doeLibSha256 must be sha256 hex for doe")
+    else:
+        if artifact.get("doeLibPath") is not None:
+            errors.append(f"{label} artifactIdentity.doeLibPath must be null for dawn")
+        if artifact.get("doeLibSha256") is not None:
+            errors.append(f"{label} artifactIdentity.doeLibSha256 must be null for dawn")
+    return errors
+
+
 def validate_smoke_report(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if payload.get("reportKind") != "chromium-webgpu-playwright-smoke":
@@ -155,6 +202,7 @@ def validate_smoke_report(payload: dict[str, Any]) -> list[str]:
             errors.append("smoke modeResults entry missing mode")
             continue
         modes_seen.add(mode)
+        errors.extend(validate_runtime_selection(row.get("runtimeSelection"), mode, f"smoke {mode}"))
         if row.get("webgpuAvailable") is not True:
             errors.append(f"smoke mode {mode} webgpuAvailable must be true")
         if row.get("adapterAvailable") is not True:
@@ -184,6 +232,41 @@ def validate_layered_artifacts(
         errors.append("layered reportKind must be browser-layered-diagnostic")
     if not isinstance(report_payload.get("browserEnvironmentEvidence"), dict):
         errors.append("layered report missing browserEnvironmentEvidence")
+    runtime_selections = report_payload.get("runtimeSelections")
+    if not isinstance(runtime_selections, list):
+        errors.append("layered report runtimeSelections must be list")
+    else:
+        selection_modes = []
+        for index, selection in enumerate(runtime_selections):
+            mode = selection.get("selectionMode") if isinstance(selection, dict) else None
+            if isinstance(mode, str):
+                selection_modes.append(mode)
+                errors.extend(
+                    validate_runtime_selection(selection, mode, f"layered runtimeSelections[{index}]")
+                )
+            else:
+                errors.append(f"layered runtimeSelections[{index}] missing selectionMode")
+        if sorted(selection_modes) != ["dawn", "doe"]:
+            errors.append(f"layered runtimeSelections must contain dawn and doe, found {selection_modes}")
+    mode_details = report_payload.get("modeRunDetails")
+    if not isinstance(mode_details, list):
+        errors.append("layered report modeRunDetails must be list")
+    else:
+        for index, detail in enumerate(mode_details):
+            if not isinstance(detail, dict):
+                errors.append(f"layered modeRunDetails[{index}] must be object")
+                continue
+            mode = detail.get("mode")
+            if not isinstance(mode, str):
+                errors.append(f"layered modeRunDetails[{index}] missing mode")
+                continue
+            errors.extend(
+                validate_runtime_selection(
+                    detail.get("runtimeSelection"),
+                    mode,
+                    f"layered modeRunDetails[{index}]",
+                )
+            )
     if summary_payload.get("reportKind") != "browser-layered-superset-summary":
         errors.append("summary reportKind must be browser-layered-superset-summary")
     if summary_payload.get("comparisonStatus") != "diagnostic":

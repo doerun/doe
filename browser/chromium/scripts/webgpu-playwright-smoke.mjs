@@ -85,6 +85,7 @@ const BENCHMARK_CLASS = "diagnostic";
 const TIMING_CLASS = "browser-operation-proxy";
 const TIMING_SOURCE = "performance.now";
 const HASH_ALGORITHM = "sha256";
+const RUNTIME_SELECTOR_VERSION = "browser-runtime-selector-v1";
 const UPLOAD_WARMUP_ITERS = 50;
 const DISPATCH_WARMUP_ITERS = 20;
 const COPY_BYTES_PER_ROW_ALIGNMENT = 256;
@@ -175,6 +176,7 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
   return {
     mode,
     apiSurface: args.apiSurface,
+    runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
     runtimeArgs: runtimeArgs(mode, args.doeLibPath),
     launchArgs,
     browserVersion,
@@ -278,6 +280,11 @@ function stableObject(value) {
 function hashHex(value) {
   const canonical = JSON.stringify(stableObject(value));
   return createHash(HASH_ALGORITHM).update(canonical).digest("hex");
+}
+
+function fileHashHex(pathValue) {
+  if (!pathValue || !existsSync(pathValue)) return null;
+  return createHash(HASH_ALGORITHM).update(readFileSync(pathValue)).digest("hex");
 }
 
 function attachHashChain(entries) {
@@ -469,6 +476,28 @@ function runtimeArgs(mode, doeLibPath) {
     "--use-webgpu-runtime=doe",
     `--doe-webgpu-library-path=${doeLibPath}`,
   ];
+}
+
+function runtimeArtifactIdentity(mode, args) {
+  return {
+    browserExecutablePath: args.chromePath,
+    doeLibPath: mode === "doe" ? args.doeLibPath : null,
+    doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
+  };
+}
+
+function buildRuntimeSelection(mode, args, launchArgs) {
+  return {
+    selectionMode: mode,
+    selectedRuntime: mode,
+    forcedMode: mode,
+    fallbackApplied: false,
+    fallbackReasonCode: "",
+    hiddenFallbackAllowed: false,
+    selectorVersion: RUNTIME_SELECTOR_VERSION,
+    artifactIdentity: runtimeArtifactIdentity(mode, args),
+    launchArgsHash: hashHex(launchArgs),
+  };
 }
 
 function safeDeltaPercent(dawnValue, doeValue) {
@@ -1237,6 +1266,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
 
     return {
       mode,
+      runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
       runtimeArgs: runtimeArgs(mode, args.doeLibPath),
       launchArgs,
       browserVersion,
@@ -1346,6 +1376,7 @@ async function main() {
         "Browser harness output is diagnostic and not a strict L0 apples-to-apples claim artifact.",
       ],
     },
+    runtimeSelections: modeResultsWithHashes.map((entry) => entry.runtimeSelection),
     modeResults: modeResultsWithHashes,
     comparison: computeComparison(modeResultsWithHashes),
   };

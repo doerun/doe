@@ -26,7 +26,10 @@ because the archived schemas and fixtures still use those ids.
 8. `browser-benchmark-superset.contract.md`
    - Layered browser benchmark superset contract (`L0`/`L1`/`L2`) and projection/gate rules.
    - includes hash-synchronization, status-code taxonomy, cadence, and promotion-approval policy.
-9. `../bench/workflows/browser-milestones.json`
+9. `browser-claim-methodology.contract.md`
+   - Forced-runtime browser claim methodology and required runtime-selection
+     artifact fields.
+10. `../bench/workflows/browser-milestones.json`
    - schema-backed M0-M6 status manifest for current nursery state and local evidence.
 
 ## Contract Rules

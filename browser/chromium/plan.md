@@ -5,7 +5,12 @@
 This plan defines a detailed, contract-first rollout for:
 
 1. Track A:
-   - Doe as an optional Dawn replacement for Chromium `navigator.gpu`.
+   - Doe as the strategic Dawn replacement lane for Chromium `navigator.gpu`.
+
+The target is a forced-Doe Chromium-family WebGPU path that can beat Dawn/Tint
+on claimable compiler, runtime, and browser-lane evidence while keeping the
+fork delta WebGPU-focused. The strategy lives in
+[`docs/chromium-webgpu-dominance.md`](../../docs/chromium-webgpu-dominance.md).
 
 Track B (optional internal Chromium GPU modules) was archived 2026-03-19.
 See the Track B sections below (marked archived) and `docs/status.md` for
@@ -28,6 +33,8 @@ state and local evidence.
 3. Preserve Doe stage discipline and gate precedence.
 4. Require deterministic artifacts for all quality decisions.
 5. Keep Dawn fallback available at every rollout stage.
+6. Disable hidden fallback in claim mode so forced-Doe evidence is real.
+7. Keep Chromium changes isolated to WebGPU runtime integration boundaries.
 
 ## Program phases
 

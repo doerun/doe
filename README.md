@@ -12,6 +12,10 @@ In practice that means embedding where Dawn is too heavy, lowering kernels to
 multiple GPU and spatial backends from the same IR, and emitting artifact-
 backed receipts that bind every claim to a specific build.
 
+The flagship target is Chromium-family WebGPU: make Doe the evidence-backed
+open-source runtime and compiler path that can beat Dawn/Tint without silent
+fallbacks or broad browser-fork drift.
+
 Published npm surface: [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
 
 ## Tenants
@@ -32,7 +36,10 @@ visible, lowering preserves identity, and every claim has a receipt path.
 ## Why Doe
 
 - Lean runtime story: a Zig runtime with a small package layer instead of
-  treating Chromium's in-tree Dawn stack as the default deployment model.
+  treating Chromium's in-tree Dawn stack as the permanent ceiling.
+- Chromium-family target: turn source-preserving compiler output, explicit
+  runtime behavior, and browser-lane receipts into a better WebGPU
+  implementation path for Chromium-derived browsers.
 - Explicit behavior: no silent fallback, explicit runtime boundaries, and
   artifact-backed benchmarking instead of hand-wavy claims.
 - Performance work with receipts: current results live in
@@ -59,13 +66,14 @@ Receipt paths for these charted lanes are listed in
 
 ## Current product surface
 
-- Competitive today: native, package, embedded, and server-side JavaScript
-  lanes.
+- Strategic target: Chromium-family WebGPU implementation.
+- Competitive evidence today: native, package, embedded, and server-side
+  JavaScript lanes.
 - `doe-gpu/browser` is a browser shim over the browser's incumbent WebGPU
-  implementation. Chromium replacement work lives under the experimental
-  `browser/chromium/` lane.
-- [`browser/chromium/`](browser/chromium/README.md) is an experimental future
-  lane outside the current product surface.
+  implementation. It does not run Doe runtime code.
+- [`browser/chromium/`](browser/chromium/README.md) is the strategic
+  Chromium integration lane for replacing Dawn at the `navigator.gpu` seam
+  after compatibility, trace, correctness, and comparability gates pass.
 
 ## Start here
 
@@ -73,6 +81,8 @@ Receipt paths for these charted lanes are listed in
 - Runtime contributors: [`runtime/zig/README.md`](runtime/zig/README.md)
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
+- Chromium WebGPU strategy:
+  [`docs/chromium-webgpu-dominance.md`](docs/chromium-webgpu-dominance.md)
 - Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
 - Cerebras lane (Doppler → Doe → Cerebras):
   [`docs/cerebras.md`](docs/cerebras.md). Progress, source, reproduce,

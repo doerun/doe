@@ -20,6 +20,11 @@ the shards under [`docs/status/`](status/).
 - [`licensing.md`](licensing.md) — license surface and third-party
 - [`upgrade-policy.md`](upgrade-policy.md) — version compatibility and deprecation rules
 
+## Strategic target
+
+- [`chromium-webgpu-dominance.md`](chromium-webgpu-dominance.md) — Doe's
+  Dawn/Tint/Chromium WebGPU target and claim boundaries
+
 ## Cerebras lane (Doppler → Doe → Cerebras)
 
 Front door: [`cerebras.md`](cerebras.md). Bundle packer + claim-discipline

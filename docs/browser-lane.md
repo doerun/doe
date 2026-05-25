@@ -3,6 +3,11 @@
 This document covers the **Chromium integration lane** (Track A): embedding the
 Doe Zig runtime inside Chromium to replace Dawn at `navigator.gpu`.
 
+This lane is the browser-facing arm of
+[`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md). It is where
+Doe proves forced-Doe Chromium execution, not where package shims delegate to
+the incumbent browser runtime.
+
 This is **not** the browser wrapper in `packages/doe-gpu/src/browser.js`. That
 wrapper is a JS shim inside the `doe-gpu` package that delegates to
 the browser's own WebGPU implementation. It exists today and runs no Doe code.
@@ -14,9 +19,9 @@ See the "Package layer stack" diagram in the root `README.md` for the wrapper's 
 │ JS shim → browser's own navigator.gpu → browser drives GPU  │
 │ No Doe runtime code runs. Wrapper for API compatibility.    │
 ├──────────────────────────────────────────────────────────────┤
-│ browser/chromium/            (this document — future)   │
+│ browser/chromium/            (this document — strategic lane)│
 │ Embed Doe Zig runtime inside Chromium to replace Dawn       │
-│ at the navigator.gpu seam. Plans/contracts only today.      │
+│ at the navigator.gpu seam. Claims require lane artifacts.    │
 └──────────────────────────────────────────────────────────────┘
 ```
 

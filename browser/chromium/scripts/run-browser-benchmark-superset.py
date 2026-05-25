@@ -549,6 +549,7 @@ def main() -> int:
             "l2": run_summary.get("l2", {}),
             "overallRequiredFailures": run_summary.get("overallRequiredFailures"),
             "browserEnvironmentEvidence": report_payload.get("browserEnvironmentEvidence", {}),
+            "runtimeSelections": report_payload.get("runtimeSelections", []),
         },
     }
 
