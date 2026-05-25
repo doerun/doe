@@ -16,6 +16,29 @@ Verified:
 - `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_run_artifact.py bench/tests/test_compare_from_artifacts.py bench/tests/test_report_conformance.py -q`
 - `python3 bench/cli.py run-config --side comparison --config bench/native-compare/compare.config.apple.metal.release.json --workload-filter compute_concurrent_execution_single --out bench/out/apple-metal/identity-check/dawn-vs-doe.apple.metal.identity-check.json --workspace bench/out/apple-metal/identity-check/runtime-comparisons.apple.metal.identity-check`
 
+## 2026-05-25 — Browser executable identity is pinned in diagnostics
+
+Browser smoke and layered diagnostics now hash the resolved Chromium executable
+for both Dawn and Doe modes. The browser gate requires
+`artifactIdentity.browserExecutableSha256`, so browser evidence is tied to the
+exact executable plus the Doe runtime library when Doe mode is selected.
+
+Current refreshed evidence:
+
+- `browser/chromium/artifacts/20260525T202040Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+- `browser/chromium/artifacts/20260525T202052Z/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- `browser/chromium/artifacts/20260525T202052Z/dawn-vs-doe.browser-layered.superset.check.json`
+- `browser/chromium/artifacts/20260525T202052Z/dawn-vs-doe.browser-layered.superset.summary.json`
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_browser_gate.py -q`
+- `node --check browser/chromium/scripts/webgpu-playwright-smoke.mjs`
+- `node --check browser/chromium/scripts/webgpu-playwright-layered-bench.mjs`
+- `./browser/chromium/scripts/preflight.sh --mode bench`
+- `./browser/chromium/scripts/run-smoke.sh --mode both --strict`
+- `./browser/chromium/scripts/run-bench.sh --mode both --strict-run`
+
 ## 2026-05-25 — Browser smoke and layered diagnostics refreshed
 
 Fresh browser-lane diagnostics were generated through the wrapper entrypoints

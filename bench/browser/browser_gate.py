@@ -159,6 +159,10 @@ def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]
         "browserExecutablePath"
     ].strip():
         errors.append(f"{label} artifactIdentity.browserExecutablePath must be non-empty")
+    if not isinstance(artifact.get("browserExecutableSha256"), str) or not re.fullmatch(
+        r"[a-f0-9]{64}", artifact["browserExecutableSha256"]
+    ):
+        errors.append(f"{label} artifactIdentity.browserExecutableSha256 must be sha256 hex")
     if mode == "doe":
         if not isinstance(artifact.get("doeLibPath"), str) or not artifact["doeLibPath"].strip():
             errors.append(f"{label} artifactIdentity.doeLibPath must be non-empty for doe")

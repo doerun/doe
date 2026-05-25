@@ -649,6 +649,7 @@ function runtimeArgs(mode, doeLibPath) {
 function runtimeArtifactIdentity(mode, args, chromePath) {
   return {
     browserExecutablePath: chromePath,
+    browserExecutableSha256: fileHashHex(chromePath),
     doeLibPath: mode === "doe" ? args.doeLibPath : null,
     doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
   };
