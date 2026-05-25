@@ -3,6 +3,23 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-25 — Apple Metal preflight checks executor artifacts
+
+The local Apple Metal preflight now verifies the actual compare-lane executor
+artifacts before a run can proceed:
+
+- `runtime/zig/zig-out/bin/doe-zig-runtime`
+- `bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib`
+
+The Dawn delegate library check also inspects the exported WebGPU C ABI symbols
+required by the delegate lane. This prevents a host-only Metal toolchain smoke
+from being treated as a runnable Doe-vs-Dawn compare preflight.
+
+Verified:
+
+- `python3 bench/runners/preflight_metal_host.py`
+- `python3 -m pytest bench/tests/test_preflight_metal_host.py -q`
+
 ## 2026-05-25 — Apple Metal copy contracts enter the release claim lane
 
 Apple Metal native Doe-vs-Dawn release evidence has been refreshed after the

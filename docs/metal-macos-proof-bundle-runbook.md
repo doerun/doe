@@ -5,7 +5,7 @@ This runbook is for final strict apples-to-apples Metal proof on Apple Silicon h
 ## Preconditions
 
 1. Host is macOS on Apple Silicon (`arm64`) with Metal capability.
-2. Dawn binaries and `dawn_perf_tests` are present under `bench/vendor/dawn/out/Release`.
+2. The Dawn delegate shared library is present under `bench/vendor/dawn/out/Release`.
 3. Zig runtime binary exists at `runtime/zig/zig-out/bin/doe-zig-runtime`.
 
 ## 1. Host preflight

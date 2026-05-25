@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -12,6 +13,9 @@ import sys
 from pathlib import Path
 
 VERSION_PATTERN = re.compile(r"\b\d+(?:\.\d+)*\b")
+DEFAULT_RUNTIME_PATH = Path("runtime/zig/zig-out/bin/doe-zig-runtime")
+DEFAULT_DAWN_LIBRARY_PATH = Path("bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib")
+REQUIRED_DAWN_SYMBOLS = ("_wgpuCreateInstance", "_wgpuAdapterRequestDevice")
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,6 +30,16 @@ def parse_args() -> argparse.Namespace:
         default="config/shader-toolchain.json",
         help="Shader toolchain contract used for optional Metal version checks.",
     )
+    parser.add_argument(
+        "--runtime",
+        default=str(DEFAULT_RUNTIME_PATH),
+        help="Doe runtime binary required by Apple Metal compare lanes.",
+    )
+    parser.add_argument(
+        "--dawn-library",
+        default=str(DEFAULT_DAWN_LIBRARY_PATH),
+        help="Dawn WebGPU shared library required by dawn_delegate Metal lanes.",
+    )
     return parser.parse_args()
 
 
@@ -38,6 +52,35 @@ def capture_tool(*cmd: str) -> tuple[bool, str]:
     completed = subprocess.run(cmd, capture_output=True, text=True, check=False)
     output = (completed.stdout or "") + (completed.stderr or "")
     return completed.returncode == 0, output
+
+
+def check_file(path: Path, *, executable: bool = False) -> tuple[bool, str]:
+    if not path.is_file():
+        return False, f"missing file: {path}"
+    if executable and not os.access(path, os.X_OK):
+        return False, f"not executable: {path}"
+    return True, "ok"
+
+
+def check_dawn_library_exports(path: Path) -> tuple[bool, str]:
+    ok, message = check_file(path)
+    if not ok:
+        return ok, message
+
+    completed = subprocess.run(
+        ["nm", "-gU", str(path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        diagnostic = (completed.stderr or completed.stdout or "nm failed").strip()
+        return False, f"failed to inspect Dawn library exports: {diagnostic}"
+
+    missing = [symbol for symbol in REQUIRED_DAWN_SYMBOLS if symbol not in completed.stdout]
+    if missing:
+        return False, f"Dawn library missing required exports: {', '.join(missing)}"
+    return True, "ok"
 
 
 def load_expected_versions(path: Path) -> dict[str, str]:
@@ -109,6 +152,16 @@ def main() -> int:
 
     if not run_tool("xcrun", "--find", "metallib"):
         print("FAIL: xcrun cannot locate metallib tool")
+        return 1
+
+    runtime_ok, runtime_message = check_file(Path(args.runtime), executable=True)
+    if not runtime_ok:
+        print(f"FAIL: Doe runtime unavailable: {runtime_message}")
+        return 1
+
+    dawn_ok, dawn_message = check_dawn_library_exports(Path(args.dawn_library))
+    if not dawn_ok:
+        print(f"FAIL: Dawn delegate library unavailable: {dawn_message}")
         return 1
 
     if args.require_toolchain:
