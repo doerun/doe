@@ -143,9 +143,10 @@ MSL/SPIR-V/HLSL WebGPU lanes remain live.
 
 Dawn is Google's WebGPU implementation. Tint is Dawn's shader compiler.
 Tint is therefore a first-class Doe target, not incidental background. The
-browser strategy in [`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md)
-requires compiler evidence against Tint before any Chromium WebGPU replacement
-claim can promote.
+Chromium task list in
+[`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md) requires
+compiler evidence against Tint before any Chromium WebGPU replacement claim can
+promote.
 
 | Dimension | Dawn/Tint | Doe |
 |-----------|-----------|-----|

@@ -1,51 +1,42 @@
 # Browser lane
 
-This document covers the **Chromium integration lane** (Track A): embedding the
-Doe Zig runtime inside Chromium to replace Dawn at `navigator.gpu`.
+This file is a routing note, not a second task list.
 
-This lane is the browser-facing arm of
-[`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md). It is where
-Doe proves forced-Doe Chromium execution, not where package shims delegate to
-the incumbent browser runtime.
+The canonical Chromium WebGPU task list is
+[`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md). The executable
+browser integration layer is [`../browser/chromium/`](../browser/chromium/README.md).
 
-This is **not** the browser wrapper in `packages/doe-gpu/src/browser.js`. That
-wrapper is a JS shim inside the `doe-gpu` package that delegates to
-the browser's own WebGPU implementation. It exists today and runs no Doe code.
-See the "Package layer stack" diagram in the root `README.md` for the wrapper's role.
+## Boundaries
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ packages/doe-gpu/src/browser.js  (exists today)             │
-│ JS shim → browser's own navigator.gpu → browser drives GPU  │
-│ No Doe runtime code runs. Wrapper for API compatibility.    │
-├──────────────────────────────────────────────────────────────┤
-│ browser/chromium/            (this document — strategic lane)│
-│ Embed Doe Zig runtime inside Chromium to replace Dawn       │
-│ at the navigator.gpu seam. Claims require lane artifacts.    │
-└──────────────────────────────────────────────────────────────┘
-```
+- `packages/doe-gpu/src/browser.js` is only the package browser wrapper. It
+  delegates to the browser's existing `navigator.gpu` and does not prove Doe
+  browser execution.
+- `browser/chromium/` owns contracts, scripts, diagnostics, and lane-local
+  artifacts for forced-Doe Chromium work.
+- `browser/chromium_webgpu_lane/` or `FAWN_CHROMIUM_LANE_DIR` owns the actual
+  Chromium checkout/build workspace.
+- Browser smoke, layered browser benchmarks, browser claim gates, and native
+  Dawn-vs-Doe runtime claims are separate artifact lanes.
 
-## Chromium integration layers
+## Required task sources
 
-The browser family is split into two layers:
+- Task list:
+  [`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md)
+- Browser plan:
+  [`../browser/chromium/plan.md`](../browser/chromium/plan.md)
+- Milestone manifest:
+  [`../browser/chromium/bench/workflows/browser-milestones.json`](../browser/chromium/bench/workflows/browser-milestones.json)
+- Runtime selector contract:
+  [`../browser/chromium/contracts/runtime-selector-and-fallback.contract.md`](../browser/chromium/contracts/runtime-selector-and-fallback.contract.md)
+- Browser benchmark contract:
+  [`../browser/chromium/contracts/browser-benchmark-superset.contract.md`](../browser/chromium/contracts/browser-benchmark-superset.contract.md)
+- Browser claim methodology:
+  [`../browser/chromium/contracts/browser-claim-methodology.contract.md`](../browser/chromium/contracts/browser-claim-methodology.contract.md)
 
-- `browser/chromium`
-  - docs, contracts, scripts, and diagnostics for Chromium integration
-- `browser/chromium_webgpu_lane`
-  - the actual Chromium checkout/build workspace when stored in-tree
+## Archived module note
 
-Keep those layers distinct:
-
-- `chromium` is the control and evidence layer
-- `chromium_webgpu_lane` is the heavyweight build workspace
-
-Browser smoke and browser benchmark projection remain separate benchmark
-contracts even when they share scripts or projection manifests.
-
-## Track B (modules) — archived
-
-Track B proposed optional Chromium-internal GPU modules (SDF renderer, path
-engine, effects pipeline, compute services, resource scheduler). It was
-archived 2026-03-19: building parallel browser subsystem replacements
-duplicates work that arrives for free once Track A ships. See
-`browser/chromium/README.md` and `docs/status.md` for the full rationale.
+The old Track B module designs for SDF rendering, path processing, effects,
+compute services, and resource scheduling are archived. Use them only as
+contract references. New browser work starts from the canonical task list and
+must promote through schema, trace, gate, and artifact contracts before it can
+affect runtime behavior.

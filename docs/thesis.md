@@ -128,7 +128,7 @@ For v0, success is trend-based rather than slogan-based:
   pain points and how Doe handles them
 - [`architecture.md`](./architecture.md) for system surfaces
 - [`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md) for the
-  Dawn/Tint/Chromium strategy
+  Dawn/Tint/Chromium task list
 - [`performance-strategy.md`](./performance-strategy.md) for Dawn comparison
   methodology
 

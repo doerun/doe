@@ -20,10 +20,10 @@ the shards under [`docs/status/`](status/).
 - [`licensing.md`](licensing.md) — license surface and third-party
 - [`upgrade-policy.md`](upgrade-policy.md) — version compatibility and deprecation rules
 
-## Strategic target
+## Chromium WebGPU tasks
 
-- [`chromium-webgpu-dominance.md`](chromium-webgpu-dominance.md) — Doe's
-  Dawn/Tint/Chromium WebGPU target and claim boundaries
+- [`chromium-webgpu-dominance.md`](chromium-webgpu-dominance.md) — canonical
+  task list for Doe vs Tint, Doe vs Dawn, and forced-Doe Chromium WebGPU work
 
 ## Cerebras lane (Doppler → Doe → Cerebras)
 
@@ -65,6 +65,7 @@ gate depend on the bundle and appendix files; do not rename.
 - [`benchmark-taxonomy.md`](benchmark-taxonomy.md) — canonical compare taxonomy
 - [`performance-strategy.md`](performance-strategy.md) — performance work approach
 - [`doe-support-matrix.md`](doe-support-matrix.md) — platform × surface × runtime support
-- [`browser-lane.md`](browser-lane.md) — browser benchmarking lane
+- [`browser-lane.md`](browser-lane.md) — routing note for browser-lane tasks,
+  contracts, and artifacts
 - [`numeric-stability.md`](numeric-stability.md) — determinism + numeric stability
 - [`claim-discipline.md`](claim-discipline.md) — claim-language rules over benchmark output

@@ -1,166 +1,200 @@
-# Chromium WebGPU dominance strategy
+# Chromium WebGPU task list
 
-## Purpose
+This is the canonical task list for making Doe a stronger Chromium WebGPU
+implementation path than the Dawn/Tint incumbent. Keep this file task-only:
+what to build, gate, prove, or remove. Strategy prose belongs in
+[`thesis.md`](./thesis.md); current evidence belongs in
+[`status.md`](./status.md) and artifact reports.
 
-Doe's flagship strategic target is to become the best open-source WebGPU
-implementation path for Chromium-family browsers.
+## Task routing
 
-That is an engineering target, not a current claim. The path is to beat the
-incumbent Dawn/Tint stack on claimable compiler, runtime, and browser-lane
-evidence while keeping Chromium changes isolated to WebGPU integration
-boundaries.
+- Keep browser execution tasks under [`../browser/chromium/`](../browser/chromium/README.md).
+- Keep compiler work under [`../runtime/zig/src/doe_wgsl/`](../runtime/zig/src/doe_wgsl/).
+- Keep runtime backend work under [`../runtime/zig/src/backend/`](../runtime/zig/src/backend/).
+- Keep benchmark and claim gates under [`../bench/`](../bench/README.md).
+- Keep contracts and schemas under [`../config/`](../config/).
+- Keep live status in [`status/compiler-and-webgpu.md`](./status/compiler-and-webgpu.md) and
+  [`status/runtime-backends-and-bench.md`](./status/runtime-backends-and-bench.md).
 
-## Goal hierarchy
+## Non-negotiable task gates
 
-1. Beat Tint on the shader compiler surfaces that matter for WebGPU adoption:
-   WGSL parsing, semantic validation, IR lowering, backend emission,
-   robustness transforms, diagnostics, and reproducible compiler receipts.
-2. Beat Dawn on runtime surfaces that matter to browser and AI workloads:
-   pipeline creation, buffer upload, command encoding, queue submission,
-   readback, cache behavior, concurrency, and tail stability.
-3. Run as a forced Doe runtime inside a Chromium-family browser at the
-   `navigator.gpu` seam with hidden fallback disabled and failure reasons
-   recorded as artifacts.
-4. Turn browser runtime identity into a product advantage: developers should
-   see which runtime compiled and executed a workload, what IR/backend path ran,
-   why a fallback or failure occurred, and which receipt supports the claim.
+- Every performance claim must pass strict Dawn/Tint comparability gates.
+- Every forced-Doe Chromium claim must prove hidden fallback is disabled.
+- Every browser artifact must identify the browser executable, Doe runtime,
+  Dawn fallback runtime, shader compiler, workload, adapter, and trace chain.
+- Every unsupported path must emit a typed failure code.
+- Every task that changes runtime-visible behavior must update schema, docs, and
+  status in the same change.
 
-## Why Dawn and Tint are the real targets
+## Compiler tasks: Doe vs Tint
 
-Dawn is the runtime that Chromium depends on for WebGPU. Tint is Dawn's shader
-compiler. A Chromium WebGPU win is therefore not just "Doe faster than Dawn" on
-one benchmark row. It requires a linked stack:
+- Build and maintain a WGSL corpus manifest covering browser shaders, canvas
+  workloads, WebGPU samples, model inference kernels, game-engine shaders, and
+  invalid diagnostic fixtures.
+- Add or extend corpus materializers so every shader row records source path,
+  normalized source hash, expected validity, expected backend targets, and
+  provenance.
+- Run Doe and Tint on the same corpus rows with matched parse, validation,
+  lowering, emit, and validation phases where both toolchains expose comparable
+  boundaries.
+- Require every claimable compiler row to carry Doe tool identity, Tint tool
+  identity, warm Tint benchmark identity, source hash, IR hash, backend output
+  hash, validation result, and diagnostic status.
+- Expand `bench/gates/tint_compiler_evidence_gate.py` when a new compiler
+  artifact field becomes required for claimability.
+- Close WGSL frontend gaps found by the corpus: parsing, semantic validation,
+  address-space handling, builtins, type rules, diagnostic spans, and error
+  taxonomy.
+- Close backend emission gaps for MSL, SPIR-V, DXIL/HLSL, and any browser-lane
+  target promoted into the support matrix.
+- Add robustness-transform fixtures for every bounds, aliasing, texture
+  dimension, and guard pattern used by browser-facing workloads.
+- Add invalid-shader diagnostic quality fixtures and compare Doe/Tint failure
+  messages by typed category, not free-form text.
+- Add shader minimization tooling for corpus failures so a failing browser
+  shader can be reduced without losing source/backend identity.
+- Add CTS shader-subset ingestion and make the compiler evidence report link
+  CTS rows to the same source/output hash contract.
+- Emit source-to-IR-to-backend receipts from compiler runs so browser artifacts
+  can link a page shader to the exact lowered output.
 
-- Doe compiler evidence against Tint.
-- Doe runtime evidence against Dawn.
-- Browser integration evidence at Chromium's WebGPU seam.
-- Compatibility evidence that prevents a faster path from becoming a weaker
-  implementation.
-- Receipts that make every claim replayable.
+## Runtime tasks: Doe vs Dawn
 
-The browser wrapper in `packages/doe-gpu/src/browser.js` does not satisfy this
-target. It delegates to the browser's incumbent WebGPU implementation. The real
-browser target lives in `browser/chromium/`.
+- Keep strict native Dawn-vs-Doe compare reports on matched workload contracts
+  with structural work equivalence.
+- Audit every claimable workload for command count, dispatch count, resource
+  setup, submit/wait scope, readback scope, and success count on both sides.
+- Reject claimability when either side skips a command, reports zero dispatches
+  for executed work, or reports a timing phase that the other side measures.
+- Expand Metal runtime coverage for upload, pipeline creation, compute,
+  readback, small command streams, cache behavior, concurrency, and tails.
+- Expand Vulkan runtime coverage for the same workload classes before any
+  cross-platform claim is promoted.
+- Add D3D12/DXIL runtime coverage before any Windows browser path is promoted.
+- Implement and benchmark pipeline cache behavior with explicit cold/warm mode
+  contracts.
+- Implement and benchmark allocation-light upload paths without hiding
+  hardware-path asymmetry.
+- Implement and benchmark command encoder/resource reuse where workload
+  semantics allow it.
+- Emit command graph receipts from native runtime runs: buffers, textures,
+  pipeline IDs, bind group IDs, command ordering, submit IDs, and trace hashes.
+- Add deterministic replay checks for native command graph receipts.
+- Keep no-fallback reports for strict Doe runtime paths.
+- Keep `diagnostic` output separate from `claimable` output in every compare
+  artifact and gate.
 
-## Engineering principles
+## Chromium seam tasks
 
-1. Evidence before slogans.
-2. Strict Dawn/Tint comparability before performance claims.
-3. No hidden fallback in claim lanes.
-4. Keep Dawn available as an explicit compatibility fallback until gates say
-   otherwise.
-5. Keep Chromium fork delta small and WebGPU-focused.
-6. Do not replace browser sandbox, process, layout, media, or accessibility
-   policy with Doe logic.
-7. Prefer source-preserving diagnostics, IR receipts, and replay artifacts over
-   opaque pass/fail output.
+- Keep the browser wrapper path separate from Chromium integration; the package
+  wrapper does not prove Doe browser execution.
+- Wire Chromium runtime selection to explicit `dawn`, `doe`, and `auto` modes.
+- Add an emergency kill switch that selects Dawn without changing schemas or
+  artifact history.
+- Add deterministic denylist/profile fallback with typed reason codes.
+- Make forced `doe` mode fail closed when Doe cannot initialize; do not silently
+  select Dawn.
+- Bind Doe at the `navigator.gpu` WebGPU runtime seam without changing the
+  renderer process model, GPU process boundary, sandbox model, layout engine,
+  media policy, or accessibility policy.
+- Keep Dawn available as the compatibility runtime until replacement gates say
+  otherwise.
+- Require browser-lane reports to record browser executable hash, Doe runtime
+  hash, Dawn delegate hash, runtime selector version, adapter identity, and
+  fallback state.
+- Add browser-level WebGPU smoke, layered workload, and CTS subset artifacts for
+  both Dawn and forced Doe.
+- Add canvas and presentation-path probes that verify `GPUCanvasContext`
+  behavior under forced Doe.
+- Add external texture and media-path probes for `GPUExternalTexture`,
+  `copyExternalImageToTexture`, and shared texture/import behavior.
+- Add ORT/browser model workloads that exercise model warmup, pipeline reuse,
+  dispatch, upload, and readback inside Chromium.
+- Add crash, hang, device-loss, validation-error, and recovery parity checks
+  against the Dawn lane.
+- Promote a browser claim lane only when repeated forced-Doe browser artifacts
+  pass the browser claim policy and strict hidden-fallback checks.
 
-## Workstreams
+## Browser end-to-end responsibility map tasks
 
-### Compiler: Doe vs Tint
+- Add a browser responsibility map that separates CPU-owned browser duties from
+  GPU-owned browser duties.
+- CPU-owned map entries must include networking, cache, HTML parsing, CSS
+  parsing, cascade, DOM, style tree, layout, JavaScript execution, event loop,
+  accessibility tree, permissions, origin policy, scheduling, lifecycle,
+  workers, service workers, and developer tooling.
+- GPU-owned map entries must include rasterization, compositing, canvas 2D,
+  WebGL, WebGPU, image filters, CSS effects, transforms, texture upload,
+  readback, video presentation, swapchain/surface presentation, GPU memory
+  residency, command submission, pipeline cache, shader compilation, and frame
+  pacing.
+- Boundary map entries must name every CPU/GPU crossing that Doe can observe,
+  optimize, schedule, or receipt.
+- Mark every map entry as one of: `not_doe_scope`, `webgpu_seam`,
+  `doe_observable`, `doe_schedulable`, `doe_claim_candidate`, or
+  `blocked_by_browser_policy`.
+- Link each `doe_claim_candidate` entry to a contract, schema, workload, gate,
+  and artifact path before any claim language is allowed.
 
-The compiler lane should measure Doe's WGSL pipeline against Tint under matched
-contracts:
+## Browser capability tasks beyond current Chrome behavior
 
-- representative WGSL corpora from browser, canvas, WebGPU samples, model
-  inference, and game-engine shaders
-- parse/sema/lower/emit phase timing where both sides can expose comparable
-  boundaries
-- output validation for MSL, SPIR-V, and DXIL/HLSL paths
-- robustness transform coverage and failure taxonomy
-- diagnostics quality for invalid shaders
-- IR receipt output that binds source hash, IR hash, backend output hash, and
-  validation result
+- Build a page-level GPU flight-recorder contract that captures shaders, IR,
+  backend output, bind groups, buffers, textures, command graphs, timings,
+  adapter identity, frame hashes, and failure codes.
+- Implement a browser flight-recorder prototype for WebGPU workloads under
+  forced Doe.
+- Add replay tooling for flight-recorder artifacts and make replay failures
+  typed.
+- Add a canvas/WebGPU fusion contract that lets canvas 2D, WebGPU, image
+  filters, and presentation work share a visible Doe graph when the browser path
+  exposes stable command boundaries.
+- Add canvas/WebGPU fusion probes that compare output hashes, timing scopes, and
+  fallback reasons.
+- Add a page-level GPU scheduler contract for WebGPU, canvas, video, CSS
+  effects, local AI, and compositor-adjacent work.
+- Add scheduler probes for priority, fairness, frame deadline, origin quota,
+  device loss, and fallback behavior.
+- Add inline HTML/CSS GPU effect experiments only as explicit WebGPU-backed
+  effects; do not move layout, accessibility, or security semantics into Doe.
+- Add a local AI browser workload set for embeddings, ranking, image/video
+  transforms, and model inference under Chromium.
+- Emit receipts for every local AI browser workload: model identity, shader
+  identity, pipeline cache state, input contract, output digest, and fallback
+  status.
+- Add a developer-visible runtime identity surface that exposes which runtime
+  compiled and executed a workload.
+- Add developer-visible shader links from page source to Doe IR to backend
+  output.
+- Add developer-visible cache hit/miss and pipeline creation receipts.
+- Add developer-visible unsupported-capability and fallback explanations.
 
-Compiler wins are only useful when generated output remains spec-compatible.
-The priority is not "smaller compiler"; it is a smaller compiler that emits
-valid code, explains failures, and gives the browser path less hidden runtime
-work.
+## Security and fork-maintenance tasks
 
-The claim boundary for this lane is now schema-backed by
-[`config/tint-compiler-evidence.schema.json`](../config/tint-compiler-evidence.schema.json)
-and gated by
-[`bench/gates/tint_compiler_evidence_gate.py`](../bench/gates/tint_compiler_evidence_gate.py).
-A report can be diagnostic while the lane is still collecting comparable Tint
-phase timing and validation receipts; `claimStatus=claimable` requires every
-row to carry comparable Doe and Tint compiler evidence.
+- Keep capture artifacts origin-scoped and redact or hash page data that must
+  not leave the browser boundary.
+- Add permission and policy checks for any developer-visible capture or replay
+  surface.
+- Keep Doe integration inside the WebGPU seam unless a browser responsibility
+  map entry has a promoted contract and gate.
+- Keep Chromium fork patches isolated enough to rebase with Chromium security
+  updates.
+- Keep a Dawn fallback path and rollback procedure for release builds.
+- Add release artifacts that prove the shipped browser binary, Doe runtime,
+  compiler, contracts, and browser claim reports match.
 
-### Runtime: Doe vs Dawn
+## Current task ledgers
 
-The runtime lane should keep using strict compare policy from
-[`performance-strategy.md`](./performance-strategy.md):
-
-- matched workload contracts
-- operation-scope timing consistency
-- structural work equivalence
-- explicit cache and warm/cold configuration
-- comparable setup, encode, submit, wait, and readback boundaries
-- positive tails before promoted speed claims
-- artifact-backed claimability status
-
-Browser-relevant workloads include upload-heavy canvases, compute dispatch,
-pipeline creation, model warmup, readback, concurrent queue pressure, and
-small frequent command streams.
-
-### Browser: Chromium WebGPU lane
-
-The browser lane should prove forced-Doe behavior before claiming replacement:
-
-- runtime selector with explicit Doe, Dawn, and fallback states
-- hidden fallback disabled in claim mode
-- browser-level WebGPU tests and CTS subsets
-- canvas and presentation-path probes
-- external texture and media-path probes
-- ORT/browser model workloads
-- Playwright artifacts with runtime identity, trace metadata, and failure
-  taxonomy
-- crash/hang/error parity checks against the Dawn fallback lane
-
-The target is not to rewrite the browser. The target is to replace the WebGPU
-runtime seam so every browser subsystem that routes through WebGPU can benefit
-without Doe owning unrelated Chromium subsystems.
-
-### Developer product surface
-
-Doe should make the runtime visible in ways Dawn does not:
-
-- runtime identity in browser-lane diagnostics
-- shader source to IR to backend output links
-- cache hit/miss and pipeline creation receipts
-- unsupported-capability explanations
-- compatibility fallback reasons
-- trace/replay pointers for benchmark and bug reports
-
-This is part of the browser strategy. The best implementation is not only
-faster; it is more inspectable when it fails.
-
-## Claim boundaries
-
-Allowed claims when artifacts support them:
-
-- Doe is faster than Dawn on a named workload row with claimable compare
-  evidence.
-- Doe's compiler is faster or more diagnostic than Tint on a named compiler
-  corpus with comparable compiler receipts.
-- The Chromium lane ran a named WebGPU workload through forced Doe with hidden
-  fallback disabled.
-- A browser-lane artifact proves runtime identity, failure reason, and trace
-  continuity for a named workload.
-
-Not allowed:
-
-- Doe has already replaced Chromium WebGPU.
-- Doe is faster than Dawn globally.
-- Doe is more correct than Dawn/Tint without CTS, differential, or
-  replay-backed evidence.
-- The browser wrapper proves Doe browser execution.
-- Chromium fork changes outside WebGPU integration count as Doe progress.
-
-## Current repo routing
-
-- Strategy and claim boundary: this document and [`thesis.md`](./thesis.md).
-- Browser integration layer: [`../browser/chromium/`](../browser/chromium/README.md).
-- Browser lane overview: [`browser-lane.md`](./browser-lane.md).
-- Compiler architecture: [`shader-compiler-architecture.md`](./shader-compiler-architecture.md).
-- Runtime performance methodology: [`performance-strategy.md`](./performance-strategy.md).
-- Status routing: [`status.md`](./status.md).
+- Browser milestone state:
+  [`../browser/chromium/bench/workflows/browser-milestones.json`](../browser/chromium/bench/workflows/browser-milestones.json)
+- Browser acceptance plan:
+  [`../browser/chromium/plan.md`](../browser/chromium/plan.md)
+- Browser claim methodology:
+  [`../browser/chromium/contracts/browser-claim-methodology.contract.md`](../browser/chromium/contracts/browser-claim-methodology.contract.md)
+- Runtime selector contract:
+  [`../browser/chromium/contracts/runtime-selector-and-fallback.contract.md`](../browser/chromium/contracts/runtime-selector-and-fallback.contract.md)
+- Browser benchmark superset contract:
+  [`../browser/chromium/contracts/browser-benchmark-superset.contract.md`](../browser/chromium/contracts/browser-benchmark-superset.contract.md)
+- Compiler evidence gate:
+  [`../bench/gates/tint_compiler_evidence_gate.py`](../bench/gates/tint_compiler_evidence_gate.py)
+- Runtime compare policy:
+  [`performance-strategy.md`](./performance-strategy.md)
