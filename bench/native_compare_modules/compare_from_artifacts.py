@@ -561,7 +561,7 @@ def build_compare_report(
         for entry in enriched_entries
         if not entry["comparability"].get("comparable", False)
     ]
-    comparison_status = "comparable" if not comparability_failures else "unreliable"
+    comparison_status = "comparable" if not comparability_failures else "diagnostic"
     workload_manifest = baseline_artifact.get("workloadManifest", {})
     if not isinstance(workload_manifest, dict):
         workload_manifest = {}
@@ -617,9 +617,9 @@ def build_compare_report(
         benchmark_policy_path=benchmark_policy_path,
     )
     if comparison_status == "comparable" and coherence.get("status") != "pass":
-        report["comparisonStatus"] = "unreliable"
+        report["comparisonStatus"] = "diagnostic"
         coherence["statusBeforeCoherence"] = "comparable"
-        coherence["finalComparisonStatus"] = "unreliable"
+        coherence["finalComparisonStatus"] = "diagnostic"
     else:
         coherence["statusBeforeCoherence"] = comparison_status
         coherence["finalComparisonStatus"] = report["comparisonStatus"]

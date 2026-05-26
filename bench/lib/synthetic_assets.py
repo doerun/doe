@@ -11,6 +11,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Iterable
 
+from bench.lib.hash_utils import file_sha256, json_sha256
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CACHE_ENV_VAR = "DOE_BENCH_ASSET_CACHE_DIR"
@@ -26,18 +28,6 @@ SUPPORTED_GENERATORS = {
     "splitmix64_f16_nonzero_v1",
     "splitmix64_f32_nonzero_v1",
 }
-
-
-def canonical_json_text(payload: Any) -> str:
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
-
-
-def json_sha256(payload: Any) -> str:
-    return hashlib.sha256(canonical_json_text(payload).encode("utf-8")).hexdigest()
-
-
-def file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def resolve_cache_root() -> Path:

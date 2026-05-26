@@ -7,9 +7,9 @@
 `doe-gpu` is the npm package for Doe, a Zig-first WebGPU runtime for Node.js,
 Bun, and Deno.
 
-It gives you a small JavaScript layer over the native Doe runtime, plus focused
-subpaths for compute, browser, and hybrid use cases. The package is built for
-people who want a leaner, explicit WebGPU runtime outside the browser.
+It gives JavaScript a small layer over the native Doe runtime, with focused
+subpaths for compute, browser compatibility, capture, plans, and native
+provider access.
 
 ## Install
 
@@ -20,27 +20,29 @@ npm install doe-gpu
 ## Why use it
 
 - Small JS layer over the native Doe runtime
-- Faster on modern consumer hardware
 - Explicit failure instead of silent fallback
 - One package surface across Node.js, Bun, and Deno
+- Receipt-backed performance work against Dawn-backed package lanes
 - Browser shim available when you want API compatibility rather than runtime
   replacement
 
 ## Current evidence
 
-End to end Gemma 3 inference. Positive percentages mean Doe is faster vs Dawn via Node `webgpu` and Bun `bun-webgpu` packages.
+End-to-end Gemma 3 inference evidence compares Doe with Dawn-backed Node
+`webgpu` and Bun `bun-webgpu` package lanes. Positive percentages mean Doe
+finished faster in that lane.
 
 ![doe-gpu benchmark claims](https://raw.githubusercontent.com/doe-gpu/doe/main/assets/readme/package-claims.svg)
 
 Outputs:
-- Node package, AMD Vulkan: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
-- Bun package, AMD Vulkan: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
-- Node package, Apple Metal: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
-- Bun package, Apple Metal: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
+- [Node package, AMD Vulkan](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
+- [Bun package, AMD Vulkan](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
+- [Node package, Apple Metal](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
+- [Bun package, Apple Metal](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
 
 ## Additional benchmark outputs
 
-ONNX Runtime (ORT) lanes and broader follow-up work live in the repo status page. Read
+ONNX Runtime (ORT) lanes and broader follow-up work live in the repo status. Read
 [`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
 for the current scope and artifacts.
 
@@ -138,8 +140,7 @@ does not mean Doe has replaced the browser runtime.
 
 `doe-gpu/api`, `doe-gpu/plan`, and `doe-gpu/capture` do not load native addons
 or platform packages. They expose provider-neutral helpers, JSON shape checks,
-WebGPU enum globals, and a record-only WebGPU provider that captures supported
-compute calls into a Doe execution graph.
+WebGPU enum globals, and record-only capture into a Doe execution graph.
 
 The portable capture boundary is WebGPU behavior, not arbitrary JavaScript
 source translation. Host code may use normal JavaScript, but the observable GPU
@@ -157,7 +158,7 @@ Doppler integrations should prefer an explicit Doppler provider over treating
 `/hybrid` as a core Doe runtime layer.
 
 There is intentionally no public `doe-gpu/csl` subpath yet. CSL and SdkLayout
-lowering stays private until the HostPlan and receipt boundary is stable enough
+lowering stay private until the HostPlan and receipt boundary is stable enough
 to publish without overpromising. The public boundary today is the captured
 WebGPU graph plus plan/receipt contracts. Public demos should bind the Doppler
 runner, capture graph hash, WGSL hashes, lowering stage status, and parity

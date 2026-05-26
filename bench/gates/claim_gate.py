@@ -22,7 +22,7 @@ from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import report_conformance
 
 
-VALID_COMPARISON_STATUSES = {"comparable", "unreliable"}
+VALID_COMPARISON_STATUSES = {"comparable", "diagnostic"}
 VALID_CLAIM_STATUSES = {"claimable", "diagnostic"}
 VALID_CLAIMABILITY_MODES = {"local", "release"}
 VALID_BENCHMARK_CLASSES = {"comparable", "directional"}
@@ -596,8 +596,6 @@ def main() -> int:
         comparable_flag = workload_comparability.get("comparable")
         if args.require_comparison_status == "comparable" and comparable_flag is not True:
             failures.append(f"{workload_id}: comparability.comparable must be true")
-        if args.require_comparison_status == "unreliable" and comparable_flag is not False:
-            failures.append(f"{workload_id}: comparability.comparable must be false")
 
         obligation_schema_version = parse_int(
             workload_comparability.get("obligationSchemaVersion")
@@ -773,4 +771,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

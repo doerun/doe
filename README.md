@@ -4,13 +4,13 @@
   <img src="https://raw.githubusercontent.com/doe-gpu/doe/main/assets/doe-logo.svg" alt="Doe logo" width="96" />
 </p>
 
-Doe is a source-preserving accelerator runtime and compiler system: it keeps
+Doe is a source-preserving accelerator runtime and compiler system. It keeps
 shader/program bodies visible, lowers them across execution targets, and
 produces receipts that prove what ran.
 
 In practice that means embedding where Dawn is too heavy, lowering kernels to
-multiple GPU and spatial backends from the same IR, and emitting artifact-
-backed receipts that bind every claim to a specific build.
+multiple GPU and spatial backends from the same IR, and emitting
+artifact-backed receipts that bind every claim to a specific build.
 
 The flagship target is Chromium-family WebGPU: make Doe the evidence-backed
 open-source runtime and compiler path that can beat Dawn/Tint without silent
@@ -20,7 +20,7 @@ Published npm surface: [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md
 
 ## Tenants
 
-The repo carries five tenants under that umbrella:
+The repo carries five tenants:
 
 | Tenant | Role |
 |---|---|
@@ -35,12 +35,12 @@ visible, lowering preserves identity, and every claim has a receipt path.
 
 ## Why Doe
 
-- Lean runtime story: a Zig runtime with a small package layer instead of
+- Lean runtime: a Zig runtime with a small package layer instead of
   treating Chromium's in-tree Dawn stack as the permanent ceiling.
-- Chromium-family target: turn source-preserving compiler output, explicit
+- Chromium-family target: source-preserving compiler output, explicit
   runtime behavior, and browser-lane receipts into a better WebGPU
   implementation path for Chromium-derived browsers.
-- Explicit behavior: no silent fallback, explicit runtime boundaries, and
+- Explicit behavior: no silent fallback, clear runtime boundaries, and
   artifact-backed benchmarking instead of hand-wavy claims.
 - Performance work with receipts: current results live in
   [`docs/status.md`](docs/status.md), with public README receipt paths indexed
@@ -48,7 +48,8 @@ visible, lowering preserves identity, and every claim has a receipt path.
 
 ## Current evidence
 
-These charts summarize the current public benchmark lanes. A positive percent means Doe finished faster than the comparison runtime (Dawn).
+These charts summarize the current public benchmark lanes. Positive
+percentages mean Doe finished faster than Dawn in that lane.
 
 ![Doe package benchmark claims](assets/readme/package-claims.svg)
 
@@ -57,7 +58,7 @@ Receipt paths for these charted lanes are listed in
 
 ## Additional benchmark outputs
 
-Additional benchmark outputs also exist for ONNX Runtime (ORT) and broader compare surfaces.
+Additional ONNX Runtime (ORT) and compare-lane outputs live in the repo.
 
 ![Doe ORT benchmark claims](assets/readme/ort-claims.svg)
 

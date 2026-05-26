@@ -10,6 +10,19 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-26 — Guarded texture coordinate aliases stay unclamped
+
+The WGSL robustness transform now resolves const-local value aliases while
+classifying guarded `global_invocation_id` texture coordinates and root guard
+conditions. Clamp elision now requires guards tied to the same
+`textureDimensions(...)` expression, so `const coords = vec2(gid.x, gid.y)` and
+`const out_of_bounds = ...` paths keep their proof only when the guard is bound
+to the actual texture extent.
+
+Verified:
+
+- `zig build test-wgsl`
+
 ## 2026-05-25 — Tint compiler evidence pins warm benchmark identity
 
 Doe-vs-Tint compiler evidence now records the `tint_benchmark` binary in the

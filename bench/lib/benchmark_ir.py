@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from collections import OrderedDict
 from pathlib import Path
@@ -12,6 +11,7 @@ from typing import Any
 import jsonschema
 
 from bench.lib import synthetic_assets
+from bench.lib.hash_utils import json_sha256
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -34,18 +34,6 @@ def write_json(path: Path, payload: Any) -> bool:
         return False
     path.write_text(rendered, encoding="utf-8")
     return True
-
-
-def canonical_json_text(payload: Any) -> str:
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
-
-
-def json_sha256(payload: Any) -> str:
-    return hashlib.sha256(canonical_json_text(payload).encode("utf-8")).hexdigest()
-
-
-def file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _validate_schema(path: Path, payload: Any) -> None:

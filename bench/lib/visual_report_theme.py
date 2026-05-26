@@ -50,7 +50,7 @@ def status_tone(status: str, *, kind: str = "comparison") -> str:
         return "good"
     if token in {"diagnostic", "not-evaluated"}:
         return "warn"
-    if token in {"unsupported", "unimplemented", "unreliable", "non-comparable"}:
+    if token in {"unsupported", "unimplemented", "non-comparable"}:
         return "bad"
     return "neutral"
 

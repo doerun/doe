@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
 from bench.lib import compare_claim_artifacts as artifacts_mod
+from bench.lib.hash_utils import file_sha256, json_sha256
 
 
 REPORT_SCHEMA_VERSION = 1
@@ -32,27 +32,6 @@ def load_json_object(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"invalid JSON object: {path}")
     return payload
-
-
-def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            chunk = handle.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def json_sha256(value: Any) -> str:
-    payload = json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=True,
-    ).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
 
 
 def is_sha256_hex(value: Any) -> bool:
@@ -177,7 +156,7 @@ def validate_report_conformance(
         return False, "missing or empty workloads list"
 
     comparison_status = payload.get("comparisonStatus")
-    if comparison_status not in {"comparable", "unreliable"}:
+    if comparison_status not in {"comparable", "diagnostic"}:
         return False, "missing or invalid comparisonStatus"
 
     participants = payload.get("participants")
@@ -477,4 +456,3 @@ def validate_claim_report_conformance(
     if claim_status == "diagnostic" and observed_failures == 0:
         return False, "diagnostic claim report must contain at least one non-claimable workload"
     return True, ""
-

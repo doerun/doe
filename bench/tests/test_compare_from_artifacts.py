@@ -269,7 +269,7 @@ class TestCompareFromArtifacts(unittest.TestCase):
             comparability_min_timed_samples=7,
             benchmark_policy_path="config/benchmark-methodology-thresholds.json",
         )
-        self.assertEqual(report["comparisonStatus"], "unreliable")
+        self.assertEqual(report["comparisonStatus"], "diagnostic")
         coherence = report["comparabilityCoherence"]
         self.assertEqual(coherence["status"], "fail")
         self.assertEqual(coherence["minTimedSamples"], 7)

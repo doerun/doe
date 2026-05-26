@@ -12,9 +12,11 @@ const u32_type = support.u32_type;
 const f32_type = support.f32_type;
 const add_struct_type = support.add_struct_type;
 const resource_test = @import("ir_transform_robustness_resource_test.zig");
+const guard_alias_test = @import("ir_transform_robustness_guard_alias_test.zig");
 
 comptime {
     _ = resource_test;
+    _ = guard_alias_test;
 }
 
 test "robustness: sized array index is clamped" {

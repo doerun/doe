@@ -3,6 +3,32 @@
 This is a live topical status shard. Follow the shared shard policy in
 [`README.md`](README.md).
 
+## 2026-05-26 — Benchmark artifact hashing is shared and streaming
+
+Benchmark IR materialization, synthetic asset manifests, and report conformance
+now use `bench/lib/hash_utils.py` for canonical JSON hashes and file hashes.
+The shared file hash path streams artifact bytes instead of loading the whole
+file into memory.
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_benchmark_ir.py bench/tests/test_synthetic_assets.py bench/tests/test_report_conformance.py -q`
+- `python3 -m py_compile bench/lib/hash_utils.py bench/lib/benchmark_ir.py bench/lib/synthetic_assets.py bench/lib/report_conformance.py`
+
+## 2026-05-26 — Compare reports use diagnostic for failed comparability
+
+New Dawn-vs-Doe compare reports now classify failed comparability or coherence
+as `comparisonStatus=diagnostic`. The schema, conformance checker, claim gate,
+report builder, viewer styling, and regression tests now use the same two-status
+comparison contract: `comparable` for claim-eligible evidence and `diagnostic`
+for engineering evidence.
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_compare_from_artifacts.py bench/tests/test_report_conformance.py -q`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_config_schemas.py bench/tests/test_comparability_coherence_smoke_floor.py -q`
+- `python3 bench/gates/schema_gate.py`
+
 ## 2026-05-25 — Schema gate no longer depends on local generated bench output
 
 The schema gate now treats generated `bench/out/` data targets as optional when

@@ -596,7 +596,12 @@ fn try_elide_dispatch_fit_texture_coords(
     const coord_arg = function.expr_args.items[call_data.args.start + 1];
     const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
     const dim = dispatch_fit_texture_coord_dim(tex_ty) orelse return null;
-    if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return null;
+    const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
+    const level_arg = if (is_load and texture_has_level(tex_ty) and call_data.args.len >= 3)
+        function.expr_args.items[call_data.args.start + 2]
+    else
+        null;
+    if (texture_coord_is_explicitly_guarded(function, texture_arg, level_arg, coord_arg, dim)) return null;
     const mip_level = texture_level_is_dispatch_fit_supported(function, tex_ty, call_data) orelse return null;
     const pattern = match_texture_coord_pattern(function, coord_arg, dim) orelse return null;
 
@@ -644,7 +649,7 @@ fn try_elide_dispatch_fit_texture_coords(
 }
 
 fn classify_gid_coord_axes(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) ?[3]bool {
-    const expr = function.exprs.items[expr_id];
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
     const construct = switch (expr.data) {
         .construct => |value| value,
         else => return null,
@@ -660,17 +665,78 @@ fn classify_gid_coord_axes(function: *const ir.Function, expr_id: ir.ExprId, dim
     return axes;
 }
 
-fn collect_guarded_gid_axes(function: *const ir.Function, expr_id: ir.ExprId, axes: *[3]bool) bool {
-    const expr = function.exprs.items[expr_id];
+fn expr_values_equivalent(function: *const ir.Function, lhs: ir.ExprId, rhs: ir.ExprId) bool {
+    const lhs_id = resolve_value_alias(function, lhs);
+    const rhs_id = resolve_value_alias(function, rhs);
+    if (lhs_id == rhs_id) return true;
+    const lhs_expr = function.exprs.items[lhs_id];
+    const rhs_expr = function.exprs.items[rhs_id];
+    return switch (lhs_expr.data) {
+        .global_ref => |lhs_global| rhs_expr.data == .global_ref and rhs_expr.data.global_ref == lhs_global,
+        .local_ref => |lhs_local| rhs_expr.data == .local_ref and rhs_expr.data.local_ref == lhs_local,
+        .param_ref => |lhs_param| rhs_expr.data == .param_ref and rhs_expr.data.param_ref == lhs_param,
+        .int_lit => |lhs_value| rhs_expr.data == .int_lit and rhs_expr.data.int_lit == lhs_value,
+        else => false,
+    };
+}
+
+fn match_texture_dimensions_call(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    texture_arg: ir.ExprId,
+    level_arg: ?ir.ExprId,
+) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const call = switch (expr.data) {
+        .call => |value| value,
+        else => return false,
+    };
+    if (call.kind != .builtin or !std.mem.eql(u8, call.name, "textureDimensions")) return false;
+    const expected_args: u32 = if (level_arg == null) 1 else 2;
+    if (call.args.len != expected_args) return false;
+    if (!expr_values_equivalent(function, function.expr_args.items[call.args.start], texture_arg)) return false;
+    if (level_arg) |level| {
+        return expr_values_equivalent(function, function.expr_args.items[call.args.start + 1], level);
+    }
+    return true;
+}
+
+fn guard_rhs_matches_texture_extent(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    texture_arg: ir.ExprId,
+    level_arg: ?ir.ExprId,
+    axis: u8,
+) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .member => |member| member.field_index == axis and
+            match_texture_dimensions_call(function, member.base, texture_arg, level_arg),
+        .call => axis == 0 and match_texture_dimensions_call(function, expr_id, texture_arg, level_arg),
+        else => false,
+    };
+}
+
+fn collect_guarded_gid_axes(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    texture_arg: ir.ExprId,
+    level_arg: ?ir.ExprId,
+    axes: *[3]bool,
+) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
     switch (expr.data) {
         .binary => |binary| switch (binary.op) {
             .logical_or => {
-                const lhs_ok = collect_guarded_gid_axes(function, binary.lhs, axes);
-                const rhs_ok = collect_guarded_gid_axes(function, binary.rhs, axes);
+                const lhs_ok = collect_guarded_gid_axes(function, binary.lhs, texture_arg, level_arg, axes);
+                const rhs_ok = collect_guarded_gid_axes(function, binary.rhs, texture_arg, level_arg, axes);
                 return lhs_ok and rhs_ok;
             },
             .greater_equal => {
                 const axis = classify_gid_scalar(function, binary.lhs) orelse return false;
+                if (!guard_rhs_matches_texture_extent(function, binary.rhs, texture_arg, level_arg, axis)) {
+                    return false;
+                }
                 axes[axis] = true;
                 return true;
             },
@@ -692,13 +758,17 @@ fn stmt_is_return_only(function: *const ir.Function, stmt_id: ir.StmtId) bool {
     }
 }
 
-fn function_has_root_gid_guard(function: *const ir.Function, required_axes: [3]bool) bool {
+fn function_has_root_gid_guard(
+    function: *const ir.Function,
+    texture_arg: ir.ExprId,
+    level_arg: ?ir.ExprId,
+    required_axes: [3]bool,
+) bool {
     const root = function.stmts.items[function.root_stmt];
     const root_range = switch (root) {
         .block => |range| range,
         else => return false,
     };
-
     for (function.stmt_children.items[root_range.start .. root_range.start + root_range.len]) |child_id| {
         const child = function.stmts.items[child_id];
         const branch = switch (child) {
@@ -709,7 +779,7 @@ fn function_has_root_gid_guard(function: *const ir.Function, required_axes: [3]b
         if (!stmt_is_return_only(function, branch.then_block)) continue;
 
         var guarded_axes = [_]bool{ false, false, false };
-        if (!collect_guarded_gid_axes(function, branch.cond, &guarded_axes)) continue;
+        if (!collect_guarded_gid_axes(function, branch.cond, texture_arg, level_arg, &guarded_axes)) continue;
 
         var axis_index: usize = 0;
         while (axis_index < required_axes.len) : (axis_index += 1) {
@@ -721,9 +791,15 @@ fn function_has_root_gid_guard(function: *const ir.Function, required_axes: [3]b
     return false;
 }
 
-fn texture_coord_is_explicitly_guarded(function: *const ir.Function, coord_arg: ir.ExprId, dim: u8) bool {
+fn texture_coord_is_explicitly_guarded(
+    function: *const ir.Function,
+    texture_arg: ir.ExprId,
+    level_arg: ?ir.ExprId,
+    coord_arg: ir.ExprId,
+    dim: u8,
+) bool {
     const required_axes = classify_gid_coord_axes(function, coord_arg, dim) orelse return false;
-    return function_has_root_gid_guard(function, required_axes);
+    return function_has_root_gid_guard(function, texture_arg, level_arg, required_axes);
 }
 
 /// Clamp coordinate arguments of textureLoad/textureStore to valid ranges.
@@ -746,7 +822,12 @@ fn clamp_texture_coords(
     const coord_arg = function.expr_args.items[call_data.args.start + 1];
     const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
     const dim = texture_coord_dim(tex_ty) orelse return;
-    if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return;
+    const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
+    const level_arg = if (is_load and texture_has_level(tex_ty) and call_data.args.len >= 3)
+        function.expr_args.items[call_data.args.start + 2]
+    else
+        null;
+    if (texture_coord_is_explicitly_guarded(function, texture_arg, level_arg, coord_arg, dim)) return;
 
     const coord_ty = function.exprs.items[coord_arg].ty;
 
@@ -765,10 +846,8 @@ fn clamp_texture_coords(
     };
     // Build textureDimensions(tex) or textureDimensions(tex, level)
     const td_id = blk: {
-        const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
-        if (is_load and texture_has_level(tex_ty) and call_data.args.len >= 3) {
-            const level_arg = function.expr_args.items[call_data.args.start + 2];
-            const td_args = try function.append_expr_args(allocator, &.{ texture_arg, level_arg });
+        if (level_arg) |texture_level_arg| {
+            const td_args = try function.append_expr_args(allocator, &.{ texture_arg, texture_level_arg });
             break :blk try function.append_expr(allocator, .{
                 .ty = coord_ty,
                 .category = .value,
