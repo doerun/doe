@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-smoke-report.schema.json",
+  "title": "Chromium WebGPU smoke report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "reportKind",
+    "benchmarkClass",
+    "comparisonStatus",
+    "claimStatus",
+    "hashAlgorithm",
+    "workloadIdentity",
+    "mode",
+    "methodology",
+    "modeResults",
+    "comparison",
+    "reportHash"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "reportKind": {
+      "type": "string",
+      "const": "chromium-webgpu-playwright-smoke"
+    },
+    "benchmarkClass": { "type": "string", "const": "diagnostic" },
+    "comparisonStatus": { "type": "string", "const": "diagnostic" },
+    "claimStatus": { "type": "string", "const": "diagnostic" },
+    "hashAlgorithm": { "type": "string", "const": "sha256" },
+    "workloadIdentity": { "$ref": "#/$defs/WorkloadIdentity" },
+    "mode": { "enum": ["dawn", "doe", "both"] },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["strictMode"],
+      "properties": {
+        "strictMode": { "type": "boolean" }
+      }
+    },
+    "modeResults": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ModeResult" }
+    },
+    "comparison": { "$ref": "#/$defs/Comparison" },
+    "reportHash": { "$ref": "#/$defs/Sha256" }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "NullableSha256": {
+      "anyOf": [
+        { "$ref": "#/$defs/Sha256" },
+        { "type": "null" }
+      ]
+    },
+    "RuntimeMode": {
+      "enum": ["dawn", "doe"]
+    },
+    "WorkloadIdentity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "workloadHash": { "$ref": "#/$defs/Sha256" },
+        "sourceWorkloadsSha256": { "$ref": "#/$defs/Sha256" },
+        "taskConfigHash": { "$ref": "#/$defs/Sha256" }
+      },
+      "anyOf": [
+        { "required": ["workloadHash"] },
+        { "required": ["sourceWorkloadsSha256"] },
+        { "required": ["taskConfigHash"] }
+      ]
+    },
+    "RuntimeSelection": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "selectionMode",
+        "selectedRuntime",
+        "forcedMode",
+        "fallbackApplied",
+        "fallbackReasonCode",
+        "hiddenFallbackAllowed",
+        "profile",
+        "selectorVersion",
+        "artifactIdentity",
+        "launchArgsHash"
+      ],
+      "properties": {
+        "selectionMode": { "$ref": "#/$defs/RuntimeMode" },
+        "selectedRuntime": { "$ref": "#/$defs/RuntimeMode" },
+        "forcedMode": { "$ref": "#/$defs/RuntimeMode" },
+        "fallbackApplied": { "type": "boolean", "const": false },
+        "fallbackReasonCode": { "type": "string" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "profile": { "$ref": "#/$defs/Profile" },
+        "selectorVersion": { "type": "string", "minLength": 1 },
+        "artifactIdentity": { "$ref": "#/$defs/ArtifactIdentity" },
+        "launchArgsHash": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "Profile": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["vendor", "api", "deviceFamily", "driver"],
+      "properties": {
+        "vendor": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "deviceFamily": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ArtifactIdentity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "browserExecutablePath",
+        "browserExecutableSha256",
+        "dawnRuntimePath",
+        "dawnRuntimeSha256",
+        "doeLibPath",
+        "doeLibSha256"
+      ],
+      "properties": {
+        "browserExecutablePath": { "type": "string", "minLength": 1 },
+        "browserExecutableSha256": { "$ref": "#/$defs/Sha256" },
+        "dawnRuntimePath": { "type": "string", "minLength": 1 },
+        "dawnRuntimeSha256": { "$ref": "#/$defs/Sha256" },
+        "doeLibPath": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "doeLibSha256": { "$ref": "#/$defs/NullableSha256" }
+      }
+    },
+    "ShaderCompilerIdentity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "compilerSurface",
+        "compilerArtifactPath",
+        "compilerArtifactSha256",
+        "identitySource"
+      ],
+      "properties": {
+        "compilerSurface": {
+          "enum": [
+            "dawn_runtime_embedded_shader_compiler",
+            "doe_runtime_embedded_shader_compiler"
+          ]
+        },
+        "compilerArtifactPath": { "type": "string", "minLength": 1 },
+        "compilerArtifactSha256": { "$ref": "#/$defs/Sha256" },
+        "identitySource": {
+          "type": "string",
+          "const": "runtime_artifact_identity"
+        }
+      }
+    },
+    "AdapterIdentity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["adapterInfoSha256", "featureCount"],
+      "properties": {
+        "adapterInfoSha256": { "$ref": "#/$defs/Sha256" },
+        "featureCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "SmokeChecks": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["computeIncrement", "renderTriangle"],
+      "properties": {
+        "computeIncrement": { "$ref": "#/$defs/PassCheck" },
+        "renderTriangle": { "$ref": "#/$defs/PassCheck" }
+      }
+    },
+    "PassCheck": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["pass"],
+      "properties": {
+        "pass": { "type": "boolean", "const": true }
+      }
+    },
+    "ModeResult": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "mode",
+        "runtimeSelection",
+        "shaderCompilerIdentity",
+        "webgpuAvailable",
+        "adapterAvailable",
+        "adapterIdentity",
+        "errors",
+        "smoke",
+        "previousHash",
+        "hash"
+      ],
+      "properties": {
+        "mode": { "$ref": "#/$defs/RuntimeMode" },
+        "runtimeSelection": { "$ref": "#/$defs/RuntimeSelection" },
+        "shaderCompilerIdentity": { "$ref": "#/$defs/ShaderCompilerIdentity" },
+        "webgpuAvailable": { "type": "boolean", "const": true },
+        "adapterAvailable": { "type": "boolean", "const": true },
+        "adapterIdentity": { "$ref": "#/$defs/AdapterIdentity" },
+        "errors": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "smoke": { "$ref": "#/$defs/SmokeChecks" },
+        "previousHash": { "$ref": "#/$defs/NullableSha256" },
+        "hash": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "Comparison": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["bothComputeSmokePass", "bothRenderSmokePass"],
+      "properties": {
+        "bothComputeSmokePass": { "type": "boolean", "const": true },
+        "bothRenderSmokePass": { "type": "boolean", "const": true }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "chromium_fork_maintenance_policy",
+  "policyId": "chromium-fork-maintenance-v0",
+  "patchIsolation": {
+    "allowedPatchRoots": [
+      "browser/chromium/",
+      "browser/chromium/contracts/",
+      "browser/chromium/scripts/",
+      "config/",
+      "bench/",
+      "docs/"
+    ],
+    "forbiddenPatchRoots": [
+      "browser/chromium_webgpu_lane/.local_volume/",
+      "browser/chromium/vendor/",
+      "third_party/"
+    ],
+    "patchManifestRequired": true,
+    "patchManifestPath": "config/chromium-patch-manifest.json"
+  },
+  "rollback": {
+    "dawnFallbackAvailable": true,
+    "rollbackProcedurePath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+    "killSwitchPolicyPath": "config/browser-runtime-selector-policy.json"
+  },
+  "releaseArtifacts": {
+    "browserBinaryHashRequired": true,
+    "doeRuntimeHashRequired": true,
+    "compilerHashRequired": true,
+    "claimReportRequired": true
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/wgsl-diagnostic-fixtures.schema.json",
+  "title": "WGSL diagnostic fixtures",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "fixtureSetId",
+    "manifestPath",
+    "taxonomyPath",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_diagnostic_fixtures" },
+    "fixtureSetId": { "type": "string", "minLength": 1 },
+    "manifestPath": { "type": "string", "minLength": 1 },
+    "taxonomyPath": { "type": "string", "minLength": 1 },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/DiagnosticRow" }
+    }
+  },
+  "$defs": {
+    "DiagnosticRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixtureId",
+        "shaderId",
+        "sourcePath",
+        "normalizedSourceSha256",
+        "expectedDiagnosticCategory",
+        "comparisonMode",
+        "expected",
+        "evidencePolicy"
+      ],
+      "properties": {
+        "fixtureId": { "type": "string", "minLength": 1 },
+        "shaderId": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "normalizedSourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expectedDiagnosticCategory": {
+          "enum": ["syntax", "semantic", "type", "control_flow", "binding"]
+        },
+        "comparisonMode": { "type": "string", "const": "typed_category" },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["doe", "tint"],
+          "properties": {
+            "doe": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["taxonomyCode", "stage"],
+              "properties": {
+                "taxonomyCode": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+                "stage": { "type": "string", "minLength": 1 }
+              }
+            },
+            "tint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["diagnosticCategory"],
+              "properties": {
+                "diagnosticCategory": {
+                  "enum": ["syntax", "semantic", "type", "control_flow", "binding"]
+                }
+              }
+            }
+          }
+        },
+        "evidencePolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["freeFormTextCompared", "spanRequired"],
+          "properties": {
+            "freeFormTextCompared": { "type": "boolean", "const": false },
+            "spanRequired": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

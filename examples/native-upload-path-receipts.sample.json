@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "native_upload_path_receipts",
+  "receiptStatus": "pass",
+  "rows": [
+    {
+      "receiptId": "upload-path:strict:upload_64kb",
+      "workloadId": "upload_write_buffer_64kb",
+      "backend": "doe_vulkan",
+      "payloadBytes": 65536,
+      "uploadPath": "staging_copy",
+      "allocationClass": "pooled",
+      "copyCommandsRecorded": 1,
+      "strictComparable": true,
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "claimEligible": true,
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "upload-path:diagnostic:upload_64kb",
+      "workloadId": "upload_write_buffer_64kb",
+      "backend": "doe_metal",
+      "payloadBytes": 65536,
+      "uploadPath": "shared_memory_write",
+      "allocationClass": "persistent",
+      "copyCommandsRecorded": 0,
+      "strictComparable": false,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "UMA shared-memory write does not record the staging copy work used by discrete-GPU paths.",
+      "claimEligible": false,
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "hardware_path_asymmetry"
+    }
+  ],
+  "failureCodes": []
+}

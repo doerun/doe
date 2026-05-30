@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_cts_subset",
+  "subsetId": "browser-cts-subset-smoke",
+  "ctsSource": "bench/fixtures/cts_subset.fawn-node.json",
+  "ctsRevision": "untracked",
+  "browserArtifacts": {
+    "dawnArtifactPath": "browser/chromium/artifacts/dawn-cts-subset.diagnostic.json",
+    "forcedDoeArtifactPath": "browser/chromium/artifacts/doe-cts-subset.diagnostic.json"
+  },
+  "rows": [
+    {
+      "query": "webgpu:api,operation,adapter,requestAdapter:*",
+      "bucket": "adapter",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    },
+    {
+      "query": "webgpu:api,operation,buffers,map:*",
+      "bucket": "buffer",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    },
+    {
+      "query": "webgpu:api,operation,command_buffer,basic:*",
+      "bucket": "command_buffer",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    },
+    {
+      "query": "webgpu:api,operation,queue,writeBuffer:*",
+      "bucket": "queue",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    },
+    {
+      "query": "webgpu:api,validation,error_scope:*",
+      "bucket": "validation",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    },
+    {
+      "query": "webgpu:shader,execution,expression,call,builtin,textureDimensions:*",
+      "bucket": "shader_execution",
+      "dawnStatus": "not_run",
+      "forcedDoeStatus": "not_run",
+      "parityStatus": "diagnostic",
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "diagnostic_sample",
+      "artifactPath": "browser/chromium/artifacts/"
+    }
+  ],
+  "fallbackPolicy": {
+    "hiddenFallbackAllowed": false,
+    "reasonCodeRequired": true
+  }
+}

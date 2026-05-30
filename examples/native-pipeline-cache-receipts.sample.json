@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "native_pipeline_cache_receipts",
+  "receiptStatus": "pass",
+  "rows": [
+    {
+      "receiptId": "pipeline-cache:cold:compute_test",
+      "workloadId": "compute_test",
+      "backend": "doe_vulkan",
+      "mode": "cold",
+      "pipelineId": "kernel:copy_textures_x32",
+      "cacheKey": "kernel:copy_textures_x32:vulkan",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/native-cache/compute_test.cold.pipeline.json",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": ""
+    },
+    {
+      "receiptId": "pipeline-cache:warm:compute_test",
+      "workloadId": "compute_test",
+      "backend": "doe_vulkan",
+      "mode": "warm",
+      "pipelineId": "kernel:copy_textures_x32",
+      "cacheKey": "kernel:copy_textures_x32:vulkan",
+      "cacheState": "hit",
+      "pipelineCreationPath": "bench/out/native-cache/compute_test.warm.pipeline.json",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": ""
+    }
+  ],
+  "failureCodes": []
+}

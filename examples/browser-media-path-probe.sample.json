@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_media_path_probe",
+  "probeSetId": "browser-media-path-smoke",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "capturePolicy": {
+    "capturePolicyPath": "config/browser-capture-policy.json",
+    "surfaceId": "media_path_probe"
+  },
+  "mediaSources": [
+    {
+      "mediaSourceId": "media:video-frame",
+      "sourceKind": "video_frame",
+      "sourcePath": "browser/chromium/fixtures/media/video-frame.rgba.digest",
+      "sourceDigest": {
+        "algorithm": "sha256",
+        "value": "e000000000000000000000000000000000000000000000000000000000000001"
+      }
+    },
+    {
+      "mediaSourceId": "media:image-bitmap",
+      "sourceKind": "image_bitmap",
+      "sourcePath": "browser/chromium/fixtures/media/image-bitmap.rgba.digest",
+      "sourceDigest": {
+        "algorithm": "sha256",
+        "value": "e000000000000000000000000000000000000000000000000000000000000002"
+      }
+    },
+    {
+      "mediaSourceId": "media:shared-texture",
+      "sourceKind": "shared_texture",
+      "sourcePath": "browser/chromium/fixtures/media/shared-texture.digest",
+      "sourceDigest": {
+        "algorithm": "sha256",
+        "value": "e000000000000000000000000000000000000000000000000000000000000003"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "probeId": "probe:gpu-external-texture",
+      "probeKind": "gpu_external_texture",
+      "mediaSourceIds": ["media:video-frame"],
+      "status": "diagnostic",
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "f000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:copy-external-image",
+      "probeKind": "copy_external_image_to_texture",
+      "mediaSourceIds": ["media:image-bitmap"],
+      "status": "diagnostic",
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "f000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:shared-texture-import",
+      "probeKind": "shared_texture_import",
+      "mediaSourceIds": ["media:shared-texture"],
+      "status": "diagnostic",
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "f000000000000000000000000000000000000000000000000000000000000003"
+      },
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "evidencePath": "browser/chromium/artifacts/"
+    }
+  ],
+  "fallbackPolicy": {
+    "hiddenFallbackAllowed": false,
+    "reasonCodeRequired": true
+  },
+  "privacy": {
+    "originScoped": true,
+    "rawMediaIncluded": false
+  }
+}

@@ -5,6 +5,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import {
+  loadRuntimeSelectorPolicy,
+  resolveRuntimeSelection,
+} from "./browser-runtime-selector.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
@@ -52,13 +56,18 @@ function defaultChromePath() {
 }
 
 function defaultDoeLibPath() {
-  const preferredExt = process.platform === "darwin" ? "dylib" : "so";
+  const preferredExt = process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so";
   const envDoeLib = process.env.FAWN_DOE_LIB;
   const candidates = [
     envDoeLib,
+    resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe_full.${preferredExt}`),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.so"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dll"),
     resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.so"),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dll"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -71,6 +80,7 @@ function defaultDoeLibPath() {
 
 const DEFAULT_CHROME = defaultChromePath();
 const DEFAULT_DOE_LIB = defaultDoeLibPath();
+const DEFAULT_RUNTIME_SELECTOR_POLICY = resolve(ROOT, "config/browser-runtime-selector-policy.json");
 const DEFAULT_MANIFEST = resolve(
   ROOT,
   "browser/chromium/bench/generated/browser_projection_manifest.json",
@@ -113,11 +123,15 @@ function usage() {
   node browser/chromium/scripts/webgpu-playwright-layered-bench.mjs [options]
 
 Options:
-  --mode dawn|doe|both      Runtime mode to run (default: both)
+  --mode dawn|doe|auto|both Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
   --dawn-chrome PATH        Browser executable for dawn mode (defaults to --chrome)
   --doe-chrome PATH         Browser executable for doe mode (defaults to --chrome)
-  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
+  --doe-lib PATH            libwebgpu_doe_full.{so,dylib,dll} path (for doe mode)
+  --runtime-selector-policy PATH
+                            Runtime selector policy JSON path (default: config/browser-runtime-selector-policy.json)
+  --runtime-selector-profile-id ID
+                            Optional selector profileId for auto denylist checks
   --manifest PATH           Projection manifest JSON path
   --workflows PATH          Browser workflow manifest JSON path
   --out PATH                Output report JSON path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
@@ -235,6 +249,9 @@ function parseArgs(argv) {
     dawnChromePath: "",
     doeChromePath: "",
     doeLibPath: DEFAULT_DOE_LIB,
+    runtimeSelectorPolicyPath: DEFAULT_RUNTIME_SELECTOR_POLICY,
+    runtimeSelectorPolicy: null,
+    runtimeSelectorProfileId: "",
     manifestPath: DEFAULT_MANIFEST,
     workflowsPath: DEFAULT_WORKFLOWS,
     outPath: defaultOutPath(),
@@ -272,6 +289,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (token === "--doe-lib") {
       args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
+      i += 1;
+    } else if (token === "--runtime-selector-policy") {
+      args.runtimeSelectorPolicyPath = readOptionValue(argv, i, "--runtime-selector-policy");
+      i += 1;
+    } else if (token === "--runtime-selector-profile-id") {
+      args.runtimeSelectorProfileId = readOptionValue(argv, i, "--runtime-selector-profile-id");
       i += 1;
     } else if (token === "--manifest") {
       args.manifestPath = readOptionValue(argv, i, "--manifest");
@@ -332,9 +355,13 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["dawn", "doe", "both"].includes(args.mode)) {
-    throw new Error("--mode must be one of dawn, doe, both");
+  if (!["dawn", "doe", "auto", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, auto, both");
   }
+  if (!existsSync(args.runtimeSelectorPolicyPath)) {
+    throw new Error(`runtime selector policy not found: ${args.runtimeSelectorPolicyPath}`);
+  }
+  args.runtimeSelectorPolicy = loadRuntimeSelectorPolicy(args.runtimeSelectorPolicyPath);
   if (!["native", "package-browser"].includes(args.apiSurface)) {
     throw new Error("--api-surface must be one of native, package-browser");
   }
@@ -343,13 +370,28 @@ function parseArgs(argv) {
     dawn: args.dawnChromePath || args.chromePath,
     doe: args.doeChromePath || args.chromePath,
   };
-  if (args.mode !== "doe" && !existsSync(modeChromePaths.dawn)) {
+  const autoResolution =
+    args.mode === "auto"
+      ? resolveRuntimeSelection({
+          requestedMode: "auto",
+          doeLibPath: args.doeLibPath,
+          policy: args.runtimeSelectorPolicy,
+          profile: { profileId: args.runtimeSelectorProfileId },
+        })
+      : null;
+  if (
+    (args.mode === "dawn" || args.mode === "both" || autoResolution?.selectedRuntime === "dawn") &&
+    !existsSync(modeChromePaths.dawn)
+  ) {
     throw new Error(`dawn mode chrome binary not found: ${modeChromePaths.dawn}`);
   }
-  if (args.mode !== "dawn" && !existsSync(modeChromePaths.doe)) {
+  if (
+    (args.mode === "doe" || args.mode === "both" || autoResolution?.selectedRuntime === "doe") &&
+    !existsSync(modeChromePaths.doe)
+  ) {
     throw new Error(`doe mode chrome binary not found: ${modeChromePaths.doe}`);
   }
-  if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
+  if ((args.mode === "doe" || args.mode === "both") && !existsSync(args.doeLibPath)) {
     throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
   }
   args.modeChromePaths = modeChromePaths;
@@ -647,25 +689,65 @@ function runtimeArgs(mode, doeLibPath) {
 }
 
 function runtimeArtifactIdentity(mode, args, chromePath) {
+  const browserExecutableSha256 = fileHashHex(chromePath);
   return {
     browserExecutablePath: chromePath,
-    browserExecutableSha256: fileHashHex(chromePath),
+    browserExecutableSha256,
+    dawnRuntimePath: chromePath,
+    dawnRuntimeSha256: browserExecutableSha256,
     doeLibPath: mode === "doe" ? args.doeLibPath : null,
     doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
   };
 }
 
+function runtimeSelectionResolution(mode, args) {
+  return resolveRuntimeSelection({
+    requestedMode: mode,
+    doeLibPath: args.doeLibPath,
+    policy: args.runtimeSelectorPolicy,
+    profile: { profileId: args.runtimeSelectorProfileId },
+  });
+}
+
 function buildRuntimeSelection(mode, args, chromePath, launchArgs) {
+  const resolution = runtimeSelectionResolution(mode, args);
   return {
-    selectionMode: mode,
-    selectedRuntime: mode,
-    forcedMode: mode,
-    fallbackApplied: false,
-    fallbackReasonCode: "",
-    hiddenFallbackAllowed: false,
+    ...resolution,
     selectorVersion: RUNTIME_SELECTOR_VERSION,
-    artifactIdentity: runtimeArtifactIdentity(mode, args, chromePath),
+    artifactIdentity: runtimeArtifactIdentity(resolution.selectedRuntime, args, chromePath),
     launchArgsHash: hashHex(launchArgs),
+  };
+}
+
+function shaderCompilerIdentity(mode, args, chromePath) {
+  const resolution = runtimeSelectionResolution(mode, args);
+  const artifactIdentity = runtimeArtifactIdentity(resolution.selectedRuntime, args, chromePath);
+  const compilerArtifactPath =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibPath
+      : artifactIdentity.dawnRuntimePath;
+  const compilerArtifactSha256 =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibSha256
+      : artifactIdentity.dawnRuntimeSha256;
+  return {
+    compilerSurface:
+      resolution.selectedRuntime === "doe"
+        ? "doe_runtime_embedded_shader_compiler"
+        : "dawn_runtime_embedded_shader_compiler",
+    compilerArtifactPath,
+    compilerArtifactSha256,
+    identitySource: "runtime_artifact_identity",
+  };
+}
+
+function adapterIdentityFromProbe(probe) {
+  const adapterInfo =
+    probe?.adapterInfo && typeof probe.adapterInfo === "object" ? probe.adapterInfo : {};
+  const featureCount = Number.isInteger(probe?.featureCount) ? probe.featureCount : 0;
+  return {
+    adapterInfoSha256: hashHex(adapterInfo),
+    featureCount,
   };
 }
 
@@ -1466,10 +1548,11 @@ function applyModeWideFailure(l1Rows, l2Rows, rowResultsById, workflowResultsByI
 }
 
 async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromePath) {
+  const selection = runtimeSelectionResolution(mode, args);
   const launchArgs = [
     ...baseLaunchArgs(pageTarget.port),
     ...args.chromeArgs,
-    ...runtimeArgs(mode, args.doeLibPath),
+    ...runtimeArgs(selection.selectedRuntime, args.doeLibPath),
   ];
   const startMs = Date.now();
   const rowResultsById = new Map();
@@ -1490,6 +1573,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     webgpuAvailable: false,
     adapterAvailable: false,
     adapterInfo: null,
+    adapterIdentity: adapterIdentityFromProbe(null),
     featureCount: 0,
     errors: [],
   };
@@ -1512,6 +1596,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
       chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
+      shaderCompilerIdentity: shaderCompilerIdentity(mode, args, chromePath),
       runtimeProbe,
       runtimeEvidence,
       modeFailure: failure,
@@ -1531,6 +1616,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     runtimeEvidence.browserVersion = browser.version();
     runtimeEvidence.userAgent = await page.evaluate(() => navigator.userAgent);
     runtimeProbe = await probeRuntime(page, browserSurfaceArgs);
+    runtimeProbe.adapterIdentity = adapterIdentityFromProbe(runtimeProbe);
 
     for (const row of l1Rows) {
       if (row.layerTarget === "l0_only") {
@@ -1579,6 +1665,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
       chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
+      shaderCompilerIdentity: shaderCompilerIdentity(mode, args, chromePath),
       runtimeProbe,
       runtimeEvidence,
       modeFailure: null,
@@ -1591,11 +1678,13 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     runtimeEvidence.failureStatusCode = failure.statusCode;
     applyModeWideFailure(l1Rows, l2Rows, rowResultsById, workflowResultsById, failure);
     runtimeProbe.errors = [...runtimeProbe.errors, failure.error];
+    runtimeProbe.adapterIdentity = adapterIdentityFromProbe(runtimeProbe);
     return {
       mode,
       chromePath,
       launchArgs,
       elapsedMs: Date.now() - startMs,
+      shaderCompilerIdentity: shaderCompilerIdentity(mode, args, chromePath),
       runtimeProbe,
       runtimeEvidence,
       modeFailure: failure,
@@ -1686,6 +1775,9 @@ async function main() {
   }
   try {
     for (const mode of modes) {
+      const modeSelection = runtimeSelectionResolution(mode, args);
+      const chromePathForMode =
+        modeSelection.selectedRuntime === "dawn" ? args.modeChromePaths.dawn : args.modeChromePaths.doe;
       if (pageTarget.kind === "unavailable") {
         const failure = {
           stage: "page_target",
@@ -1718,13 +1810,19 @@ async function main() {
           runtimeSelection: buildRuntimeSelection(
             mode,
             args,
-            args.modeChromePaths[mode] ?? args.chromePath,
+            chromePathForMode,
             [],
+          ),
+          shaderCompilerIdentity: shaderCompilerIdentity(
+            mode,
+            args,
+            chromePathForMode,
           ),
           runtimeProbe: {
             webgpuAvailable: false,
             adapterAvailable: false,
             adapterInfo: null,
+            adapterIdentity: adapterIdentityFromProbe(null),
             featureCount: 0,
             errors: [failure.error],
           },
@@ -1733,7 +1831,7 @@ async function main() {
             runtimeSelection: buildRuntimeSelection(
               mode,
               args,
-              args.modeChromePaths[mode] ?? args.chromePath,
+              chromePathForMode,
               [],
             ),
             pageTargetKind: pageTarget.kind,
@@ -1752,8 +1850,6 @@ async function main() {
         continue;
       }
 
-      const chromePathForMode =
-        mode === "dawn" ? args.modeChromePaths.dawn : args.modeChromePaths.doe;
       const modeRun = await runMode(
         chromium,
         mode,
@@ -1769,6 +1865,7 @@ async function main() {
         elapsedMs: modeRun.elapsedMs,
         launchArgs: modeRun.launchArgs,
         runtimeSelection: modeRun.runtimeEvidence.runtimeSelection,
+        shaderCompilerIdentity: modeRun.shaderCompilerIdentity,
         runtimeProbe: modeRun.runtimeProbe,
         runtimeEvidence: modeRun.runtimeEvidence,
         modeFailure: modeRun.modeFailure,
@@ -1820,6 +1917,17 @@ async function main() {
     generatedAt: new Date().toISOString(),
     outputPath: args.outPath,
     hashAlgorithm: HASH_ALGORITHM,
+    runtimeSelectorPolicyPath: args.runtimeSelectorPolicyPath,
+    workloadIdentity: {
+      kind: "browser_layered_superset",
+      sourceWorkloadsPath: projectionManifest.metadata.sourceWorkloadsPath,
+      sourceWorkloadsSha256: projectionManifest.metadata.sourceWorkloadsSha256,
+      projectionRulesPath: projectionManifest.metadata.rulesPath,
+      projectionRulesSha256: projectionManifest.metadata.rulesSha256,
+      workflowManifestPath: args.workflowsPath,
+      workflowManifestSha256: hashHex(workflowManifest),
+      projectionContractHash: projectionManifest.metadata.projectionContractHash,
+    },
     projectionContractHash: projectionManifest.metadata.projectionContractHash,
     sourceWorkloadsPath: projectionManifest.metadata.sourceWorkloadsPath,
     sourceWorkloadsSha256: projectionManifest.metadata.sourceWorkloadsSha256,

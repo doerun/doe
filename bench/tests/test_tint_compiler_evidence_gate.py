@@ -34,7 +34,7 @@ def side_payload(output_digit: str) -> dict:
         "status": "ok",
         "diagnosticCode": "",
         "outputSha256": output_digit * 64,
-        "irSha256": None,
+        "irSha256": "7" * 64,
         "validationStatus": "passed",
         "validationTool": "validator",
         "phaseTimingsNs": {
@@ -96,6 +96,10 @@ def claimable_report() -> dict:
             {
                 "shaderId": "shader-a",
                 "sourceSha256": "1" * 64,
+                "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+                "corpusCategory": "webgpu_sample",
+                "expectedValidity": "valid",
+                "expectedBackendTargets": ["spirv"],
                 "target": "spirv",
                 "shaderStage": "compute",
                 "doe": side_payload("2"),
@@ -227,6 +231,33 @@ class TintCompilerEvidenceGateTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(
             any("toolchains.tintWarm.artifactSha256 must be sha256 hex" in item for item in result["failures"])
+        )
+
+    def test_claimable_row_requires_corpus_linkage(self) -> None:
+        payload = claimable_report()
+        payload["rows"][0].pop("sourcePath")
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("claimable row requires sourcePath" in item for item in result["failures"]))
+
+    def test_claimable_row_requires_doe_ir_hash(self) -> None:
+        payload = claimable_report()
+        payload["rows"][0]["doe"]["irSha256"] = None
+        result = self.module.evaluate_report(payload, require_claimable=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("claimable row requires doe.irSha256" in item for item in result["failures"]))
+
+    def test_claimable_report_requires_phase_split_model(self) -> None:
+        payload = claimable_report()
+        payload["phaseModel"]["requiredPhases"] = ["total"]
+        payload["rows"][0]["doe"]["phaseTimingsNs"] = {"total": 4}
+        payload["rows"][0]["tint"]["phaseTimingsNs"] = {"total": 4}
+
+        result = self.module.evaluate_report(payload, require_claimable=True)
+
+        self.assertFalse(result["ok"])
+        self.assertTrue(
+            any("requires phaseModel.requiredPhases" in item for item in result["failures"])
         )
 
 

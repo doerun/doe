@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-pipeline-cache-receipts.schema.json",
+  "title": "Browser pipeline cache receipts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "sourceWorkloadsPath",
+    "sourceWorkloadSetId",
+    "runtimeIdentity",
+    "receiptStatus",
+    "receipts",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_pipeline_cache_receipts" },
+    "sourceWorkloadsPath": { "type": "string", "minLength": 1 },
+    "sourceWorkloadSetId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "receiptStatus": { "enum": ["pass", "fail"] },
+    "receipts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Receipt" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Failure" }
+    }
+  },
+  "$defs": {
+    "Receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receiptId",
+        "workloadId",
+        "workloadKind",
+        "shaderId",
+        "sourceSha256",
+        "irSha256",
+        "backendOutputSha256",
+        "cacheKey",
+        "cacheState",
+        "pipelineCreationPath",
+        "creationStatus",
+        "fallbackApplied",
+        "hiddenFallbackAllowed"
+      ],
+      "properties": {
+        "receiptId": { "type": "string", "minLength": 1 },
+        "workloadId": { "type": "string", "minLength": 1 },
+        "workloadKind": {
+          "enum": [
+            "embedding",
+            "ranking",
+            "image_transform",
+            "video_transform",
+            "model_inference"
+          ]
+        },
+        "shaderId": { "type": "string", "minLength": 1 },
+        "sourceSha256": { "$ref": "#/$defs/Sha256" },
+        "irSha256": { "$ref": "#/$defs/Sha256" },
+        "backendOutputSha256": { "$ref": "#/$defs/Sha256" },
+        "cacheKey": { "type": "string", "minLength": 1 },
+        "cacheState": { "enum": ["hit", "miss", "created", "disabled"] },
+        "pipelineCreationPath": { "type": "string", "minLength": 1 },
+        "creationStatus": { "enum": ["reused", "created", "skipped"] },
+        "fallbackApplied": { "type": "boolean" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCode": { "type": "string" }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "source", "message", "path"],
+      "properties": {
+        "code": {
+          "enum": [
+            "missing_cache_receipt_field",
+            "hidden_fallback_allowed",
+            "missing_fallback_reason"
+          ]
+        },
+        "severity": { "enum": ["error"] },
+        "source": { "type": "string", "const": "browser_pipeline_cache_receipts" },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

@@ -26,6 +26,33 @@
           "coordinator"
         ]
       },
+      "allOf": [
+        {
+          "contains": {
+            "const": "browser_runtime_integration_owner"
+          }
+        },
+        {
+          "contains": {
+            "const": "browser_quality_owner"
+          }
+        },
+        {
+          "contains": {
+            "const": "browser_benchmark_methodology_owner"
+          }
+        },
+        {
+          "contains": {
+            "const": "module_contracts_owner"
+          }
+        },
+        {
+          "contains": {
+            "const": "coordinator"
+          }
+        }
+      ],
       "uniqueItems": true
     },
     "approvals": {

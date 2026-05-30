@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_lowering_link_receipt",
+  "evidencePath": "examples/tint-compiler-evidence.sample.json",
+  "manifestPath": "config/wgsl-browser-corpus.json",
+  "corpusId": "browser-wgsl-corpus-v0",
+  "rows": [
+    {
+      "shaderId": "webgpu-prefix-sum",
+      "manifestShaderId": "webgpu-prefix-sum",
+      "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+      "sourceSha256": "a8a642a54aaca908b707d20666566db8db62dbb5c9bfd518fbe98925da22c416",
+      "expectedValidity": "valid",
+      "shaderStage": "compute",
+      "backendTarget": "spirv",
+      "doeIrSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "doeBackendOutputSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "doeReceiptPath": "examples/runtime-compile-report.sample.json",
+      "validationStatus": "passed",
+      "comparabilityStatus": "diagnostic",
+      "claimabilityStatus": "diagnostic",
+      "linkStatus": "linked",
+      "failureCodes": []
+    }
+  ],
+  "summary": {
+    "rowCount": 1,
+    "linkedRows": 1,
+    "diagnosticRows": 0,
+    "failureCodes": []
+  }
+}

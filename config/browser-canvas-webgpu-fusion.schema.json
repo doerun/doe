@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-canvas-webgpu-fusion.schema.json",
+  "title": "Browser canvas WebGPU fusion probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "probeId",
+    "runtimeIdentity",
+    "surfaces",
+    "graph",
+    "outputHashes",
+    "timingScopes",
+    "fallbackReasons",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "browser_canvas_webgpu_fusion_probe"
+    },
+    "probeId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Surface" }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graphSha256", "nodes", "edges"],
+      "properties": {
+        "graphSha256": { "$ref": "#/$defs/Sha256" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/GraphNode" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/GraphEdge" }
+        }
+      }
+    },
+    "outputHashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/OutputHash" }
+    },
+    "timingScopes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/TimingScope" }
+    },
+    "fallbackReasons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FallbackReason" }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawPageDataIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawPageDataIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_:-]*$"
+    },
+    "Surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "kind", "responsibilityMapEntry"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/Id" },
+        "kind": {
+          "enum": ["canvas_2d", "webgpu", "image_filter", "presentation"]
+        },
+        "responsibilityMapEntry": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "GraphNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "surfaceId", "op"],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/Id" },
+        "surfaceId": { "$ref": "#/$defs/Id" },
+        "op": {
+          "enum": [
+            "canvas_draw",
+            "webgpu_dispatch",
+            "webgpu_render",
+            "image_filter",
+            "present"
+          ]
+        }
+      }
+    },
+    "GraphEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromNodeId", "toNodeId", "edgeKind"],
+      "properties": {
+        "fromNodeId": { "$ref": "#/$defs/Id" },
+        "toNodeId": { "$ref": "#/$defs/Id" },
+        "edgeKind": { "enum": ["orders_before", "feeds", "presents"] }
+      }
+    },
+    "OutputHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "outputSha256"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/Id" },
+        "outputSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "TimingScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "phase", "durationNs"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/Id" },
+        "phase": {
+          "enum": ["canvas_2d", "webgpu", "filter", "present", "readback"]
+        },
+        "durationNs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "FallbackReason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surfaceId", "reasonCode"],
+      "properties": {
+        "surfaceId": { "$ref": "#/$defs/Id" },
+        "reasonCode": { "type": "string", "minLength": 1 },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

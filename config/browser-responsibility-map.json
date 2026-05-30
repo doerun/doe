@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "mapVersion": "2026-05-26-browser-responsibility-map-v1",
+  "entries": [
+    {
+      "entryId": "networking",
+      "label": "Networking",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Network fetch, protocol policy, and socket behavior remain browser CPU/process responsibilities."
+    },
+    {
+      "entryId": "cache",
+      "label": "Cache",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "HTTP/cache storage and invalidation are browser storage responsibilities outside the WebGPU seam."
+    },
+    {
+      "entryId": "html_parsing",
+      "label": "HTML parsing",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Markup parsing is owned by the browser engine and must not move into Doe."
+    },
+    {
+      "entryId": "css_parsing",
+      "label": "CSS parsing",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "CSS tokenization and parsing remain browser engine responsibilities."
+    },
+    {
+      "entryId": "cascade",
+      "label": "Cascade",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Cascade resolution is browser policy and layout input, not a Doe execution target."
+    },
+    {
+      "entryId": "dom",
+      "label": "DOM",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "DOM construction and mutation semantics stay inside the browser engine."
+    },
+    {
+      "entryId": "style_tree",
+      "label": "Style tree",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Style tree construction is browser-owned input to rendering."
+    },
+    {
+      "entryId": "layout",
+      "label": "Layout",
+      "owner": "cpu",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "Layout semantics affect accessibility, hit testing, and web compatibility; Doe may observe downstream GPU work but not own layout."
+    },
+    {
+      "entryId": "javascript_execution",
+      "label": "JavaScript execution",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "JavaScript execution remains V8/browser-owned and is not a Doe runtime surface."
+    },
+    {
+      "entryId": "event_loop",
+      "label": "Event loop",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Task scheduling and event dispatch stay in the browser runtime."
+    },
+    {
+      "entryId": "accessibility_tree",
+      "label": "Accessibility tree",
+      "owner": "cpu",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "Accessibility semantics remain browser-owned and cannot depend on Doe runtime behavior."
+    },
+    {
+      "entryId": "permissions",
+      "label": "Permissions",
+      "owner": "cpu",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "Permission decisions remain Chromium policy; Doe can only consume approved GPU access."
+    },
+    {
+      "entryId": "origin_policy",
+      "label": "Origin policy",
+      "owner": "cpu",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "Origin isolation and security policy remain browser responsibilities."
+    },
+    {
+      "entryId": "scheduling",
+      "label": "Scheduling",
+      "owner": "cpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Browser task scheduling stays CPU-owned, while Doe can receipt downstream GPU command timing."
+    },
+    {
+      "entryId": "lifecycle",
+      "label": "Lifecycle",
+      "owner": "cpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Page lifecycle remains browser-owned; Doe can observe device loss and runtime teardown artifacts."
+    },
+    {
+      "entryId": "workers",
+      "label": "Workers",
+      "owner": "cpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Worker execution is browser-owned, but WebGPU work issued by workers can be captured at the runtime seam."
+    },
+    {
+      "entryId": "service_workers",
+      "label": "Service workers",
+      "owner": "cpu",
+      "scopeStatus": "not_doe_scope",
+      "rationale": "Service worker fetch and lifecycle behavior stays outside Doe."
+    },
+    {
+      "entryId": "developer_tooling",
+      "label": "Developer tooling",
+      "owner": "cpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Browser developer tools remain CPU-owned, while Doe can expose runtime identity, shader links, cache state, and fallback receipts."
+    },
+    {
+      "entryId": "rasterization",
+      "label": "Rasterization",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Rasterization is GPU-owned; Doe can observe it only where Chromium exposes stable WebGPU/canvas command boundaries."
+    },
+    {
+      "entryId": "compositing",
+      "label": "Compositing",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Compositing is GPU-owned but remains browser-policy constrained outside promoted contracts."
+    },
+    {
+      "entryId": "canvas_2d",
+      "label": "Canvas 2D",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Canvas 2D can become observable through fusion probes when stable command boundaries exist."
+    },
+    {
+      "entryId": "webgl",
+      "label": "WebGL",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "WebGL GPU work is observable in browser GPU lanes but is not a Doe replacement target without a promoted contract."
+    },
+    {
+      "entryId": "webgpu",
+      "label": "WebGPU",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "WebGPU is the promoted Doe browser seam when forced-runtime and hidden-fallback gates pass.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+        "schemaPath": "config/webgpu-integration-chromium.schema.json",
+        "workloadPath": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+        "gatePath": "bench/browser/browser_gate.py",
+        "artifactPath": "browser/chromium/artifacts/"
+      }
+    },
+    {
+      "entryId": "image_filters",
+      "label": "Image filters",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Image filters can be observed where the browser exposes GPU command boundaries."
+    },
+    {
+      "entryId": "css_effects",
+      "label": "CSS effects",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "CSS effects may be observable as GPU work but CSS semantics remain browser-owned."
+    },
+    {
+      "entryId": "transforms",
+      "label": "Transforms",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Transform execution can be observed in GPU traces when the browser exposes stable command boundaries."
+    },
+    {
+      "entryId": "texture_upload",
+      "label": "Texture upload",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Texture upload is a promoted comparison surface for native runtime and browser workloads when structural equivalence holds.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+        "schemaPath": "config/compare-report.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "entryId": "readback",
+      "label": "Readback",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Readback can support claims only with matched command graph receipts and timing scope symmetry.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+        "schemaPath": "config/compare-report.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "entryId": "video_presentation",
+      "label": "Video presentation",
+      "owner": "gpu",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "Video presentation touches media policy and shared textures; Doe cannot claim it without a promoted browser-policy contract."
+    },
+    {
+      "entryId": "swapchain_surface_presentation",
+      "label": "Swapchain/surface presentation",
+      "owner": "gpu",
+      "scopeStatus": "webgpu_seam",
+      "rationale": "Surface presentation is part of WebGPU/canvas presentation behavior and must be validated by browser-lane artifacts."
+    },
+    {
+      "entryId": "gpu_memory_residency",
+      "label": "GPU memory residency",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Doe can receipt resource allocation and lifetime where runtime traces expose the data."
+    },
+    {
+      "entryId": "command_submission",
+      "label": "Command submission",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Command submission is a Doe runtime comparison surface when both sides measure the same submit/wait scope.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-claim-methodology.contract.md",
+        "schemaPath": "config/run-receipt.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "entryId": "pipeline_cache",
+      "label": "Pipeline cache",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Pipeline cache behavior can be claimed only through explicit cold/warm contracts and disclosed cache state.",
+      "claimBinding": {
+        "contractPath": "docs/performance-strategy.md",
+        "schemaPath": "config/pipeline-warmup-policy.schema.json",
+        "workloadPath": "config/pipeline-warmup-policy.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "entryId": "shader_compilation",
+      "label": "Shader compilation",
+      "owner": "gpu",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Shader compilation is claimable only through Doe-vs-Tint evidence with source/output hashes and validation receipts.",
+      "claimBinding": {
+        "contractPath": "docs/chromium-webgpu-task-list.md",
+        "schemaPath": "config/tint-compiler-evidence.schema.json",
+        "workloadPath": "bench/native-compare/compare_doe_vs_tint.config.json",
+        "gatePath": "bench/gates/tint_compiler_evidence_gate.py",
+        "artifactPath": "bench/out/tint-compiler-evidence.json"
+      }
+    },
+    {
+      "entryId": "frame_pacing",
+      "label": "Frame pacing",
+      "owner": "gpu",
+      "scopeStatus": "doe_observable",
+      "rationale": "Frame pacing is observable through browser diagnostics but not claimable until repeated browser claim windows cover it."
+    }
+  ],
+  "boundaries": [
+    {
+      "boundaryId": "js_to_webgpu",
+      "fromEntryId": "javascript_execution",
+      "toEntryId": "webgpu",
+      "crossing": "JavaScript issues WebGPU API calls through navigator.gpu.",
+      "scopeStatus": "webgpu_seam",
+      "rationale": "This is the primary Chromium runtime-selection seam."
+    },
+    {
+      "boundaryId": "worker_to_webgpu",
+      "fromEntryId": "workers",
+      "toEntryId": "webgpu",
+      "crossing": "Worker-originated WebGPU commands enter the same runtime seam.",
+      "scopeStatus": "doe_observable",
+      "rationale": "Doe can observe the command stream after browser policy accepts the worker context."
+    },
+    {
+      "boundaryId": "webgpu_to_shader_compilation",
+      "fromEntryId": "webgpu",
+      "toEntryId": "shader_compilation",
+      "crossing": "WGSL sources lower through Doe/Tint compiler paths.",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Compiler evidence can link source to IR and backend output for browser shader rows.",
+      "claimBinding": {
+        "contractPath": "docs/chromium-webgpu-task-list.md",
+        "schemaPath": "config/tint-compiler-evidence.schema.json",
+        "workloadPath": "bench/native-compare/compare_doe_vs_tint.config.json",
+        "gatePath": "bench/gates/tint_compiler_evidence_gate.py",
+        "artifactPath": "bench/out/tint-compiler-evidence.json"
+      }
+    },
+    {
+      "boundaryId": "webgpu_to_command_submission",
+      "fromEntryId": "webgpu",
+      "toEntryId": "command_submission",
+      "crossing": "Encoded commands enter runtime queue submission and wait scopes.",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Submit/wait claims require timing-phase symmetry and command graph receipts.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-claim-methodology.contract.md",
+        "schemaPath": "config/run-receipt.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "boundaryId": "webgpu_to_texture_upload",
+      "fromEntryId": "webgpu",
+      "toEntryId": "texture_upload",
+      "crossing": "WebGPU write/copy operations move host data into GPU textures.",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Upload claims require explicit path-asymmetry annotations and structural equivalence.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+        "schemaPath": "config/compare-report.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "boundaryId": "webgpu_to_readback",
+      "fromEntryId": "webgpu",
+      "toEntryId": "readback",
+      "crossing": "GPU results return to mapped buffers or browser-visible outputs.",
+      "scopeStatus": "doe_claim_candidate",
+      "rationale": "Readback claims require matched GPU work and identical readback scope.",
+      "claimBinding": {
+        "contractPath": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+        "schemaPath": "config/compare-report.schema.json",
+        "workloadPath": "bench/workloads/metadata/backend-workload-catalog.json",
+        "gatePath": "bench/gates/claim_gate.py",
+        "artifactPath": "bench/out/**/{*.json,*.claim.json}"
+      }
+    },
+    {
+      "boundaryId": "canvas_to_gpu",
+      "fromEntryId": "canvas_2d",
+      "toEntryId": "rasterization",
+      "crossing": "Canvas commands reach GPU rasterization or fallback paths.",
+      "scopeStatus": "doe_observable",
+      "rationale": "Canvas/GPU fusion probes can observe output hashes and fallback reasons when command boundaries are stable."
+    },
+    {
+      "boundaryId": "css_to_gpu_effects",
+      "fromEntryId": "css_effects",
+      "toEntryId": "image_filters",
+      "crossing": "Browser CSS effects lower to GPU filter or compositing work.",
+      "scopeStatus": "doe_observable",
+      "rationale": "Doe can receipt only GPU-visible work; CSS semantics remain browser-owned."
+    },
+    {
+      "boundaryId": "gpu_to_presentation",
+      "fromEntryId": "compositing",
+      "toEntryId": "swapchain_surface_presentation",
+      "crossing": "Composited frames reach swapchain or surface presentation.",
+      "scopeStatus": "webgpu_seam",
+      "rationale": "Presentation behavior is validated by browser-lane smoke and layered artifacts."
+    },
+    {
+      "boundaryId": "video_to_gpu",
+      "fromEntryId": "video_presentation",
+      "toEntryId": "texture_upload",
+      "crossing": "External video/image resources may enter GPU textures.",
+      "scopeStatus": "blocked_by_browser_policy",
+      "rationale": "External texture and media import behavior needs a promoted browser-policy contract before claims."
+    },
+    {
+      "boundaryId": "developer_tooling_to_receipts",
+      "fromEntryId": "developer_tooling",
+      "toEntryId": "webgpu",
+      "crossing": "Developer-visible surfaces expose runtime identity, shader links, cache state, and unsupported-capability receipts.",
+      "scopeStatus": "doe_observable",
+      "rationale": "The map permits developer-visible evidence without changing browser semantics."
+    }
+  ]
+}

@@ -1,9 +1,14 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto";
 import http from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import {
+  loadRuntimeSelectorPolicy,
+  resolveRuntimeSelection,
+} from "./browser-runtime-selector.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
@@ -23,7 +28,10 @@ const ORT_BROWSER_WEBGPU_MODULE_PATH = resolve(
 );
 const REPORT_KIND = "chromium-webgpu-playwright-ort-bench";
 const REPORT_SCHEMA_VERSION = 1;
+const HASH_ALGORITHM = "sha256";
+const RUNTIME_SELECTOR_VERSION = "browser-runtime-selector-v1";
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-ort-bench.diagnostic.json";
+const DEFAULT_RUNTIME_SELECTOR_POLICY = resolve(ROOT, "config/browser-runtime-selector-policy.json");
 const DEFAULT_TASK = "sentiment";
 const DEFAULT_TIMED_ITERS = 5;
 const DEFAULT_WARMUP_ITERS = 1;
@@ -119,13 +127,18 @@ function defaultChromePath() {
 }
 
 function defaultDoeLibPath() {
-  const preferredExt = process.platform === "darwin" ? "dylib" : "so";
+  const preferredExt = process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so";
   const envDoeLib = process.env.FAWN_DOE_LIB;
   const candidates = [
     envDoeLib,
+    resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe_full.${preferredExt}`),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.so"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dll"),
     resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.so"),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dll"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -141,9 +154,13 @@ function usage() {
   node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs [options]
 
 Options:
-  --mode dawn|doe|both      Runtime mode to run (default: both)
+  --mode dawn|doe|auto|both Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
+  --doe-lib PATH            libwebgpu_doe_full.{so,dylib,dll} path (for doe mode)
+  --runtime-selector-policy PATH
+                            Runtime selector policy JSON path (default: config/browser-runtime-selector-policy.json)
+  --runtime-selector-profile-id ID
+                            Optional selector profileId for auto denylist checks
   --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this report under bench/out/scratch
   --headless true|false     Launch headless (default: true)
@@ -221,6 +238,9 @@ function parseArgs(argv) {
     mode: "both",
     chromePath: defaultChromePath(),
     doeLibPath: defaultDoeLibPath(),
+    runtimeSelectorPolicyPath: DEFAULT_RUNTIME_SELECTOR_POLICY,
+    runtimeSelectorPolicy: null,
+    runtimeSelectorProfileId: "",
     outPath: defaultOutPath(),
     allowBenchOut: false,
     headless: true,
@@ -251,6 +271,12 @@ function parseArgs(argv) {
     } else if (token === "--doe-lib") {
       args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
       i += 1;
+    } else if (token === "--runtime-selector-policy") {
+      args.runtimeSelectorPolicyPath = readOptionValue(argv, i, "--runtime-selector-policy");
+      i += 1;
+    } else if (token === "--runtime-selector-profile-id") {
+      args.runtimeSelectorProfileId = readOptionValue(argv, i, "--runtime-selector-profile-id");
+      i += 1;
     } else if (token === "--out") {
       args.outPath = readOptionValue(argv, i, "--out");
       i += 1;
@@ -280,16 +306,20 @@ function parseArgs(argv) {
     }
   }
 
-  if (!["dawn", "doe", "both"].includes(args.mode)) {
-    throw new Error("--mode must be one of dawn, doe, both");
+  if (!["dawn", "doe", "auto", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, auto, both");
   }
+  if (!existsSync(args.runtimeSelectorPolicyPath)) {
+    throw new Error(`runtime selector policy not found: ${args.runtimeSelectorPolicyPath}`);
+  }
+  args.runtimeSelectorPolicy = loadRuntimeSelectorPolicy(args.runtimeSelectorPolicyPath);
   if (!Object.hasOwn(TASKS, args.task)) {
     throw new Error(`--task must be one of ${Object.keys(TASKS).join(", ")}`);
   }
   if (!existsSync(args.chromePath)) {
     throw new Error(`chrome binary not found: ${args.chromePath}`);
   }
-  if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
+  if ((args.mode === "doe" || args.mode === "both") && !existsSync(args.doeLibPath)) {
     throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
   }
   if (!existsSync(JETSTREAM_BUILD_ROOT)) {
@@ -457,6 +487,91 @@ function safeDeltaPercent(dawnValue, doeValue) {
   return ((dawnValue - doeValue) / dawnValue) * 100;
 }
 
+function stableObject(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => stableObject(entry));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, stableObject(value[key])]),
+    );
+  }
+  return value;
+}
+
+function hashHex(value) {
+  const canonical = JSON.stringify(stableObject(value));
+  return createHash(HASH_ALGORITHM).update(canonical).digest("hex");
+}
+
+function fileHashHex(pathValue) {
+  if (!pathValue || !existsSync(pathValue)) return null;
+  return createHash(HASH_ALGORITHM).update(readFileSync(pathValue)).digest("hex");
+}
+
+function runtimeArtifactIdentity(mode, args) {
+  const browserExecutableSha256 = fileHashHex(args.chromePath);
+  return {
+    browserExecutablePath: args.chromePath,
+    browserExecutableSha256,
+    dawnRuntimePath: args.chromePath,
+    dawnRuntimeSha256: browserExecutableSha256,
+    doeLibPath: mode === "doe" ? args.doeLibPath : null,
+    doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
+  };
+}
+
+function runtimeSelectionResolution(mode, args) {
+  return resolveRuntimeSelection({
+    requestedMode: mode,
+    doeLibPath: args.doeLibPath,
+    policy: args.runtimeSelectorPolicy,
+    profile: { profileId: args.runtimeSelectorProfileId },
+  });
+}
+
+function buildRuntimeSelection(mode, args, launchArgs) {
+  const resolution = runtimeSelectionResolution(mode, args);
+  return {
+    ...resolution,
+    selectorVersion: RUNTIME_SELECTOR_VERSION,
+    artifactIdentity: runtimeArtifactIdentity(resolution.selectedRuntime, args),
+    launchArgsHash: hashHex(launchArgs),
+  };
+}
+
+function shaderCompilerIdentity(mode, args) {
+  const resolution = runtimeSelectionResolution(mode, args);
+  const artifactIdentity = runtimeArtifactIdentity(resolution.selectedRuntime, args);
+  const compilerArtifactPath =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibPath
+      : artifactIdentity.dawnRuntimePath;
+  const compilerArtifactSha256 =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibSha256
+      : artifactIdentity.dawnRuntimeSha256;
+  return {
+    compilerSurface:
+      resolution.selectedRuntime === "doe"
+        ? "doe_runtime_embedded_shader_compiler"
+        : "dawn_runtime_embedded_shader_compiler",
+    compilerArtifactPath,
+    compilerArtifactSha256,
+    identitySource: "runtime_artifact_identity",
+  };
+}
+
+function adapterIdentityFromSummary(summary) {
+  const adapterSummary = summary && typeof summary === "object" ? summary : {};
+  return {
+    adapterSummarySha256: hashHex(adapterSummary),
+    featureCount: Array.isArray(adapterSummary.features) ? adapterSummary.features.length : 0,
+  };
+}
+
 function taskDefinition(taskId) {
   return TASKS[taskId];
 }
@@ -500,15 +615,18 @@ function modeReportOnError(mode, args, launchArgs, browserVersion, startedMs, er
     browserVersion,
     elapsedMs: Date.now() - startedMs,
     timingClass: "process-wall",
+    runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
+    shaderCompilerIdentity: shaderCompilerIdentity(mode, args),
     error: errorText,
   };
 }
 
 async function runMode(chromium, mode, args, localUrl, localPort) {
+  const selection = runtimeSelectionResolution(mode, args);
   const launchArgs = [
     ...baseLaunchArgs(localPort),
     ...args.chromeArgs,
-    ...runtimeArgs(mode, args.doeLibPath),
+    ...runtimeArgs(selection.selectedRuntime, args.doeLibPath),
   ];
   const startedMs = Date.now();
   let browser = null;
@@ -820,6 +938,8 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
       elapsedMs: Date.now() - startedMs,
       launchArgs,
       timingClass: "process-wall",
+      runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
+      shaderCompilerIdentity: shaderCompilerIdentity(mode, args),
       pipelineLoadMs: result.loadMs,
       sequenceLength: result.sequenceLength,
       sessionInputNames: result.sessionInputNames,
@@ -828,6 +948,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
       timedP50Ms: percentile(result.timedIterationsMs, 0.5),
       timedP95Ms: percentile(result.timedIterationsMs, 0.95),
       adapterSummary: result.adapterSummary,
+      adapterIdentity: adapterIdentityFromSummary(result.adapterSummary),
       outputSummary: result.outputSummary,
       webgpuCounterPatches: result.webgpuCounterPatches,
       webgpuDispatchCount: result.webgpuDispatchCount,
@@ -852,6 +973,22 @@ function extractModeResult(modeResults, mode) {
   return modeResults.find((entry) => entry.mode === mode) ?? null;
 }
 
+function attachHashChain(entries) {
+  let previousHash = "0".repeat(64);
+  return entries.map((entry, index) => {
+    const traceEntry = {
+      module: "browser_ort",
+      opCode: "mode_result",
+      seq: index + 1,
+      ...entry,
+    };
+    const hash = hashHex({ previousHash, entry: traceEntry });
+    const withHash = { ...traceEntry, previousHash, hash };
+    previousHash = hash;
+    return withHash;
+  });
+}
+
 function comparisonFor(modeResults) {
   const dawn = extractModeResult(modeResults, "dawn");
   const doe = extractModeResult(modeResults, "doe");
@@ -867,7 +1004,8 @@ function comparisonFor(modeResults) {
 }
 
 function buildReport(args, serverInfo, modeResults) {
-  return {
+  const modeResultsWithHashes = attachHashChain(modeResults);
+  const report = {
     schemaVersion: REPORT_SCHEMA_VERSION,
     reportKind: REPORT_KIND,
     benchmarkClass: "directional",
@@ -876,14 +1014,24 @@ function buildReport(args, serverInfo, modeResults) {
     generatedAt: new Date().toISOString(),
     task: args.task,
     taskConfig: taskDefinition(args.task),
+    workloadIdentity: {
+      kind: "browser_ort_workload",
+      task: args.task,
+      taskConfigHash: hashHex(taskDefinition(args.task)),
+    },
     headless: args.headless,
     chromePath: args.chromePath,
     doeLibPath: args.mode === "dawn" ? null : args.doeLibPath,
     localServerUrl: serverInfo.url,
     timingClass: "process-wall",
-    modeResults,
-    comparison: comparisonFor(modeResults),
+    hashAlgorithm: HASH_ALGORITHM,
+    runtimeSelectorPolicyPath: args.runtimeSelectorPolicyPath,
+    runtimeSelections: modeResultsWithHashes.map((entry) => entry.runtimeSelection),
+    modeResults: modeResultsWithHashes,
+    comparison: comparisonFor(modeResultsWithHashes),
   };
+  report.reportHash = hashHex(report);
+  return report;
 }
 
 function printSummary(report) {

@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import http from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import {
+  loadRuntimeSelectorPolicy,
+  resolveRuntimeSelection,
+} from "./browser-runtime-selector.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
@@ -52,13 +57,18 @@ function defaultChromePath() {
 }
 
 function defaultDoeLibPath() {
-  const preferredExt = process.platform === "darwin" ? "dylib" : "so";
+  const preferredExt = process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so";
   const envDoeLib = process.env.FAWN_DOE_LIB;
   const candidates = [
     envDoeLib,
+    resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe_full.${preferredExt}`),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.so"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe_full.dll"),
     resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.so"),
     resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dll"),
   ].filter((value) => typeof value === "string" && value.length > 0);
 
   for (const candidate of candidates) {
@@ -71,8 +81,53 @@ function defaultDoeLibPath() {
 
 const DEFAULT_CHROME = defaultChromePath();
 const DEFAULT_DOE_LIB = defaultDoeLibPath();
+const DEFAULT_RUNTIME_SELECTOR_POLICY = resolve(ROOT, "config/browser-runtime-selector-policy.json");
 const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
 const DEFAULT_OUT_FILE = "dawn-vs-doe.browser.playwright-smoke.diagnostic.json";
+const FLIGHT_RECORDER_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-gpu-flight-recorder.py",
+);
+const CANVAS_WEBGPU_FUSION_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-canvas-webgpu-fusion.py",
+);
+const MEDIA_PATH_PROBE_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-media-path-probe.py",
+);
+const RECOVERY_PARITY_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-recovery-parity.py",
+);
+const GPU_SCHEDULER_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-gpu-scheduler.py",
+);
+const WEBGPU_EFFECT_EXPERIMENT_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-webgpu-effect-experiment.py",
+);
+const LOCAL_AI_WORKLOADS_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-local-ai-workloads.py",
+);
+const SHADER_LINKS_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-shader-links.py",
+);
+const PIPELINE_CACHE_RECEIPTS_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-pipeline-cache-receipts.py",
+);
+const FALLBACK_EXPLANATIONS_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-fallback-explanations.py",
+);
+const CTS_SUBSET_BUILDER = resolve(
+  ROOT,
+  "browser/chromium/scripts/build-browser-cts-subset.py",
+);
 const DEFAULT_API_SURFACE = "native";
 const DEFAULT_UPLOAD_ITERS = 500;
 const DEFAULT_DISPATCH_ITERS = 200;
@@ -120,9 +175,13 @@ function usage() {
   node browser/chromium/scripts/webgpu-playwright-smoke.mjs [options]
 
 Options:
-  --mode dawn|doe|both      Runtime mode to run (default: both)
+  --mode dawn|doe|auto|both Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
-  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
+  --doe-lib PATH            libwebgpu_doe_full.{so,dylib,dll} path (for doe mode)
+  --runtime-selector-policy PATH
+                            Runtime selector policy JSON path (default: config/browser-runtime-selector-policy.json)
+  --runtime-selector-profile-id ID
+                            Optional selector profileId for auto denylist checks
   --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
@@ -132,6 +191,48 @@ Options:
   --dispatch-iters N        compute dispatch timed iterations (default: 200)
   --suite-timeout-ms N      Max time for one mode suite run (default: 120000)
   --op-timeout-ms N         Max time for one async WebGPU wait op (default: 30000)
+  --flight-recorder-components PATH
+                            Component manifest for optional browser_gpu_flight_recorder output
+  --flight-recorder-out PATH
+                            Output path for optional browser_gpu_flight_recorder artifact
+  --flight-recorder-mode dawn|doe
+                            Runtime mode to extract for optional flight recorder (default: doe)
+  --shader-links-out PATH
+                            Output path for optional browser_shader_links artifact; requires --flight-recorder-out
+  --canvas-webgpu-fusion-out PATH
+                            Output path for optional browser_canvas_webgpu_fusion_probe artifact
+  --canvas-webgpu-fusion-mode dawn|doe
+                            Runtime mode to extract for optional canvas/WebGPU fusion probe (default: doe)
+  --media-path-probe-out PATH
+                            Output path for optional browser_media_path_probe artifact
+  --media-path-probe-mode dawn|doe
+                            Runtime mode to extract for optional media path probe (default: doe)
+  --media-path-probe-capture-policy PATH
+                            Browser capture policy for optional media path probe
+  --recovery-parity-out PATH
+                            Output path for optional browser_recovery_parity artifact
+  --cts-subset-out PATH
+                            Output path for optional browser_cts_subset artifact; requires --mode both
+  --gpu-scheduler-out PATH
+                            Output path for optional browser_gpu_scheduler_probe artifact
+  --gpu-scheduler-mode dawn|doe
+                            Runtime mode to extract for optional GPU scheduler probe (default: doe)
+  --webgpu-effect-experiment-out PATH
+                            Output path for optional browser_webgpu_effect_experiment artifact
+  --webgpu-effect-experiment-mode dawn|doe
+                            Runtime mode to extract for optional WebGPU effect experiment (default: doe)
+  --local-ai-workloads-out PATH
+                            Output path for optional browser_local_ai_workloads artifact
+  --local-ai-workloads-mode dawn|doe
+                            Runtime mode to extract for optional local AI workloads (default: doe)
+  --pipeline-cache-receipts-out PATH
+                            Output path for optional browser_pipeline_cache_receipts artifact; requires --local-ai-workloads-out
+  --fallback-explanations-out PATH
+                            Output path for optional browser_fallback_explanations artifact
+  --fallback-explanations-mode dawn|doe
+                            Runtime mode to extract for optional fallback explanations (default: doe)
+  --fallback-explanations-taxonomy PATH
+                            Browser unsupported/fallback reason taxonomy path
   --strict                  Exit non-zero if any smoke test fails
   --help                    Show this message
 `);
@@ -173,17 +274,20 @@ async function withTimeout(promise, timeoutMs, label) {
 
 function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error) {
   const errorText = String(error?.stack ?? error);
+  const selection = runtimeSelectionResolution(mode, args);
   return {
     mode,
     apiSurface: args.apiSurface,
     runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
-    runtimeArgs: runtimeArgs(mode, args.doeLibPath),
+    shaderCompilerIdentity: shaderCompilerIdentity(mode, args),
+    runtimeArgs: runtimeArgs(selection.selectedRuntime, args.doeLibPath),
     launchArgs,
     browserVersion,
     elapsedMs: Date.now() - startMs,
     webgpuAvailable: false,
     adapterAvailable: false,
     adapterInfo: null,
+    adapterIdentity: adapterIdentityFromSmokeResult(null),
     features: [],
     limits: {},
     wgslLanguageFeatures: [],
@@ -216,6 +320,11 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
         pass: false,
         centerRgba: null,
         error: errorText,
+      },
+      recovery: {
+        validationError: { pass: false, captured: false, messageCount: 0, error: errorText },
+        deviceLost: { pass: false, promiseAvailable: false, error: errorText },
+        postValidationCompute: { pass: false, actual: null, expected: [2, 3, 4, 5], error: errorText },
       },
     },
     benches: {
@@ -253,6 +362,37 @@ function pathWithin(pathValue, rootPath) {
   const absolutePath = resolve(pathValue);
   const absoluteRoot = resolve(rootPath);
   return absolutePath === absoluteRoot || absolutePath.startsWith(`${absoluteRoot}/`);
+}
+
+function resolveInvocationPath(pathValue) {
+  if (typeof pathValue !== "string" || pathValue.length === 0) {
+    return "";
+  }
+  return resolve(process.cwd(), pathValue);
+}
+
+function normalizePathArgs(args) {
+  const pathFields = [
+    "chromePath",
+    "doeLibPath",
+    "runtimeSelectorPolicyPath",
+    "outPath",
+    "flightRecorderComponentsPath",
+    "flightRecorderOutPath",
+    "shaderLinksOutPath",
+    "canvasWebgpuFusionOutPath",
+    "mediaPathProbeOutPath",
+    "recoveryParityOutPath",
+    "ctsSubsetOutPath",
+    "gpuSchedulerOutPath",
+    "webgpuEffectExperimentOutPath",
+    "localAiWorkloadsOutPath",
+    "pipelineCacheReceiptsOutPath",
+    "fallbackExplanationsOutPath",
+  ];
+  for (const field of pathFields) {
+    args[field] = resolveInvocationPath(args[field]);
+  }
 }
 
 function ensureAllowedOutPath(outPath, allowBenchOut) {
@@ -302,6 +442,9 @@ function parseArgs(argv) {
     mode: "both",
     chromePath: DEFAULT_CHROME,
     doeLibPath: DEFAULT_DOE_LIB,
+    runtimeSelectorPolicyPath: DEFAULT_RUNTIME_SELECTOR_POLICY,
+    runtimeSelectorPolicy: null,
+    runtimeSelectorProfileId: "",
     outPath: defaultOutPath(),
     allowBenchOut: false,
     headless: true,
@@ -311,6 +454,27 @@ function parseArgs(argv) {
     dispatchIters: DEFAULT_DISPATCH_ITERS,
     suiteTimeoutMs: DEFAULT_SUITE_TIMEOUT_MS,
     opTimeoutMs: DEFAULT_OPERATION_TIMEOUT_MS,
+    flightRecorderComponentsPath: "",
+    flightRecorderOutPath: "",
+    flightRecorderMode: "doe",
+    shaderLinksOutPath: "",
+    canvasWebgpuFusionOutPath: "",
+    canvasWebgpuFusionMode: "doe",
+    mediaPathProbeOutPath: "",
+    mediaPathProbeMode: "doe",
+    mediaPathProbeCapturePolicyPath: "config/browser-capture-policy.json",
+    recoveryParityOutPath: "",
+    ctsSubsetOutPath: "",
+    gpuSchedulerOutPath: "",
+    gpuSchedulerMode: "doe",
+    webgpuEffectExperimentOutPath: "",
+    webgpuEffectExperimentMode: "doe",
+    localAiWorkloadsOutPath: "",
+    localAiWorkloadsMode: "doe",
+    pipelineCacheReceiptsOutPath: "",
+    fallbackExplanationsOutPath: "",
+    fallbackExplanationsMode: "doe",
+    fallbackExplanationsTaxonomyPath: "config/browser-unsupported-reason-taxonomy.json",
     strict: false,
   };
 
@@ -331,6 +495,12 @@ function parseArgs(argv) {
       i += 1;
     } else if (token === "--doe-lib") {
       args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
+      i += 1;
+    } else if (token === "--runtime-selector-policy") {
+      args.runtimeSelectorPolicyPath = readOptionValue(argv, i, "--runtime-selector-policy");
+      i += 1;
+    } else if (token === "--runtime-selector-profile-id") {
+      args.runtimeSelectorProfileId = readOptionValue(argv, i, "--runtime-selector-profile-id");
       i += 1;
     } else if (token === "--out") {
       args.outPath = readOptionValue(argv, i, "--out");
@@ -365,25 +535,513 @@ function parseArgs(argv) {
         "--op-timeout-ms",
       );
       i += 1;
+    } else if (token === "--flight-recorder-components") {
+      args.flightRecorderComponentsPath = readOptionValue(argv, i, "--flight-recorder-components");
+      i += 1;
+    } else if (token === "--flight-recorder-out") {
+      args.flightRecorderOutPath = readOptionValue(argv, i, "--flight-recorder-out");
+      i += 1;
+    } else if (token === "--flight-recorder-mode") {
+      args.flightRecorderMode = readOptionValue(argv, i, "--flight-recorder-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--shader-links-out") {
+      args.shaderLinksOutPath = readOptionValue(argv, i, "--shader-links-out");
+      i += 1;
+    } else if (token === "--canvas-webgpu-fusion-out") {
+      args.canvasWebgpuFusionOutPath = readOptionValue(argv, i, "--canvas-webgpu-fusion-out");
+      i += 1;
+    } else if (token === "--canvas-webgpu-fusion-mode") {
+      args.canvasWebgpuFusionMode = readOptionValue(argv, i, "--canvas-webgpu-fusion-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--media-path-probe-out") {
+      args.mediaPathProbeOutPath = readOptionValue(argv, i, "--media-path-probe-out");
+      i += 1;
+    } else if (token === "--media-path-probe-mode") {
+      args.mediaPathProbeMode = readOptionValue(argv, i, "--media-path-probe-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--media-path-probe-capture-policy") {
+      args.mediaPathProbeCapturePolicyPath = readOptionValue(argv, i, "--media-path-probe-capture-policy");
+      i += 1;
+    } else if (token === "--recovery-parity-out") {
+      args.recoveryParityOutPath = readOptionValue(argv, i, "--recovery-parity-out");
+      i += 1;
+    } else if (token === "--cts-subset-out") {
+      args.ctsSubsetOutPath = readOptionValue(argv, i, "--cts-subset-out");
+      i += 1;
+    } else if (token === "--gpu-scheduler-out") {
+      args.gpuSchedulerOutPath = readOptionValue(argv, i, "--gpu-scheduler-out");
+      i += 1;
+    } else if (token === "--gpu-scheduler-mode") {
+      args.gpuSchedulerMode = readOptionValue(argv, i, "--gpu-scheduler-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--webgpu-effect-experiment-out") {
+      args.webgpuEffectExperimentOutPath = readOptionValue(argv, i, "--webgpu-effect-experiment-out");
+      i += 1;
+    } else if (token === "--webgpu-effect-experiment-mode") {
+      args.webgpuEffectExperimentMode = readOptionValue(argv, i, "--webgpu-effect-experiment-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--local-ai-workloads-out") {
+      args.localAiWorkloadsOutPath = readOptionValue(argv, i, "--local-ai-workloads-out");
+      i += 1;
+    } else if (token === "--local-ai-workloads-mode") {
+      args.localAiWorkloadsMode = readOptionValue(argv, i, "--local-ai-workloads-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--pipeline-cache-receipts-out") {
+      args.pipelineCacheReceiptsOutPath = readOptionValue(argv, i, "--pipeline-cache-receipts-out");
+      i += 1;
+    } else if (token === "--fallback-explanations-out") {
+      args.fallbackExplanationsOutPath = readOptionValue(argv, i, "--fallback-explanations-out");
+      i += 1;
+    } else if (token === "--fallback-explanations-mode") {
+      args.fallbackExplanationsMode = readOptionValue(argv, i, "--fallback-explanations-mode").toLowerCase();
+      i += 1;
+    } else if (token === "--fallback-explanations-taxonomy") {
+      args.fallbackExplanationsTaxonomyPath = readOptionValue(argv, i, "--fallback-explanations-taxonomy");
+      i += 1;
     } else {
       throw new Error(`unknown argument: ${token}`);
     }
   }
 
-  if (!["dawn", "doe", "both"].includes(args.mode)) {
-    throw new Error("--mode must be one of dawn, doe, both");
+  normalizePathArgs(args);
+  if (!["dawn", "doe", "auto", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, auto, both");
   }
+  if (!existsSync(args.runtimeSelectorPolicyPath)) {
+    throw new Error(`runtime selector policy not found: ${args.runtimeSelectorPolicyPath}`);
+  }
+  args.runtimeSelectorPolicy = loadRuntimeSelectorPolicy(args.runtimeSelectorPolicyPath);
   if (!["native", "package-browser"].includes(args.apiSurface)) {
     throw new Error("--api-surface must be one of native, package-browser");
+  }
+  if (!["dawn", "doe"].includes(args.flightRecorderMode)) {
+    throw new Error("--flight-recorder-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.canvasWebgpuFusionMode)) {
+    throw new Error("--canvas-webgpu-fusion-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.mediaPathProbeMode)) {
+    throw new Error("--media-path-probe-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.gpuSchedulerMode)) {
+    throw new Error("--gpu-scheduler-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.webgpuEffectExperimentMode)) {
+    throw new Error("--webgpu-effect-experiment-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.localAiWorkloadsMode)) {
+    throw new Error("--local-ai-workloads-mode must be one of dawn, doe");
+  }
+  if (!["dawn", "doe"].includes(args.fallbackExplanationsMode)) {
+    throw new Error("--fallback-explanations-mode must be one of dawn, doe");
+  }
+  const hasFlightRecorderComponent = args.flightRecorderComponentsPath.length > 0;
+  const hasFlightRecorderOut = args.flightRecorderOutPath.length > 0;
+  if (hasFlightRecorderComponent !== hasFlightRecorderOut) {
+    throw new Error("--flight-recorder-components and --flight-recorder-out must be provided together");
+  }
+  if (args.shaderLinksOutPath.length > 0 && !hasFlightRecorderOut) {
+    throw new Error("--shader-links-out requires --flight-recorder-out");
+  }
+  if (hasFlightRecorderComponent && !existsSync(args.flightRecorderComponentsPath)) {
+    throw new Error(`flight recorder component manifest not found: ${args.flightRecorderComponentsPath}`);
+  }
+  if (hasFlightRecorderComponent && args.mode !== "both" && args.mode !== args.flightRecorderMode) {
+    throw new Error(
+      `--flight-recorder-mode ${args.flightRecorderMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (args.canvasWebgpuFusionOutPath.length > 0 && args.mode !== "both" && args.mode !== args.canvasWebgpuFusionMode) {
+    throw new Error(
+      `--canvas-webgpu-fusion-mode ${args.canvasWebgpuFusionMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (args.mediaPathProbeOutPath.length > 0 && args.mode !== "both" && args.mode !== args.mediaPathProbeMode) {
+    throw new Error(
+      `--media-path-probe-mode ${args.mediaPathProbeMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (args.recoveryParityOutPath.length > 0 && args.mode !== "both") {
+    throw new Error("--recovery-parity-out requires --mode both");
+  }
+  if (args.ctsSubsetOutPath.length > 0 && args.mode !== "both") {
+    throw new Error("--cts-subset-out requires --mode both");
+  }
+  if (args.gpuSchedulerOutPath.length > 0 && args.mode !== "both" && args.mode !== args.gpuSchedulerMode) {
+    throw new Error(
+      `--gpu-scheduler-mode ${args.gpuSchedulerMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (
+    args.webgpuEffectExperimentOutPath.length > 0 &&
+    args.mode !== "both" &&
+    args.mode !== args.webgpuEffectExperimentMode
+  ) {
+    throw new Error(
+      `--webgpu-effect-experiment-mode ${args.webgpuEffectExperimentMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (args.localAiWorkloadsOutPath.length > 0 && args.mode !== "both" && args.mode !== args.localAiWorkloadsMode) {
+    throw new Error(
+      `--local-ai-workloads-mode ${args.localAiWorkloadsMode} is not included in --mode ${args.mode}`,
+    );
+  }
+  if (args.pipelineCacheReceiptsOutPath.length > 0 && args.localAiWorkloadsOutPath.length === 0) {
+    throw new Error("--pipeline-cache-receipts-out requires --local-ai-workloads-out");
+  }
+  if (
+    args.fallbackExplanationsOutPath.length > 0 &&
+    args.mode !== "both" &&
+    args.mode !== args.fallbackExplanationsMode
+  ) {
+    throw new Error(
+      `--fallback-explanations-mode ${args.fallbackExplanationsMode} is not included in --mode ${args.mode}`,
+    );
   }
   ensureAllowedOutPath(args.outPath, args.allowBenchOut);
   if (!existsSync(args.chromePath)) {
     throw new Error(`chrome binary not found: ${args.chromePath}`);
   }
-  if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
+  if ((args.mode === "doe" || args.mode === "both") && !existsSync(args.doeLibPath)) {
     throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
   }
   return args;
+}
+
+function maybeWriteFlightRecorder(args) {
+  if (!args.flightRecorderComponentsPath || !args.flightRecorderOutPath) {
+    return null;
+  }
+  const command = [
+    FLIGHT_RECORDER_BUILDER,
+    "--report",
+    args.outPath,
+    "--components",
+    args.flightRecorderComponentsPath,
+    "--mode",
+    args.flightRecorderMode,
+    "--scenario-id",
+    "webgpu-playwright-smoke",
+    "--workload-id",
+    "browser_webgpu_smoke",
+    "--origin",
+    "browser-chromium-smoke",
+    "--out",
+    args.flightRecorderOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`flight recorder builder failed with exit code ${result.status}`);
+  }
+  return args.flightRecorderOutPath;
+}
+
+function maybeWriteShaderLinks(args) {
+  if (!args.shaderLinksOutPath) {
+    return null;
+  }
+  const command = [
+    SHADER_LINKS_BUILDER,
+    "--flight-recorder",
+    args.flightRecorderOutPath,
+    "--out",
+    args.shaderLinksOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`shader links builder failed with exit code ${result.status}`);
+  }
+  return args.shaderLinksOutPath;
+}
+
+function maybeWriteCanvasWebgpuFusion(args) {
+  if (!args.canvasWebgpuFusionOutPath) {
+    return null;
+  }
+  const command = [
+    CANVAS_WEBGPU_FUSION_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.canvasWebgpuFusionMode,
+    "--out",
+    args.canvasWebgpuFusionOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`canvas/WebGPU fusion builder failed with exit code ${result.status}`);
+  }
+  return args.canvasWebgpuFusionOutPath;
+}
+
+function maybeWriteMediaPathProbe(args) {
+  if (!args.mediaPathProbeOutPath) {
+    return null;
+  }
+  const command = [
+    MEDIA_PATH_PROBE_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.mediaPathProbeMode,
+    "--out",
+    args.mediaPathProbeOutPath,
+    "--capture-policy",
+    args.mediaPathProbeCapturePolicyPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`media path probe builder failed with exit code ${result.status}`);
+  }
+  return args.mediaPathProbeOutPath;
+}
+
+function maybeWriteRecoveryParity(args) {
+  if (!args.recoveryParityOutPath) {
+    return null;
+  }
+  const command = [
+    RECOVERY_PARITY_BUILDER,
+    "--report",
+    args.outPath,
+    "--out",
+    args.recoveryParityOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`recovery parity builder failed with exit code ${result.status}`);
+  }
+  return args.recoveryParityOutPath;
+}
+
+function maybeWriteCtsSubset(args) {
+  if (!args.ctsSubsetOutPath) {
+    return null;
+  }
+  const command = [
+    CTS_SUBSET_BUILDER,
+    "--report",
+    args.outPath,
+    "--out",
+    args.ctsSubsetOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`CTS subset builder failed with exit code ${result.status}`);
+  }
+  return args.ctsSubsetOutPath;
+}
+
+function maybeWriteGpuScheduler(args) {
+  if (!args.gpuSchedulerOutPath) {
+    return null;
+  }
+  const command = [
+    GPU_SCHEDULER_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.gpuSchedulerMode,
+    "--out",
+    args.gpuSchedulerOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`GPU scheduler builder failed with exit code ${result.status}`);
+  }
+  return args.gpuSchedulerOutPath;
+}
+
+function maybeWriteWebgpuEffectExperiment(args) {
+  if (!args.webgpuEffectExperimentOutPath) {
+    return null;
+  }
+  const command = [
+    WEBGPU_EFFECT_EXPERIMENT_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.webgpuEffectExperimentMode,
+    "--out",
+    args.webgpuEffectExperimentOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`WebGPU effect experiment builder failed with exit code ${result.status}`);
+  }
+  return args.webgpuEffectExperimentOutPath;
+}
+
+function maybeWriteLocalAiWorkloads(args) {
+  if (!args.localAiWorkloadsOutPath) {
+    return null;
+  }
+  const command = [
+    LOCAL_AI_WORKLOADS_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.localAiWorkloadsMode,
+    "--out",
+    args.localAiWorkloadsOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`local AI workloads builder failed with exit code ${result.status}`);
+  }
+  return args.localAiWorkloadsOutPath;
+}
+
+function maybeWritePipelineCacheReceipts(args) {
+  if (!args.pipelineCacheReceiptsOutPath) {
+    return null;
+  }
+  const command = [
+    PIPELINE_CACHE_RECEIPTS_BUILDER,
+    "--workloads",
+    args.localAiWorkloadsOutPath,
+    "--out",
+    args.pipelineCacheReceiptsOutPath,
+  ];
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`pipeline cache receipts builder failed with exit code ${result.status}`);
+  }
+  return args.pipelineCacheReceiptsOutPath;
+}
+
+function appendArtifactArg(command, flag, pathValue) {
+  if (pathValue) {
+    command.push(flag, pathValue);
+  }
+}
+
+function maybeWriteFallbackExplanations(args) {
+  if (!args.fallbackExplanationsOutPath) {
+    return null;
+  }
+  const command = [
+    FALLBACK_EXPLANATIONS_BUILDER,
+    "--report",
+    args.outPath,
+    "--mode",
+    args.fallbackExplanationsMode,
+    "--out",
+    args.fallbackExplanationsOutPath,
+    "--taxonomy",
+    args.fallbackExplanationsTaxonomyPath,
+  ];
+  appendArtifactArg(command, "--canvas-webgpu-fusion", args.canvasWebgpuFusionOutPath);
+  appendArtifactArg(command, "--media-path-probe", args.mediaPathProbeOutPath);
+  appendArtifactArg(command, "--gpu-scheduler", args.gpuSchedulerOutPath);
+  appendArtifactArg(command, "--webgpu-effect-experiment", args.webgpuEffectExperimentOutPath);
+  appendArtifactArg(command, "--local-ai-workloads", args.localAiWorkloadsOutPath);
+  appendArtifactArg(command, "--pipeline-cache-receipts", args.pipelineCacheReceiptsOutPath);
+  appendArtifactArg(command, "--shader-links", args.shaderLinksOutPath);
+  const result = spawnSync("python3", command, {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.status !== 0) {
+    throw new Error(`fallback explanations builder failed with exit code ${result.status}`);
+  }
+  return args.fallbackExplanationsOutPath;
 }
 
 async function loadChromiumDriver() {
@@ -479,25 +1137,55 @@ function runtimeArgs(mode, doeLibPath) {
 }
 
 function runtimeArtifactIdentity(mode, args) {
+  const browserExecutableSha256 = fileHashHex(args.chromePath);
   return {
     browserExecutablePath: args.chromePath,
-    browserExecutableSha256: fileHashHex(args.chromePath),
+    browserExecutableSha256,
+    dawnRuntimePath: args.chromePath,
+    dawnRuntimeSha256: browserExecutableSha256,
     doeLibPath: mode === "doe" ? args.doeLibPath : null,
     doeLibSha256: mode === "doe" ? fileHashHex(args.doeLibPath) : null,
   };
 }
 
+function runtimeSelectionResolution(mode, args) {
+  return resolveRuntimeSelection({
+    requestedMode: mode,
+    doeLibPath: args.doeLibPath,
+    policy: args.runtimeSelectorPolicy,
+    profile: { profileId: args.runtimeSelectorProfileId },
+  });
+}
+
 function buildRuntimeSelection(mode, args, launchArgs) {
+  const resolution = runtimeSelectionResolution(mode, args);
   return {
-    selectionMode: mode,
-    selectedRuntime: mode,
-    forcedMode: mode,
-    fallbackApplied: false,
-    fallbackReasonCode: "",
-    hiddenFallbackAllowed: false,
+    ...resolution,
     selectorVersion: RUNTIME_SELECTOR_VERSION,
-    artifactIdentity: runtimeArtifactIdentity(mode, args),
+    artifactIdentity: runtimeArtifactIdentity(resolution.selectedRuntime, args),
     launchArgsHash: hashHex(launchArgs),
+  };
+}
+
+function shaderCompilerIdentity(mode, args) {
+  const resolution = runtimeSelectionResolution(mode, args);
+  const artifactIdentity = runtimeArtifactIdentity(resolution.selectedRuntime, args);
+  const compilerArtifactPath =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibPath
+      : artifactIdentity.dawnRuntimePath;
+  const compilerArtifactSha256 =
+    resolution.selectedRuntime === "doe"
+      ? artifactIdentity.doeLibSha256
+      : artifactIdentity.dawnRuntimeSha256;
+  return {
+    compilerSurface:
+      resolution.selectedRuntime === "doe"
+        ? "doe_runtime_embedded_shader_compiler"
+        : "dawn_runtime_embedded_shader_compiler",
+    compilerArtifactPath,
+    compilerArtifactSha256,
+    identitySource: "runtime_artifact_identity",
   };
 }
 
@@ -512,15 +1200,48 @@ function extractModeResult(modeResults, mode) {
   return modeResults.find((entry) => entry.mode === mode) ?? null;
 }
 
+function adapterIdentityFromSmokeResult(result) {
+  const adapterInfo =
+    result?.adapterInfo && typeof result.adapterInfo === "object" ? result.adapterInfo : {};
+  const features = Array.isArray(result?.features) ? [...result.features].sort() : [];
+  const limits = result?.limits && typeof result.limits === "object" ? result.limits : {};
+  return {
+    adapterInfoSha256: hashHex(adapterInfo),
+    featuresSha256: hashHex(features),
+    limitsSha256: hashHex(limits),
+    featureCount: features.length,
+    limitCount: Object.keys(limits).length,
+  };
+}
+
+function smokeWorkloadIdentity() {
+  const workloadIds = [
+    "compute_increment",
+    "render_triangle",
+    "request_adapter_xr_compatible",
+    "copy_external_image_to_texture",
+    "import_external_texture",
+    "gpu_canvas_context",
+    "write_buffer_64kb",
+    "compute_dispatch",
+  ];
+  return {
+    kind: "browser_smoke_suite",
+    workloadIds,
+    workloadHash: hashHex(workloadIds),
+  };
+}
+
 function browserSurfaceModuleUrl(baseUrl) {
   return new URL("/packages/doe-gpu/src/browser.js", baseUrl).href;
 }
 
 async function runMode(chromium, mode, args, localUrl, localPort) {
+  const selection = runtimeSelectionResolution(mode, args);
   const launchArgs = [
     ...baseLaunchArgs(localPort),
     ...args.chromeArgs,
-    ...runtimeArgs(mode, args.doeLibPath),
+    ...runtimeArgs(selection.selectedRuntime, args.doeLibPath),
   ];
   const startMs = Date.now();
   let browser = null;
@@ -661,6 +1382,11 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
               centerRgba: null,
               error: null,
             },
+            recovery: {
+              validationError: { pass: false, captured: false, messageCount: 0, error: null },
+              deviceLost: { pass: false, promiseAvailable: false, error: null },
+              postValidationCompute: { pass: false, actual: null, expected: [2, 3, 4, 5], error: null },
+            },
           },
           webgpuCanvasApi: {
             offscreenCanvasAvailable: false,
@@ -766,9 +1492,39 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             typeof device.importExternalTexture === "function";
           result.webgpuDeviceApi.hasCopyExternalImageToTexture =
             typeof device.queue?.copyExternalImageToTexture === "function";
+          try {
+            result.smoke.recovery.deviceLost.promiseAvailable =
+              Boolean(device.lost) && typeof device.lost.then === "function";
+            result.smoke.recovery.deviceLost.pass =
+              result.smoke.recovery.deviceLost.promiseAvailable;
+          } catch (error) {
+            result.smoke.recovery.deviceLost.error = String(error);
+          }
         } catch (error) {
           result.errors.push(`adapter/device init failed: ${String(error)}`);
           return result;
+        }
+
+        try {
+          const invalidShader = device.createShaderModule({
+            code: `
+              @compute @workgroup_size(1)
+              fn main() {
+                let value: missing_type = 1;
+              }
+            `,
+          });
+          const info = await withOpTimeout("invalid shader getCompilationInfo", () =>
+            invalidShader.getCompilationInfo(),
+          );
+          const messages = Array.from(info.messages ?? []);
+          result.smoke.recovery.validationError.messageCount = messages.length;
+          result.smoke.recovery.validationError.captured =
+            messages.some((message) => message.type === "error");
+          result.smoke.recovery.validationError.pass =
+            result.smoke.recovery.validationError.captured;
+        } catch (error) {
+          result.smoke.recovery.validationError.error = String(error);
         }
 
         try {
@@ -824,6 +1580,9 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         } catch (error) {
           result.smoke.computeIncrement.error = String(error);
         }
+        result.smoke.recovery.postValidationCompute.actual = result.smoke.computeIncrement.actual;
+        result.smoke.recovery.postValidationCompute.pass = result.smoke.computeIncrement.pass;
+        result.smoke.recovery.postValidationCompute.error = result.smoke.computeIncrement.error;
 
         try {
           const width = 64;
@@ -1268,11 +2027,13 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
     return {
       mode,
       runtimeSelection: buildRuntimeSelection(mode, args, launchArgs),
-      runtimeArgs: runtimeArgs(mode, args.doeLibPath),
+      shaderCompilerIdentity: shaderCompilerIdentity(mode, args),
+      runtimeArgs: runtimeArgs(selection.selectedRuntime, args.doeLibPath),
       launchArgs,
       browserVersion,
       elapsedMs: Date.now() - startMs,
       ...suite,
+      adapterIdentity: adapterIdentityFromSmokeResult(suite),
     };
   } catch (error) {
     return makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error);
@@ -1354,6 +2115,8 @@ async function main() {
     timingSource: TIMING_SOURCE,
     generatedAt,
     hashAlgorithm: HASH_ALGORITHM,
+    runtimeSelectorPolicyPath: args.runtimeSelectorPolicyPath,
+    workloadIdentity: smokeWorkloadIdentity(),
     invocation: {
       argv: process.argv.slice(2),
       cwd: process.cwd(),
@@ -1386,6 +2149,50 @@ async function main() {
   mkdirSync(dirname(args.outPath), { recursive: true });
   writeFileSync(args.outPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   console.log(`report written: ${args.outPath}`);
+  const flightRecorderPath = maybeWriteFlightRecorder(args);
+  if (flightRecorderPath) {
+    console.log(`flight recorder written: ${flightRecorderPath}`);
+  }
+  const shaderLinksPath = maybeWriteShaderLinks(args);
+  if (shaderLinksPath) {
+    console.log(`shader links written: ${shaderLinksPath}`);
+  }
+  const canvasWebgpuFusionPath = maybeWriteCanvasWebgpuFusion(args);
+  if (canvasWebgpuFusionPath) {
+    console.log(`canvas/WebGPU fusion probe written: ${canvasWebgpuFusionPath}`);
+  }
+  const mediaPathProbePath = maybeWriteMediaPathProbe(args);
+  if (mediaPathProbePath) {
+    console.log(`media path probe written: ${mediaPathProbePath}`);
+  }
+  const recoveryParityPath = maybeWriteRecoveryParity(args);
+  if (recoveryParityPath) {
+    console.log(`recovery parity written: ${recoveryParityPath}`);
+  }
+  const ctsSubsetPath = maybeWriteCtsSubset(args);
+  if (ctsSubsetPath) {
+    console.log(`CTS subset written: ${ctsSubsetPath}`);
+  }
+  const gpuSchedulerPath = maybeWriteGpuScheduler(args);
+  if (gpuSchedulerPath) {
+    console.log(`GPU scheduler probe written: ${gpuSchedulerPath}`);
+  }
+  const webgpuEffectExperimentPath = maybeWriteWebgpuEffectExperiment(args);
+  if (webgpuEffectExperimentPath) {
+    console.log(`WebGPU effect experiment written: ${webgpuEffectExperimentPath}`);
+  }
+  const localAiWorkloadsPath = maybeWriteLocalAiWorkloads(args);
+  if (localAiWorkloadsPath) {
+    console.log(`local AI workloads written: ${localAiWorkloadsPath}`);
+  }
+  const pipelineCacheReceiptsPath = maybeWritePipelineCacheReceipts(args);
+  if (pipelineCacheReceiptsPath) {
+    console.log(`pipeline cache receipts written: ${pipelineCacheReceiptsPath}`);
+  }
+  const fallbackExplanationsPath = maybeWriteFallbackExplanations(args);
+  if (fallbackExplanationsPath) {
+    console.log(`fallback explanations written: ${fallbackExplanationsPath}`);
+  }
   if (report.comparison) {
     console.log(
       `delta (diagnostic only; positive=doe faster): writeBuffer64kb=${report.comparison.writeBuffer64kbDeltaPercent?.toFixed(2) ?? "n/a"}% dispatch=${report.comparison.computeDispatchDeltaPercent?.toFixed(2) ?? "n/a"}%`,

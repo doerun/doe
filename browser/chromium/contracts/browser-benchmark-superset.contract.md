@@ -25,6 +25,7 @@ Define a low-maintenance browser benchmark superset that:
 1. `bench/workloads/specialized/workloads.amd.vulkan.superset.json` remains the only source for engine workload identity and ownership.
 2. nursery projection manifests are generated from this source and must not hand-copy workload lists.
 3. if a workload is added/removed in `L0`, the projection generator and gate must reflect this automatically.
+4. projection manifests reference source workloads and projection rules with repo-relative contract paths.
 
 ## Projection Classes
 
@@ -84,7 +85,15 @@ Nursery superset gate must fail when:
 4. projection hashes drift from active workloads/rules,
 5. a provided layered browser report misses any required projected `L1` row,
 6. required `L1/L2` rows are present without explicit `status` + `statusCode`,
-7. report claim-scope fields drift from projection/workflow contracts.
+7. report claim-scope fields drift from projection/workflow contracts,
+8. report evidence lacks workload identity, runtime selection, adapter
+   identity, shader compiler identity, or trace hash fields.
+
+Diagnostic `auto` mode is allowed only as runtime-selector evidence. It must
+carry `selectionMode=auto`, a concrete `selectedRuntime` of `dawn` or `doe`,
+`forcedMode=null`, visible fallback reason codes when fallback is applied, and
+the same artifact identities as the selected runtime. Claim gates still require
+explicit `dawn` plus forced `doe` evidence.
 
 ## Failure Taxonomy (Browser Lane)
 
@@ -128,10 +137,8 @@ Execution cadence:
 2. twice-weekly layered browser benchmark runs,
 3. weekly promotion review.
 
-Promotion gate approvals (required):
-
-1. `module_contracts_owner`
-2. `coordinator`
+Promotion gate approvals must match the roles declared by the workflow
+manifest and promotion-approvals artifact.
 
 ## Artifact Discipline
 

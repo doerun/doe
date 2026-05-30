@@ -20,6 +20,13 @@ import jsonschema
 
 VALID_HEX = set("0123456789abcdef")
 SIDE_KEYS = ("doe", "tint")
+CLAIMABLE_REQUIRED_PHASES = ("parse", "sema", "lower", "emit", "total")
+CLAIMABLE_ROW_FIELDS = (
+    "sourcePath",
+    "corpusCategory",
+    "expectedValidity",
+    "expectedBackendTargets",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -212,6 +219,19 @@ def row_blockers(row: dict[str, Any], required_phases: list[str]) -> tuple[list[
         if claim_reasons:
             failures.append(f"{row_id}: claimable row must not carry claimability reasons")
             claimable = False
+        for field in CLAIMABLE_ROW_FIELDS:
+            value = row.get(field)
+            if field == "expectedBackendTargets":
+                if not isinstance(value, list) or not value:
+                    failures.append(f"{row_id}: claimable row requires expectedBackendTargets")
+                    claimable = False
+            elif not is_non_empty_string(value):
+                failures.append(f"{row_id}: claimable row requires {field}")
+                claimable = False
+        doe_result = row.get("doe")
+        if not isinstance(doe_result, dict) or not is_sha256(doe_result.get("irSha256")):
+            failures.append(f"{row_id}: claimable row requires doe.irSha256")
+            claimable = False
         if not claimable or status != "comparable":
             failures.append(f"{row_id}: claimable row has blocking evidence gaps")
     else:
@@ -291,6 +311,14 @@ def evaluate_report(payload: dict[str, Any], require_claimable: bool = False) ->
         claim_blockers.extend(
             toolchain_artifact_blockers(payload.get("toolchains"), ("doe", "tint"))
         )
+        missing_claim_phases = [
+            phase for phase in CLAIMABLE_REQUIRED_PHASES if phase not in required_phases
+        ]
+        if missing_claim_phases:
+            claim_blockers.append(
+                "claimable compiler evidence requires phaseModel.requiredPhases to include "
+                + ", ".join(CLAIMABLE_REQUIRED_PHASES)
+            )
     if claim_status == "claimable" or require_claimable or claimable_rows > 0:
         claim_blockers.extend(
             toolchain_artifact_blockers(payload.get("toolchains"), ("tintWarm",))

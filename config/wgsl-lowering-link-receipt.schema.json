@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/wgsl-lowering-link-receipt.schema.json",
+  "title": "WGSL lowering link receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "evidencePath",
+    "manifestPath",
+    "corpusId",
+    "rows",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_lowering_link_receipt" },
+    "evidencePath": { "type": "string", "minLength": 1 },
+    "manifestPath": { "type": "string", "minLength": 1 },
+    "corpusId": { "type": "string", "minLength": 1 },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/LinkRow" }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rowCount", "linkedRows", "diagnosticRows", "failureCodes"],
+      "properties": {
+        "rowCount": { "type": "integer", "minimum": 0 },
+        "linkedRows": { "type": "integer", "minimum": 0 },
+        "diagnosticRows": { "type": "integer", "minimum": 0 },
+        "failureCodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Failure" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "NullableHash": {
+      "anyOf": [{ "$ref": "#/$defs/Hash" }, { "type": "null" }]
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "rowId", "message"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "rowId": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "LinkRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "manifestShaderId",
+        "sourcePath",
+        "sourceSha256",
+        "expectedValidity",
+        "shaderStage",
+        "backendTarget",
+        "doeIrSha256",
+        "doeBackendOutputSha256",
+        "doeReceiptPath",
+        "validationStatus",
+        "comparabilityStatus",
+        "claimabilityStatus",
+        "linkStatus",
+        "failureCodes"
+      ],
+      "properties": {
+        "shaderId": { "type": "string", "minLength": 1 },
+        "manifestShaderId": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "sourceSha256": { "$ref": "#/$defs/Hash" },
+        "expectedValidity": { "enum": ["valid", "invalid"] },
+        "shaderStage": { "enum": ["compute", "vertex", "fragment", "mixed"] },
+        "backendTarget": { "enum": ["msl", "spirv", "dxil", "hlsl"] },
+        "doeIrSha256": { "$ref": "#/$defs/NullableHash" },
+        "doeBackendOutputSha256": { "$ref": "#/$defs/NullableHash" },
+        "doeReceiptPath": { "type": "string" },
+        "validationStatus": { "type": "string", "minLength": 1 },
+        "comparabilityStatus": { "enum": ["comparable", "diagnostic"] },
+        "claimabilityStatus": { "enum": ["claimable", "diagnostic"] },
+        "linkStatus": { "enum": ["linked", "diagnostic"] },
+        "failureCodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Failure" }
+        }
+      }
+    }
+  }
+}

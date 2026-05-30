@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/native-backend-coverage-matrix.schema.json",
+  "title": "Native backend coverage matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "matrixId", "rows"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "native_backend_coverage_matrix" },
+    "matrixId": { "type": "string", "minLength": 1 },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Row" }
+    }
+  },
+  "$defs": {
+    "Row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "coverageClass",
+        "status",
+        "evidencePath",
+        "reasonCode"
+      ],
+      "properties": {
+        "backend": { "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"] },
+        "coverageClass": {
+          "enum": [
+            "upload",
+            "pipeline_creation",
+            "compute",
+            "readback",
+            "small_command_stream",
+            "cache_behavior",
+            "concurrency",
+            "tails"
+          ]
+        },
+        "status": { "enum": ["covered", "diagnostic", "missing"] },
+        "evidencePath": { "type": "string" },
+        "reasonCode": { "type": "string" }
+      }
+    }
+  }
+}

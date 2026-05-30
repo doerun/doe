@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_minimization_receipt",
+  "receiptId": "wgsl-minimize-invalid-missing-return",
+  "manifestPath": "config/wgsl-browser-corpus.json",
+  "corpusId": "browser-wgsl-corpus-v0",
+  "source": {
+    "shaderId": "invalid-missing-return",
+    "category": "invalid_diagnostic_fixture",
+    "sourcePath": "bench/fixtures/wgsl-corpus/invalid/missing-return.wgsl",
+    "normalizedSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+    "expectedValidity": "invalid",
+    "expectedBackendTargets": [
+      "msl",
+      "spirv",
+      "dxil",
+      "hlsl"
+    ],
+    "shaderStages": [
+      "fragment"
+    ]
+  },
+  "failure": {
+    "stage": "sema",
+    "taxonomyCode": "wgsl_sema_failed",
+    "diagnosticCategory": "control_flow",
+    "backendTargets": [
+      "msl"
+    ]
+  },
+  "minimizationPolicy": {
+    "candidateStatus": "pending_replay",
+    "preservesOriginalIdentity": true,
+    "freeFormDiagnosticCompared": false,
+    "replayRequired": true
+  },
+  "candidates": [
+    {
+      "candidateId": "invalid-missing-return:normalized-original",
+      "transformation": "normalized_original",
+      "candidatePath": "examples/wgsl-minimize/invalid-missing-return/normalized-original.wgsl",
+      "normalizedSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "parentSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "retainedLineStart": 1,
+      "retainedLineEnd": 4,
+      "lineCount": 4,
+      "status": "pending_replay",
+      "replayRequired": true
+    },
+    {
+      "candidateId": "invalid-missing-return:diagnostic-line-window",
+      "transformation": "diagnostic_line_window",
+      "candidatePath": "examples/wgsl-minimize/invalid-missing-return/diagnostic-line-window.wgsl",
+      "normalizedSourceSha256": "3518c920b62eeced9b5997a1fa5eae9657cf306fd7fc785227d489b9a1bffb73",
+      "parentSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "retainedLineStart": 2,
+      "retainedLineEnd": 4,
+      "lineCount": 3,
+      "status": "pending_replay",
+      "replayRequired": true
+    },
+    {
+      "candidateId": "invalid-missing-return:drop-local-declarations",
+      "transformation": "drop_local_declarations",
+      "candidatePath": "examples/wgsl-minimize/invalid-missing-return/drop-local-declarations.wgsl",
+      "normalizedSourceSha256": "bc4e2ed5c086b058c60112ee51f6e53a782073154af002b71e86b66b24a0f164",
+      "parentSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "retainedLineStart": 1,
+      "retainedLineEnd": 4,
+      "lineCount": 3,
+      "status": "pending_replay",
+      "replayRequired": true
+    }
+  ]
+}

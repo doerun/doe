@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-runtime-identity.schema.json",
+  "title": "Browser runtime identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "surface",
+    "evidenceSource",
+    "selectedRuntime",
+    "executionOwner",
+    "doeRuntimeActive",
+    "webgpuAvailable",
+    "provider",
+    "runtimeSelection"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_runtime_identity" },
+    "surface": { "type": "string", "const": "doe-gpu/browser" },
+    "evidenceSource": {
+      "enum": ["browser_wrapper_probe", "runtime_selection_artifact"]
+    },
+    "selectedRuntime": {
+      "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+    },
+    "executionOwner": {
+      "enum": ["browser", "chromium_runtime_selector"]
+    },
+    "doeRuntimeActive": { "type": "boolean" },
+    "webgpuAvailable": { "type": "boolean" },
+    "provider": { "type": "object" },
+    "runtimeSelection": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object" }
+      ]
+    }
+  }
+}

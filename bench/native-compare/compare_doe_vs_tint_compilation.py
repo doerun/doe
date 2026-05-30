@@ -55,6 +55,7 @@ DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
 DEFAULT_TINT_WARM_REPETITIONS = 9
 DEFAULT_DOE_EMIT_BINARY = "runtime/zig/zig-out/bin/doe-runtime-compile-report"
 SCHEMA_VERSION = 3
+CLAIMABLE_REQUIRED_PHASES = ("parse", "sema", "lower", "emit", "total")
 _TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
 fn main() {}
 """
@@ -142,7 +143,14 @@ def discover_corpus(corpus_dir, tiers):
             continue
         line_count = len(wgsl.read_text().splitlines())
         shaders.append(
-            {"name": name, "tier": tier, "path": str(wgsl), "sourceLines": line_count}
+            {
+                "name": name,
+                "tier": tier,
+                "path": str(wgsl),
+                "sourceLines": line_count,
+                "corpusCategory": "legacy_compilation_workload",
+                "expectedValidity": "valid",
+            }
         )
 
     if not shaders:
@@ -188,6 +196,9 @@ def discover_workload_rows(workloads_path, workload_ids):
                 "sourceLines": source_lines,
                 "target": row.get("compilationTarget", "msl"),
                 "sourceShader": shader_path.stem,
+                "corpusCategory": row.get("corpusCategory", "legacy_compilation_workload"),
+                "expectedValidity": row.get("expectedValidity", "valid"),
+                "expectedBackendTargets": row.get("expectedBackendTargets", [row.get("compilationTarget", "msl")]),
             }
         )
 
@@ -254,6 +265,10 @@ def discover_tint_benchmark_rows(script_path, requested_names):
                 "path": str(shader_path),
                 "sourceLines": source_lines,
                 "sourceShader": shader_path.stem,
+                "target": "msl",
+                "corpusCategory": "tint_benchmark_corpus",
+                "expectedValidity": "valid",
+                "expectedBackendTargets": ["msl"],
             }
         )
 
@@ -451,6 +466,19 @@ def validation_result_not_run(reason):
     }
 
 
+def normalize_phase_timings_ns(value):
+    if not isinstance(value, dict):
+        return {}
+    timings = {}
+    for phase in CLAIMABLE_REQUIRED_PHASES:
+        raw = value.get(phase)
+        if isinstance(raw, bool):
+            continue
+        if isinstance(raw, int) and raw > 0:
+            timings[phase] = int(raw)
+    return timings
+
+
 def validate_msl_output(path):
     try:
         find_proc = subprocess.run(
@@ -497,9 +525,14 @@ def make_compiler_result(
     validation_status="not_run",
     validation_tool="",
     phase_total_ns=0,
+    phase_timings_ns=None,
     receipt_path="",
 ):
-    timings = {"total": int(phase_total_ns)} if status == "ok" and phase_total_ns else {}
+    timings = {}
+    if status == "ok":
+        timings = normalize_phase_timings_ns(phase_timings_ns)
+        if not timings and phase_total_ns:
+            timings = {"total": int(phase_total_ns)}
     return {
         "status": status,
         "diagnosticCode": diagnostic_code,
@@ -573,8 +606,15 @@ def compile_doe_evidence_output(shader, target, record, evidence_dir, doe_emit_b
             diagnostic_code=f"doe_msl_validation_{validation['status']}",
         )
 
+    compile_report = {}
+    try:
+        compile_report = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        compile_report = {}
+    phase_timings_ns = normalize_phase_timings_ns(compile_report.get("phaseTimingsNs"))
+
     phase_total_ns = get_record_total_ns(record, "doe")
-    if phase_total_ns <= 0:
+    if phase_total_ns <= 0 and not phase_timings_ns:
         return make_compiler_result(
             status="failed",
             diagnostic_code="missing_doe_timing_evidence",
@@ -588,6 +628,7 @@ def compile_doe_evidence_output(shader, target, record, evidence_dir, doe_emit_b
         validation_status="passed",
         validation_tool=validation["tool"],
         phase_total_ns=phase_total_ns,
+        phase_timings_ns=phase_timings_ns,
         receipt_path=repo_relative(receipt_path),
     )
 
@@ -1306,7 +1347,22 @@ def build_claimability(record, claim_workload, comparable):
     }
 
 
-def build_row_comparability(record, doe_result, tint_result):
+def missing_phase_timings(result, required_phases):
+    if result.get("status") != "ok":
+        return []
+    timings = result.get("phaseTimingsNs")
+    if not isinstance(timings, dict):
+        return list(required_phases)
+    missing = []
+    for phase in required_phases:
+        value = timings.get(phase)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            missing.append(phase)
+    return missing
+
+
+def build_row_comparability(record, doe_result, tint_result, required_phases=None):
+    required_phases = tuple(required_phases or ("total",))
     reasons = []
     if not record or record.get("status") != "compared":
         reasons.append(f"row not compared: {record.get('reason', 'missing record') if record else 'missing record'}")
@@ -1316,6 +1372,10 @@ def build_row_comparability(record, doe_result, tint_result):
         reasons.append(f"tint evidence status: {tint_result.get('diagnosticCode') or tint_result.get('status')}")
     if record and not record.get("comparison", {}).get("warm", {}).get("p50_ns"):
         reasons.append("missing in-process Tint warm timing evidence")
+    for phase in missing_phase_timings(doe_result, required_phases):
+        reasons.append(f"doe missing phase timing: {phase}")
+    for phase in missing_phase_timings(tint_result, required_phases):
+        reasons.append(f"tint missing phase timing: {phase}")
 
     deduped_reasons = []
     for reason in reasons:
@@ -1338,6 +1398,7 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
 
     rows = []
     tool_gap_codes = {gap["name"]: gap["code"] for gap in cfg.get("_toolGaps", [])}
+    required_phases = list(CLAIMABLE_REQUIRED_PHASES)
     for shader in shaders:
         record = records_by_shader.get(shader["name"])
         shader_target = normalize_schema_target(shader.get("target", target))
@@ -1372,7 +1433,7 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
                 evidence_dir,
                 args.dry_run,
             )
-        comparability = build_row_comparability(record, doe_result, tint_result)
+        comparability = build_row_comparability(record, doe_result, tint_result, required_phases)
         claimability = build_claimability(
             record,
             claim_by_shader.get(shader["name"]),
@@ -1382,6 +1443,13 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
             {
                 "shaderId": shader.get("workloadId", shader["name"]),
                 "sourceSha256": source_sha,
+                "sourcePath": repo_relative(shader["path"]),
+                "corpusCategory": shader.get("corpusCategory", "legacy_compilation_workload"),
+                "expectedValidity": shader.get("expectedValidity", "valid"),
+                "expectedBackendTargets": [
+                    normalize_schema_target(target)
+                    for target in shader.get("expectedBackendTargets", [shader_target])
+                ],
                 "target": shader_target,
                 "shaderStage": infer_shader_stage(shader["path"]),
                 "doe": doe_result,
@@ -1427,9 +1495,9 @@ def build_evidence_report(cfg, shaders, target, records, claim_report, args):
         },
         "toolchains": build_toolchain_info(cfg, args),
         "phaseModel": {
-            "timingScope": "whole-compile",
+            "timingScope": "phase",
             "units": "ns",
-            "requiredPhases": ["total"],
+            "requiredPhases": required_phases,
         },
         "rows": rows,
         "summary": {

@@ -12,6 +12,14 @@ Current milestone state is tracked in:
 
 1. `browser/chromium/bench/workflows/browser-milestones.json`
 2. validate with `python3 browser/chromium/scripts/check-browser-milestones.py`
+3. gate through `python3 bench/runners/run_blocking_gates.py --with-browser-milestones-gate`
+
+Chromium source checkout readiness is checked separately from repo-owned
+browser evidence:
+
+1. diagnostic: `python3 bench/tools/check_chromium_source_checkout.py --source-root browser/chromium/src --root . --json`
+2. source-ready gate: `python3 bench/runners/run_blocking_gates.py --with-chromium-source-checkout-gate`
+3. source selector gate: `python3 bench/runners/run_blocking_gates.py --with-chromium-source-checkout-gate --chromium-source-require-runtime-selector`
 
 ## Layout options
 
@@ -167,7 +175,7 @@ Do not begin with compositor/layout/media refactors.
 
 Use existing drop-in artifact lane as initial test substrate:
 
-1. `runtime/zig/zig-out/lib/libwebgpu_doe.{so,dylib}`
+1. `runtime/zig/zig-out/lib/libwebgpu_doe_full.{so,dylib,dll}`
 2. symbol and behavior gate tools in `bench/`.
 
 Initial criterion is deterministic compatibility and observability, not performance.
@@ -185,22 +193,23 @@ Initial criterion is deterministic compatibility and observability, not performa
 5. `I4`:
    - run strict comparability benchmark lanes for claimable paths.
 
-## Current snapshot (2026-03-20)
+## Current snapshot (2026-05-29)
 
-1. Selector/fallback plumbing is now live in the local Chromium tree:
-   - `--use-webgpu-runtime=dawn|doe`,
-   - `--disable-webgpu-doe`,
-   - `--doe-webgpu-library-path=...`.
-2. Local Linux `out/fawn_release/chrome` now executes real browser WebGPU work in both selector modes:
-   - the Playwright smoke harness now defaults Linux launches to `--use-angle=vulkan`, which makes the local forced-Dawn lane pass compute, render, `requestAdapter({ xrCompatible: false })`, `copyExternalImageToTexture`, `importExternalTexture`, and the mini timing probes,
-   - Doe required GPU-thread polling to tick each live Doe device before `instanceProcessEvents`; without that, submit-driven callbacks stalled after `queue.submit()`,
-   - Doe custom mailbox commands now also enter the selected runtime's per-thread proc scope, which was necessary to keep Doe mailbox handling inside the selected runtime path instead of dropping back to Dawn-global procs.
-3. Negative-control validation now behaves correctly:
-   - forced `--use-webgpu-runtime=doe` with a fake shared-library path leaves `navigator.gpu` present but `requestAdapter()` returns `null`,
-   - there is no silent substitution back to Dawn in forced-Doe mode.
-4. Remaining browser-lane issue on this host is now Doe-only:
-   - with Linux Vulkan ANGLE enabled, Doe still fails `importExternalTexture` and the mini timing probes with `A valid external Instance reference no longer exists.`,
-   - this is downstream of Doe's still-incomplete native media/shared-texture interop path, not selector fallback or fake-Dawn substitution.
+Repo-owned browser diagnostics and wrapper selectors exist, but the mounted
+Chromium source checkout inspected on this host did not contain the source-level
+runtime selector markers:
+
+- `use-webgpu-runtime`,
+- `disable-webgpu-doe`,
+- `doe-webgpu-library-path`,
+- `runtime_artifact_load_failed`,
+- `symbol_surface_incomplete`.
+
+Those markers are now checked by
+`bench/tools/check_chromium_source_checkout.py --require-runtime-selector`.
+Until that gate passes against `browser/chromium/src`, forced-Doe browser smoke
+artifacts remain diagnostic wrapper evidence and must not be described as
+Chromium-owned Doe runtime execution.
 
 ## Common wrapper scripts
 
@@ -223,6 +232,8 @@ Use wrappers under `browser/chromium/scripts` to avoid hardcoded paths:
 A small Playwright harness now exists for real-browser WebGPU smoke + mini bench comparison:
 
 - `browser/chromium/scripts/webgpu-playwright-smoke.mjs`
+- standalone checker: `browser/chromium/scripts/check-browser-smoke-report.py`
+- schema: `config/browser-smoke-report.schema.json`
 - classification: diagnostic browser evidence (`L1`), not a strict `L0` claim artifact
 - checks:
   - `navigator.gpu` + adapter/device availability
@@ -250,6 +261,13 @@ npm --prefix browser/chromium ci
 By default the harness writes to timestamped lane-local artifacts:
 
 - `browser/chromium/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+
+Validate an existing smoke report without launching Chromium:
+
+```bash
+python3 browser/chromium/scripts/check-browser-smoke-report.py \
+  --smoke-report browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json
+```
 
 Optional browser-surface seam:
 
@@ -329,7 +347,7 @@ Promotion candidates:
 
 1. must keep projection hashes synchronized with active workloads/rules,
 2. must include explicit `status` + `statusCode` for required `L1/L2` rows,
-3. must carry approvals from `module_contracts_owner` and `coordinator`.
+3. must carry approvals matching the roles declared by the workflow manifest.
 
 ## ORT WebGPU diagnostic harness
 
@@ -359,7 +377,7 @@ node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
   --mode both \
   --dawn-chrome /path/to/chrome-or-chromium \
   --doe-chrome /path/to/fawn-or-doe-enabled-chromium \
-  --doe-lib runtime/zig/zig-out/lib/libwebgpu_doe.so
+  --doe-lib runtime/zig/zig-out/lib/libwebgpu_doe_full.so
 ```
 
 Guardrail:
@@ -416,6 +434,26 @@ If Chromium tools are not currently installed on the machine path, start with:
 
 ## Next continuation targets
 
-1. Validate forced-Doe adapter acquisition on non-denylisted GPU host/session.
+Local forced-Doe adapter acquisition is recorded in
+`artifacts/20260526T223345Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+That run also emits browser flight-recorder, shader-link, canvas/WebGPU fusion,
+media-path, recovery-parity, CTS-subset, scheduler, WebGPU-effect,
+local-AI-workload, pipeline-cache, and fallback-explanation artifacts. These
+artifacts remain diagnostic until source selector markers and hidden-fallback
+state are present in the Chromium checkout.
+The smoke report itself is now independently checkable through
+`scripts/check-browser-smoke-report.py`, including diagnostic partition,
+runtime identity, hidden-fallback state, strict-mode evidence, report hash, and
+mode-result hash chain.
+The smaller runtime-identity artifact is also independently checkable through
+`scripts/check-browser-runtime-identity.py`; wrapper probes cannot claim Doe
+execution, and Chromium selector evidence must carry explicit no-hidden-fallback
+state before `doeRuntimeActive` can be true.
+Flight-recorder replay can also run as a standalone blocking-runner gate with
+`--with-browser-gpu-flight-recorder-replay-gate`.
+
+Remaining source-checkout targets:
+
+1. Land the fail-closed source selector markers checked by `--require-runtime-selector`.
 2. Add decoder-branch tests for Doe init/load/proc-surface/instance failure and teardown paths.
 3. Continue adapter-level denylist detail propagation and Dawn-native dependency audit in `WebGPUDecoderImpl`.

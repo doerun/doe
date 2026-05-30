@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_fallback_explanations",
+  "explanationSetId": "browser-fallback-smoke",
+  "taxonomyPath": "config/browser-unsupported-reason-taxonomy.json",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "explanations": [
+    {
+      "explanationId": "fallback:webgpu-runtime",
+      "capability": "webgpu_runtime",
+      "surface": "navigator.gpu",
+      "status": "supported",
+      "reasonCode": "runtime_available",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "developerAction": "keep forced-runtime artifact attached to browser report",
+      "evidencePath": "examples/browser-runtime-identity.sample.json"
+    },
+    {
+      "explanationId": "fallback:external-texture",
+      "capability": "external_texture",
+      "surface": "GPUExternalTexture",
+      "status": "unsupported",
+      "reasonCode": "external_texture_probe_not_promoted",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "developerAction": "run the external texture probe before claiming media-path support",
+      "evidencePath": "browser/chromium/artifacts/"
+    }
+  ],
+  "privacy": {
+    "originScoped": true,
+    "rawPageDataIncluded": false
+  }
+}

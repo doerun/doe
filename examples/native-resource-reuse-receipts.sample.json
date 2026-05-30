@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "native_resource_reuse_receipts",
+  "receiptStatus": "pass",
+  "rows": [
+    {
+      "receiptId": "reuse:command-encoder:compute_test",
+      "workloadId": "compute_test",
+      "backend": "doe_vulkan",
+      "reuseKind": "command_encoder",
+      "semanticsAllowReuse": true,
+      "reuseApplied": true,
+      "resourceIdentityPreserved": true,
+      "commandOrderPreserved": true,
+      "claimEligible": true,
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "reuse:texture:surface_test",
+      "workloadId": "surface_test",
+      "backend": "doe_metal",
+      "reuseKind": "texture",
+      "semanticsAllowReuse": false,
+      "reuseApplied": false,
+      "resourceIdentityPreserved": true,
+      "commandOrderPreserved": true,
+      "claimEligible": false,
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false,
+      "reasonCode": "reuse_not_semantically_allowed"
+    }
+  ],
+  "failureCodes": []
+}

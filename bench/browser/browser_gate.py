@@ -29,6 +29,7 @@ if str(BENCH_ROOT) not in sys.path:
     sys.path.insert(0, str(BENCH_ROOT))
 
 from bench.lib import output_paths
+from bench.tools import check_browser_responsibility_map
 
 
 def repo_root() -> Path:
@@ -56,6 +57,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ownership",
         default=str(root / "config/browser-ownership.json"),
+    )
+    parser.add_argument(
+        "--responsibility-map",
+        default=str(root / "config/browser-responsibility-map.json"),
+    )
+    parser.add_argument(
+        "--runtime-selector-policy",
+        default=str(root / "config/browser-runtime-selector-policy.json"),
+    )
+    parser.add_argument(
+        "--fork-maintenance-policy",
+        default=str(root / "config/chromium-fork-maintenance-policy.json"),
+    )
+    parser.add_argument(
+        "--capture-policy",
+        default=str(root / "config/browser-capture-policy.json"),
     )
     parser.add_argument(
         "--artifact-root",
@@ -128,6 +145,175 @@ def validate_ownership(payload: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_responsibility_map(path: Path, root: Path) -> list[str]:
+    payload = load_json(path)
+    return [
+        f"responsibility-map:{item['code']}: {item['path']}: {item['message']}"
+        for item in check_browser_responsibility_map.check_responsibility_map(payload, root)
+    ]
+
+
+def validate_cts_subset(path: Path, root: Path) -> list[str]:
+    checker = root / "browser/chromium/scripts/check-browser-cts-subset.py"
+    completed = subprocess.run(
+        [sys.executable, str(checker), "--subset", str(path), "--json"],
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    output = completed.stdout.strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            return [f"cts-subset: checker emitted invalid JSON: {output}"]
+        failures = payload.get("failures")
+        if isinstance(failures, list):
+            return [
+                f"cts-subset:{item.get('code')}: {item.get('path')}: {item.get('message')}"
+                for item in failures
+                if isinstance(item, dict)
+            ]
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or output or "check failed"
+        return [f"cts-subset: {detail}"]
+    return []
+
+
+def validate_recovery_parity(path: Path, root: Path) -> list[str]:
+    checker = root / "browser/chromium/scripts/check-browser-recovery-parity.py"
+    completed = subprocess.run(
+        [sys.executable, str(checker), "--parity", str(path), "--json"],
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    output = completed.stdout.strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            return [f"recovery-parity: checker emitted invalid JSON: {output}"]
+        failures = payload.get("failures")
+        if isinstance(failures, list):
+            return [
+                f"recovery-parity:{item.get('code')}: {item.get('path')}: {item.get('message')}"
+                for item in failures
+                if isinstance(item, dict)
+            ]
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or output or "check failed"
+        return [f"recovery-parity: {detail}"]
+    return []
+
+
+def validate_json_checker(
+    *,
+    label: str,
+    root: Path,
+    checker: Path,
+    path_flag: str,
+    artifact_path: Path,
+    extra_args: list[str] | None = None,
+) -> list[str]:
+    command = [sys.executable, str(checker), path_flag, str(artifact_path), "--json"]
+    if extra_args:
+        command.extend(extra_args)
+    completed = subprocess.run(
+        command,
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    output = completed.stdout.strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            return [f"{label}: checker emitted invalid JSON: {output}"]
+        failures = payload.get("failures")
+        if isinstance(failures, list):
+            return [
+                f"{label}:{item.get('code')}: {item.get('path')}: {item.get('message')}"
+                for item in failures
+                if isinstance(item, dict)
+            ]
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or output or "check failed"
+        return [f"{label}: {detail}"]
+    return []
+
+
+def validate_pipeline_cache_receipts(path: Path, root: Path | None = None) -> list[str]:
+    repo_root = root if root is not None else Path(__file__).resolve().parents[2]
+    return validate_json_checker(
+        label="pipeline-cache-receipts",
+        root=repo_root,
+        checker=repo_root / "browser/chromium/scripts/check-browser-pipeline-cache-receipts.py",
+        path_flag="--receipts",
+        artifact_path=path,
+        extra_args=[
+            "--verify-workloads-root",
+            str(repo_root),
+            "--runtime-identity-root",
+            str(repo_root),
+        ],
+    )
+
+
+def validate_flight_recorder_replay(
+    *,
+    root: Path,
+    flight_recorder_path: Path,
+    replay_report_path: Path,
+    capture_policy_path: Path,
+) -> list[str]:
+    checker = root / "browser/chromium/scripts/replay-browser-gpu-flight-recorder.py"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(checker),
+            "--flight-recorder",
+            str(flight_recorder_path),
+            "--out",
+            str(replay_report_path),
+            "--capture-policy",
+            str(capture_policy_path),
+            "--responsibility-map-root",
+            str(root),
+            "--json",
+        ],
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    output = completed.stdout.strip()
+    if output:
+        try:
+            payload = json.loads(output)
+        except json.JSONDecodeError:
+            return [f"flight-recorder-replay: checker emitted invalid JSON: {output}"]
+        failures = payload.get("failureCodes")
+        if isinstance(failures, list):
+            return [
+                f"flight-recorder-replay:{item.get('code')}: {item.get('path')}: {item.get('message')}"
+                for item in failures
+                if isinstance(item, dict) and item.get("severity") in {"error", "fatal"}
+            ]
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or output or "check failed"
+        return [f"flight-recorder-replay: {detail}"]
+    return []
+
+
 def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]:
     errors: list[str] = []
     if not isinstance(payload, dict):
@@ -144,6 +330,13 @@ def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]
         errors.append(f"{label} fallbackReasonCode must be empty")
     if payload.get("hiddenFallbackAllowed") is not False:
         errors.append(f"{label} hiddenFallbackAllowed must be false")
+    profile = payload.get("profile")
+    if not isinstance(profile, dict):
+        errors.append(f"{label} profile must be object")
+    else:
+        for field in ("vendor", "api", "deviceFamily", "driver"):
+            if not isinstance(profile.get(field), str) or not profile[field].strip():
+                errors.append(f"{label} profile.{field} must be non-empty")
     if not isinstance(payload.get("selectorVersion"), str) or not payload["selectorVersion"].strip():
         errors.append(f"{label} selectorVersion must be non-empty")
     if not isinstance(payload.get("launchArgsHash"), str) or not re.fullmatch(
@@ -163,6 +356,12 @@ def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]
         r"[a-f0-9]{64}", artifact["browserExecutableSha256"]
     ):
         errors.append(f"{label} artifactIdentity.browserExecutableSha256 must be sha256 hex")
+    if not isinstance(artifact.get("dawnRuntimePath"), str) or not artifact["dawnRuntimePath"].strip():
+        errors.append(f"{label} artifactIdentity.dawnRuntimePath must be non-empty")
+    if not isinstance(artifact.get("dawnRuntimeSha256"), str) or not re.fullmatch(
+        r"[a-f0-9]{64}", artifact["dawnRuntimeSha256"]
+    ):
+        errors.append(f"{label} artifactIdentity.dawnRuntimeSha256 must be sha256 hex")
     if mode == "doe":
         if not isinstance(artifact.get("doeLibPath"), str) or not artifact["doeLibPath"].strip():
             errors.append(f"{label} artifactIdentity.doeLibPath must be non-empty for doe")
@@ -178,24 +377,170 @@ def validate_runtime_selection(payload: Any, mode: str, label: str) -> list[str]
     return errors
 
 
-def validate_smoke_report(payload: dict[str, Any]) -> list[str]:
+def validate_adapter_identity(payload: Any, label: str) -> list[str]:
     errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{label} adapterIdentity must be object"]
+    for field in ("adapterInfoSha256",):
+        if not isinstance(payload.get(field), str) or not re.fullmatch(r"[a-f0-9]{64}", payload[field]):
+            errors.append(f"{label} adapterIdentity.{field} must be sha256 hex")
+    feature_count = payload.get("featureCount")
+    if not isinstance(feature_count, int) or feature_count < 0:
+        errors.append(f"{label} adapterIdentity.featureCount must be non-negative integer")
+    return errors
+
+
+def validate_shader_compiler_identity(payload: Any, mode: str, label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{label} shaderCompilerIdentity must be object"]
+    if not isinstance(payload.get("compilerSurface"), str) or not payload["compilerSurface"].strip():
+        errors.append(f"{label} shaderCompilerIdentity.compilerSurface must be non-empty")
+    if payload.get("identitySource") != "runtime_artifact_identity":
+        errors.append(f"{label} shaderCompilerIdentity.identitySource must be runtime_artifact_identity")
+    if not isinstance(payload.get("compilerArtifactPath"), str) or not payload["compilerArtifactPath"].strip():
+        errors.append(f"{label} shaderCompilerIdentity.compilerArtifactPath must be non-empty")
+    if not isinstance(payload.get("compilerArtifactSha256"), str) or not re.fullmatch(
+        r"[a-f0-9]{64}", payload["compilerArtifactSha256"]
+    ):
+        errors.append(f"{label} shaderCompilerIdentity.compilerArtifactSha256 must be sha256 hex")
+    expected_surface = (
+        "doe_runtime_embedded_shader_compiler"
+        if mode == "doe"
+        else "dawn_runtime_embedded_shader_compiler"
+    )
+    if payload.get("compilerSurface") != expected_surface:
+        errors.append(f"{label} shaderCompilerIdentity.compilerSurface must be {expected_surface}")
+    return errors
+
+
+def validate_trace_hash_fields(payload: Any, label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{label} trace row must be object"]
+    if not isinstance(payload.get("hash"), str) or not re.fullmatch(r"[a-f0-9]{64}", payload["hash"]):
+        errors.append(f"{label} hash must be sha256 hex")
+    previous_hash = payload.get("previousHash")
+    if previous_hash is not None and (
+        not isinstance(previous_hash, str) or not re.fullmatch(r"[a-f0-9]{64}", previous_hash)
+    ):
+        errors.append(f"{label} previousHash must be null or sha256 hex")
+    return errors
+
+
+def validate_workload_identity(payload: Any, label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{label} workloadIdentity must be object"]
+    if not isinstance(payload.get("kind"), str) or not payload["kind"].strip():
+        errors.append(f"{label} workloadIdentity.kind must be non-empty")
+    digest_fields = (
+        "workloadHash",
+        "sourceWorkloadsSha256",
+        "taskConfigHash",
+    )
+    if not any(
+        isinstance(payload.get(field), str) and re.fullmatch(r"[a-f0-9]{64}", payload[field])
+        for field in digest_fields
+    ):
+        errors.append(f"{label} workloadIdentity must include a sha256 workload digest")
+    return errors
+
+
+def _without_hash_fields(payload: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
+    return {key: value for key, value in payload.items() if key not in fields}
+
+
+def validate_report_hash(payload: dict[str, Any], label: str) -> list[str]:
+    report_hash = payload.get("reportHash")
+    if not isinstance(report_hash, str) or not re.fullmatch(r"[a-f0-9]{64}", report_hash):
+        return [f"{label} reportHash must be sha256 hex"]
+    expected_hash = stable_hash(_without_hash_fields(payload, ("reportHash",)))
+    if report_hash != expected_hash:
+        return [f"{label} reportHash mismatch"]
+    return []
+
+
+def validate_mode_hash_chain(rows: list[Any], label: str) -> list[str]:
+    errors: list[str] = []
+    previous_hash: str | None = None
+    for index, row in enumerate(rows):
+        row_label = f"{label} modeResults[{index}]"
+        if not isinstance(row, dict):
+            errors.append(f"{row_label} must be object")
+            continue
+        actual_previous = row.get("previousHash")
+        if actual_previous != previous_hash:
+            expected = "null" if previous_hash is None else previous_hash
+            errors.append(f"{row_label} previousHash must be {expected}")
+        actual_hash = row.get("hash")
+        if not isinstance(actual_hash, str) or not re.fullmatch(r"[a-f0-9]{64}", actual_hash):
+            errors.append(f"{row_label} hash must be sha256 hex")
+            previous_hash = actual_hash if isinstance(actual_hash, str) else previous_hash
+            continue
+        expected_hash = stable_hash(
+            {
+                "previousHash": previous_hash,
+                "entry": _without_hash_fields(row, ("previousHash", "hash")),
+            }
+        )
+        if actual_hash != expected_hash:
+            errors.append(f"{row_label} hash mismatch")
+        previous_hash = actual_hash
+    return errors
+
+
+def validate_smoke_report(
+    payload: dict[str, Any],
+    *,
+    required_modes: tuple[str, ...] = ("dawn", "doe"),
+    require_strict: bool = True,
+    require_hash_chain: bool = True,
+) -> list[str]:
+    errors: list[str] = []
+    required_mode_set = set(required_modes)
+    if required_mode_set - {"dawn", "doe"}:
+        errors.append(f"smoke required_modes invalid: {sorted(required_mode_set)}")
+    if payload.get("schemaVersion") != 1:
+        errors.append("smoke schemaVersion must be 1")
     if payload.get("reportKind") != "chromium-webgpu-playwright-smoke":
         errors.append("smoke reportKind must be chromium-webgpu-playwright-smoke")
     if payload.get("benchmarkClass") != "diagnostic":
         errors.append("smoke benchmarkClass must be diagnostic")
+    if payload.get("comparisonStatus") != "diagnostic":
+        errors.append("smoke comparisonStatus must be diagnostic")
+    if payload.get("claimStatus") != "diagnostic":
+        errors.append("smoke claimStatus must be diagnostic")
+    if payload.get("hashAlgorithm") != "sha256":
+        errors.append("smoke hashAlgorithm must be sha256")
+    report_mode = payload.get("mode")
+    if required_mode_set == {"dawn", "doe"} and report_mode != "both":
+        errors.append("smoke mode must be both when dawn and doe are required")
+    elif len(required_mode_set) == 1 and report_mode not in required_mode_set | {"both"}:
+        errors.append(f"smoke mode must match required modes, found {report_mode!r}")
+    methodology = payload.get("methodology")
+    if not isinstance(methodology, dict):
+        errors.append("smoke methodology must be object")
+    elif require_strict and methodology.get("strictMode") is not True:
+        errors.append("smoke methodology.strictMode must be true")
+    if require_hash_chain:
+        errors.extend(validate_report_hash(payload, "smoke"))
+    errors.extend(validate_workload_identity(payload.get("workloadIdentity"), "smoke report"))
     comparison = payload.get("comparison")
-    if not isinstance(comparison, dict):
-        errors.append("smoke comparison missing")
-        return errors
-    if comparison.get("bothComputeSmokePass") is not True:
-        errors.append("smoke bothComputeSmokePass must be true")
-    if comparison.get("bothRenderSmokePass") is not True:
-        errors.append("smoke bothRenderSmokePass must be true")
+    if required_mode_set == {"dawn", "doe"}:
+        if not isinstance(comparison, dict):
+            errors.append("smoke comparison missing")
+            return errors
+        if comparison.get("bothComputeSmokePass") is not True:
+            errors.append("smoke bothComputeSmokePass must be true")
+        if comparison.get("bothRenderSmokePass") is not True:
+            errors.append("smoke bothRenderSmokePass must be true")
     mode_results = payload.get("modeResults")
-    if not isinstance(mode_results, list) or len(mode_results) < 2:
-        errors.append("smoke modeResults must include dawn and doe")
+    if not isinstance(mode_results, list) or len(mode_results) < len(required_mode_set):
+        errors.append(f"smoke modeResults must include {sorted(required_mode_set)}")
         return errors
+    if require_hash_chain:
+        errors.extend(validate_mode_hash_chain(mode_results, "smoke"))
     modes_seen = set()
     for row in mode_results:
         if not isinstance(row, dict):
@@ -206,11 +551,21 @@ def validate_smoke_report(payload: dict[str, Any]) -> list[str]:
             errors.append("smoke modeResults entry missing mode")
             continue
         modes_seen.add(mode)
+        errors.extend(validate_trace_hash_fields(row, f"smoke mode {mode}"))
         errors.extend(validate_runtime_selection(row.get("runtimeSelection"), mode, f"smoke {mode}"))
+        errors.extend(
+            validate_shader_compiler_identity(
+                row.get("shaderCompilerIdentity"),
+                mode,
+                f"smoke {mode}",
+            )
+        )
         if row.get("webgpuAvailable") is not True:
             errors.append(f"smoke mode {mode} webgpuAvailable must be true")
         if row.get("adapterAvailable") is not True:
             errors.append(f"smoke mode {mode} adapterAvailable must be true")
+        else:
+            errors.extend(validate_adapter_identity(row.get("adapterIdentity"), f"smoke mode {mode}"))
         if row.get("errors"):
             errors.append(f"smoke mode {mode} errors must be empty")
         smoke = row.get("smoke")
@@ -221,8 +576,13 @@ def validate_smoke_report(payload: dict[str, Any]) -> list[str]:
             part = smoke.get(key)
             if not isinstance(part, dict) or part.get("pass") is not True:
                 errors.append(f"smoke mode {mode} {key} pass must be true")
-    if modes_seen != {"dawn", "doe"}:
-        errors.append(f"smoke modeResults must contain dawn and doe, found {sorted(modes_seen)}")
+    if not required_mode_set.issubset(modes_seen):
+        errors.append(
+            f"smoke modeResults must contain {sorted(required_mode_set)}, found {sorted(modes_seen)}"
+        )
+    unknown_modes = modes_seen - {"dawn", "doe"}
+    if unknown_modes:
+        errors.append(f"smoke modeResults contains unknown modes: {sorted(unknown_modes)}")
     return errors
 
 
@@ -234,6 +594,7 @@ def validate_layered_artifacts(
     errors: list[str] = []
     if report_payload.get("reportKind") != "browser-layered-diagnostic":
         errors.append("layered reportKind must be browser-layered-diagnostic")
+    errors.extend(validate_workload_identity(report_payload.get("workloadIdentity"), "layered report"))
     if not isinstance(report_payload.get("browserEnvironmentEvidence"), dict):
         errors.append("layered report missing browserEnvironmentEvidence")
     runtime_selections = report_payload.get("runtimeSelections")
@@ -264,6 +625,7 @@ def validate_layered_artifacts(
             if not isinstance(mode, str):
                 errors.append(f"layered modeRunDetails[{index}] missing mode")
                 continue
+            errors.extend(validate_trace_hash_fields(detail, f"layered modeRunDetails[{index}]"))
             errors.extend(
                 validate_runtime_selection(
                     detail.get("runtimeSelection"),
@@ -271,6 +633,23 @@ def validate_layered_artifacts(
                     f"layered modeRunDetails[{index}]",
                 )
             )
+            errors.extend(
+                validate_shader_compiler_identity(
+                    detail.get("shaderCompilerIdentity"),
+                    mode,
+                    f"layered modeRunDetails[{index}]",
+                )
+            )
+            runtime_probe = detail.get("runtimeProbe")
+            if not isinstance(runtime_probe, dict):
+                errors.append(f"layered modeRunDetails[{index}] runtimeProbe must be object")
+            elif runtime_probe.get("adapterAvailable") is True:
+                errors.extend(
+                    validate_adapter_identity(
+                        runtime_probe.get("adapterIdentity"),
+                        f"layered modeRunDetails[{index}]",
+                    )
+                )
     if summary_payload.get("reportKind") != "browser-layered-superset-summary":
         errors.append("summary reportKind must be browser-layered-superset-summary")
     if summary_payload.get("comparisonStatus") != "diagnostic":
@@ -321,12 +700,68 @@ def main() -> int:
     report_path.parent.mkdir(parents=True, exist_ok=True)
 
     smoke_report = artifacts_root / "dawn-vs-doe.browser.playwright-smoke.diagnostic.json"
+    cts_subset_report = artifacts_root / "browser-cts-subset.json"
+    recovery_parity_report = artifacts_root / "browser-recovery-parity.json"
+    canvas_webgpu_fusion_report = artifacts_root / "browser-canvas-webgpu-fusion.json"
+    media_path_probe_report = artifacts_root / "browser-media-path-probe.json"
+    gpu_scheduler_report = artifacts_root / "browser-gpu-scheduler.json"
+    webgpu_effect_experiment_report = artifacts_root / "browser-webgpu-effect-experiment.json"
+    flight_recorder_report = artifacts_root / "browser-gpu-flight-recorder.json"
+    flight_replay_report = artifacts_root / "browser-gpu-flight-replay.json"
+    shader_links_report = artifacts_root / "browser-shader-links.json"
+    local_ai_workloads_report = artifacts_root / "browser-local-ai-workloads.json"
+    pipeline_cache_receipts_report = artifacts_root / "browser-pipeline-cache-receipts.json"
+    fallback_explanations_report = artifacts_root / "browser-fallback-explanations.json"
     layered_report = artifacts_root / "dawn-vs-doe.browser-layered.superset.diagnostic.json"
     summary_report = artifacts_root / "dawn-vs-doe.browser-layered.superset.summary.json"
     check_report = artifacts_root / "dawn-vs-doe.browser-layered.superset.check.json"
 
     approvals_path = Path(args.promotion_approvals).resolve()
     ownership_path = Path(args.ownership).resolve()
+    responsibility_map_path = Path(args.responsibility_map).resolve()
+    runtime_selector_policy_path = Path(args.runtime_selector_policy).resolve()
+    fork_maintenance_policy_path = Path(args.fork_maintenance_policy).resolve()
+    capture_policy_path = Path(args.capture_policy).resolve()
+
+    selector_policy_check = [
+        sys.executable,
+        str(root / "browser/chromium/scripts/check-browser-runtime-selector-policy.py"),
+        "--policy",
+        str(runtime_selector_policy_path),
+    ]
+    run_step("runtime-selector-policy", selector_policy_check, root)
+
+    fork_maintenance_policy_check = [
+        sys.executable,
+        str(root / "bench/tools/check_chromium_fork_maintenance_policy.py"),
+        "--policy",
+        str(fork_maintenance_policy_path),
+        "--root",
+        str(root),
+    ]
+    run_step("chromium-fork-maintenance-policy", fork_maintenance_policy_check, root)
+
+    fork_maintenance_policy = load_json(fork_maintenance_policy_path)
+    patch_manifest_path = root / fork_maintenance_policy["patchIsolation"]["patchManifestPath"]
+    patch_manifest_check = [
+        sys.executable,
+        str(root / "bench/tools/check_chromium_patch_manifest.py"),
+        "--manifest",
+        str(patch_manifest_path),
+        "--policy",
+        str(fork_maintenance_policy_path),
+        "--root",
+        str(root),
+    ]
+    run_step("chromium-patch-manifest", patch_manifest_check, root)
+
+    capture_policy_check = [
+        sys.executable,
+        str(root / "bench/tools/check_browser_capture_policy.py"),
+        "--policy",
+        str(capture_policy_path),
+    ]
+    run_step("browser-capture-policy", capture_policy_check, root)
 
     preflight = [
         "./browser/chromium/scripts/preflight.sh",
@@ -340,8 +775,40 @@ def main() -> int:
         "--mode",
         "both",
         "--strict",
+        "--runtime-selector-policy",
+        str(runtime_selector_policy_path),
         "--out",
         str(smoke_report),
+        "--cts-subset-out",
+        str(cts_subset_report),
+        "--recovery-parity-out",
+        str(recovery_parity_report),
+        "--canvas-webgpu-fusion-out",
+        str(canvas_webgpu_fusion_report),
+        "--media-path-probe-out",
+        str(media_path_probe_report),
+        "--media-path-probe-capture-policy",
+        str(capture_policy_path),
+        "--gpu-scheduler-out",
+        str(gpu_scheduler_report),
+        "--webgpu-effect-experiment-out",
+        str(webgpu_effect_experiment_report),
+        "--flight-recorder-components",
+        str(root / "examples/browser-gpu-flight-recorder.sample.json"),
+        "--flight-recorder-out",
+        str(flight_recorder_report),
+        "--flight-recorder-mode",
+        "doe",
+        "--shader-links-out",
+        str(shader_links_report),
+        "--local-ai-workloads-out",
+        str(local_ai_workloads_report),
+        "--pipeline-cache-receipts-out",
+        str(pipeline_cache_receipts_report),
+        "--fallback-explanations-out",
+        str(fallback_explanations_report),
+        "--fallback-explanations-taxonomy",
+        str(root / "config/browser-unsupported-reason-taxonomy.json"),
     ]
     if args.chrome:
         smoke_command.extend(["--chrome", args.chrome])
@@ -357,6 +824,8 @@ def main() -> int:
         "--require-promotion-approvals",
         "--promotion-approvals",
         str(approvals_path),
+        "--runtime-selector-policy",
+        str(runtime_selector_policy_path),
         "--out",
         str(layered_report),
         "--summary-out",
@@ -376,6 +845,87 @@ def main() -> int:
     run_step("layered", bench_command, root)
 
     ownership_errors = validate_ownership(load_json(ownership_path))
+    responsibility_map_errors = validate_responsibility_map(responsibility_map_path, root)
+    cts_subset_errors = validate_cts_subset(cts_subset_report, root)
+    recovery_parity_errors = validate_recovery_parity(recovery_parity_report, root)
+    canvas_webgpu_fusion_errors = validate_json_checker(
+        label="canvas-webgpu-fusion",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-canvas-webgpu-fusion.py",
+        path_flag="--probe",
+        artifact_path=canvas_webgpu_fusion_report,
+        extra_args=["--runtime-identity-root", str(root)],
+    )
+    media_path_probe_errors = validate_json_checker(
+        label="media-path-probe",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-media-path-probe.py",
+        path_flag="--probe",
+        artifact_path=media_path_probe_report,
+        extra_args=[
+            "--capture-policy-root",
+            str(root),
+            "--runtime-identity-root",
+            str(root),
+        ],
+    )
+    gpu_scheduler_errors = validate_json_checker(
+        label="gpu-scheduler",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-gpu-scheduler.py",
+        path_flag="--probe",
+        artifact_path=gpu_scheduler_report,
+        extra_args=["--runtime-identity-root", str(root)],
+    )
+    webgpu_effect_experiment_errors = validate_json_checker(
+        label="webgpu-effect-experiment",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-webgpu-effect-experiment.py",
+        path_flag="--experiment",
+        artifact_path=webgpu_effect_experiment_report,
+        extra_args=["--runtime-identity-root", str(root)],
+    )
+    flight_recorder_replay_errors = validate_flight_recorder_replay(
+        root=root,
+        flight_recorder_path=flight_recorder_report,
+        replay_report_path=flight_replay_report,
+        capture_policy_path=capture_policy_path,
+    )
+    shader_links_errors = validate_json_checker(
+        label="shader-links",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-shader-links.py",
+        path_flag="--links",
+        artifact_path=shader_links_report,
+        extra_args=[
+            "--verify-flight-recorder-root",
+            str(root),
+            "--verify-lowering-root",
+            str(root),
+        ],
+    )
+    local_ai_workloads_errors = validate_json_checker(
+        label="local-ai-workloads",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-local-ai-workloads.py",
+        path_flag="--workloads",
+        artifact_path=local_ai_workloads_report,
+        extra_args=["--runtime-identity-root", str(root)],
+    )
+    pipeline_cache_receipts_errors = validate_pipeline_cache_receipts(pipeline_cache_receipts_report, root)
+    fallback_explanations_errors = validate_json_checker(
+        label="fallback-explanations",
+        root=root,
+        checker=root / "browser/chromium/scripts/check-browser-fallback-explanations.py",
+        path_flag="--explanations",
+        artifact_path=fallback_explanations_report,
+        extra_args=[
+            "--taxonomy-root",
+            str(root),
+            "--runtime-identity-root",
+            str(root),
+        ],
+    )
     smoke_payload = load_json(smoke_report)
     smoke_errors = validate_smoke_report(smoke_payload)
     report_payload = load_json(layered_report)
@@ -383,12 +933,40 @@ def main() -> int:
     check_payload = load_json(check_report)
     layered_errors = validate_layered_artifacts(report_payload, summary_payload, check_payload)
 
-    failures = ownership_errors + smoke_errors + layered_errors
+    failures = (
+        ownership_errors
+        + responsibility_map_errors
+        + cts_subset_errors
+        + recovery_parity_errors
+        + canvas_webgpu_fusion_errors
+        + media_path_probe_errors
+        + gpu_scheduler_errors
+        + webgpu_effect_experiment_errors
+        + flight_recorder_replay_errors
+        + shader_links_errors
+        + local_ai_workloads_errors
+        + pipeline_cache_receipts_errors
+        + fallback_explanations_errors
+        + smoke_errors
+        + layered_errors
+    )
     payload = {
         "laneId": "browser_diagnostic",
         "ok": not failures,
         "generatedAt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "ownershipOk": not ownership_errors,
+        "responsibilityMapOk": not responsibility_map_errors,
+        "ctsSubsetOk": not cts_subset_errors,
+        "recoveryParityOk": not recovery_parity_errors,
+        "canvasWebgpuFusionOk": not canvas_webgpu_fusion_errors,
+        "mediaPathProbeOk": not media_path_probe_errors,
+        "gpuSchedulerOk": not gpu_scheduler_errors,
+        "webgpuEffectExperimentOk": not webgpu_effect_experiment_errors,
+        "flightRecorderReplayOk": not flight_recorder_replay_errors,
+        "shaderLinksOk": not shader_links_errors,
+        "localAiWorkloadsOk": not local_ai_workloads_errors,
+        "pipelineCacheReceiptsOk": not pipeline_cache_receipts_errors,
+        "fallbackExplanationsOk": not fallback_explanations_errors,
         "smokeOk": not smoke_errors,
         "layeredOk": not layered_errors,
         "artifacts": {
@@ -398,9 +976,38 @@ def main() -> int:
             "checkReport": str(check_report),
             "promotionApprovals": str(approvals_path),
             "ownership": str(ownership_path),
+            "responsibilityMap": str(responsibility_map_path),
+            "runtimeSelectorPolicy": str(runtime_selector_policy_path),
+            "forkMaintenancePolicy": str(fork_maintenance_policy_path),
+            "chromiumPatchManifest": str(patch_manifest_path),
+            "capturePolicy": str(capture_policy_path),
+            "ctsSubsetReport": str(cts_subset_report),
+            "recoveryParityReport": str(recovery_parity_report),
+            "canvasWebgpuFusionReport": str(canvas_webgpu_fusion_report),
+            "mediaPathProbeReport": str(media_path_probe_report),
+            "gpuSchedulerReport": str(gpu_scheduler_report),
+            "webgpuEffectExperimentReport": str(webgpu_effect_experiment_report),
+            "flightRecorderReport": str(flight_recorder_report),
+            "flightReplayReport": str(flight_replay_report),
+            "shaderLinksReport": str(shader_links_report),
+            "localAiWorkloadsReport": str(local_ai_workloads_report),
+            "pipelineCacheReceiptsReport": str(pipeline_cache_receipts_report),
+            "fallbackExplanationsReport": str(fallback_explanations_report),
         },
         "hashes": {
             "smokeReport": stable_hash(smoke_payload),
+            "ctsSubsetReport": stable_hash(load_json(cts_subset_report)),
+            "recoveryParityReport": stable_hash(load_json(recovery_parity_report)),
+            "canvasWebgpuFusionReport": stable_hash(load_json(canvas_webgpu_fusion_report)),
+            "mediaPathProbeReport": stable_hash(load_json(media_path_probe_report)),
+            "gpuSchedulerReport": stable_hash(load_json(gpu_scheduler_report)),
+            "webgpuEffectExperimentReport": stable_hash(load_json(webgpu_effect_experiment_report)),
+            "flightRecorderReport": stable_hash(load_json(flight_recorder_report)),
+            "flightReplayReport": stable_hash(load_json(flight_replay_report)),
+            "shaderLinksReport": stable_hash(load_json(shader_links_report)),
+            "localAiWorkloadsReport": stable_hash(load_json(local_ai_workloads_report)),
+            "pipelineCacheReceiptsReport": stable_hash(load_json(pipeline_cache_receipts_report)),
+            "fallbackExplanationsReport": stable_hash(load_json(fallback_explanations_report)),
             "layeredReport": stable_hash(report_payload),
             "summaryReport": stable_hash(summary_payload),
             "checkReport": stable_hash(check_payload),
@@ -416,6 +1023,18 @@ def main() -> int:
             "claimGateRan": False,
             "status": "pass" if not failures else "fail",
             "smokeReport": str(smoke_report),
+            "ctsSubsetReport": str(cts_subset_report),
+            "recoveryParityReport": str(recovery_parity_report),
+            "canvasWebgpuFusionReport": str(canvas_webgpu_fusion_report),
+            "mediaPathProbeReport": str(media_path_probe_report),
+            "gpuSchedulerReport": str(gpu_scheduler_report),
+            "webgpuEffectExperimentReport": str(webgpu_effect_experiment_report),
+            "flightRecorderReport": str(flight_recorder_report),
+            "flightReplayReport": str(flight_replay_report),
+            "shaderLinksReport": str(shader_links_report),
+            "localAiWorkloadsReport": str(local_ai_workloads_report),
+            "pipelineCacheReceiptsReport": str(pipeline_cache_receipts_report),
+            "fallbackExplanationsReport": str(fallback_explanations_report),
             "layeredReport": str(layered_report),
         },
     )

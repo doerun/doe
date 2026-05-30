@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-webgpu-effect-experiment.schema.json",
+  "title": "Browser WebGPU effect experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "experimentId",
+    "runtimeIdentity",
+    "surfaces",
+    "pipelines",
+    "probes",
+    "fallbackPolicy",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_webgpu_effect_experiment" },
+    "experimentId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/EffectSurface" }
+    },
+    "pipelines": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/EffectPipeline" }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Probe" }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hiddenFallbackAllowed", "reasonCodeRequired"],
+      "properties": {
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCodeRequired": { "type": "boolean", "const": true }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawDomIncluded", "rawPageDataIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawDomIncluded": { "type": "boolean", "const": false },
+        "rawPageDataIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "EffectSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surfaceId",
+        "sourceKind",
+        "webgpuBacked",
+        "doeBoundary",
+        "layoutOwner",
+        "accessibilityOwner",
+        "securityOwner",
+        "sourcePath"
+      ],
+      "properties": {
+        "surfaceId": { "type": "string", "minLength": 1 },
+        "sourceKind": {
+          "enum": ["html_element", "css_effect", "canvas_overlay", "presentation_filter"]
+        },
+        "webgpuBacked": { "type": "boolean", "const": true },
+        "doeBoundary": { "type": "string", "const": "visual_effect_only" },
+        "layoutOwner": { "type": "string", "const": "browser" },
+        "accessibilityOwner": { "type": "string", "const": "browser" },
+        "securityOwner": { "type": "string", "const": "browser" },
+        "sourcePath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "EffectPipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pipelineId",
+        "surfaceIds",
+        "shaderLanguage",
+        "shaderSourcePath",
+        "backendTarget",
+        "backendOutputPath"
+      ],
+      "properties": {
+        "pipelineId": { "type": "string", "minLength": 1 },
+        "surfaceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "shaderLanguage": { "type": "string", "const": "wgsl" },
+        "shaderSourcePath": { "type": "string", "minLength": 1 },
+        "backendTarget": { "enum": ["msl", "spirv", "dxil", "hlsl", "wgsl"] },
+        "backendOutputPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["probeId", "probeKind", "surfaceIds", "status", "evidencePath"],
+      "properties": {
+        "probeId": { "type": "string", "minLength": 1 },
+        "probeKind": {
+          "enum": [
+            "output_hash",
+            "semantics_boundary",
+            "fallback_behavior",
+            "frame_timing",
+            "security_policy"
+          ]
+        },
+        "surfaceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "status": { "enum": ["pass", "diagnostic", "blocked", "fail"] },
+        "evidencePath": { "type": "string", "minLength": 1 },
+        "reasonCode": { "type": "string" }
+      }
+    }
+  }
+}

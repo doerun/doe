@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/native-command-graph-receipt.schema.json",
+  "title": "Native command graph receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "runReceiptPath",
+    "runReceiptSha256",
+    "commandsPath",
+    "commandsSha256",
+    "workload",
+    "runtimeIdentity",
+    "graph",
+    "traceChain",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "artifactKind": { "type": "string", "const": "native_command_graph_receipt" },
+    "runReceiptPath": { "type": "string", "minLength": 1 },
+    "runReceiptSha256": { "$ref": "#/$defs/Hash" },
+    "commandsPath": { "type": "string", "minLength": 1 },
+    "commandsSha256": { "$ref": "#/$defs/Hash" },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "domain"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "domain": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["buffers", "textures", "pipelines", "bindGroups", "commands"],
+      "properties": {
+        "buffers": { "$ref": "#/$defs/StringArray" },
+        "textures": { "$ref": "#/$defs/StringArray" },
+        "pipelines": { "$ref": "#/$defs/StringArray" },
+        "bindGroups": { "$ref": "#/$defs/StringArray" },
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CommandRow" }
+        }
+      }
+    },
+    "traceChain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootHash", "terminalHash"],
+      "properties": {
+        "rootHash": { "$ref": "#/$defs/Hash" },
+        "terminalHash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandCount",
+        "submitCount",
+        "dispatchCount",
+        "drawCount",
+        "copyCount",
+        "resourceCount"
+      ],
+      "properties": {
+        "commandCount": { "type": "integer", "minimum": 0 },
+        "submitCount": { "type": "integer", "minimum": 0 },
+        "dispatchCount": { "type": "integer", "minimum": 0 },
+        "drawCount": { "type": "integer", "minimum": 0 },
+        "copyCount": { "type": "integer", "minimum": 0 },
+        "resourceCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "Hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "StringArray": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "CommandRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seq",
+        "submitId",
+        "kind",
+        "resourceRefs",
+        "bindGroupRefs",
+        "pipelineId",
+        "dispatch",
+        "bytes",
+        "rowHash"
+      ],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0 },
+        "submitId": { "type": "integer", "minimum": 0 },
+        "kind": { "type": "string", "minLength": 1 },
+        "resourceRefs": { "$ref": "#/$defs/StringArray" },
+        "bindGroupRefs": { "$ref": "#/$defs/StringArray" },
+        "pipelineId": { "type": ["string", "null"] },
+        "dispatch": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["x", "y", "z"],
+          "properties": {
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 },
+            "z": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "rowHash": { "$ref": "#/$defs/Hash" }
+      }
+    }
+  }
+}

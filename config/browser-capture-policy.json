@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_capture_policy",
+  "policyId": "browser-capture-policy-v0",
+  "surfaces": [
+    {
+      "surfaceId": "gpu_flight_recorder",
+      "originScoped": true,
+      "permissionGate": "secure_context_devtools_opt_in",
+      "rawPageDataPolicy": "hash",
+      "artifactDataPolicy": "hashes_and_redacted_metadata",
+      "replayAllowed": true,
+      "developerVisible": true
+    },
+    {
+      "surfaceId": "flight_replay",
+      "originScoped": true,
+      "permissionGate": "secure_context_devtools_opt_in",
+      "rawPageDataPolicy": "forbid",
+      "artifactDataPolicy": "metadata_only",
+      "replayAllowed": true,
+      "developerVisible": true
+    },
+    {
+      "surfaceId": "shader_links",
+      "originScoped": true,
+      "permissionGate": "devtools_opt_in",
+      "rawPageDataPolicy": "redact",
+      "artifactDataPolicy": "hashes_and_redacted_metadata",
+      "replayAllowed": false,
+      "developerVisible": true,
+      "reasonCode": "source_link_only"
+    },
+    {
+      "surfaceId": "media_path_probe",
+      "originScoped": true,
+      "permissionGate": "secure_context_devtools_opt_in",
+      "rawPageDataPolicy": "hash",
+      "artifactDataPolicy": "hashes_and_redacted_metadata",
+      "replayAllowed": false,
+      "developerVisible": true,
+      "reasonCode": "media_probe_digest_only"
+    },
+    {
+      "surfaceId": "pipeline_cache_receipts",
+      "originScoped": true,
+      "permissionGate": "devtools_opt_in",
+      "rawPageDataPolicy": "forbid",
+      "artifactDataPolicy": "metadata_only",
+      "replayAllowed": false,
+      "developerVisible": true,
+      "reasonCode": "receipt_only"
+    },
+    {
+      "surfaceId": "unsupported_explanations",
+      "originScoped": true,
+      "permissionGate": "devtools_opt_in",
+      "rawPageDataPolicy": "forbid",
+      "artifactDataPolicy": "metadata_only",
+      "replayAllowed": false,
+      "developerVisible": true,
+      "reasonCode": "diagnostic_only"
+    }
+  ]
+}

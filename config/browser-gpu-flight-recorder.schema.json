@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-gpu-flight-recorder.schema.json",
+  "title": "Browser GPU flight recorder artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "captureId",
+    "page",
+    "runtimeIdentity",
+    "adapterIdentity",
+    "responsibilityMap",
+    "shaders",
+    "bindGroups",
+    "buffers",
+    "textures",
+    "commandGraph",
+    "timings",
+    "frames",
+    "failureCodes",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "browser_gpu_flight_recorder"
+    },
+    "captureId": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "urlSha256", "scenarioId"],
+      "properties": {
+        "origin": { "type": "string", "minLength": 1 },
+        "urlSha256": { "$ref": "#/$defs/Sha256" },
+        "scenarioId": { "type": "string", "minLength": 1 },
+        "workloadId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedRuntime",
+        "selectorVersion",
+        "browserExecutableSha256",
+        "doeRuntimeSha256",
+        "dawnDelegateSha256",
+        "fallbackApplied"
+      ],
+      "properties": {
+        "selectedRuntime": { "enum": ["dawn", "doe", "auto"] },
+        "selectorVersion": { "type": "string", "minLength": 1 },
+        "browserExecutableSha256": { "$ref": "#/$defs/Sha256" },
+        "doeRuntimeSha256": { "$ref": "#/$defs/NullableSha256" },
+        "dawnDelegateSha256": { "$ref": "#/$defs/NullableSha256" },
+        "fallbackApplied": { "type": "boolean" },
+        "fallbackReasonCode": { "type": "string" }
+      }
+    },
+    "adapterIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "vendorId", "deviceId", "backend", "limitsSha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "vendorId": { "type": "string", "minLength": 1 },
+        "deviceId": { "type": "string", "minLength": 1 },
+        "backend": { "type": "string", "minLength": 1 },
+        "limitsSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "responsibilityMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mapVersion"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "const": "config/browser-responsibility-map.json"
+        },
+        "mapVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "shaders": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ShaderRecord" }
+    },
+    "bindGroups": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BindGroupRecord" }
+    },
+    "buffers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BufferRecord" }
+    },
+    "textures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TextureRecord" }
+    },
+    "commandGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graphSha256", "nodes", "edges", "submitIds"],
+      "properties": {
+        "graphSha256": { "$ref": "#/$defs/Sha256" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CommandNode" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CommandEdge" }
+        },
+        "submitIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "timings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/TimingRecord" }
+    },
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/FrameRecord" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/FailureCode" }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "pageDataPolicy", "rawPageDataIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "pageDataPolicy": {
+          "enum": ["hash_only", "redacted", "explicit_debug_capture"]
+        },
+        "rawPageDataIncluded": { "type": "boolean" },
+        "redactionNotes": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "NullableSha256": {
+      "anyOf": [
+        { "$ref": "#/$defs/Sha256" },
+        { "type": "null" }
+      ]
+    },
+    "ResourceId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_:-]*$"
+    },
+    "ShaderRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "sourceLanguage",
+        "sourceSha256",
+        "irSha256",
+        "backendTarget",
+        "backendOutputSha256"
+      ],
+      "properties": {
+        "shaderId": { "$ref": "#/$defs/ResourceId" },
+        "sourceLanguage": { "enum": ["wgsl", "glsl", "hlsl", "msl", "spirv"] },
+        "sourcePath": { "type": "string" },
+        "sourceSha256": { "$ref": "#/$defs/Sha256" },
+        "irPath": { "type": "string" },
+        "irSha256": { "$ref": "#/$defs/Sha256" },
+        "loweringReceiptPath": { "type": "string" },
+        "loweringReceiptRowId": { "type": "string" },
+        "backendTarget": { "type": "string", "minLength": 1 },
+        "backendOutputPath": { "type": "string" },
+        "backendOutputSha256": { "$ref": "#/$defs/Sha256" },
+        "diagnosticStatus": { "enum": ["ok", "warning", "failed"] }
+      }
+    },
+    "BindGroupRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindGroupId", "layoutId", "bindings"],
+      "properties": {
+        "bindGroupId": { "$ref": "#/$defs/ResourceId" },
+        "layoutId": { "$ref": "#/$defs/ResourceId" },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["binding", "resourceId"],
+            "properties": {
+              "binding": { "type": "integer", "minimum": 0 },
+              "resourceId": { "$ref": "#/$defs/ResourceId" }
+            }
+          }
+        }
+      }
+    },
+    "BufferRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bufferId", "sizeBytes", "usage", "contentSha256"],
+      "properties": {
+        "bufferId": { "$ref": "#/$defs/ResourceId" },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "usage": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "contentSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "TextureRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["textureId", "format", "extent", "usage"],
+      "properties": {
+        "textureId": { "$ref": "#/$defs/ResourceId" },
+        "format": { "type": "string", "minLength": 1 },
+        "extent": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "usage": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "contentSha256": { "$ref": "#/$defs/NullableSha256" }
+      }
+    },
+    "CommandNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "op", "shaderIds", "resourceIds"],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/ResourceId" },
+        "op": {
+          "enum": [
+            "create_shader_module",
+            "create_pipeline",
+            "create_bind_group",
+            "write_buffer",
+            "copy_buffer_to_texture",
+            "copy_texture_to_buffer",
+            "dispatch",
+            "draw",
+            "submit",
+            "present"
+          ]
+        },
+        "shaderIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ResourceId" }
+        },
+        "resourceIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ResourceId" }
+        }
+      }
+    },
+    "CommandEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromNodeId", "toNodeId", "edgeKind"],
+      "properties": {
+        "fromNodeId": { "$ref": "#/$defs/ResourceId" },
+        "toNodeId": { "$ref": "#/$defs/ResourceId" },
+        "edgeKind": { "enum": ["orders_before", "reads", "writes", "presents"] }
+      }
+    },
+    "TimingRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "durationNs"],
+      "properties": {
+        "phase": {
+          "enum": [
+            "page_setup",
+            "shader_compile",
+            "pipeline_create",
+            "upload",
+            "encode",
+            "submit_wait",
+            "readback",
+            "present"
+          ]
+        },
+        "durationNs": { "type": "integer", "minimum": 0 },
+        "nodeId": { "$ref": "#/$defs/ResourceId" }
+      }
+    },
+    "FrameRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frameId", "frameSha256"],
+      "properties": {
+        "frameId": { "type": "integer", "minimum": 0 },
+        "frameSha256": { "$ref": "#/$defs/Sha256" },
+        "presentNodeId": { "$ref": "#/$defs/ResourceId" }
+      }
+    },
+    "FailureCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "source"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["info", "warning", "error", "fatal"] },
+        "source": {
+          "enum": [
+            "runtime_selection",
+            "browser_policy",
+            "shader_compilation",
+            "command_execution",
+            "capture",
+            "replay",
+            "presentation"
+          ]
+        },
+        "message": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_pipeline_cache_receipts",
+  "sourceWorkloadsPath": "examples/browser-local-ai-workloads.sample.json",
+  "sourceWorkloadSetId": "browser-local-ai-smoke",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "receiptStatus": "pass",
+  "receipts": [
+    {
+      "receiptId": "cache:local-ai:embedding",
+      "workloadId": "local-ai:embedding",
+      "workloadKind": "embedding",
+      "shaderId": "shader:embedding",
+      "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000001",
+      "irSha256": "e000000000000000000000000000000000000000000000000000000000000001",
+      "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000001",
+      "cacheKey": "cache:embedding",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/browser-local-ai/embedding.pipeline.json",
+      "creationStatus": "created",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "cache:local-ai:ranking",
+      "workloadId": "local-ai:ranking",
+      "workloadKind": "ranking",
+      "shaderId": "shader:ranking",
+      "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000002",
+      "irSha256": "e000000000000000000000000000000000000000000000000000000000000002",
+      "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000002",
+      "cacheKey": "cache:ranking",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/browser-local-ai/ranking.pipeline.json",
+      "creationStatus": "created",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "cache:local-ai:image-transform",
+      "workloadId": "local-ai:image-transform",
+      "workloadKind": "image_transform",
+      "shaderId": "shader:image-transform",
+      "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000003",
+      "irSha256": "e000000000000000000000000000000000000000000000000000000000000003",
+      "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000003",
+      "cacheKey": "cache:image-transform",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/browser-local-ai/image-transform.pipeline.json",
+      "creationStatus": "created",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "cache:local-ai:video-transform",
+      "workloadId": "local-ai:video-transform",
+      "workloadKind": "video_transform",
+      "shaderId": "shader:video-transform",
+      "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000004",
+      "irSha256": "e000000000000000000000000000000000000000000000000000000000000004",
+      "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000004",
+      "cacheKey": "cache:video-transform",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/browser-local-ai/video-transform.pipeline.json",
+      "creationStatus": "created",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    },
+    {
+      "receiptId": "cache:local-ai:model-inference",
+      "workloadId": "local-ai:model-inference",
+      "workloadKind": "model_inference",
+      "shaderId": "shader:model-inference",
+      "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000005",
+      "irSha256": "e000000000000000000000000000000000000000000000000000000000000005",
+      "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000005",
+      "cacheKey": "cache:model-inference",
+      "cacheState": "created",
+      "pipelineCreationPath": "bench/out/browser-local-ai/model-inference.pipeline.json",
+      "creationStatus": "created",
+      "fallbackApplied": false,
+      "hiddenFallbackAllowed": false
+    }
+  ],
+  "failureCodes": []
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/chromium-source-checkout-check.schema.json",
+  "title": "Chromium source checkout check",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "sourceRoot",
+    "requireReady",
+    "requireRuntimeSelector",
+    "status",
+    "checks",
+    "missingRequired"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "chromium_source_checkout_check" },
+    "sourceRoot": { "type": "string", "minLength": 1 },
+    "requireReady": { "type": "boolean" },
+    "requireRuntimeSelector": { "type": "boolean" },
+    "status": { "enum": ["pass", "blocked"] },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Check" }
+    },
+    "missingRequired": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "Check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkId", "status", "required", "message"],
+      "properties": {
+        "checkId": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["pass", "fail"] },
+        "required": { "type": "boolean" },
+        "path": { "type": "string" },
+        "resolvedPath": { "type": "string" },
+        "command": { "type": "string" },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

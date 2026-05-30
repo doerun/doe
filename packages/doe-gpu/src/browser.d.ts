@@ -76,7 +76,27 @@ export interface BrowserRuntime {
   bindDevice(device: GPUDevice): GPUDevice;
 }
 
+export interface BrowserRuntimeIdentityOptions {
+  gpu?: GPU | null;
+  selectedRuntime?: "browser_navigator_gpu" | "dawn" | "doe" | "auto" | "unknown";
+  runtimeSelection?: Record<string, unknown> | null;
+}
+
+export interface BrowserRuntimeIdentity {
+  schemaVersion: 1;
+  artifactKind: "browser_runtime_identity";
+  surface: "doe-gpu/browser";
+  evidenceSource: "browser_wrapper_probe" | "runtime_selection_artifact";
+  selectedRuntime: "browser_navigator_gpu" | "dawn" | "doe" | "auto" | "unknown";
+  executionOwner: "browser" | "chromium_runtime_selector";
+  doeRuntimeActive: boolean;
+  webgpuAvailable: boolean;
+  provider: ProviderInfo;
+  runtimeSelection: Record<string, unknown> | null;
+}
+
 export function createBrowserRuntime(options?: BrowserCreateOptions): BrowserRuntime;
+export function createBrowserRuntimeIdentity(options?: BrowserRuntimeIdentityOptions): BrowserRuntimeIdentity;
 export function create(options?: BrowserCreateOptions): GPU;
 export function createInstance(options?: BrowserCreateOptions): GPU;
 export function setupGlobals(target?: object, options?: BrowserCreateOptions): GPU;
@@ -123,6 +143,7 @@ export { createGpuNamespace as createDoeNamespace };
 
 declare const _default: {
   createBrowserRuntime: typeof createBrowserRuntime;
+  createBrowserRuntimeIdentity: typeof createBrowserRuntimeIdentity;
   create: typeof create;
   createInstance: typeof createInstance;
   setupGlobals: typeof setupGlobals;

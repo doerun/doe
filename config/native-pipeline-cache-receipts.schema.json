@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/native-pipeline-cache-receipts.schema.json",
+  "title": "Native pipeline cache receipts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "receiptStatus", "rows", "failureCodes"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "native_pipeline_cache_receipts" },
+    "receiptStatus": { "enum": ["pass", "fail"] },
+    "rows": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/Row" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Failure" }
+    }
+  },
+  "$defs": {
+    "Row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receiptId",
+        "workloadId",
+        "backend",
+        "mode",
+        "pipelineId",
+        "cacheKey",
+        "cacheState",
+        "pipelineCreationPath",
+        "fallbackApplied",
+        "hiddenFallbackAllowed",
+        "pathAsymmetry",
+        "pathAsymmetryNote"
+      ],
+      "properties": {
+        "receiptId": { "type": "string", "minLength": 1 },
+        "workloadId": { "type": "string", "minLength": 1 },
+        "backend": { "enum": ["doe_metal", "doe_vulkan", "doe_d3d12"] },
+        "mode": { "enum": ["cold", "warm"] },
+        "pipelineId": { "type": "string", "minLength": 1 },
+        "cacheKey": { "type": "string", "minLength": 1 },
+        "cacheState": { "enum": ["disabled", "miss", "created", "hit"] },
+        "pipelineCreationPath": { "type": "string", "minLength": 1 },
+        "fallbackApplied": { "type": "boolean" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "pathAsymmetry": { "type": "boolean" },
+        "pathAsymmetryNote": { "type": "string" },
+        "reasonCode": { "type": "string" }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

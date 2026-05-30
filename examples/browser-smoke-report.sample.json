@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "chromium-webgpu-playwright-smoke",
+  "benchmarkClass": "diagnostic",
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "diagnostic",
+  "timingClass": "browser-operation-proxy",
+  "timingSource": "performance.now",
+  "generatedAt": "2026-05-26T00:00:00.000Z",
+  "hashAlgorithm": "sha256",
+  "workloadIdentity": {
+    "kind": "browser_smoke_suite",
+    "workloadHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "mode": "both",
+  "methodology": {
+    "strictMode": true
+  },
+  "modeResults": [
+    {
+      "mode": "dawn",
+      "runtimeSelection": {
+        "selectionMode": "dawn",
+        "selectedRuntime": "dawn",
+        "forcedMode": "dawn",
+        "fallbackApplied": false,
+        "fallbackReasonCode": "",
+        "hiddenFallbackAllowed": false,
+        "profile": {
+          "profileId": "",
+          "vendor": "unknown",
+          "api": "unknown",
+          "deviceFamily": "unknown",
+          "driver": "unknown"
+        },
+        "selectorVersion": "browser-runtime-selector-v1",
+        "artifactIdentity": {
+          "browserExecutablePath": "/examples/fawn/Chromium",
+          "browserExecutableSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dawnRuntimePath": "/examples/fawn/Chromium",
+          "dawnRuntimeSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "doeLibPath": null,
+          "doeLibSha256": null
+        },
+        "launchArgsHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "shaderCompilerIdentity": {
+        "compilerSurface": "dawn_runtime_embedded_shader_compiler",
+        "compilerArtifactPath": "/examples/fawn/Chromium",
+        "compilerArtifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "identitySource": "runtime_artifact_identity"
+      },
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterIdentity": {
+        "adapterInfoSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "featureCount": 0
+      },
+      "errors": [],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true
+        },
+        "renderTriangle": {
+          "pass": true
+        }
+      },
+      "previousHash": null,
+      "hash": "6fc6fc53060f14bda24e5b868c0236d4733b368aba9f18f365a67182d3069e10"
+    },
+    {
+      "mode": "doe",
+      "runtimeSelection": {
+        "selectionMode": "doe",
+        "selectedRuntime": "doe",
+        "forcedMode": "doe",
+        "fallbackApplied": false,
+        "fallbackReasonCode": "",
+        "hiddenFallbackAllowed": false,
+        "profile": {
+          "profileId": "",
+          "vendor": "unknown",
+          "api": "unknown",
+          "deviceFamily": "unknown",
+          "driver": "unknown"
+        },
+        "selectorVersion": "browser-runtime-selector-v1",
+        "artifactIdentity": {
+          "browserExecutablePath": "/examples/fawn/Chromium",
+          "browserExecutableSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dawnRuntimePath": "/examples/fawn/Chromium",
+          "dawnRuntimeSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "doeLibPath": "/examples/libwebgpu_doe.dylib",
+          "doeLibSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "launchArgsHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "shaderCompilerIdentity": {
+        "compilerSurface": "doe_runtime_embedded_shader_compiler",
+        "compilerArtifactPath": "/examples/libwebgpu_doe.dylib",
+        "compilerArtifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "identitySource": "runtime_artifact_identity"
+      },
+      "webgpuAvailable": true,
+      "adapterAvailable": true,
+      "adapterIdentity": {
+        "adapterInfoSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "featureCount": 0
+      },
+      "errors": [],
+      "smoke": {
+        "computeIncrement": {
+          "pass": true
+        },
+        "renderTriangle": {
+          "pass": true
+        }
+      },
+      "previousHash": "6fc6fc53060f14bda24e5b868c0236d4733b368aba9f18f365a67182d3069e10",
+      "hash": "a74f8e74d15f61af7c795c4490c1ca5558348b96a534e13bf809308e041f139a"
+    }
+  ],
+  "comparison": {
+    "bothComputeSmokePass": true,
+    "bothRenderSmokePass": true
+  },
+  "reportHash": "e22f0d013d41a91182edd4f3ff2c28a5f9ee874b409b4709f5e567cdfb70159f"
+}

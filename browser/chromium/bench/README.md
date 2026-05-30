@@ -25,13 +25,13 @@ This module implements a layered browser benchmark superset for Chromium Track A
 2. `projection-manifest.schema.json`
    - schema for generated projection manifest.
 3. `generated/browser_projection_manifest.json`
-   - generated `L1/L0` projection rows with contract hashes.
+   - generated `L1/L0` projection rows with contract hashes and repo-relative source/rules paths.
 4. `workflows/browser-workflow-manifest.json`
    - `L2` workflow definitions with required status, claim scope, and promotion approver roles.
 5. `workflows/browser-workflow-manifest.schema.json`
    - schema for `L2` workflow manifest.
 6. `workflows/browser-promotion-approvals.json`
-   - explicit promotion approvals (`module_contracts_owner`, `coordinator`).
+   - explicit promotion approvals for the roles required by the workflow manifest.
 7. `workflows/browser-promotion-approvals.schema.json`
    - schema for promotion approval artifact.
 8. `workflows/browser-milestones.json`
@@ -113,4 +113,4 @@ Promotion candidates must pass:
 
 1. hash-synchronized projection contract checks,
 2. explicit status/statusCode evidence for required `L1/L2` rows,
-3. promotion approvals from `module_contracts_owner` and `coordinator`.
+3. promotion approvals matching the roles declared by the workflow manifest.

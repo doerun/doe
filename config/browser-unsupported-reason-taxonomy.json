@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_unsupported_reason_taxonomy",
+  "taxonomyId": "browser-unsupported-reason-taxonomy-v0",
+  "codes": [
+    {
+      "reasonCode": "runtime_available",
+      "category": "supported",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Runtime selection is available without fallback."
+    },
+    {
+      "reasonCode": "webgpu_runtime_unavailable",
+      "category": "blocked",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Browser WebGPU or adapter acquisition is unavailable."
+    },
+    {
+      "reasonCode": "hidden_fallback_allowed",
+      "category": "blocked",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Runtime selection allowed hidden fallback, so the result cannot support a forced-Doe claim."
+    },
+    {
+      "reasonCode": "fallback_applied",
+      "category": "fallback",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["fallback"],
+      "developerVisible": true,
+      "notes": "Runtime selection fell back without a more specific reason."
+    },
+    {
+      "reasonCode": "global_disable_active",
+      "category": "fallback",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["fallback", "blocked"],
+      "developerVisible": true,
+      "notes": "Emergency disable switch selected the compatibility runtime."
+    },
+    {
+      "reasonCode": "profile_denylisted",
+      "category": "fallback",
+      "capabilities": ["webgpu_runtime"],
+      "statuses": ["fallback", "blocked"],
+      "developerVisible": true,
+      "notes": "Adapter or profile denylist selected the compatibility runtime."
+    },
+    {
+      "reasonCode": "canvas_fusion_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["canvas_fusion"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Canvas/WebGPU fusion evidence was not attached."
+    },
+    {
+      "reasonCode": "canvas_fusion_probe_attached",
+      "category": "supported",
+      "capabilities": ["canvas_fusion"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Canvas/WebGPU fusion evidence is attached and has no fallback reasons."
+    },
+    {
+      "reasonCode": "canvas_fusion_fallback_reasons_present",
+      "category": "unsupported",
+      "capabilities": ["canvas_fusion"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Canvas/WebGPU fusion evidence carries fallback reasons."
+    },
+    {
+      "reasonCode": "external_texture_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["external_texture"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Media path probe evidence was not attached."
+    },
+    {
+      "reasonCode": "external_texture_probe_not_promoted",
+      "category": "unsupported",
+      "capabilities": ["external_texture"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "External texture evidence exists only as an unpromoted diagnostic."
+    },
+    {
+      "reasonCode": "media_path_probe_attached",
+      "category": "supported",
+      "capabilities": ["external_texture"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Required media path probes passed."
+    },
+    {
+      "reasonCode": "media_path_probe_incomplete",
+      "category": "unsupported",
+      "capabilities": ["external_texture"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Required media path probes are missing or not passing."
+    },
+    {
+      "reasonCode": "browser_capability_unavailable",
+      "category": "unsupported",
+      "capabilities": ["external_texture"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Browser media capability required by the probe is unavailable."
+    },
+    {
+      "reasonCode": "not_reported_by_smoke",
+      "category": "diagnostic",
+      "capabilities": ["external_texture"],
+      "statuses": ["diagnostic", "unsupported"],
+      "developerVisible": true,
+      "notes": "The smoke report did not exercise this media path."
+    },
+    {
+      "reasonCode": "scheduler_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["scheduler"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "GPU scheduler probe evidence was not attached."
+    },
+    {
+      "reasonCode": "scheduler_probe_attached",
+      "category": "supported",
+      "capabilities": ["scheduler"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "GPU scheduler probe evidence is attached."
+    },
+    {
+      "reasonCode": "scheduler_probe_incomplete",
+      "category": "blocked",
+      "capabilities": ["scheduler"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "GPU scheduler probe evidence is incomplete."
+    },
+    {
+      "reasonCode": "webgpu_effect_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["webgpu_effect"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "WebGPU effect experiment evidence was not attached."
+    },
+    {
+      "reasonCode": "webgpu_effect_probe_attached",
+      "category": "supported",
+      "capabilities": ["webgpu_effect"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "WebGPU effect experiment evidence is attached."
+    },
+    {
+      "reasonCode": "webgpu_effect_probe_incomplete",
+      "category": "blocked",
+      "capabilities": ["webgpu_effect"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "WebGPU effect experiment evidence is incomplete."
+    },
+    {
+      "reasonCode": "render_probe_failed",
+      "category": "failure",
+      "capabilities": ["webgpu_effect"],
+      "statuses": ["fail"],
+      "developerVisible": true,
+      "notes": "Render probe did not produce the expected output."
+    },
+    {
+      "reasonCode": "webgpu_render_failed",
+      "category": "failure",
+      "capabilities": ["canvas_fusion", "webgpu_effect"],
+      "statuses": ["fail"],
+      "developerVisible": true,
+      "notes": "WebGPU render path failed."
+    },
+    {
+      "reasonCode": "local_ai_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["local_ai"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Local AI workload evidence was not attached."
+    },
+    {
+      "reasonCode": "local_ai_workloads_attached",
+      "category": "supported",
+      "capabilities": ["local_ai"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Local AI workload evidence is attached without fallback rows."
+    },
+    {
+      "reasonCode": "local_ai_workload_fallback_applied",
+      "category": "fallback",
+      "capabilities": ["local_ai"],
+      "statuses": ["fallback"],
+      "developerVisible": true,
+      "notes": "At least one local AI workload applied fallback."
+    },
+    {
+      "reasonCode": "hidden_fallback_applied",
+      "category": "fallback",
+      "capabilities": ["local_ai", "scheduler", "webgpu_effect"],
+      "statuses": ["fallback", "blocked"],
+      "developerVisible": true,
+      "notes": "A hidden fallback was observed by a derived browser diagnostic."
+    },
+    {
+      "reasonCode": "hidden_fallback_disabled",
+      "category": "supported",
+      "capabilities": ["scheduler", "webgpu_effect"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Fallback behavior probe verified hidden fallback is disabled."
+    },
+    {
+      "reasonCode": "pipeline_cache_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["pipeline_cache"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Pipeline cache receipt evidence was not attached."
+    },
+    {
+      "reasonCode": "pipeline_cache_receipts_attached",
+      "category": "supported",
+      "capabilities": ["pipeline_cache"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Pipeline cache receipt evidence passed."
+    },
+    {
+      "reasonCode": "pipeline_cache_receipts_failed",
+      "category": "blocked",
+      "capabilities": ["pipeline_cache"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Pipeline cache receipt evidence failed."
+    },
+    {
+      "reasonCode": "shader_link_artifact_missing",
+      "category": "unsupported",
+      "capabilities": ["shader_link"],
+      "statuses": ["unsupported"],
+      "developerVisible": true,
+      "notes": "Shader link evidence was not attached."
+    },
+    {
+      "reasonCode": "shader_links_attached",
+      "category": "supported",
+      "capabilities": ["shader_link"],
+      "statuses": ["supported"],
+      "developerVisible": true,
+      "notes": "Shader link evidence passed."
+    },
+    {
+      "reasonCode": "shader_links_failed",
+      "category": "blocked",
+      "capabilities": ["shader_link"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Shader link evidence failed."
+    },
+    {
+      "reasonCode": "diagnostic_sample",
+      "category": "diagnostic",
+      "capabilities": ["cts_subset", "recovery_parity"],
+      "statuses": ["diagnostic"],
+      "developerVisible": false,
+      "notes": "Sample artifact placeholder reason for diagnostic rows."
+    },
+    {
+      "reasonCode": "smoke_bucket_not_fully_exercised",
+      "category": "diagnostic",
+      "capabilities": ["cts_subset"],
+      "statuses": ["diagnostic"],
+      "developerVisible": false,
+      "notes": "CTS bucket was not fully exercised by the smoke run."
+    },
+    {
+      "reasonCode": "not_exercised_by_smoke",
+      "category": "diagnostic",
+      "capabilities": ["recovery_parity"],
+      "statuses": ["diagnostic"],
+      "developerVisible": false,
+      "notes": "Recovery path was not exercised by the smoke run."
+    },
+    {
+      "reasonCode": "post_validation_compute_failed",
+      "category": "failure",
+      "capabilities": ["recovery_parity"],
+      "statuses": ["fail"],
+      "developerVisible": true,
+      "notes": "Recovery post-validation compute failed."
+    },
+    {
+      "reasonCode": "media_probe_digest_only",
+      "category": "policy",
+      "capabilities": ["capture_policy"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Media probe capture policy stores digests instead of raw media."
+    },
+    {
+      "reasonCode": "source_link_only",
+      "category": "policy",
+      "capabilities": ["capture_policy"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Shader link capture policy stores source linkage only."
+    },
+    {
+      "reasonCode": "receipt_only",
+      "category": "policy",
+      "capabilities": ["capture_policy"],
+      "statuses": ["blocked"],
+      "developerVisible": true,
+      "notes": "Pipeline cache policy stores receipts only."
+    },
+    {
+      "reasonCode": "diagnostic_only",
+      "category": "policy",
+      "capabilities": ["capture_policy", "scheduler", "webgpu_effect"],
+      "statuses": ["diagnostic", "blocked"],
+      "developerVisible": true,
+      "notes": "Surface is diagnostic-only."
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-claim-report.schema.json",
+  "title": "Browser claim report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "laneId",
+    "reportKind",
+    "generatedAt",
+    "benchmarkClass",
+    "comparisonStatus",
+    "claimStatus",
+    "timingClass",
+    "timingSource",
+    "claimabilityPolicy",
+    "policyPath",
+    "responsibilityMapPath",
+    "runtimeSelectorPolicyPath",
+    "forkMaintenancePolicyPath",
+    "capturePolicyPath",
+    "promotionApprovalsPath",
+    "ownershipPath",
+    "windowCount",
+    "windows",
+    "claimabilitySummary",
+    "workloads",
+    "failures"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "laneId": { "type": "string", "minLength": 1 },
+    "reportKind": { "type": "string", "const": "browser-claim-report" },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "benchmarkClass": { "type": "string", "const": "comparable" },
+    "comparisonStatus": { "enum": ["comparable", "diagnostic"] },
+    "claimStatus": { "enum": ["claimable", "diagnostic"] },
+    "timingClass": { "type": "string", "minLength": 1 },
+    "timingSource": { "type": "string", "minLength": 1 },
+    "claimabilityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "minTimedSamples",
+        "requiredPositivePercentiles",
+        "maxFlakePercent"
+      ],
+      "properties": {
+        "mode": { "enum": ["local", "release"] },
+        "minTimedSamples": { "type": "integer", "minimum": 1 },
+        "requiredPositivePercentiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "maxFlakePercent": { "type": "number", "minimum": 0 }
+      }
+    },
+    "policyPath": { "type": "string", "minLength": 1 },
+    "responsibilityMapPath": { "type": "string", "minLength": 1 },
+    "runtimeSelectorPolicyPath": { "type": "string", "minLength": 1 },
+    "forkMaintenancePolicyPath": { "type": "string", "minLength": 1 },
+    "capturePolicyPath": { "type": "string", "minLength": 1 },
+    "promotionApprovalsPath": { "type": "string", "minLength": 1 },
+    "ownershipPath": { "type": "string", "minLength": 1 },
+    "windowCount": { "type": "integer", "minimum": 1 },
+    "windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Window" }
+    },
+    "claimabilitySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workloadCount", "comparableCount", "claimableCount"],
+      "properties": {
+        "workloadCount": { "type": "integer", "minimum": 0 },
+        "comparableCount": { "type": "integer", "minimum": 0 },
+        "claimableCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Workload" }
+    },
+    "failures": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "Window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["window", "smokeReport"],
+      "properties": {
+        "window": { "type": "integer", "minimum": 1 },
+        "gateReport": { "type": "string", "minLength": 1 },
+        "smokeReport": { "type": "string", "minLength": 1 },
+        "layeredReport": { "type": "string", "minLength": 1 },
+        "summaryReport": { "type": "string", "minLength": 1 },
+        "checkReport": { "type": "string", "minLength": 1 },
+        "artifacts": { "type": "object" },
+        "hashes": { "type": "object" },
+        "browserEnvironmentEvidence": { "type": "object" }
+      }
+    },
+    "Workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "domain",
+        "scenarioTemplate",
+        "claimScope",
+        "comparabilityExpectation",
+        "comparisonStatus",
+        "claimability",
+        "deltaPercent",
+        "baseline",
+        "comparison"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "domain": { "type": "string" },
+        "scenarioTemplate": { "type": "string" },
+        "claimScope": { "type": "string" },
+        "comparabilityExpectation": { "type": "string" },
+        "comparisonStatus": { "enum": ["comparable", "diagnostic"] },
+        "claimability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claimable", "reasons", "windowCount", "flakePercent"],
+          "properties": {
+            "claimable": { "type": "boolean" },
+            "reasons": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "windowCount": { "type": "integer", "minimum": 1 },
+            "flakePercent": { "type": "number", "minimum": 0 }
+          }
+        },
+        "deltaPercent": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "baseline": { "$ref": "#/$defs/RuntimeStats" },
+        "comparison": { "$ref": "#/$defs/RuntimeStats" }
+      }
+    },
+    "RuntimeStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "timingSources", "stats", "samplesMs"],
+      "properties": {
+        "runtime": { "enum": ["dawn", "doe"] },
+        "timingSources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "samplesMs": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    }
+  }
+}

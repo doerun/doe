@@ -25,14 +25,16 @@
     },
     "sourceWorkloadsPath": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
     },
     "sourceWorkloadsSha256": {
       "$ref": "#/$defs/hashHex"
     },
     "rulesPath": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
     },
     "rulesSha256": {
       "$ref": "#/$defs/hashHex"

@@ -117,6 +117,19 @@ pub const CompilationStage = enum {
     csl_emit,
 };
 
+pub const CompilePhaseTimingsNs = struct {
+    parse: u64 = 0,
+    sema: u64 = 0,
+    lower: u64 = 0,
+    emit: u64 = 0,
+    total: u64 = 0,
+};
+
+pub const TimedAnalyzeResult = struct {
+    module: ir.Module,
+    phase_timings_ns: CompilePhaseTimingsNs,
+};
+
 const LAST_ERROR_CAP: usize = 256;
 const LAST_CONTEXT_CAP: usize = 96;
 var last_error_buf: [LAST_ERROR_CAP]u8 = undefined;
@@ -283,6 +296,15 @@ fn default_translation_robustness_config() ir_transform_robustness.Config {
     };
 }
 
+fn nowNs() i128 {
+    return std.time.nanoTimestamp();
+}
+
+fn elapsedNs(start: i128, end: i128) u64 {
+    if (end <= start) return 0;
+    return @intCast(end - start);
+}
+
 pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!ir.Module {
     return analyzeToIrWithConfig(allocator, wgsl, default_translation_robustness_config());
 }
@@ -292,7 +314,18 @@ pub fn analyzeToIrWithConfig(
     wgsl: []const u8,
     config: ir_transform_robustness.Config,
 ) TranslateError!ir.Module {
+    const result = try analyzeToIrWithConfigTimed(allocator, wgsl, config);
+    return result.module;
+}
+
+pub fn analyzeToIrWithConfigTimed(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    config: ir_transform_robustness.Config,
+) TranslateError!TimedAnalyzeResult {
     clearLastError();
+    const total_start_ns = nowNs();
+    const parse_start_ns = total_start_ns;
     var tree = parser.parseSource(allocator, wgsl) catch |err| {
         const kind = switch (err) {
             error.OutOfMemory => TranslateError.OutOfMemory,
@@ -302,15 +335,19 @@ pub fn analyzeToIrWithConfig(
         setLastError(.parser, kind, wgsl, fail_loc);
         return kind;
     };
+    const parse_end_ns = nowNs();
     defer tree.deinit();
 
+    const sema_start_ns = parse_end_ns;
     var semantic = sema.analyze(allocator, &tree) catch |err| {
         const kind = mapSemanticError(err);
         setLastError(.sema, kind, tree.source, tokenLoc(&tree, sema.lastFailureContext().token_idx));
         return kind;
     };
+    const sema_end_ns = nowNs();
     defer semantic.deinit();
 
+    const lower_start_ns = sema_end_ns;
     var module = ir_builder.build(allocator, &tree, &semantic) catch |err| {
         const kind = mapIrBuildError(err);
         setLastError(.ir_builder, kind, tree.source, tokenLoc(&tree, ir_builder.lastFailureContext().token_idx));
@@ -335,7 +372,16 @@ pub fn analyzeToIrWithConfig(
         setLastErrorDetail(.ir_transform, TranslateError.InvalidIr, @errorName(err));
         return TranslateError.InvalidIr;
     };
-    return module;
+    const lower_end_ns = nowNs();
+    return .{
+        .module = module,
+        .phase_timings_ns = .{
+            .parse = elapsedNs(parse_start_ns, parse_end_ns),
+            .sema = elapsedNs(sema_start_ns, sema_end_ns),
+            .lower = elapsedNs(lower_start_ns, lower_end_ns),
+            .total = elapsedNs(total_start_ns, lower_end_ns),
+        },
+    };
 }
 
 pub fn extractBindings(allocator: std.mem.Allocator, wgsl: []const u8, out: []BindingMeta) TranslateError!usize {

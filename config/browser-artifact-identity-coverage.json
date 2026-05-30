@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_artifact_identity_coverage",
+  "coverageId": "browser-artifact-identity-coverage-v0",
+  "artifacts": [
+    {
+      "artifactPath": "examples/browser-smoke-report.sample.json",
+      "kindField": "reportKind",
+      "expectedKind": "chromium-webgpu-playwright-smoke",
+      "identityMode": "smoke_report_identity",
+      "requiredPointers": [
+        "/workloadIdentity/kind",
+        "/workloadIdentity/workloadHash",
+        "/modeResults",
+        "/reportHash"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-gpu-flight-recorder.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_gpu_flight_recorder",
+      "identityMode": "flight_recorder_identity",
+      "requiredPointers": [
+        "/runtimeIdentity/browserExecutableSha256",
+        "/runtimeIdentity/doeRuntimeSha256",
+        "/runtimeIdentity/dawnDelegateSha256",
+        "/adapterIdentity",
+        "/shaders",
+        "/commandGraph",
+        "/frames"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-canvas-webgpu-fusion.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_canvas_webgpu_fusion_probe",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-gpu-scheduler.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_gpu_scheduler_probe",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-local-ai-workloads.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_local_ai_workloads",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied",
+        "/workloads"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-media-path-probe.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_media_path_probe",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied",
+        "/capturePolicy/capturePolicyPath"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-pipeline-cache-receipts.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_pipeline_cache_receipts",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied",
+        "/sourceWorkloadsPath",
+        "/sourceWorkloadSetId",
+        "/receipts/0/sourceSha256",
+        "/receipts/0/irSha256",
+        "/receipts/0/backendOutputSha256"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-webgpu-effect-experiment.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_webgpu_effect_experiment",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied",
+        "/pipelines"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-fallback-explanations.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_fallback_explanations",
+      "identityMode": "runtime_identity_anchor",
+      "requiredPointers": [
+        "/runtimeIdentity/runtimeIdentityPath",
+        "/runtimeIdentity/selectedRuntime",
+        "/runtimeIdentity/fallbackApplied",
+        "/taxonomyPath",
+        "/explanations"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-shader-links.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_shader_links",
+      "identityMode": "source_flight_recorder",
+      "requiredPointers": [
+        "/captureId",
+        "/sourceFlightRecorderPath",
+        "/selectedRuntime",
+        "/shaders",
+        "/shaders/0/sourceSha256",
+        "/shaders/0/irSha256",
+        "/shaders/0/backendOutputSha256"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-gpu-flight-replay.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_gpu_flight_replay",
+      "identityMode": "replay_source_identity",
+      "requiredPointers": [
+        "/sourcePath",
+        "/sourceArtifactKind",
+        "/policyPath",
+        "/graphSha256"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-cts-subset.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_cts_subset",
+      "identityMode": "artifact_pair",
+      "requiredPointers": [
+        "/browserArtifacts/dawnArtifactPath",
+        "/browserArtifacts/forcedDoeArtifactPath",
+        "/rows"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-recovery-parity.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_recovery_parity",
+      "identityMode": "artifact_pair",
+      "requiredPointers": [
+        "/runtimeSelector/selectorVersion",
+        "/dawnArtifactPath",
+        "/doeArtifactPath",
+        "/cases"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-claim-report.sample.json",
+      "kindField": "reportKind",
+      "expectedKind": "browser-claim-report",
+      "identityMode": "claim_policy_identity",
+      "requiredPointers": [
+        "/runtimeSelectorPolicyPath",
+        "/forkMaintenancePolicyPath",
+        "/capturePolicyPath",
+        "/ownershipPath",
+        "/responsibilityMapPath"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-claim-promotion-receipt.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_claim_promotion_receipt",
+      "identityMode": "promotion_receipt_identity",
+      "requiredPointers": [
+        "/claimPolicyPath",
+        "/artifacts",
+        "/hiddenFallbackCheck"
+      ]
+    },
+    {
+      "artifactPath": "examples/browser-release-artifact-bundle.sample.json",
+      "kindField": "artifactKind",
+      "expectedKind": "browser_release_artifact_bundle",
+      "identityMode": "release_bundle_identity",
+      "requiredPointers": [
+        "/browserBinary/sha256",
+        "/doeRuntime/sha256",
+        "/shaderCompiler/sha256",
+        "/claimReports",
+        "/promotionReceipts",
+        "/policies"
+      ]
+    }
+  ]
+}

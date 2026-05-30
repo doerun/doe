@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-shader-links.schema.json",
+  "title": "Browser shader links artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "captureId",
+    "sourceFlightRecorderPath",
+    "selectedRuntime",
+    "linkStatus",
+    "shaders",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_shader_links" },
+    "captureId": { "type": "string", "minLength": 1 },
+    "sourceFlightRecorderPath": { "type": "string", "minLength": 1 },
+    "selectedRuntime": {
+      "enum": ["dawn", "doe", "auto", "browser_navigator_gpu", "unknown"]
+    },
+    "linkStatus": { "enum": ["pass", "fail"] },
+    "shaders": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ShaderLink" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FailureCode" }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ShaderLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "sourceLanguage",
+        "sourcePath",
+        "sourceSha256",
+        "irPath",
+        "irSha256",
+        "loweringReceiptPath",
+        "loweringReceiptRowId",
+        "backendTarget",
+        "backendOutputPath",
+        "backendOutputSha256"
+      ],
+      "properties": {
+        "shaderId": { "type": "string", "minLength": 1 },
+        "sourceLanguage": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "sourceSha256": { "$ref": "#/$defs/Sha256" },
+        "irPath": { "type": "string", "minLength": 1 },
+        "irSha256": { "$ref": "#/$defs/Sha256" },
+        "loweringReceiptPath": { "type": "string", "minLength": 1 },
+        "loweringReceiptRowId": { "type": "string", "minLength": 1 },
+        "backendTarget": { "type": "string", "minLength": 1 },
+        "backendOutputPath": { "type": "string", "minLength": 1 },
+        "backendOutputSha256": { "$ref": "#/$defs/Sha256" },
+        "diagnosticStatus": { "enum": ["ok", "warning", "failed"] }
+      }
+    },
+    "FailureCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "source", "message", "path"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "fatal"] },
+        "source": { "enum": ["browser_shader_links"] },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

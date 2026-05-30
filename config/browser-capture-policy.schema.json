@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-capture-policy.schema.json",
+  "title": "Browser capture policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "policyId", "surfaces"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_capture_policy" },
+    "policyId": { "type": "string", "minLength": 1 },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Surface" }
+    }
+  },
+  "$defs": {
+    "Surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surfaceId",
+        "originScoped",
+        "permissionGate",
+        "rawPageDataPolicy",
+        "artifactDataPolicy",
+        "replayAllowed",
+        "developerVisible"
+      ],
+      "properties": {
+        "surfaceId": {
+          "enum": [
+            "gpu_flight_recorder",
+            "flight_replay",
+            "shader_links",
+            "media_path_probe",
+            "pipeline_cache_receipts",
+            "unsupported_explanations"
+          ]
+        },
+        "originScoped": { "type": "boolean", "const": true },
+        "permissionGate": {
+          "enum": ["devtools_opt_in", "secure_context_devtools_opt_in", "disabled"]
+        },
+        "rawPageDataPolicy": {
+          "enum": ["hash", "redact", "forbid"]
+        },
+        "artifactDataPolicy": {
+          "enum": ["metadata_only", "hashes_and_redacted_metadata"]
+        },
+        "replayAllowed": { "type": "boolean" },
+        "developerVisible": { "type": "boolean" },
+        "reasonCode": { "type": "string" }
+      }
+    }
+  }
+}

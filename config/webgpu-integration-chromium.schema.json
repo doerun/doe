@@ -9,6 +9,7 @@
     "surfaceId",
     "surfaceVersion",
     "lastUpdated",
+    "integrationPhase",
     "description",
     "smokeTestArtifact",
     "coverage",
@@ -19,6 +20,14 @@
     "surfaceId": { "type": "string", "const": "doe-chromium" },
     "surfaceVersion": { "type": "integer" },
     "lastUpdated": { "type": "string" },
+    "integrationPhase": {
+      "type": "string",
+      "enum": [
+        "wrapper_diagnostic",
+        "source_selector_required",
+        "chromium_runtime_active"
+      ]
+    },
     "description": { "type": "string" },
     "smokeTestArtifact": { "type": "string" },
     "coverage": {
@@ -31,7 +40,13 @@
           "capability": { "type": "string", "minLength": 1 },
           "status": {
             "type": "string",
-            "enum": ["passing", "not_supported", "implemented_untested_in_browser"]
+            "enum": [
+              "passing",
+              "not_supported",
+              "diagnostic_wrapper_only",
+              "source_patch_required",
+              "implemented_untested_in_browser"
+            ]
           },
           "domain": { "type": "string", "minLength": 1 },
           "blockedBy": { "type": "string" },

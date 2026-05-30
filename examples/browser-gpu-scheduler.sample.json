@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_gpu_scheduler_probe",
+  "schedulerId": "browser-gpu-scheduler-smoke",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "workClasses": [
+    {
+      "workClassId": "work:webgpu",
+      "surface": "webgpu",
+      "priorityClass": "interactive"
+    },
+    {
+      "workClassId": "work:canvas",
+      "surface": "canvas",
+      "priorityClass": "frame"
+    },
+    {
+      "workClassId": "work:video",
+      "surface": "video",
+      "priorityClass": "frame"
+    },
+    {
+      "workClassId": "work:css_effects",
+      "surface": "css_effects",
+      "priorityClass": "frame"
+    },
+    {
+      "workClassId": "work:local_ai",
+      "surface": "local_ai",
+      "priorityClass": "background"
+    },
+    {
+      "workClassId": "work:compositor",
+      "surface": "compositor_adjacent",
+      "priorityClass": "frame"
+    }
+  ],
+  "probes": [
+    {
+      "probeId": "probe:priority",
+      "probeKind": "priority",
+      "workClassIds": ["work:webgpu", "work:canvas", "work:local_ai"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:fairness",
+      "probeKind": "fairness",
+      "workClassIds": ["work:webgpu", "work:local_ai"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:frame_deadline",
+      "probeKind": "frame_deadline",
+      "workClassIds": ["work:canvas", "work:css_effects", "work:compositor"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:origin_quota",
+      "probeKind": "origin_quota",
+      "workClassIds": ["work:webgpu", "work:local_ai"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:device_loss",
+      "probeKind": "device_loss",
+      "workClassIds": ["work:webgpu", "work:canvas", "work:video"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:fallback_behavior",
+      "probeKind": "fallback_behavior",
+      "workClassIds": ["work:webgpu", "work:canvas", "work:video", "work:css_effects", "work:local_ai", "work:compositor"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/",
+      "reasonCode": "diagnostic_only"
+    }
+  ],
+  "fallbackPolicy": {
+    "hiddenFallbackAllowed": false,
+    "reasonCodeRequired": true
+  },
+  "privacy": {
+    "originScoped": true,
+    "rawPageDataIncluded": false
+  }
+}

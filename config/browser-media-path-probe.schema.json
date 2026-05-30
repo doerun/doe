@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-media-path-probe.schema.json",
+  "title": "Browser media path probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "probeSetId",
+    "runtimeIdentity",
+    "capturePolicy",
+    "mediaSources",
+    "probes",
+    "fallbackPolicy",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_media_path_probe" },
+    "probeSetId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "capturePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capturePolicyPath", "surfaceId"],
+      "properties": {
+        "capturePolicyPath": { "type": "string", "minLength": 1 },
+        "surfaceId": { "type": "string", "const": "media_path_probe" }
+      }
+    },
+    "mediaSources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/MediaSource" }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Probe" }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hiddenFallbackAllowed", "reasonCodeRequired"],
+      "properties": {
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCodeRequired": { "type": "boolean", "const": true }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawMediaIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawMediaIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "MediaSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mediaSourceId", "sourceKind", "sourcePath", "sourceDigest"],
+      "properties": {
+        "mediaSourceId": { "type": "string", "minLength": 1 },
+        "sourceKind": { "enum": ["video_frame", "image_bitmap", "canvas_source", "shared_texture"] },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "sourceDigest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "value"],
+          "properties": {
+            "algorithm": { "type": "string", "const": "sha256" },
+            "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        }
+      }
+    },
+    "Probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probeId",
+        "probeKind",
+        "mediaSourceIds",
+        "status",
+        "outputDigest",
+        "fallbackApplied",
+        "hiddenFallbackAllowed",
+        "evidencePath"
+      ],
+      "properties": {
+        "probeId": { "type": "string", "minLength": 1 },
+        "probeKind": {
+          "enum": [
+            "gpu_external_texture",
+            "copy_external_image_to_texture",
+            "shared_texture_import"
+          ]
+        },
+        "mediaSourceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "status": { "enum": ["pass", "diagnostic", "unsupported", "fail"] },
+        "outputDigest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "value"],
+          "properties": {
+            "algorithm": { "type": "string", "const": "sha256" },
+            "value": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        },
+        "fallbackApplied": { "type": "boolean" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCode": { "type": "string" },
+        "evidencePath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

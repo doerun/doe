@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-recovery-parity.schema.json",
+  "title": "Browser recovery parity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "paritySetId",
+    "runtimeSelector",
+    "dawnArtifactPath",
+    "doeArtifactPath",
+    "cases",
+    "fallbackPolicy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_recovery_parity" },
+    "paritySetId": { "type": "string", "minLength": 1 },
+    "runtimeSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectorVersion", "doeMode", "hiddenFallbackAllowed"],
+      "properties": {
+        "selectorVersion": { "type": "string", "minLength": 1 },
+        "doeMode": { "enum": ["forced_doe", "dawn", "auto"] },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false }
+      }
+    },
+    "dawnArtifactPath": { "type": "string", "minLength": 1 },
+    "doeArtifactPath": { "type": "string", "minLength": 1 },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Case" }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hiddenFallbackAllowed", "reasonCodeRequired"],
+      "properties": {
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCodeRequired": { "type": "boolean", "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "Case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "caseKind",
+        "dawnStatus",
+        "doeStatus",
+        "parityStatus",
+        "evidencePath"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "caseKind": {
+          "enum": ["crash", "hang", "device_loss", "validation_error", "recovery"]
+        },
+        "dawnStatus": { "enum": ["pass", "diagnostic", "fail", "unsupported"] },
+        "doeStatus": { "enum": ["pass", "diagnostic", "fail", "unsupported"] },
+        "parityStatus": { "enum": ["match", "mismatch", "diagnostic"] },
+        "reasonCode": { "type": "string" },
+        "evidencePath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

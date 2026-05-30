@@ -1,4 +1,4 @@
-# Runtime Selector and Fallback Contract (Draft)
+# Runtime selector and fallback contract
 
 ## Status
 
@@ -30,7 +30,17 @@ Out of scope:
 2. Non-WebGPU subsystem selection.
 3. Implicit policy heuristics.
 
-## Control Surfaces
+## Schema-backed policy
+
+The runtime selector policy is
+[`config/browser-runtime-selector-policy.json`](../../../config/browser-runtime-selector-policy.json)
+and validates against
+[`config/browser-runtime-selector-policy.schema.json`](../../../config/browser-runtime-selector-policy.schema.json).
+The policy records the selection modes, control precedence, emergency kill
+switch, auto-mode preconditions, denylist reason, fallback taxonomy,
+forced-Doe failure behavior, and required observability fields.
+
+## Control surfaces
 
 Candidate control surfaces (precedence high -> low):
 
@@ -40,28 +50,37 @@ Candidate control surfaces (precedence high -> low):
 4. Auto selection policy based on adapter/profile support.
 5. Default baseline (`dawn`) when none provided.
 
-## Selection Modes
+## Selection modes
 
 1. `dawn`
-   - force incumbent runtime.
+   - force incumbent runtime; no fallback is allowed or reported.
 2. `doe`
-   - force Doe path.
+   - force Doe path; initialization failure is a Doe failure, not a Dawn
+     fallback.
 3. `auto`
-   - attempt Doe only when all gating preconditions hold for active profile; otherwise fallback to Dawn with reason code.
+   - diagnostic policy mode. The browser runners attempt Doe only when the
+     runtime artifact is available and the emergency kill switch is inactive;
+     otherwise they select Dawn and emit a typed fallback reason.
 
-## Auto Mode Preconditions (Draft)
+## Auto mode preconditions
 
 All required:
 
-1. Runtime artifact availability and load success.
-2. Required symbol surface available.
-3. Required capability checks pass.
-4. Profile not denylisted.
-5. No active emergency disable.
+1. Emergency disable inactive.
+2. Runtime artifact available.
+3. Runtime artifact load success.
+4. Required symbol surface available.
+5. Required capability checks pass.
+6. Profile not denylisted.
 
 If any precondition fails, select `dawn` with explicit fallback reason.
+The current Playwright diagnostic selector implements the emergency-disable,
+runtime-artifact-availability, and explicit profile-denylist checks. Later
+Chromium-integrated selectors must fill in runtime load, symbol, capability,
+and adapter-derived profile checks before auto output can support claim
+language.
 
-## Fallback Reason Taxonomy (Draft)
+## Fallback reason taxonomy
 
 1. `global_disable_active`
 2. `runtime_artifact_missing`
@@ -75,36 +94,44 @@ If any precondition fails, select `dawn` with explicit fallback reason.
 
 No free-form fallback reasons in reporting; reasons must be typed from this taxonomy.
 
-## Required Observability Fields
+## Required observability fields
 
 Per runtime session:
 
 1. `selectionMode` (`dawn|doe|auto`)
 2. `selectedRuntime` (`dawn|doe`)
-3. `fallbackApplied` (boolean)
-4. `fallbackReasonCode` (taxonomy value or empty when not applicable)
-5. `profile`:
+3. `forcedMode` (`dawn|doe` for forced claim lanes)
+4. `fallbackApplied` (boolean)
+5. `fallbackReasonCode` (taxonomy value or empty when not applicable)
+6. `hiddenFallbackAllowed` (boolean)
+7. `profile`:
    - `vendor`,
    - `api`,
    - `deviceFamily`,
    - `driver`.
-6. `selectorVersion`
-7. `artifactIdentity`:
-   - runtime artifact hash/version.
+8. `selectorVersion`
+9. `artifactIdentity`:
+   - `browserExecutablePath`,
+   - `browserExecutableSha256`,
+   - `dawnRuntimePath`,
+   - `dawnRuntimeSha256`,
+   - `doeLibPath`,
+   - `doeLibSha256`.
+10. `launchArgsHash`
 
-## Trace and Report Contract
+## Trace and report contract
 
 1. Selection fields are emitted in run metadata and trace meta.
 2. Fallback events are emitted once per session and linked to run identity.
 3. Selection logs must be deterministic for identical profile and controls.
 
-## Failure Policy
+## Failure policy
 
 1. Selector failures must fail closed to `dawn` unless explicit forced mode says otherwise.
 2. Forced `doe` mode must fail fast with actionable error if runtime cannot initialize.
 3. No silent mode mutation after first successful runtime selection in a session.
 
-## Gating Requirements
+## Gating requirements
 
 Blocking before promotion:
 
@@ -117,7 +144,7 @@ Advisory:
 
 1. Performance and reliability trend tracking.
 
-## Negative Tests (Required)
+## Negative tests
 
 1. Missing artifact -> deterministic fallback with `runtime_artifact_missing`.
 2. Missing required symbols -> deterministic fallback with `symbol_surface_incomplete`.
@@ -125,13 +152,13 @@ Advisory:
 4. Global kill switch -> deterministic fallback with `global_disable_active`.
 5. Forced `doe` with failed init -> explicit hard failure, not silent Dawn selection.
 
-## Rollback Contract
+## Rollback contract
 
 1. Rollback can be executed via global kill switch without rebuild.
 2. Rollback event must include reason and timestamp in run metadata.
 3. Rollback does not alter schema or artifact history contracts.
 
-## Promotion Preconditions
+## Promotion preconditions
 
 1. Control-surface precedence implemented and tested.
 2. Fallback taxonomy implemented and schema-backed.

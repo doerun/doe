@@ -118,6 +118,20 @@ JS / C application
           GPU
 ```
 
+## Corpus routing
+
+The Chromium WebGPU task list routes browser-facing compiler coverage through
+the schema-backed WGSL corpus manifest at
+[`config/wgsl-browser-corpus.json`](../config/wgsl-browser-corpus.json). The
+manifest rows bind source path, normalized source hash, expected validity,
+expected backend targets, shader stages, and provenance before they can feed
+Doe-vs-Tint evidence. The materializer
+[`bench/tools/materialize_wgsl_corpus_manifest.py`](../bench/tools/materialize_wgsl_corpus_manifest.py)
+requires repo-relative source paths, validates those hashes, and emits
+normalized WGSL files plus a `wgsl_corpus_materialization` receipt. Receipt
+verification keeps materialized and minimized candidate files under the supplied
+`--verify-files-root` before hashing them.
+
 ## TSIR path for spatial backends
 
 The current compiler pipeline in this document is the operative path for Metal,
@@ -144,7 +158,7 @@ MSL/SPIR-V/HLSL WebGPU lanes remain live.
 Dawn is Google's WebGPU implementation. Tint is Dawn's shader compiler.
 Tint is therefore a first-class Doe target, not incidental background. The
 Chromium task list in
-[`chromium-webgpu-dominance.md`](./chromium-webgpu-dominance.md) requires
+[`chromium-webgpu-task-list.md`](./chromium-webgpu-task-list.md) requires
 compiler evidence against Tint before any Chromium WebGPU replacement claim can
 promote.
 

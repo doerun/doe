@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "chromium_source_checkout_check",
+  "sourceRoot": "browser/chromium/src",
+  "requireReady": false,
+  "requireRuntimeSelector": false,
+  "status": "blocked",
+  "checks": [
+    {
+      "checkId": "source_root",
+      "status": "fail",
+      "required": true,
+      "path": "browser/chromium/src",
+      "message": "Chromium source root is missing"
+    },
+    {
+      "checkId": "tool:gclient",
+      "status": "fail",
+      "required": true,
+      "command": "gclient",
+      "message": "required Chromium tool is missing from PATH"
+    }
+  ],
+  "missingRequired": [
+    "source_root",
+    "tool:gclient"
+  ]
+}

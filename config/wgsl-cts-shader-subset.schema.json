@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/wgsl-cts-shader-subset.schema.json",
+  "title": "WGSL CTS shader subset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "subsetId",
+    "manifestPath",
+    "ctsEvidencePath",
+    "ctsSource",
+    "ctsRevision",
+    "subsetStatus",
+    "rows",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_cts_shader_subset" },
+    "subsetId": { "type": "string", "minLength": 1 },
+    "manifestPath": { "type": "string", "minLength": 1 },
+    "ctsEvidencePath": { "type": "string", "minLength": 1 },
+    "ctsSource": { "type": "string", "minLength": 1 },
+    "ctsRevision": { "type": "string", "minLength": 1 },
+    "subsetStatus": { "enum": ["pass", "fail"] },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SubsetRow" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Failure" }
+    }
+  },
+  "$defs": {
+    "SubsetRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ctsQuery",
+        "ctsBucket",
+        "shaderId",
+        "sourcePath",
+        "normalizedSourceSha256",
+        "expectedValidity",
+        "expectedBackendTargets",
+        "shaderStages",
+        "ctsArtifactPath"
+      ],
+      "properties": {
+        "ctsQuery": { "type": "string", "minLength": 1 },
+        "ctsBucket": { "type": "string", "minLength": 1 },
+        "shaderId": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "normalizedSourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expectedValidity": { "enum": ["valid", "invalid"] },
+        "expectedBackendTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["msl", "spirv", "dxil", "hlsl"] }
+        },
+        "shaderStages": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["compute", "vertex", "fragment"] }
+        },
+        "ctsArtifactPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "missing_cts_shader_row",
+            "missing_cts_evidence",
+            "unsafe_source_path",
+            "unsafe_cts_artifact_path",
+            "source_hash_mismatch"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

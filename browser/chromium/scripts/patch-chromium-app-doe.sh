@@ -32,6 +32,10 @@ EOF
 fawn_default_doe_lib() {
   local ext="dylib"
   printf "%s\n" \
+    "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.${ext}" \
+    "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.so" \
+    "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib" \
+    "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.dll" \
     "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.${ext}" \
     "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.so" \
     "${FAWN_PROJECT_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.dylib" \

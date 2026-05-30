@@ -19,7 +19,7 @@ import math
 import subprocess
 import sys
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 BENCH_ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +29,8 @@ if str(BENCH_ROOT) not in sys.path:
 
 from bench.lib import output_paths
 from bench.lib.config_validation import load_validated_config
+from bench.tools import build_browser_claim_promotion_receipt
+from bench.tools import check_browser_responsibility_map
 
 
 def repo_root() -> Path:
@@ -45,6 +47,30 @@ def default_report_path(root: Path) -> Path:
 
 def default_artifact_root(root: Path) -> Path:
     return root / "browser/chromium/artifacts" / utc_stamp() / "browser-claim"
+
+
+def safe_repo_path(path_text: str) -> bool:
+    path = PurePosixPath(path_text)
+    return bool(path_text) and not path.is_absolute() and ".." not in path.parts
+
+
+def resolve_repo_path(root: Path, path_text: str) -> Path:
+    return root.joinpath(*PurePosixPath(path_text).parts)
+
+
+def chromium_patch_manifest_path_from_policy(
+    policy: dict[str, Any],
+    root: Path,
+) -> tuple[Path | None, str | None]:
+    try:
+        manifest_path = policy["patchIsolation"]["patchManifestPath"]
+    except (KeyError, TypeError):
+        return None, "missing patchIsolation.patchManifestPath"
+    if not isinstance(manifest_path, str) or not manifest_path:
+        return None, "patchIsolation.patchManifestPath must be non-empty"
+    if not safe_repo_path(manifest_path):
+        return None, f"patchIsolation.patchManifestPath must be repo-relative: {manifest_path}"
+    return resolve_repo_path(root, manifest_path), None
 
 
 def parse_args() -> argparse.Namespace:
@@ -64,6 +90,22 @@ def parse_args() -> argparse.Namespace:
         default=str(root / "config/browser-ownership.json"),
     )
     parser.add_argument(
+        "--responsibility-map",
+        default=str(root / "config/browser-responsibility-map.json"),
+    )
+    parser.add_argument(
+        "--runtime-selector-policy",
+        default=str(root / "config/browser-runtime-selector-policy.json"),
+    )
+    parser.add_argument(
+        "--fork-maintenance-policy",
+        default=str(root / "config/chromium-fork-maintenance-policy.json"),
+    )
+    parser.add_argument(
+        "--capture-policy",
+        default=str(root / "config/browser-capture-policy.json"),
+    )
+    parser.add_argument(
         "--window-count",
         type=int,
         default=0,
@@ -73,6 +115,11 @@ def parse_args() -> argparse.Namespace:
         "--report",
         default="",
         help="Output JSON report path. Defaults to bench/out/browser-claim/<timestamp>/browser_claim_report.json",
+    )
+    parser.add_argument(
+        "--promotion-receipt-out",
+        default="",
+        help="Output browser claim promotion receipt path. Defaults next to --report.",
     )
     parser.add_argument(
         "--artifact-root",
@@ -157,6 +204,94 @@ def parse_policy(path: Path) -> dict[str, Any]:
     return payload
 
 
+def responsibility_map_failures(path: Path, root: Path) -> list[str]:
+    payload = load_json(path)
+    return [
+        f"responsibility-map:{item['code']}: {item['path']}: {item['message']}"
+        for item in check_browser_responsibility_map.check_responsibility_map(payload, root)
+    ]
+
+
+def runtime_selector_policy_failures(path: Path, root: Path) -> list[str]:
+    checker = root / "browser/chromium/scripts/check-browser-runtime-selector-policy.py"
+    result = subprocess.run(
+        [sys.executable, str(checker), "--policy", str(path)],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode == 0:
+        return []
+    output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+    return [f"runtime-selector-policy: {output or 'check failed'}"]
+
+
+def fork_maintenance_policy_failures(path: Path, root: Path) -> list[str]:
+    checker = root / "bench/tools/check_chromium_fork_maintenance_policy.py"
+    result = subprocess.run(
+        [sys.executable, str(checker), "--policy", str(path), "--root", str(root)],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode == 0:
+        return []
+    output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+    return [f"fork-maintenance-policy: {output or 'check failed'}"]
+
+
+def chromium_patch_manifest_failures(policy_path: Path, root: Path) -> list[str]:
+    try:
+        policy = load_json(policy_path)
+        manifest_path, error = chromium_patch_manifest_path_from_policy(policy, root)
+        if error is not None or manifest_path is None:
+            return [f"chromium-patch-manifest: failed to resolve manifest path: {error}"]
+    except (KeyError, TypeError, ValueError, OSError, json.JSONDecodeError) as exc:
+        return [f"chromium-patch-manifest: failed to resolve manifest path: {exc}"]
+    checker = root / "bench/tools/check_chromium_patch_manifest.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(checker),
+            "--manifest",
+            str(manifest_path),
+            "--policy",
+            str(policy_path),
+            "--root",
+            str(root),
+        ],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode == 0:
+        return []
+    output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+    return [f"chromium-patch-manifest: {output or 'check failed'}"]
+
+
+def capture_policy_failures(path: Path, root: Path) -> list[str]:
+    checker = root / "bench/tools/check_browser_capture_policy.py"
+    result = subprocess.run(
+        [sys.executable, str(checker), "--policy", str(path)],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode == 0:
+        return []
+    output = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+    return [f"capture-policy: {output or 'check failed'}"]
+
+
 def extract_claim_rows(report_payload: dict[str, Any], required_claim_scopes: set[str]) -> dict[str, dict[str, Any]]:
     rows = report_payload.get("l1", {}).get("rows", [])
     if not isinstance(rows, list):
@@ -235,6 +370,14 @@ def run_window(
         str(Path(args.promotion_approvals).resolve()),
         "--ownership",
         str(Path(args.ownership).resolve()),
+        "--responsibility-map",
+        str(Path(args.responsibility_map).resolve()),
+        "--runtime-selector-policy",
+        str(Path(args.runtime_selector_policy).resolve()),
+        "--fork-maintenance-policy",
+        str(Path(args.fork_maintenance_policy).resolve()),
+        "--capture-policy",
+        str(Path(args.capture_policy).resolve()),
         "--artifact-root",
         str(window_artifacts),
         "--report",
@@ -255,6 +398,32 @@ def run_window(
     return gate_payload
 
 
+def reuse_window_artifacts(window_dir: Path) -> dict[str, str]:
+    candidates = {
+        "smokeReport": window_dir / "dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+        "ctsSubsetReport": window_dir / "browser-cts-subset.json",
+        "recoveryParityReport": window_dir / "browser-recovery-parity.json",
+        "canvasWebgpuFusionReport": window_dir / "browser-canvas-webgpu-fusion.json",
+        "mediaPathProbeReport": window_dir / "browser-media-path-probe.json",
+        "gpuSchedulerReport": window_dir / "browser-gpu-scheduler.json",
+        "webgpuEffectExperimentReport": window_dir / "browser-webgpu-effect-experiment.json",
+        "flightRecorderReport": window_dir / "browser-gpu-flight-recorder.json",
+        "flightReplayReport": window_dir / "browser-gpu-flight-replay.json",
+        "shaderLinksReport": window_dir / "browser-shader-links.json",
+        "localAiWorkloadsReport": window_dir / "browser-local-ai-workloads.json",
+        "pipelineCacheReceiptsReport": window_dir / "browser-pipeline-cache-receipts.json",
+        "fallbackExplanationsReport": window_dir / "browser-fallback-explanations.json",
+        "layeredReport": window_dir / "dawn-vs-doe.browser-layered.superset.diagnostic.json",
+        "summaryReport": window_dir / "dawn-vs-doe.browser-layered.superset.summary.json",
+        "checkReport": window_dir / "dawn-vs-doe.browser-layered.superset.check.json",
+    }
+    return {
+        key: str(path)
+        for key, path in candidates.items()
+        if path.exists()
+    }
+
+
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
@@ -262,6 +431,12 @@ def main() -> int:
     policy = parse_policy(policy_path)
     report_path = Path(args.report).resolve() if args.report else default_report_path(root)
     report_path.parent.mkdir(parents=True, exist_ok=True)
+    promotion_receipt_path = (
+        Path(args.promotion_receipt_out).resolve()
+        if args.promotion_receipt_out
+        else Path(f"{report_path.with_suffix('')}.promotion-receipt.json")
+    )
+    promotion_receipt_path.parent.mkdir(parents=True, exist_ok=True)
     artifacts_root = Path(args.artifact_root).resolve() if args.artifact_root else default_artifact_root(root)
     artifacts_root.mkdir(parents=True, exist_ok=True)
     windows_dir = report_path.parent / "windows"
@@ -276,6 +451,31 @@ def main() -> int:
         return 1
 
     failures: list[str] = []
+    responsibility_map_path = Path(args.responsibility_map).resolve()
+    runtime_selector_policy_path = Path(args.runtime_selector_policy).resolve()
+    fork_maintenance_policy_path = Path(args.fork_maintenance_policy).resolve()
+    try:
+        fork_maintenance_policy = load_json(fork_maintenance_policy_path)
+        maybe_chromium_patch_manifest_path, patch_manifest_error = (
+            chromium_patch_manifest_path_from_policy(fork_maintenance_policy, root)
+        )
+        chromium_patch_manifest_path = (
+            maybe_chromium_patch_manifest_path
+            if maybe_chromium_patch_manifest_path is not None
+            else root / "config/chromium-patch-manifest.json"
+        )
+    except (KeyError, TypeError, ValueError, OSError, json.JSONDecodeError):
+        patch_manifest_error = None
+        chromium_patch_manifest_path = root / "config/chromium-patch-manifest.json"
+    capture_policy_path = Path(args.capture_policy).resolve()
+    failures.extend(responsibility_map_failures(responsibility_map_path, root))
+    failures.extend(runtime_selector_policy_failures(runtime_selector_policy_path, root))
+    failures.extend(fork_maintenance_policy_failures(fork_maintenance_policy_path, root))
+    if patch_manifest_error is not None:
+        failures.append(f"chromium-patch-manifest: failed to resolve manifest path: {patch_manifest_error}")
+    else:
+        failures.extend(chromium_patch_manifest_failures(fork_maintenance_policy_path, root))
+    failures.extend(capture_policy_failures(capture_policy_path, root))
     per_window_rows: list[dict[str, Any]] = []
     claim_scope_rows: dict[str, dict[str, Any]] = {}
     required_claim_scopes = set(policy["requireClaimScopes"])
@@ -295,21 +495,15 @@ def main() -> int:
             summary_path = window_dir / "dawn-vs-doe.browser-layered.superset.summary.json"
             check_path = window_dir / "dawn-vs-doe.browser-layered.superset.check.json"
             smoke_path = window_dir / "dawn-vs-doe.browser.playwright-smoke.diagnostic.json"
+            artifact_map = reuse_window_artifacts(window_dir)
             layered_report = load_json(layered_path)
             summary_report = load_json(summary_path)
             check_report = load_json(check_path)
             gate_payload = {
-                "artifacts": {
-                    "smokeReport": str(smoke_path),
-                    "layeredReport": str(layered_path),
-                    "summaryReport": str(summary_path),
-                    "checkReport": str(check_path),
-                },
+                "artifacts": artifact_map,
                 "hashes": {
-                    "smokeReport": stable_hash(load_json(smoke_path)),
-                    "layeredReport": stable_hash(layered_report),
-                    "summaryReport": stable_hash(summary_report),
-                    "checkReport": stable_hash(check_report),
+                    key: stable_hash(load_json(Path(path)))
+                    for key, path in artifact_map.items()
                 },
             }
             if not smoke_path.exists():
@@ -334,6 +528,7 @@ def main() -> int:
                     "layeredReport": str(layered_path),
                     "summaryReport": str(summary_path),
                     "checkReport": str(check_path),
+                    "artifacts": gate_payload["artifacts"],
                     "hashes": gate_payload["hashes"],
                     "browserEnvironmentEvidence": browser_evidence,
                 }
@@ -381,6 +576,7 @@ def main() -> int:
                     "layeredReport": gate_payload["artifacts"]["layeredReport"],
                     "summaryReport": gate_payload["artifacts"]["summaryReport"],
                     "checkReport": gate_payload["artifacts"]["checkReport"],
+                    "artifacts": gate_payload["artifacts"],
                     "hashes": gate_payload["hashes"],
                     "browserEnvironmentEvidence": browser_evidence,
                 }
@@ -524,6 +720,11 @@ def main() -> int:
             "maxFlakePercent": policy["maxFlakePercent"],
         },
         "policyPath": str(policy_path),
+        "responsibilityMapPath": str(responsibility_map_path),
+        "runtimeSelectorPolicyPath": str(runtime_selector_policy_path),
+        "forkMaintenancePolicyPath": str(fork_maintenance_policy_path),
+        "chromiumPatchManifestPath": str(chromium_patch_manifest_path),
+        "capturePolicyPath": str(capture_policy_path),
         "promotionApprovalsPath": str(Path(args.promotion_approvals).resolve()),
         "ownershipPath": str(Path(args.ownership).resolve()),
         "windowCount": requested_windows,
@@ -576,12 +777,23 @@ def main() -> int:
     gate_result_path = Path(f"{report_path.with_suffix('')}.claim-gate-result.json")
     gate_result_path.write_text(json.dumps(gate_result, indent=2) + "\n", encoding="utf-8")
 
+    promotion_receipt = build_browser_claim_promotion_receipt.build_receipt(
+        [report_path],
+        claim_policy_path=policy_path,
+        receipt_id=f"browser-claim-promotion:{report_path.stem}",
+    )
+    promotion_receipt_path.write_text(
+        json.dumps(promotion_receipt, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
     manifest = {
         "schemaVersion": 1,
         "generatedAt": payload["generatedAt"],
         "reportPath": str(report_path),
         "gateResultPath": str(gate_result_path),
         "tailHealthPath": str(tail_health_path),
+        "promotionReceiptPath": str(promotion_receipt_path),
         "artifactsRoot": str(artifacts_root),
         "windowReports": [row["gateReport"] for row in per_window_rows],
     }
@@ -589,7 +801,7 @@ def main() -> int:
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     output_paths.write_run_manifest_for_outputs(
-        [report_path, gate_result_path, tail_health_path, manifest_path],
+        [report_path, gate_result_path, tail_health_path, promotion_receipt_path, manifest_path],
         {
             "runType": "browser-claim-gate",
             "fullRun": True,
@@ -598,6 +810,7 @@ def main() -> int:
             "windowCount": requested_windows,
             "status": "pass" if ok else "fail",
             "reportPath": str(report_path),
+            "promotionReceiptPath": str(promotion_receipt_path),
         },
     )
 

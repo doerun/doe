@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-gpu-scheduler.schema.json",
+  "title": "Browser GPU scheduler probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "schedulerId",
+    "runtimeIdentity",
+    "workClasses",
+    "probes",
+    "fallbackPolicy",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_gpu_scheduler_probe" },
+    "schedulerId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "workClasses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/WorkClass" }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Probe" }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hiddenFallbackAllowed", "reasonCodeRequired"],
+      "properties": {
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCodeRequired": { "type": "boolean", "const": true }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawPageDataIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawPageDataIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "WorkClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workClassId", "surface", "priorityClass"],
+      "properties": {
+        "workClassId": { "type": "string", "minLength": 1 },
+        "surface": {
+          "enum": [
+            "webgpu",
+            "canvas",
+            "video",
+            "css_effects",
+            "local_ai",
+            "compositor_adjacent"
+          ]
+        },
+        "priorityClass": { "enum": ["interactive", "frame", "background"] }
+      }
+    },
+    "Probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probeId",
+        "probeKind",
+        "workClassIds",
+        "status",
+        "evidencePath"
+      ],
+      "properties": {
+        "probeId": { "type": "string", "minLength": 1 },
+        "probeKind": {
+          "enum": [
+            "priority",
+            "fairness",
+            "frame_deadline",
+            "origin_quota",
+            "device_loss",
+            "fallback_behavior"
+          ]
+        },
+        "workClassIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "status": { "enum": ["pass", "diagnostic", "blocked", "fail"] },
+        "evidencePath": { "type": "string", "minLength": 1 },
+        "reasonCode": { "type": "string" }
+      }
+    }
+  }
+}

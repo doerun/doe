@@ -10,6 +10,341 @@ This is a live topical status shard. Follow the shared shard policy in
 stays focused on non-TSIR compiler work (shader compiler non-TSIR paths,
 WebGPU runtime, robustness).
 
+## 2026-05-27 — WGSL verified output paths stay under verification root
+
+WGSL corpus materialization and minimization receipt checks now reject verified
+output paths that resolve outside `--verify-files-root`. Source paths remain
+repo-relative, and generated materialized/minimized files must stay under the
+verification root before hashing.
+
+Touched:
+
+- `bench/tools/check_wgsl_corpus_materialization.py`
+- `bench/tools/check_wgsl_minimization_receipt.py`
+- `bench/tests/test_wgsl_corpus_manifest.py`
+- `bench/tests/test_wgsl_minimization_receipt.py`
+- `docs/shader-compiler-architecture.md`
+- `docs/status/compiler-and-webgpu.md`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_corpus_materialization.py bench/tools/check_wgsl_minimization_receipt.py bench/tests/test_wgsl_corpus_manifest.py bench/tests/test_wgsl_minimization_receipt.py`
+- `python3 bench/tools/check_wgsl_corpus_materialization.py --receipt examples/wgsl-corpus-materialization.sample.json --verify-files-root . --json`
+- `python3 bench/tools/check_wgsl_minimization_receipt.py --receipt examples/wgsl-minimization-receipt.sample.json --verify-files-root . --json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_corpus_manifest.py bench/tests/test_wgsl_minimization_receipt.py -q`
+
+## 2026-05-27 — Standalone WGSL evidence paths reject traversal
+
+Standalone WGSL fixture and receipt checkers now reject absolute or
+parent-traversal source paths before hashing or file verification. The CTS
+shader subset builder/checker also rejects unsafe CTS artifact references, and
+the lowering-link checker rejects unsafe Doe receipt links.
+
+Touched:
+
+- `bench/tools/check_wgsl_robustness_fixtures.py`
+- `bench/tools/check_wgsl_diagnostic_fixtures.py`
+- `bench/tools/build_wgsl_cts_shader_subset.py`
+- `bench/tools/check_wgsl_cts_shader_subset.py`
+- `bench/tools/minimize_wgsl_corpus_failure.py`
+- `bench/tools/check_wgsl_minimization_receipt.py`
+- `bench/tools/check_wgsl_lowering_link_receipt.py`
+- `bench/runners/run_blocking_gates.py`
+- `bench/tests/test_wgsl_robustness_fixtures.py`
+- `bench/tests/test_wgsl_diagnostic_fixtures.py`
+- `bench/tests/test_wgsl_cts_shader_subset.py`
+- `bench/tests/test_wgsl_minimization_receipt.py`
+- `bench/tests/test_wgsl_lowering_link_receipt.py`
+- `bench/tests/test_run_blocking_gates_wiring.py`
+- `config/wgsl-cts-shader-subset.schema.json`
+- `examples/wgsl-cts-shader-subset.sample.json`
+- `examples/wgsl-minimization-receipt.sample.json`
+- `docs/status/compiler-and-webgpu.md`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_robustness_fixtures.py bench/tools/check_wgsl_diagnostic_fixtures.py bench/tools/build_wgsl_cts_shader_subset.py bench/tools/check_wgsl_cts_shader_subset.py bench/tools/minimize_wgsl_corpus_failure.py bench/tools/check_wgsl_minimization_receipt.py bench/tools/check_wgsl_lowering_link_receipt.py bench/runners/run_blocking_gates.py bench/tests/test_wgsl_robustness_fixtures.py bench/tests/test_wgsl_diagnostic_fixtures.py bench/tests/test_wgsl_cts_shader_subset.py bench/tests/test_wgsl_minimization_receipt.py bench/tests/test_wgsl_lowering_link_receipt.py bench/tests/test_run_blocking_gates_wiring.py`
+- `python3 bench/tools/build_wgsl_cts_shader_subset.py --manifest config/wgsl-browser-corpus.json --cts-evidence config/webgpu-cts-evidence.json --out examples/wgsl-cts-shader-subset.sample.json`
+- `python3 bench/tools/minimize_wgsl_corpus_failure.py --manifest config/wgsl-browser-corpus.json --shader-id invalid-missing-return --taxonomy-code wgsl_sema_failed --failure-stage sema --diagnostic-category control_flow --backend-target msl --diagnostic-line 3 --context-lines 1 --out-dir examples/wgsl-minimize --receipt-out examples/wgsl-minimization-receipt.sample.json`
+- `python3 bench/tools/check_wgsl_robustness_fixtures.py --fixtures config/wgsl-robustness-fixtures.json --json`
+- `python3 bench/tools/check_wgsl_diagnostic_fixtures.py --fixtures config/wgsl-diagnostic-fixtures.json --manifest config/wgsl-browser-corpus.json --taxonomy config/shader-error-taxonomy.json --json`
+- `python3 bench/tools/check_wgsl_cts_shader_subset.py --subset examples/wgsl-cts-shader-subset.sample.json --json`
+- `python3 bench/tools/check_wgsl_minimization_receipt.py --receipt examples/wgsl-minimization-receipt.sample.json --verify-files-root . --json`
+- `python3 bench/tools/check_wgsl_lowering_link_receipt.py --receipt examples/wgsl-lowering-link-receipt.sample.json --verify-files-root . --json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_*.py bench/tests/test_run_blocking_gates_wiring.py -q`
+- `python3 bench/gates/schema_gate.py`
+- `git diff --check`
+
+## 2026-05-27 — WGSL corpus source paths stay repo-relative
+
+WGSL corpus manifests now reject absolute or parent-traversal `sourcePath`
+values before materialization can read files. Materialization receipts also
+reject unsafe row `sourcePath` values, so compiler evidence cannot point outside
+the repo-owned corpus while still claiming normalized source identity.
+
+Touched:
+
+- `bench/tools/materialize_wgsl_corpus_manifest.py`
+- `bench/tools/check_wgsl_corpus_materialization.py`
+- `bench/tests/test_wgsl_corpus_manifest.py`
+- `config/wgsl-corpus-materialization.schema.json`
+- `examples/wgsl-corpus-materialization.sample.json`
+- `docs/shader-compiler-architecture.md`
+- `docs/status/compiler-and-webgpu.md`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/materialize_wgsl_corpus_manifest.py bench/tools/check_wgsl_corpus_materialization.py bench/tests/test_wgsl_corpus_manifest.py`
+- `python3 bench/tools/materialize_wgsl_corpus_manifest.py --manifest config/wgsl-browser-corpus.json --out-dir examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0 --receipt-out examples/wgsl-corpus-materialization.sample.json`
+- `python3 bench/tools/check_wgsl_corpus_materialization.py --receipt examples/wgsl-corpus-materialization.sample.json --verify-files-root . --json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_corpus_manifest.py -q`
+- `python3 bench/gates/schema_gate.py`
+- `git diff --check`
+
+## 2026-05-26 — Blocking runner can gate standalone WGSL receipts
+
+The canonical blocking runner now exposes opt-in gates for standalone WGSL
+diagnostic fixtures, robustness fixtures, lowering-link receipts, minimization
+receipts, CTS shader subsets, and corpus materializations. Compiler lanes can
+promote those receipts through the same runner as schema/correctness/trace
+gates instead of relying on separate manual commands.
+
+Touched:
+
+- `bench/runners/run_blocking_gates.py`
+- `bench/tests/test_run_blocking_gates_wiring.py`
+- `bench/README.md`
+- `docs/process.md`
+
+Verified:
+
+- `python3 -m py_compile bench/runners/run_blocking_gates.py bench/tests/test_run_blocking_gates_wiring.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_run_blocking_gates_wiring.py -q`
+- `python3 bench/tools/check_wgsl_diagnostic_fixtures.py --fixtures config/wgsl-diagnostic-fixtures.json --manifest config/wgsl-browser-corpus.json --taxonomy config/shader-error-taxonomy.json`
+- `python3 bench/tools/check_wgsl_robustness_fixtures.py --fixtures config/wgsl-robustness-fixtures.json`
+
+## 2026-05-26 — WGSL corpus materializations have a standalone checker
+
+WGSL corpus materialization receipts now have an independent checker. It
+validates materialization status, row uniqueness, required shader metadata,
+source hashes, backend targets, shader stages, and can optionally verify that
+materialized WGSL files still hash to the receipt values.
+
+Touched:
+
+- `bench/tools/check_wgsl_corpus_materialization.py`
+- `bench/tests/test_wgsl_corpus_manifest.py`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_corpus_materialization.py bench/tools/materialize_wgsl_corpus_manifest.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_corpus_manifest.py -q`
+- `python3 bench/tools/check_wgsl_corpus_materialization.py --receipt examples/wgsl-corpus-materialization.sample.json`
+
+## 2026-05-26 — WGSL CTS shader subsets have a standalone checker
+
+WGSL CTS shader subset artifacts now have an independent checker. It enforces
+pass status, non-empty CTS rows, unique shader/query linkage, source hashes,
+CTS artifact anchors, backend targets, and shader stages.
+
+Touched:
+
+- `bench/tools/check_wgsl_cts_shader_subset.py`
+- `bench/tests/test_wgsl_cts_shader_subset.py`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_cts_shader_subset.py bench/tools/build_wgsl_cts_shader_subset.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_cts_shader_subset.py -q`
+- `python3 bench/tools/check_wgsl_cts_shader_subset.py --subset examples/wgsl-cts-shader-subset.sample.json`
+
+## 2026-05-26 — WGSL minimization receipts have a standalone checker
+
+WGSL corpus minimization receipts now have an independent checker. It enforces
+source identity preservation, taxonomy/failure metadata, pending-replay
+candidate status, parent-source hash linkage, line-range sanity, and the
+required normalized-original candidate.
+
+Touched:
+
+- `bench/tools/check_wgsl_minimization_receipt.py`
+- `bench/tests/test_wgsl_minimization_receipt.py`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_minimization_receipt.py bench/tools/minimize_wgsl_corpus_failure.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_minimization_receipt.py -q`
+- `python3 bench/tools/check_wgsl_minimization_receipt.py --receipt examples/wgsl-minimization-receipt.sample.json`
+
+## 2026-05-26 — WGSL lowering link receipts have a standalone checker
+
+WGSL source-to-IR-to-backend lowering link receipts now have an independent
+checker. It verifies row counts, linked/diagnostic status, required source, IR,
+and backend hashes, Doe receipt paths, and summary failure mirroring before the
+receipt can be used as compiler evidence.
+
+Touched:
+
+- `bench/tools/check_wgsl_lowering_link_receipt.py`
+- `bench/tests/test_wgsl_lowering_link_receipt.py`
+
+Verified:
+
+- `python3 -m py_compile bench/tools/check_wgsl_lowering_link_receipt.py bench/tools/build_wgsl_lowering_link_receipt.py`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_lowering_link_receipt.py -q`
+- `python3 bench/tools/check_wgsl_lowering_link_receipt.py --receipt examples/wgsl-lowering-link-receipt.sample.json`
+
+## 2026-05-26 — Doe compile reports emit phase timings
+
+The single-shader runtime compile reporter now records parse, sema, lower,
+emit, and total timings from the Doe WGSL pipeline. Compiler evidence consumes
+those receipt timings for Doe rows instead of reducing Doe evidence to a
+whole-compile-only total.
+
+Touched:
+
+- `config/runtime-compile-report.schema.json`
+- `examples/runtime-compile-report.sample.json`
+- `runtime/zig/src/doe_wgsl/mod.zig`
+- `runtime/zig/src/doe_wgsl/runtime_compile.zig`
+- `runtime/zig/src/doe_wgsl/runtime_compile_report.zig`
+- `bench/native-compare/compare_doe_vs_tint_compilation.py`
+- `bench/tests/test_compare_doe_vs_tint_compilation.py`
+- `bench/tests/test_runtime_compile_report_schema.py`
+- `config/schema-targets.json`
+- `bench/README.md`
+- `runtime/zig/README.md`
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_compare_doe_vs_tint_compilation.py -q`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_runtime_compile_report_schema.py -q`
+- `python3 bench/gates/schema_gate.py`
+- `zig build runtime-compile-report`
+- `runtime/zig/zig-out/bin/doe-runtime-compile-report --shader-path bench/fixtures/wgsl-robustness/bounds-storage-buffer-1d.wgsl --shader-name bounds-storage-buffer-1d`
+- `zig build test-wgsl`
+
+## 2026-05-26 — Compiler evidence cannot claim whole-compile-only timing
+
+Doe-vs-Tint compiler evidence now keeps whole-compile-only timing diagnostic.
+Claimable rows require the phase model and row timings to cover parse, sema,
+lower, emit, and total phases.
+
+Touched:
+
+- `bench/native-compare/compare_doe_vs_tint_compilation.py`
+- `bench/gates/tint_compiler_evidence_gate.py`
+- `bench/tests/test_compare_doe_vs_tint_compilation.py`
+- `bench/tests/test_tint_compiler_evidence_gate.py`
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_compare_doe_vs_tint_compilation.py bench/tests/test_tint_compiler_evidence_gate.py -q`
+
+## 2026-05-26 — Browser WGSL robustness fixture classes are covered
+
+Browser-facing robustness transform fixtures now have a schema-backed coverage
+manifest:
+
+- `config/wgsl-robustness-fixtures.schema.json`
+- `config/wgsl-robustness-fixtures.json`
+- `bench/tools/check_wgsl_robustness_fixtures.py`
+- `bench/fixtures/wgsl-robustness/`
+
+The checker requires fixture coverage for bounds, aliasing, texture dimension,
+and guard patterns. Each row binds a source path, normalized source hash,
+expected transform class, required source needles, and the browser workload
+classes that use the pattern.
+
+Verified:
+
+- `python3 bench/tools/check_wgsl_robustness_fixtures.py --fixtures config/wgsl-robustness-fixtures.json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_robustness_fixtures.py -q`
+
+## 2026-05-26 — WGSL lowering links bind source, IR, and backend output
+
+Compiler evidence can now be converted into a schema-backed lowering link
+receipt:
+
+- `config/wgsl-lowering-link-receipt.schema.json`
+- `examples/wgsl-lowering-link-receipt.sample.json`
+- `bench/tools/build_wgsl_lowering_link_receipt.py`
+
+The receipt maps compiler evidence rows back to the WGSL corpus manifest by
+shader id or source path, then binds source hash, Doe IR hash, backend output
+hash, backend target, validation status, and Doe receipt path. Rows with source
+hash drift, missing IR hash, missing backend hash, or missing compiler receipt
+stay diagnostic with typed failure codes.
+
+Verified:
+
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_lowering_link_receipt.py -q`
+
+## 2026-05-26 — WGSL failure minimization preserves corpus identity
+
+Corpus shader failures now have a schema-backed minimization receipt producer:
+
+- `config/wgsl-minimization-receipt.schema.json`
+- `examples/wgsl-minimization-receipt.sample.json`
+- `bench/tools/minimize_wgsl_corpus_failure.py`
+
+The minimizer emits deterministic candidate WGSL files while carrying the
+original manifest shader id, source path, normalized source hash, backend
+targets, failure stage, and taxonomy code on every receipt. Candidates remain
+`pending_replay`, so a reduced shader cannot become evidence until the compiler
+replays it against the same typed failure identity.
+
+Verified:
+
+- `python3 bench/tools/minimize_wgsl_corpus_failure.py --manifest config/wgsl-browser-corpus.json --shader-id invalid-missing-return --taxonomy-code wgsl_sema_failed --failure-stage sema --diagnostic-category control_flow --backend-target msl --diagnostic-line 3 --context-lines 1 --out-dir /tmp/wgsl-minimize --receipt-out /tmp/wgsl-minimization-receipt.json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_minimization_receipt.py -q`
+
+## 2026-05-26 — Invalid WGSL diagnostics compare typed categories
+
+Invalid browser WGSL corpus rows now have a schema-backed diagnostic fixture
+set:
+
+- `config/wgsl-diagnostic-fixtures.schema.json`
+- `config/wgsl-diagnostic-fixtures.json`
+- `bench/tools/check_wgsl_diagnostic_fixtures.py`
+
+The checker binds each diagnostic fixture to an invalid manifest row, source
+hash, expected diagnostic category, and Doe taxonomy code. It rejects free-form
+message comparison and requires every invalid manifest row to have typed
+diagnostic coverage.
+
+Verified:
+
+- `python3 bench/tools/check_wgsl_diagnostic_fixtures.py --fixtures config/wgsl-diagnostic-fixtures.json --manifest config/wgsl-browser-corpus.json --taxonomy config/shader-error-taxonomy.json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_diagnostic_fixtures.py -q`
+
+## 2026-05-26 — Browser WGSL corpus manifest is schema-backed
+
+The compiler lane now has a browser-facing WGSL corpus manifest and
+materializer:
+
+- `config/wgsl-corpus-manifest.schema.json`
+- `config/wgsl-browser-corpus.json`
+- `config/wgsl-corpus-materialization.schema.json`
+- `bench/tools/materialize_wgsl_corpus_manifest.py`
+
+The manifest binds each row to source path, normalized source hash, expected
+validity, backend targets, shader stages, and provenance. The materializer
+checks category coverage and source-hash drift before writing normalized WGSL
+files and a receipt. The Tint compiler evidence gate now requires claimable
+rows to carry corpus linkage fields and a Doe IR hash alongside source and
+backend output hashes. CTS shader-subset ingestion now links CTS evidence rows
+to manifest shader rows through the same normalized source-hash contract.
+
+Verified:
+
+- `python3 bench/gates/schema_gate.py`
+- `python3 bench/tools/materialize_wgsl_corpus_manifest.py --manifest config/wgsl-browser-corpus.json --out-dir /tmp/wgsl-browser-corpus --receipt-out /tmp/wgsl-browser-corpus.materialization.json`
+- `python3 bench/tools/build_wgsl_cts_shader_subset.py --manifest config/wgsl-browser-corpus.json --cts-evidence config/webgpu-cts-evidence.json --out /tmp/wgsl-cts-shader-subset.json`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_corpus_manifest.py -q`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_wgsl_cts_shader_subset.py -q`
+- `PYTHONPATH=bench:. python3 -m pytest bench/tests/test_tint_compiler_evidence_gate.py -q`
+
 ## 2026-05-26 — Guarded texture coordinate aliases stay unclamped
 
 The WGSL robustness transform now resolves const-local value aliases while

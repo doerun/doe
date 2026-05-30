@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_cts_shader_subset",
+  "subsetId": "browser-wgsl-corpus-v0-cts",
+  "manifestPath": "config/wgsl-browser-corpus.json",
+  "ctsEvidencePath": "config/webgpu-cts-evidence.json",
+  "ctsSource": "bench/fixtures/cts_subset.fawn-node.json",
+  "ctsRevision": "untracked",
+  "subsetStatus": "pass",
+  "rows": [
+    {
+      "ctsQuery": "webgpu:shader,execution,expression,call,builtin,textureDimensions:*",
+      "ctsBucket": "shader_execution",
+      "shaderId": "cts-texture-dimensions",
+      "sourcePath": "bench/fixtures/wgsl-corpus/cts/texture-dimensions.wgsl",
+      "normalizedSourceSha256": "89bf3bfe5e5fdc91835200ba40e3e47dc952571edffa8d0e7061e41659a7c4f9",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "compute"
+      ],
+      "ctsArtifactPath": "bench/out/apple-runtime-release/20260328T031800Z/cts_baseline.json"
+    }
+  ],
+  "failureCodes": []
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/chromium-fork-maintenance-policy.schema.json",
+  "title": "Chromium fork maintenance policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "policyId",
+    "patchIsolation",
+    "rollback",
+    "releaseArtifacts"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "chromium_fork_maintenance_policy" },
+    "policyId": { "type": "string", "minLength": 1 },
+    "patchIsolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowedPatchRoots", "forbiddenPatchRoots", "patchManifestRequired", "patchManifestPath"],
+      "properties": {
+        "allowedPatchRoots": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "forbiddenPatchRoots": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "patchManifestRequired": { "type": "boolean", "const": true },
+        "patchManifestPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dawnFallbackAvailable", "rollbackProcedurePath", "killSwitchPolicyPath"],
+      "properties": {
+        "dawnFallbackAvailable": { "type": "boolean", "const": true },
+        "rollbackProcedurePath": { "type": "string", "minLength": 1 },
+        "killSwitchPolicyPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "releaseArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["browserBinaryHashRequired", "doeRuntimeHashRequired", "compilerHashRequired", "claimReportRequired"],
+      "properties": {
+        "browserBinaryHashRequired": { "type": "boolean", "const": true },
+        "doeRuntimeHashRequired": { "type": "boolean", "const": true },
+        "compilerHashRequired": { "type": "boolean", "const": true },
+        "claimReportRequired": { "type": "boolean", "const": true }
+      }
+    }
+  }
+}

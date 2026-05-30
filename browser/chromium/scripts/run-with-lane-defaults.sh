@@ -113,13 +113,17 @@ if [[ "${skip_run}" -eq 0 ]]; then
   if [[ "${runner}" == "bench" ]]; then
     dawn_bin_resolved="${dawn_chrome_bin:-${chrome_bin}}"
     doe_bin_resolved="${doe_chrome_bin:-${chrome_bin}}"
-    if [[ "${mode}" != "doe" && ! -x "${dawn_bin_resolved}" ]]; then
+    if [[ "${mode}" == "dawn" || "${mode}" == "both" ]]; then
+      if [[ ! -x "${dawn_bin_resolved}" ]]; then
       echo "missing dawn mode chrome binary: ${dawn_bin_resolved}" >&2
       exit 1
+      fi
     fi
-    if [[ "${mode}" != "dawn" && ! -x "${doe_bin_resolved}" ]]; then
+    if [[ "${mode}" == "doe" || "${mode}" == "both" ]]; then
+      if [[ ! -x "${doe_bin_resolved}" ]]; then
       echo "missing doe mode chrome binary: ${doe_bin_resolved}" >&2
       exit 1
+      fi
     fi
   else
     if [[ ! -x "${chrome_bin}" ]]; then
@@ -127,7 +131,7 @@ if [[ "${skip_run}" -eq 0 ]]; then
       exit 1
     fi
   fi
-  if [[ "${mode}" != "dawn" && ! -f "${doe_lib}" ]]; then
+  if [[ ("${mode}" == "doe" || "${mode}" == "both") && ! -f "${doe_lib}" ]]; then
     echo "missing doe runtime library: ${doe_lib}" >&2
     exit 1
   fi

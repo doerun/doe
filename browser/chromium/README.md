@@ -62,7 +62,7 @@ Milestone status source of truth:
 Doe already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
 
 1. Drop-in artifact:
-   - `runtime/zig/zig-out/lib/libwebgpu_doe.{so,dylib}`
+   - `runtime/zig/zig-out/lib/libwebgpu_doe_full.{so,dylib,dll}`
 2. Symbol contract and gate support:
    - `config/dropin_abi.symbols.txt`
    - `bench/drop-in/dropin_symbol_gate.py`
@@ -266,6 +266,11 @@ Current browser integration layer structure:
    - lane-local helpers (`scripts/bootstrap-host-tools.sh`, `scripts/env.sh`,
      `scripts/preflight.sh`, `scripts/bringup-linux.sh`,
      `scripts/run-smoke.sh`, `scripts/run-bench.sh`,
+     `scripts/build-browser-gpu-scheduler.py`,
+     `scripts/build-browser-webgpu-effect-experiment.py`,
+     `scripts/build-browser-local-ai-workloads.py`,
+     `scripts/build-browser-fallback-explanations.py`,
+     `scripts/build-browser-cts-subset.py`,
      `scripts/refresh-doe-app.sh`,
      `scripts/check-browser-milestones.py`).
 7. `assets/`
@@ -329,9 +334,29 @@ Lane setup for both macOS and Linux:
 5. Run browser checks with lane defaults:
    - `./scripts/run-smoke.sh --mode both`
    - `./scripts/run-bench.sh --mode both`
+   - selector diagnostic mode:
+     `./scripts/run-bench.sh --mode auto`
+   - runtime-selector policy:
+     `python3 browser/chromium/scripts/check-browser-runtime-selector-policy.py --policy config/browser-runtime-selector-policy.json`
+   - responsibility-map gate:
+     `python3 bench/tools/check_browser_responsibility_map.py --map config/browser-responsibility-map.json`
+   - optional canvas/WebGPU fusion:
+     `./scripts/run-smoke.sh --mode doe --canvas-webgpu-fusion-out browser/chromium/artifacts/canvas-webgpu-fusion.json --canvas-webgpu-fusion-mode doe`
+   - optional media-path probe:
+     `./scripts/run-smoke.sh --mode doe --media-path-probe-out browser/chromium/artifacts/media-path-probe.json --media-path-probe-mode doe`
+   - optional recovery parity:
+     `./scripts/run-smoke.sh --mode both --recovery-parity-out browser/chromium/artifacts/recovery-parity.json`
+   - optional CTS subset projection:
+     `./scripts/run-smoke.sh --mode both --cts-subset-out browser/chromium/artifacts/browser-cts-subset.json`
+   - optional flight recorder plus shader links:
+     `./scripts/run-smoke.sh --mode both --flight-recorder-components examples/browser-gpu-flight-recorder.sample.json --flight-recorder-out browser/chromium/artifacts/browser-gpu-flight-recorder.json --shader-links-out browser/chromium/artifacts/browser-shader-links.json`
+   - browser claim promotion receipt:
+     `python3 bench/browser/browser_claim_gate.py --promotion-receipt-out bench/out/browser-claim/browser-claim-promotion-receipt.json`
+   - release artifact bundle:
+     `python3 bench/tools/build_browser_release_artifact_bundle.py --browser-binary <chromium-binary> --doe-runtime <libwebgpu_doe> --shader-compiler runtime/zig/zig-out/bin/doe-zig-runtime --claim-report <browser-claim-report.json> --promotion-receipt <browser-claim-promotion-receipt.json> --out <browser-release-artifact-bundle.json>`
 6. If only Doe runtime code changed on macOS:
    - `./scripts/refresh-doe-app.sh`
-   - rebuilds `libwebgpu_doe.dylib` and reapplies the app-bundle Doe wrapper
+   - rebuilds `libwebgpu_doe_full.dylib` and reapplies the app-bundle Doe wrapper
 
 Notes:
 - Lane-local env file is `.external-lane.env` (mac helper also writes legacy `.external-macos.env` for compatibility).

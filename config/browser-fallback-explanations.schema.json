@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-fallback-explanations.schema.json",
+  "title": "Browser fallback explanations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "explanationSetId",
+    "runtimeIdentity",
+    "taxonomyPath",
+    "explanations",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_fallback_explanations" },
+    "explanationSetId": { "type": "string", "minLength": 1 },
+    "taxonomyPath": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "explanations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Explanation" }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawPageDataIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawPageDataIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "Explanation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "explanationId",
+        "capability",
+        "surface",
+        "status",
+        "reasonCode",
+        "fallbackApplied",
+        "hiddenFallbackAllowed",
+        "developerAction",
+        "evidencePath"
+      ],
+      "properties": {
+        "explanationId": { "type": "string", "minLength": 1 },
+        "capability": {
+          "enum": [
+            "webgpu_runtime",
+            "canvas_fusion",
+            "external_texture",
+            "local_ai",
+            "scheduler",
+            "webgpu_effect",
+            "pipeline_cache",
+            "shader_link"
+          ]
+        },
+        "surface": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["supported", "unsupported", "fallback", "blocked"] },
+        "reasonCode": { "type": "string", "minLength": 1 },
+        "fallbackApplied": { "type": "boolean" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "developerAction": { "type": "string", "minLength": 1 },
+        "evidencePath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

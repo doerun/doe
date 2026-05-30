@@ -22,6 +22,7 @@ DEFAULT_MANIFEST = (
 DEFAULT_WORKFLOWS = (
     REPO_ROOT / "browser/chromium/bench/workflows/browser-workflow-manifest.json"
 )
+DEFAULT_RUNTIME_SELECTOR_POLICY = REPO_ROOT / "config/browser-runtime-selector-policy.json"
 BENCH_OUT_ROOT = REPO_ROOT / "bench/out"
 BENCH_OUT_SCRATCH_ROOT = REPO_ROOT / "bench/out/scratch"
 ARTIFACTS_ROOT = REPO_ROOT / "browser/chromium/artifacts"
@@ -46,6 +47,10 @@ def default_doe_lib() -> Path:
         candidates.append(Path(env_doe_lib))
     candidates.extend(
         [
+            REPO_ROOT / f"runtime/zig/zig-out/lib/libwebgpu_doe_full.{preferred_ext}",
+            REPO_ROOT / "runtime/zig/zig-out/lib/libwebgpu_doe_full.so",
+            REPO_ROOT / "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib",
+            REPO_ROOT / "runtime/zig/zig-out/lib/libwebgpu_doe_full.dll",
             REPO_ROOT / f"runtime/zig/zig-out/lib/libwebgpu_doe.{preferred_ext}",
             REPO_ROOT / "runtime/zig/zig-out/lib/libwebgpu_doe.so",
             REPO_ROOT / "runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
@@ -122,7 +127,17 @@ def parse_args() -> argparse.Namespace:
         help="Browser executable for doe mode (defaults to --chrome).",
     )
     parser.add_argument("--doe-lib", default=str(DEFAULT_DOE_LIB))
-    parser.add_argument("--mode", choices=["dawn", "doe", "both"], default="both")
+    parser.add_argument("--mode", choices=["dawn", "doe", "auto", "both"], default="both")
+    parser.add_argument(
+        "--runtime-selector-policy",
+        default=str(DEFAULT_RUNTIME_SELECTOR_POLICY),
+        help="Runtime selector policy JSON passed to the layered runner.",
+    )
+    parser.add_argument(
+        "--runtime-selector-profile-id",
+        default="",
+        help="Optional selector profileId for auto denylist checks.",
+    )
     parser.add_argument("--api-surface", choices=["native", "package-browser"], default="native")
     parser.add_argument("--headless", default="true", choices=["true", "false"])
     parser.add_argument("--chrome-arg", action="append", default=[])
@@ -372,6 +387,7 @@ def main() -> int:
     dawn_chrome = Path(args.dawn_chrome).resolve() if args.dawn_chrome else chrome
     doe_chrome = Path(args.doe_chrome).resolve() if args.doe_chrome else chrome
     doe_lib = Path(args.doe_lib).resolve()
+    runtime_selector_policy = Path(args.runtime_selector_policy).resolve()
     promotion_approvals = Path(args.promotion_approvals).resolve()
     default_out, default_summary, default_check = default_output_paths()
     out = Path(args.out).resolve() if args.out else default_out
@@ -394,6 +410,9 @@ def main() -> int:
             return 2
         if args.mode in {"doe", "both"} and not doe_lib.exists():
             print(f"FAIL: doe runtime library not found: {doe_lib}")
+            return 2
+        if not runtime_selector_policy.exists():
+            print(f"FAIL: runtime selector policy not found: {runtime_selector_policy}")
             return 2
 
     generate_command = [
@@ -423,6 +442,8 @@ def main() -> int:
             str(doe_chrome),
             "--doe-lib",
             str(doe_lib),
+            "--runtime-selector-policy",
+            str(runtime_selector_policy),
             "--manifest",
             str(manifest_out),
             "--workflows",
@@ -438,6 +459,8 @@ def main() -> int:
             run_command.append("--allow-bench-out")
         if args.allow_data_url_fallback:
             run_command.append("--allow-data-url-fallback")
+        if args.runtime_selector_profile_id:
+            run_command.extend(["--runtime-selector-profile-id", args.runtime_selector_profile_id])
         for chrome_arg in args.chrome_arg:
             run_command.extend(["--chrome-arg", chrome_arg])
         if args.strict_run:
@@ -512,6 +535,8 @@ def main() -> int:
             "dawnChrome": str(dawn_chrome),
             "doeChrome": str(doe_chrome),
             "doeLib": str(doe_lib),
+            "runtimeSelectorPolicy": str(runtime_selector_policy),
+            "runtimeSelectorProfileId": args.runtime_selector_profile_id,
             "mode": args.mode,
             "apiSurface": args.api_surface,
             "promotionApprovals": str(promotion_approvals),

@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_local_ai_workloads",
+  "workloadSetId": "browser-local-ai-smoke",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "workloads": [
+    {
+      "workloadId": "local-ai:embedding",
+      "workloadKind": "embedding",
+      "modelIdentity": {
+        "modelId": "embedding-smoke",
+        "modelFamily": "browser-local-ai",
+        "artifactPath": "bench/fixtures/local-ai/embedding.model.json",
+        "artifactSha256": "a000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "shaderIdentity": {
+        "shaderId": "shader:embedding",
+        "sourcePath": "browser/chromium/fixtures/local-ai/embedding.wgsl",
+        "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000001",
+        "irPath": "bench/out/browser-local-ai/embedding.ir.json",
+        "irSha256": "e000000000000000000000000000000000000000000000000000000000000001",
+        "backendOutputPath": "bench/out/browser-local-ai/embedding.msl",
+        "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "pipelineCache": {
+        "cacheKey": "cache:embedding",
+        "cacheState": "created",
+        "pipelineCreationPath": "bench/out/browser-local-ai/embedding.pipeline.json"
+      },
+      "inputContract": {
+        "contractPath": "bench/fixtures/local-ai/embedding.input.json",
+        "inputDigest": {
+          "algorithm": "sha256",
+          "value": "c000000000000000000000000000000000000000000000000000000000000001"
+        },
+        "redaction": "hashed"
+      },
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "d000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "fallbackStatus": {
+        "fallbackApplied": false,
+        "hiddenFallbackAllowed": false
+      }
+    },
+    {
+      "workloadId": "local-ai:ranking",
+      "workloadKind": "ranking",
+      "modelIdentity": {
+        "modelId": "ranking-smoke",
+        "modelFamily": "browser-local-ai",
+        "artifactPath": "bench/fixtures/local-ai/ranking.model.json",
+        "artifactSha256": "a000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "shaderIdentity": {
+        "shaderId": "shader:ranking",
+        "sourcePath": "browser/chromium/fixtures/local-ai/ranking.wgsl",
+        "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000002",
+        "irPath": "bench/out/browser-local-ai/ranking.ir.json",
+        "irSha256": "e000000000000000000000000000000000000000000000000000000000000002",
+        "backendOutputPath": "bench/out/browser-local-ai/ranking.msl",
+        "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "pipelineCache": {
+        "cacheKey": "cache:ranking",
+        "cacheState": "created",
+        "pipelineCreationPath": "bench/out/browser-local-ai/ranking.pipeline.json"
+      },
+      "inputContract": {
+        "contractPath": "bench/fixtures/local-ai/ranking.input.json",
+        "inputDigest": {
+          "algorithm": "sha256",
+          "value": "c000000000000000000000000000000000000000000000000000000000000002"
+        },
+        "redaction": "hashed"
+      },
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "d000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "fallbackStatus": {
+        "fallbackApplied": false,
+        "hiddenFallbackAllowed": false
+      }
+    },
+    {
+      "workloadId": "local-ai:image-transform",
+      "workloadKind": "image_transform",
+      "modelIdentity": {
+        "modelId": "image-transform-smoke",
+        "modelFamily": "browser-local-ai",
+        "artifactPath": "bench/fixtures/local-ai/image-transform.model.json",
+        "artifactSha256": "a000000000000000000000000000000000000000000000000000000000000003"
+      },
+      "shaderIdentity": {
+        "shaderId": "shader:image-transform",
+        "sourcePath": "browser/chromium/fixtures/local-ai/image-transform.wgsl",
+        "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000003",
+        "irPath": "bench/out/browser-local-ai/image-transform.ir.json",
+        "irSha256": "e000000000000000000000000000000000000000000000000000000000000003",
+        "backendOutputPath": "bench/out/browser-local-ai/image-transform.msl",
+        "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000003"
+      },
+      "pipelineCache": {
+        "cacheKey": "cache:image-transform",
+        "cacheState": "created",
+        "pipelineCreationPath": "bench/out/browser-local-ai/image-transform.pipeline.json"
+      },
+      "inputContract": {
+        "contractPath": "bench/fixtures/local-ai/image-transform.input.json",
+        "inputDigest": {
+          "algorithm": "sha256",
+          "value": "c000000000000000000000000000000000000000000000000000000000000003"
+        },
+        "redaction": "hashed"
+      },
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "d000000000000000000000000000000000000000000000000000000000000003"
+      },
+      "fallbackStatus": {
+        "fallbackApplied": false,
+        "hiddenFallbackAllowed": false
+      }
+    },
+    {
+      "workloadId": "local-ai:video-transform",
+      "workloadKind": "video_transform",
+      "modelIdentity": {
+        "modelId": "video-transform-smoke",
+        "modelFamily": "browser-local-ai",
+        "artifactPath": "bench/fixtures/local-ai/video-transform.model.json",
+        "artifactSha256": "a000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "shaderIdentity": {
+        "shaderId": "shader:video-transform",
+        "sourcePath": "browser/chromium/fixtures/local-ai/video-transform.wgsl",
+        "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000004",
+        "irPath": "bench/out/browser-local-ai/video-transform.ir.json",
+        "irSha256": "e000000000000000000000000000000000000000000000000000000000000004",
+        "backendOutputPath": "bench/out/browser-local-ai/video-transform.msl",
+        "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "pipelineCache": {
+        "cacheKey": "cache:video-transform",
+        "cacheState": "created",
+        "pipelineCreationPath": "bench/out/browser-local-ai/video-transform.pipeline.json"
+      },
+      "inputContract": {
+        "contractPath": "bench/fixtures/local-ai/video-transform.input.json",
+        "inputDigest": {
+          "algorithm": "sha256",
+          "value": "c000000000000000000000000000000000000000000000000000000000000004"
+        },
+        "redaction": "hashed"
+      },
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "d000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "fallbackStatus": {
+        "fallbackApplied": false,
+        "hiddenFallbackAllowed": false
+      }
+    },
+    {
+      "workloadId": "local-ai:model-inference",
+      "workloadKind": "model_inference",
+      "modelIdentity": {
+        "modelId": "model-inference-smoke",
+        "modelFamily": "browser-local-ai",
+        "artifactPath": "bench/fixtures/local-ai/model-inference.model.json",
+        "artifactSha256": "a000000000000000000000000000000000000000000000000000000000000005"
+      },
+      "shaderIdentity": {
+        "shaderId": "shader:model-inference",
+        "sourcePath": "browser/chromium/fixtures/local-ai/model-inference.wgsl",
+        "sourceSha256": "b000000000000000000000000000000000000000000000000000000000000005",
+        "irPath": "bench/out/browser-local-ai/model-inference.ir.json",
+        "irSha256": "e000000000000000000000000000000000000000000000000000000000000005",
+        "backendOutputPath": "bench/out/browser-local-ai/model-inference.msl",
+        "backendOutputSha256": "f000000000000000000000000000000000000000000000000000000000000005"
+      },
+      "pipelineCache": {
+        "cacheKey": "cache:model-inference",
+        "cacheState": "created",
+        "pipelineCreationPath": "bench/out/browser-local-ai/model-inference.pipeline.json"
+      },
+      "inputContract": {
+        "contractPath": "bench/fixtures/local-ai/model-inference.input.json",
+        "inputDigest": {
+          "algorithm": "sha256",
+          "value": "c000000000000000000000000000000000000000000000000000000000000005"
+        },
+        "redaction": "hashed"
+      },
+      "outputDigest": {
+        "algorithm": "sha256",
+        "value": "d000000000000000000000000000000000000000000000000000000000000005"
+      },
+      "fallbackStatus": {
+        "fallbackApplied": false,
+        "hiddenFallbackAllowed": false
+      }
+    }
+  ],
+  "privacy": {
+    "originScoped": true,
+    "rawInputIncluded": false,
+    "rawOutputIncluded": false
+  }
+}

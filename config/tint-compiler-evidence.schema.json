@@ -199,6 +199,32 @@
         "sourceSha256": {
           "$ref": "#/$defs/sha256"
         },
+        "sourcePath": {
+          "type": "string"
+        },
+        "corpusCategory": {
+          "enum": [
+            "browser_shader",
+            "canvas_workload",
+            "webgpu_sample",
+            "model_inference_kernel",
+            "game_engine_shader",
+            "invalid_diagnostic_fixture",
+            "legacy_compilation_workload",
+            "tint_benchmark_corpus"
+          ]
+        },
+        "expectedValidity": {
+          "enum": ["valid", "invalid"]
+        },
+        "expectedBackendTargets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["msl", "spirv", "dxil", "hlsl"]
+          }
+        },
         "target": {
           "type": "string",
           "enum": ["msl", "spirv", "dxil", "hlsl"]

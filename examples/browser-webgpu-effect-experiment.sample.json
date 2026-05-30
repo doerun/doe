@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_webgpu_effect_experiment",
+  "experimentId": "webgpu-backed-css-filter-smoke",
+  "runtimeIdentity": {
+    "runtimeIdentityPath": "examples/browser-runtime-identity.sample.json",
+    "selectedRuntime": "browser_navigator_gpu",
+    "fallbackApplied": false
+  },
+  "surfaces": [
+    {
+      "surfaceId": "surface:hero-filter",
+      "sourceKind": "css_effect",
+      "webgpuBacked": true,
+      "doeBoundary": "visual_effect_only",
+      "layoutOwner": "browser",
+      "accessibilityOwner": "browser",
+      "securityOwner": "browser",
+      "sourcePath": "browser/chromium/fixtures/effects/hero-filter.html"
+    },
+    {
+      "surfaceId": "surface:canvas-overlay",
+      "sourceKind": "canvas_overlay",
+      "webgpuBacked": true,
+      "doeBoundary": "visual_effect_only",
+      "layoutOwner": "browser",
+      "accessibilityOwner": "browser",
+      "securityOwner": "browser",
+      "sourcePath": "browser/chromium/fixtures/effects/canvas-overlay.html"
+    }
+  ],
+  "pipelines": [
+    {
+      "pipelineId": "pipeline:blur-pass",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "shaderLanguage": "wgsl",
+      "shaderSourcePath": "browser/chromium/fixtures/effects/blur-pass.wgsl",
+      "backendTarget": "msl",
+      "backendOutputPath": "bench/out/browser-effects/blur-pass.msl"
+    }
+  ],
+  "probes": [
+    {
+      "probeId": "probe:output-hash",
+      "probeKind": "output_hash",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:semantics-boundary",
+      "probeKind": "semantics_boundary",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:fallback-behavior",
+      "probeKind": "fallback_behavior",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/",
+      "reasonCode": "diagnostic_only"
+    },
+    {
+      "probeId": "probe:frame-timing",
+      "probeKind": "frame_timing",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "probeId": "probe:security-policy",
+      "probeKind": "security_policy",
+      "surfaceIds": ["surface:hero-filter", "surface:canvas-overlay"],
+      "status": "diagnostic",
+      "evidencePath": "browser/chromium/artifacts/"
+    }
+  ],
+  "fallbackPolicy": {
+    "hiddenFallbackAllowed": false,
+    "reasonCodeRequired": true
+  },
+  "privacy": {
+    "originScoped": true,
+    "rawDomIncluded": false,
+    "rawPageDataIncluded": false
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/runtime-compile-report.schema.json",
+  "title": "Runtime compile report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schemaVersion",
+    "shader",
+    "shaderPath",
+    "leanVerified",
+    "mslBytes",
+    "minCount",
+    "doeSizesPresent",
+    "needsSizesBuf",
+    "dispatchPreconditions",
+    "textureDispatchPreconditions",
+    "workgroupSize",
+    "phaseTimingsNs"
+  ],
+  "properties": {
+    "kind": { "type": "string", "const": "runtime_compile_report" },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "shader": { "type": "string", "minLength": 1 },
+    "shaderPath": { "type": "string", "minLength": 1 },
+    "leanVerified": { "type": "boolean" },
+    "mslBytes": { "type": "integer", "minimum": 0 },
+    "minCount": { "type": "integer", "minimum": 0 },
+    "doeSizesPresent": { "type": "boolean" },
+    "needsSizesBuf": { "type": "boolean" },
+    "dispatchPreconditions": { "type": "integer", "minimum": 0 },
+    "textureDispatchPreconditions": { "type": "integer", "minimum": 0 },
+    "workgroupSize": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "phaseTimingsNs": { "$ref": "#/$defs/PhaseTimingsNs" }
+  },
+  "$defs": {
+    "PhaseTimingsNs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parse", "sema", "lower", "emit", "total"],
+      "properties": {
+        "parse": { "type": "integer", "minimum": 0 },
+        "sema": { "type": "integer", "minimum": 0 },
+        "lower": { "type": "integer", "minimum": 0 },
+        "emit": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

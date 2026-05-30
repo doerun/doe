@@ -30,6 +30,10 @@ fawn_default_doe_lib_candidates() {
   local extension
   extension="$(fawn_doe_lib_extension)"
   printf "%s\n" \
+    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.${extension}" \
+    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.so" \
+    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib" \
+    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe_full.dll" \
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.${extension}" \
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.so" \
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.dylib" \

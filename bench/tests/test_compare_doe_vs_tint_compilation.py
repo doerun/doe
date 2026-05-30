@@ -121,6 +121,110 @@ class TestCompareDoeVsTintCompilation(unittest.TestCase):
             ["missing/tint_benchmark", "--benchmark_format=json"],
         )
 
+    def test_comparability_rejects_whole_compile_only_phase_evidence(self) -> None:
+        record = {
+            "status": "compared",
+            "comparison": {"warm": {"p50_ns": 10}},
+        }
+        doe_result = self.module.make_compiler_result(
+            status="ok",
+            diagnostic_code="",
+            output_sha256="1" * 64,
+            ir_sha256="2" * 64,
+            validation_status="passed",
+            validation_tool="validator",
+            phase_total_ns=10,
+            receipt_path="bench/out/scratch/doe.json",
+        )
+        tint_result = self.module.make_compiler_result(
+            status="ok",
+            diagnostic_code="",
+            output_sha256="3" * 64,
+            validation_status="passed",
+            validation_tool="validator",
+            phase_total_ns=10,
+            receipt_path="bench/out/scratch/tint.json",
+        )
+
+        comparability = self.module.build_row_comparability(
+            record,
+            doe_result,
+            tint_result,
+            self.module.CLAIMABLE_REQUIRED_PHASES,
+        )
+
+        self.assertEqual(comparability["status"], "diagnostic")
+        self.assertIn("doe missing phase timing: parse", comparability["reasons"])
+        self.assertIn("tint missing phase timing: emit", comparability["reasons"])
+
+    def test_compile_doe_evidence_output_reads_compile_report_phase_timings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            shader_path = root / "shader.wgsl"
+            shader_path.write_text(
+                "@compute @workgroup_size(1)\nfn main() {}\n",
+                encoding="utf-8",
+            )
+            script = root / "doe-runtime-compile-report"
+            script.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys\n"
+                "args = sys.argv[1:]\n"
+                "emit_path = args[args.index('--emit-msl') + 1]\n"
+                "out_path = args[args.index('--out') + 1]\n"
+                "open(emit_path, 'w', encoding='utf-8').write('// msl\\n')\n"
+                "payload = {\n"
+                "  'kind': 'runtime_compile_report',\n"
+                "  'phaseTimingsNs': {\n"
+                "    'parse': 11,\n"
+                "    'sema': 12,\n"
+                "    'lower': 13,\n"
+                "    'emit': 14,\n"
+                "    'total': 60,\n"
+                "  },\n"
+                "}\n"
+                "open(out_path, 'w', encoding='utf-8').write(json.dumps(payload) + '\\n')\n",
+                encoding="utf-8",
+            )
+            script.chmod(script.stat().st_mode | 0o111)
+            evidence_dir = root / "evidence"
+
+            original_validate = self.module.validate_msl_output
+            self.module.validate_msl_output = lambda _path: {
+                "status": "passed",
+                "tool": "test-validator",
+                "reason": "",
+            }
+            try:
+                result = self.module.compile_doe_evidence_output(
+                    {
+                        "name": "shader",
+                        "path": str(shader_path),
+                    },
+                    "msl",
+                    {
+                        "status": "compared",
+                        "baseline": {"p50_ns": 100},
+                    },
+                    evidence_dir,
+                    str(script),
+                    False,
+                )
+            finally:
+                self.module.validate_msl_output = original_validate
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(
+            result["phaseTimingsNs"],
+            {
+                "parse": 11,
+                "sema": 12,
+                "lower": 13,
+                "emit": 14,
+                "total": 60,
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

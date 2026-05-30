@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_diagnostic_fixtures",
+  "fixtureSetId": "browser-wgsl-diagnostics-v0",
+  "manifestPath": "config/wgsl-browser-corpus.json",
+  "taxonomyPath": "config/shader-error-taxonomy.json",
+  "rows": [
+    {
+      "fixtureId": "diagnostic:invalid-missing-return",
+      "shaderId": "invalid-missing-return",
+      "sourcePath": "bench/fixtures/wgsl-corpus/invalid/missing-return.wgsl",
+      "normalizedSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "expectedDiagnosticCategory": "control_flow",
+      "comparisonMode": "typed_category",
+      "expected": {
+        "doe": {
+          "taxonomyCode": "wgsl_sema_failed",
+          "stage": "sema"
+        },
+        "tint": {
+          "diagnosticCategory": "control_flow"
+        }
+      },
+      "evidencePolicy": {
+        "freeFormTextCompared": false,
+        "spanRequired": true
+      }
+    }
+  ]
+}

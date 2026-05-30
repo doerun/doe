@@ -21,6 +21,21 @@ pub const TranslationResult = struct {
     info: TranslationInfo,
 };
 
+pub const TimedTranslationResult = struct {
+    len: usize,
+    info: TranslationInfo,
+    phase_timings_ns: mod.CompilePhaseTimingsNs,
+};
+
+fn nowNs() i128 {
+    return std.time.nanoTimestamp();
+}
+
+fn elapsedNs(start: i128, end: i128) u64 {
+    if (end <= start) return 0;
+    return @intCast(end - start);
+}
+
 pub fn compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
     return .{
         .elide_proven_bounds = lean_proof.bounds_elimination_available,
@@ -45,20 +60,47 @@ pub fn translateToMslForComputeRuntime(
     overrides: ?[*]const ir.OverrideEntry,
     override_count: usize,
 ) mod.TranslateError!TranslationResult {
-    var module_ir = try mod.analyzeToIrWithConfig(allocator, wgsl, compute_runtime_robustness_config());
-    defer module_ir.deinit();
+    const timed = try translateToMslForComputeRuntimeTimed(
+        allocator,
+        wgsl,
+        out,
+        overrides,
+        override_count,
+    );
+    return .{
+        .len = timed.len,
+        .info = timed.info,
+    };
+}
+
+pub fn translateToMslForComputeRuntimeTimed(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    out: []u8,
+    overrides: ?[*]const ir.OverrideEntry,
+    override_count: usize,
+) mod.TranslateError!TimedTranslationResult {
+    const total_start_ns = nowNs();
+    var analysis = try mod.analyzeToIrWithConfigTimed(allocator, wgsl, compute_runtime_robustness_config());
+    defer analysis.module.deinit();
 
     if (overrides != null and override_count > 0) {
-        mod.applyOverrides(&module_ir, overrides.?[0..override_count]);
+        mod.applyOverrides(&analysis.module, overrides.?[0..override_count]);
     }
 
-    const len = mod.emit_msl.emit(&module_ir, out) catch |err| return switch (err) {
+    const emit_start_ns = nowNs();
+    const len = mod.emit_msl.emit(&analysis.module, out) catch |err| return switch (err) {
         error.OutputTooLarge => mod.TranslateError.OutputTooLarge,
         error.InvalidIr => mod.TranslateError.InvalidIr,
     };
+    const emit_end_ns = nowNs();
+    var phase_timings_ns = analysis.phase_timings_ns;
+    phase_timings_ns.emit = elapsedNs(emit_start_ns, emit_end_ns);
+    phase_timings_ns.total = elapsedNs(total_start_ns, emit_end_ns);
     return .{
         .len = len,
-        .info = try build_translation_info(allocator, &module_ir),
+        .info = try build_translation_info(allocator, &analysis.module),
+        .phase_timings_ns = phase_timings_ns,
     };
 }
 
@@ -307,4 +349,31 @@ fn compute_workgroup_size(module_ir: *const ir.Module) [3]u32 {
         if (entry.stage == .compute) return entry.workgroup_size;
     }
     return .{ 1, 1, 1 };
+}
+
+test "timed compute runtime translation reports compiler phases" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = data[id.x] * 2.0;
+        \\}
+    ;
+    var out: [mod.MAX_OUTPUT]u8 = undefined;
+    var result = try translateToMslForComputeRuntimeTimed(
+        std.testing.allocator,
+        source,
+        &out,
+        null,
+        0,
+    );
+    defer result.info.deinit(std.testing.allocator);
+
+    try std.testing.expect(result.len > 0);
+    try std.testing.expect(result.phase_timings_ns.parse > 0);
+    try std.testing.expect(result.phase_timings_ns.sema > 0);
+    try std.testing.expect(result.phase_timings_ns.lower > 0);
+    try std.testing.expect(result.phase_timings_ns.emit > 0);
+    try std.testing.expect(result.phase_timings_ns.total >= result.phase_timings_ns.parse);
+    try std.testing.expect(result.phase_timings_ns.total >= result.phase_timings_ns.emit);
 }

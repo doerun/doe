@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_runtime_identity",
+  "surface": "doe-gpu/browser",
+  "evidenceSource": "browser_wrapper_probe",
+  "selectedRuntime": "browser_navigator_gpu",
+  "executionOwner": "browser",
+  "doeRuntimeActive": false,
+  "webgpuAvailable": false,
+  "provider": {
+    "module": "doe-gpu/browser",
+    "loaded": false,
+    "loadError": "native browser navigator.gpu is unavailable"
+  },
+  "runtimeSelection": null
+}

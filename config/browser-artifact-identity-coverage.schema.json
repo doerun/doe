@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-artifact-identity-coverage.schema.json",
+  "title": "Browser artifact identity coverage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "artifactKind", "coverageId", "artifacts"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_artifact_identity_coverage" },
+    "coverageId": { "type": "string", "minLength": 1 },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Artifact" }
+    }
+  },
+  "$defs": {
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactPath",
+        "kindField",
+        "expectedKind",
+        "identityMode",
+        "requiredPointers"
+      ],
+      "properties": {
+        "artifactPath": { "$ref": "#/$defs/RepoPath" },
+        "kindField": { "enum": ["artifactKind", "reportKind"] },
+        "expectedKind": { "type": "string", "minLength": 1 },
+        "identityMode": {
+          "enum": [
+            "runtime_identity_anchor",
+            "flight_recorder_identity",
+            "source_flight_recorder",
+            "smoke_report_identity",
+            "artifact_pair",
+            "release_bundle_identity",
+            "claim_policy_identity",
+            "promotion_receipt_identity",
+            "replay_source_identity"
+          ]
+        },
+        "requiredPointers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^/(?:[^/~]|~0|~1)+(?:/(?:[^/~]|~0|~1)+)*$"
+          }
+        }
+      }
+    },
+    "RepoPath": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^/" },
+          { "pattern": "(^|/)\\.\\.(/|$)" }
+        ]
+      }
+    }
+  }
+}

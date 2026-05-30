@@ -2,7 +2,7 @@
 
 This file is the browser-lane acceptance plan. The actual Chromium WebGPU task
 list lives in
-[`../../docs/chromium-webgpu-dominance.md`](../../docs/chromium-webgpu-dominance.md).
+[`../../docs/chromium-webgpu-task-list.md`](../../docs/chromium-webgpu-task-list.md).
 Live milestone state lives in
 [`bench/workflows/browser-milestones.json`](bench/workflows/browser-milestones.json)
 and is checked by [`scripts/check-browser-milestones.py`](scripts/check-browser-milestones.py).
@@ -28,6 +28,8 @@ artifact route changes.
 - Runtime selector contract exists.
 - Browser benchmark and claim methodology contracts exist.
 - Ownership, rollback, and artifact routes are schema-backed.
+- Browser responsibility boundaries are schema-backed.
+- Browser GPU flight-recorder artifact shape is schema-backed.
 - Milestone state is represented in the manifest.
 
 ### M1. Forced runtime selection
@@ -64,7 +66,7 @@ Use the canonical task list for all new work:
 - security and fork-maintenance tasks
 
 See
-[`../../docs/chromium-webgpu-dominance.md`](../../docs/chromium-webgpu-dominance.md).
+[`../../docs/chromium-webgpu-task-list.md`](../../docs/chromium-webgpu-task-list.md).
 
 ## Archived module references
 

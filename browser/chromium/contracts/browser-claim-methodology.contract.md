@@ -26,7 +26,11 @@ Browser claim language is allowed only when all required artifacts prove:
 5. Dawn and Doe execute the same required browser rows,
 6. required browser rows have zero required failures,
 7. timing scope and comparability class are explicit,
-8. report, summary, check, and gate artifacts are hash-linked.
+8. adapter identity is emitted for every mode with an available adapter,
+9. shader compiler identity is emitted for every mode,
+10. workload identity is emitted for every browser report,
+11. per-mode trace hash fields are emitted,
+12. report, summary, check, and gate artifacts are hash-linked.
 
 Until those conditions are true, browser output remains diagnostic.
 
@@ -50,6 +54,9 @@ Every per-mode browser artifact must emit:
    - non-empty selector contract version.
 8. `artifactIdentity`
    - `browserExecutablePath`
+   - `browserExecutableSha256`
+   - `dawnRuntimePath`
+   - `dawnRuntimeSha256`
    - `doeLibPath` for Doe mode
    - `doeLibSha256` for Doe mode
 9. `launchArgsHash`
@@ -94,14 +101,19 @@ claim-candidate contract.
 The promoted browser gate must fail when:
 
 1. any mode lacks a `runtimeSelection` object,
-2. Doe mode lacks `doeLibSha256`,
-3. Dawn mode carries a Doe library identity,
-4. `fallbackApplied=true` in a forced claim-candidate run,
-5. `hiddenFallbackAllowed=true`,
-6. launch argument hash is missing,
-7. required smoke checks fail,
-8. required layered rows fail,
-9. promotion approvals are missing when required.
+2. any mode lacks `dawnRuntimeSha256`,
+3. Doe mode lacks `doeLibSha256`,
+4. Dawn mode carries a Doe library identity,
+5. `fallbackApplied=true` in a forced claim-candidate run,
+6. `hiddenFallbackAllowed=true`,
+7. launch argument hash is missing,
+8. adapter identity is missing for an available adapter,
+9. shader compiler identity is missing,
+10. workload identity is missing,
+11. per-mode trace hash fields are missing,
+12. required smoke checks fail,
+13. required layered rows fail,
+14. promotion approvals are missing when required.
 
 ## Non-claims
 

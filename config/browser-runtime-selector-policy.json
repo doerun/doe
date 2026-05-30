@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "policyId": "browser-runtime-selector-v0",
+  "selectionModes": ["dawn", "doe", "auto"],
+  "controlPrecedence": [
+    "emergency_kill_switch",
+    "explicit_override",
+    "enterprise_policy",
+    "auto_profile_policy",
+    "default_dawn"
+  ],
+  "emergencyKillSwitch": {
+    "controlName": "DOE_BROWSER_DISABLE_DOE_RUNTIME",
+    "selectsRuntime": "dawn",
+    "reasonCode": "global_disable_active"
+  },
+  "autoModePreconditions": [
+    "runtime_artifact_available",
+    "runtime_artifact_loads",
+    "required_symbols_available",
+    "capabilities_pass",
+    "profile_not_denylisted",
+    "emergency_kill_switch_inactive"
+  ],
+  "denylist": {
+    "reasonCode": "profile_denylisted",
+    "profiles": []
+  },
+  "fallbackReasons": [
+    "global_disable_active",
+    "runtime_artifact_missing",
+    "runtime_artifact_load_failed",
+    "symbol_surface_incomplete",
+    "profile_denylisted",
+    "capability_requirement_failed",
+    "runtime_health_degraded",
+    "explicit_operator_override",
+    "unknown_selection_error"
+  ],
+  "forcedDoeFailure": {
+    "failClosed": true,
+    "fallbackToDawn": false
+  },
+  "observabilityFields": [
+    "selectionMode",
+    "selectedRuntime",
+    "forcedMode",
+    "fallbackApplied",
+    "fallbackReasonCode",
+    "hiddenFallbackAllowed",
+    "profile.vendor",
+    "profile.api",
+    "profile.deviceFamily",
+    "profile.driver",
+    "selectorVersion",
+    "artifactIdentity.browserExecutablePath",
+    "artifactIdentity.browserExecutableSha256",
+    "artifactIdentity.dawnRuntimePath",
+    "artifactIdentity.dawnRuntimeSha256",
+    "artifactIdentity.doeLibPath",
+    "artifactIdentity.doeLibSha256",
+    "launchArgsHash"
+  ]
+}

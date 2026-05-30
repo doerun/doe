@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/wgsl-corpus-manifest.schema.json",
+  "title": "WGSL corpus manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "corpusId",
+    "normalization",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_corpus_manifest" },
+    "corpusId": { "type": "string", "minLength": 1 },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lineEndings", "finalNewline"],
+      "properties": {
+        "lineEndings": { "type": "string", "const": "lf" },
+        "finalNewline": { "type": "boolean", "const": true }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/CorpusRow" }
+    }
+  },
+  "$defs": {
+    "CorpusRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "category",
+        "sourcePath",
+        "normalizedSourceSha256",
+        "expectedValidity",
+        "expectedBackendTargets",
+        "shaderStages",
+        "provenance"
+      ],
+      "properties": {
+        "shaderId": { "type": "string", "minLength": 1 },
+        "category": {
+          "enum": [
+            "browser_shader",
+            "canvas_workload",
+            "webgpu_sample",
+            "model_inference_kernel",
+            "game_engine_shader",
+            "invalid_diagnostic_fixture"
+          ]
+        },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "normalizedSourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expectedValidity": { "enum": ["valid", "invalid"] },
+        "expectedDiagnosticCategory": {
+          "enum": [
+            "syntax",
+            "semantic",
+            "type",
+            "control_flow",
+            "binding",
+            "none"
+          ]
+        },
+        "expectedBackendTargets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["msl", "spirv", "dxil", "hlsl"] }
+        },
+        "shaderStages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["compute", "vertex", "fragment"] }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceKind", "origin", "license"],
+          "properties": {
+            "sourceKind": {
+              "enum": ["repo_fixture", "synthetic_fixture", "external_sample", "cts_shader_subset"]
+            },
+            "origin": { "type": "string", "minLength": 1 },
+            "license": { "type": "string", "minLength": 1 },
+            "notes": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "expectedValidity": { "const": "invalid" } }
+          },
+          "then": { "required": ["expectedDiagnosticCategory"] }
+        }
+      ]
+    }
+  }
+}

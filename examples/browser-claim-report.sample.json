@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "laneId": "browser_claim_local",
+  "reportKind": "browser-claim-report",
+  "generatedAt": "2026-05-27T00:00:00Z",
+  "benchmarkClass": "comparable",
+  "comparisonStatus": "comparable",
+  "claimStatus": "claimable",
+  "timingClass": "scenario",
+  "timingSource": "browser-performance-now",
+  "claimabilityPolicy": {
+    "mode": "local",
+    "minTimedSamples": 7,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "maxFlakePercent": 5.0
+  },
+  "policyPath": "config/browser-claim-policy.json",
+  "responsibilityMapPath": "config/browser-responsibility-map.json",
+  "runtimeSelectorPolicyPath": "config/browser-runtime-selector-policy.json",
+  "forkMaintenancePolicyPath": "config/chromium-fork-maintenance-policy.json",
+  "capturePolicyPath": "config/browser-capture-policy.json",
+  "promotionApprovalsPath": "browser/chromium/bench/workflows/browser-promotion-approvals.json",
+  "ownershipPath": "config/browser-ownership.json",
+  "windowCount": 7,
+  "windows": [
+    {
+      "window": 1,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 2,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 3,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 4,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 5,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 6,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "window": 7,
+      "smokeReport": "examples/browser-smoke-report.sample.json"
+    }
+  ],
+  "claimabilitySummary": {
+    "workloadCount": 1,
+    "comparableCount": 1,
+    "claimableCount": 1
+  },
+  "workloads": [
+    {
+      "id": "browser_claim_sample",
+      "name": "Browser claim sample",
+      "domain": "browser",
+      "scenarioTemplate": "startup_adapter_device",
+      "claimScope": "l1_strict_candidate",
+      "comparabilityExpectation": "strict",
+      "comparisonStatus": "comparable",
+      "claimability": {
+        "claimable": true,
+        "reasons": [],
+        "windowCount": 7,
+        "flakePercent": 0.0
+      },
+      "deltaPercent": {
+        "p50Percent": 1.0,
+        "p95Percent": 1.0
+      },
+      "baseline": {
+        "runtime": "dawn",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "p50Ms": 10.0,
+          "p95Ms": 11.0
+        },
+        "samplesMs": [
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ]
+      },
+      "comparison": {
+        "runtime": "doe",
+        "timingSources": [
+          "browser-performance-now"
+        ],
+        "stats": {
+          "p50Ms": 9.9,
+          "p95Ms": 10.9
+        },
+        "samplesMs": [
+          9.9,
+          9.9,
+          9.9,
+          9.9,
+          9.9,
+          9.9,
+          9.9
+        ]
+      }
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_release_artifact_bundle",
+  "bundleId": "browser-release-diagnostic-sample-v1",
+  "releaseStatus": "diagnostic",
+  "browserBinary": {
+    "path": "browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium",
+    "sha256": "3aaae3857f75c0df9136483ae5300661812a42887c5b489f26679b2758b1aeaa",
+    "kind": "browser_binary"
+  },
+  "doeRuntime": {
+    "path": "runtime/zig/zig-out/lib/libwebgpu_doe_full.dylib",
+    "sha256": "29ccbc3fe75a47a3ba75a38e78b38883429c4aa47101d4398759081bbe6ccfca",
+    "kind": "doe_runtime"
+  },
+  "shaderCompiler": {
+    "path": "runtime/zig/zig-out/bin/doe-zig-runtime",
+    "sha256": "e67467aa3e7d64fc737c0e5a35748146de5951f43497a28d2c11f9de6c8b26dd",
+    "kind": "shader_compiler"
+  },
+  "contracts": [
+    {
+      "path": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
+      "sha256": "098449470e61678ba554d7973eca1e7d71cfede323fdd20610703af24181fe8c",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-canvas-webgpu-fusion.contract.md",
+      "sha256": "817b79664fe29fb0ab57f88d70d6c574c2da45d7db6c80038a296f38d7974b0d",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-claim-methodology.contract.md",
+      "sha256": "e44969875299d51bbfdb33272312ce87a75dbe38c5db9966dc2a040af52399c0",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-cts-subset.contract.md",
+      "sha256": "6a4e1061fdd18a653948dcf73d6213c457ad0e1b353199a946df422982ea3eea",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-fallback-explanations.contract.md",
+      "sha256": "ffd67a7095807cc8b3c1385801b8f260e6b5505e88ab3222920479c648aa9c41",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-gpu-flight-recorder.contract.md",
+      "sha256": "ec368154b1d9d60d2b1fe9ad48fecdf709e773c7df8cae8aa456d04a86e41b56",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-gpu-scheduler.contract.md",
+      "sha256": "b3ce97bcbb8b4c9a86b59fe05eb4eed5a8214f97da8de6aa74386866668a26a5",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-local-ai-workloads.contract.md",
+      "sha256": "556dfa69e8e261aa08bc85a6a451db9cd6e797652d4578e2450316a606d33fee",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-media-path-probe.contract.md",
+      "sha256": "663f05e4c253523d3db535248540c9201e90a214a9101affbf6045ab573914e0",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-pipeline-cache-receipts.contract.md",
+      "sha256": "9aec82831409cf58962c8fce134c7689fc4f0c66cf50110d14652e5e2d0c8bb3",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-recovery-parity.contract.md",
+      "sha256": "0b05d7d390e28642e31675cd85285dac8193b543782743a05d39ac8b74fadbbb",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-responsibility-map.contract.md",
+      "sha256": "a4daa7ffe89a77286a75cb4cf883c6f7018d51cf6746e2d83bed09d94a98e74e",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-shader-links.contract.md",
+      "sha256": "a031e4dc8ac0c750b68c07d9274536232a556cbd0d95c5640ce42d2d32535aa4",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/browser-webgpu-effect-experiment.contract.md",
+      "sha256": "c32ef649aff156f353916648c318bcaacbe7f8333ab0cadfc3a0fee6b20ff5a9",
+      "kind": "contract"
+    },
+    {
+      "path": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "sha256": "c580af5040285aadcb12d14c67a752b93dcd2c8708b18b69948405b5b9016a04",
+      "kind": "contract"
+    }
+  ],
+  "claimReports": [
+    {
+      "path": "examples/browser-claim-report.sample.json",
+      "sha256": "dc0e791e990837b1b50a2c487c38c3284cb901fed8f520308ed67b78c69d6645",
+      "kind": "browser_claim_report"
+    }
+  ],
+  "promotionReceipts": [
+    {
+      "path": "examples/browser-claim-promotion-receipt.sample.json",
+      "sha256": "449785f3dd7a6c94cfa1463d2b7b0e948a066af99abcebb94b3997da0b9d459f",
+      "kind": "browser_claim_promotion_receipt"
+    }
+  ],
+  "policies": [
+    {
+      "path": "config/browser-runtime-selector-policy.json",
+      "sha256": "9632b2fd38e71c5a1c463680f3e16e5003b72a770ce1738a2de6032483a3af52",
+      "kind": "runtime_selector_policy"
+    },
+    {
+      "path": "config/chromium-fork-maintenance-policy.json",
+      "sha256": "167385a2527ed37483c5335eef5f89068beeb41f17758cb4dbf5d647355e82d5",
+      "kind": "fork_maintenance_policy"
+    },
+    {
+      "path": "config/chromium-patch-manifest.json",
+      "sha256": "0cda374cce093579126e9409878e75f1c8b69ca1d840c449ab052f86ec815aff",
+      "kind": "chromium_patch_manifest"
+    },
+    {
+      "path": "config/browser-claim-policy.json",
+      "sha256": "097027d7b1226041c7a789ae0b7b39cc746320890a435a9a4b7b261b10962a17",
+      "kind": "browser_claim_policy"
+    },
+    {
+      "path": "config/browser-capture-policy.json",
+      "sha256": "b993155449675d9827a524a95cfbae241e6894042f0a7f98aa54ed1a6bb5da49",
+      "kind": "browser_capture_policy"
+    },
+    {
+      "path": "config/browser-artifact-identity-coverage.json",
+      "sha256": "77690dcebad6ec235a492139dd4d8fd229460cc3fc04180bb03572e95637c21a",
+      "kind": "browser_artifact_identity_coverage"
+    },
+    {
+      "path": "config/browser-unsupported-reason-taxonomy.json",
+      "sha256": "1af444d6e5c30c98f14ec42ee8f1414eed18ee36f0e22acaee4673bb7f5d15f1",
+      "kind": "browser_unsupported_reason_taxonomy"
+    }
+  ],
+  "failureCodes": []
+}

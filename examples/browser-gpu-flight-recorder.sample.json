@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_gpu_flight_recorder",
+  "captureId": "browser-flight-recorder-smoke",
+  "generatedAt": "2026-05-26T00:00:00Z",
+  "page": {
+    "origin": "https://example.invalid",
+    "urlSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "scenarioId": "webgpu-smoke",
+    "workloadId": "compute_noop"
+  },
+  "runtimeIdentity": {
+    "selectedRuntime": "doe",
+    "selectorVersion": "browser-runtime-selector-v1",
+    "browserExecutableSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "doeRuntimeSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "dawnDelegateSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "fallbackApplied": false,
+    "fallbackReasonCode": ""
+  },
+  "adapterIdentity": {
+    "name": "sample-adapter",
+    "vendorId": "0x0000",
+    "deviceId": "0x0000",
+    "backend": "metal",
+    "limitsSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "responsibilityMap": {
+    "path": "config/browser-responsibility-map.json",
+    "mapVersion": "2026-05-26-browser-responsibility-map-v1"
+  },
+  "shaders": [
+    {
+      "shaderId": "shader:webgpu_prefix_sum",
+      "sourceLanguage": "wgsl",
+      "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+      "sourceSha256": "a8a642a54aaca908b707d20666566db8db62dbb5c9bfd518fbe98925da22c416",
+      "irPath": "bench/out/browser-flight-recorder/prefix-sum.ir.json",
+      "irSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "loweringReceiptPath": "examples/wgsl-lowering-link-receipt.sample.json",
+      "loweringReceiptRowId": "webgpu-prefix-sum",
+      "backendTarget": "spirv",
+      "backendOutputPath": "bench/out/browser-flight-recorder/prefix-sum.spv",
+      "backendOutputSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "diagnosticStatus": "ok"
+    }
+  ],
+  "bindGroups": [
+    {
+      "bindGroupId": "bind_group:0",
+      "layoutId": "bind_group_layout:0",
+      "bindings": [
+        {
+          "binding": 0,
+          "resourceId": "buffer:input"
+        }
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "bufferId": "buffer:input",
+      "sizeBytes": 1024,
+      "usage": ["storage", "copy_dst"],
+      "contentSha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "textures": [
+    {
+      "textureId": "texture:frame",
+      "format": "rgba8unorm",
+      "extent": [64, 64, 1],
+      "usage": ["render_attachment", "copy_src"],
+      "contentSha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "commandGraph": {
+    "graphSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "nodes": [
+      {
+        "nodeId": "node:create_shader",
+        "op": "create_shader_module",
+        "shaderIds": ["shader:webgpu_prefix_sum"],
+        "resourceIds": []
+      },
+      {
+        "nodeId": "node:dispatch",
+        "op": "dispatch",
+        "shaderIds": ["shader:webgpu_prefix_sum"],
+        "resourceIds": ["buffer:input", "bind_group:0"]
+      },
+      {
+        "nodeId": "node:present",
+        "op": "present",
+        "shaderIds": [],
+        "resourceIds": ["texture:frame"]
+      }
+    ],
+    "edges": [
+      {
+        "fromNodeId": "node:create_shader",
+        "toNodeId": "node:dispatch",
+        "edgeKind": "orders_before"
+      },
+      {
+        "fromNodeId": "node:dispatch",
+        "toNodeId": "node:present",
+        "edgeKind": "orders_before"
+      }
+    ],
+    "submitIds": ["submit:0"]
+  },
+  "timings": [
+    {
+      "phase": "shader_compile",
+      "durationNs": 0,
+      "nodeId": "node:create_shader"
+    },
+    {
+      "phase": "submit_wait",
+      "durationNs": 0,
+      "nodeId": "node:dispatch"
+    },
+    {
+      "phase": "present",
+      "durationNs": 0,
+      "nodeId": "node:present"
+    }
+  ],
+  "frames": [
+    {
+      "frameId": 0,
+      "frameSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "presentNodeId": "node:present"
+    }
+  ],
+  "failureCodes": [
+    {
+      "code": "ok",
+      "severity": "info",
+      "source": "capture",
+      "message": "sample artifact has no failure"
+    }
+  ],
+  "privacy": {
+    "originScoped": true,
+    "pageDataPolicy": "hash_only",
+    "rawPageDataIncluded": false,
+    "redactionNotes": "sample keeps page data out of the artifact"
+  }
+}

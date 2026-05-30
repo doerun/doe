@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -68,10 +68,12 @@ def require_string_list(value: Any, label: str) -> list[str]:
 
 
 def resolve_repo_path(value: str) -> Path:
-    candidate = Path(value)
-    if candidate.is_absolute():
-        return candidate.resolve()
-    return (REPO_ROOT / candidate).resolve()
+    return REPO_ROOT.joinpath(*PurePosixPath(value).parts).resolve()
+
+
+def safe_repo_path(value: str) -> bool:
+    path = PurePosixPath(value)
+    return bool(value) and not path.is_absolute() and ".." not in path.parts
 
 
 def validate_manifest(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
@@ -242,8 +244,12 @@ def build_summary(milestones: list[dict[str, Any]], errors: list[str]) -> dict[s
         present_count = 0
         required_count = 0
         for evidence in milestone["evidence"]:
-            resolved = resolve_repo_path(evidence["path"])
-            exists = resolved.exists()
+            if not safe_repo_path(evidence["path"]):
+                exists = False
+                errors.append(f"{milestone['id']} unsafe local evidence path: {evidence['path']}")
+            else:
+                resolved = resolve_repo_path(evidence["path"])
+                exists = resolved.exists()
             if exists:
                 present_count += 1
             if evidence["required"]:

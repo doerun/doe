@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_corpus_manifest",
+  "corpusId": "browser-wgsl-corpus-v0",
+  "normalization": {
+    "lineEndings": "lf",
+    "finalNewline": true
+  },
+  "rows": [
+    {
+      "shaderId": "browser-basic-fragment",
+      "category": "browser_shader",
+      "sourcePath": "bench/fixtures/wgsl-corpus/browser/basic-fragment.wgsl",
+      "normalizedSourceSha256": "8229b1b3dc23c8daa9673e90cda17d2d6213f5d0dc3fb13a73f19f45c84baf54",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["fragment"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe browser corpus fixture",
+        "license": "repository"
+      }
+    },
+    {
+      "shaderId": "canvas-composite",
+      "category": "canvas_workload",
+      "sourcePath": "bench/fixtures/wgsl-corpus/canvas/canvas-composite.wgsl",
+      "normalizedSourceSha256": "04a06cc38436f680c3814ee7884ce7d91235e3f78e47568c255d740882267b77",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["fragment"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe canvas fusion corpus fixture",
+        "license": "repository"
+      }
+    },
+    {
+      "shaderId": "webgpu-prefix-sum",
+      "category": "webgpu_sample",
+      "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+      "normalizedSourceSha256": "a8a642a54aaca908b707d20666566db8db62dbb5c9bfd518fbe98925da22c416",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["compute"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe WebGPU sample corpus fixture",
+        "license": "repository"
+      }
+    },
+    {
+      "shaderId": "model-inference-matmul",
+      "category": "model_inference_kernel",
+      "sourcePath": "bench/fixtures/wgsl-corpus/model/inference-matmul.wgsl",
+      "normalizedSourceSha256": "7047f99bdcd495af0e56f384035240a2af26f0e6bfd5442b78a60c1c971c5099",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["compute"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe local AI corpus fixture",
+        "license": "repository"
+      }
+    },
+    {
+      "shaderId": "game-particle-integrate",
+      "category": "game_engine_shader",
+      "sourcePath": "bench/fixtures/wgsl-corpus/game/particle-integrate.wgsl",
+      "normalizedSourceSha256": "38347aee11e88ac1e55c349b99bd3f8e25fd3c499b6036b367eca3c7c410df6a",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["compute"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe game-engine corpus fixture",
+        "license": "repository"
+      }
+    },
+    {
+      "shaderId": "cts-texture-dimensions",
+      "category": "webgpu_sample",
+      "sourcePath": "bench/fixtures/wgsl-corpus/cts/texture-dimensions.wgsl",
+      "normalizedSourceSha256": "89bf3bfe5e5fdc91835200ba40e3e47dc952571edffa8d0e7061e41659a7c4f9",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["compute"],
+      "provenance": {
+        "sourceKind": "cts_shader_subset",
+        "origin": "webgpu:shader,execution,expression,call,builtin,textureDimensions:*",
+        "license": "repository",
+        "notes": "CTS query-linked fixture for compiler corpus ingestion."
+      }
+    },
+    {
+      "shaderId": "invalid-missing-return",
+      "category": "invalid_diagnostic_fixture",
+      "sourcePath": "bench/fixtures/wgsl-corpus/invalid/missing-return.wgsl",
+      "normalizedSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "expectedValidity": "invalid",
+      "expectedDiagnosticCategory": "control_flow",
+      "expectedBackendTargets": ["msl", "spirv", "dxil", "hlsl"],
+      "shaderStages": ["fragment"],
+      "provenance": {
+        "sourceKind": "repo_fixture",
+        "origin": "Doe invalid diagnostic corpus fixture",
+        "license": "repository"
+      }
+    }
+  ]
+}

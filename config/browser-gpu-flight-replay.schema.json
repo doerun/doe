@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-gpu-flight-replay.schema.json",
+  "title": "Browser GPU flight replay report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "captureId",
+    "sourcePath",
+    "sourceArtifactKind",
+    "policyPath",
+    "graphSha256",
+    "replayStatus",
+    "nodeOrder",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": {
+      "type": "string",
+      "const": "browser_gpu_flight_replay"
+    },
+    "captureId": { "type": "string", "minLength": 1 },
+    "sourcePath": { "type": "string", "minLength": 1 },
+    "sourceArtifactKind": {
+      "type": "string",
+      "const": "browser_gpu_flight_recorder"
+    },
+    "policyPath": { "type": "string", "minLength": 1 },
+    "graphSha256": { "$ref": "#/$defs/Sha256" },
+    "replayStatus": { "enum": ["pass", "fail"] },
+    "nodeOrder": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ResourceId" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FailureCode" }
+    }
+  },
+  "$defs": {
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "ResourceId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_:-]*$"
+    },
+    "FailureCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "source", "message", "path"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["warning", "error", "fatal"] },
+        "source": { "enum": ["flight_recorder_replay", "browser_policy"] },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

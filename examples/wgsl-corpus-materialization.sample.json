@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_corpus_materialization",
+  "corpusId": "browser-wgsl-corpus-v0",
+  "manifestPath": "config/wgsl-browser-corpus.json",
+  "outputRoot": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0",
+  "materializationStatus": "pass",
+  "rows": [
+    {
+      "shaderId": "browser-basic-fragment",
+      "category": "browser_shader",
+      "sourcePath": "bench/fixtures/wgsl-corpus/browser/basic-fragment.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/browser_shader/browser-basic-fragment.wgsl",
+      "normalizedSourceSha256": "8229b1b3dc23c8daa9673e90cda17d2d6213f5d0dc3fb13a73f19f45c84baf54",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "fragment"
+      ]
+    },
+    {
+      "shaderId": "canvas-composite",
+      "category": "canvas_workload",
+      "sourcePath": "bench/fixtures/wgsl-corpus/canvas/canvas-composite.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/canvas_workload/canvas-composite.wgsl",
+      "normalizedSourceSha256": "04a06cc38436f680c3814ee7884ce7d91235e3f78e47568c255d740882267b77",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "fragment"
+      ]
+    },
+    {
+      "shaderId": "webgpu-prefix-sum",
+      "category": "webgpu_sample",
+      "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/webgpu_sample/webgpu-prefix-sum.wgsl",
+      "normalizedSourceSha256": "a8a642a54aaca908b707d20666566db8db62dbb5c9bfd518fbe98925da22c416",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "compute"
+      ]
+    },
+    {
+      "shaderId": "model-inference-matmul",
+      "category": "model_inference_kernel",
+      "sourcePath": "bench/fixtures/wgsl-corpus/model/inference-matmul.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/model_inference_kernel/model-inference-matmul.wgsl",
+      "normalizedSourceSha256": "7047f99bdcd495af0e56f384035240a2af26f0e6bfd5442b78a60c1c971c5099",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "compute"
+      ]
+    },
+    {
+      "shaderId": "game-particle-integrate",
+      "category": "game_engine_shader",
+      "sourcePath": "bench/fixtures/wgsl-corpus/game/particle-integrate.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/game_engine_shader/game-particle-integrate.wgsl",
+      "normalizedSourceSha256": "38347aee11e88ac1e55c349b99bd3f8e25fd3c499b6036b367eca3c7c410df6a",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "compute"
+      ]
+    },
+    {
+      "shaderId": "cts-texture-dimensions",
+      "category": "webgpu_sample",
+      "sourcePath": "bench/fixtures/wgsl-corpus/cts/texture-dimensions.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/webgpu_sample/cts-texture-dimensions.wgsl",
+      "normalizedSourceSha256": "89bf3bfe5e5fdc91835200ba40e3e47dc952571edffa8d0e7061e41659a7c4f9",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "compute"
+      ]
+    },
+    {
+      "shaderId": "invalid-missing-return",
+      "category": "invalid_diagnostic_fixture",
+      "sourcePath": "bench/fixtures/wgsl-corpus/invalid/missing-return.wgsl",
+      "materializedPath": "examples/wgsl-corpus-materialized/browser-wgsl-corpus-v0/invalid_diagnostic_fixture/invalid-missing-return.wgsl",
+      "normalizedSourceSha256": "1a57b3e4782785b928dc8b146faadfa63d96b169e6bca1518bd85a623849922c",
+      "expectedValidity": "invalid",
+      "expectedBackendTargets": [
+        "msl",
+        "spirv",
+        "dxil",
+        "hlsl"
+      ],
+      "shaderStages": [
+        "fragment"
+      ]
+    }
+  ],
+  "failureCodes": []
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_gpu_flight_replay",
+  "captureId": "browser-flight-recorder-smoke",
+  "sourcePath": "examples/browser-gpu-flight-recorder.sample.json",
+  "sourceArtifactKind": "browser_gpu_flight_recorder",
+  "policyPath": "config/browser-capture-policy.json",
+  "graphSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+  "replayStatus": "pass",
+  "nodeOrder": [
+    "node:create_shader",
+    "node:dispatch",
+    "node:present"
+  ],
+  "failureCodes": []
+}

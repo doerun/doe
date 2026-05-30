@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -19,6 +19,8 @@ VALID_OPTIONAL_REQUIRED_STATUS = {"ok", "optional"}
 VALID_L1_CLAIM_SCOPE = {"l1_strict_candidate", "l1_component_only", "l0_only_no_claim"}
 VALID_L2_CLAIM_SCOPE = {"l2_component_only", "l2_diagnostic_only"}
 VALID_RUNTIME_STATUS = {"ok", "fail", "unsupported", "l0_only"}
+VALID_REPORT_MODES = {"dawn", "doe", "auto"}
+VALID_SELECTED_RUNTIMES = {"dawn", "doe"}
 VALID_RUNTIME_STATUS_CODES = {
     "ok": {"ok"},
     "fail": {"browser_launch_failed", "mode_setup_failed", "mode_execution_failed", "scenario_runtime_error"},
@@ -34,6 +36,7 @@ VALID_RUNTIME_STATUS_CODES = {
     },
     "l0_only": {"l0_only"},
 }
+VALID_HEX = set("0123456789abcdef")
 PROMOTION_APPROVER_ROLES = {
     "browser_runtime_integration_owner",
     "browser_quality_owner",
@@ -123,6 +126,10 @@ def require_hash_hex(value: Any, label: str) -> str:
     return text
 
 
+def is_hash_hex(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(ch in VALID_HEX for ch in value)
+
+
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -132,11 +139,13 @@ def payload_sha256(value: Any) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
-def resolve_path(value: str) -> Path:
-    candidate = Path(value)
-    if candidate.is_absolute():
-        return candidate.resolve()
-    return (REPO_ROOT / candidate).resolve()
+def safe_repo_path(value: str) -> bool:
+    path = PurePosixPath(value)
+    return bool(value) and not path.is_absolute() and ".." not in path.parts
+
+
+def resolve_repo_path(value: str) -> Path:
+    return REPO_ROOT.joinpath(*PurePosixPath(value).parts).resolve()
 
 
 def parse_workloads(workloads_payload: dict[str, Any]) -> list[dict[str, str]]:
@@ -304,6 +313,8 @@ def parse_workflow_manifest(workflows_payload: dict[str, Any]) -> dict[str, Any]
         if role_value in required_approvals:
             raise ValueError(f"duplicate promotion approver role: {role_value}")
         required_approvals.append(role_value)
+    for role in sorted(PROMOTION_APPROVER_ROLES - set(required_approvals)):
+        raise ValueError(f"workflow manifest missing promotion approver role: {role}")
 
     rows_raw = workflows_payload.get("rows")
     if not isinstance(rows_raw, list) or not rows_raw:
@@ -486,12 +497,18 @@ def check_projection_hash_sync(
 ) -> list[str]:
     errors: list[str] = []
 
-    manifest_workload_path = resolve_path(manifest["sourceWorkloadsPath"])
-    if manifest_workload_path != workloads_path:
+    source_workloads_path = manifest["sourceWorkloadsPath"]
+    if not safe_repo_path(source_workloads_path):
         errors.append(
-            "manifest sourceWorkloadsPath drift: "
-            f"manifest={manifest_workload_path} requested={workloads_path}"
+            f"manifest sourceWorkloadsPath must be repo-relative: {source_workloads_path}"
         )
+    else:
+        manifest_workload_path = resolve_repo_path(source_workloads_path)
+        if manifest_workload_path != workloads_path:
+            errors.append(
+                "manifest sourceWorkloadsPath drift: "
+                f"manifest={manifest_workload_path} requested={workloads_path}"
+            )
 
     if not workloads_path.exists():
         errors.append(f"workloads path not found: {workloads_path}")
@@ -504,7 +521,12 @@ def check_projection_hash_sync(
             f"manifest={manifest['sourceWorkloadsSha256']} current={current_workloads_hash}"
         )
 
-    rules_path = resolve_path(manifest["rulesPath"])
+    rules_path_text = manifest["rulesPath"]
+    if not safe_repo_path(rules_path_text):
+        errors.append(f"manifest rulesPath must be repo-relative: {rules_path_text}")
+        return errors
+
+    rules_path = resolve_repo_path(rules_path_text)
     if not rules_path.exists():
         errors.append(f"rules path not found: {rules_path}")
         return errors
@@ -543,7 +565,7 @@ def parse_required_modes(value: str) -> list[str]:
         return []
     modes = [segment.strip() for segment in value.split(",") if segment.strip()]
     for mode in modes:
-        if mode not in {"dawn", "doe"}:
+        if mode not in VALID_REPORT_MODES:
             raise ValueError(f"invalid mode in --require-modes: {mode}")
     return modes
 
@@ -570,6 +592,139 @@ def check_mode_result(
     return errors
 
 
+def check_runtime_selection(
+    runtime_selection: Any,
+    row_label: str,
+    mode: str,
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(runtime_selection, dict):
+        return [f"{row_label}: missing runtimeSelection object"]
+
+    selected_runtime = runtime_selection.get("selectedRuntime")
+    if runtime_selection.get("selectionMode") != mode:
+        errors.append(f"{row_label}: runtimeSelection.selectionMode must be {mode}")
+    if mode == "auto":
+        if selected_runtime not in VALID_SELECTED_RUNTIMES:
+            errors.append(f"{row_label}: runtimeSelection.selectedRuntime must be dawn or doe")
+        if runtime_selection.get("forcedMode") is not None:
+            errors.append(f"{row_label}: runtimeSelection.forcedMode must be null for auto")
+        fallback_applied = runtime_selection.get("fallbackApplied")
+        fallback_reason = runtime_selection.get("fallbackReasonCode")
+        if not isinstance(fallback_applied, bool):
+            errors.append(f"{row_label}: runtimeSelection.fallbackApplied must be bool for auto")
+        elif fallback_applied and (
+            not isinstance(fallback_reason, str) or not fallback_reason.strip()
+        ):
+            errors.append(f"{row_label}: runtimeSelection.fallbackReasonCode must be non-empty for auto fallback")
+        elif not fallback_applied and fallback_reason != "":
+            errors.append(f"{row_label}: runtimeSelection.fallbackReasonCode must be empty without fallback")
+    else:
+        if selected_runtime != mode:
+            errors.append(f"{row_label}: runtimeSelection.selectedRuntime must be {mode}")
+        if runtime_selection.get("forcedMode") != mode:
+            errors.append(f"{row_label}: runtimeSelection.forcedMode must be {mode}")
+        if runtime_selection.get("fallbackApplied") is not False:
+            errors.append(f"{row_label}: runtimeSelection.fallbackApplied must be false")
+        if runtime_selection.get("fallbackReasonCode") != "":
+            errors.append(f"{row_label}: runtimeSelection.fallbackReasonCode must be empty")
+
+    if runtime_selection.get("hiddenFallbackAllowed") is not False:
+        errors.append(f"{row_label}: runtimeSelection.hiddenFallbackAllowed must be false")
+    profile = runtime_selection.get("profile")
+    if not isinstance(profile, dict):
+        errors.append(f"{row_label}: runtimeSelection.profile missing")
+    else:
+        for field in ("vendor", "api", "deviceFamily", "driver"):
+            if not isinstance(profile.get(field), str) or not profile[field].strip():
+                errors.append(f"{row_label}: runtimeSelection.profile.{field} missing")
+    if not isinstance(runtime_selection.get("selectorVersion"), str) or not runtime_selection["selectorVersion"].strip():
+        errors.append(f"{row_label}: runtimeSelection.selectorVersion missing")
+
+    artifact_identity = runtime_selection.get("artifactIdentity")
+    if not isinstance(artifact_identity, dict):
+        errors.append(f"{row_label}: runtimeSelection.artifactIdentity missing")
+        return errors
+    if not isinstance(artifact_identity.get("browserExecutablePath"), str) or not artifact_identity["browserExecutablePath"].strip():
+        errors.append(f"{row_label}: artifactIdentity.browserExecutablePath missing")
+    if not is_hash_hex(artifact_identity.get("browserExecutableSha256")):
+        errors.append(f"{row_label}: artifactIdentity.browserExecutableSha256 must be sha256 hex")
+    if not isinstance(artifact_identity.get("dawnRuntimePath"), str) or not artifact_identity["dawnRuntimePath"].strip():
+        errors.append(f"{row_label}: artifactIdentity.dawnRuntimePath missing")
+    if not is_hash_hex(artifact_identity.get("dawnRuntimeSha256")):
+        errors.append(f"{row_label}: artifactIdentity.dawnRuntimeSha256 must be sha256 hex")
+    if selected_runtime == "doe":
+        if not isinstance(artifact_identity.get("doeLibPath"), str) or not artifact_identity["doeLibPath"].strip():
+            errors.append(f"{row_label}: artifactIdentity.doeLibPath missing for doe mode")
+        if not is_hash_hex(artifact_identity.get("doeLibSha256")):
+            errors.append(f"{row_label}: artifactIdentity.doeLibSha256 must be sha256 hex for doe mode")
+    return errors
+
+
+def check_adapter_identity(runtime_probe: Any, row_label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(runtime_probe, dict):
+        return [f"{row_label}: runtimeProbe missing"]
+    if runtime_probe.get("adapterAvailable") is not True:
+        return errors
+    adapter_identity = runtime_probe.get("adapterIdentity")
+    if not isinstance(adapter_identity, dict):
+        return [f"{row_label}: adapterIdentity missing"]
+    if not is_hash_hex(adapter_identity.get("adapterInfoSha256")):
+        errors.append(f"{row_label}: adapterIdentity.adapterInfoSha256 must be sha256 hex")
+    feature_count = adapter_identity.get("featureCount")
+    if not isinstance(feature_count, int) or feature_count < 0:
+        errors.append(f"{row_label}: adapterIdentity.featureCount must be non-negative integer")
+    return errors
+
+
+def check_shader_compiler_identity(payload: Any, row_label: str, mode: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{row_label}: shaderCompilerIdentity missing"]
+    expected_surface = (
+        "doe_runtime_embedded_shader_compiler"
+        if mode == "doe"
+        else "dawn_runtime_embedded_shader_compiler"
+    )
+    if payload.get("compilerSurface") != expected_surface:
+        errors.append(f"{row_label}: shaderCompilerIdentity.compilerSurface must be {expected_surface}")
+    if payload.get("identitySource") != "runtime_artifact_identity":
+        errors.append(f"{row_label}: shaderCompilerIdentity.identitySource must be runtime_artifact_identity")
+    if not isinstance(payload.get("compilerArtifactPath"), str) or not payload["compilerArtifactPath"].strip():
+        errors.append(f"{row_label}: shaderCompilerIdentity.compilerArtifactPath missing")
+    if not is_hash_hex(payload.get("compilerArtifactSha256")):
+        errors.append(f"{row_label}: shaderCompilerIdentity.compilerArtifactSha256 must be sha256 hex")
+    return errors
+
+
+def check_trace_hash_fields(payload: Any, row_label: str) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return [f"{row_label}: trace row missing"]
+    if not is_hash_hex(payload.get("hash")):
+        errors.append(f"{row_label}: hash must be sha256 hex")
+    previous_hash = payload.get("previousHash")
+    if not is_hash_hex(previous_hash):
+        errors.append(f"{row_label}: previousHash must be sha256 hex")
+    return errors
+
+
+def check_workload_identity(payload: Any, manifest: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(payload, dict):
+        return ["report workloadIdentity missing"]
+    if payload.get("kind") != "browser_layered_superset":
+        errors.append("report workloadIdentity.kind must be browser_layered_superset")
+    if payload.get("sourceWorkloadsSha256") != manifest["sourceWorkloadsSha256"]:
+        errors.append("report workloadIdentity.sourceWorkloadsSha256 mismatch")
+    if payload.get("projectionContractHash") != manifest["projectionContractHash"]:
+        errors.append("report workloadIdentity.projectionContractHash mismatch")
+    if not is_hash_hex(payload.get("workflowManifestSha256")):
+        errors.append("report workloadIdentity.workflowManifestSha256 must be sha256 hex")
+    return errors
+
+
 def check_report_coverage(
     report_payload: dict[str, Any],
     manifest: dict[str, Any],
@@ -588,6 +743,7 @@ def check_report_coverage(
             "report projectionContractHash mismatch: "
             f"report={report_projection_hash} manifest={manifest['projectionContractHash']}"
         )
+    errors.extend(check_workload_identity(report_payload.get("workloadIdentity"), manifest))
 
     env_evidence = report_payload.get("browserEnvironmentEvidence")
     if not isinstance(env_evidence, dict):
@@ -599,7 +755,7 @@ def check_report_coverage(
         mode_order = []
     else:
         for index, mode in enumerate(mode_order):
-            if mode not in {"dawn", "doe"}:
+            if mode not in VALID_REPORT_MODES:
                 errors.append(f"modeOrder[{index}] invalid mode: {mode}")
 
     for mode in required_modes:
@@ -616,7 +772,7 @@ def check_report_coverage(
                 errors.append(f"modeRunDetails[{index}] is not an object")
                 continue
             detail_mode = detail.get("mode")
-            if detail_mode not in {"dawn", "doe"}:
+            if detail_mode not in VALID_REPORT_MODES:
                 errors.append(f"modeRunDetails[{index}] has invalid mode: {detail_mode}")
                 continue
             mode_run_details[str(detail_mode)] = detail
@@ -626,18 +782,50 @@ def check_report_coverage(
         if detail is None:
             errors.append(f"modeRunDetails missing required mode: {mode}")
             continue
+        errors.extend(check_trace_hash_fields(detail, f"modeRunDetails[{mode}]"))
         runtime_evidence = detail.get("runtimeEvidence")
         if not isinstance(runtime_evidence, dict):
             errors.append(f"modeRunDetails[{mode}] missing runtimeEvidence object")
             continue
         if runtime_evidence.get("modeRequested") != mode:
             errors.append(f"modeRunDetails[{mode}] runtimeEvidence.modeRequested mismatch")
+        detail_runtime_selection = detail.get("runtimeSelection")
+        evidence_runtime_selection = runtime_evidence.get("runtimeSelection")
+        if not isinstance(detail_runtime_selection, dict):
+            errors.append(f"modeRunDetails[{mode}] missing runtimeSelection object")
+        elif detail_runtime_selection != evidence_runtime_selection:
+            errors.append(f"modeRunDetails[{mode}] runtimeSelection drift")
+        errors.extend(
+            check_runtime_selection(
+                evidence_runtime_selection,
+                f"modeRunDetails[{mode}]",
+                mode,
+            )
+        )
+        selected_runtime = (
+            evidence_runtime_selection.get("selectedRuntime")
+            if isinstance(evidence_runtime_selection, dict)
+            else mode
+        )
+        compiler_mode = (
+            selected_runtime
+            if selected_runtime in VALID_SELECTED_RUNTIMES
+            else mode
+        )
         if not isinstance(runtime_evidence.get("pageTargetKind"), str):
             errors.append(f"modeRunDetails[{mode}] missing runtimeEvidence.pageTargetKind")
         if not isinstance(runtime_evidence.get("browserVersion"), str):
             errors.append(f"modeRunDetails[{mode}] missing runtimeEvidence.browserVersion")
         if not isinstance(runtime_evidence.get("userAgent"), str):
             errors.append(f"modeRunDetails[{mode}] missing runtimeEvidence.userAgent")
+        errors.extend(check_adapter_identity(detail.get("runtimeProbe"), f"modeRunDetails[{mode}]"))
+        errors.extend(
+            check_shader_compiler_identity(
+                detail.get("shaderCompilerIdentity"),
+                f"modeRunDetails[{mode}]",
+                compiler_mode,
+            )
+        )
 
     report_l1 = report_payload.get("l1")
     report_l2 = report_payload.get("l2")
@@ -747,6 +935,9 @@ def check_promotion_approvals(
     errors: list[str] = []
     workflow_required = workflow_manifest["requiredApprovals"]
     approval_required = approvals["requiredApprovals"]
+    for role in approval_required:
+        if role not in workflow_required:
+            errors.append(f"promotion approvals role not workflow-required: {role}")
     for role in workflow_required:
         if role not in approval_required:
             errors.append(f"promotion approvals missing required role declaration: {role}")

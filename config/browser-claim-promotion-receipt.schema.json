@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-claim-promotion-receipt.schema.json",
+  "title": "Browser claim promotion receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "receiptId",
+    "claimPolicyPath",
+    "promotionStatus",
+    "artifacts",
+    "hiddenFallbackCheck",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_claim_promotion_receipt" },
+    "receiptId": { "type": "string", "minLength": 1 },
+    "claimPolicyPath": { "type": "string", "minLength": 1 },
+    "promotionStatus": { "enum": ["diagnostic", "promotable"] },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Artifact" }
+    },
+    "hiddenFallbackCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "passed"],
+      "properties": {
+        "required": { "type": "boolean", "const": true },
+        "passed": { "type": "boolean" }
+      }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Failure" }
+    }
+  },
+  "$defs": {
+    "Hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "mode",
+        "forcedDoe",
+        "hiddenFallbackUsed",
+        "claimPolicyPassed"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/Hash" },
+        "mode": { "enum": ["doe", "dawn", "auto"] },
+        "forcedDoe": { "type": "boolean" },
+        "hiddenFallbackUsed": { "type": "boolean" },
+        "claimPolicyPassed": { "type": "boolean" }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

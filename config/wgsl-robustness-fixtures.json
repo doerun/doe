@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "wgsl_robustness_fixtures",
+  "fixtureSetId": "browser-wgsl-robustness-v0",
+  "rows": [
+    {
+      "fixtureId": "bounds:storage-buffer-1d",
+      "patternClass": "bounds",
+      "sourcePath": "bench/fixtures/wgsl-robustness/bounds-storage-buffer-1d.wgsl",
+      "normalizedSourceSha256": "794213b672a2d5a634947750512ed6b9af761cbc373eea1a9e018ca0f5441ecd",
+      "expectedTransform": "clamp_inserted",
+      "requiredNeedles": ["data[gid.x]", "global_invocation_id"],
+      "browserWorkloadClasses": ["webgpu_sample", "model_inference_kernel", "game_engine_shader"]
+    },
+    {
+      "fixtureId": "aliasing:storage-buffer-index",
+      "patternClass": "aliasing",
+      "sourcePath": "bench/fixtures/wgsl-robustness/alias-storage-buffer-index.wgsl",
+      "normalizedSourceSha256": "c549b2ae4b8362f16cf8a573e6eefef54576a309c2d25b077d738e938dafd113",
+      "expectedTransform": "clamp_inserted",
+      "requiredNeedles": ["let index", "data[index]"],
+      "browserWorkloadClasses": ["webgpu_sample", "model_inference_kernel", "game_engine_shader"]
+    },
+    {
+      "fixtureId": "texture:dimension-guard",
+      "patternClass": "texture_dimension",
+      "sourcePath": "bench/fixtures/wgsl-robustness/texture-dimension-guard.wgsl",
+      "normalizedSourceSha256": "f0008c069677dbce13edb4e51a7da97687351b97094cbdecba4e014220a9d6b4",
+      "expectedTransform": "clamp_elided_when_proven",
+      "requiredNeedles": ["textureDimensions(src)", "textureLoad", "textureStore"],
+      "browserWorkloadClasses": ["browser_shader", "canvas_workload", "webgpu_sample"]
+    },
+    {
+      "fixtureId": "guard:root-early-return",
+      "patternClass": "guard",
+      "sourcePath": "bench/fixtures/wgsl-robustness/guard-root-early-return.wgsl",
+      "normalizedSourceSha256": "9ad6703f1bddbbf7aef6dad720d91fbe11bf2e8a8d1bfe516943691d33f1ad4a",
+      "expectedTransform": "guard_preserved",
+      "requiredNeedles": ["arrayLength(&data)", "return", "data[gid.x]"],
+      "browserWorkloadClasses": ["webgpu_sample", "model_inference_kernel"]
+    }
+  ]
+}

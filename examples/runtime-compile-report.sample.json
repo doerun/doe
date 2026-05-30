@@ -1,0 +1,21 @@
+{
+  "kind": "runtime_compile_report",
+  "schemaVersion": 1,
+  "shader": "bounds-storage-buffer-1d",
+  "shaderPath": "bench/fixtures/wgsl-robustness/bounds-storage-buffer-1d.wgsl",
+  "leanVerified": false,
+  "mslBytes": 266,
+  "minCount": 1,
+  "doeSizesPresent": true,
+  "needsSizesBuf": true,
+  "dispatchPreconditions": 0,
+  "textureDispatchPreconditions": 0,
+  "workgroupSize": [64, 1, 1],
+  "phaseTimingsNs": {
+    "parse": 1,
+    "sema": 1,
+    "lower": 1,
+    "emit": 1,
+    "total": 4
+  }
+}

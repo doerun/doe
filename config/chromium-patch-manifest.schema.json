@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/chromium-patch-manifest.schema.json",
+  "title": "Chromium patch manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "manifestId",
+    "policyPath",
+    "surfaceId",
+    "patches"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "chromium_patch_manifest" },
+    "manifestId": { "type": "string", "minLength": 1 },
+    "policyPath": { "$ref": "#/$defs/RepoPath" },
+    "surfaceId": { "type": "string", "const": "doe-chromium" },
+    "patches": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Patch" }
+    }
+  },
+  "$defs": {
+    "Patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "patchId",
+        "path",
+        "patchKind",
+        "status",
+        "allowedRoot",
+        "ownership",
+        "rollbackPath",
+        "evidencePaths",
+        "chromiumSourceRequired",
+        "notes"
+      ],
+      "properties": {
+        "patchId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        },
+        "path": { "$ref": "#/$defs/RepoPath" },
+        "patchKind": {
+          "enum": [
+            "app_wrapper",
+            "release_artifact_sync",
+            "runtime_selector_tool",
+            "runtime_selector_contract",
+            "runtime_selector_policy",
+            "integration_overlay",
+            "responsibility_contract",
+            "responsibility_map"
+          ]
+        },
+        "status": { "enum": ["active", "retired", "planned"] },
+        "allowedRoot": { "$ref": "#/$defs/RepoPath" },
+        "ownership": { "type": "string", "minLength": 1 },
+        "rollbackPath": { "$ref": "#/$defs/RepoPath" },
+        "evidencePaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/RepoPath" }
+        },
+        "chromiumSourceRequired": { "type": "boolean" },
+        "notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "RepoPath": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^/" },
+          { "pattern": "(^|/)\\.\\.(/|$)" }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-local-ai-workloads.schema.json",
+  "title": "Browser local AI workloads",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "workloadSetId",
+    "runtimeIdentity",
+    "workloads",
+    "privacy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_local_ai_workloads" },
+    "workloadSetId": { "type": "string", "minLength": 1 },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeIdentityPath", "selectedRuntime", "fallbackApplied"],
+      "properties": {
+        "runtimeIdentityPath": { "type": "string", "minLength": 1 },
+        "selectedRuntime": {
+          "enum": ["browser_navigator_gpu", "dawn", "doe", "auto", "unknown"]
+        },
+        "fallbackApplied": { "type": "boolean" }
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Workload" }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originScoped", "rawInputIncluded", "rawOutputIncluded"],
+      "properties": {
+        "originScoped": { "type": "boolean", "const": true },
+        "rawInputIncluded": { "type": "boolean", "const": false },
+        "rawOutputIncluded": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "Workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workloadId",
+        "workloadKind",
+        "modelIdentity",
+        "shaderIdentity",
+        "pipelineCache",
+        "inputContract",
+        "outputDigest",
+        "fallbackStatus"
+      ],
+      "properties": {
+        "workloadId": { "type": "string", "minLength": 1 },
+        "workloadKind": {
+          "enum": [
+            "embedding",
+            "ranking",
+            "image_transform",
+            "video_transform",
+            "model_inference"
+          ]
+        },
+        "modelIdentity": { "$ref": "#/$defs/ModelIdentity" },
+        "shaderIdentity": { "$ref": "#/$defs/ShaderIdentity" },
+        "pipelineCache": { "$ref": "#/$defs/PipelineCache" },
+        "inputContract": { "$ref": "#/$defs/InputContract" },
+        "outputDigest": { "$ref": "#/$defs/Digest" },
+        "fallbackStatus": { "$ref": "#/$defs/FallbackStatus" }
+      }
+    },
+    "ModelIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["modelId", "modelFamily", "artifactPath", "artifactSha256"],
+      "properties": {
+        "modelId": { "type": "string", "minLength": 1 },
+        "modelFamily": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 },
+        "artifactSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "ShaderIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "sourcePath",
+        "sourceSha256",
+        "irPath",
+        "irSha256",
+        "backendOutputPath",
+        "backendOutputSha256"
+      ],
+      "properties": {
+        "shaderId": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "sourceSha256": { "$ref": "#/$defs/Sha256" },
+        "irPath": { "type": "string", "minLength": 1 },
+        "irSha256": { "$ref": "#/$defs/Sha256" },
+        "backendOutputPath": { "type": "string", "minLength": 1 },
+        "backendOutputSha256": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "PipelineCache": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cacheKey", "cacheState", "pipelineCreationPath"],
+      "properties": {
+        "cacheKey": { "type": "string", "minLength": 1 },
+        "cacheState": { "enum": ["hit", "miss", "created", "disabled"] },
+        "pipelineCreationPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "InputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractPath", "inputDigest", "redaction"],
+      "properties": {
+        "contractPath": { "type": "string", "minLength": 1 },
+        "inputDigest": { "$ref": "#/$defs/Digest" },
+        "redaction": { "enum": ["hashed", "synthetic", "public_fixture"] }
+      }
+    },
+    "Digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": { "type": "string", "const": "sha256" },
+        "value": { "$ref": "#/$defs/Sha256" }
+      }
+    },
+    "FallbackStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fallbackApplied", "hiddenFallbackAllowed"],
+      "properties": {
+        "fallbackApplied": { "type": "boolean" },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCode": { "type": "string" }
+      }
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

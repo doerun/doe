@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "chromium_patch_manifest",
+  "manifestId": "chromium-patch-manifest-v0",
+  "policyPath": "config/chromium-fork-maintenance-policy.json",
+  "surfaceId": "doe-chromium",
+  "patches": [
+    {
+      "patchId": "chromium_app_doe_wrapper",
+      "path": "browser/chromium/scripts/patch-chromium-app-doe.sh",
+      "patchKind": "app_wrapper",
+      "status": "active",
+      "allowedRoot": "browser/chromium/scripts/",
+      "ownership": "browser_runtime_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "browser/chromium/scripts/refresh-doe-app.sh",
+        "browser/chromium/scripts/build-release-external.sh",
+        "docs/fawn-fork-maintenance-policy.md"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Repo-owned packaging wrapper that keeps Doe runtime launch wiring outside the Chromium source checkout."
+    },
+    {
+      "patchId": "chromium_release_artifact_sync",
+      "path": "browser/chromium/scripts/sync-release-artifacts-local.sh",
+      "patchKind": "release_artifact_sync",
+      "status": "active",
+      "allowedRoot": "browser/chromium/scripts/",
+      "ownership": "browser_release_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "browser/chromium/scripts/build-release-external.sh",
+        "bench/tools/check_browser_release_artifact_bundle.py",
+        "examples/browser-release-artifact-bundle.sample.json"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Local release sync keeps browser binary, Doe runtime, and compiler artifacts hash-bound without changing Chromium source trees."
+    },
+    {
+      "patchId": "browser_runtime_selector_tool",
+      "path": "browser/chromium/scripts/browser-runtime-selector.mjs",
+      "patchKind": "runtime_selector_tool",
+      "status": "active",
+      "allowedRoot": "browser/chromium/scripts/",
+      "ownership": "browser_runtime_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "bench/tests/test_browser_runtime_selector_mjs.py",
+        "browser/chromium/scripts/webgpu-playwright-smoke.mjs",
+        "browser/chromium/scripts/webgpu-playwright-layered-bench.mjs"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Diagnostic runtime selector and fallback taxonomy for browser evidence lanes."
+    },
+    {
+      "patchId": "browser_runtime_selector_contract",
+      "path": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "patchKind": "runtime_selector_contract",
+      "status": "active",
+      "allowedRoot": "browser/chromium/contracts/",
+      "ownership": "browser_runtime_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "config/browser-runtime-selector-policy.schema.json",
+        "config/browser-runtime-selector-policy.json",
+        "browser/chromium/scripts/check-browser-runtime-selector-policy.py"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Contract that defines deterministic Dawn/Doe/auto selection and rollback controls."
+    },
+    {
+      "patchId": "browser_runtime_selector_policy",
+      "path": "config/browser-runtime-selector-policy.json",
+      "patchKind": "runtime_selector_policy",
+      "status": "active",
+      "allowedRoot": "config/",
+      "ownership": "browser_runtime_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "config/browser-runtime-selector-policy.schema.json",
+        "browser/chromium/scripts/check-browser-runtime-selector-policy.py",
+        "bench/tests/test_browser_runtime_selector_policy.py"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Schema-backed runtime selection policy for browser wrappers and diagnostics."
+    },
+    {
+      "patchId": "webgpu_integration_overlay",
+      "path": "config/webgpu-integration-chromium.json",
+      "patchKind": "integration_overlay",
+      "status": "active",
+      "allowedRoot": "config/",
+      "ownership": "browser_runtime_integration",
+      "rollbackPath": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
+      "evidencePaths": [
+        "config/webgpu-integration-chromium.schema.json",
+        "bench/tools/check_webgpu_integration_chromium.py",
+        "bench/tests/test_webgpu_integration_chromium_checker.py"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Chromium WebGPU seam overlay for required capabilities, blocked browser gaps, and smoke-artifact linkage."
+    },
+    {
+      "patchId": "browser_responsibility_contract",
+      "path": "browser/chromium/contracts/browser-responsibility-map.contract.md",
+      "patchKind": "responsibility_contract",
+      "status": "active",
+      "allowedRoot": "browser/chromium/contracts/",
+      "ownership": "browser_methodology",
+      "rollbackPath": "browser/chromium/contracts/browser-responsibility-map.contract.md",
+      "evidencePaths": [
+        "config/browser-responsibility-map.schema.json",
+        "config/browser-responsibility-map.json",
+        "bench/tools/check_browser_responsibility_map.py"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "CPU/GPU browser boundary contract that prevents Chromium responsibility from being misclaimed as Doe runtime scope."
+    },
+    {
+      "patchId": "browser_responsibility_map",
+      "path": "config/browser-responsibility-map.json",
+      "patchKind": "responsibility_map",
+      "status": "active",
+      "allowedRoot": "config/",
+      "ownership": "browser_methodology",
+      "rollbackPath": "browser/chromium/contracts/browser-responsibility-map.contract.md",
+      "evidencePaths": [
+        "config/browser-responsibility-map.schema.json",
+        "bench/tools/check_browser_responsibility_map.py",
+        "bench/tests/test_browser_responsibility_map.py"
+      ],
+      "chromiumSourceRequired": false,
+      "notes": "Schema-backed browser ownership map for Chromium/Doe claim boundaries."
+    }
+  ]
+}

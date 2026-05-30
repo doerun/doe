@@ -45,6 +45,10 @@
     {
       "shaderId": "sample-compute-copy",
       "sourceSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sourcePath": "bench/fixtures/wgsl-corpus/webgpu/sample-prefix-sum.wgsl",
+      "corpusCategory": "webgpu_sample",
+      "expectedValidity": "valid",
+      "expectedBackendTargets": ["spirv"],
       "target": "spirv",
       "shaderStage": "compute",
       "doe": {

@@ -22,6 +22,34 @@
       "data": "examples/run-receipt.sample.json"
     },
     {
+      "schema": "config/native-command-graph-receipt.schema.json",
+      "data": "examples/native-command-graph-receipt.sample.json"
+    },
+    {
+      "schema": "config/runtime-compile-report.schema.json",
+      "data": "examples/runtime-compile-report.sample.json"
+    },
+    {
+      "schema": "config/native-no-fallback-report.schema.json",
+      "data": "examples/native-no-fallback-report.sample.json"
+    },
+    {
+      "schema": "config/native-pipeline-cache-receipts.schema.json",
+      "data": "examples/native-pipeline-cache-receipts.sample.json"
+    },
+    {
+      "schema": "config/native-upload-path-receipts.schema.json",
+      "data": "examples/native-upload-path-receipts.sample.json"
+    },
+    {
+      "schema": "config/native-resource-reuse-receipts.schema.json",
+      "data": "examples/native-resource-reuse-receipts.sample.json"
+    },
+    {
+      "schema": "config/native-backend-coverage-matrix.schema.json",
+      "data": "config/native-backend-coverage-matrix.json"
+    },
+    {
       "schema": "config/compare-report.schema.json",
       "data": "examples/compare-report.sample.json"
     },
@@ -108,6 +136,34 @@
     {
       "schema": "config/shader-toolchain.schema.json",
       "data": "config/shader-toolchain.json"
+    },
+    {
+      "schema": "config/wgsl-corpus-manifest.schema.json",
+      "data": "config/wgsl-browser-corpus.json"
+    },
+    {
+      "schema": "config/wgsl-corpus-materialization.schema.json",
+      "data": "examples/wgsl-corpus-materialization.sample.json"
+    },
+    {
+      "schema": "config/wgsl-cts-shader-subset.schema.json",
+      "data": "examples/wgsl-cts-shader-subset.sample.json"
+    },
+    {
+      "schema": "config/wgsl-diagnostic-fixtures.schema.json",
+      "data": "config/wgsl-diagnostic-fixtures.json"
+    },
+    {
+      "schema": "config/wgsl-minimization-receipt.schema.json",
+      "data": "examples/wgsl-minimization-receipt.sample.json"
+    },
+    {
+      "schema": "config/wgsl-lowering-link-receipt.schema.json",
+      "data": "examples/wgsl-lowering-link-receipt.sample.json"
+    },
+    {
+      "schema": "config/wgsl-robustness-fixtures.schema.json",
+      "data": "config/wgsl-robustness-fixtures.json"
     },
     {
       "schema": "config/tint-compiler-evidence.schema.json",
@@ -538,8 +594,124 @@
       "data": "config/browser-ownership.json"
     },
     {
+      "schema": "browser/chromium/bench/workflows/browser-milestones.schema.json",
+      "data": "browser/chromium/bench/workflows/browser-milestones.json"
+    },
+    {
+      "schema": "browser/chromium/bench/workflows/browser-promotion-approvals.schema.json",
+      "data": "browser/chromium/bench/workflows/browser-promotion-approvals.json"
+    },
+    {
+      "schema": "browser/chromium/bench/workflows/browser-workflow-manifest.schema.json",
+      "data": "browser/chromium/bench/workflows/browser-workflow-manifest.json"
+    },
+    {
+      "schema": "config/browser-responsibility-map.schema.json",
+      "data": "config/browser-responsibility-map.json"
+    },
+    {
+      "schema": "config/browser-gpu-flight-recorder.schema.json",
+      "data": "examples/browser-gpu-flight-recorder.sample.json"
+    },
+    {
+      "schema": "config/browser-smoke-report.schema.json",
+      "data": "examples/browser-smoke-report.sample.json"
+    },
+    {
+      "schema": "config/browser-claim-report.schema.json",
+      "data": "examples/browser-claim-report.sample.json"
+    },
+    {
+      "schema": "config/browser-gpu-flight-replay.schema.json",
+      "data": "examples/browser-gpu-flight-replay.sample.json"
+    },
+    {
+      "schema": "config/browser-runtime-identity.schema.json",
+      "data": "examples/browser-runtime-identity.sample.json"
+    },
+    {
+      "schema": "config/browser-canvas-webgpu-fusion.schema.json",
+      "data": "examples/browser-canvas-webgpu-fusion.sample.json"
+    },
+    {
+      "schema": "config/browser-shader-links.schema.json",
+      "data": "examples/browser-shader-links.sample.json"
+    },
+    {
+      "schema": "config/browser-gpu-scheduler.schema.json",
+      "data": "examples/browser-gpu-scheduler.sample.json"
+    },
+    {
+      "schema": "config/browser-webgpu-effect-experiment.schema.json",
+      "data": "examples/browser-webgpu-effect-experiment.sample.json"
+    },
+    {
+      "schema": "config/browser-local-ai-workloads.schema.json",
+      "data": "examples/browser-local-ai-workloads.sample.json"
+    },
+    {
+      "schema": "config/browser-pipeline-cache-receipts.schema.json",
+      "data": "examples/browser-pipeline-cache-receipts.sample.json"
+    },
+    {
+      "schema": "config/browser-fallback-explanations.schema.json",
+      "data": "examples/browser-fallback-explanations.sample.json"
+    },
+    {
+      "schema": "config/browser-unsupported-reason-taxonomy.schema.json",
+      "data": "config/browser-unsupported-reason-taxonomy.json"
+    },
+    {
+      "schema": "config/browser-media-path-probe.schema.json",
+      "data": "examples/browser-media-path-probe.sample.json"
+    },
+    {
+      "schema": "config/browser-recovery-parity.schema.json",
+      "data": "examples/browser-recovery-parity.sample.json"
+    },
+    {
+      "schema": "config/browser-runtime-selector-policy.schema.json",
+      "data": "config/browser-runtime-selector-policy.json"
+    },
+    {
+      "schema": "config/browser-capture-policy.schema.json",
+      "data": "config/browser-capture-policy.json"
+    },
+    {
+      "schema": "config/browser-artifact-identity-coverage.schema.json",
+      "data": "config/browser-artifact-identity-coverage.json"
+    },
+    {
+      "schema": "config/chromium-fork-maintenance-policy.schema.json",
+      "data": "config/chromium-fork-maintenance-policy.json"
+    },
+    {
+      "schema": "config/chromium-patch-manifest.schema.json",
+      "data": "config/chromium-patch-manifest.json"
+    },
+    {
+      "schema": "config/chromium-source-checkout-check.schema.json",
+      "data": "examples/chromium-source-checkout-check.sample.json"
+    },
+    {
+      "schema": "config/browser-release-artifact-bundle.schema.json",
+      "data": "examples/browser-release-artifact-bundle.sample.json"
+    },
+    {
+      "schema": "config/browser-claim-promotion-receipt.schema.json",
+      "data": "examples/browser-claim-promotion-receipt.sample.json"
+    },
+    {
+      "schema": "config/browser-cts-subset.schema.json",
+      "data": "examples/browser-cts-subset.sample.json"
+    },
+    {
       "schema": "config/browser-claim-policy.schema.json",
       "data": "config/browser-claim-policy.json"
+    },
+    {
+      "schema": "config/browser-claim-policy.schema.json",
+      "data": "config/browser-claim-policy.release.json"
     },
     {
       "schema": "config/compute-services.schema.json",

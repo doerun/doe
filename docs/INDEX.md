@@ -22,7 +22,7 @@ the shards under [`docs/status/`](status/).
 
 ## Chromium WebGPU tasks
 
-- [`chromium-webgpu-dominance.md`](chromium-webgpu-dominance.md) — canonical
+- [`chromium-webgpu-task-list.md`](chromium-webgpu-task-list.md) — canonical
   task list for Doe vs Tint, Doe vs Dawn, and forced-Doe Chromium WebGPU work
 
 ## Cerebras lane (Doppler → Doe → Cerebras)

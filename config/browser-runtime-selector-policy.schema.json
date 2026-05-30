@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-runtime-selector-policy.schema.json",
+  "title": "Browser runtime selector policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyId",
+    "selectionModes",
+    "controlPrecedence",
+    "emergencyKillSwitch",
+    "autoModePreconditions",
+    "denylist",
+    "fallbackReasons",
+    "forcedDoeFailure",
+    "observabilityFields"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "policyId": { "type": "string", "minLength": 1 },
+    "selectionModes": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": { "enum": ["dawn", "doe", "auto"] }
+    },
+    "controlPrecedence": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "emergency_kill_switch",
+          "explicit_override",
+          "enterprise_policy",
+          "auto_profile_policy",
+          "default_dawn"
+        ]
+      }
+    },
+    "emergencyKillSwitch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controlName", "selectsRuntime", "reasonCode"],
+      "properties": {
+        "controlName": { "type": "string", "minLength": 1 },
+        "selectsRuntime": { "type": "string", "const": "dawn" },
+        "reasonCode": { "type": "string", "const": "global_disable_active" }
+      }
+    },
+    "autoModePreconditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "runtime_artifact_available",
+          "runtime_artifact_loads",
+          "required_symbols_available",
+          "capabilities_pass",
+          "profile_not_denylisted",
+          "emergency_kill_switch_inactive"
+        ]
+      }
+    },
+    "denylist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "profiles"],
+      "properties": {
+        "reasonCode": { "type": "string", "const": "profile_denylisted" },
+        "profiles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Profile" }
+        }
+      }
+    },
+    "fallbackReasons": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "global_disable_active",
+          "runtime_artifact_missing",
+          "runtime_artifact_load_failed",
+          "symbol_surface_incomplete",
+          "profile_denylisted",
+          "capability_requirement_failed",
+          "runtime_health_degraded",
+          "explicit_operator_override",
+          "unknown_selection_error"
+        ]
+      }
+    },
+    "forcedDoeFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failClosed", "fallbackToDawn"],
+      "properties": {
+        "failClosed": { "type": "boolean", "const": true },
+        "fallbackToDawn": { "type": "boolean", "const": false }
+      }
+    },
+    "observabilityFields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "selectionMode",
+          "selectedRuntime",
+          "fallbackApplied",
+          "fallbackReasonCode",
+          "hiddenFallbackAllowed",
+          "forcedMode",
+          "profile.vendor",
+          "profile.api",
+          "profile.deviceFamily",
+          "profile.driver",
+          "selectorVersion",
+          "artifactIdentity.browserExecutablePath",
+          "artifactIdentity.browserExecutableSha256",
+          "artifactIdentity.dawnRuntimePath",
+          "artifactIdentity.dawnRuntimeSha256",
+          "artifactIdentity.doeLibPath",
+          "artifactIdentity.doeLibSha256",
+          "launchArgsHash"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "Profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profileId", "vendor", "api", "deviceFamily", "driverPattern"],
+      "properties": {
+        "profileId": { "type": "string", "minLength": 1 },
+        "vendor": { "type": "string", "minLength": 1 },
+        "api": { "enum": ["metal", "vulkan", "d3d12", "opengl", "unknown"] },
+        "deviceFamily": { "type": "string", "minLength": 1 },
+        "driverPattern": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

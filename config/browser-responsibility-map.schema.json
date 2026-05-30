@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-responsibility-map.schema.json",
+  "title": "Browser responsibility map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mapVersion", "entries", "boundaries"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "mapVersion": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Entry" }
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Boundary" }
+    }
+  },
+  "$defs": {
+    "Entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryId",
+        "label",
+        "owner",
+        "scopeStatus",
+        "rationale"
+      ],
+      "properties": {
+        "entryId": { "$ref": "#/$defs/SnakeId" },
+        "label": { "type": "string", "minLength": 1 },
+        "owner": { "enum": ["cpu", "gpu", "boundary"] },
+        "scopeStatus": { "$ref": "#/$defs/ScopeStatus" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "claimBinding": { "$ref": "#/$defs/ClaimBinding" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scopeStatus": { "const": "doe_claim_candidate" }
+            },
+            "required": ["scopeStatus"]
+          },
+          "then": { "required": ["claimBinding"] }
+        }
+      ]
+    },
+    "Boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boundaryId",
+        "fromEntryId",
+        "toEntryId",
+        "crossing",
+        "scopeStatus",
+        "rationale"
+      ],
+      "properties": {
+        "boundaryId": { "$ref": "#/$defs/SnakeId" },
+        "fromEntryId": { "$ref": "#/$defs/SnakeId" },
+        "toEntryId": { "$ref": "#/$defs/SnakeId" },
+        "crossing": { "type": "string", "minLength": 1 },
+        "scopeStatus": { "$ref": "#/$defs/ScopeStatus" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "claimBinding": { "$ref": "#/$defs/ClaimBinding" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scopeStatus": { "const": "doe_claim_candidate" }
+            },
+            "required": ["scopeStatus"]
+          },
+          "then": { "required": ["claimBinding"] }
+        }
+      ]
+    },
+    "ClaimBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractPath",
+        "schemaPath",
+        "workloadPath",
+        "gatePath",
+        "artifactPath"
+      ],
+      "properties": {
+        "contractPath": { "type": "string", "minLength": 1 },
+        "schemaPath": { "type": "string", "minLength": 1 },
+        "workloadPath": { "type": "string", "minLength": 1 },
+        "gatePath": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ScopeStatus": {
+      "enum": [
+        "not_doe_scope",
+        "webgpu_seam",
+        "doe_observable",
+        "doe_schedulable",
+        "doe_claim_candidate",
+        "blocked_by_browser_policy"
+      ]
+    },
+    "SnakeId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+    }
+  }
+}

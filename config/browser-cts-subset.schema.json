@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/browser-cts-subset.schema.json",
+  "title": "Browser CTS subset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "subsetId",
+    "ctsSource",
+    "ctsRevision",
+    "browserArtifacts",
+    "rows",
+    "fallbackPolicy"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "browser_cts_subset" },
+    "subsetId": { "type": "string", "minLength": 1 },
+    "ctsSource": { "type": "string", "minLength": 1 },
+    "ctsRevision": { "type": "string", "minLength": 1 },
+    "browserArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dawnArtifactPath", "forcedDoeArtifactPath"],
+      "properties": {
+        "dawnArtifactPath": { "type": "string", "minLength": 1 },
+        "forcedDoeArtifactPath": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Row" }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hiddenFallbackAllowed", "reasonCodeRequired"],
+      "properties": {
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCodeRequired": { "type": "boolean", "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "Row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "query",
+        "bucket",
+        "dawnStatus",
+        "forcedDoeStatus",
+        "parityStatus",
+        "hiddenFallbackAllowed",
+        "artifactPath"
+      ],
+      "properties": {
+        "query": { "type": "string", "minLength": 1 },
+        "bucket": {
+          "enum": [
+            "adapter",
+            "buffer",
+            "command_buffer",
+            "compute",
+            "queue",
+            "shader_execution",
+            "validation"
+          ]
+        },
+        "dawnStatus": { "enum": ["pass", "fail", "skip", "not_run"] },
+        "forcedDoeStatus": { "enum": ["pass", "fail", "skip", "not_run"] },
+        "parityStatus": { "enum": ["match", "mismatch", "diagnostic"] },
+        "hiddenFallbackAllowed": { "type": "boolean", "const": false },
+        "reasonCode": { "type": "string" },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

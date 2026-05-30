@@ -109,7 +109,7 @@ from scattered configs:
 | Node ORT WebGPU Doe vs `node-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
 | Browser ORT WebGPU Doe vs Dawn | repo-only strict comparable browser surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.browser.ort-webgpu.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
 | Doe WGSL compiler vs Tint | repo-only claim-boundary contract | `python3 bench/native-compare/compare_doe_vs_tint_compilation.py --config bench/native-compare/compare_doe_vs_tint.config.json --evidence-out bench/out/tint-compiler-evidence.json`, then `python3 bench/gates/tint_compiler_evidence_gate.py --report bench/out/tint-compiler-evidence.json`; add `--require-claimable` only when the report is intended to support a compiler claim |
-| AMD Vulkan browser superset (Chromium Playwright layered) | repo-only diagnostic | `python3 browser/chromium/scripts/generate-browser-projection-manifest.py --workloads bench/workloads/specialized/workloads.amd.vulkan.superset.json` then `python3 browser/chromium/scripts/run-browser-benchmark-superset.py` on a Linux/AMD host with vulkaninfo reachable |
+| AMD Vulkan browser superset (Chromium Playwright layered) | repo-only diagnostic; `--mode auto` is selector evidence only | `python3 browser/chromium/scripts/generate-browser-projection-manifest.py --workloads bench/workloads/specialized/workloads.amd.vulkan.superset.json` then `python3 browser/chromium/scripts/run-browser-benchmark-superset.py` on a Linux/AMD host with vulkaninfo reachable |
 | Apple Metal browser superset (Chromium Playwright layered) | repo-only diagnostic, cross-backend parity with Vulkan (50 IDs) | `python3 browser/chromium/scripts/generate-browser-projection-manifest.py --workloads bench/workloads/specialized/workloads.apple.metal.superset.json --out browser/chromium/bench/generated/browser_projection_manifest.apple.metal.json` then `python3 browser/chromium/scripts/run-browser-benchmark-superset.py --workloads bench/workloads/specialized/workloads.apple.metal.superset.json --manifest-out browser/chromium/bench/generated/browser_projection_manifest.apple.metal.json` on a macOS host |
 | Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_matmul_add_relu_float32_rank2_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/matmul_add_relu --out-report bench/out/native-ort-doe-ep/matmul_add_relu.report.json --out-metadata bench/out/native-ort-doe-ep/matmul_add_relu.metadata.json --no-timestamp-output` |
 | Native ORT incumbent WebGPU vs Doe EP basic-ops compare | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json` |
@@ -124,6 +124,31 @@ Two rules for first-time operators:
   explicit per-side `run-config` commands.
 - Do not infer that every taxonomy tuple is runnable or promoted. The backend
   matrix is broader than the current plan/package matrix.
+
+Browser runtime identity artifacts can be checked without launching Chromium:
+
+```sh
+python3 browser/chromium/scripts/check-browser-runtime-identity.py \
+  --identity examples/browser-runtime-identity.sample.json
+```
+
+The same checker is available through `run_blocking_gates.py` with
+`--with-browser-runtime-identity-gate`.
+
+Browser pipeline cache receipts can also be checked against their source
+local-AI workload artifact:
+
+```sh
+python3 browser/chromium/scripts/check-browser-pipeline-cache-receipts.py \
+  --receipts examples/browser-pipeline-cache-receipts.sample.json \
+  --verify-workloads-root . \
+  --runtime-identity-root .
+```
+
+Derived browser artifacts with `runtimeIdentity.runtimeIdentityPath` accept the
+same `--runtime-identity-root` check. The reference may be a
+`browser_runtime_identity` artifact or the source browser smoke report, and the
+checker rejects selected-runtime or fallback-state drift.
 
 ## ONNX Runtime plugin EP lane
 
@@ -288,7 +313,8 @@ it does not live in a scratch-only path.
   - `runtime/zig/src/doe_wgsl/runtime_compile_report.zig` is the single-shader
     structural emitter; one invocation per shader emits MSL size, `min(...)`
     count, `_doe_sizes` presence, `needs_sizes_buf`, dispatch preconditions,
-    and workgroup size for the current build flavor
+    workgroup size, and parse/sema/lower/emit/total phase timings for the
+    current build flavor
 - build flavors:
   - `-Dlean-verified=false` reports the baseline structural shape
   - `-Dlean-verified=true` reports the proof-backed structural shape with the
@@ -634,6 +660,7 @@ resolves its entries against repo root.
   - canonical entrypoint for blocking gate order: schema -> CSL fixture mirrors -> CSL operation graphs -> correctness -> trace -> optional drop-in -> optional claim gate.
   - release-claim readiness evidence requires claim gate enabled (`--with-claim-gate`), and can be enforced with `--require-claim-gate`.
   - can run comparability verification parity fixtures with `--with-comparability-parity-gate`.
+  - can run standalone browser/WGSL/native artifact checks with opt-in `--with-*-gate` flags for browser milestone/smoke/flight-replay/policy/probe/promotion/release artifacts, capture-policy-bound media probes, Chromium patch manifests, Chromium source-checkout readiness, WGSL corpus/diagnostic/robustness/lowering evidence, and native upload/cache/reuse/command-graph/no-fallback/coverage receipts.
   - shader-artifact gating now treats SPIR-V validation as routine for SPIR-V-bearing manifests; `spirv-val` is auto-discovered from PATH when available.
 - `comparability_obligation_parity_gate.py`
   - validates comparability obligation parity fixtures against Python evaluation and Lean obligation ID set alignment.
@@ -649,6 +676,34 @@ resolves its entries against repo root.
   - forwards claim rehearsal artifact generation per window by default; use `--no-with-claim-rehearsal-artifacts` to disable.
   - forwards cycle-lock/rollback gate execution per window by default; use `--no-with-cycle-gate` to disable.
   - can forward optional substantiation status into cycle-gate evaluation via `--cycle-substantiation-report`.
+- `build_browser_claim_promotion_receipt.py`
+  - turns schema-backed browser claim reports into promotion receipts with forced-Doe, claim-policy, and hidden-fallback checks.
+- `build_browser_release_artifact_bundle.py`
+  - hash-binds the browser binary, Doe runtime, shader compiler, browser claim reports, promotion receipts, contracts, and policies, including the Chromium patch manifest, browser artifact identity coverage manifest, and browser unsupported reason taxonomy, into the release artifact bundle contract.
+- `check_browser_claim_promotion_receipt.py` / `check_browser_release_artifact_bundle.py`
+  - validate browser promotion/release artifacts and can verify referenced file hashes with `--verify-files-root`; verified artifact paths must resolve under that root.
+- `check_browser_artifact_identity_coverage.py`
+  - validates the configured identity anchors for smoke, flight-recorder, derived probe, claim, promotion, and release artifacts.
+- `check_browser_unsupported_reason_taxonomy.py`
+  - validates browser unsupported/fallback reason-code governance used by developer-visible fallback explanations.
+- `check_browser_claim_policy.py`
+  - validates browser claim policy semantics for local and release modes, including required modes, strict/headless flags, no data-URL fallback, and release percentile coverage.
+- `check_browser_ownership.py`
+  - validates promoted browser ownership assignments for runtime integration, compatibility, methodology, and nursery-exit approval.
+- `check_browser_responsibility_map.py`
+  - validates browser CPU/GPU responsibility entries, repo-relative claim-candidate bindings, boundary references, and stale claim-binding paths.
+- `check_chromium_fork_maintenance_policy.py` / `check_chromium_patch_manifest.py`
+  - validate Chromium fork isolation policy and the required patch manifest, including allowed/forbidden roots, rollback references, active patch files, and evidence references.
+- `check_webgpu_integration_chromium.py`
+  - validates the Chromium integration overlay, required browser seam capabilities, external-texture blocked state, wire-protocol notes, and optional repo-relative smoke-artifact linkage.
+- `check-browser-runtime-selector-policy.py`
+  - validates browser runtime selector modes, fallback taxonomy, fail-closed Doe behavior, and required observability fields.
+- `check-browser-promotion-approvals.py`
+  - validates browser promotion approval roles, approval timestamps, and exact workflow-required approval coverage.
+- `check-browser-workflow-manifest.py`
+  - validates browser workflow rows, required/optional status, L2 claim scope, metric uniqueness, and L0 parity claim-language boundaries.
+- `check-browser-benchmark-superset.py`
+  - validates browser projection hash sync, repo-relative source/rules paths, report coverage, and promotion approvals.
 - `build_test_inventory_dashboard.py`
   - scans Dawn-vs-Doe compare reports and emits:
     - canonical tested-profile inventory JSON (`vendor/api/deviceFamily/driver` coverage, matrix status history, report-level status rollups)

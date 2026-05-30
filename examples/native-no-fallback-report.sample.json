@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "native_no_fallback_report",
+  "strictNoFallback": true,
+  "status": "pass",
+  "rows": [
+    {
+      "runReceiptPath": "examples/run-receipt.sample.json",
+      "runReceiptSha256": "1028872f10b9fa941109eb7ddc726f4e7dbc2d928c87e7fdf3722c51238fab8c",
+      "product": "doe",
+      "runtimeHost": "native",
+      "executionBackend": "doe_vulkan",
+      "fallbackUsed": false,
+      "status": "pass",
+      "failureCodes": []
+    }
+  ],
+  "summary": {
+    "rowCount": 1,
+    "passCount": 1,
+    "failCount": 0,
+    "failureCodes": []
+  }
+}

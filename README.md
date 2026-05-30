@@ -83,7 +83,7 @@ Receipt paths for these charted lanes are listed in
 - Benchmarks and evidence: [`bench/README.md`](bench/README.md)
 - Current status and claim boundaries: [`docs/status.md`](docs/status.md)
 - Chromium WebGPU strategy:
-  [`docs/chromium-webgpu-dominance.md`](docs/chromium-webgpu-dominance.md)
+  [`docs/chromium-webgpu-task-list.md`](docs/chromium-webgpu-task-list.md)
 - Doppler Program Bundle ingest: [`docs/doppler-ingest.md`](docs/doppler-ingest.md)
 - Cerebras lane (Doppler → Doe → Cerebras):
   [`docs/cerebras.md`](docs/cerebras.md). Progress, source, reproduce,

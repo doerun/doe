@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fawn://config/wgsl-corpus-materialization.schema.json",
+  "title": "WGSL corpus materialization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "corpusId",
+    "manifestPath",
+    "outputRoot",
+    "materializationStatus",
+    "rows",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "wgsl_corpus_materialization" },
+    "corpusId": { "type": "string", "minLength": 1 },
+    "manifestPath": { "type": "string", "minLength": 1 },
+    "outputRoot": { "type": "string", "minLength": 1 },
+    "materializationStatus": { "enum": ["pass", "fail"] },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/MaterializedRow" }
+    },
+    "failureCodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Failure" }
+    }
+  },
+  "$defs": {
+    "MaterializedRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shaderId",
+        "category",
+        "sourcePath",
+        "materializedPath",
+        "normalizedSourceSha256",
+        "expectedValidity",
+        "expectedBackendTargets",
+        "shaderStages"
+      ],
+      "properties": {
+        "shaderId": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "materializedPath": { "type": "string", "minLength": 1 },
+        "normalizedSourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "expectedValidity": { "enum": ["valid", "invalid"] },
+        "expectedBackendTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "shaderStages": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "missing_category",
+            "duplicate_shader_id",
+            "unsafe_source_path",
+            "source_not_found",
+            "source_hash_mismatch",
+            "missing_expected_diagnostic"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

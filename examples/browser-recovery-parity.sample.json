@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "browser_recovery_parity",
+  "paritySetId": "browser-recovery-parity-smoke",
+  "runtimeSelector": {
+    "selectorVersion": "browser-runtime-selector-v0",
+    "doeMode": "forced_doe",
+    "hiddenFallbackAllowed": false
+  },
+  "dawnArtifactPath": "browser/chromium/artifacts/dawn-recovery.diagnostic.json",
+  "doeArtifactPath": "browser/chromium/artifacts/doe-recovery.diagnostic.json",
+  "cases": [
+    {
+      "caseId": "case:crash",
+      "caseKind": "crash",
+      "dawnStatus": "diagnostic",
+      "doeStatus": "diagnostic",
+      "parityStatus": "diagnostic",
+      "reasonCode": "diagnostic_sample",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "caseId": "case:hang",
+      "caseKind": "hang",
+      "dawnStatus": "diagnostic",
+      "doeStatus": "diagnostic",
+      "parityStatus": "diagnostic",
+      "reasonCode": "diagnostic_sample",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "caseId": "case:device-loss",
+      "caseKind": "device_loss",
+      "dawnStatus": "diagnostic",
+      "doeStatus": "diagnostic",
+      "parityStatus": "diagnostic",
+      "reasonCode": "diagnostic_sample",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "caseId": "case:validation-error",
+      "caseKind": "validation_error",
+      "dawnStatus": "diagnostic",
+      "doeStatus": "diagnostic",
+      "parityStatus": "diagnostic",
+      "reasonCode": "diagnostic_sample",
+      "evidencePath": "browser/chromium/artifacts/"
+    },
+    {
+      "caseId": "case:recovery",
+      "caseKind": "recovery",
+      "dawnStatus": "diagnostic",
+      "doeStatus": "diagnostic",
+      "parityStatus": "diagnostic",
+      "reasonCode": "diagnostic_sample",
+      "evidencePath": "browser/chromium/artifacts/"
+    }
+  ],
+  "fallbackPolicy": {
+    "hiddenFallbackAllowed": false,
+    "reasonCodeRequired": true
+  }
+}

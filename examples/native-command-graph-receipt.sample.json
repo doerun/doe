@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "native_command_graph_receipt",
+  "runReceiptPath": "examples/run-receipt.sample.json",
+  "runReceiptSha256": "1028872f10b9fa941109eb7ddc726f4e7dbc2d928c87e7fdf3722c51238fab8c",
+  "commandsPath": "examples/kernel_dispatch_commands.json",
+  "commandsSha256": "26024c608e03f1bc9f0007ab3fa0effeb17e1ea14ea1e83c24b0bbae9db28424",
+  "workload": {
+    "id": "compute_test",
+    "domain": "compute"
+  },
+  "runtimeIdentity": {
+    "binaryPath": "runtime/zig/zig-out/bin/doe-zig-runtime",
+    "binarySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "executionBackend": "doe_vulkan",
+    "packageLockHash": "",
+    "packageName": "",
+    "packageVersion": "",
+    "providerId": "doe",
+    "providerName": "doe-gpu",
+    "runtimeHost": "native"
+  },
+  "graph": {
+    "buffers": [],
+    "textures": [
+      "handle:1024",
+      "handle:2048"
+    ],
+    "pipelines": [
+      "kernel:copy_textures_x32"
+    ],
+    "bindGroups": [],
+    "commands": [
+      {
+        "seq": 0,
+        "submitId": 0,
+        "kind": "kernel_dispatch",
+        "resourceRefs": [],
+        "bindGroupRefs": [],
+        "pipelineId": "kernel:copy_textures_x32",
+        "dispatch": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "bytes": null,
+        "rowHash": "2f2123f04887c0e4bdd0f03b28de8a6de8fd61b57f981a58e9695901643e7da6"
+      },
+      {
+        "seq": 1,
+        "submitId": 0,
+        "kind": "dispatch_workgroups",
+        "resourceRefs": [],
+        "bindGroupRefs": [],
+        "pipelineId": null,
+        "dispatch": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "bytes": null,
+        "rowHash": "9c1441445b5ead69eb1d9a4f14edfe68587b4d2fc1b1a7798b4213ca3c34738c"
+      },
+      {
+        "seq": 2,
+        "submitId": 0,
+        "kind": "texture_copy",
+        "resourceRefs": [
+          "handle:1024",
+          "handle:2048"
+        ],
+        "bindGroupRefs": [],
+        "pipelineId": null,
+        "dispatch": null,
+        "bytes": 8192,
+        "rowHash": "d0464ec8fe6aff6de73ce60821e771999c9897efd84d72a9c1fc89bb8952bf8c"
+      }
+    ]
+  },
+  "traceChain": {
+    "rootHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "terminalHash": "d0464ec8fe6aff6de73ce60821e771999c9897efd84d72a9c1fc89bb8952bf8c"
+  },
+  "summary": {
+    "commandCount": 3,
+    "submitCount": 1,
+    "dispatchCount": 2,
+    "drawCount": 0,
+    "copyCount": 1,
+    "resourceCount": 2
+  }
+}

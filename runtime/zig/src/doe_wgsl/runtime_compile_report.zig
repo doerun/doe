@@ -87,7 +87,7 @@ pub fn main() !void {
     var out_buf = try allocator.alloc(u8, mod.MAX_OUTPUT);
     defer allocator.free(out_buf);
 
-    var translation = try runtime_compile.translateToMslForComputeRuntime(
+    var translation = try runtime_compile.translateToMslForComputeRuntimeTimed(
         allocator,
         shader_source,
         out_buf,
@@ -106,7 +106,7 @@ pub fn main() !void {
         try file.writeAll(msl);
     }
 
-    const report_fmt = "{{\"kind\":\"runtime_compile_report\",\"shader\":\"{s}\",\"shaderPath\":\"{s}\",\"leanVerified\":{s},\"mslBytes\":{d},\"minCount\":{d},\"doeSizesPresent\":{s},\"needsSizesBuf\":{s},\"dispatchPreconditions\":{d},\"textureDispatchPreconditions\":{d},\"workgroupSize\":[{d},{d},{d}]}}\n";
+    const report_fmt = "{{\"kind\":\"runtime_compile_report\",\"schemaVersion\":1,\"shader\":\"{s}\",\"shaderPath\":\"{s}\",\"leanVerified\":{s},\"mslBytes\":{d},\"minCount\":{d},\"doeSizesPresent\":{s},\"needsSizesBuf\":{s},\"dispatchPreconditions\":{d},\"textureDispatchPreconditions\":{d},\"workgroupSize\":[{d},{d},{d}],\"phaseTimingsNs\":{{\"parse\":{d},\"sema\":{d},\"lower\":{d},\"emit\":{d},\"total\":{d}}}}}\n";
     const report_args = .{
         shader_name,
         config.shader_path,
@@ -120,6 +120,11 @@ pub fn main() !void {
         translation.info.workgroup_size[0],
         translation.info.workgroup_size[1],
         translation.info.workgroup_size[2],
+        translation.phase_timings_ns.parse,
+        translation.phase_timings_ns.sema,
+        translation.phase_timings_ns.lower,
+        translation.phase_timings_ns.emit,
+        translation.phase_timings_ns.total,
     };
 
     if (config.out_path) |path| {

@@ -104,7 +104,8 @@
 - ad-hoc/manual artifact names are routed under `bench/out/scratch/<timestamp>/...` to keep canonical run folders and dashboard inputs clean.
 - canonical CI/script entrypoint for blocking gate sequence:
   `python3 bench/runners/run_blocking_gates.py --report bench/out/dawn-vs-doe.json --trace-semantic-parity-mode auto --with-comparability-parity-gate --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate --claim-require-claimability-mode release --claim-require-claim-status claimable --claim-require-comparison-status comparable --claim-require-min-timed-samples 15`
-  `run_blocking_gates.py` enables `comparability_coherence_gate.py` and `structural_equivalence_gate.py` by default. When `--with-claim-gate` is enabled, disabling either gate is a hard error so sample-floor, workload matching, obligation, path-asymmetry, timing-phase, and execution-shape mismatches block the claim lane before publication.
+  `run_blocking_gates.py` enables `compare_output_partition_gate.py`, `comparability_coherence_gate.py`, and `structural_equivalence_gate.py` by default. When `--with-claim-gate` is enabled, disabling any of those gates is a hard error so diagnostic row mixing, sample-floor, workload matching, obligation, path-asymmetry, timing-phase, and execution-shape mismatches block the claim lane before publication.
+  Standalone evidence checkers can be promoted through the same runner with opt-in flags for browser policy/probe/release artifacts, WGSL corpus/diagnostic/robustness/lowering evidence, and native upload/cache/reuse/command-graph/no-fallback/coverage receipts.
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
   `python3 bench/runners/run_release_pipeline.py --config bench/native-compare/compare.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate`
@@ -183,9 +184,127 @@ This keeps process weight aligned with v0 maturity.
 
 Promoted Track B (modules) follow the same blocking schema, correctness, and trace requirements as other core runtime modules. `python3 bench/runners/run_blocking_gates.py --with-modules` enables those promoted-module gates in the canonical blocking runner. Track B (modules) performance gates remain advisory and are not required for M6 governance promotion, but no Track B module may carry claimability assertions until explicit advisory performance coverage is added.
 
-Promoted Track A (browser) diagnostics are governed through the lane-wrapper browser gate in `bench/browser/browser_gate.py`. `python3 bench/runners/run_blocking_gates.py --with-browser-gate` runs the macOS/host browser preflight plus fresh Playwright smoke and strict layered-superset validation with required browser promotion approvals. That default browser gate remains diagnostic-only by contract.
+Promoted Track A (browser) diagnostics are governed through the lane-wrapper
+browser gate in `bench/browser/browser_gate.py`.
+`python3 bench/runners/run_blocking_gates.py --with-browser-gate` runs the
+macOS/host browser preflight plus fresh Playwright smoke, CTS subset projection,
+recovery parity projection, smoke-derived browser capability probes, browser
+GPU flight-recorder replay and shader-link validation, strict layered-superset
+validation, required browser promotion approvals, the browser runtime-selector
+policy check, the Chromium fork-maintenance policy check, the browser
+patch-manifest check, the browser capture-policy check, and the browser
+responsibility-map check. Flight-recorder replay also checks the
+responsibility-map version named by the capture. That default browser gate
+remains diagnostic-only by contract.
+The browser milestone manifest is schema-registered and can be checked in the
+blocking runner with `--with-browser-milestones-gate`.
+The browser promotion-approval and workflow manifests are also registered with
+schema gate, keeping the governed browser workflow ledgers under the same
+contract path as other browser artifacts.
+They can also be checked directly through
+`browser/chromium/scripts/check-browser-promotion-approvals.py` and
+`browser/chromium/scripts/check-browser-workflow-manifest.py`, or through
+`run_blocking_gates.py --with-browser-promotion-approvals-gate
+--with-browser-workflow-manifest-gate`, which keeps promotion role coverage,
+exact approval/workflow role agreement, approval state, workflow row
+requirements, claim scope, and L0-boundary language enforced outside the
+superset checker.
+Existing smoke reports can also be checked without launching Chromium via
+`browser/chromium/scripts/check-browser-smoke-report.py`, or through
+`run_blocking_gates.py --with-browser-smoke-report-gate`, which validates the
+diagnostic partition, forced-runtime identity, hidden-fallback state, adapter
+and compiler identity, workload identity, report hash, and mode-result hash
+chain. The report shape is registered under
+`config/browser-smoke-report.schema.json`.
+Browser runtime identity artifacts can be checked directly through
+`browser/chromium/scripts/check-browser-runtime-identity.py`, or through
+`run_blocking_gates.py --with-browser-runtime-identity-gate`. The checker keeps
+wrapper probes from claiming Doe execution and requires Chromium selector
+evidence to carry explicit no-hidden-fallback state before `doeRuntimeActive`
+can be true.
+The Chromium integration overlay can be checked through
+`bench/tools/check_webgpu_integration_chromium.py`, or through
+`run_blocking_gates.py --with-webgpu-integration-chromium-gate`. The checker
+audits required browser seam capabilities, the external-texture blocked state,
+wire-protocol notes, and optional repo-relative smoke-artifact linkage.
+The Chromium fork-maintenance policy names the required patch manifest. The
+manifest can be checked directly through
+`bench/tools/check_chromium_patch_manifest.py`, or through
+`run_blocking_gates.py --with-chromium-patch-manifest-gate`, which keeps
+browser-owned Chromium integration deltas inside declared roots and verifies
+rollback/evidence references.
+Chromium source-dependent seam work can be preflighted through
+`bench/tools/check_chromium_source_checkout.py`. Diagnostic mode reports missing
+checkout/tool state without failing repo-owned browser evidence gates;
+`run_blocking_gates.py --with-chromium-source-checkout-gate` requires the
+checkout markers and Chromium build tools before source-level patches can be
+claimed. Source-level Doe runtime selector claims must also pass
+`--chromium-source-require-runtime-selector`, which checks for the Chromium
+switches and typed fail-closed reason markers before accepting selector
+ownership.
+Existing flight-recorder artifacts can be replayed without launching Chromium
+via `browser/chromium/scripts/replay-browser-gpu-flight-recorder.py`, or through
+`run_blocking_gates.py --with-browser-gpu-flight-recorder-replay-gate`, which
+applies the configured browser capture policy before accepting replay evidence.
+Replay also rejects duplicate command node IDs, duplicate/invalid submit IDs,
+backward ordering edges, unknown shader/resource references, stale timing node
+references, and invalid frame presentation nodes.
+Browser shader-link artifacts can be checked with
+`browser/chromium/scripts/check-browser-shader-links.py`; passing
+`--verify-flight-recorder-root` verifies that each shader link matches the
+named browser flight-recorder capture, and `--verify-lowering-root` verifies
+each shader link against its WGSL lowering-link receipt row.
+Browser media-path probe artifacts can be checked with
+`browser/chromium/scripts/check-browser-media-path-probe.py`; the checker
+verifies the artifact's `media_path_probe` capture-policy binding before
+accepting external texture or media-copy diagnostics.
+Browser unsupported and fallback reasons are governed by
+`config/browser-unsupported-reason-taxonomy.json`. The taxonomy can be checked
+with `bench/tools/check_browser_unsupported_reason_taxonomy.py`, and fallback
+explanations reject reason codes that are not valid for the declared capability
+and status.
+Browser pipeline cache receipts can be checked with
+`browser/chromium/scripts/check-browser-pipeline-cache-receipts.py --receipts examples/browser-pipeline-cache-receipts.sample.json --verify-workloads-root .`;
+this links each receipt back to the source local-AI workload artifact and
+rejects missing, duplicate, extra, or shader-identity drifted receipt rows.
+Derived browser artifacts that carry `runtimeIdentity.runtimeIdentityPath` can
+also be checked with `--runtime-identity-root .`; the shared reference checker
+accepts either a `browser_runtime_identity` artifact or the source smoke report
+and rejects selected-runtime or fallback-state drift.
+Browser artifact identity coverage can be checked with
+`bench/tools/check_browser_artifact_identity_coverage.py`, or through
+`run_blocking_gates.py --with-browser-artifact-identity-coverage-gate`. The
+coverage manifest records the required identity anchors for smoke reports,
+flight recorders, derived browser probes, claim reports, promotion receipts,
+and release bundles.
 
-Track A (browser) claimability is now a separate repeated-window lane in `bench/browser/browser_claim_gate.py`, controlled by `config/browser-claim-policy.json`. `python3 bench/runners/run_blocking_gates.py --with-browser-claim-gate` runs the claim gate instead of the single-window browser gate, aggregates repeated strict browser windows, and requires positive local-claim percentiles before reporting `claimStatus=claimable`. Browser claimability remains local-only until a release-grade browser claim policy is explicitly added.
+Track A (browser) claimability is now a separate repeated-window lane in
+`bench/browser/browser_claim_gate.py`, controlled by
+`config/browser-claim-policy.json`.
+`python3 bench/runners/run_blocking_gates.py --with-browser-claim-gate` runs
+the claim gate instead of the single-window browser gate, aggregates repeated
+strict browser windows, requires positive local-claim percentiles before
+reporting `claimStatus=claimable`, checks the browser runtime-selector policy,
+Chromium fork-maintenance policy, Chromium patch manifest, browser capture
+policy, and responsibility map, and emits a browser claim-promotion receipt
+next to the claim report.
+Existing promotion receipts can be checked through
+`run_blocking_gates.py --with-browser-claim-promotion-receipt-gate` without
+rerunning the repeated-window claim gate. Promotion and release-bundle artifact
+verification rejects paths that resolve outside `--verify-files-root` before
+hashing referenced files.
+Browser claim reports are schema-backed by
+`config/browser-claim-report.schema.json`, so promotion receipts hash a governed
+claim report rather than an untyped browser-lane output.
+Browser claim policies can be checked directly through
+`bench/tools/check_browser_claim_policy.py`, or through
+`run_blocking_gates.py --with-browser-claim-policy-gate`. The release policy is
+registered with schema gate alongside the local policy.
+Browser ownership can be checked directly through
+`bench/tools/check_browser_ownership.py`, or through
+`run_blocking_gates.py --with-browser-ownership-gate`.
+Release browser claimability still requires release-policy evidence windows
+before publication.
 
 ### Numeric-stability promotion rule
 
